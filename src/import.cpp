@@ -23,8 +23,9 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "core/TomahawkImporter.h"
 #include "utility.h"
+#include "core/TomahawkImporter.h"
+//#include "core/TomahawkImportWriter.h"
 
 void import_usage(void){
 	programMessage();
@@ -113,6 +114,17 @@ int main(int argc, char** argv){
 		programMessage();
 		std::cerr << Tomahawk::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
+
+	//Tomahawk::TomahawkImportWriter writer;
+	//writer.test();
+	/*
+	Tomahawk::Index::IndexBlockEntryBase b;
+	std::cerr << b.contigID << std::endl;
+	Tomahawk::Index::IndexBlockEntry e;
+	std::cerr << e.contigID << std::endl;
+	return(1);
+	*/
+
 
 	Tomahawk::TomahawkImporter importer(input, output, checkpoint);
 

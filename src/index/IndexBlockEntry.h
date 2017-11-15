@@ -2,6 +2,7 @@
 #define INDEX_INDEXBLOCKENTRY_H_
 
 #include <fstream>
+#include <bitset>
 #include "../algorithm/OpenHashTable.h"
 
 namespace Tomahawk{

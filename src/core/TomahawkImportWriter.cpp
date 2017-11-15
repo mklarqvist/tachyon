@@ -1,10 +1,10 @@
-#include "../core/TomahawkImportWriter.h"
-
 #include <strings.h>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include "TomahawkImportWriter.h"
 
 namespace Tomahawk {
 
@@ -408,7 +408,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	//this->totempole_entry.l_gt_simple = this->buffer_encode_simple.pointer;
 
 	Index::IndexBlockEntry block_entry;
-	//std::cerr << block_entry.contigID << std::endl;
+	std::cerr << "ID: " << block_entry.contigID << std::endl;
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO: " << this->info_values.size() << " entries -> " << ceil((float)this->info_values.size()/8) << " bytes" << std::endl;
 	std::cerr << "External before: " << block_entry.info_bit_vectors << std::endl;
 	std::cerr << &block_entry << std::endl;

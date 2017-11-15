@@ -1,8 +1,8 @@
 #ifndef CORE_TOMAHAWKBLOCKITERATOR_H_
 #define CORE_TOMAHAWKBLOCKITERATOR_H_
 
-#include "../core/base/EntryHotMeta.h"
-#include "../core/base/GTRecords.h"
+#include "base/EntryHotMeta.h"
+#include "base/GTRecords.h"
 
 namespace Tomahawk{
 

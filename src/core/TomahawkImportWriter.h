@@ -3,18 +3,12 @@
 
 #include <fstream>
 
-#include "base/EntryHotMeta.h"
-#include "base/EntryColdMeta.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexBlockEntry.h"
-#include "../io/BasicBuffer.h"
-#include "../io/compression/TGZFController.h"
-#include "../io/vcf/VCFHeaderConstants.h"
-#include "../io/vcf/VCFLines.h"
-#include "../io/vcf/VCFHeader.h"
-#include "../algorithm/OpenHashTable.h"
 #include "../algorithm/permutation/RadixSortGT.h"
 #include "../algorithm/compression/TomahawkImportEncoder.h"
+#include "base/EntryHotMeta.h"
+#include "base/EntryColdMeta.h"
 
 namespace Tomahawk {
 

@@ -1,5 +1,4 @@
-#include "../core/TomahawkImporter.h"
-#include "../core/TomahawkImportWriter.h"
+#include "TomahawkImporter.h"
 
 namespace Tomahawk {
 
@@ -61,7 +60,6 @@ bool TomahawkImporter::BuildBCF(void){
 
 	// Spawn RLE controller
 	this->encoder = new encoder_type(this->header_->samples);
-	//this->encoder->DetermineBitWidth();
 	this->permutator.setSamples(this->header_->samples);
 
 	this->writer_.setHeader(reader.header);
@@ -70,27 +68,9 @@ bool TomahawkImporter::BuildBCF(void){
 		return false;
 	}
 
-	///
-	/// TODO
-	/// temp
-
-	this->sort_order_helper.previous_position = 0;
-	this->sort_order_helper.contigID = nullptr;
-	this->sort_order_helper.prevcontigID = 0;
-	this->writer_.totempole_entry.contigID = 0;
-	this->writer_.totempole_entry.minPosition = 0;
-
-	//std::cerr << "PPA_conventional\tPPA_best\tPPA_byte\tPPA_u16\tPPA_u32\tPPA_u64\trle_conventional\trle_best\trle_byte\trle_u16\trle_u32\trle_u64\tfd_rle_best_ppa_best\tmemory_savings_rle_ppa\tfc_rle_conventional_ppa_best" << std::endl;
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
 			break;
-
-		S32 contigID = reader[0].body->CHROM;
-		this->sort_order_helper.previous_position = reader[0].body->POS;
-		this->sort_order_helper.contigID = &contigID;
-		this->sort_order_helper.prevcontigID = contigID;
-		this->writer_.totempole_entry.contigID = contigID;
-		this->writer_.totempole_entry.minPosition = reader[0].body->POS;
 
 		// Reset permutate
 		if(!this->permutator.build(reader)){
@@ -105,8 +85,7 @@ bool TomahawkImporter::BuildBCF(void){
 			}
 		}
 
-
-		++this->header_->getContig(contigID); // update block count for this contigID
+		++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
 		this->writer_.flush(this->permutator);
 
 		// Reset permutator
@@ -120,9 +99,10 @@ bool TomahawkImporter::BuildBCF(void){
 	}
 
 	++this->header_->getContig(*this->sort_order_helper.contigID);
-	this->writer_.flush(this->permutator);
-	this->writer_.WriteFinal();
+	//this->writer_.flush(this->permutator);
+	//this->writer_.WriteFinal();
 
+	/*
 	if(this->writer_.getVariantsWritten() == 0){
 		std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Did not import any variants..." << std::endl;
 		return false;
@@ -132,37 +112,14 @@ bool TomahawkImporter::BuildBCF(void){
 		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Wrote: " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.getVariantsWritten()))
 														 << " variants to " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.blocksWritten()))
 														 << " blocks..." << std::endl;
-
+*/
 	return(true);
 }
 
 bool TomahawkImporter::parseBCFLine(bcf_entry_type& line){
-	if(this->sort_order_helper.prevcontigID != line.body->CHROM){
-		if(line.body->CHROM < this->sort_order_helper.prevcontigID){
-			std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Contigs are not sorted (" << (*this->header_)[this->sort_order_helper.prevcontigID].name << " > " << (*this->header_)[line.body->CHROM].name << ")..." << std::endl;
-			exit(1);
-		}
-
-		if(!SILENT)
-			std::cerr << Helpers::timestamp("LOG", "IMPORT") << "Switch detected: " << this->header_->getContig(this->sort_order_helper.prevcontigID).name << "->" << this->header_->getContig(line.body->CHROM).name << "..." << std::endl;
-
-		this->sort_order_helper.previous_position = 0;
-
-		// Get new contig value from header
-		// and flush out data
-		++this->header_->getContig(line.body->CHROM);
-		//this->writer_.flush(this->permutator);
-	}
-
 	// Assert position is in range
 	if(line.body->POS + 1 > this->header_->getContig(line.body->CHROM).length){
 		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << (*this->header_)[line.body->CHROM].name << ':' << line.body->POS+1 << " > reported max size of contig (" << (*this->header_)[line.body->CHROM].length << ")..." << std::endl;
-		return false;
-	}
-
-	// Assert file is ordered
-	if(line.body->POS < this->sort_order_helper.previous_position){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "File is not sorted by coordinates (" << (*this->header_)[line.body->CHROM].name << ':' << line.body->POS+1 << " > " << (*this->header_)[line.body->CHROM].name << ':' << this->sort_order_helper.previous_position << ")..." << std::endl;
 		return false;
 	}
 

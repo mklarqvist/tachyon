@@ -51,8 +51,19 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="third_party/FiniteStateEntropy/Visual|third_party/xxhash/xxhsum.c|third_party/zlib/win32|third_party/zlib/doc|third_party/zlib/msdos|third_party/zlib/as400|third_party/zlib/examples|third_party/zlib/test|third_party/zlib/contrib|third_party/FiniteStateEntropy/lib/Archives|third_party/FiniteStateEntropy/programs|io/compression|third_party/zlib/qnx|third_party/zlib/old|third_party/zlib/watcom|third_party/zlib/nintendods|third_party/zlib/amiga" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+						<entry excluding="third_party|algorithm|algorithm/compression|algorithm/permutation|core|core/base|index|io|io/bcf|io/compression|support|io/vcf" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+						<entry excluding="compression|permutation" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src/algorithm"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/algorithm/compression"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/algorithm/permutation"/>
+						<entry excluding="base" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/core"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/core/base"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/index"/>
+						<entry excluding="vcf|bcf|compression|support" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/bcf"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/compression"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/vcf"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/support"/>
+						<entry excluding="FiniteStateEntropy/Visual|xxhash/xxhsum.c|zlib/win32|zlib/doc|zlib/msdos|zlib/as400|zlib/examples|zlib/test|zlib/contrib|FiniteStateEntropy/lib/Archives|FiniteStateEntropy/programs|zlib/qnx|third_party/zlib/old|zlib/watcom|zlib/nintendods|zlib/amiga" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src/third_party"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

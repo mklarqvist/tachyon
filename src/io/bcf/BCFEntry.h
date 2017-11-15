@@ -3,7 +3,6 @@
 
 #include "../vcf/VCFHeader.h"
 #include "../../third_party/xxhash/xxhash.h"
-#include "../BasicBuffer.h"
 
 namespace Tomahawk {
 namespace BCF {

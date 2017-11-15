@@ -3,7 +3,6 @@
 
 #include <cassert>
 
-#include "../../io/BasicBuffer.h"
 #include "../../io/bcf/BCFEntry.h"
 
 namespace Tomahawk{

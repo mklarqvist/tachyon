@@ -1,6 +1,10 @@
 #ifndef INDEX_INDEXENTRY_H_
 #define INDEX_INDEXENTRY_H_
 
+#include <fstream>
+
+#include "../support/TypeDefinitions.h"
+
 namespace Tomahawk{
 namespace Totempole{
 

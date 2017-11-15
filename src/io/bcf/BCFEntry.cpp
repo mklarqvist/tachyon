@@ -1,7 +1,6 @@
 #include <cassert>
 
 #include "BCFEntry.h"
-#include "../../support/MagicConstants.h"
 
 namespace Tomahawk {
 namespace BCF {

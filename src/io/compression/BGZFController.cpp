@@ -4,7 +4,6 @@
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 #include "BGZFController.h"
-#include "GZFConstants.h"
 
 namespace Tomahawk {
 namespace IO {

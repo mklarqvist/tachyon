@@ -1,9 +1,11 @@
 #ifndef TOMAHAWKIMPORTER_H_
 #define TOMAHAWKIMPORTER_H_
 
-#include "../io/vcf/VCFHeader.h"
+#include "../index/IndexEntry.h"
+#include "../index/IndexBlockEntry.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../core/TomahawkImportWriter.h"
+#include "../algorithm/compression/TomahawkImportEncoder.h"
+#include "TomahawkImportWriter.h"
 
 namespace Tomahawk {
 
@@ -47,9 +49,6 @@ public:
 private:
 	bool BuildBCF();  // import a BCF file
 	bool parseBCFLine(bcf_entry_type& line); // Import a BCF line
-	// Check if the current meta and RLE buffers exceeds
-	// the disk flush limit
-	bool checkSize(void) const{ return(this->meta_buffer.size() + this->encode_rle_buffer.size() >= this->block_flush_limit); }
 
 private:
 	bool permutateData(bcf_reader_type& reader);
