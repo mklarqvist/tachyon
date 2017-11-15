@@ -1,14 +1,16 @@
 #ifndef INDEXENTRY_H_
 #define INDEXENTRY_H_
 
+#include "../support/TypeDefinitions.h"
+
 namespace Tomahawk{
 namespace Totempole{
 
-struct TotempoleEntry{
-	typedef TotempoleEntry self_type;
+struct IndexEntry{
+	typedef IndexEntry self_type;
 
 public:
-	TotempoleEntry() :
+	IndexEntry() :
 		contigID(0),
 		n_variants(0),
 		byte_offset(0),
@@ -16,7 +18,7 @@ public:
 		minPosition(0),
 		maxPosition(0)
 	{}
-	~TotempoleEntry(){}
+	~IndexEntry(){}
 
 	inline bool isValid(void) const{ return(this->byte_offset != 0); }
 

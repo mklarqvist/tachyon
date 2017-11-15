@@ -1,7 +1,10 @@
 #ifndef INDEX_INDEXBLOCKENTRY_H_
 #define INDEX_INDEXBLOCKENTRY_H_
 
+#include <iostream>
+#include <fstream>
 #include "../support/TypeDefinitions.h"
+#include "../algorithm/OpenHashTable.h"
 
 namespace Tomahawk{
 namespace Index{
@@ -17,6 +20,9 @@ public:
 		type(0),
 		method(0)
 	{}
+	~IndexBlockEntryController(){}
+
+	inline void clear(){ memset(this, 0, sizeof(BYTE)); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
 		const BYTE* c = reinterpret_cast<const BYTE* const>(&controller);
@@ -72,11 +78,17 @@ struct IndexBlockEntryBitvector{
 	typedef IndexBlockEntryBitvector self_type;
 
 public:
-	// bool construct(const std::vector<U32>& values, const U32& width);
+	IndexBlockEntryBitvector() : bit_bytes(nullptr){}
+	~IndexBlockEntryBitvector(){ delete [] this->bit_bytes; }
+
 	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
+	inline void allocate(const U32& w){ this->bit_bytes = new BYTE[w]; memset(this->bit_bytes, 0, w); }
 
 	template <class T>
-	FORCE_INLINE const bool operator[](const T& p) const{ return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8)); }
+	FORCE_INLINE const bool operator[](const T& p) const{
+		std::cerr << (U32)p << " byte: " << (U32)p/8 << " remainder: " << (U32)p%8 << " shift: " << std::bitset<8>((1 << (p % 8))) << std::endl;
+		return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8));
+	}
 
 public:
 	BYTE* bit_bytes;
@@ -86,11 +98,28 @@ struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
 	typedef IndexBlockEntryController controller_type;
 
+public:
+	IndexBlockEntryBase() :
+		contigID(-1),
+		n_variants(0),
+		offset_streams_begin(0),
+		l_ppa(0),
+		l_meta(0),
+		l_meta_complex(0),
+		l_gt_rle(0),
+		l_gt_simple(0),
+		n_info_streams(0),
+		n_format_streams(0),
+		n_filter_streams(0)
+	{}
+	~IndexBlockEntryBase(){}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
-
+		stream.write(reinterpret_cast<const char*>(&entry.offset_streams_begin),  sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.l_ppa), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_meta), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_meta_complex), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_gt_rle), sizeof(U32));
@@ -104,9 +133,10 @@ struct IndexBlockEntryBase{
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
 		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.contigID),    sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),       sizeof(U16));
-
+		stream.read(reinterpret_cast<char*>(&entry.contigID),  sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.offset_streams_begin), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.l_ppa), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_meta), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_meta_complex), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_gt_rle), sizeof(U32));
@@ -119,8 +149,11 @@ struct IndexBlockEntryBase{
 	}
 
 	void reset(void){
-		this->contigID = 0;
+		this->controller.clear();
+		this->contigID = -1;
 		this->n_variants = 0;
+		this->offset_streams_begin = 0;
+		this->l_ppa = 0;
 		this->l_meta = 0;
 		this->l_gt_rle = 0;
 		this->l_gt_simple = 0;
@@ -169,35 +202,32 @@ struct IndexBlockEntry{
 	typedef IndexBlockEntryController controller_type;
 	typedef IndexBlockEntryOffset offset_type;
 	typedef IndexBlockEntryBitvector bit_vector;
+	typedef Hash::HashTable<U32, U32> hash_table;
+	typedef std::vector<U32> id_vector;
+	typedef std::vector< id_vector > pattern_vector;
+
+	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
-	IndexBlockEntry(){}
-	~IndexBlockEntry(){}
+	IndexBlockEntry();
+	~IndexBlockEntry();
+	void reset(void);
 
-	void reset(void){
-		this->base.reset();
-
-		delete [] this->info_offsets;
-		delete [] this->format_offsets;
-		delete [] this->filter_offsets;
-		this->info_offsets = nullptr;
-		this->format_offsets = nullptr;
-		this->filter_offsets = nullptr;
-
-		delete [] this->info_bit_vectors;
-		delete [] this->format_bit_vectors;
-		delete [] this->filter_bit_vectors;
-		this->info_bit_vectors = nullptr;
-		this->format_bit_vectors = nullptr;
-		this->filter_bit_vectors = nullptr;
-	}
+	/////////////////////////
+	// Import functionality
+	/////////////////////////
+	// During import we need to intialize and
+	// resize these these pointers to fit the
+	// data we want to store
+	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
+	bool __constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
 
 public:
 	base_type base;
 
 	// Virtual offsets into various
 	// INFO/FORMAT/FILTER streams
-
+	//
 	// This mean local key is implicit
 	// GLOBAL KEY | OFFSET
 	offset_type* info_offsets;

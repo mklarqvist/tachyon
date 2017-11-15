@@ -7,7 +7,7 @@ namespace Tomahawk{
 namespace Support{
 
 // Size of meta entry BEFORE run entries
-#define ENTRY_HOT_META_SIZE	(sizeof(BYTE) + sizeof(U64) + sizeof(BYTE) + 2*sizeof(float) + 3*sizeof(U16) + 2*sizeof(U32))
+#define ENTRY_HOT_META_SIZE	(sizeof(BYTE) + sizeof(U64) + sizeof(BYTE) + sizeof(float) + 3*sizeof(U16) + 2*sizeof(U32))
 
 /*
  TomahawkEntryMetaBase is used for reinterpreting
@@ -47,7 +47,6 @@ public:
 		position(0),
 		ref_alt(0),
 		//MGF(0),
-		HWE_P(0),
 		AF(0),
 		FILTER_map_ID(0),
 		INFO_map_ID(0),
@@ -62,7 +61,7 @@ public:
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.AF << '\t' << entry.HWE_P << '\t' << entry.virtual_offset_cold_meta << '\t' << entry.virtual_offset_gt;
+		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.AF << '\t' << entry.virtual_offset_cold_meta << '\t' << entry.virtual_offset_gt;
 		return(out);
 	}
 
@@ -71,8 +70,6 @@ public:
 		buffer += *reinterpret_cast<const BYTE* const>(&entry.controller);
 		buffer += entry.position;
 		buffer += entry.ref_alt;
-		//buffer += entry.MGF;
-		buffer += entry.HWE_P;
 		buffer += entry.AF;
 		buffer += entry.FILTER_map_ID;
 		buffer += entry.INFO_map_ID;
@@ -89,10 +86,8 @@ public:
 	// sites that are not bi-allelic and not simple
 	// will be encoded in the complex meta section
 	BYTE ref_alt;
-	// MGF, HWE, AF is pre-computed as they are used in
-	// LD heuristics
+	// AF is pre-computed
 	//float MGF;
-	float HWE_P;
 	float AF;
 	// FILTER map
 	U16 FILTER_map_ID;
@@ -132,7 +127,7 @@ public:
 	inline const T& getRuns(void) const{ return(this->n_runs); }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.n_runs << '\t' << entry.AF << '\t' << entry.HWE_P << '\t' << entry.n_runs;
+		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.n_runs << '\t' << entry.AF << '\t' << entry.n_runs;
 		return(out);
 	}
 

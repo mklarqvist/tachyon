@@ -54,7 +54,7 @@ private:
 	typedef TomahawkRunPacked self_type;
 
 public:
-	TomahawkRunPacked();	// Disallowed ctor
+	TomahawkRunPacked();  // Disallowed ctor
 	~TomahawkRunPacked(); // Disallowed dtor
 
 	T phasing: 1,

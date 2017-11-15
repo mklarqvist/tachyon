@@ -11,7 +11,6 @@
 #include "../io/bcf/BCFEntry.h"
 #include "../support/helpers.h"
 #include "../support/MagicConstants.h"
-#include "../third_party/FiniteStateEntropy/lib/fse.h"
 
 namespace Tomahawk {
 
@@ -64,103 +63,27 @@ bool TomahawkImportWriter::Open(const std::string output){
 	this->filename = output;
 	this->CheckOutputNames(output);
 	this->streamTomahawk.open(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
-	this->streamTotempole.open(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX + '.' + Constants::OUTPUT_INDEX_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
 	if(!this->streamTomahawk.good()){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
-	if(!this->streamTotempole.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX + '.' + Constants::OUTPUT_INDEX_SUFFIX << "!" << std::endl;
-		return false;
-	}
 
 	if(!SILENT){
 		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX << "..." << std::endl;
-		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX + '.' + Constants::OUTPUT_INDEX_SUFFIX << "..." << std::endl;
 	}
-
-	// Write Tomahawk and Totempole headers
-	//this->WriteHeaders();
-
-	// Determine flush limit
-	this->DetermineFlushLimit();
-
-	return true;
-}
-
-void TomahawkImportWriter::DetermineFlushLimit(void){
-	this->flush_limit = this->vcf_header->samples * this->n_variants_limit / 10; // Worst case
-	if(this->vcf_header->samples <= Constants::UPPER_LIMIT_SAMPLES_8B - 1)
-		this->flush_limit *= sizeof(BYTE);
-	else if(this->vcf_header->samples <= Constants::UPPER_LIMIT_SAMPLES_16B - 1)
-		this->flush_limit *= sizeof(U16);
-	else if(this->vcf_header->samples <= Constants::UPPER_LIMIT_SAMPLES_32B - 1)
-		this->flush_limit *= sizeof(U32);
-	else this->flush_limit *= sizeof(U64);
-}
-
-bool TomahawkImportWriter::OpenExtend(const std::string output){
-	this->filename = output;
-	this->CheckOutputNames(output);
-	this->streamTomahawk.open(output, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-	this->streamTotempole.open(output + '.' + Constants::OUTPUT_INDEX_SUFFIX, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-
-	// Check streams
-	if(!this->streamTomahawk.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << output << "!" << std::endl;
-		return false;
-	}
-	if(!this->streamTotempole.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << output + '.' + Constants::OUTPUT_INDEX_SUFFIX << "!" << std::endl;
-		return false;
-	}
-
-	if(!SILENT){
-		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Extending: " << output << "..." << std::endl;
-		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Extending: " << output + '.' + Constants::OUTPUT_INDEX_SUFFIX << "..." << std::endl;
-	}
-
-	U64 tempsize = this->streamTomahawk.tellp();
-	this->streamTomahawk.seekp(tempsize - sizeof(U64) * Tomahawk::Constants::eof_length);
-	tempsize = this->streamTotempole.tellp();
-	this->streamTotempole.seekp(tempsize - sizeof(U64) * Tomahawk::Constants::eof_length);
-
-	// Determine flush limit
-	this->DetermineFlushLimit();
 
 	return true;
 }
 
 void TomahawkImportWriter::WriteFinal(void){
-	// Write EOF
-	for(U32 i = 0; i < Constants::eof_length; ++i){
-		this->streamTotempole.write(reinterpret_cast<const char*>(&Constants::eof[i]), sizeof(U64));
-		this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::eof[i]), sizeof(U64));
-	}
 
-	// Re-open file and overwrite block counts and offset
-	const U32 shift = Constants::WRITE_HEADER_MAGIC_INDEX_LENGTH + sizeof(float) + sizeof(U64) + sizeof(BYTE);
-	this->streamTotempole.flush();
-	std::fstream streamTemp(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX + '.' + Constants::OUTPUT_INDEX_SUFFIX, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
-
-	if(!streamTemp.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not re-open file!" << std::endl;
-		exit(1);
-	}
-
-	streamTemp.seekg(shift);
-	streamTemp.write(reinterpret_cast<const char*>(&this->n_blocksWritten), sizeof(U32));
-	streamTemp.write(reinterpret_cast<const char*>(&this->largest_uncompressed_block), sizeof(U32));
-	streamTemp.flush();
-	streamTemp.close();
 }
 
 void TomahawkImportWriter::setHeader(VCF::VCFHeader& header){
 	this->vcf_header = &header;
 	this->encoder = new encoder_type(header.samples);
-	//this->encoder->DetermineBitWidth();
 }
 
 bool TomahawkImportWriter::add(const VCF::VCFLine& line){
@@ -485,114 +408,28 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 
 	// Update sizes of streams
 	this->totempole_entry.byte_offset = this->streamTomahawk.tellp(); // IO offset in Tomahawk output
-	this->totempole_entry.l_meta = this->buffer_meta.pointer;
-	this->totempole_entry.l_meta_complex = this->buffer_metaComplex.pointer;
-	this->totempole_entry.l_gt_rle = this->buffer_encode_rle.pointer;
-	this->totempole_entry.l_gt_simple = this->buffer_encode_simple.pointer;
+	//this->totempole_entry.l_meta = this->buffer_meta.pointer;
+	//this->totempole_entry.l_meta_complex = this->buffer_metaComplex.pointer;
+	//this->totempole_entry.l_gt_rle = this->buffer_encode_rle.pointer;
+	//this->totempole_entry.l_gt_simple = this->buffer_encode_simple.pointer;
 
-
-	// Todo:
-	// Build map
-	// Construct bitvectors
+	Index::IndexBlockEntry block_entry;
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO: " << this->info_values.size() << " entries -> " << ceil((float)this->info_values.size()/8) << " bytes" << std::endl;
-	if(!this->constructBitVector(this->info_hash_streams, this->info_values, this->info_patterns)){
-		std::cerr << "failed bit" << std::endl;
-		return false;
-	}
+	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
+	block_entry.info_bit_vectors = new Index::IndexBlockEntry::bit_vector[5];
+	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
+	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO, this->info_hash_streams, this->info_values, this->info_patterns);
+	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
+
+	std::cerr << "Is null = " << (block_entry.info_bit_vectors == nullptr) << '\t' << (block_entry.info_bit_vectors[0].bit_bytes == nullptr) << std::endl;
 
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT: " << this->format_values.size() << " entries -> " << ceil((float)this->format_values.size()/8) << " bytes" << std::endl;
-	if(!this->constructBitVector(this->format_hash_streams, this->format_values, this->format_patterns)){
-		std::cerr << "failed bit" << std::endl;
-		return false;
-	}
+	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT, this->format_hash_streams, this->format_values, this->format_patterns);
 
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FILTER: " << this->filter_values.size() << " entries -> " << ceil((float)this->filter_values.size()/8) << " bytes" << std::endl;
-	if(!this->constructBitVector(this->filter_hash_streams, this->filter_values, this->filter_patterns)){
-		std::cerr << "failed bit" << std::endl;
-		return false;
-	}
+	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER, this->filter_hash_streams, this->filter_values, this->filter_patterns);
 
-	// Test to iterate over complex
-
-	//U32 p = 0;
-	/*
-	TomahawkBlockIterator<U16> b(this->buffer_meta.data, this->buffer_meta.pointer, this->totempole_entry);
-	while(true){
-		//std::cerr << b.getMeta() << std::endl;
-		//std::cerr << p++ << '/' << this->totempole_entry.n_variants << ": " << b.isRLE() << '\t' << b.size() << '\t' << b.getMeta() << std::endl;
-
-		if(b.getMeta().controller.biallelic == 0 && b.getMeta().controller.rle == 0){
-			std::cerr << b.getMeta().position << '\t' << b.getMeta().n_runs << std::endl;
-			const BYTE n_alleles = b.getMetaComplex().n_allele + 1;
-			if(n_alleles < 8){
-				const Support::TomahawkRunSimple<BYTE>* field = nullptr;
-				while(b.nextRunSimple(field)){
-					std::cerr << *field << '\t';
-				}
-				std::cerr << std::endl;
-
-				//exit(1);
-			} else {
-				std::cerr << this->totempole_entry.n_variants << ": " << b.isRLE() << '\t' << b.size() << '\t' << b.getMeta() << std::endl;
-				const Support::TomahawkRunSimple<U16>* field = nullptr;
-				while(b.nextRunSimple(field)){
-					//std::cerr << *reinterpret_cast<const U16*>(field) << '\t' << *field << std::endl;
-					std::cerr << *field << '\t';
-				}
-				std::cerr << std::endl;
-				//exit(1);
-			}
-		} else if(b.getMeta().controller.biallelic == 0 && b.getMeta().controller.rle == 1){
-			const BYTE& rle_type = b.getMeta().controller.rle_type;
-			const BYTE shift_size = ceil(log2(b.getMetaComplex().n_allele + 1));
-			const BYTE allele_mask = (1 << shift_size) - 1;
-
-			if(rle_type == 0){
-				std::cerr << b.getMeta().position << std::endl;
-				std::cerr << "nallelic and rle: " << (int)rle_type << " n_alleles: " << b.getMetaComplex().n_allele << std::endl;
-				std::cerr << (int)shift_size << ',' << (int)rle_type << " mask: " << std::bitset<8>(allele_mask) << std::endl;
-
-				const BYTE* field = nullptr;
-
-				while(b.nextRunSimple(field)){
-					const U32 l = ((*field >> (1 + 2*shift_size)));
-					for(U32 i = 0; i < l; ++i)
-						std::cerr << (int)(((*field >> 1) & allele_mask) - 1) << ((*field&1) ? '|' : '/') << (int)(((*field >> (1 + shift_size)) & allele_mask) - 1) << '\t';
-					//std::cerr << "A: " << (int)((*field >> 1) & allele_mask) << '\t'
-					//		  << "B: " << (int)((*field >> (1 + shift_size)) & allele_mask) << '\t'
-					//		  << "run; " << (int)((*field >> (1 + 2*shift_size))) << '\t'
-					//		  << std::bitset<8>(*field) << std::endl;
-				}
-				exit(1);
-			}
-		}
-
-
-		else if(b.getMeta().controller.biallelic == 1 && b.getMeta().controller.rle == 1) {
-			/*
-			const BYTE& rle_type = b.getMeta().controller.rle_type;
-			const BYTE shift_size = 1 + b.getMeta().controller.anyMissing;
-			const BYTE mixed_phasing = b.getMeta().controller.mixed_phasing;
-			const BYTE allele_mask = (1 << shift_size) - 1;
-
-			if(rle_type == 1){
-				const U16* field = nullptr;
-				std::cerr << (int)shift_size << ',' << (int)mixed_phasing << ',' << (int)rle_type << " mask: " << std::bitset<16>(allele_mask) << std::endl;
-				while(b.nextRun(field)){
-					std::cerr << "A: " << (int)((*field >> mixed_phasing) & allele_mask) << '\t'
-							  << "B: " << (int)((*field >> (mixed_phasing + shift_size)) & allele_mask) << '\t'
-							  << "run; " << (int)((*field >> (mixed_phasing + 2*shift_size))) << '\t'
-							  << std::bitset<16>(*field) << std::endl;
-				}
-				exit(1);
-			}
-			*/
-		/*}
-
-
-		if(!++b) break;
-	}
-	*/
+	std::cerr << block_entry.info_bit_vectors[0][6] << std::endl;
 
 	// Split U32 values into 4 streams
 	const U32 partition = this->vcf_header->samples;
@@ -603,11 +440,6 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	memset(this->buffer_ppa.data, 0, 2*sizeof(BYTE)*partition);
 	bytePreprocessBits(&this->buffer_general.data[partition*2], partition, this->buffer_ppa.data);
 	bytePreprocessBits(&this->buffer_general.data[partition*3], partition, &this->buffer_ppa.data[partition]);
-	//const BYTE* const test_bit = reinterpret_cast<const BYTE* const>(this->buffer_ppa.data);
-	//for(U32 i = 0; i < partition; ++i){
-//		std::cerr << (U32)test_bit[i] << ' ';
-	//}
-	//std::cerr << std::endl;
 	this->buffer_ppa.pointer = 2*partition;
 	this->gzip_controller.Deflate(this->buffer_ppa);
 	this->streamTomahawk << this->gzip_controller;
@@ -615,40 +447,6 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	//std::cout << "PPA\t0\t" << partition*2 << '\t' << this->gzip_controller.buffer.size() << '\n';
 	this->gzip_controller.Clear();
 	this->buffer_general.reset();
-
-	/*
-
-	this->buffer_ppa.resize(partition*8);
-	U32 ret_sep = 0;
-	buffer_type temp2(partition*8);
-	buffer_type temp3(partition*8);
-	std::cerr << "size: " << temp2.capacity() << std::endl;
-	for(U32 i = 0; i < 4; ++i){
-		std::cerr << "compressing: " << partition*i << "->" << partition*(i+1) << " at " << this->buffer_ppa.pointer << '/' << this->buffer_ppa.capacity() << std::endl;
-		size_t ret = FSE_compress(&this->buffer_ppa.data[this->buffer_ppa.pointer], this->buffer_ppa.capacity(),
-				                  &test.data[partition*i], partition);
-		std::cerr << "compressed: " << ret << " input: " << partition << std::endl;
-		if(FSE_isError(ret) || ret == 0){
-			std::cerr << "failed to compress: " << ret << std::endl;
-			exit(1);
-		}
-
-		if(ret == 1)
-			continue;
-
-		size_t retD = FSE_decompress(temp2.data, temp2.capacity(), &this->buffer_ppa.data[this->buffer_ppa.pointer], ret);
-		if(FSE_isError(retD)){
-			std::cerr << "decompress error: "  << retD << std::endl;
-			exit(1);
-		}
-		std::cerr << "decompressed: " << retD << std::endl;
-		ret_sep += ret;
-		this->buffer_ppa.pointer += ret;
-	}
-	this->streamTomahawk << this->buffer_ppa;
-	std::cerr << Helpers::timestamp("DEBUG","IMPORT") << "PPA\t" << this->vcf_header->samples*sizeof(U32) << '\t' << this->buffer_ppa.pointer << std::endl;
-	this->buffer_ppa.reset();
-	*/
 
 	// Merge data to single buffer
 	// and compress
@@ -690,7 +488,6 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 
 	//this->totempole_entry.l_uncompressed = this->buffer_meta.size(); // Store uncompressed size
 	this->totempole_entry.byte_offset_end = this->streamTomahawk.tellp(); // IO offset in Tomahawk output
-	this->streamTotempole << this->totempole_entry; // Write totempole output
 	++this->n_blocksWritten; // update number of blocks written
 	this->n_variants_written += this->totempole_entry.n_variants; // update number of variants written
 	this->totempole_entry.reset();
@@ -730,48 +527,6 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	this->reset(); // reset buffers
 
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "END FLUSH" << std::endl;
-
-	return true;
-}
-
-bool TomahawkImportWriter::constructBitVector(hash_table& htable, const id_vector& values, const pattern_vector& patterns){
-	const BYTE bitvector_width = ceil((float)values.size()/8);
-	BYTE* bitvector = new BYTE[bitvector_width];
-	memset(bitvector, 0, sizeof(BYTE)*bitvector_width);
-
-	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Mapping..." << std::endl;
-
-	// Cycle over pattern size
-	for(U32 i = 0; i < patterns.size(); ++i){
-		// Dump data
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < patterns[i].size(); ++j){
-			std::cerr << patterns[i][j] << '\t';
-		}
-		std::cerr << std::endl;
-
-		//
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < patterns[i].size(); ++j){
-			U32* retval = nullptr;
-			if(!htable.GetItem(&patterns[i][j], retval, sizeof(U32))){
-				std::cerr << "impossible" << std::endl;
-				exit(1);
-			}
-			bitvector[*retval/8] ^= 1 << (*retval % 8);
-			std::cerr << *retval << '\t';
-		}
-		std::cerr << std::endl;
-
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < bitvector_width; ++j)
-			std::cerr << std::bitset<8>(bitvector[j]);
-
-		std::cerr << std::endl << std::endl;
-		memset(bitvector, 0, sizeof(BYTE)*bitvector_width);
-	}
-	std::cerr << std::endl;
-	delete [] bitvector;
 
 	return true;
 }

@@ -11,7 +11,7 @@ class TomahawkBlockIterator{
 	typedef TomahawkBlockIterator self_type;
 	typedef Support::EntryHotMeta<T> meta_type;
 	typedef Support::EntryColdMeta meta_complex_type;
-	typedef Totempole::TotempoleEntry totempole_entry_type;
+	typedef Totempole::IndexEntry totempole_entry_type;
 
 public:
 	TomahawkBlockIterator(char* data, const U64& size, const totempole_entry_type& totempole) :
@@ -24,9 +24,9 @@ public:
 		totempole(totempole),
 		data(data),
 		meta(reinterpret_cast<const meta_type*>(data)),
-		encoding_RLE(&data[totempole.l_meta]),
-		encoding_simple(&data[totempole.l_meta + totempole.l_gt_rle]),
-		meta_complex(&data[totempole.l_meta + totempole.l_gt_rle + totempole.l_gt_simple])
+		encoding_RLE(&data[0]),
+		encoding_simple(&data[0]),
+		meta_complex(&data[0])
 	{
 		this->upper_limit = this->meta[0].n_runs;
 	}
@@ -40,11 +40,11 @@ public:
 
 		this->upper_limit = this->getMeta().n_runs;
 		if(this->getMeta().controller.biallelic){
-			this->encoding_RLE = &this->data[totempole.l_meta + this->getMeta().virtual_offset_gt];
+			this->encoding_RLE = &this->data[0];
 			++this->p_rle;
 		}
 		else {
-			this->encoding_simple = &this->data[totempole.l_meta + totempole.l_gt_rle + this->getMeta().virtual_offset_gt];
+			this->encoding_simple = &this->data[0];
 			++this->p_simple;
 		}
 

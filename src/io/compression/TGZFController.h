@@ -1,5 +1,5 @@
-#ifndef GZCONTROLLER_H_
-#define GZCONTROLLER_H_
+#ifndef TGZFCONTROLLER_H_
+#define TGZFCONTROLLER_H_
 
 #include <fstream>
 
@@ -52,4 +52,4 @@ public:
 }
 }
 
-#endif /* GZCONTROLLER_H_ */
+#endif /* TGZFCONTROLLER_H_ */

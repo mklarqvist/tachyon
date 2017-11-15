@@ -1,5 +1,4 @@
 #include "../core/TomahawkImporter.h"
-
 #include "../core/TomahawkImportWriter.h"
 
 namespace Tomahawk {
@@ -109,7 +108,6 @@ bool TomahawkImporter::BuildBCF(void){
 
 		++this->header_->getContig(contigID); // update block count for this contigID
 		this->writer_.flush(this->permutator);
-		this->writer_.TotempoleSwitch(contigID, this->sort_order_helper.previous_position);
 
 		// Reset permutator
 		this->permutator.reset();
@@ -154,9 +152,6 @@ bool TomahawkImporter::parseBCFLine(bcf_entry_type& line){
 		// and flush out data
 		++this->header_->getContig(line.body->CHROM);
 		//this->writer_.flush(this->permutator);
-
-		// Update index values
-		this->writer_.TotempoleSwitch(line.body->CHROM, 0);
 	}
 
 	// Assert position is in range

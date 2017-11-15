@@ -1,5 +1,5 @@
-#ifndef VCFPARSER_H_
-#define VCFPARSER_H_
+#ifndef TOMAHAWKIMPORTER_H_
+#define TOMAHAWKIMPORTER_H_
 
 #include "../io/vcf/VCFHeader.h"
 #include "../algorithm/permutation/RadixSortGT.h"
@@ -15,7 +15,7 @@ class TomahawkImporter {
 	typedef VCF::VCFLine line_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Algorithm::TomahawkImportEncoder encoder_type;
-	typedef Totempole::TotempoleEntry totempole_entry_type;
+	typedef Totempole::IndexEntry totempole_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Algorithm::RadixSortGT radix_sorter_type;
@@ -73,4 +73,4 @@ private:
 
 } /* namespace Tomahawk */
 
-#endif /* VCFPARSER_H_ */
+#endif /* TOMAHAWKIMPORTER_H_ */

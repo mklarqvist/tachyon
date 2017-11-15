@@ -2,6 +2,7 @@
 #define TOMAHAWK_UTILITY_H_
 
 #include <iostream>
+#include "support/helpers.h"
 #include "support/MagicConstants.h"
 
 // Declare extern

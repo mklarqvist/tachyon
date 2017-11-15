@@ -1,5 +1,5 @@
-#ifndef TomahawkImportEncoder_H_
-#define TomahawkImportEncoder_H_
+#ifndef TOMAHAWKIMPORTENCODER_H_
+#define TOMAHAWKIMPORTENCODER_H_
 
 #include <algorithm>
 #include <bitset>
@@ -687,4 +687,4 @@ bool TomahawkImportEncoder::EncodeRLEComplex(const vcf_type& line, buffer_type& 
 }
 }
 
-#endif /* TomahawkImportEncoder_H_ */
+#endif /* TOMAHAWKIMPORTENCODER_H_ */

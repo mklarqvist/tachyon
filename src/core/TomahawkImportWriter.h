@@ -3,19 +3,18 @@
 
 #include <fstream>
 
-#include "../algorithm/compression/TomahawkImportEncoder.h"
-#include "../support/TypeDefinitions.h"
+#include "base/EntryHotMeta.h"
+#include "base/EntryColdMeta.h"
+#include "../index/IndexEntry.h"
+#include "../index/IndexBlockEntry.h"
 #include "../io/BasicBuffer.h"
-#include "../io/BasicWriters.h"
 #include "../io/compression/TGZFController.h"
 #include "../io/vcf/VCFHeaderConstants.h"
 #include "../io/vcf/VCFLines.h"
 #include "../io/vcf/VCFHeader.h"
 #include "../algorithm/OpenHashTable.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../core/base/EntryHotMeta.h"
-#include "../index/IndexEntry.h"
-#include "base/EntryColdMeta.h"
+#include "../algorithm/compression/TomahawkImportEncoder.h"
 
 namespace Tomahawk {
 
@@ -189,7 +188,7 @@ class TomahawkImportWriter {
 	typedef Support::EntryHotMetaBase meta_base_type;
 	typedef Algorithm::TomahawkImportEncoder encoder_type;
 	typedef VCF::VCFHeader vcf_header_type;
-	typedef Totempole::TotempoleEntry totempole_entry_type;
+	typedef Totempole::IndexEntry totempole_entry_type;
 	typedef IO::TGZFController tgzf_controller_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Hash::HashTable<U64, U32> hash_table_vector;
@@ -203,8 +202,6 @@ public:
 	~TomahawkImportWriter();
 
 	bool Open(const std::string output);
-	void DetermineFlushLimit(void);
-	bool OpenExtend(const std::string output);
 	void WriteFinal(void);
 	void setHeader(vcf_header_type& header);
 	bool add(const VCF::VCFLine& line);
@@ -248,33 +245,17 @@ public:
 		this->filter_values.clear();
 
 		// Reset
+		// Todo: fix resizing if required
 		for(U32 i = 0; i < 100; ++i){
 			this->info_containers[i].reset();
 			this->format_containers[i].reset();
 		}
 	}
 
-	inline void TotempoleSwitch(const U32 contig, const U32 minPos){
-		this->totempole_entry.reset();
-		this->totempole_entry.contigID = contig;
-		this->totempole_entry.minPosition = minPos;
-	}
-
 	// flush and write
 	bool flush(Algorithm::RadixSortGT& permuter);
-	//bool flush(const U32* const ppa);
-
-	inline bool checkSize() const{
-		// if the current size is larger than our desired output block size, return TRUE to trigger a flush
-		// or if the number of entries written to buffer exceeds our set limit
-		if(this->totempole_entry.n_variants >= this->n_variants_limit || this->buffer_encode_rle.size() >= this->flush_limit)
-			return true;
-
-		return false;
-	}
 
 	inline const U64& blocksWritten(void) const{ return this->n_blocksWritten; }
-	inline const U64& size(void) const{ return this->buffer_encode_rle.size(); }
 	inline const U64& getVariantsWritten(void) const{ return this->n_variants_written; }
 
 	void CheckOutputNames(const std::string& input);
@@ -282,14 +263,12 @@ public:
 	inline totempole_entry_type& getTotempoleEntry(void){ return(this->totempole_entry); }
 
 private:
-	bool constructBitVector(hash_table& htable, const id_vector& values, const pattern_vector& patterns);
 	S32 recodeStream(stream_container& stream);
 	S32 recodeStreamStride(buffer_type& buffer);
 
 public:
 	// Stream information
 	std::ofstream streamTomahawk;   // stream for data
-	std::ofstream streamTotempole;  // stream for index
 	std::string filename;
 	std::string basePath;
 	std::string baseName;
@@ -323,6 +302,7 @@ public:
 	U32 info_hash_value_counter;
 	U32 format_hash_value_counter;
 	U32 filter_hash_value_counter;
+
 	// Hashes
 	hash_table_vector filter_hash_pattern;
 	hash_table_vector info_hash_pattern;
