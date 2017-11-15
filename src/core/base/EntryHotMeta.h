@@ -7,7 +7,7 @@ namespace Tomahawk{
 namespace Support{
 
 // Size of meta entry BEFORE run entries
-#define TOMAHAWK_ENTRY_META_SIZE	(sizeof(BYTE) + sizeof(U64) + sizeof(BYTE) + 2*sizeof(float) + 3*sizeof(U16) + 2*sizeof(U32))
+#define ENTRY_HOT_META_SIZE	(sizeof(BYTE) + sizeof(U64) + sizeof(BYTE) + 2*sizeof(float) + 3*sizeof(U16) + 2*sizeof(U32))
 
 /*
  TomahawkEntryMetaBase is used for reinterpreting
@@ -16,8 +16,8 @@ namespace Support{
  number and byte length of the stream
  */
 #pragma pack(1)
-struct TomahawkEntryMetaBase{
-	typedef TomahawkEntryMetaBase self_type;
+struct EntryHotMetaBase{
+	typedef EntryHotMetaBase self_type;
 	typedef IO::BasicBuffer buffer_type;
 
 public:
@@ -43,7 +43,7 @@ public:
 	} controller_byte;
 
 public:
-	TomahawkEntryMetaBase() :
+	EntryHotMetaBase() :
 		position(0),
 		ref_alt(0),
 		//MGF(0),
@@ -55,7 +55,7 @@ public:
 		virtual_offset_cold_meta(0),
 		virtual_offset_gt(0)
 	{}
-	~TomahawkEntryMetaBase(){}
+	~EntryHotMetaBase(){}
 
 	inline const bool isSingleton(void) const{ return(this->AF == 0); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
@@ -121,12 +121,12 @@ public:
  */
 #pragma pack(1)
 template <class T>
-struct TomahawkEntryMeta : public TomahawkEntryMetaBase{
-	typedef TomahawkEntryMeta self_type;
+struct EntryHotMeta : public EntryHotMetaBase{
+	typedef EntryHotMeta self_type;
 
 public:
-	TomahawkEntryMeta() : n_runs(0){}
-	~TomahawkEntryMeta(){}
+	EntryHotMeta() : n_runs(0){}
+	~EntryHotMeta(){}
 
 	inline const bool isValid(void) const{ return(this->n_runs > 0); }
 	inline const T& getRuns(void) const{ return(this->n_runs); }

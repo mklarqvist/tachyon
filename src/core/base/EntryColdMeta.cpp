@@ -1,9 +1,9 @@
-#include "TomahawkEntrySupport.h"
+#include "EntryColdMeta.h"
 
 namespace Tomahawk{
 namespace Support{
 
-TomahawkSupport::TomahawkSupport(void) :
+EntryColdMeta::EntryColdMeta(void) :
 		l_body(0),
 		QUAL(0),
 		n_allele(0),
@@ -12,11 +12,11 @@ TomahawkSupport::TomahawkSupport(void) :
 		alleles(nullptr)
 	{}
 
-TomahawkSupport::~TomahawkSupport(void){
+EntryColdMeta::~EntryColdMeta(void){
 	delete [] this->alleles;
 }
 
-bool TomahawkSupport::write(const bcf_type& entry, buffer_type& buffer){
+bool EntryColdMeta::write(const bcf_type& entry, buffer_type& buffer){
 	// Determine offset
 	// Base length
 	// offset + QUAL + n_alleles

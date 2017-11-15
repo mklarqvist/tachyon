@@ -1,5 +1,5 @@
-#ifndef TOMAHAWK_BASE_TOMAHAWKENTRYSUPPORT_H_
-#define TOMAHAWK_BASE_TOMAHAWKENTRYSUPPORT_H_
+#ifndef CORE_BASE_ENTRYCOLDMETA_H_
+#define CORE_BASE_ENTRYCOLDMETA_H_
 
 #include <cassert>
 
@@ -12,9 +12,9 @@ namespace Support{
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted
 #pragma pack(1)
-struct TomahawkSupport{
+struct EntryColdMeta{
 private:
-	typedef TomahawkSupport self_type;
+	typedef EntryColdMeta self_type;
 	typedef BCF::BCFEntry bcf_type;
 	typedef IO::BasicBuffer buffer_type;
 
@@ -79,8 +79,8 @@ public:
 	} typed_value;
 
 public:
-	explicit TomahawkSupport(void);
-	~TomahawkSupport(void);
+	explicit EntryColdMeta(void);
+	~EntryColdMeta(void);
 
 	// Parse everything in this entry
 	bool parse(void);
@@ -119,4 +119,4 @@ public:
 }
 }
 
-#endif /* TOMAHAWK_BASE_TOMAHAWKENTRYSUPPORT_H_ */
+#endif /* CORE_BASE_ENTRYCOLDMETA_H_ */

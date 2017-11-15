@@ -3,7 +3,7 @@
 
 #include "../io/vcf/VCFHeader.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "TomahawkImportWriter.h"
+#include "../core/TomahawkImportWriter.h"
 
 namespace Tomahawk {
 

@@ -4,10 +4,10 @@
 #include <algorithm>
 #include <bitset>
 
-#include "../../tomahawk/base/TomahawkEntryMeta.h"
+#include "../../core/base/EntryHotMeta.h"
+#include "../../core/base/GTRecords.h"
 #include "../../io/bcf/BCFReader.h"
 #include "../../io/vcf/VCFLines.h"
-#include "../../tomahawk/base/TomahawkGTEntries.h"
 
 namespace Tomahawk{
 namespace Algorithm{
@@ -199,7 +199,7 @@ class TomahawkImportEncoder {
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCF::VCFLine vcf_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef Support::TomahawkEntryMetaBase meta_base_type;
+	typedef Support::EntryHotMetaBase meta_base_type;
 	typedef TomahawkImportEncoderHelper helper_type;
 
 	typedef struct __RLEAssessHelper{

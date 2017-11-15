@@ -1,4 +1,4 @@
-#include "TomahawkImportWriter.h"
+#include "../core/TomahawkImportWriter.h"
 
 #include <strings.h>
 #include <cstdlib>
@@ -6,11 +6,11 @@
 #include <string>
 #include <vector>
 
+#include "../core/base/GTRecords.h"
+#include "../core/TomahawkBlockIterator.h"
 #include "../io/bcf/BCFEntry.h"
 #include "../support/helpers.h"
 #include "../support/MagicConstants.h"
-#include "base/TomahawkGTEntries.h"
-#include "TomahawkBlockIterator.h"
 #include "../third_party/FiniteStateEntropy/lib/fse.h"
 
 namespace Tomahawk {
@@ -237,7 +237,7 @@ bool TomahawkImportWriter::add(bcf_entry_type& entry, const U32* const ppa){
 	}
 
 	// Complex meta data
-	Support::TomahawkSupport test;
+	Support::EntryColdMeta test;
 	if(!test.write(entry, this->buffer_metaComplex)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;

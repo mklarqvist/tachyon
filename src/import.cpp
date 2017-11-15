@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "tomahawk/TomahawkImporter.h"
+#include "core/TomahawkImporter.h"
 #include "utility.h"
 
 void import_usage(void){

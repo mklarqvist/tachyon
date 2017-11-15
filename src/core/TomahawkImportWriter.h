@@ -11,11 +11,11 @@
 #include "../io/vcf/VCFHeaderConstants.h"
 #include "../io/vcf/VCFLines.h"
 #include "../io/vcf/VCFHeader.h"
-#include "base/TomahawkEntryMeta.h"
-#include "base/TomahawkEntrySupport.h"
-#include "../totempole/TotempoleEntry.h"
 #include "../algorithm/OpenHashTable.h"
 #include "../algorithm/permutation/RadixSortGT.h"
+#include "../core/base/EntryHotMeta.h"
+#include "../index/IndexEntry.h"
+#include "base/EntryColdMeta.h"
 
 namespace Tomahawk {
 
@@ -186,7 +186,7 @@ public:
 
 class TomahawkImportWriter {
 	typedef IO::BasicBuffer buffer_type;
-	typedef Support::TomahawkEntryMetaBase meta_base_type;
+	typedef Support::EntryHotMetaBase meta_base_type;
 	typedef Algorithm::TomahawkImportEncoder encoder_type;
 	typedef VCF::VCFHeader vcf_header_type;
 	typedef Totempole::TotempoleEntry totempole_entry_type;

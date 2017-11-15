@@ -1,6 +1,24 @@
 #ifndef TYPEDEFINITIONS_H_
 #define TYPEDEFINITIONS_H_
 
+/* *************************************
+*  Compiler Specific Options
+***************************************/
+#ifdef _MSC_VER    /* Visual Studio */
+#  pragma warning(disable : 4127)      /* disable: C4127: conditional expression is constant */
+#  define FORCE_INLINE __forceinline
+#else
+#  if defined (__cplusplus) || defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* C99 */
+#    ifdef __GNUC__
+#      define FORCE_INLINE inline __attribute__((always_inline))
+#    else
+#      define FORCE_INLINE inline
+#    endif
+#  else
+#    define FORCE_INLINE inline
+#  endif /* __STDC_VERSION__ */
+#endif
+
 //**************************************
 // Basic Types
 //**************************************

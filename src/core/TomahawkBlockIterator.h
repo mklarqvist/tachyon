@@ -1,16 +1,16 @@
-#ifndef TOMAHAWK_TOMAHAWKBLOCKITERATOR_H_
-#define TOMAHAWK_TOMAHAWKBLOCKITERATOR_H_
+#ifndef CORE_TOMAHAWKBLOCKITERATOR_H_
+#define CORE_TOMAHAWKBLOCKITERATOR_H_
 
-#include "base/TomahawkEntryMeta.h"
-#include "base/TomahawkGTEntries.h"
+#include "../core/base/EntryHotMeta.h"
+#include "../core/base/GTRecords.h"
 
 namespace Tomahawk{
 
 template <class T>
 class TomahawkBlockIterator{
 	typedef TomahawkBlockIterator self_type;
-	typedef Support::TomahawkEntryMeta<T> meta_type;
-	typedef Support::TomahawkSupport meta_complex_type;
+	typedef Support::EntryHotMeta<T> meta_type;
+	typedef Support::EntryColdMeta meta_complex_type;
 	typedef Totempole::TotempoleEntry totempole_entry_type;
 
 public:
@@ -143,4 +143,4 @@ private:
 
 }
 
-#endif /* TOMAHAWK_TOMAHAWKBLOCKITERATOR_H_ */
+#endif /* CORE_TOMAHAWKBLOCKITERATOR_H_ */

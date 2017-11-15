@@ -1,5 +1,6 @@
-#include "TomahawkImporter.h"
-#include "TomahawkImportWriter.h"
+#include "../core/TomahawkImporter.h"
+
+#include "../core/TomahawkImportWriter.h"
 
 namespace Tomahawk {
 
