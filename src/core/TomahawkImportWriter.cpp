@@ -6,12 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "../core/base/GTRecords.h"
-#include "../core/TomahawkBlockIterator.h"
-#include "../io/bcf/BCFEntry.h"
-#include "../support/helpers.h"
-#include "../support/MagicConstants.h"
-
 namespace Tomahawk {
 
 TomahawkImportWriter::TomahawkImportWriter() :
@@ -414,14 +408,12 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	//this->totempole_entry.l_gt_simple = this->buffer_encode_simple.pointer;
 
 	Index::IndexBlockEntry block_entry;
+	//std::cerr << block_entry.contigID << std::endl;
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO: " << this->info_values.size() << " entries -> " << ceil((float)this->info_values.size()/8) << " bytes" << std::endl;
-	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
-	block_entry.info_bit_vectors = new Index::IndexBlockEntry::bit_vector[5];
-	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
+	std::cerr << "External before: " << block_entry.info_bit_vectors << std::endl;
+	std::cerr << &block_entry << std::endl;
 	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO, this->info_hash_streams, this->info_values, this->info_patterns);
-	std::cerr << "External: " << (void*)block_entry.info_bit_vectors << std::endl;
-
-	std::cerr << "Is null = " << (block_entry.info_bit_vectors == nullptr) << '\t' << (block_entry.info_bit_vectors[0].bit_bytes == nullptr) << std::endl;
+	std::cerr << "External after: " << block_entry.info_bit_vectors << std::endl;
 
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT: " << this->format_values.size() << " entries -> " << ceil((float)this->format_values.size()/8) << " bytes" << std::endl;
 	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT, this->format_hash_streams, this->format_values, this->format_patterns);

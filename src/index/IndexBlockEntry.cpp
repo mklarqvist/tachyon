@@ -5,6 +5,22 @@
 namespace Tomahawk{
 namespace Index{
 
+IndexBlockEntryBase::IndexBlockEntryBase() :
+	contigID(-1),
+	n_variants(0),
+	offset_streams_begin(0),
+	l_ppa(0),
+	l_meta(0),
+	l_meta_complex(0),
+	l_gt_rle(0),
+	l_gt_simple(0),
+	n_info_streams(0),
+	n_format_streams(0),
+	n_filter_streams(0)
+{}
+
+IndexBlockEntryBase::~IndexBlockEntryBase(){}
+
 IndexBlockEntry::IndexBlockEntry():
 	info_offsets(nullptr),
 	format_offsets(nullptr),
@@ -24,7 +40,7 @@ IndexBlockEntry::~IndexBlockEntry(){
 }
 
 void IndexBlockEntry::reset(void){
-	this->base.reset();
+	this->IndexBlockEntryBase::reset();
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
@@ -42,6 +58,8 @@ void IndexBlockEntry::reset(void){
 }
 
 bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns){
+	std::cerr << "INTERNAL: " << this->info_bit_vectors << '\t' << this->format_bit_vectors << '\t' << this->filter_bit_vectors << std::endl;
+
 	// Determine target
 	switch(target){
 	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, htable, values, patterns));   break;

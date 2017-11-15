@@ -85,7 +85,7 @@ public:
 	inline void allocate(const U32& w){ this->bit_bytes = new BYTE[w]; memset(this->bit_bytes, 0, w); }
 
 	template <class T>
-	FORCE_INLINE const bool operator[](const T& p) const{
+	const bool operator[](const T& p) const{
 		std::cerr << (U32)p << " byte: " << (U32)p/8 << " remainder: " << (U32)p%8 << " shift: " << std::bitset<8>((1 << (p % 8))) << std::endl;
 		return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8));
 	}
@@ -99,20 +99,8 @@ struct IndexBlockEntryBase{
 	typedef IndexBlockEntryController controller_type;
 
 public:
-	IndexBlockEntryBase() :
-		contigID(-1),
-		n_variants(0),
-		offset_streams_begin(0),
-		l_ppa(0),
-		l_meta(0),
-		l_meta_complex(0),
-		l_gt_rle(0),
-		l_gt_simple(0),
-		n_info_streams(0),
-		n_format_streams(0),
-		n_filter_streams(0)
-	{}
-	~IndexBlockEntryBase(){}
+	IndexBlockEntryBase();
+	virtual ~IndexBlockEntryBase();
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
@@ -196,7 +184,7 @@ public:
 
 };
 
-struct IndexBlockEntry{
+struct IndexBlockEntry : public IndexBlockEntryBase{
 	typedef IndexBlockEntry self_type;
 	typedef IndexBlockEntryBase base_type;
 	typedef IndexBlockEntryController controller_type;
@@ -223,8 +211,6 @@ public:
 	bool __constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
 
 public:
-	base_type base;
-
 	// Virtual offsets into various
 	// INFO/FORMAT/FILTER streams
 	//

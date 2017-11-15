@@ -1,6 +1,7 @@
 #ifndef INDEXENTRY_H_
 #define INDEXENTRY_H_
 
+#include <fstream>
 #include "../support/TypeDefinitions.h"
 
 namespace Tomahawk{
