@@ -1,5 +1,5 @@
-#ifndef TYPEDEFINITIONS_H_
-#define TYPEDEFINITIONS_H_
+#ifndef SUPPORT_TYPEDEFINITIONS_H_
+#define SUPPORT_TYPEDEFINITIONS_H_
 
 /* *************************************
 *  Compiler Specific Options
@@ -43,4 +43,4 @@ typedef unsigned long long	U64;
 typedef unsigned long long	ULL;
 #endif
 
-#endif /* TYPEDEFINITIONS_H_ */
+#endif /* SUPPORT_TYPEDEFINITIONS_H_ */

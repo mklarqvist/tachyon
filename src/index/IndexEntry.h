@@ -1,8 +1,5 @@
-#ifndef INDEXENTRY_H_
-#define INDEXENTRY_H_
-
-#include <fstream>
-#include "../support/TypeDefinitions.h"
+#ifndef INDEX_INDEXENTRY_H_
+#define INDEX_INDEXENTRY_H_
 
 namespace Tomahawk{
 namespace Totempole{
@@ -20,8 +17,6 @@ public:
 		maxPosition(0)
 	{}
 	~IndexEntry(){}
-
-	inline bool isValid(void) const{ return(this->byte_offset != 0); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.contigID), sizeof(S32));

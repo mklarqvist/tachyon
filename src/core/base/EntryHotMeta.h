@@ -1,5 +1,5 @@
-#ifndef TOMAHAWKENTRYMETA_H_
-#define TOMAHAWKENTRYMETA_H_
+#ifndef CORE_BASE_ENTRYHOTMETA_H_
+#define CORE_BASE_ENTRYHOTMETA_H_
 
 #include "../../io/BasicBuffer.h"
 
@@ -138,4 +138,4 @@ public:
 }
 }
 
-#endif /* TOMAHAWKENTRYMETA_H_ */
+#endif /* CORE_BASE_ENTRYHOTMETA_H_ */

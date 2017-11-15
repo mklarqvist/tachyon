@@ -1,5 +1,5 @@
-#ifndef TOMAHAWK_TOMAHAWKGTENTRIES_H_
-#define TOMAHAWK_TOMAHAWKGTENTRIES_H_
+#ifndef CORE_BASE_GTRECORDS_H_
+#define CORE_BASE_GTRECORDS_H_
 
 namespace Tomahawk{
 namespace Support{
@@ -88,4 +88,4 @@ public:
 }
 }
 
-#endif /* TOMAHAWK_TOMAHAWKGTENTRIES_H_ */
+#endif /* CORE_BASE_GTRECORDS_H_ */

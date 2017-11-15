@@ -1,5 +1,5 @@
-#ifndef TOMAHAWKIMPORTWRITER_H_
-#define TOMAHAWKIMPORTWRITER_H_
+#ifndef CORE_TOMAHAWKIMPORTWRITER_H_
+#define CORE_TOMAHAWKIMPORTWRITER_H_
 
 #include <fstream>
 
@@ -333,4 +333,4 @@ public:
 
 } /* namespace Tomahawk */
 
-#endif /* TOMAHAWKIMPORTWRITER_H_ */
+#endif /* CORE_TOMAHAWKIMPORTWRITER_H_ */

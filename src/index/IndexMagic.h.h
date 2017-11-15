@@ -1,10 +1,5 @@
-#ifndef INDEXMAGIC_H_
-#define INDEXMAGIC_H_
-
-#include <iostream>
-#include <fstream>
-#include <cstring>
-#include "../support/MagicConstants.h"
+#ifndef INDEX_INDEXMAGIC_H_
+#define INDEX_INDEXMAGIC_H_
 
 namespace Tomahawk{
 namespace IO{

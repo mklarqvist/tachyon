@@ -1,9 +1,7 @@
 #ifndef INDEX_INDEXBLOCKENTRY_H_
 #define INDEX_INDEXBLOCKENTRY_H_
 
-#include <iostream>
 #include <fstream>
-#include "../support/TypeDefinitions.h"
 #include "../algorithm/OpenHashTable.h"
 
 namespace Tomahawk{
