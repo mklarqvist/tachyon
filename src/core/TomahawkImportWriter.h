@@ -9,6 +9,7 @@
 #include "../algorithm/compression/TomahawkImportEncoder.h"
 #include "base/EntryHotMeta.h"
 #include "base/EntryColdMeta.h"
+#include "StreamContainer.h"
 
 namespace Tomahawk {
 
@@ -73,110 +74,6 @@ inline bool bytePreprocessBits(const char* const data, const size_t& size, char*
 	return true;
 }
 
-// Stream container for importing
-class TomahawkImportEncoderStreamContainer{
-	typedef TomahawkImportEncoderStreamContainer self_type;
-	typedef IO::BasicBuffer buffer_type;
-
-public:
-	TomahawkImportEncoderStreamContainer() :
-		stream_data_type(0),
-		addSize(-1),
-		n_entries(0),
-		n_additions(0)
-	{}
-
-	TomahawkImportEncoderStreamContainer(const U32 start_size) :
-		stream_data_type(0),
-		addSize(-1),
-		n_entries(0),
-		n_additions(0),
-		buffer_data(start_size),
-		buffer_strides(start_size)
-	{}
-
-	~TomahawkImportEncoderStreamContainer(){ this->buffer_data.deleteAll(); }
-
-	inline void setType(const BYTE value){ this->stream_data_type = value; }
-	inline void setStrideSize(const S32 value){ this->addSize = value; }
-	inline const bool checkStrideSize(const S32& value) const{ return this->addSize == value; }
-	inline void setMixedStrides(void){ this->addSize = -1; }
-
-	inline void operator++(void){ ++this->n_additions; }
-
-	inline void addStride(const U32& value){ this->buffer_strides += value; }
-
-	inline void operator+=(const SBYTE& value){
-		if(this->stream_data_type != 0) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const BYTE& value){
-		if(this->stream_data_type != 1) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const S16& value){
-		if(this->stream_data_type != 2) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const U16& value){
-		if(this->stream_data_type != 3) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const S32& value){
-		if(this->stream_data_type != 4) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const U32& value){
-		if(this->stream_data_type != 5) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const U64& value){
-		if(this->stream_data_type != 6) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	inline void operator+=(const float& value){
-		if(this->stream_data_type != 7) exit(1);
-		this->buffer_data += value;
-		++this->n_entries;
-	}
-
-	void reset(void){
-		this->stream_data_type = 0;
-		this->n_entries = 0;
-		this->n_additions = 0;
-		this->buffer_data.reset();
-		this->buffer_strides.reset();
-		this->addSize = -1;
-	}
-
-	inline void resize(const U32 size){
-		this->buffer_data.resize(size);
-		this->buffer_strides.resize(size);
-	}
-
-public:
-	BYTE stream_data_type;
-	S32 addSize;
-	U32 n_entries;   // number of entries
-	U32 n_additions; // number of times added
-	buffer_type buffer_data;
-	buffer_type buffer_strides;
-};
-
 class TomahawkImportWriter {
 	typedef IO::BasicBuffer buffer_type;
 	typedef Support::EntryHotMetaBase meta_base_type;
@@ -187,7 +84,7 @@ class TomahawkImportWriter {
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Hash::HashTable<U64, U32> hash_table_vector;
 	typedef Hash::HashTable<U32, U32> hash_table;
-	typedef TomahawkImportEncoderStreamContainer stream_container;
+	typedef Core::StreamContainer stream_container;
 	typedef std::vector<U32> id_vector;
 	typedef std::vector< id_vector > pattern_vector;
 

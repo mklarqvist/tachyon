@@ -184,6 +184,7 @@ public:
 };
 
 struct IndexBlockEntry : public IndexBlockEntryBase{
+private:
 	typedef IndexBlockEntry self_type;
 	typedef IndexBlockEntryBase base_type;
 	typedef IndexBlockEntryController controller_type;
@@ -193,6 +194,7 @@ struct IndexBlockEntry : public IndexBlockEntryBase{
 	typedef std::vector<U32> id_vector;
 	typedef std::vector< id_vector > pattern_vector;
 
+public:
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
@@ -207,6 +209,8 @@ public:
 	// resize these these pointers to fit the
 	// data we want to store
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
+
+private:
 	bool __constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
 
 public:

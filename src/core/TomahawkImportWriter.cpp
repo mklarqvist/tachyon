@@ -491,9 +491,9 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 			std::cerr << "failed recode @ " << i << std::endl;
 			exit(1);
 		}
-		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO " << this->info_values[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->info_containers[i].buffer_data.size()/ret_size << '\t' << this->info_containers[i].addSize << std::endl;
+		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO " << this->info_values[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->info_containers[i].buffer_data.size()/ret_size << '\t' << this->info_containers[i].header.stride << std::endl;
 		//std::cout << "INFO\t" << this->info_values[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << ret_size << std::endl;
-		if(this->info_containers[i].addSize == -1){
+		if(this->info_containers[i].header.stride == -1){
 			S32 ret_stride_size = this->recodeStreamStride(this->info_containers[i].buffer_strides);
 			std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO-ADD " << this->info_values[i] << '\t' << this->info_containers[i].buffer_strides.size() << '\t' << ret_stride_size << '\t' << (float)this->info_containers[i].buffer_strides.size()/ret_stride_size << std::endl;
 			//std::cout << "INFO-ADD\t" << this->info_values[i] << '\t' << this->info_containers[i].buffer_strides.size() << '\t' << ret_stride_size << std::endl;
@@ -507,9 +507,9 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 			std::cerr << "failed recode @ " << i << std::endl;
 			exit(1);
 		}
-		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT " << this->format_values[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->format_containers[i].buffer_data.size()/ret_size << '\t' << this->format_containers[i].addSize << std::endl;
+		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT " << this->format_values[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->format_containers[i].buffer_data.size()/ret_size << '\t' << this->format_containers[i].header.stride << std::endl;
 		//std::cout << "FORMAT\t" << this->format_values[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << ret_size << std::endl;
-		if(this->format_containers[i].addSize == -1){
+		if(this->format_containers[i].header.stride == -1){
 			S32 ret_stride_size = this->recodeStreamStride(this->format_containers[i].buffer_strides);
 			std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT-ADD " << this->format_values[i] << '\t' << this->format_containers[i].buffer_strides.size() << '\t' << ret_stride_size << '\t' << (float)this->format_containers[i].buffer_strides.size()/ret_stride_size << std::endl;
 			//std::cout << "FORMAT-ADD\t" << this->format_values[i] << '\t' << this->format_containers[i].buffer_strides.size() << '\t' << ret_stride_size << std::endl;
@@ -576,7 +576,7 @@ S32 TomahawkImportWriter::recodeStreamStride(buffer_type& buffer){
 S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 	S32 ret_size = -1;
 
-	if(stream.stream_data_type == 4){
+	if(stream.header.controller.type == 4){
 		const S32* dat = reinterpret_cast<const S32*>(stream.buffer_data.data);
 		S32 min = dat[0];
 		S32 max = dat[0];

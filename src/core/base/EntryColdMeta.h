@@ -10,7 +10,6 @@ namespace Support{
 
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted
-#pragma pack(1)
 struct EntryColdMeta{
 private:
 	typedef EntryColdMeta self_type;
