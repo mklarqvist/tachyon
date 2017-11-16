@@ -8,7 +8,7 @@
 #include "../algorithm/permutation/RadixSortGT.h"
 #include "StreamContainer.h"
 #include "PermutationManager.h"
-#include "TomahawkImportWriter.h"
+#include "ImportWriter.h"
 #include "HashContainer.h"
 
 namespace Tomahawk {
@@ -17,7 +17,7 @@ class TomahawkImporter {
 	typedef TomahawkImporter self_type;
 	typedef reader reader_type;
 	typedef VCF::VCFHeader header_type;
-	typedef TomahawkImportWriter writer_type;
+	typedef ImportWriter writer_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Algorithm::EncoderGenotypesRLE encoder_type;
 	typedef Totempole::IndexEntry totempole_entry_type;

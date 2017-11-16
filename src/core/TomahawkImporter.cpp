@@ -89,7 +89,6 @@ bool TomahawkImporter::BuildBCF(void){
 	this->encoder.setSamples(this->header_->samples);
 	this->permutator.setSamples(this->header_->samples);
 
-	this->writer_.setHeader(reader.header);
 	if(!this->writer_.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
@@ -121,7 +120,7 @@ bool TomahawkImporter::BuildBCF(void){
 		}
 
 		++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
-		this->writer_.flush(this->permutator.getPPA());
+		this->writer_.flush();
 		this->writer_.n_variants_written += reader.size();
 
 		// Reset permutator
@@ -148,6 +147,7 @@ bool TomahawkImporter::BuildBCF(void){
 		Index::IndexBlockEntry i;
 		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
 		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		this->permutator.reset();
 		this->resetHashes();

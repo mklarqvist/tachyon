@@ -72,74 +72,22 @@ inline bool bytePreprocessBits(const char* const data, const size_t& size, char*
 	return true;
 }
 
-class TomahawkImportWriter {
-	typedef IO::BasicBuffer buffer_type;
-	typedef Core::EntryHotMetaBase meta_base_type;
-	typedef Algorithm::EncoderGenotypesRLE encoder_type;
-	typedef VCF::VCFHeader vcf_header_type;
-	typedef Totempole::IndexEntry totempole_entry_type;
+class ImportWriter {
 	typedef IO::TGZFController tgzf_controller_type;
 	typedef BCF::BCFEntry bcf_entry_type;
-	typedef Hash::HashTable<U64, U32> hash_table_vector;
-	typedef Hash::HashTable<U32, U32> hash_table;
 	typedef Core::StreamContainer stream_container;
-	typedef std::vector<U32> id_vector;
-	typedef std::vector< id_vector > pattern_vector;
 
 public:
-	TomahawkImportWriter();
-	~TomahawkImportWriter();
+	ImportWriter();
+	~ImportWriter();
 
 	bool Open(const std::string output);
 	void WriteFinal(void);
-	void setHeader(vcf_header_type& header);
-	bool add(bcf_entry_type& entry, const U32* const ppa);
-	bool parseBCF(meta_base_type& meta, bcf_entry_type& entry);
-
-	void reset(void){
-		// Buffers
-		this->buffer_encode_rle.reset();
-		this->buffer_encode_simple.reset();
-		this->buffer_meta.reset();
-		this->buffer_metaComplex.reset();
-		this->buffer_general.reset();
-
-		// Reset hash patterns
-		this->filter_hash_pattern.clear();
-		this->info_hash_pattern.clear();
-		this->format_hash_pattern.clear();
-
-		this->filter_hash_streams.clear();
-		this->info_hash_streams.clear();
-		this->format_hash_streams.clear();
-
-		// Pattern data
-		this->info_patterns.clear();
-		this->format_patterns.clear();
-		this->filter_patterns.clear();
-
-		// Value data
-		this->info_values.clear();
-		this->format_values.clear();
-		this->filter_values.clear();
-
-		// Reset
-		// Todo: fix resizing if required
-		for(U32 i = 0; i < 100; ++i){
-			this->info_containers[i].reset();
-			this->format_containers[i].reset();
-		}
-	}
 
 	// flush and write
-	bool flush(const U32* ppa);
-
-	inline const U64& blocksWritten(void) const{ return this->n_blocksWritten; }
-	inline const U64& getVariantsWritten(void) const{ return this->n_variants_written; }
+	bool flush(void);
 
 	void CheckOutputNames(const std::string& input);
-
-	inline totempole_entry_type& getTotempoleEntry(void){ return(this->totempole_entry); }
 
 private:
 	S32 recodeStream(stream_container& stream);
@@ -154,53 +102,13 @@ public:
 	std::string baseName;
 
 	// Basic
-	U32 flush_limit;
-	U32 n_variants_limit;
 	U64 n_blocksWritten;            // number of blocks written
 	U64 n_variants_written;         // number of variants written
 	U64 n_variants_complex_written; // number of complex variants written
 	U32 largest_uncompressed_block; // size of largest block observed
 
-	// Totempole entry
-	totempole_entry_type totempole_entry;
-
 	// TGZF controller
 	tgzf_controller_type gzip_controller;
-
-	// Basic output buffers
-	buffer_type buffer_encode_rle; // run lengths
-	buffer_type buffer_encode_simple; // simple encoding
-	buffer_type buffer_meta;// meta data for run lengths (chromosome, position, ref/alt)
-	buffer_type buffer_metaComplex; // complex meta data
-	buffer_type buffer_ppa; // ppa buffer
-	buffer_type buffer_general; // general compression buffer
-
-	// Hashes
-	hash_table_vector filter_hash_pattern;
-	hash_table_vector info_hash_pattern;
-	hash_table info_hash_streams;
-	hash_table_vector format_hash_pattern;
-	hash_table format_hash_streams;
-	hash_table filter_hash_streams;
-
-	// Actual patterns
-	pattern_vector format_patterns;
-	pattern_vector info_patterns;
-	pattern_vector filter_patterns;
-	// Values
-	id_vector format_values;
-	id_vector info_values;
-	id_vector filter_values;
-
-	// Encoder
-	encoder_type* encoder;
-
-	// VCF header reference
-	vcf_header_type* vcf_header;
-
-	// Stream containers
-	stream_container* info_containers;
-	stream_container* format_containers;
 };
 
 } /* namespace Tomahawk */

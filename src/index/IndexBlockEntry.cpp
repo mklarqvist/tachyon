@@ -68,8 +68,11 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	return false;
 }
 
-bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns){
+bool IndexBlockEntry::__constructBitVector(bit_vector*& target, id_vector& target_id, hash_container_type& values, hash_vector_container_type& patterns){
 	const BYTE bitvector_width = ceil((float)values.size()/8);
+
+	if(values.size() == 1)
+		return false;
 
 // Clear data if present
 	// Allocate new bit-vectors
