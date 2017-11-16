@@ -10,10 +10,32 @@ TomahawkImporter::TomahawkImporter(std::string inputFile, std::string outputPref
 	outputPrefix(outputPrefix),
 	reader_(inputFile),
 	writer_(),
-	header_(nullptr)
-{}
+	header_(nullptr),
+	info_containers(new stream_container[100]),
+	format_containers(new stream_container[100]),
+	filter_containers(new stream_container[100])
+{
+	for(U32 i = 0; i < 100; ++i){
+		this->info_containers[i].resize(65536*4);
+		this->format_containers[i].resize(65536*4);
+		this->filter_containers[i].resize(65536*4);
+	}
+}
 
 TomahawkImporter::~TomahawkImporter(){}
+
+void TomahawkImporter::resetContainers(void){
+	std::cerr << "Reset" << std::endl;
+	for(U32 i = 0; i < 100; ++i){
+		this->info_containers[i].reset();
+		this->format_containers[i].reset();
+		this->filter_containers[i].reset();
+	}
+	this->meta_hot_container.reset();
+	this->meta_cold_container.reset();
+	this->gt_rle_container.reset();
+	this->gt_simple_container.reset();
+}
 
 bool TomahawkImporter::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
@@ -90,13 +112,15 @@ bool TomahawkImporter::BuildBCF(void){
 			}
 		}
 
-		std::cerr << "After parse" << std::endl;
 		++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
 		this->writer_.flush(this->permutator.getPPA());
 		this->writer_.n_variants_written += reader.size();
 
 		// Reset permutator
+		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
+		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		this->permutator.reset();
+		this->resetContainers();
 	}
 
 	// This only happens if there are no valid entries in the file
@@ -131,81 +155,41 @@ bool TomahawkImporter::parseBCFLine(bcf_entry_type& entry){
 
 	// Perform run-length encoding
 	U64 n_runs = 0;
-	std::cerr << "before encode" << std::endl;
 
 	meta_type meta;
 	if(!this->encoder.Encode(entry, meta, this->gt_rle_container, this->gt_simple_container, n_runs, this->permutator.ppa))
 		return false;
 
-	U32 test = 24;
-	U32 ret = this->info_fields.setGet(test);
-	std::cerr << "got stuff back: "  << ret << std::endl;
-
-	/*
-	// Keep positions
-	// If the entry needs to be filtered out
-	// then we roll back to these positions
-	// In practice we simply move the pointer back
-	const U64 meta_start_pos   = this->buffer_meta.pointer;
-	const U64 simple_start_pos = this->buffer_encode_simple.pointer;
-	const U64 rle_start_pos    = this->buffer_encode_rle.pointer;
-	meta_base_type meta;
-
-	// Perform run-length encoding
-	U64 n_runs = 0;
-	std::cerr << "before encode" << std::endl;
-	if(!this->encoder->Encode(entry, meta, this->buffer_encode_rle, this->buffer_encode_simple, n_runs, ppa)){
-		this->buffer_meta.pointer = meta_start_pos; // roll back
-		this->buffer_encode_rle.pointer  = rle_start_pos; // roll back
-		this->buffer_encode_simple.pointer = simple_start_pos;
+	if(!this->parseBCFBody(meta, entry)){
+		std::cerr << "bad" << std::endl;
 		return false;
 	}
-	std::cerr << "after encode" << std::endl;
-
-	// Parse BCF
-	this->parseBCF(meta, entry);
-	std::cerr << "after parse bcf" << std::endl;
-
-	// If the current minPosition is 0
-	// then this is the first entry we've seen
-	// in this contig. Keep the current position
-	// as the last one we've seen
-	if(this->totempole_entry.minPosition == 0)
-		this->totempole_entry.minPosition = entry.body->POS + 1;
-
-	// Update max position
-	this->totempole_entry.maxPosition = entry.body->POS + 1;
-
-	// Push meta to buffer
-	// update complex offset position
-	meta.virtual_offset_cold_meta = this->buffer_metaComplex.pointer;
-	this->buffer_meta += meta;
 
 	// RLE using this word size
-	U32 w = ceil(ceil(log2(this->vcf_header->samples + 1))/8);
+	U32 w = ceil(ceil(log2(this->header_->samples + 1))/8);
 	if((w > 2) & (w < 4)) w = 4;
 	else if(w > 4) w = 8;
 
 	switch(w){
-	case 1: this->buffer_meta += (BYTE)n_runs; break;
-	case 2: this->buffer_meta += (U16)n_runs; break;
-	case 4: this->buffer_meta += (U32)n_runs; break;
-	case 8: this->buffer_meta += (U64)n_runs; break;
+	case 1: this->meta_hot_container += (BYTE)n_runs; break;
+	case 2: this->meta_hot_container += (U16)n_runs; break;
+	case 4: this->meta_hot_container += (U32)n_runs; break;
+	case 8: this->meta_hot_container += (U64)n_runs; break;
 	default:
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
 		exit(1); // unrecoverable error
 	}
 
 	// Complex meta data
-	Support::EntryColdMeta test;
-	if(!test.write(entry, this->buffer_metaComplex)){
+	Core::EntryColdMeta test;
+	if(!test.write(entry, this->meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
 	}
 
 	// Update number of entries in block
 	++this->totempole_entry.n_variants;
-	*/
+
 
 	return true;
 }
@@ -289,38 +273,20 @@ bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 	while(entry.nextFormat(val, info_length, info_value_type, internal_pos)){
 		// Hash FORMAT values
-		U32* hash_map_ret = nullptr;
-		U32 mapID = 0;
-		U32 temp = val;
-		if(this->format_hash_streams.GetItem(&temp, hash_map_ret, sizeof(U32))){
-			mapID = *hash_map_ret;
-		} else {
-			U32 tot = this->format_values.size();
-			this->format_hash_streams.SetItem(&temp, tot, sizeof(U32));
-			mapID = tot;
-			this->format_values.push_back(val);
-			std::cerr << Helpers::timestamp("DEBUG") << val << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
-		}
-		std::cerr << "here" << std::endl;
+		const U32 mapID = this->format_fields.setGet(val);
 
-		std::cerr << "mapid: " << mapID << std::endl;
-		std::cerr << this->format_containers << std::endl;
-		std::cerr << &this->format_containers[1] << std::endl;
-		std::cerr << this->format_containers[0].n_entries << std::endl;
 		if(this->format_containers[mapID].n_entries == 0){
 			this->format_containers[mapID].setStrideSize(info_length);
 		}
-		std::cerr << "after update" << std::endl;
 
 		if(mapID == 0){
 			switch(info_value_type){
-			case 1: internal_pos += this->vcf_header->samples * sizeof(SBYTE) * info_length; break;
-			case 2: internal_pos += this->vcf_header->samples * sizeof(S16)   * info_length; break;
-			case 3: internal_pos += this->vcf_header->samples * sizeof(S32)   * info_length; break;
+			case 1: internal_pos += this->header_->samples * sizeof(SBYTE) * info_length; break;
+			case 2: internal_pos += this->header_->samples * sizeof(S16)   * info_length; break;
+			case 3: internal_pos += this->header_->samples * sizeof(S32)   * info_length; break;
 			}
 			continue;
 		}
-		std::cerr << "after update2" << std::endl;
 
 		stream_container& target_container = this->format_containers[mapID];
 		if(this->format_containers[mapID].n_entries == 0){
@@ -342,19 +308,19 @@ bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Flags and integers
 		if(info_value_type <= 3){
-			for(U32 j = 0; j < this->vcf_header->samples*info_length; ++j){
+			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
 				target_container += entry.getInteger(info_value_type, internal_pos);
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
-			for(U32 j = 0; j < this->vcf_header->samples*info_length; ++j){
+			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
 				target_container += entry.getFloat(internal_pos);
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
-			for(U32 j = 0; j < this->vcf_header->samples*info_length; ++j){
+			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
 				target_container += entry.getChar(internal_pos);
 			}
 		}
@@ -366,60 +332,62 @@ bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	}
 
 	// Hash FILTER pattern
-	U32 mapID = 0;
-	U32* hash_map_ret = nullptr;
 	const U64 hash_filter_vector = entry.hashFilter();
-	if(this->filter_hash_pattern.GetItem(&hash_filter_vector, hash_map_ret, sizeof(U64))){
-		mapID = *hash_map_ret;
+
+	U32 mapID = 0;
+	if(this->format_patterns.getRaw(hash_filter_vector, mapID)){
+
 	} else {
-		U32 tot = this->filter_patterns.size();
-		this->filter_hash_pattern.SetItem(&hash_filter_vector, tot, sizeof(U64));
-		this->filter_patterns.push_back(std::vector<U32>());
-		for(U32 i = 0; i < entry.filterPointer; ++i){
-			this->filter_patterns[tot].push_back(entry.filterID[i]);
-		}
-		assert(tot < 65536);
-		mapID = tot;
+		std::vector<U32> ret_pattern;
+		for(U32 i = 0; i < entry.filterPointer; ++i)
+			ret_pattern.push_back(entry.filterID[i]);
+
+		mapID = this->format_patterns.size();
+		assert(mapID < 65536);
+		this->format_patterns.set(ret_pattern, hash_filter_vector);
 	}
+
 	// Store this map in the meta
 	meta.FILTER_map_ID = mapID;
 
+
+
 	// Hash INFO pattern
-	mapID = 0;
-	hash_map_ret = nullptr;
-	// Hash INFO vector of identifiers
 	const U64 hash_info_vector = entry.hashInfo();
-	if(this->info_hash_pattern.GetItem(&hash_info_vector, hash_map_ret, sizeof(U64))){
-		mapID = *hash_map_ret;
+
+	mapID = 0;
+	if(this->info_patterns.getRaw(hash_info_vector, mapID)){
+
 	} else {
-		U32 tot = this->info_patterns.size();
-		this->info_hash_pattern.SetItem(&hash_info_vector, tot, sizeof(U64));
-		this->info_patterns.push_back(std::vector<U32>());
-		for(U32 i = 0; i < entry.infoPointer; ++i){
-			this->info_patterns[tot].push_back(entry.infoID[i]);
-		}
-		assert(tot < 65536);
-		mapID = tot;
+		std::vector<U32> ret_pattern;
+		for(U32 i = 0; i < entry.infoPointer; ++i)
+			ret_pattern.push_back(entry.infoID[i]);
+
+		mapID = this->info_patterns.size();
+		assert(mapID < 65536);
+		this->info_patterns.set(ret_pattern, hash_info_vector);
 	}
+
 	// Store this map in the meta
 	meta.INFO_map_ID = mapID;
 
+
 	// Hash FORMAT pattern
-	mapID = 0;
-	hash_map_ret = nullptr;
 	const U64 hash_format_vector = entry.hashFormat();
-	if(this->format_hash_pattern.GetItem(&hash_format_vector, hash_map_ret, sizeof(U64))){
-		mapID = *hash_map_ret;
+
+	 mapID = 0;
+	if(this->format_patterns.getRaw(hash_format_vector, mapID)){
+
 	} else {
-		U32 tot = this->format_patterns.size();
-		this->format_hash_pattern.SetItem(&hash_format_vector, tot, sizeof(U64));
-		format_patterns.push_back(std::vector<U32>());
-		for(U32 i = 0; i < entry.formatPointer; ++i){
-			this->format_patterns[tot].push_back(entry.formatID[i]);
-		}
-		assert(tot < 65536);
-		mapID = tot;
+		std::vector<U32> ret_pattern;
+		for(U32 i = 0; i < entry.formatPointer; ++i)
+			ret_pattern.push_back(entry.formatID[i]);
+
+		mapID = this->format_patterns.size();
+		assert(mapID < 65536);
+		this->format_patterns.set(ret_pattern, hash_format_vector);
 	}
+
 	// Store this map in the meta
 	meta.FORMAT_map_ID = mapID;
 

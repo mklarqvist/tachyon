@@ -61,6 +61,7 @@ private:
 
 private:
 	bool permutateData(bcf_reader_type& reader);
+	void resetContainers(void);
 
 private:
 	U32 checkpoint_size;      // number of variants until checkpointing

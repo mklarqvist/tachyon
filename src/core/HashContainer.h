@@ -72,6 +72,15 @@ public:
 		return false;
 	}
 
+	inline bool getRaw(const U64& value, U32& ret){
+		U32* ret2 = nullptr;
+		if(this->htable.GetItem(&value, ret2, sizeof(U64))){
+			ret = *ret2;
+			return true;
+		}
+		return false;
+	}
+
 	inline bool set(const std::vector<U32>& value, const U64& hashValue){
 		U32 tot = this->data.size();
 		this->htable.SetItem(&hashValue, tot, sizeof(U64));

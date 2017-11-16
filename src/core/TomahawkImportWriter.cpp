@@ -134,10 +134,10 @@ bool TomahawkImportWriter::add(bcf_entry_type& entry, const U32* const ppa){
 
 	// Complex meta data
 	Core::EntryColdMeta test;
-	if(!test.write(entry, this->buffer_metaComplex)){
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
-		return false;
-	}
+	//if(!test.write(entry, this->buffer_metaComplex)){
+	//	std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
+	//	return false;
+	//}
 
 	// Update number of entries in block
 	++this->totempole_entry.n_variants;

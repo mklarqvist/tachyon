@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "../../io/bcf/BCFEntry.h"
+#include "../StreamContainer.h"
 
 namespace Tomahawk{
 namespace Core{
@@ -14,7 +15,7 @@ struct EntryColdMeta{
 private:
 	typedef EntryColdMeta self_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef Core::StreamContainer stream_container;
 
 public:
 	typedef struct __support_allele_info{
@@ -91,7 +92,7 @@ public:
 
 	// Write out entry using BCF entry as template
 	// and injects into buffer
-	bool write(const bcf_type& entry, buffer_type& buffer);
+	bool write(const bcf_type& entry, stream_container& buffer);
 
 public:
 	// Relative virtual offset to end of this

@@ -286,6 +286,33 @@ public:
 		return true;
 	}
 
+	bool checkUniformity(void){
+		const U32 stride_size = this->header.stride;
+		if(stride_size == -1)
+			return false;
+
+		U32 stride_update = stride_size;
+
+		switch(this->header.controller.type){
+		case 4: stride_update *= sizeof(S32);   break;
+		case 7: stride_update *= sizeof(float); break;
+		case 0: stride_update *= sizeof(char);  break;
+		default: return false; break;
+		}
+
+		bool is_uniform = true;
+		const U64 first_hash = XXH64(&this->buffer_data.data[0], stride_update, 1337);
+		for(U32 i = stride_update; i < this->n_entries; i+= stride_update){
+			if(XXH64(&this->buffer_data.data[i], stride_update, 1337) != first_hash){
+				std::cerr << Helpers::timestamp("DEBUG") << "Not uniform" << std::endl;
+				is_uniform = false;
+				break;
+			}
+		}
+		std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << is_uniform << std::endl;
+		return(is_uniform);
+	}
+
 	/////////////////////
 	// Loading a container
 	/////////////////////
