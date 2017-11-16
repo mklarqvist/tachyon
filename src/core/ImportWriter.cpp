@@ -10,9 +10,7 @@ namespace Tomahawk {
 
 ImportWriter::ImportWriter() :
 	n_blocksWritten(0),
-	n_variants_written(0),
-	n_variants_complex_written(0),
-	largest_uncompressed_block(0)
+	n_variants_written(0)
 {
 }
 
@@ -225,33 +223,6 @@ S32 ImportWriter::recodeStreamStride(stream_container& stream){
 
 	return(ret_size);
 	*/
-}
-
-bool ImportWriter::checkUniformity(stream_container& stream){
-	const U32 stride_size = stream.header.stride;
-	if(stride_size == -1)
-		return false;
-
-	U32 stride_update = stride_size;
-
-	switch(stream.header.controller.type){
-	case 4: stride_update *= sizeof(S32);   break;
-	case 7: stride_update *= sizeof(float); break;
-	case 0: stride_update *= sizeof(char);  break;
-	default: return false; break;
-	}
-
-	bool is_uniform = true;
-	const U64 first_hash = XXH64(&stream.buffer_data.data[0], stride_update, 1337);
-	for(U32 i = stride_update; i < stream.n_entries; i+= stride_update){
-		if(XXH64(&stream.buffer_data.data[i], stride_update, 1337) != first_hash){
-			std::cerr << Helpers::timestamp("DEBUG") << "Not uniform" << std::endl;
-			is_uniform = false;
-			break;
-		}
-	}
-	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << is_uniform << std::endl;
-	return(is_uniform);
 }
 
 S32 ImportWriter::recodeStream(stream_container& stream){

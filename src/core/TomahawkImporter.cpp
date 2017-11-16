@@ -155,6 +155,7 @@ bool TomahawkImporter::BuildBCF(void){
 				continue;
 
 			this->info_containers[i].checkUniformity();
+			this->info_containers[i].reformatStream();
 
 			cont.Deflate(this->info_containers[i].buffer_data);
 			this->writer_.streamTomahawk << cont;
@@ -168,8 +169,6 @@ bool TomahawkImporter::BuildBCF(void){
 				cont.Clear();
 			}
 		}
-
-
 
 		std::cerr << "FORMAT: " << std::endl;
 		for(U32 i = 0; i < this->format_fields.size(); ++i){

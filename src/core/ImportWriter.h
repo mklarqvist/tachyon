@@ -104,11 +104,6 @@ public:
 	// Basic
 	U64 n_blocksWritten;            // number of blocks written
 	U64 n_variants_written;         // number of variants written
-	U64 n_variants_complex_written; // number of complex variants written
-	U32 largest_uncompressed_block; // size of largest block observed
-
-	// TGZF controller
-	tgzf_controller_type gzip_controller;
 };
 
 } /* namespace Tomahawk */

@@ -296,6 +296,9 @@ public:
 	}
 
 	bool checkUniformity(void){
+		if(this->n_entries == 0)
+			return false;
+
 		const U32 stride_size = this->header.stride;
 		if(stride_size == -1)
 			return false;
@@ -318,7 +321,7 @@ public:
 			//std::cerr << i << ',' << x[i] << ';';
 			if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
 			//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
-				//std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
+				std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
 				return(false);
 			}
 		}
@@ -332,6 +335,101 @@ public:
 		this->header.controller.encoder = 0;
 
 		return(true);
+	}
+
+	void reformatStream(void){
+		// Recode integer types
+		if(this->header.controller.type == 4){
+			const S32* dat = reinterpret_cast<const S32*>(this->buffer_data.data);
+			S32 min = dat[0];
+			S32 max = dat[0];
+
+			for(U32 j = 1; j < this->n_entries; ++j){
+				if(dat[j] < min) min = dat[j];
+				if(dat[j] > max) max = dat[j];
+			}
+
+			BYTE byte_width = 0;
+			if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
+			else byte_width = ceil(ceil(log2(max + 1))/8);
+
+			if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
+			else if(byte_width > 4) byte_width = 8;
+			if(byte_width == 0) byte_width = 1;
+
+			// Phase 2
+			// Here we re-encode values using the smallest possible
+			// word-size
+			if(this->header.controller.uniform){
+				// Non-negative
+				this->buffer_data.pointer = 0;
+				this->n_entries = 1;
+				this->n_additions = 1;
+				if(min >= 0){
+					switch(byte_width){
+					case 1: this->buffer_data += (BYTE)min; break;
+					case 2: this->buffer_data += (U16)min; break;
+					case 4: this->buffer_data += (U32)min; break;
+					case 8: this->buffer_data += (U64)min; break;
+					default: std::cerr << "illegal: " << std::endl; exit(1);
+					}
+				} else {
+					switch(byte_width){
+					case 1: this->buffer_data += (SBYTE)min; break;
+					case 2: this->buffer_data += (S16)min; break;
+					case 4: this->buffer_data += (S32)min; break;
+					default: std::cerr << "illegal" << std::endl; exit(1);
+					}
+				}
+				// done
+				std::cerr << "swap: uniform" << std::endl;
+				return;
+			}
+			// Not unfirom
+			else {
+				IO::BasicBuffer buffer(this->buffer_data.pointer);
+				dat = reinterpret_cast<const S32*>(this->buffer_data.data);
+				// Is non-negative
+				if(min >= 0){
+					if(byte_width == 1){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (BYTE)*(dat++);
+					} else if(byte_width == 2){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (U16)*(dat++);
+					} else if(byte_width == 4){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (U32)*(dat++);
+					} else if(byte_width == 8){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (U64)*(dat++);
+					} else {
+						std::cerr << "illegal" << std::endl;
+						exit(1);
+					}
+				}
+				// Is negative
+				else {
+					if(byte_width == 1){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (SBYTE)*(dat++);
+					} else if(byte_width == 2){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (S16)*(dat++);
+					} else if(byte_width == 4){
+						for(U32 j = 0; j < this->n_entries; ++j)
+							buffer += (S32)*(dat++);
+					} else {
+						std::cerr << "illegal" << std::endl;
+						exit(1);
+					}
+				}
+				std::cerr << "swap: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
+				std::swap(this->buffer_data.data, buffer.data);
+				this->buffer_data.pointer = buffer.pointer;
+				buffer.deleteAll();
+			}
+		}
 	}
 
 	/////////////////////
