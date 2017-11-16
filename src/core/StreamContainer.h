@@ -73,6 +73,7 @@ struct StreamContainerHeader{
 		n_extra(0),
 		extra(nullptr)
 	{}
+
 	virtual ~StreamContainerHeader(){
 		delete [] this->extra;
 	}
@@ -284,10 +285,13 @@ public:
 	}
 
 public:
+	// Headers
 	header_type header;
 	header_stride_type header_stride;
+	// Not written - used internally only
 	U32 n_entries;   // number of entries
 	U32 n_additions; // number of times added
+	// Buffers
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
 };

@@ -58,8 +58,6 @@ void IndexBlockEntry::reset(void){
 }
 
 bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns){
-	std::cerr << "INTERNAL: " << this->info_bit_vectors << '\t' << this->format_bit_vectors << '\t' << this->filter_bit_vectors << std::endl;
-
 	// Determine target
 	switch(target){
 	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, htable, values, patterns));   break;
@@ -72,20 +70,15 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 
 bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns){
 	const BYTE bitvector_width = ceil((float)values.size()/8);
-	std::cerr << (void*)this->info_bit_vectors << '\t' << (void*)target << std::endl;
 
 // Clear data if present
 	// Allocate new bit-vectors
 	if(target != nullptr){ delete [] target; }
 	target = new bit_vector[patterns.size()];
 
-	std::cerr << (void*)this->info_bit_vectors << '\t' << (void*)target << std::endl;
-
 	// Allocate memory for these bit-vectors
 	for(U32 i = 0; i < patterns.size(); ++i)
 		target[i].allocate(bitvector_width);
-
-	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Mapping..." << std::endl;
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){

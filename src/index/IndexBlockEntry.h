@@ -14,32 +14,30 @@ struct IndexBlockEntryController{
 
 public:
 	IndexBlockEntryController():
-		mixedStride(0),
-		signedness(0),
-		type(0),
-		method(0)
+		hasGT(0),
+		isDiploid(0),
+		unused(0)
 	{}
 	~IndexBlockEntryController(){}
 
 	inline void clear(){ memset(this, 0, sizeof(BYTE)); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
-		const BYTE* c = reinterpret_cast<const BYTE* const>(&controller);
-		stream.write(reinterpret_cast<const char*>(&c), sizeof(BYTE));
+		const U16* c = reinterpret_cast<const U16* const>(&controller);
+		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& controller){
-		BYTE* c = reinterpret_cast<BYTE*>(&controller);
-		stream.read(reinterpret_cast<char*>(c), sizeof(BYTE));
+		U16* c = reinterpret_cast<U16*>(&controller);
+		stream.read(reinterpret_cast<char*>(c), sizeof(U16));
 		return(stream);
 	}
 
 public:
-	BYTE mixedStride: 1,
-	     signedness: 1,
-		 type: 3,
-		 method: 3;
+	U16 hasGT: 1,
+	    isDiploid: 1,
+		unused: 14;
 };
 
 // Block offset (key,key)-pair
@@ -159,15 +157,6 @@ public:
 	// Virtual offsets to the start of various
 	// basic fields:
 	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
-	/*
-	 Streams
-	 +---+---+---+---+---+---+---+---+---+---+
-	 | 1 | 4             |                 ~~~
-	 +---+---+---+---+---+---+---+---+---+---+
-	 ^   ^               ^
-	 |   |               |
-	 CNT U_SIZE          DATA
-	*/
 	U32 l_ppa;
 	U32 l_meta;
 	U32 l_meta_complex;
@@ -221,29 +210,6 @@ public:
 	offset_type* info_offsets;
 	offset_type* format_offsets;
 	offset_type* filter_offsets;
-	/*
-	 Data starts at offset
-	 +---+---+---+---+---+---+---+---+
-	 | 1 | 1 | 4 | 4 | 4 | 1 | 4 | 4 |
-	 +---+---+---+---+---+---+---+---+
-	 ^   ^   ^   ^   ^   ^   ^   ^
-	 |   |   |   |   |   |   |   |
-	 CNT STRIDE  CLENGTH CNT CLENGTH
-	         OFFSET  ULENGTH     ULENGTH
-	*/
-
-	/*
-	//Base struct
-	BYTE controller;
-	BYTE stride;
-	U32 offset;
-	U32 cLength;
-	U32 uLength;
-	// If extended
-	BYTE controller2;
-	U32 cLengthStride;
-	U32 uLengthStride;
-	*/
 
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;

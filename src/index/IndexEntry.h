@@ -57,7 +57,7 @@ public:
 public:
 	// Move out to global index
 	S32 contigID;       // this data is duplicated
-	U16 n_variants;      // this data is duplicated
+	U16 n_variants;     // this data is duplicated
 	U64 byte_offset;	// tellg() position in stream for start of record in Tomahawk file
 	U64 byte_offset_end;// tellg() position in stream for start of record in Tomahawk file
 	U64 minPosition;	// smallest bp position
