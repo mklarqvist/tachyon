@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <bitset>
+
 #include "../core/PermutationManager.h"
 #include "../algorithm/OpenHashTable.h"
 

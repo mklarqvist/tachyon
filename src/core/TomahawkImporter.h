@@ -1,11 +1,15 @@
 #ifndef TOMAHAWKIMPORTER_H_
 #define TOMAHAWKIMPORTER_H_
 
+#include "base/EntryHotMeta.h"
 #include "../algorithm/compression/EncoderGenotypesRLE.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexBlockEntry.h"
 #include "../algorithm/permutation/RadixSortGT.h"
+#include "StreamContainer.h"
+#include "PermutationManager.h"
 #include "TomahawkImportWriter.h"
+#include "HashContainer.h"
 
 namespace Tomahawk {
 
@@ -14,13 +18,17 @@ class TomahawkImporter {
 	typedef reader reader_type;
 	typedef VCF::VCFHeader header_type;
 	typedef TomahawkImportWriter writer_type;
-	typedef VCF::VCFLine line_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Algorithm::EncoderGenotypesRLE encoder_type;
 	typedef Totempole::IndexEntry totempole_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Algorithm::RadixSortGT radix_sorter_type;
+	typedef Core::StreamContainer stream_container;
+	typedef Core::PermutationManager permutation_type;
+	typedef Core::EntryHotMetaBase meta_type;
+	typedef Core::Support::HashContainer hash_container_type;
+	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 
 	/*
 	 This supportive structure keeps track of the current and
@@ -49,6 +57,7 @@ public:
 private:
 	bool BuildBCF();  // import a BCF file
 	bool parseBCFLine(bcf_entry_type& line); // Import a BCF line
+	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
 private:
 	bool permutateData(bcf_reader_type& reader);
@@ -60,13 +69,28 @@ private:
 	std::string outputPrefix; // output file prefix
 	reader_type reader_;      // reader
 	writer_type writer_;      // writer
-	buffer_type meta_buffer;  // meta buffer
-	buffer_type encode_rle_buffer;   // RLE buffer
-	buffer_type encode_simple_buffer;   // RLE buffer
+
+
 	totempole_entry_type totempole_entry;  // totempole entry for indexing
 	radix_sorter_type permutator;
 	header_type* header_;     // header
-	encoder_type* encoder;   // RLE packer
+	encoder_type encoder;   // RLE packer
+
+	//
+	permutation_type ppa_manager;
+	stream_container meta_hot_container;
+	stream_container meta_cold_container;
+	stream_container gt_rle_container;
+	stream_container gt_simple_container;
+	hash_container_type info_fields;
+	hash_container_type format_fields;
+	hash_container_type filter_fields;
+	hash_vector_container_type info_patterns;
+	hash_vector_container_type format_patterns;
+	hash_vector_container_type filter_patterns;
+	stream_container* info_containers;
+	stream_container* format_containers;
+	stream_container* filter_containers;
 };
 
 

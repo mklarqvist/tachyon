@@ -187,7 +187,7 @@ public:
 		buffer_strides(start_size)
 	{}
 
-	~StreamContainer(){ this->buffer_data.deleteAll(); }
+	~StreamContainer(){ this->buffer_data.deleteAll(); this->buffer_strides.deleteAll(); }
 
 	inline void setType(const BYTE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
@@ -199,55 +199,55 @@ public:
 	inline void addStride(const U32& value){ this->buffer_strides += value; }
 
 	inline void operator+=(const SBYTE& value){
-		assert(this->header.controller.type == 0);
+		//assert(this->header.controller.type == 0);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const BYTE& value){
-		assert(this->header.controller.type == 1);
+		//assert(this->header.controller.type == 1);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const S16& value){
-		assert(this->header.controller.type == 2);
+		//assert(this->header.controller.type == 2);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U16& value){
-		assert(this->header.controller.type == 3);
+		//assert(this->header.controller.type == 3);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const S32& value){
-		assert(this->header.controller.type == 4);
+		//assert(this->header.controller.type == 4);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U32& value){
-		assert(this->header.controller.type == 5);
+		//assert(this->header.controller.type == 5);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U64& value){
-		assert(this->header.controller.type == 6);
+		//assert(this->header.controller.type == 6);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const float& value){
-		assert(this->header.controller.type == 7);
+		//assert(this->header.controller.type == 7);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const double& value){
-		assert(this->header.controller.type == 8);
+		//assert(this->header.controller.type == 8);
 		this->buffer_data += value;
 		++this->n_entries;
 	}

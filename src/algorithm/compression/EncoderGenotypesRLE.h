@@ -3,11 +3,12 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cassert>
 
+#include "../../io/bcf/BCFEntry.h"
 #include "../../core/base/EntryHotMeta.h"
 #include "../../core/base/GTRecords.h"
-#include "../../io/bcf/BCFReader.h"
-#include "../../io/vcf/VCFLines.h"
+#include "../../core/StreamContainer.h"
 
 namespace Tomahawk{
 namespace Algorithm{
@@ -18,6 +19,18 @@ namespace Algorithm{
 // Todo: These should all be moved to VCF or BCF entry class
 struct EncoderGenotypesRLEHelper{
 	typedef EncoderGenotypesRLEHelper self_type;
+
+	EncoderGenotypesRLEHelper(void) :
+		MAF(0),
+		MGF(0),
+		HWE_P(0),
+		missingValues(0),
+		phased(false),
+		expectedSamples(0)
+	{
+		memset(&this->countsGenotypes[0], 0, sizeof(U64)*16);
+		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
+	}
 
 	EncoderGenotypesRLEHelper(const U64 expectedSamples) :
 		MAF(0),
@@ -32,6 +45,7 @@ struct EncoderGenotypesRLEHelper{
 	}
 	~EncoderGenotypesRLEHelper(){}
 
+	void setExpected(const U32 expected){ this->expectedSamples = expected; }
 	U64& operator[](const U32& p){ return(this->countsGenotypes[p]); }
 
 	inline void reset(){
@@ -191,16 +205,16 @@ struct EncoderGenotypesRLEHelper{
 	float HWE_P;
 	bool missingValues;
 	bool phased;
-	const U64 expectedSamples;
+	U64 expectedSamples;
 };
 
 class EncoderGenotypesRLE {
 	typedef EncoderGenotypesRLE self_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef VCF::VCFLine vcf_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef Support::EntryHotMetaBase meta_base_type;
+	typedef Core::EntryHotMetaBase meta_base_type;
 	typedef EncoderGenotypesRLEHelper helper_type;
+	typedef Core::StreamContainer container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) : mixedPhasing(1), hasMissing(1), word_width(1), n_runs(0){}
@@ -223,24 +237,27 @@ class EncoderGenotypesRLE {
 	} rle_helper_type;
 
 public:
+	EncoderGenotypesRLE() :
+		n_samples(0)
+	{
+	}
+
 	EncoderGenotypesRLE(const U64 samples) :
 		n_samples(samples),
 		helper(samples)
-		//encode(nullptr),
-		//encodeComplex(nullptr),
-		//encodeBCF(nullptr)
 	{
 	}
 
 	~EncoderGenotypesRLE(){}
-	bool Encode(const bcf_type& line, meta_base_type& meta_base, buffer_type& runs, buffer_type& simple, U64& n_runs, const U32* const ppa);
+	bool Encode(const bcf_type& line, meta_base_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa);
+	inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
 
 private:
 	const rle_helper_type assessRLEBiallelic(const bcf_type& line, const U32* const ppa);
 	const rle_helper_type assessRLEnAllelic(const bcf_type& line, const U32* const ppa);
-	template <class T> bool EncodeSimple(const bcf_type& line, buffer_type& runs, U64& n_runs);
-	template <class T> bool EncodeRLE(const bcf_type& line, buffer_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing = true, const bool hasMixedPhase = true);
-	template <class T> bool EncodeRLESimple(const bcf_type& line, buffer_type& runs, U64& n_runs);
+	template <class T> bool EncodeSimple(const bcf_type& line, container_type& runs, U64& n_runs);
+	template <class T> bool EncodeRLE(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing = true, const bool hasMixedPhase = true);
+	template <class T> bool EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs);
 
 private:
 	U64 n_samples;             // number of samples
@@ -248,7 +265,7 @@ private:
 };
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, buffer_type& simple, U64& n_runs){
+bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& simple, U64& n_runs){
 	BYTE shift_size = 3;
 	if(sizeof(T) == 2) shift_size = 7;
 	if(sizeof(T) == 4) shift_size = 15;
@@ -287,7 +304,7 @@ bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, buffer_type& simple
 }
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, buffer_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing, const bool hasMixedPhase){
+bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing, const bool hasMixedPhase){
 	U32 internal_pos = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength = 0;
 	T length = 1;
@@ -384,7 +401,7 @@ bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, buffer_type& runs, U64
 }
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, buffer_type& runs, U64& n_runs){
+bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs){
 	U32 internal_pos = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength = 0;
 	T length = 1;

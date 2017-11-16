@@ -19,12 +19,6 @@ TomahawkImportWriter::TomahawkImportWriter() :
 	buffer_encode_simple(flush_limit*2),
 	buffer_meta(flush_limit*10), // meta joins all other buffers
 	buffer_metaComplex(flush_limit*2),
-	filter_hash_pattern_counter(0),
-	info_hash_pattern_counter(0),
-	format_hash_pattern_counter(0),
-	info_hash_value_counter(0),
-	format_hash_value_counter(0),
-	filter_hash_value_counter(0),
 	filter_hash_pattern(5012),
 	info_hash_pattern(5012),
 	info_hash_streams(5012),
@@ -93,15 +87,20 @@ bool TomahawkImportWriter::add(bcf_entry_type& entry, const U32* const ppa){
 
 	// Perform run-length encoding
 	U64 n_runs = 0;
+	std::cerr << "before encode" << std::endl;
+	/*
 	if(!this->encoder->Encode(entry, meta, this->buffer_encode_rle, this->buffer_encode_simple, n_runs, ppa)){
 		this->buffer_meta.pointer = meta_start_pos; // roll back
 		this->buffer_encode_rle.pointer  = rle_start_pos; // roll back
 		this->buffer_encode_simple.pointer = simple_start_pos;
 		return false;
 	}
+	*/
+	std::cerr << "after encode" << std::endl;
 
 	// Parse BCF
 	this->parseBCF(meta, entry);
+	std::cerr << "after parse bcf" << std::endl;
 
 	// If the current minPosition is 0
 	// then this is the first entry we've seen
@@ -134,7 +133,7 @@ bool TomahawkImportWriter::add(bcf_entry_type& entry, const U32* const ppa){
 	}
 
 	// Complex meta data
-	Support::EntryColdMeta test;
+	Core::EntryColdMeta test;
 	if(!test.write(entry, this->buffer_metaComplex)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
@@ -167,9 +166,9 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 		if(this->filter_hash_streams.GetItem(&temp, hash_map_ret, sizeof(U32))){
 			// exists
 		} else {
-			this->filter_hash_streams.SetItem(&temp, this->filter_hash_value_counter, sizeof(U32));
+			U32 tot = this->filter_values.size();
+			this->filter_hash_streams.SetItem(&temp, tot, sizeof(U32));
 			this->filter_values.push_back(val);
-			++this->filter_hash_value_counter;
 		}
 	}
 
@@ -184,10 +183,10 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 		if(this->info_hash_streams.GetItem(&temp, hash_map_ret, sizeof(U32))){
 			mapID = *hash_map_ret;
 		} else {
-			this->info_hash_streams.SetItem(&temp, this->info_hash_value_counter, sizeof(U32));
-			mapID = this->info_hash_value_counter;
+			U32 tot = this->info_values.size();
+			this->info_hash_streams.SetItem(&temp, tot, sizeof(U32));
+			mapID = tot;
 			this->info_values.push_back(val);
-			++this->info_hash_value_counter;
 		}
 
 		//
@@ -250,16 +249,22 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 		if(this->format_hash_streams.GetItem(&temp, hash_map_ret, sizeof(U32))){
 			mapID = *hash_map_ret;
 		} else {
-			this->format_hash_streams.SetItem(&temp, this->format_hash_value_counter, sizeof(U32));
-			mapID = this->format_hash_value_counter;
+			U32 tot = this->format_values.size();
+			this->format_hash_streams.SetItem(&temp, tot, sizeof(U32));
+			mapID = tot;
 			this->format_values.push_back(val);
 			std::cerr << Helpers::timestamp("DEBUG") << val << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
-			++this->format_hash_value_counter;
 		}
+		std::cerr << "here" << std::endl;
 
+		std::cerr << "mapid: " << mapID << std::endl;
+		std::cerr << this->format_containers << std::endl;
+		std::cerr << &this->format_containers[1] << std::endl;
+		std::cerr << this->format_containers[0].n_entries << std::endl;
 		if(this->format_containers[mapID].n_entries == 0){
 			this->format_containers[mapID].setStrideSize(info_length);
 		}
+		std::cerr << "after update" << std::endl;
 
 		if(mapID == 0){
 			switch(info_value_type){
@@ -269,6 +274,7 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 			}
 			continue;
 		}
+		std::cerr << "after update2" << std::endl;
 
 		stream_container& target_container = this->format_containers[mapID];
 		if(this->format_containers[mapID].n_entries == 0){
@@ -320,14 +326,14 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 	if(this->filter_hash_pattern.GetItem(&hash_filter_vector, hash_map_ret, sizeof(U64))){
 		mapID = *hash_map_ret;
 	} else {
-		this->filter_hash_pattern.SetItem(&hash_filter_vector, this->filter_hash_pattern_counter, sizeof(U64));
-		filter_patterns.push_back(std::vector<U32>());
+		U32 tot = this->filter_patterns.size();
+		this->filter_hash_pattern.SetItem(&hash_filter_vector, tot, sizeof(U64));
+		this->filter_patterns.push_back(std::vector<U32>());
 		for(U32 i = 0; i < entry.filterPointer; ++i){
-			this->filter_patterns[this->filter_hash_pattern_counter].push_back(entry.filterID[i]);
+			this->filter_patterns[tot].push_back(entry.filterID[i]);
 		}
-		assert(this->filter_hash_pattern_counter < 65536);
-		mapID = this->filter_hash_pattern_counter;
-		++this->filter_hash_pattern_counter;
+		assert(tot < 65536);
+		mapID = tot;
 	}
 	// Store this map in the meta
 	meta.FILTER_map_ID = mapID;
@@ -340,14 +346,14 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 	if(this->info_hash_pattern.GetItem(&hash_info_vector, hash_map_ret, sizeof(U64))){
 		mapID = *hash_map_ret;
 	} else {
-		this->info_hash_pattern.SetItem(&hash_info_vector, this->info_hash_pattern_counter, sizeof(U64));
+		U32 tot = this->info_patterns.size();
+		this->info_hash_pattern.SetItem(&hash_info_vector, tot, sizeof(U64));
 		this->info_patterns.push_back(std::vector<U32>());
 		for(U32 i = 0; i < entry.infoPointer; ++i){
-			this->info_patterns[this->info_hash_pattern_counter].push_back(entry.infoID[i]);
+			this->info_patterns[tot].push_back(entry.infoID[i]);
 		}
-		assert(this->info_hash_pattern_counter < 65536);
-		mapID = this->info_hash_pattern_counter;
-		++this->info_hash_pattern_counter;
+		assert(tot < 65536);
+		mapID = tot;
 	}
 	// Store this map in the meta
 	meta.INFO_map_ID = mapID;
@@ -359,14 +365,14 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 	if(this->format_hash_pattern.GetItem(&hash_format_vector, hash_map_ret, sizeof(U64))){
 		mapID = *hash_map_ret;
 	} else {
-		this->format_hash_pattern.SetItem(&hash_format_vector, this->format_hash_pattern_counter, sizeof(U64));
+		U32 tot = this->format_patterns.size();
+		this->format_hash_pattern.SetItem(&hash_format_vector, tot, sizeof(U64));
 		format_patterns.push_back(std::vector<U32>());
 		for(U32 i = 0; i < entry.formatPointer; ++i){
-			this->format_patterns[this->format_hash_pattern_counter].push_back(entry.formatID[i]);
+			this->format_patterns[tot].push_back(entry.formatID[i]);
 		}
-		assert(this->format_hash_pattern_counter < 65536);
-		mapID = this->format_hash_pattern_counter;
-		++this->format_hash_pattern_counter;
+		assert(tot < 65536);
+		mapID = tot;
 	}
 	// Store this map in the meta
 	meta.FORMAT_map_ID = mapID;
@@ -376,7 +382,7 @@ bool TomahawkImportWriter::parseBCF(meta_base_type& meta, bcf_entry_type& entry)
 }
 
 // flush and write
-bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
+bool TomahawkImportWriter::flush(const U32* ppa){
 	if(this->buffer_meta.size() == 0)
 		return false;
 
@@ -406,7 +412,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	// Split U32 values into 4 streams
 	const U32 partition = this->vcf_header->samples;
 	//buffer_type test(partition*sizeof(U32)*10);
-	bytePreprocessor(permuter.getPPA(), partition, this->buffer_general.data);
+	bytePreprocessor(ppa, partition, this->buffer_general.data);
 
 	// test bitshuffle
 	memset(this->buffer_ppa.data, 0, 2*sizeof(BYTE)*partition);
@@ -465,7 +471,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	this->totempole_entry.reset();
 
 	// Dispatch values into streams
-	for(U32 i = 0; i < this->info_hash_value_counter; ++i){
+	for(U32 i = 0; i < this->info_values.size(); ++i){
 		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Recoding: INFO " << this->info_values[i] << " with stride: " << this->info_containers[i].header.stride << std::endl;
 		S32 ret_size = this->recodeStream(this->info_containers[i]);
 		if(ret_size == -1){
@@ -482,7 +488,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	}
 
 	// Dispatch values into streams
-	for(U32 i = 0; i < this->format_hash_value_counter; ++i){
+	for(U32 i = 0; i < this->format_values.size(); ++i){
 		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Recoding: FORMAT " << this->format_values[i] << " with stride: " << this->format_containers[i].header.stride << std::endl;
 		S32 ret_size = this->recodeStream(this->format_containers[i]);
 		if(ret_size == -1){

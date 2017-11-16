@@ -2,7 +2,7 @@
 #define CORE_BASE_GTRECORDS_H_
 
 namespace Tomahawk{
-namespace Support{
+namespace Core{
 
 // We CANNOT place phasing template parameter
 // since if we set it to 0 then we have a

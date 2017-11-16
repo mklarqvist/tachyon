@@ -4,7 +4,7 @@
 #include "../../io/BasicBuffer.h"
 
 namespace Tomahawk{
-namespace Support{
+namespace Core{
 
 // Size of meta entry BEFORE run entries
 #define ENTRY_HOT_META_SIZE	(sizeof(BYTE) + sizeof(U64) + sizeof(BYTE) + sizeof(float) + 3*sizeof(U16) + 2*sizeof(U32))

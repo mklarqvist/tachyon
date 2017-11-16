@@ -6,7 +6,7 @@
 #include "../../io/bcf/BCFEntry.h"
 
 namespace Tomahawk{
-namespace Support{
+namespace Core{
 
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted

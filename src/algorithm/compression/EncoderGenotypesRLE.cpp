@@ -3,7 +3,7 @@
 namespace Tomahawk{
 namespace Algorithm{
 
-bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base, buffer_type& runs, buffer_type& simple, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
@@ -20,7 +20,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 	rle_helper_type cost;
 	if(line.body->n_allele == 2){
 		cost = this->assessRLEBiallelic(line, ppa);
-		meta_base.virtual_offset_gt = runs.pointer; // absolute position at start of stream
+		meta_base.virtual_offset_gt = runs.buffer_data.pointer; // absolute position at start of stream
 		meta_base.controller.rle = true;
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.anyMissing = cost.hasMissing;
@@ -62,7 +62,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 		else if(line.body->n_allele + 1 < 128)   costBCFStyle *= 2;
 		else if(line.body->n_allele + 1 < 32768) costBCFStyle *= 4;
 
-		meta_base.virtual_offset_gt = simple.pointer; // absolute position at start of stream
+		meta_base.virtual_offset_gt = simple.buffer_data.pointer; // absolute position at start of stream
 		meta_base.controller.biallelic = false;
 		meta_base.AF = 0; // AF needs to be looked up in cold store
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;

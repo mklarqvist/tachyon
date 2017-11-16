@@ -10,6 +10,8 @@ class PermutationManager{
 	typedef PermutationManager self_type;
 
 public:
+	PermutationManager(){}
+
 	// Lookup
 	const BYTE& operator[](const BYTE& p) const{ return(*reinterpret_cast<const BYTE* const>(&this->PPA[p * sizeof(BYTE)])); }
 	const U16&  operator[](const U16& p)  const{ return(*reinterpret_cast<const U16*  const>(&this->PPA[p * sizeof(U16)]));  }

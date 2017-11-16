@@ -1,7 +1,7 @@
 #include "EntryColdMeta.h"
 
 namespace Tomahawk{
-namespace Support{
+namespace Core{
 
 EntryColdMeta::EntryColdMeta(void) :
 		l_body(0),

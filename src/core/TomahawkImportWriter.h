@@ -5,9 +5,7 @@
 
 #include "../index/IndexEntry.h"
 #include "../index/IndexBlockEntry.h"
-#include "../algorithm/permutation/RadixSortGT.h"
 #include "../algorithm/compression/EncoderGenotypesRLE.h"
-#include "base/EntryHotMeta.h"
 #include "base/EntryColdMeta.h"
 #include "StreamContainer.h"
 
@@ -76,7 +74,7 @@ inline bool bytePreprocessBits(const char* const data, const size_t& size, char*
 
 class TomahawkImportWriter {
 	typedef IO::BasicBuffer buffer_type;
-	typedef Support::EntryHotMetaBase meta_base_type;
+	typedef Core::EntryHotMetaBase meta_base_type;
 	typedef Algorithm::EncoderGenotypesRLE encoder_type;
 	typedef VCF::VCFHeader vcf_header_type;
 	typedef Totempole::IndexEntry totempole_entry_type;
@@ -106,15 +104,6 @@ public:
 		this->buffer_metaComplex.reset();
 		this->buffer_general.reset();
 
-		// Hashes
-		this->filter_hash_pattern_counter = 0;
-		this->info_hash_pattern_counter = 0;
-		this->format_hash_pattern_counter = 0;
-
-		this->info_hash_value_counter = 0;
-		this->format_hash_value_counter = 0;
-		this->filter_hash_value_counter = 0;
-
 		// Reset hash patterns
 		this->filter_hash_pattern.clear();
 		this->info_hash_pattern.clear();
@@ -143,7 +132,7 @@ public:
 	}
 
 	// flush and write
-	bool flush(Algorithm::RadixSortGT& permuter);
+	bool flush(const U32* ppa);
 
 	inline const U64& blocksWritten(void) const{ return this->n_blocksWritten; }
 	inline const U64& getVariantsWritten(void) const{ return this->n_variants_written; }
@@ -185,14 +174,6 @@ public:
 	buffer_type buffer_metaComplex; // complex meta data
 	buffer_type buffer_ppa; // ppa buffer
 	buffer_type buffer_general; // general compression buffer
-
-	// Meta data
-	U32 filter_hash_pattern_counter;
-	U32 info_hash_pattern_counter;
-	U32 format_hash_pattern_counter;
-	U32 info_hash_value_counter;
-	U32 format_hash_value_counter;
-	U32 filter_hash_value_counter;
 
 	// Hashes
 	hash_table_vector filter_hash_pattern;
