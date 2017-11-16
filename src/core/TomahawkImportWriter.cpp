@@ -495,7 +495,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO " << this->info_values[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->info_containers[i].buffer_data.size()/ret_size << '\t' << this->info_containers[i].header.stride << std::endl;
 		//std::cout << "INFO\t" << this->info_values[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << ret_size << std::endl;
 		if(this->info_containers[i].header.stride == -1){
-			S32 ret_stride_size = this->recodeStreamStride(this->info_containers[i].buffer_strides);
+			S32 ret_stride_size = this->recodeStreamStride(this->info_containers[i]);
 			std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO-ADD " << this->info_values[i] << '\t' << this->info_containers[i].buffer_strides.size() << '\t' << ret_stride_size << '\t' << (float)this->info_containers[i].buffer_strides.size()/ret_stride_size << std::endl;
 			//std::cout << "INFO-ADD\t" << this->info_values[i] << '\t' << this->info_containers[i].buffer_strides.size() << '\t' << ret_stride_size << std::endl;
 		}
@@ -512,7 +512,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT " << this->format_values[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << ret_size << '\t' << (float)this->format_containers[i].buffer_data.size()/ret_size << '\t' << this->format_containers[i].header.stride << std::endl;
 		//std::cout << "FORMAT\t" << this->format_values[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << ret_size << std::endl;
 		if(this->format_containers[i].header.stride == -1){
-			S32 ret_stride_size = this->recodeStreamStride(this->format_containers[i].buffer_strides);
+			S32 ret_stride_size = this->recodeStreamStride(this->format_containers[i]);
 			std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FORMAT-ADD " << this->format_values[i] << '\t' << this->format_containers[i].buffer_strides.size() << '\t' << ret_stride_size << '\t' << (float)this->format_containers[i].buffer_strides.size()/ret_stride_size << std::endl;
 			//std::cout << "FORMAT-ADD\t" << this->format_values[i] << '\t' << this->format_containers[i].buffer_strides.size() << '\t' << ret_stride_size << std::endl;
 		}
@@ -525,14 +525,14 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 	return true;
 }
 
-S32 TomahawkImportWriter::recodeStreamStride(buffer_type& buffer){
+S32 TomahawkImportWriter::recodeStreamStride(stream_container& stream){
 	S32 ret_size = -1;
-	const U32* const strides = reinterpret_cast<const U32* const>(buffer.data);
-	if(buffer.size() % sizeof(U32) != 0){
+	const U32* const strides = reinterpret_cast<const U32* const>(stream.buffer_strides.data);
+	if(stream.buffer_strides.size() % sizeof(U32) != 0){
 		std::cerr << Helpers::timestamp("ERROR") << "Buffer is truncated!" << std::endl;
 		return -1;
 	}
-	const U32 n_entries = buffer.size() / sizeof(U32);
+	const U32 n_entries = stream.buffer_strides.size() / sizeof(U32);
 	U32 min = strides[0];
 	U32 max = strides[0];
 	U32 prev_value = strides[0];
@@ -567,6 +567,7 @@ S32 TomahawkImportWriter::recodeStreamStride(buffer_type& buffer){
 	}
 
 	this->gzip_controller.Deflate(this->buffer_general);
+	this->streamTomahawk << stream.header_stride;
 	this->streamTomahawk << this->gzip_controller;
 	ret_size = this->gzip_controller.buffer.size();
 	this->gzip_controller.Clear();
@@ -583,9 +584,9 @@ bool TomahawkImportWriter::checkUniformity(stream_container& stream){
 	U32 stride_update = stride_size;
 
 	switch(stream.header.controller.type){
-	case 4: stride_update *= sizeof(S32); break;
+	case 4: stride_update *= sizeof(S32);   break;
 	case 7: stride_update *= sizeof(float); break;
-	case 0: stride_update *= sizeof(char); break;
+	case 0: stride_update *= sizeof(char);  break;
 	default: return false; break;
 	}
 
@@ -704,6 +705,7 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 			ret_size = byte_width;
 		} else {
 			this->gzip_controller.Deflate(this->buffer_general);
+			this->streamTomahawk << stream.header;
 			this->streamTomahawk << this->gzip_controller;
 			ret_size = this->gzip_controller.buffer.size();
 			this->gzip_controller.Clear();
@@ -713,6 +715,7 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 	// Is not an integer
 	else {
 		this->gzip_controller.Deflate(stream.buffer_data);
+		this->streamTomahawk << stream.header;
 		this->streamTomahawk << this->gzip_controller;
 		ret_size = this->gzip_controller.buffer.size();
 		this->gzip_controller.Clear();

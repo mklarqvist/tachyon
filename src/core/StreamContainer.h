@@ -277,10 +277,48 @@ public:
 
 		// Checksum for strides
 		if(both){
-			crc = crc32(0, NULL, 0);
-			crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
-			this->header_stride.crc = crc;
+			if(this->buffer_strides.size() > 0){
+				crc = crc32(0, NULL, 0);
+				crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+				this->header_stride.crc = crc;
+			}
 		}
+		return true;
+	}
+
+	/////////////////////
+	// Loading a container
+	/////////////////////
+	// Sketch of algorithm
+	// 1) Load header
+	// 2) Read compressed data into temp buffer
+	// 3) Decompress into local buffer
+	// 4) Finished if stride is not equal to -1
+	// 5) Load stride header
+	// 6) Read stride data into temp buffer
+	// 7) Decompress into local buffer
+	bool read(std::istream& stream, buffer_type& temp_buffer){
+		stream >> this->header;
+		// Todo: currently no encoding-specific fields
+		stream.read(temp_buffer.data, this->header.cLength);
+		if(!stream.good()){
+			std::cerr << Helpers::timestamp("ERROR","CONTAINER") << "Stream is not good!" << std::endl;
+			return false;
+		}
+		// Uncompress into local buffer
+
+		if(this->header.controller.mixedStride == 1){
+			stream >> this->header_stride;
+			stream.read(temp_buffer.data, this->header_stride.cLength);
+			if(!stream.good()){
+				std::cerr << Helpers::timestamp("ERROR","CONTAINER") << "Stream is not good!" << std::endl;
+				return false;
+			}
+			// Uncompress into local buffer
+		} // end stride extra
+
+		// check crc checksum
+
 		return true;
 	}
 
