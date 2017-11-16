@@ -153,12 +153,15 @@ bool TomahawkImporter::BuildBCF(void){
 		this->resetHashes();
 		this->resetContainers();
 	}
+	std::cerr << "done main" << std::endl;
 
+	/*
 	// This only happens if there are no valid entries in the file
 	if(this->sort_order_helper.contigID == nullptr){
 		std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Did not import any variants..." << std::endl;
 		return false;
 	}
+
 
 	++this->header_->getContig(*this->sort_order_helper.contigID);
 	this->writer_.flush(this->permutator.getPPA());
@@ -173,7 +176,10 @@ bool TomahawkImporter::BuildBCF(void){
 	if(!SILENT)
 		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Wrote: " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.getVariantsWritten()))
 														 << " variants to " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.blocksWritten()))
-														 << " blocks..." << std::endl;
+
+													 << " blocks..." << std::endl;
+	 */
+	std::cerr << "all done" << std::endl;
 	return(true);
 }
 

@@ -60,9 +60,9 @@ void IndexBlockEntry::reset(void){
 bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
 	// Determine target
 	switch(target){
-	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, values, patterns));   break;
-	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) : return(this->__constructBitVector(this->format_bit_vectors, values, patterns)); break;
-	case(INDEX_BLOCK_TARGET::INDEX_FILTER) : return(this->__constructBitVector(this->filter_bit_vectors, values, patterns)); break;
+	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, this->info_map, values, patterns));   break;
+	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) : return(this->__constructBitVector(this->format_bit_vectors, this->format_map, values, patterns)); break;
+	case(INDEX_BLOCK_TARGET::INDEX_FILTER) : return(this->__constructBitVector(this->filter_bit_vectors, this->filter_map, values, patterns)); break;
 	}
 
 	return false;

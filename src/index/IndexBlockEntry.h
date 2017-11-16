@@ -204,9 +204,15 @@ public:
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 private:
-	bool __constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns);
+	bool __constructBitVector(bit_vector*& target, id_vector& target_id, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
+	// These contain the local map to a stream ID
+	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
+	id_vector info_map;
+	id_vector format_map;
+	id_vector filter_map;
+
 	// Virtual offsets into various
 	// INFO/FORMAT/FILTER streams
 	//
