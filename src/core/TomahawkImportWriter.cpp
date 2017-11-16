@@ -80,26 +80,6 @@ void TomahawkImportWriter::setHeader(VCF::VCFHeader& header){
 	this->encoder = new encoder_type(header.samples);
 }
 
-bool TomahawkImportWriter::add(const VCF::VCFLine& line){
-	const U32 meta_start_pos = this->buffer_meta.pointer;
-	const U32 rle_start_pos  = this->buffer_encode_rle.pointer;
-	if(!this->encoder->Encode(line, this->buffer_meta, this->buffer_encode_rle)){
-		this->buffer_meta.pointer = meta_start_pos; // reroll back
-		this->buffer_encode_rle.pointer  = rle_start_pos; // reroll back
-		return false;
-	}
-
-	//const U64 n_runs = (this->buffer_encode_rle.pointer - rle_start_pos)/this->rleController_->getBitWidth();
-	const meta_base_type& base_meta = *reinterpret_cast<const meta_base_type* const>(&this->buffer_meta[meta_start_pos]);
-
-	if(this->totempole_entry.minPosition == 0)
-		this->totempole_entry.minPosition = line.position;
-
-	this->totempole_entry.maxPosition = line.position;
-	++this->totempole_entry.n_variants;
-
-	return true;
-}
 
 bool TomahawkImportWriter::add(bcf_entry_type& entry, const U32* const ppa){
 	// Keep positions

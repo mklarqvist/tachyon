@@ -6,7 +6,7 @@
 #include "../index/IndexEntry.h"
 #include "../index/IndexBlockEntry.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../algorithm/compression/TomahawkImportEncoder.h"
+#include "../algorithm/compression/EncoderGenotypesRLE.h"
 #include "base/EntryHotMeta.h"
 #include "base/EntryColdMeta.h"
 #include "StreamContainer.h"
@@ -77,7 +77,7 @@ inline bool bytePreprocessBits(const char* const data, const size_t& size, char*
 class TomahawkImportWriter {
 	typedef IO::BasicBuffer buffer_type;
 	typedef Support::EntryHotMetaBase meta_base_type;
-	typedef Algorithm::TomahawkImportEncoder encoder_type;
+	typedef Algorithm::EncoderGenotypesRLE encoder_type;
 	typedef VCF::VCFHeader vcf_header_type;
 	typedef Totempole::IndexEntry totempole_entry_type;
 	typedef IO::TGZFController tgzf_controller_type;
@@ -95,7 +95,6 @@ public:
 	bool Open(const std::string output);
 	void WriteFinal(void);
 	void setHeader(vcf_header_type& header);
-	bool add(const VCF::VCFLine& line);
 	bool add(bcf_entry_type& entry, const U32* const ppa);
 	bool parseBCF(meta_base_type& meta, bcf_entry_type& entry);
 

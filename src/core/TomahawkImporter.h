@@ -1,10 +1,10 @@
 #ifndef TOMAHAWKIMPORTER_H_
 #define TOMAHAWKIMPORTER_H_
 
+#include "../algorithm/compression/EncoderGenotypesRLE.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexBlockEntry.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../algorithm/compression/TomahawkImportEncoder.h"
 #include "TomahawkImportWriter.h"
 
 namespace Tomahawk {
@@ -16,7 +16,7 @@ class TomahawkImporter {
 	typedef TomahawkImportWriter writer_type;
 	typedef VCF::VCFLine line_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef Algorithm::TomahawkImportEncoder encoder_type;
+	typedef Algorithm::EncoderGenotypesRLE encoder_type;
 	typedef Totempole::IndexEntry totempole_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;

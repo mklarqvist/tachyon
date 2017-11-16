@@ -1,9 +1,9 @@
-#include "TomahawkImportEncoder.h"
+#include "EncoderGenotypesRLE.h"
 
 namespace Tomahawk{
 namespace Algorithm{
 
-bool TomahawkImportEncoder::Encode(const bcf_type& line, meta_base_type& meta_base, buffer_type& runs, buffer_type& simple, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base, buffer_type& runs, buffer_type& simple, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
@@ -128,7 +128,7 @@ bool TomahawkImportEncoder::Encode(const bcf_type& line, meta_base_type& meta_ba
 	return false;
 }
 
-const TomahawkImportEncoder::rle_helper_type TomahawkImportEncoder::assessRLEBiallelic(const bcf_type& line, const U32* const ppa){
+const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessRLEBiallelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	U32 internal_pos_rle = line.p_genotypes;
 	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);
@@ -231,7 +231,7 @@ const TomahawkImportEncoder::rle_helper_type TomahawkImportEncoder::assessRLEBia
 	return(rle_helper_type(word_width, chosen_runs, mixedPhase, anyMissing));
 }
 
-const TomahawkImportEncoder::rle_helper_type TomahawkImportEncoder::assessRLEnAllelic(const bcf_type& line, const U32* const ppa){
+const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessRLEnAllelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	const BYTE shift_size = ceil(log2(line.body->n_allele + 1));
 	U32 internal_pos_rle = line.p_genotypes;
