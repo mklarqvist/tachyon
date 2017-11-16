@@ -24,12 +24,23 @@ public:
 		}
 		return false;
 	}
+
+	inline bool getRaw(const U32& value, U32& ret){
+		U32* ret2 = nullptr;
+		if(this->htable.GetItem(&value, ret2, sizeof(U32))){
+			ret = *ret2;
+			return true;
+		}
+		return false;
+	}
+
 	inline bool set(const U32& value){
 		U32 tot = this->data.size();
 		this->htable.SetItem(&value, tot, sizeof(U32));
 		this->data.push_back(value);
 		return true;
 	}
+
 	inline U32 setGet(const U32& value){
 		U32* ret = nullptr;
 		if(this->htable.GetItem(&value, ret, sizeof(U32))){

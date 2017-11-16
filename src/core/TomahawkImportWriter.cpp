@@ -393,6 +393,7 @@ bool TomahawkImportWriter::flush(const U32* ppa){
 	//this->totempole_entry.l_gt_rle = this->buffer_encode_rle.pointer;
 	//this->totempole_entry.l_gt_simple = this->buffer_encode_simple.pointer;
 
+	/*
 	Index::IndexBlockEntry block_entry;
 	std::cerr << "ID: " << block_entry.contigID << std::endl;
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "INFO: " << this->info_values.size() << " entries -> " << ceil((float)this->info_values.size()/8) << " bytes" << std::endl;
@@ -407,7 +408,9 @@ bool TomahawkImportWriter::flush(const U32* ppa){
 	std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "FILTER: " << this->filter_values.size() << " entries -> " << ceil((float)this->filter_values.size()/8) << " bytes" << std::endl;
 	block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER, this->filter_hash_streams, this->filter_values, this->filter_patterns);
 
+
 	std::cerr << block_entry.info_bit_vectors[0][6] << std::endl;
+*/
 
 	// Split U32 values into 4 streams
 	const U32 partition = this->vcf_header->samples;

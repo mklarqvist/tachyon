@@ -57,18 +57,18 @@ void IndexBlockEntry::reset(void){
 	this->filter_bit_vectors = nullptr;
 }
 
-bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns){
+bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
 	// Determine target
 	switch(target){
-	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, htable, values, patterns));   break;
-	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) : return(this->__constructBitVector(this->format_bit_vectors, htable, values, patterns)); break;
-	case(INDEX_BLOCK_TARGET::INDEX_FILTER) : return(this->__constructBitVector(this->filter_bit_vectors, htable, values, patterns)); break;
+	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, values, patterns));   break;
+	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) : return(this->__constructBitVector(this->format_bit_vectors, values, patterns)); break;
+	case(INDEX_BLOCK_TARGET::INDEX_FILTER) : return(this->__constructBitVector(this->filter_bit_vectors, values, patterns)); break;
 	}
 
 	return false;
 }
 
-bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns){
+bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns){
 	const BYTE bitvector_width = ceil((float)values.size()/8);
 
 // Clear data if present
@@ -92,13 +92,13 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_table& htab
 		//
 		std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
-			U32* retval = nullptr;
-			if(!htable.GetItem(&patterns[i][j], retval, sizeof(U32))){
+			U32 retval = 0;
+			if(!values.getRaw(patterns[i][j], retval)){
 				std::cerr << "impossible" << std::endl;
 				exit(1);
 			}
-			target[i].bit_bytes[*retval/8] ^= 1 << (*retval % 8);
-			std::cerr << *retval << '\t';
+			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
+			std::cerr << retval << '\t';
 		}
 		std::cerr << std::endl;
 

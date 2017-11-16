@@ -107,8 +107,9 @@ bool TomahawkImporter::BuildBCF(void){
 			break;
 
 		// Reset permutate
+		std::cerr << "reader: " << reader.size() << std::endl;
 		if(!this->permutator.build(reader)){
-			std::cerr << "fail" << std::endl;
+			std::cerr << "fail permutator" << std::endl;
 			return false;
 		}
 
@@ -143,8 +144,12 @@ bool TomahawkImporter::BuildBCF(void){
 			}
 		}
 
-		this->permutator.reset();
+		//
+		Index::IndexBlockEntry i;
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 
+		this->permutator.reset();
 		this->resetHashes();
 		this->resetContainers();
 	}

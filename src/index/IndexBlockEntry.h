@@ -6,6 +6,7 @@
 
 #include "../core/PermutationManager.h"
 #include "../algorithm/OpenHashTable.h"
+#include "../core/HashContainer.h"
 
 namespace Tomahawk{
 namespace Index{
@@ -183,6 +184,8 @@ private:
 	typedef Hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32> id_vector;
 	typedef std::vector< id_vector > pattern_vector;
+	typedef Core::Support::HashContainer hash_container_type;
+	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 
 public:
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
@@ -198,10 +201,10 @@ public:
 	// During import we need to intialize and
 	// resize these these pointers to fit the
 	// data we want to store
-	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
+	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 private:
-	bool __constructBitVector(bit_vector*& target, hash_table& htable, const id_vector& values, const pattern_vector& patterns);
+	bool __constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
 	// Virtual offsets into various
