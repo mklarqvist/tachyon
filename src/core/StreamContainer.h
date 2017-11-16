@@ -52,12 +52,12 @@ public:
 
 /*
  Stream header data structure
- +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
- |   2   |   2   |       4       |        4      |       4       | X ~
- +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
- ^       ^       ^               ^               ^               ^
- |       |       |               |               |               |
- CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   POSSIBLE PARAMETERS
+ +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+----+
+ |   2   |   2   |       4       |        4      |       4       |       4       | X ~
+ +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ ^       ^       ^               ^               ^               ^               ^
+ |       |       |               |               |               |               |
+ CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   CRC             POSSIBLE PARAMETERS
                  OFFSET
 */
 struct StreamContainerHeader{
@@ -69,6 +69,7 @@ struct StreamContainerHeader{
 		offset(0),
 		cLength(0),
 		uLength(0),
+		crc(0),
 		n_extra(0),
 		extra(nullptr)
 	{}
@@ -82,6 +83,7 @@ struct StreamContainerHeader{
 		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.crc),    sizeof(U32));
 		if(entry.n_extra > 0)
 			stream.write(entry.extra, entry.n_extra);
 
@@ -94,6 +96,7 @@ struct StreamContainerHeader{
 		stream.read(reinterpret_cast<char*>(&entry.offset),  sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
 		return(stream);
 	}
 
@@ -103,8 +106,9 @@ public:
 	U32 offset;
 	U32 cLength;
 	U32 uLength;
+	U32 crc;
 	U32 n_extra; // not written; used internally only
-	char* extra;
+	char* extra; // extra length is encoder specific
 };
 
 /*
@@ -126,6 +130,7 @@ struct StreamContainerHeaderStride{
 	StreamContainerHeaderStride() :
 		cLength(0),
 		uLength(0),
+		crc(0),
 		n_extra(0),
 		extra(nullptr)
 	{}
@@ -137,6 +142,7 @@ struct StreamContainerHeaderStride{
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.cLength), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.crc),     sizeof(U32));
 		if(entry.n_extra > 0)
 			stream.write(entry.extra, entry.n_extra);
 
@@ -147,6 +153,7 @@ struct StreamContainerHeaderStride{
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
 		return(stream);
 	}
 
@@ -154,8 +161,9 @@ public:
 	controller_type controller;
 	U32 cLength;
 	U32 uLength;
+	U32 crc;
 	U32 n_extra; // not written; used internally only
-	char* extra;
+	char* extra; // extra length is encoder specific
 };
 
 // Stream container for importing
@@ -255,6 +263,24 @@ public:
 	inline void resize(const U32 size){
 		this->buffer_data.resize(size);
 		this->buffer_strides.resize(size);
+	}
+
+	bool checkSum(bool both = false){
+		if(this->buffer_data.size() == 0)
+			return false;
+
+		// Checksum for main buffer
+		U32 crc = crc32(0, NULL, 0);
+		crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
+		this->header.crc = crc;
+
+		// Checksum for strides
+		if(both){
+			crc = crc32(0, NULL, 0);
+			crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+			this->header_stride.crc = crc;
+		}
+		return true;
 	}
 
 public:

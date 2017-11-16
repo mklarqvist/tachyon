@@ -66,7 +66,7 @@ public:
 	}
 
 public:
-	U32 global_key;
+	U32 global_key; // This is redundant: used for sanity only!
 	U32 offset;
 };
 
@@ -180,7 +180,6 @@ public:
 	U16 n_format_streams;
 	U16 n_filter_streams;
 	// END OF FIXED SIZE
-
 };
 
 struct IndexBlockEntry : public IndexBlockEntryBase{
