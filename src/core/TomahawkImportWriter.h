@@ -156,6 +156,7 @@ public:
 private:
 	S32 recodeStream(stream_container& stream);
 	S32 recodeStreamStride(buffer_type& buffer);
+	bool checkUniformity(stream_container& stream);
 
 public:
 	// Stream information

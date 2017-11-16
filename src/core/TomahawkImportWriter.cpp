@@ -486,6 +486,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 
 	// Dispatch values into streams
 	for(U32 i = 0; i < this->info_hash_value_counter; ++i){
+		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Recoding: INFO " << this->info_values[i] << " with stride: " << this->info_containers[i].header.stride << std::endl;
 		S32 ret_size = this->recodeStream(this->info_containers[i]);
 		if(ret_size == -1){
 			std::cerr << "failed recode @ " << i << std::endl;
@@ -502,6 +503,7 @@ bool TomahawkImportWriter::flush(Algorithm::RadixSortGT& permuter){
 
 	// Dispatch values into streams
 	for(U32 i = 0; i < this->format_hash_value_counter; ++i){
+		std::cerr << Helpers::timestamp("DEBUG","FLUSH") << "Recoding: FORMAT " << this->format_values[i] << " with stride: " << this->format_containers[i].header.stride << std::endl;
 		S32 ret_size = this->recodeStream(this->format_containers[i]);
 		if(ret_size == -1){
 			std::cerr << "failed recode @ " << i << std::endl;
@@ -573,8 +575,42 @@ S32 TomahawkImportWriter::recodeStreamStride(buffer_type& buffer){
 	return(ret_size);
 }
 
+bool TomahawkImportWriter::checkUniformity(stream_container& stream){
+	const U32 stride_size = stream.header.stride;
+	if(stride_size == -1)
+		return false;
+
+	U32 stride_update = stride_size;
+
+	switch(stream.header.controller.type){
+	case 4: stride_update *= sizeof(S32); break;
+	case 7: stride_update *= sizeof(float); break;
+	case 0: stride_update *= sizeof(char); break;
+	default: return false; break;
+	}
+
+	bool is_uniform = true;
+	const U64 first_hash = XXH64(&stream.buffer_data.data[0], stride_update, 1337);
+	for(U32 i = stride_update; i < stream.n_entries; i+= stride_update){
+		if(XXH64(&stream.buffer_data.data[i], stride_update, 1337) != first_hash){
+			std::cerr << Helpers::timestamp("DEBUG") << "Not uniform" << std::endl;
+			is_uniform = false;
+			break;
+		}
+	}
+	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << is_uniform << std::endl;
+	return(is_uniform);
+}
+
 S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 	S32 ret_size = -1;
+
+	if(this->checkUniformity(stream)){
+		std::cerr << "do stuff with me" << std::endl;
+		stream.header.controller.uniform = true;
+		stream.header.controller.mixedStride = false;
+		stream.header.controller.encoder = 0;
+	}
 
 	if(stream.header.controller.type == 4){
 		const S32* dat = reinterpret_cast<const S32*>(stream.buffer_data.data);
@@ -589,6 +625,7 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 			if(prev_value != dat[j]) is_uniform = false;
 			prev_value = dat[j];
 		}
+		std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << is_uniform << std::endl;
 
 		BYTE byte_width = 0;
 		if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
@@ -672,7 +709,6 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 			this->gzip_controller.Clear();
 		}
 		this->buffer_general.reset();
-
 	}
 	// Is not an integer
 	else {

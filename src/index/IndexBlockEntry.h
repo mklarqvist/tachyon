@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <bitset>
+#include "../core/PermutationManager.h"
 #include "../algorithm/OpenHashTable.h"
 
 namespace Tomahawk{
@@ -64,7 +65,7 @@ public:
 	}
 
 public:
-	U32 global_key; // This is redundant: used for sanity only!
+	U32 global_key;
 	U32 offset;
 };
 
