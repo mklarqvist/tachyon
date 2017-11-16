@@ -6,25 +6,59 @@
 namespace Tomahawk{
 namespace Core{
 
-enum CORE_TYPE{TYPE_8B, TYPE_16B, TYPE_32B, TYPE_64B};
+enum CORE_TYPE{TYPE_8B, TYPE_16B, TYPE_32B, TYPE_64B,
+			   TYPE_FLOAT, TYPE_DOUBLE};
 
+enum CORE_COMPRESSION{ENCODE_NONE, ENCODE_DEFLATE, ENCODE_FSE};
+
+// Controller type for stream container
 struct StreamContainerHeaderController{
+	typedef StreamContainerHeaderController self_type;
 
-	BYTE type: 3,
-	     signedness: 1,
-		 encoder: 2,
-		 other: 2;
+public:
+	StreamContainerHeaderController() :
+		signedness(0),
+		mixedStride(0),
+		type(0),
+		encoder(0),
+		uniform(0),
+		unused(0)
+	{}
+	~StreamContainerHeaderController(){}
+
+	inline void clear(){ memset(this, 0, sizeof(U16)); }
+
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
+		const U16* c = reinterpret_cast<const U16* const>(&controller);
+		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& controller){
+		U16* c = reinterpret_cast<U16*>(&controller);
+		stream.read(reinterpret_cast<char*>(c), sizeof(U16));
+		return(stream);
+	}
+
+public:
+	// 6 base values (4 integers + 2 floats)
+	U16 signedness: 1,
+		mixedStride: 1,
+		type: 6,    // base typing (extra bits saved for future use)
+		encoder: 5, // encoder bits (0 = uncompressed)
+		uniform: 1, // triggered if all values are the same
+		unused: 2;
 };
 
 /*
- Data starts at offset
- +---+---+---+---+---+---+---+---+
- | 1 | 2 | 4 | 4 | 4 | 1 | 4 | 4 |
- +---+---+---+---+---+---+---+---+
- ^   ^   ^   ^   ^   ^   ^   ^
- |   |   |   |   |   |   |   |
- CNT STRIDE  CLENGTH CNT CLENGTH
-         OFFSET  ULENGTH     ULENGTH
+ Stream header data structure
+ +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ |   2   |   2   |       4       |        4      |       4       | X ~
+ +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+ ^       ^       ^               ^               ^               ^
+ |       |       |               |               |               |
+ CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   POSSIBLE PARAMETERS
+                 OFFSET
 */
 struct StreamContainerHeader{
 	typedef StreamContainerHeader self_type;
@@ -34,9 +68,34 @@ struct StreamContainerHeader{
 		stride(-1),
 		offset(0),
 		cLength(0),
-		uLength(0)
+		uLength(0),
+		n_extra(0),
+		extra(nullptr)
 	{}
-	virtual ~StreamContainerHeader(){}
+	virtual ~StreamContainerHeader(){
+		delete [] this->extra;
+	}
+
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream << entry.controller;
+		stream.write(reinterpret_cast<const char*>(&entry.stride), sizeof(S16));
+		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.cLength),sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.uLength),sizeof(U32));
+		if(entry.n_extra > 0)
+			stream.write(entry.extra, entry.n_extra);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream >> entry.controller;
+		stream.read(reinterpret_cast<char*>(&entry.stride),  sizeof(S16));
+		stream.read(reinterpret_cast<char*>(&entry.offset),  sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
+		return(stream);
+	}
 
 public:
 	controller_type controller;
@@ -44,22 +103,59 @@ public:
 	U32 offset;
 	U32 cLength;
 	U32 uLength;
+	U32 n_extra; // not written; used internally only
+	char* extra;
 };
 
-struct StreamContainerHeaderStride : public StreamContainerHeader{
-	typedef StreamContainerHeader self_type;
+/*
+ If stride is mixed then use this
+ secondary structure. Stride is always
+ a single unsigned integer
+ +---+---+---+---+---+---+---+---+---+
+ |   2   |   2   |       4       | X ~
+ +---+---+---+---+---+---+---+---+---+
+ ^       ^       ^               ^
+ |       |       |               |
+ CNT     CLENGTH |               POSSIBLE PARAMETERS
+                 ULENGTH
+*/
+struct StreamContainerHeaderStride{
+	typedef StreamContainerHeaderStride self_type;
+	typedef StreamContainerHeaderController controller_type;
 
 	StreamContainerHeaderStride() :
-		controllerStride(0),
-		cLengthStride(0),
-		uLengthStride(0)
+		cLength(0),
+		uLength(0),
+		n_extra(0),
+		extra(nullptr)
 	{}
-	~StreamContainerHeaderStride(){}
+	~StreamContainerHeaderStride(){
+		delete [] this->extra;
+	}
+
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream << entry.controller;
+		stream.write(reinterpret_cast<const char*>(&entry.cLength), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.uLength), sizeof(U32));
+		if(entry.n_extra > 0)
+			stream.write(entry.extra, entry.n_extra);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream >> entry.controller;
+		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
+		return(stream);
+	}
 
 public:
-	BYTE controllerStride;
-	U32 cLengthStride;
-	U32 uLengthStride;
+	controller_type controller;
+	U32 cLength;
+	U32 uLength;
+	U32 n_extra; // not written; used internally only
+	char* extra;
 };
 
 // Stream container for importing
@@ -67,6 +163,7 @@ class StreamContainer{
 	typedef StreamContainer self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef StreamContainerHeader header_type;
+	typedef StreamContainerHeaderStride header_stride_type;
 
 public:
 	StreamContainer() :
@@ -93,49 +190,55 @@ public:
 	inline void addStride(const U32& value){ this->buffer_strides += value; }
 
 	inline void operator+=(const SBYTE& value){
-		if(this->header.controller.type != 0) exit(1);
+		assert(this->header.controller.type == 0);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const BYTE& value){
-		if(this->header.controller.type != 1) exit(1);
+		assert(this->header.controller.type == 1);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const S16& value){
-		if(this->header.controller.type != 2) exit(1);
+		assert(this->header.controller.type == 2);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U16& value){
-		if(this->header.controller.type != 3) exit(1);
+		assert(this->header.controller.type == 3);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const S32& value){
-		if(this->header.controller.type != 4) exit(1);
+		assert(this->header.controller.type == 4);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U32& value){
-		if(this->header.controller.type != 5) exit(1);
+		assert(this->header.controller.type == 5);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const U64& value){
-		if(this->header.controller.type != 6) exit(1);
+		assert(this->header.controller.type == 6);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
 
 	inline void operator+=(const float& value){
-		if(this->header.controller.type != 7) exit(1);
+		assert(this->header.controller.type == 7);
+		this->buffer_data += value;
+		++this->n_entries;
+	}
+
+	inline void operator+=(const double& value){
+		assert(this->header.controller.type == 8);
 		this->buffer_data += value;
 		++this->n_entries;
 	}
@@ -156,6 +259,7 @@ public:
 
 public:
 	header_type header;
+	header_stride_type header_stride;
 	U32 n_entries;   // number of entries
 	U32 n_additions; // number of times added
 	buffer_type buffer_data;
