@@ -101,6 +101,9 @@ bool TomahawkImporter::BuildBCF(void){
 	this->gt_rle_container.resize(resize_to);
 	this->gt_simple_container.resize(resize_to);
 
+	IO::TGZFController cont;
+	cont.buffer.resize(256000);
+
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
 			break;
@@ -119,27 +122,71 @@ bool TomahawkImporter::BuildBCF(void){
 			}
 		}
 
-		++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
-		this->writer_.flush();
-		this->writer_.n_variants_written += reader.size();
+		//++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
+		//this->writer_.flush();
+		//this->writer_.n_variants_written += reader.size();
+		cont.Deflate(this->meta_hot_container.buffer_data);
+		this->writer_.streamTomahawk << cont;
+		std::cerr <<"META-HOT\t" << this->meta_hot_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		cont.Clear();
+
+		cont.Deflate(this->meta_cold_container.buffer_data);
+		this->writer_.streamTomahawk << cont;
+		std::cerr <<"META-COLD\t" << this->meta_cold_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		cont.Clear();
+
+		cont.Deflate(this->gt_rle_container.buffer_data);
+		this->writer_.streamTomahawk << cont;
+		std::cerr <<"GT RLE\t" << this->gt_rle_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		cont.Clear();
+
+		cont.Deflate(this->gt_simple_container.buffer_data);
+		this->writer_.streamTomahawk << cont;
+		std::cerr <<"GT SIMPLE\t" << this->gt_simple_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		cont.Clear();
+
 
 		// Reset permutator
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
 		for(U32 i = 0; i < this->info_fields.size(); ++i){
-			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << this->info_containers[i].checkUniformity() << std::endl;
+			if(this->info_containers[i].buffer_data.size() == 0)
+				continue;
+
+			this->info_containers[i].checkUniformity();
+
+			cont.Deflate(this->info_containers[i].buffer_data);
+			this->writer_.streamTomahawk << cont;
+			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+			cont.Clear();
+
 			if(this->info_containers[i].header.stride != -1){
-				std::cerr << this->info_fields[i] << "-ADD\t" << this->info_containers[i].buffer_strides.size() << std::endl;
+				cont.Deflate(this->info_containers[i].buffer_strides);
+				this->writer_.streamTomahawk << cont;
+				std::cerr << this->info_fields[i] << "-ADD\t" << this->info_containers[i].buffer_strides.size() << '\t' << cont.buffer.size() << std::endl;
+				cont.Clear();
 			}
 		}
 
 
+
 		std::cerr << "FORMAT: " << std::endl;
 		for(U32 i = 0; i < this->format_fields.size(); ++i){
-			std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << std::endl;
+			if(this->format_containers[i].buffer_data.size() == 0)
+				continue;
+
+			this->format_containers[i].checkUniformity();
+
+			cont.Deflate(this->format_containers[i].buffer_data);
+			this->writer_.streamTomahawk << cont;
+			std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+			cont.Clear();
 			if(this->format_containers[i].header.stride != -1){
+				cont.Deflate(this->format_containers[i].buffer_strides);
+				this->writer_.streamTomahawk << cont;
 				std::cerr << this->format_fields[i] << "-ADD\t" << this->format_containers[i].buffer_strides.size() << std::endl;
+				cont.Clear();
 			}
 		}
 

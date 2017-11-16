@@ -324,8 +324,12 @@ public:
 		}
 		//std::cerr << std::endl;
 		//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
-		std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';';
+		std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
+		this->n_entries = 1;
+		this->buffer_data.pointer = stride_size;
 		this->header.controller.uniform = true;
+		this->header.controller.mixedStride = false;
+		this->header.controller.encoder = 0;
 
 		return(true);
 	}
