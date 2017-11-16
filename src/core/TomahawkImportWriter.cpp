@@ -639,6 +639,7 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 		// Phase 2
 		// Here we re-encode values using the smallest possible
 		// word-size
+		// Todo: uniform over stride size
 		if(is_uniform){
 			// Non-negative
 			if(min >= 0){
@@ -657,6 +658,12 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 				default: std::cerr << "illegal" << std::endl; exit(1);
 				}
 			}
+
+			std::cerr << "Return is uniform" << std::endl;
+			// Write out data as a literal
+			this->streamTomahawk << stream.header;
+			this->streamTomahawk.write(this->buffer_general.data, this->buffer_general.pointer);
+			return(this->buffer_general.pointer);
 		} else {
 			//std::cerr << "non-uniform" << std::endl;
 			dat = reinterpret_cast<const S32*>(stream.buffer_data.data);
@@ -697,20 +704,13 @@ S32 TomahawkImportWriter::recodeStream(stream_container& stream){
 			}
 		}
 
-		min = 0; max = 0;
-		is_uniform = true;
-
-		if(is_uniform){
-			this->streamTomahawk.write(this->buffer_general.data, byte_width);
-			ret_size = byte_width;
-		} else {
-			this->gzip_controller.Deflate(this->buffer_general);
-			this->streamTomahawk << stream.header;
-			this->streamTomahawk << this->gzip_controller;
-			ret_size = this->gzip_controller.buffer.size();
-			this->gzip_controller.Clear();
-		}
+		this->gzip_controller.Deflate(this->buffer_general);
+		this->streamTomahawk << stream.header;
+		this->streamTomahawk << this->gzip_controller;
+		ret_size = this->gzip_controller.buffer.size();
+		this->gzip_controller.Clear();
 		this->buffer_general.reset();
+		return(ret_size);
 	}
 	// Is not an integer
 	else {
