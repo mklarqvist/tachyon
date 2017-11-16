@@ -24,8 +24,16 @@ TomahawkImporter::TomahawkImporter(std::string inputFile, std::string outputPref
 
 TomahawkImporter::~TomahawkImporter(){}
 
+void TomahawkImporter::resetHashes(void){
+	this->info_fields.clear();
+	this->info_patterns.clear();
+	this->format_fields.clear();
+	this->format_patterns.clear();
+	this->filter_fields.clear();
+	this->filter_patterns.clear();
+}
+
 void TomahawkImporter::resetContainers(void){
-	std::cerr << "Reset" << std::endl;
 	for(U32 i = 0; i < 100; ++i){
 		this->info_containers[i].reset();
 		this->format_containers[i].reset();
@@ -104,7 +112,6 @@ bool TomahawkImporter::BuildBCF(void){
 			return false;
 		}
 
-		std::cerr << "After permuter" << std::endl;
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
 				std::cerr << "failed to parse" << std::endl;
@@ -119,7 +126,26 @@ bool TomahawkImporter::BuildBCF(void){
 		// Reset permutator
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
+		std::cerr << "INFO: " << std::endl;
+		for(U32 i = 0; i < this->info_fields.size(); ++i){
+			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << this->info_containers[i].checkUniformity() << std::endl;
+			if(this->info_containers[i].header.stride != -1){
+				std::cerr << this->info_fields[i] << "-ADD\t" << this->info_containers[i].buffer_strides.size() << std::endl;
+			}
+		}
+
+
+		std::cerr << "FORMAT: " << std::endl;
+		for(U32 i = 0; i < this->format_fields.size(); ++i){
+			std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << std::endl;
+			if(this->format_containers[i].header.stride != -1){
+				std::cerr << this->format_fields[i] << "-ADD\t" << this->format_containers[i].buffer_strides.size() << std::endl;
+			}
+		}
+
 		this->permutator.reset();
+
+		this->resetHashes();
 		this->resetContainers();
 	}
 
@@ -377,7 +403,6 @@ bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 	 mapID = 0;
 	if(this->format_patterns.getRaw(hash_format_vector, mapID)){
-
 	} else {
 		std::vector<U32> ret_pattern;
 		for(U32 i = 0; i < entry.formatPointer; ++i)

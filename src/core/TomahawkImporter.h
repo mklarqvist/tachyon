@@ -61,6 +61,7 @@ private:
 
 private:
 	bool permutateData(bcf_reader_type& reader);
+	void resetHashes(void);
 	void resetContainers(void);
 
 private:

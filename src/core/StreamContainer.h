@@ -2,6 +2,7 @@
 #define STREAMCONTAINER_H_
 
 #include "../io/BasicBuffer.h"
+#include "../algorithm/OpenHashTable.h"
 
 namespace Tomahawk{
 namespace Core{
@@ -76,6 +77,15 @@ struct StreamContainerHeader{
 
 	virtual ~StreamContainerHeader(){
 		delete [] this->extra;
+	}
+
+	inline void reset(void){
+		this->stride = -1;
+		this->offset = 0;
+		this->cLength = 0;
+		this->uLength = 0;
+		this->crc = 0;
+		this->n_extra = 0;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -253,12 +263,11 @@ public:
 	}
 
 	void reset(void){
-		this->header.controller.type = 0;
 		this->n_entries = 0;
 		this->n_additions = 0;
 		this->buffer_data.reset();
 		this->buffer_strides.reset();
-		this->header.stride = -1;
+		this->header.reset();
 	}
 
 	inline void resize(const U32 size){
@@ -300,17 +309,25 @@ public:
 		default: return false; break;
 		}
 
-		bool is_uniform = true;
-		const U64 first_hash = XXH64(&this->buffer_data.data[0], stride_update, 1337);
-		for(U32 i = stride_update; i < this->n_entries; i+= stride_update){
-			if(XXH64(&this->buffer_data.data[i], stride_update, 1337) != first_hash){
-				std::cerr << Helpers::timestamp("DEBUG") << "Not uniform" << std::endl;
-				is_uniform = false;
-				break;
+		//std::cerr << "check update: " << stride_update << std::endl;
+
+		const S32* const x = reinterpret_cast<const S32* const>(&this-> buffer_data.data[0]);
+		const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
+
+		for(U32 i = 1; i < this->n_entries; ++i){
+			//std::cerr << i << ',' << x[i] << ';';
+			if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
+			//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
+				//std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
+				return(false);
 			}
 		}
-		std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << is_uniform << std::endl;
-		return(is_uniform);
+		//std::cerr << std::endl;
+		//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
+		std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';';
+		this->header.controller.uniform = true;
+
+		return(true);
 	}
 
 	/////////////////////
