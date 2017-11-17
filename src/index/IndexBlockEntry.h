@@ -7,6 +7,7 @@
 #include "../core/PermutationManager.h"
 #include "../algorithm/OpenHashTable.h"
 #include "../core/HashContainer.h"
+#include "../core/StreamContainer.h"
 
 namespace Tomahawk{
 namespace Index{
@@ -43,34 +44,6 @@ public:
 		unused: 14;
 };
 
-// Block offset (key,key)-pair
-struct IndexBlockEntryOffset{
-	typedef IndexBlockEntryOffset self_type;
-
-public:
-	IndexBlockEntryOffset() : global_key(0), offset(0){}
-	IndexBlockEntryOffset(const U32& global_key, const U32& offset) : global_key(global_key), offset(offset){}
-	~IndexBlockEntryOffset(){}
-
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& record){
-		stream.write(reinterpret_cast<const char*>(&record.global_key), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&record.offset),     sizeof(U32));
-
-		return(stream);
-	}
-
-	friend std::istream& operator>>(std::istream& stream, self_type& record){
-		stream.read(reinterpret_cast<char*>(&record.global_key),sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&record.offset),    sizeof(U32));
-
-		return(stream);
-	}
-
-public:
-	U32 global_key;
-	U32 offset;
-};
-
 // Size of entries in these records are
 // inferred from the number of INFO/FORMAT/FILTER
 // entries in all the records in a block
@@ -92,6 +65,18 @@ public:
 
 public:
 	BYTE* bit_bytes;
+};
+
+struct IndexBlockEntryOffsets{
+	typedef Core::StreamContainerHeader header_type;
+	typedef Core::StreamContainerHeaderStride header_stride_type;
+
+public:
+	IndexBlockEntryOffsets(void) : header_stride(nullptr){}
+	~IndexBlockEntryOffsets(void){ delete [] this->header_stride; }
+
+	header_type header;
+	header_stride_type* header_stride;
 };
 
 struct IndexBlockEntryBase{
@@ -179,13 +164,13 @@ private:
 	typedef IndexBlockEntry self_type;
 	typedef IndexBlockEntryBase base_type;
 	typedef IndexBlockEntryController controller_type;
-	typedef IndexBlockEntryOffset offset_type;
 	typedef IndexBlockEntryBitvector bit_vector;
 	typedef Hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32> id_vector;
 	typedef std::vector< id_vector > pattern_vector;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
+	typedef IndexBlockEntryOffsets offset_type;
 
 public:
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
@@ -204,23 +189,22 @@ public:
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 private:
-	bool __constructBitVector(bit_vector*& target, id_vector& target_id, hash_container_type& values, hash_vector_container_type& patterns);
+	bool __constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
-	// These contain the local map to a stream ID
-	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
-	id_vector info_map;
-	id_vector format_map;
-	id_vector filter_map;
-
 	// Virtual offsets into various
 	// INFO/FORMAT/FILTER streams
 	//
 	// This mean local key is implicit
 	// GLOBAL KEY | OFFSET
+	// These contain the local map to a stream ID
+	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
 	offset_type* info_offsets;
 	offset_type* format_offsets;
 	offset_type* filter_offsets;
+
+	// This offset should be
+	// key: header_type : header_stride_type*
 
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;

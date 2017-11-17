@@ -1,6 +1,8 @@
 #ifndef STREAMCONTAINER_H_
 #define STREAMCONTAINER_H_
 
+#include "../third_party/zlib/zconf.h"
+#include "../third_party/zlib/zlib.h"
 #include "../io/BasicBuffer.h"
 #include "../algorithm/OpenHashTable.h"
 
@@ -478,7 +480,7 @@ public:
 		}
 		// Uncompress into local buffer
 
-		if(this->header.controller.mixedStride == 1){
+		if(this->header.controller.mixedStride){
 			stream >> this->header_stride;
 			stream.read(temp_buffer.data, this->header_stride.cLength);
 			if(!stream.good()){
