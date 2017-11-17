@@ -199,7 +199,7 @@ public:
 
 	~StreamContainer(){ this->buffer_data.deleteAll(); this->buffer_strides.deleteAll(); }
 
-	inline void setType(const BYTE value){ this->header.controller.type = value; }
+	inline void setType(const CORE_TYPE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
 	inline const bool checkStrideSize(const S32& value) const{ return this->header.stride == value; }
 	inline void setMixedStrides(void){ this->header.stride = -1; }
@@ -306,65 +306,23 @@ public:
 		U32 stride_update = stride_size;
 
 		switch(this->header.controller.type){
-		case 4: stride_update *= sizeof(S32);   break;
-		case 7: stride_update *= sizeof(float); break;
-		case 0: stride_update *= sizeof(char);  break;
+		case CORE_TYPE::TYPE_32B: stride_update *= sizeof(S32);   break;
+		case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); break;
+		case CORE_TYPE::TYPE_8B: stride_update *= sizeof(char);  break;
 		default: return false; break;
 		}
 
 		std::cerr << "check update: " << stride_size << '\t' << stride_update << std::endl;
+		const U64 first_hash = XXH64(&this->buffer_data.data[0], stride_update, 2147483647);
 
-		if(this->header.controller.type == 4){
-			const S32* const x = reinterpret_cast<const S32* const>(&this-> buffer_data.data[0]);
-			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
-
-			for(U32 i = 1; i < this->n_entries; ++i){
-				//std::cerr << i << ',' << x[i] << ';';
-				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
-				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
-					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
-					return(false);
-				}
+		for(U32 i = 1; i < this->n_entries; ++i){
+			if(XXH64(&this->buffer_data.data[i*stride_update], stride_update, 2147483647) != first_hash){
+				std::cerr << "not uniform" << std::endl;
+				return(false);
 			}
-			//std::cerr << std::endl;
-			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
-
-			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
-		} else if (this->header.controller.type == 7){
-			const float* const x = reinterpret_cast<const float* const>(&this-> buffer_data.data[0]);
-			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
-
-			for(U32 i = 1; i < this->n_entries; ++i){
-				std::cerr << i << ',' << x[i] << ';';
-				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
-				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
-					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
-					return(false);
-				}
-			}
-			//std::cerr << std::endl;
-			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
-
-			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
-
-		} else if (this->header.controller.type == 0){
-			const char* const x = reinterpret_cast<const char* const>(&this-> buffer_data.data[0]);
-			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
-
-			for(U32 i = 1; i < this->n_entries; ++i){
-				std::cerr << i << ',' << x[i] << ';';
-				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
-				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
-					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
-					return(false);
-				}
-			}
-			//std::cerr << std::endl;
-			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
-
-			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
-
 		}
+		std::cerr << "is uniform" << std::endl;
+
 		this->n_entries = 1;
 		this->buffer_data.pointer = stride_size;
 		this->header.controller.uniform = true;
@@ -375,98 +333,128 @@ public:
 		return(true);
 	}
 
+	/*
+	 This function is called during import to shrink each
+	 word-type to fit min(x) and max(x) in the worst case.
+	 At this stage all integer values in the stream is of
+	 type S32. No other values can be shrunk
+
+	 */
 	void reformatStream(void){
 		// Recode integer types
-		if(this->header.controller.type == 4){
-			const S32* dat = reinterpret_cast<const S32*>(this->buffer_data.data);
-			S32 min = dat[0];
-			S32 max = dat[0];
+		if(this->header.controller.type != TYPE_32B || this->header.controller.signedness != 1){
+			return;
+		}
 
-			for(U32 j = 1; j < this->n_entries; ++j){
-				if(dat[j] < min) min = dat[j];
-				if(dat[j] > max) max = dat[j];
+		const S32* dat = reinterpret_cast<const S32*>(this->buffer_data.data);
+		S32 min = dat[0];
+		S32 max = dat[0];
+
+		for(U32 j = 1; j < this->n_entries; ++j){
+			if(dat[j] < min) min = dat[j];
+			if(dat[j] > max) max = dat[j];
+		}
+
+		BYTE byte_width = 0;
+		if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
+		else byte_width = ceil(ceil(log2(max + 1))/8);
+
+		if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
+		else if(byte_width > 4) byte_width = 8;
+		if(byte_width == 0) byte_width = 1;
+
+		// Phase 2
+		// Here we re-encode values using the smallest possible
+		// word-size
+		if(this->header.controller.uniform){
+			// Non-negative
+			this->buffer_data.pointer = 0;
+			this->n_entries = 1;
+			this->n_additions = 1;
+			if(min >= 0){
+				this->header.controller.signedness = 0;
+				switch(byte_width){
+				case 1: this->buffer_data += (BYTE)min; this->header.controller.type = TYPE_8B;  break;
+				case 2: this->buffer_data += (U16)min;  this->header.controller.type = TYPE_16B; break;
+				case 4: this->buffer_data += (U32)min;  this->header.controller.type = TYPE_32B; break;
+				case 8: this->buffer_data += (U64)min;  this->header.controller.type = TYPE_64B; break;
+				default: std::cerr << "illegal: " << std::endl; exit(1);
+				}
+			} else {
+				this->header.controller.signedness = 1;
+				switch(byte_width){
+				case 1: this->buffer_data += (SBYTE)min; this->header.controller.type = TYPE_8B;  break;
+				case 2: this->buffer_data += (S16)min;   this->header.controller.type = TYPE_16B; break;
+				case 4: this->buffer_data += (S32)min;   this->header.controller.type = TYPE_32B; break;
+				default: std::cerr << "illegal" << std::endl; exit(1);
+				}
 			}
+			// done
+			std::cerr << "swap: uniform" << std::endl;
+			return;
+		}
+		// Not unfirom
+		else {
+			buffer_type buffer(this->buffer_data.pointer);
+			dat = reinterpret_cast<const S32*>(this->buffer_data.data);
 
-			BYTE byte_width = 0;
-			if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
-			else byte_width = ceil(ceil(log2(max + 1))/8);
+			// Is non-negative
+			if(min >= 0){
+				this->header.controller.signedness = 0;
 
-			if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
-			else if(byte_width > 4) byte_width = 8;
-			if(byte_width == 0) byte_width = 1;
+				if(byte_width == 1){
+					this->header.controller.type = TYPE_8B;
 
-			// Phase 2
-			// Here we re-encode values using the smallest possible
-			// word-size
-			if(this->header.controller.uniform){
-				// Non-negative
-				this->buffer_data.pointer = 0;
-				this->n_entries = 1;
-				this->n_additions = 1;
-				if(min >= 0){
-					switch(byte_width){
-					case 1: this->buffer_data += (BYTE)min; break;
-					case 2: this->buffer_data += (U16)min; break;
-					case 4: this->buffer_data += (U32)min; break;
-					case 8: this->buffer_data += (U64)min; break;
-					default: std::cerr << "illegal: " << std::endl; exit(1);
-					}
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (BYTE)*(dat++);
+				} else if(byte_width == 2){
+					this->header.controller.type = TYPE_16B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (U16)*(dat++);
+				} else if(byte_width == 4){
+					this->header.controller.type = TYPE_32B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (U32)*(dat++);
+				} else if(byte_width == 8){
+					this->header.controller.type = TYPE_64B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (U64)*(dat++);
 				} else {
-					switch(byte_width){
-					case 1: this->buffer_data += (SBYTE)min; break;
-					case 2: this->buffer_data += (S16)min; break;
-					case 4: this->buffer_data += (S32)min; break;
-					default: std::cerr << "illegal" << std::endl; exit(1);
-					}
+					std::cerr << "illegal" << std::endl;
+					exit(1);
 				}
-				// done
-				std::cerr << "swap: uniform" << std::endl;
-				return;
 			}
-			// Not unfirom
+			// Is negative
 			else {
-				IO::BasicBuffer buffer(this->buffer_data.pointer);
-				dat = reinterpret_cast<const S32*>(this->buffer_data.data);
-				// Is non-negative
-				if(min >= 0){
-					if(byte_width == 1){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (BYTE)*(dat++);
-					} else if(byte_width == 2){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (U16)*(dat++);
-					} else if(byte_width == 4){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (U32)*(dat++);
-					} else if(byte_width == 8){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (U64)*(dat++);
-					} else {
-						std::cerr << "illegal" << std::endl;
-						exit(1);
-					}
+				this->header.controller.signedness = 1;
+
+				if(byte_width == 1){
+					this->header.controller.type = TYPE_8B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (SBYTE)*(dat++);
+				} else if(byte_width == 2){
+					this->header.controller.type = TYPE_16B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (S16)*(dat++);
+				} else if(byte_width == 4){
+					this->header.controller.type = TYPE_32B;
+
+					for(U32 j = 0; j < this->n_entries; ++j)
+						buffer += (S32)*(dat++);
+				} else {
+					std::cerr << "illegal" << std::endl;
+					exit(1);
 				}
-				// Is negative
-				else {
-					if(byte_width == 1){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (SBYTE)*(dat++);
-					} else if(byte_width == 2){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (S16)*(dat++);
-					} else if(byte_width == 4){
-						for(U32 j = 0; j < this->n_entries; ++j)
-							buffer += (S32)*(dat++);
-					} else {
-						std::cerr << "illegal" << std::endl;
-						exit(1);
-					}
-				}
-				std::cerr << "swap: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
-				memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
-				this->buffer_data.pointer = buffer.pointer;
-				buffer.deleteAll();
 			}
+			std::cerr << "swap: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
+			memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
+			this->buffer_data.pointer = buffer.pointer;
+			buffer.deleteAll();
 		}
 	}
 
