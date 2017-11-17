@@ -145,13 +145,23 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT SIMPLE\t" << this->gt_simple_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 		cont.Clear();
 
-
 		// Reset permutator
-		Index::IndexBlockEntry i;
+		Index::IndexBlockEntry block_entry;
 		std::cerr << "Info fields: " << this->info_fields.size() << std::endl;
-		i.allocateInfoOffsets(this->info_fields.size());
-		//i.allocateFilterOffsets(this->filter_fields.size());
-		//i.allocateFormatOffsets(this->format_fields.size());
+		block_entry.n_info_streams = this->info_fields.size();
+		block_entry.n_format_streams = this->format_fields.size();
+		std::cerr << "External filter fields: " << this->filter_fields.size() << std::endl;
+		block_entry.n_filter_streams = this->filter_fields.size();
+		block_entry.n_variants = reader.size();
+		block_entry.allocateInfoOffsets(this->info_fields.size());
+		block_entry.allocateFilterOffsets(this->filter_fields.size());
+		block_entry.allocateFormatOffsets(this->format_fields.size());
+
+
+		//
+		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
+		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
@@ -168,6 +178,7 @@ bool Importer::BuildBCF(void){
 			this->info_containers[i].header.uLength = this->info_containers[i].buffer_data.pointer;
 			this->info_containers[i].header.cLength = cont.buffer.pointer;
 			this->info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			block_entry.info_offsets[i].update(0, this->info_containers[i].header);
 			this->writer_.streamTomahawk << this->info_containers[i].header;
 			this->writer_.streamTomahawk << cont;
 			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
@@ -199,6 +210,7 @@ bool Importer::BuildBCF(void){
 			this->format_containers[i].header.uLength = this->format_containers[i].buffer_data.pointer;
 			this->format_containers[i].header.cLength = cont.buffer.pointer;
 			this->format_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			block_entry.format_offsets[i].update(0, this->format_containers[i].header);
 			this->writer_.streamTomahawk << this->format_containers[i].header;
 			this->writer_.streamTomahawk << cont;
 			std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
@@ -216,16 +228,14 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
-		//
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
-		std::cerr << "clear before" << std::endl;
+		const size_t curPos = this->writer_.streamTomahawk.tellp();
+		this->writer_.streamTomahawk << block_entry;
+		std::cerr << "Header size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+
 		this->permutator.reset();
 		this->resetHashes();
 		this->resetContainers();
-		std::cerr << "clear after" << std::endl;
 	}
 	std::cerr << "done main" << std::endl;
 
@@ -320,7 +330,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextFilter(val, internal_pos)){
 		// Hash FILTER value
 		// Filter fields have no values
-		this->filter_fields.set(val);
+		this->filter_fields.setGet(val);
 	}
 
 	// At INFO
@@ -350,13 +360,10 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		target_container.addStride(info_length);
 
-		//std::cerr << val << '\t' << mapID << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
-
 		// Flags and integers
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
-				const S32 t = entry.getInteger(info_value_type, internal_pos);
-				target_container += t;
+				target_container += entry.getInteger(info_value_type, internal_pos);
 			}
 		}
 		// Floats
@@ -390,19 +397,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FORMAT values
 		const U32 mapID = this->format_fields.setGet(val);
 
-		if(this->format_containers[mapID].n_entries == 0){
-			this->format_containers[mapID].setStrideSize(info_length);
-		}
-
-		if(mapID == 0){
-			switch(info_value_type){
-			case 1: internal_pos += this->header_->samples * sizeof(SBYTE) * info_length; break;
-			case 2: internal_pos += this->header_->samples * sizeof(S16)   * info_length; break;
-			case 3: internal_pos += this->header_->samples * sizeof(S32)   * info_length; break;
-			}
-			continue;
-		}
-
+		//
 		stream_container& target_container = this->format_containers[mapID];
 		if(this->format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
@@ -422,21 +417,23 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		target_container.addStride(info_length);
 
+		//std::cerr << val << '\t' << mapID << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
+
 		// Flags and integers
 		if(info_value_type <= 3){
-			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
+			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getInteger(info_value_type, internal_pos);
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
-			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
+			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getFloat(internal_pos);
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
-			for(U32 j = 0; j < this->header_->samples*info_length; ++j){
+			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getChar(internal_pos);
 			}
 		}
@@ -451,16 +448,16 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	const U64 hash_filter_vector = entry.hashFilter();
 
 	U32 mapID = 0;
-	if(this->format_patterns.getRaw(hash_filter_vector, mapID)){
+	if(this->filter_patterns.getRaw(hash_filter_vector, mapID)){
 
 	} else {
 		std::vector<U32> ret_pattern;
 		for(U32 i = 0; i < entry.filterPointer; ++i)
 			ret_pattern.push_back(entry.filterID[i]);
 
-		mapID = this->format_patterns.size();
+		mapID = this->filter_patterns.size();
 		assert(mapID < 65536);
-		this->format_patterns.set(ret_pattern, hash_filter_vector);
+		this->filter_patterns.set(ret_pattern, hash_filter_vector);
 	}
 
 	// Store this map in the meta

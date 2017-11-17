@@ -1,5 +1,4 @@
 #include <cmath>
-#include "../support/helpers.h"
 #include "IndexBlockEntry.h"
 
 namespace Tomahawk{
@@ -16,7 +15,10 @@ IndexBlockEntryBase::IndexBlockEntryBase() :
 	l_gt_simple(0),
 	n_info_streams(0),
 	n_format_streams(0),
-	n_filter_streams(0)
+	n_filter_streams(0),
+	n_info_patterns(0),
+	n_format_patterns(0),
+	n_filter_patterns(0)
 {}
 
 IndexBlockEntryBase::~IndexBlockEntryBase(){}
@@ -58,21 +60,37 @@ void IndexBlockEntry::reset(void){
 }
 
 bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
+	if(values.size() == 0)
+		return false;
+
 	// Determine target
 	switch(target){
-	case(INDEX_BLOCK_TARGET::INDEX_INFO)   : return(this->__constructBitVector(this->info_bit_vectors, values, patterns));   break;
-	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) : return(this->__constructBitVector(this->format_bit_vectors, values, patterns)); break;
-	case(INDEX_BLOCK_TARGET::INDEX_FILTER) : return(this->__constructBitVector(this->filter_bit_vectors, values, patterns)); break;
+	case(INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		std::cerr << "info bitmap construction" << std::endl;
+		this->n_info_patterns = patterns.size();
+		return(this->__constructBitVector(this->info_bit_vectors, values, patterns));
+		break;
+	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		std::cerr << "format bitmap construction" << std::endl;
+		this->n_format_patterns = patterns.size();
+		return(this->__constructBitVector(this->format_bit_vectors, values, patterns));
+		break;
+	case(INDEX_BLOCK_TARGET::INDEX_FILTER) :
+		std::cerr << "filter bitmap construction" << std::endl;
+		this->n_filter_patterns = patterns.size();
+		return(this->__constructBitVector(this->filter_bit_vectors, values, patterns));
+		break;
+	default: std::cerr << "unknown target type" << std::endl; exit(1);
 	}
 
 	return false;
 }
 
 bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns){
-	const BYTE bitvector_width = ceil((float)values.size()/8);
-
-	if(values.size() == 1)
-		return false;
+	BYTE bitvector_width = ceil((float)values.size()/8);
+	if(values.size() == 1) bitvector_width = 1;
+	std::cerr << "bitvector width: " << (U32)bitvector_width << std::endl;
+	std::cerr << "Values/patterns: " << values.size() << '\t' << patterns.size() << std::endl;
 
 // Clear data if present
 	// Allocate new bit-vectors
@@ -97,7 +115,7 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			U32 retval = 0;
 			if(!values.getRaw(patterns[i][j], retval)){
-				std::cerr << "impossible" << std::endl;
+				std::cerr << "impossible to get " << patterns[i][j] << std::endl;
 				exit(1);
 			}
 			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
