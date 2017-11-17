@@ -312,27 +312,65 @@ public:
 		default: return false; break;
 		}
 
-		//std::cerr << "check update: " << stride_update << std::endl;
+		std::cerr << "check update: " << stride_size << '\t' << stride_update << std::endl;
 
-		const S32* const x = reinterpret_cast<const S32* const>(&this-> buffer_data.data[0]);
-		const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
+		if(this->header.controller.type == 4){
+			const S32* const x = reinterpret_cast<const S32* const>(&this-> buffer_data.data[0]);
+			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
 
-		for(U32 i = 1; i < this->n_entries; ++i){
-			//std::cerr << i << ',' << x[i] << ';';
-			if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
-			//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
-				std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
-				return(false);
+			for(U32 i = 1; i < this->n_entries; ++i){
+				//std::cerr << i << ',' << x[i] << ';';
+				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
+				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
+					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
+					return(false);
+				}
 			}
+			//std::cerr << std::endl;
+			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
+
+			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
+		} else if (this->header.controller.type == 7){
+			const float* const x = reinterpret_cast<const float* const>(&this-> buffer_data.data[0]);
+			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
+
+			for(U32 i = 1; i < this->n_entries; ++i){
+				std::cerr << i << ',' << x[i] << ';';
+				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
+				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
+					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
+					return(false);
+				}
+			}
+			//std::cerr << std::endl;
+			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
+
+			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
+
+		} else if (this->header.controller.type == 0){
+			const char* const x = reinterpret_cast<const char* const>(&this-> buffer_data.data[0]);
+			const U64 first_hash = XXH64(&x[0], stride_update, 2147483647);
+
+			for(U32 i = 1; i < this->n_entries; ++i){
+				std::cerr << i << ',' << x[i] << ';';
+				if(XXH64(&x[i], stride_update, 2147483647) != first_hash){
+				//	std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << false << std::endl;
+					std::cerr << "not uniform: " << x[0] << "<>" << x[i] << std::endl;
+					return(false);
+				}
+			}
+			//std::cerr << std::endl;
+			//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
+
+			std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
+
 		}
-		//std::cerr << std::endl;
-		//std::cerr << Helpers::timestamp("DEBUG") << "Uniformity: " << true << std::endl;
-		std::cerr << "is uniform: " << x[0] << ":" << stride_size << ';' << std::endl;
 		this->n_entries = 1;
 		this->buffer_data.pointer = stride_size;
 		this->header.controller.uniform = true;
 		this->header.controller.mixedStride = false;
 		this->header.controller.encoder = 0;
+
 
 		return(true);
 	}
@@ -425,7 +463,7 @@ public:
 					}
 				}
 				std::cerr << "swap: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
-				std::swap(this->buffer_data.data, buffer.data);
+				memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
 				this->buffer_data.pointer = buffer.pointer;
 				buffer.deleteAll();
 			}

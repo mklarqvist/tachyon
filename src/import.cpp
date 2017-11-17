@@ -24,8 +24,7 @@ DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 
 #include "utility.h"
-#include "core/TomahawkImporter.h"
-//#include "core/TomahawkImportWriter.h"
+#include "core/Importer.h"
 
 void import_usage(void){
 	programMessage();
@@ -126,7 +125,7 @@ int main(int argc, char** argv){
 	*/
 
 
-	Tomahawk::TomahawkImporter importer(input, output, checkpoint);
+	Tomahawk::Importer importer(input, output, checkpoint);
 
 	if(!importer.Build())
 		return 1;

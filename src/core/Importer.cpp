@@ -1,9 +1,9 @@
 #include <fstream>
-#include "TomahawkImporter.h"
+#include "Importer.h"
 
 namespace Tomahawk {
 
-TomahawkImporter::TomahawkImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
+Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
 	checkpoint_size(checkpoint),
 	block_flush_limit(65536),
 	inputFile(inputFile),
@@ -22,9 +22,9 @@ TomahawkImporter::TomahawkImporter(std::string inputFile, std::string outputPref
 	}
 }
 
-TomahawkImporter::~TomahawkImporter(){}
+Importer::~Importer(){}
 
-void TomahawkImporter::resetHashes(void){
+void Importer::resetHashes(void){
 	this->info_fields.clear();
 	this->info_patterns.clear();
 	this->format_fields.clear();
@@ -33,7 +33,7 @@ void TomahawkImporter::resetHashes(void){
 	this->filter_patterns.clear();
 }
 
-void TomahawkImporter::resetContainers(void){
+void Importer::resetContainers(void){
 	for(U32 i = 0; i < 100; ++i){
 		this->info_containers[i].reset();
 		this->format_containers[i].reset();
@@ -45,7 +45,7 @@ void TomahawkImporter::resetContainers(void){
 	this->gt_simple_container.reset();
 }
 
-bool TomahawkImporter::Build(){
+bool Importer::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
 	if(!temp.good()){
 		std::cerr << Helpers::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->inputFile << ")..." << std::endl;
@@ -67,7 +67,7 @@ bool TomahawkImporter::Build(){
 	return true;
 }
 
-bool TomahawkImporter::BuildBCF(void){
+bool Importer::BuildBCF(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
 		std::cerr << Helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
@@ -147,6 +147,7 @@ bool TomahawkImporter::BuildBCF(void){
 
 
 		// Reset permutator
+
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
@@ -190,14 +191,16 @@ bool TomahawkImporter::BuildBCF(void){
 		}
 
 		//
-		Index::IndexBlockEntry i;
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		//Index::IndexBlockEntry i;
+		//i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
+		//i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		//i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
+		std::cerr << "clear before" << std::endl;
 		this->permutator.reset();
 		this->resetHashes();
 		this->resetContainers();
+		std::cerr << "clear after" << std::endl;
 	}
 	std::cerr << "done main" << std::endl;
 
@@ -229,7 +232,7 @@ bool TomahawkImporter::BuildBCF(void){
 	return(true);
 }
 
-bool TomahawkImporter::parseBCFLine(bcf_entry_type& entry){
+bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header_->getContig(entry.body->CHROM).length){
 		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << (*this->header_)[entry.body->CHROM].name << ':' << entry.body->POS+1 << " > reported max size of contig (" << (*this->header_)[entry.body->CHROM].length << ")..." << std::endl;
@@ -240,7 +243,7 @@ bool TomahawkImporter::parseBCFLine(bcf_entry_type& entry){
 	U64 n_runs = 0;
 
 	meta_type meta;
-	if(!this->encoder.Encode(entry, meta, this->gt_rle_container, this->gt_simple_container, n_runs, this->permutator.ppa))
+	if(!this->encoder.Encode(entry, meta, this->gt_rle_container, this->gt_simple_container, n_runs, this->permutator.manager.get()))
 		return false;
 
 	if(!this->parseBCFBody(meta, entry)){
@@ -277,7 +280,7 @@ bool TomahawkImporter::parseBCFLine(bcf_entry_type& entry){
 	return true;
 }
 
-bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
+bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	U32 internal_pos = entry.filter_start;
 
 	// At FILTER
@@ -321,10 +324,13 @@ bool TomahawkImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		target_container.addStride(info_length);
 
+		//std::cerr << val << '\t' << mapID << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
+
 		// Flags and integers
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getInteger(info_value_type, internal_pos);
+				const S32 t = entry.getInteger(info_value_type, internal_pos);
+				target_container += t;
 			}
 		}
 		// Floats

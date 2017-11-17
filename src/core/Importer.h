@@ -13,8 +13,8 @@
 
 namespace Tomahawk {
 
-class TomahawkImporter {
-	typedef TomahawkImporter self_type;
+class Importer {
+	typedef Importer self_type;
 	typedef reader reader_type;
 	typedef VCF::VCFHeader header_type;
 	typedef ImportWriter writer_type;
@@ -50,8 +50,8 @@ class TomahawkImporter {
 	} sort_order_helper;
 
 public:
-	TomahawkImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size);
-	~TomahawkImporter();
+	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size);
+	~Importer();
 	bool Build();
 
 private:
