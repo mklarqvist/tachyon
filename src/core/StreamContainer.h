@@ -330,7 +330,6 @@ public:
 		this->header.controller.mixedStride = false;
 		this->header.controller.encoder = 0;
 
-
 		return(true);
 	}
 

@@ -147,6 +147,11 @@ bool Importer::BuildBCF(void){
 
 
 		// Reset permutator
+		Index::IndexBlockEntry i;
+		std::cerr << "Info fields: " << this->info_fields.size() << std::endl;
+		i.allocateInfoOffsets(this->info_fields.size());
+		//i.allocateFilterOffsets(this->filter_fields.size());
+		//i.allocateFormatOffsets(this->format_fields.size());
 
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
@@ -212,7 +217,6 @@ bool Importer::BuildBCF(void){
 		}
 
 		//
-		Index::IndexBlockEntry i;
 		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
 		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);

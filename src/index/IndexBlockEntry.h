@@ -4,10 +4,8 @@
 #include <fstream>
 #include <bitset>
 
-#include "../core/PermutationManager.h"
-#include "../algorithm/OpenHashTable.h"
-#include "../core/HashContainer.h"
 #include "../core/StreamContainer.h"
+#include "../core/HashContainer.h"
 
 namespace Tomahawk{
 namespace Index{
@@ -72,9 +70,14 @@ struct IndexBlockEntryOffsets{
 	typedef Core::StreamContainerHeaderStride header_stride_type;
 
 public:
-	IndexBlockEntryOffsets(void) : header_stride(nullptr){}
-	~IndexBlockEntryOffsets(void){ delete [] this->header_stride; }
-
+	IndexBlockEntryOffsets(void) : key(0), header_stride(nullptr){}
+	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h), header_stride(nullptr){}
+	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(new header_stride_type){
+		*this->header_stride = s;
+	}
+	~IndexBlockEntryOffsets(void){ delete this->header_stride; }
+public:
+	U32 key;
 	header_type header;
 	header_stride_type* header_stride;
 };
@@ -180,6 +183,22 @@ public:
 	~IndexBlockEntry();
 	void reset(void);
 
+	// Allocate offset vectors
+	void allocateInfoOffsets(const U32& size){
+		delete [] this->info_offsets;
+		this->info_offsets = new offset_type[size];
+	}
+
+	void allocateFormatOffsets(const U32& size){
+		delete [] this->format_offsets;
+		this->format_offsets = new offset_type[size];
+	}
+
+	void allocateFilterOffsets(const U32& size){
+		delete [] this->filter_offsets;
+		this->filter_offsets = new offset_type[size];
+	}
+
 	/////////////////////////
 	// Import functionality
 	/////////////////////////
@@ -203,20 +222,10 @@ public:
 	offset_type* format_offsets;
 	offset_type* filter_offsets;
 
-	// This offset should be
-	// key: header_type : header_stride_type*
-
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;
 	bit_vector* format_bit_vectors;
 	bit_vector* filter_bit_vectors;
-
-	// Store associative maps
-	// and bit vectors
-	//
-	// Remainder is
-	// INFO and FORMAT and FILTER
-	// fields
 };
 
 }
