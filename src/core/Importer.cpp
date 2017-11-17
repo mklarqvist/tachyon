@@ -157,14 +157,24 @@ bool Importer::BuildBCF(void){
 
 			this->info_containers[i].checkUniformity();
 			this->info_containers[i].reformatStream();
+			this->info_containers[i].checkSum();
 
 			cont.Deflate(this->info_containers[i].buffer_data);
+			this->info_containers[i].header.uLength = this->info_containers[i].buffer_data.pointer;
+			this->info_containers[i].header.cLength = cont.buffer.pointer;
+			this->info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			this->writer_.streamTomahawk << this->info_containers[i].header;
 			this->writer_.streamTomahawk << cont;
 			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 			cont.Clear();
 
-			if(this->info_containers[i].header.stride != -1){
+			if(this->info_containers[i].header.controller.mixedStride){
+				std::cerr << "stride: " << this->info_containers[i].header.stride << '\t' << (U32)this->info_containers[i].header.controller.type << std::endl;
+
 				cont.Deflate(this->info_containers[i].buffer_strides);
+				this->info_containers[i].header_stride.uLength = this->info_containers[i].buffer_strides.pointer;
+				this->info_containers[i].header_stride.cLength = cont.buffer.pointer;
+				this->writer_.streamTomahawk << this->info_containers[i].header_stride;
 				this->writer_.streamTomahawk << cont;
 				std::cerr << this->info_fields[i] << "-ADD\t" << this->info_containers[i].buffer_strides.size() << '\t' << cont.buffer.size() << std::endl;
 				cont.Clear();
@@ -177,13 +187,24 @@ bool Importer::BuildBCF(void){
 				continue;
 
 			this->format_containers[i].checkUniformity();
+			this->format_containers[i].reformatStream();
+			this->format_containers[i].checkSum();
 
 			cont.Deflate(this->format_containers[i].buffer_data);
+			this->format_containers[i].header.uLength = this->format_containers[i].buffer_data.pointer;
+			this->format_containers[i].header.cLength = cont.buffer.pointer;
+			this->format_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			this->writer_.streamTomahawk << this->format_containers[i].header;
 			this->writer_.streamTomahawk << cont;
 			std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 			cont.Clear();
-			if(this->format_containers[i].header.stride != -1){
+			if(this->format_containers[i].header.controller.mixedStride){
+				std::cerr << "stride: " << this->info_containers[i].header.stride << '\t' << (U32)this->info_containers[i].header.controller.type << std::endl;
+
 				cont.Deflate(this->format_containers[i].buffer_strides);
+				this->format_containers[i].header_stride.uLength = this->format_containers[i].buffer_strides.pointer;
+				this->format_containers[i].header_stride.cLength = cont.buffer.pointer;
+				this->writer_.streamTomahawk << this->format_containers[i].header_stride;
 				this->writer_.streamTomahawk << cont;
 				std::cerr << this->format_fields[i] << "-ADD\t" << this->format_containers[i].buffer_strides.size() << std::endl;
 				cont.Clear();
@@ -191,10 +212,10 @@ bool Importer::BuildBCF(void){
 		}
 
 		//
-		//Index::IndexBlockEntry i;
-		//i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
-		//i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		//i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		Index::IndexBlockEntry i;
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		i.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		std::cerr << "clear before" << std::endl;
 		this->permutator.reset();

@@ -312,7 +312,6 @@ public:
 		default: return false; break;
 		}
 
-		std::cerr << "check update: " << stride_size << '\t' << stride_update << std::endl;
 		const U64 first_hash = XXH64(&this->buffer_data.data[0], stride_update, 2147483647);
 
 		for(U32 i = 1; i < this->n_entries; ++i){
