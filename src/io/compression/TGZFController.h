@@ -34,6 +34,8 @@ public:
 	bool Deflate(const buffer_type& buffer);
 	bool Deflate(buffer_type& meta, buffer_type& rle);
 	bool Deflate(buffer_type& meta, buffer_type& meta_complex, buffer_type& rle);
+	inline void setWindowSize(const S32& window){ this->bit_window = window; }
+	inline void setCompression(const S32& compression){ this->compression_level = compression; }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(entry.buffer.data, entry.buffer.pointer);
@@ -44,10 +46,10 @@ private:
 	bool __Inflate(buffer_type& input, buffer_type& output, const header_type& header) const;
 
 public:
+	S32 compression_level;
+	S32 bit_window;
 	buffer_type buffer;
 };
-
-
 
 }
 }

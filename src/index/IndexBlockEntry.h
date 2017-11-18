@@ -132,7 +132,6 @@ public:
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams), sizeof(U16));
-
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
@@ -153,7 +152,6 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.n_info_streams), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_format_streams), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams), sizeof(U16));
-
 		stream.read(reinterpret_cast<char*>(&entry.n_info_patterns), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
@@ -282,14 +280,12 @@ public:
 				stream.write((const char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
 		}
 
-
 		if(entry.n_filter_patterns > 0){
 			std::cerr << "Writing filter bit vectors... " << entry.n_filter_patterns << std::endl;
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 			for(U32 i = 0; i < entry.n_filter_patterns; ++i)
 				stream.write((const char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
 		}
-
 
 		return(stream);
 	}

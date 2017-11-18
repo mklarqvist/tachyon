@@ -66,17 +66,14 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	// Determine target
 	switch(target){
 	case(INDEX_BLOCK_TARGET::INDEX_INFO)   :
-		std::cerr << "info bitmap construction" << std::endl;
 		this->n_info_patterns = patterns.size();
 		return(this->__constructBitVector(this->info_bit_vectors, values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-		std::cerr << "format bitmap construction" << std::endl;
 		this->n_format_patterns = patterns.size();
 		return(this->__constructBitVector(this->format_bit_vectors, values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FILTER) :
-		std::cerr << "filter bitmap construction" << std::endl;
 		this->n_filter_patterns = patterns.size();
 		return(this->__constructBitVector(this->filter_bit_vectors, values, patterns));
 		break;
@@ -89,8 +86,6 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns){
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
-	std::cerr << "bitvector width: " << (U32)bitvector_width << std::endl;
-	std::cerr << "Values/patterns: " << values.size() << '\t' << patterns.size() << std::endl;
 
 // Clear data if present
 	// Allocate new bit-vectors

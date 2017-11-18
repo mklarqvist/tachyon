@@ -10,11 +10,11 @@
 namespace Tomahawk {
 namespace IO {
 
-TGZFController::TGZFController(){}
+TGZFController::TGZFController() : compression_level(Z_DEFAULT_COMPRESSION), bit_window(Constants::GZIP_WINDOW_BITS){}
 
-TGZFController::TGZFController(const char* data, const U32 length){}
+TGZFController::TGZFController(const char* data, const U32 length) : compression_level(Z_DEFAULT_COMPRESSION), bit_window(Constants::GZIP_WINDOW_BITS){}
 
-TGZFController::TGZFController(const U32 largest_block_size) : buffer(largest_block_size){}
+TGZFController::TGZFController(const U32 largest_block_size) : compression_level(Z_DEFAULT_COMPRESSION), bit_window(Constants::GZIP_WINDOW_BITS), buffer(largest_block_size){}
 
 TGZFController::~TGZFController(){ this->buffer.deleteAll(); }
 
@@ -58,7 +58,7 @@ bool TGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	zs.next_out  = (Bytef*)&output.data[output.pointer];
 	zs.avail_out = (U32)avail_out;
 
-	int status = inflateInit2(&zs, Constants::GZIP_WINDOW_BITS);
+	int status = inflateInit2(&zs, this->bit_window);
 
 	if(status != Z_OK){
 		std::cerr << Helpers::timestamp("ERROR","TGZF") << "Zlib inflateInit failed: " << (int)status << std::endl;
@@ -112,7 +112,7 @@ bool TGZFController::Deflate(const buffer_type& buffer){
 	//buffer 16->20 is set below
 
 	// set compression level
-	const int compressionLevel = Z_DEFAULT_COMPRESSION;
+	//const int compressionLevel = Z_DEFAULT_COMPRESSION;
 	//const int compressionLevel = 9;
 
 	// initialize zstream values
@@ -128,9 +128,9 @@ bool TGZFController::Deflate(const buffer_type& buffer){
 
 	// Initialise the zlib compression algorithm
 	int status = deflateInit2(&zs,
-							  compressionLevel,
+							  this->compression_level,
 							  Z_DEFLATED,
-							  Constants::GZIP_WINDOW_BITS,
+							  this->bit_window,
 							  Constants::Z_DEFAULT_MEM_LEVEL,
 							  Z_DEFAULT_STRATEGY);
 
