@@ -3,7 +3,7 @@
 
 #include <algorithm> // for std::find
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace VCF{
 
 struct VCFHeaderLine{

@@ -1,7 +1,7 @@
 #ifndef COMPRESSIONCONTAINER_H_
 #define COMPRESSIONCONTAINER_H_
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Compression{
 
 class CompressionContainer{

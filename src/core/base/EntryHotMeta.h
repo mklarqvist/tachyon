@@ -3,7 +3,7 @@
 
 #include "../../io/BasicBuffer.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 // Size of meta entry BEFORE run entries

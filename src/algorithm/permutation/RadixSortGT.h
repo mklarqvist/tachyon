@@ -4,7 +4,7 @@
 #include "../../io/bcf/BCFReader.h"
 #include "../../core/PermutationManager.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace Algorithm {
 
 /*

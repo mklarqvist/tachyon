@@ -10,8 +10,9 @@
 #include "PermutationManager.h"
 #include "ImportWriter.h"
 #include "HashContainer.h"
+#include "BlockEntry.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 
 class Importer {
 	typedef Importer self_type;
@@ -29,6 +30,7 @@ class Importer {
 	typedef Core::EntryHotMetaBase meta_type;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
+	typedef Core::BlockEntry block_type;
 
 	/*
 	 This supportive structure keeps track of the current and
@@ -62,7 +64,6 @@ private:
 private:
 	bool permutateData(bcf_reader_type& reader);
 	void resetHashes(void);
-	void resetContainers(void);
 
 private:
 	U32 checkpoint_size;      // number of variants until checkpointing
@@ -78,21 +79,14 @@ private:
 	header_type* header_;     // header
 	encoder_type encoder;   // RLE packer
 
-	//
-	permutation_type ppa_manager;
-	stream_container meta_hot_container;
-	stream_container meta_cold_container;
-	stream_container gt_rle_container;
-	stream_container gt_simple_container;
+	block_type block;
+
 	hash_container_type info_fields;
 	hash_container_type format_fields;
 	hash_container_type filter_fields;
 	hash_vector_container_type info_patterns;
 	hash_vector_container_type format_patterns;
 	hash_vector_container_type filter_patterns;
-	stream_container* info_containers;
-	stream_container* format_containers;
-	stream_container* filter_containers;
 };
 
 

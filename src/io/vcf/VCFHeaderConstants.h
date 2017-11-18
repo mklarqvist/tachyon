@@ -4,7 +4,7 @@
 #include <string>
 #include "../../support/TypeDefinitions.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace VCF{
 namespace Constants{
 

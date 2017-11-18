@@ -6,7 +6,7 @@
 #include "../../io/bcf/BCFEntry.h"
 #include "../StreamContainer.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 // Do NOT reinterpret_cast this struct as an array

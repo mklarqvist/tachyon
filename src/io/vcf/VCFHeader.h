@@ -12,12 +12,12 @@
 #include "../../algorithm/OpenHashTable.h"
 
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace VCF{
 
 class VCFHeader {
 	typedef VCFHeader self_type;
-	typedef Tomahawk::Hash::HashTable<std::string, S32> hash_table;
+	typedef Hash::HashTable<std::string, S32> hash_table;
 	typedef VCFHeaderContig contig_type;
 	typedef IO::TGZFController tgzf_type;
 	typedef IO::BasicBuffer buffer_type;

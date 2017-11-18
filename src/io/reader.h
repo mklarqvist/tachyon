@@ -10,7 +10,7 @@
 
 #include "../support/MagicConstants.h" // for SILENT
 
-namespace Tomahawk{
+namespace Tachyon{
 
 /*
  * Basic block-wise reader

@@ -6,7 +6,7 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace IO{
 
 struct BasicBuffer{

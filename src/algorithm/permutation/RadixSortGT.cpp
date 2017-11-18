@@ -1,6 +1,6 @@
 #include "RadixSortGT.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace Algorithm {
 
 RadixSortGT::RadixSortGT() :

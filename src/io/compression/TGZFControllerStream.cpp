@@ -3,7 +3,7 @@
 #include "../../support/MagicConstants.h" // for SILENT
 #include "TGZFControllerStream.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 
 TGZFControllerStream::TGZFControllerStream() : STATE(TGZF_STATE::TGZF_INIT), chunk_size(65536), total_out(0), bytes_read(0), BSIZE(0){}
@@ -17,7 +17,7 @@ bool TGZFControllerStream::InflateOpen(std::ifstream& stream){
 	const header_type* h = reinterpret_cast<const header_type*>(&this->buffer.data[0]);
 
 	if(!h->Validate()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		exit(1);
 	}

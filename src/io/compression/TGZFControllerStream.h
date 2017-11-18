@@ -3,7 +3,7 @@
 
 #include "TGZFController.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace IO {
 
 class TGZFControllerStream : public TGZFController{

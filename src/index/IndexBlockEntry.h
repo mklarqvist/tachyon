@@ -10,7 +10,7 @@
 #include "../core/HashContainer.h"
 #include "../core/base/EntryHotMeta.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Index{
 
 // Controller
@@ -120,10 +120,10 @@ public:
 	virtual ~IndexBlockEntryBase();
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block),  sizeof(U32));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.offset_streams_begin),  sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_ppa), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_meta), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.l_meta_complex), sizeof(U32));
@@ -140,10 +140,10 @@ public:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),  sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.offset_streams_begin), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_ppa), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_meta), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.l_meta_complex), sizeof(U32));
@@ -163,7 +163,7 @@ public:
 		this->controller.clear();
 		this->contigID = -1;
 		this->n_variants = 0;
-		this->offset_streams_begin = 0;
+		this->offset_end_of_block = 0;
 		this->l_ppa = 0;
 		this->l_meta = 0;
 		this->l_gt_rle = 0;
@@ -178,11 +178,10 @@ public:
 	}
 
 public:
-	// 2 + 4 +2 + 4 + 5*4 + 3*2 = 38
+	U32 offset_end_of_block; // allows jumping to the next block
 	controller_type controller;    // bit flags
 	S32 contigID;       // contig identifier
 	U16 n_variants;     // number of variants in this block
-	U32 offset_streams_begin; // start of PPA
 
 	// Virtual offsets to the start of various
 	// basic fields:
@@ -247,6 +246,13 @@ public:
 		if(size == 0) return;
 		delete [] this->filter_offsets;
 		this->filter_offsets = new offset_type[size];
+	}
+
+
+	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
+		this->allocateInfoOffsets(info);
+		this->allocateFormatOffsets(format);
+		this->allocateFilterOffsets(filter);
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

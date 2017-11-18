@@ -4,7 +4,7 @@
 #include "base/EntryHotMeta.h"
 #include "base/GTRecords.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 
 template <class T>
 class TomahawkBlockIterator{

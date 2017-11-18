@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Algorithm{
 
 class SpinLock{

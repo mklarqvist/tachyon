@@ -1,6 +1,6 @@
 #include "EntryColdMeta.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 EntryColdMeta::EntryColdMeta(void) :

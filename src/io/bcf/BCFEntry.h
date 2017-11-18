@@ -4,7 +4,7 @@
 #include "../vcf/VCFHeader.h"
 #include "../../third_party/xxhash/xxhash.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace BCF {
 
 #define BCF_ASSERT 1

@@ -31,7 +31,7 @@ void import_usage(void){
 	std::cerr <<
 	"About:  Convert VCF/BCF->TWK/; subset and slice TWK/TWO data\n"
 	"        Only biallelic diploid genotypes from SNVs will be retained\n"
-	"Usage:  " << Tomahawk::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.twk>\n\n"
+	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.twk>\n\n"
 	"Options:\n"
 	"  -i FILE  input Tomahawk (required)\n"
 	"  -o FILE  output file prefix (required)\n"
@@ -43,8 +43,8 @@ void import_usage(void){
 }
 
 int main(int argc, char** argv){
-	if(Tomahawk::Helpers::isBigEndian()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR") << "Tomahawk does not support big endian systems..." << std::endl;
+	if(Tachyon::Helpers::isBigEndian()){
+		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Tomahawk does not support big endian systems..." << std::endl;
 		return(1);
 	}
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv){
 		case 'c':
 			checkpoint = atoi(optarg);
 			if(checkpoint < 0){
-				std::cerr << Tomahawk::Helpers::timestamp("ERROR") << "Cannot set checkpoint to < 0..." << std::endl;
+				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to < 0..." << std::endl;
 				return(1);
 			}
 			break;
@@ -98,20 +98,20 @@ int main(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << Tomahawk::Helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
+			std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
+		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << Tomahawk::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
+		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
 	//Tomahawk::TomahawkImportWriter writer;
@@ -125,7 +125,7 @@ int main(int argc, char** argv){
 	*/
 
 
-	Tomahawk::Importer importer(input, output, checkpoint);
+	Tachyon::Importer importer(input, output, checkpoint);
 
 	if(!importer.Build())
 		return 1;

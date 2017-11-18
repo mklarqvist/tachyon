@@ -2,7 +2,7 @@
 #include "Importer.h"
 #include "../algorithm/compression/CompressionContainer.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 
 Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
 	checkpoint_size(checkpoint),
@@ -11,16 +11,8 @@ Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 ch
 	outputPrefix(outputPrefix),
 	reader_(inputFile),
 	writer_(),
-	header_(nullptr),
-	info_containers(new stream_container[100]),
-	format_containers(new stream_container[100]),
-	filter_containers(new stream_container[100])
+	header_(nullptr)
 {
-	for(U32 i = 0; i < 100; ++i){
-		this->info_containers[i].resize(65536*4);
-		this->format_containers[i].resize(65536*4);
-		this->filter_containers[i].resize(65536*4);
-	}
 }
 
 Importer::~Importer(){}
@@ -32,18 +24,6 @@ void Importer::resetHashes(void){
 	this->format_patterns.clear();
 	this->filter_fields.clear();
 	this->filter_patterns.clear();
-}
-
-void Importer::resetContainers(void){
-	for(U32 i = 0; i < 100; ++i){
-		this->info_containers[i].reset();
-		this->format_containers[i].reset();
-		this->filter_containers[i].reset();
-	}
-	this->meta_hot_container.reset();
-	this->meta_cold_container.reset();
-	this->gt_rle_container.reset();
-	this->gt_simple_container.reset();
 }
 
 bool Importer::Build(){
@@ -82,7 +62,7 @@ bool Importer::BuildBCF(void){
 	}
 
 	if(this->header_->samples == 1){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tomahawk::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tachyon::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
 		return false;
 	}
 
@@ -97,10 +77,8 @@ bool Importer::BuildBCF(void){
 
 	// Resize containers
 	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
-	this->meta_hot_container.resize(resize_to);
-	this->meta_cold_container.resize(resize_to);
-	this->gt_rle_container.resize(resize_to);
-	this->gt_simple_container.resize(resize_to);
+	this->block.resize(resize_to);
+
 
 	IO::TGZFController cont;
 	cont.buffer.resize(256000);
@@ -123,130 +101,125 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
-		Index::IndexBlockEntry block_entry;
+		//Index::IndexBlockEntry block_entry;
 		//++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
 
-		std::cerr <<"META-HOT\t" << this->meta_hot_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
-		block_entry.controller.hasGT = 1;
-		block_entry.controller.isDiploid = 1;
+		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		this->block.index_entry.controller.hasGT = 1;
+		this->block.index_entry.controller.isDiploid = 1;
 		//cont.Clear();
 
 		//cont.Deflate(this->meta_cold_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"META-COLD\t" << this->meta_cold_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 		//cont.Clear();
 
 		//cont.setCompression(-1);
 		//cont.setWindowSize(-15);
 		//cont.Deflate(this->gt_rle_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"GT RLE\t" << this->gt_rle_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 		//cont.Clear();
 
 
 		//cont.Deflate(this->gt_simple_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"GT SIMPLE\t" << this->gt_simple_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 		//cont.Clear();
 
 		// Reset permutator
-		std::cerr << "Info fields: " << this->info_fields.size() << std::endl;
-		block_entry.n_info_streams = this->info_fields.size();
-		block_entry.n_format_streams = this->format_fields.size();
-		std::cerr << "External filter fields: " << this->filter_fields.size() << std::endl;
-		block_entry.n_filter_streams = this->filter_fields.size();
-		block_entry.n_variants = reader.size();
-		block_entry.allocateInfoOffsets(this->info_fields.size());
-		block_entry.allocateFilterOffsets(this->filter_fields.size());
-		block_entry.allocateFormatOffsets(this->format_fields.size());
-		//
-		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO, this->info_fields, this->info_patterns);
-		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		block_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.index_entry.n_info_streams = this->info_fields.size();
+		this->block.index_entry.n_format_streams = this->format_fields.size();
+		this->block.index_entry.n_filter_streams = this->filter_fields.size();
+		this->block.index_entry.n_variants = reader.size();
+		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
 		for(U32 i = 0; i < this->info_fields.size(); ++i){
-			if(this->info_containers[i].buffer_data.size() == 0)
+			if(this->block.info_containers[i].buffer_data.size() == 0)
 				continue;
 
-			this->info_containers[i].checkUniformity();
-			this->info_containers[i].reformatStream();
-			this->info_containers[i].checkSum();
+			this->block.info_containers[i].checkUniformity();
+			this->block.info_containers[i].reformatStream();
+			this->block.info_containers[i].checkSum();
 
-			Tomahawk::Compression::DeflateCodec comp;
-			comp.encode(this->info_containers[i]);
+			Compression::DeflateCodec comp;
+			comp.encode(this->block.info_containers[i]);
 
 			//cont.Deflate(this->info_containers[i].buffer_data);
-			this->info_containers[i].header.uLength = this->info_containers[i].buffer_data.pointer;
+			this->block.info_containers[i].header.uLength = this->block.info_containers[i].buffer_data.pointer;
 			//this->info_containers[i].header.cLength = cont.buffer.pointer;
-			this->info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
-			if(this->info_containers[i].header.controller.mixedStride == false)
-				block_entry.info_offsets[i].update(0, this->info_containers[i].header);
+			this->block.info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			if(this->block.info_containers[i].header.controller.mixedStride == false)
+				this->block.index_entry.info_offsets[i].update(0, this->block.info_containers[i].header);
 			//this->writer_.streamTomahawk << this->info_containers[i].header;
 			//this->writer_.streamTomahawk << cont;
-			std::cerr << this->info_fields[i] << '\t' << this->info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+			std::cerr << this->info_fields[i] << '\t' << this->block.info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 			//cont.Clear();
 
-			if(this->info_containers[i].header.controller.mixedStride){
-				std::cerr << "stride: " << this->info_containers[i].header.stride << '\t' << (U32)this->info_containers[i].header.controller.type << std::endl;
-				block_entry.info_offsets[i].update(0, this->info_containers[i].header, this->info_containers[i].header_stride);
+			if(this->block.info_containers[i].header.controller.mixedStride){
+				std::cerr << "stride: " << this->block.info_containers[i].header.stride << '\t' << (U32)this->block.info_containers[i].header.controller.type << std::endl;
+				this->block.index_entry.info_offsets[i].update(0, this->block.info_containers[i].header, this->block.info_containers[i].header_stride);
 
 				//cont.Deflate(this->info_containers[i].buffer_strides);
 				//this->info_containers[i].header_stride.uLength = this->info_containers[i].buffer_strides.pointer;
-				this->info_containers[i].header_stride.cLength = cont.buffer.pointer;
+				this->block.info_containers[i].header_stride.cLength = cont.buffer.pointer;
 				//this->writer_.streamTomahawk << this->info_containers[i].header_stride;
 				//this->writer_.streamTomahawk << cont;
-				std::cerr << this->info_fields[i] << "-ADD\t" << this->info_containers[i].buffer_strides.size() << '\t' << cont.buffer.size() << std::endl;
+				std::cerr << this->info_fields[i] << "-ADD\t" << this->block.info_containers[i].buffer_strides.size() << '\t' << cont.buffer.size() << std::endl;
 				//cont.Clear();
 			}
 		}
 
 		std::cerr << "FORMAT: " << std::endl;
 		for(U32 i = 0; i < this->format_fields.size(); ++i){
-			if(this->format_containers[i].buffer_data.size() == 0)
+			if(this->block.format_containers[i].buffer_data.size() == 0)
 				continue;
 
-			this->format_containers[i].checkUniformity();
-			this->format_containers[i].reformatStream();
-			this->format_containers[i].checkSum();
+			this->block.format_containers[i].checkUniformity();
+			this->block.format_containers[i].reformatStream();
+			this->block.format_containers[i].checkSum();
 
-			Tomahawk::Compression::DeflateCodec comp;
-			comp.encode(this->format_containers[i]);
+			Compression::DeflateCodec comp;
+			comp.encode(this->block.format_containers[i]);
 
 			//cont.Deflate(this->format_containers[i].buffer_data);
-			this->format_containers[i].header.uLength = this->format_containers[i].buffer_data.pointer;
+			this->block.format_containers[i].header.uLength = this->block.format_containers[i].buffer_data.pointer;
 			//this->format_containers[i].header.cLength = cont.buffer.pointer;
-			this->format_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
-			if(this->format_containers[i].header.controller.mixedStride == false)
-				block_entry.format_offsets[i].update(0, this->format_containers[i].header);
+			this->block.format_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
+			if(this->block.format_containers[i].header.controller.mixedStride == false)
+				this->block.index_entry.format_offsets[i].update(0, this->block.format_containers[i].header);
 			//this->writer_.streamTomahawk << this->format_containers[i].header;
 			//this->writer_.streamTomahawk << cont;
 			//std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
 			//cont.Clear();
-			if(this->format_containers[i].header.controller.mixedStride){
-				std::cerr << "stride: " << this->info_containers[i].header.stride << '\t' << (U32)this->info_containers[i].header.controller.type << std::endl;
-				block_entry.format_offsets[i].update(0, this->format_containers[i].header, this->format_containers[i].header_stride);
+			if(this->block.format_containers[i].header.controller.mixedStride){
+				std::cerr << "stride: " << this->block.format_containers[i].header.stride << '\t' << (U32)this->block.format_containers[i].header.controller.type << std::endl;
+				this->block.index_entry.format_offsets[i].update(0, this->block.format_containers[i].header, this->block.format_containers[i].header_stride);
 
 				//cont.Deflate(this->format_containers[i].buffer_strides);
 				//this->format_containers[i].header_stride.uLength = this->format_containers[i].buffer_strides.pointer;
-				this->format_containers[i].header_stride.cLength = cont.buffer.pointer;
+				this->block.format_containers[i].header_stride.cLength = cont.buffer.pointer;
 				//this->writer_.streamTomahawk << this->format_containers[i].header_stride;
 				//this->writer_.streamTomahawk << cont;
-				std::cerr << this->format_fields[i] << "-ADD\t" << this->format_containers[i].buffer_strides.size() << std::endl;
+				std::cerr << this->format_fields[i] << "-ADD\t" << this->block.format_containers[i].buffer_strides.size() << std::endl;
 				//cont.Clear();
 			}
 		}
 
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
-		this->writer_.streamTomahawk << block_entry;
+		this->writer_.streamTomahawk << this->block.index_entry;
 		std::cerr << "Header size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->permutator.reset();
 		this->resetHashes();
-		this->resetContainers();
+		this->block.clear();
 	}
 
 	/*
@@ -288,7 +261,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	U64 n_runs = 0;
 
 	meta_type meta;
-	if(!this->encoder.Encode(entry, meta, this->gt_rle_container, this->gt_simple_container, n_runs, this->permutator.manager.get()))
+	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager.get()))
 		return false;
 
 	if(!this->parseBCFBody(meta, entry)){
@@ -302,10 +275,10 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	else if(w > 4) w = 8;
 
 	switch(w){
-	case 1: this->meta_hot_container += (BYTE)n_runs; break;
-	case 2: this->meta_hot_container += (U16)n_runs; break;
-	case 4: this->meta_hot_container += (U32)n_runs; break;
-	case 8: this->meta_hot_container += (U64)n_runs; break;
+	case 1: this->block.meta_hot_container += (BYTE)n_runs; break;
+	case 2: this->block.meta_hot_container += (U16)n_runs; break;
+	case 4: this->block.meta_hot_container += (U32)n_runs; break;
+	case 8: this->block.meta_hot_container += (U64)n_runs; break;
 	default:
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
 		exit(1); // unrecoverable error
@@ -313,7 +286,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 
 	// Complex meta data
 	Core::EntryColdMeta test;
-	if(!test.write(entry, this->meta_cold_container)){
+	if(!test.write(entry, this->block.meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
 	}
@@ -351,8 +324,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U32 mapID = this->info_fields.setGet(val);
 
 		//
-		stream_container& target_container = this->info_containers[mapID];
-		if(this->info_containers[mapID].n_entries == 0){
+		stream_container& target_container = this->block.info_containers[mapID];
+		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
 			// Set all integer types to U32
 			// Change to smaller type later if required
@@ -409,8 +382,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U32 mapID = this->format_fields.setGet(val);
 
 		//
-		stream_container& target_container = this->format_containers[mapID];
-		if(this->format_containers[mapID].n_entries == 0){
+		stream_container& target_container = this->block.format_containers[mapID];
+		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
 			// Set all integer types to U32
 			// Change to smaller type later if required

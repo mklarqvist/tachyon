@@ -4,7 +4,7 @@
 #include "TGZFController.h"
 #include "TGZFControllerStream.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 
 template <class T>

@@ -1,6 +1,6 @@
 #include "VCFHeader.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace VCF{
 
 VCFHeader::VCFHeader() :
@@ -237,17 +237,17 @@ bool VCFHeader::__parseHeaderLines(const char* const data, U32& offset){
 bool VCFHeader::__parseSampleLine(reader& stream){
 	// At broken position is main header line
 	// Validate header
-	if(strncmp(&Tomahawk::VCF::Constants::HEADER_COLUMN[0], &stream.buffer_[0], Tomahawk::VCF::Constants::HEADER_COLUMN.size()) != 0){
+	if(strncmp(&VCF::Constants::HEADER_COLUMN[0], &stream.buffer_[0], VCF::Constants::HEADER_COLUMN.size()) != 0){
 		std::cerr << Helpers::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
 		this->error_bit = VCF_ERROR_SAMPLE;
 		return false;
 	}
 
-	U32 search_position = Tomahawk::VCF::Constants::HEADER_COLUMN.size() + 1;
+	U32 search_position = VCF::Constants::HEADER_COLUMN.size() + 1;
 	U64 delimiters_found = 0;
 	while(true){ // while there is samples in line
-		char* found = std::find(&stream[search_position], &stream[stream.size()-1], Tomahawk::VCF::Constants::VCF_DELIMITER);
-		if(*found != Tomahawk::VCF::Constants::VCF_DELIMITER)
+		char* found = std::find(&stream[search_position], &stream[stream.size()-1], VCF::Constants::VCF_DELIMITER);
+		if(*found != VCF::Constants::VCF_DELIMITER)
 			break;
 
 		//std::cerr << std::string(&stream[search_position], (found - stream.buffer_ + 1) - search_position) << std::endl;
@@ -258,12 +258,12 @@ bool VCFHeader::__parseSampleLine(reader& stream){
 	this->buildSampleTable(delimiters_found);
 
 	// Parse
-	search_position = Tomahawk::VCF::Constants::HEADER_COLUMN.size() + 1;
+	search_position = VCF::Constants::HEADER_COLUMN.size() + 1;
 	delimiters_found = 0;
 	S32* retValue;
 	char* found = 0;
 	while(found != &stream[stream.size()-1]){ // while there are samples in line
-		found = std::find(&stream[search_position], &stream[stream.size()-1], Tomahawk::VCF::Constants::VCF_DELIMITER);
+		found = std::find(&stream[search_position], &stream[stream.size()-1], VCF::Constants::VCF_DELIMITER);
 		std::string sampleName(&stream[search_position], (found - stream.buffer_ + 1) - search_position - 1);
 
 		if(sampleName == "FORMAT"){
@@ -290,20 +290,20 @@ bool VCFHeader::__parseSampleLine(reader& stream){
 bool VCFHeader::__parseSampleLine(const char* const data, U32& offset, const U32& length){
 	// At broken position is main header line
 	// Validate header
-	if(strncmp(&Tomahawk::VCF::Constants::HEADER_COLUMN[0], &data[offset], Tomahawk::VCF::Constants::HEADER_COLUMN.size()) != 0){
+	if(strncmp(&VCF::Constants::HEADER_COLUMN[0], &data[offset], VCF::Constants::HEADER_COLUMN.size()) != 0){
 		std::cerr << Helpers::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
 		this->error_bit = VCF_ERROR_SAMPLE;
 		return false;
 	}
 
-	offset += Tomahawk::VCF::Constants::HEADER_COLUMN.size() + 1;
+	offset += VCF::Constants::HEADER_COLUMN.size() + 1;
 	U64 delimiters_found = 0;
 	U32 offset_original = offset;
 
 	while(true){ // while there is samples in line
-		const char* const found = std::strchr(&data[offset], Tomahawk::VCF::Constants::VCF_DELIMITER);
+		const char* const found = std::strchr(&data[offset], VCF::Constants::VCF_DELIMITER);
 		//std::cerr << (void*)found << '\t' << (void*)&data[length] << std::endl;
-		if(found == 0 || (*found != Tomahawk::VCF::Constants::VCF_DELIMITER)){
+		if(found == 0 || (*found != VCF::Constants::VCF_DELIMITER)){
 			std::string sampleName(&data[offset], (&data[length - 1] - &data[offset]) - 1); // -2 because offset is +1 and newline is +1
 			//std::cerr << sampleName << std::endl;
 			++delimiters_found;
@@ -325,8 +325,8 @@ bool VCFHeader::__parseSampleLine(const char* const data, U32& offset, const U32
 	offset = offset_original;
 	S32* retValue;
 	while(true){ // while there is samples in line
-		const char* const found = std::strchr(&data[offset], Tomahawk::VCF::Constants::VCF_DELIMITER);
-		if(found == 0 || (*found != Tomahawk::VCF::Constants::VCF_DELIMITER)){
+		const char* const found = std::strchr(&data[offset], VCF::Constants::VCF_DELIMITER);
+		if(found == 0 || (*found != VCF::Constants::VCF_DELIMITER)){
 			std::string sampleName(&data[offset], (&data[length - 1] - &data[offset]) - 1); // -2 because offset is +1 and newline is +1
 			if(!this->getSample(sampleName, retValue))
 				this->addSample(sampleName);

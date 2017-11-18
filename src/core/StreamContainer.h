@@ -6,7 +6,7 @@
 #include "../io/BasicBuffer.h"
 #include "../algorithm/OpenHashTable.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 enum CORE_TYPE{TYPE_8B, TYPE_16B, TYPE_32B, TYPE_64B,
@@ -128,13 +128,13 @@ public:
  If stride is mixed then use this
  secondary structure. Stride is always
  a single unsigned integer
- +---+---+---+---+---+---+---+---+---+
- |   2   |   2   |       4       | X ~
- +---+---+---+---+---+---+---+---+---+
- ^       ^       ^               ^
- |       |       |               |
- CNT     CLENGTH |               POSSIBLE PARAMETERS
-                 ULENGTH
+ +---+---+---+---+---+---+---+---+---+---+---+
+ |   2   |       4       |       4       | X ~
+ +---+---+---+---+---+---+---+---+---+---+---+
+ ^       ^               ^               ^
+ |       |               |               |
+ CNT     COMP LENGTH     UNCOMP LENGTH   POSSIBLE PARAMETERS
+
 */
 struct StreamContainerHeaderStride{
 	typedef StreamContainerHeaderStride self_type;
@@ -342,10 +342,11 @@ public:
 	 */
 	void reformatStream(void){
 		// Recode integer types
-		if(this->header.controller.type != TYPE_32B || this->header.controller.signedness != 1){
+		if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1)){
 			return;
 		}
 
+		// At this point all integers are S32
 		const S32* dat = reinterpret_cast<const S32*>(this->buffer_data.data);
 		S32 min = dat[0];
 		S32 max = dat[0];

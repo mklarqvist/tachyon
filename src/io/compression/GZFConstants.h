@@ -3,7 +3,7 @@
 
 #include "../../support/TypeDefinitions.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 namespace Constants{
 

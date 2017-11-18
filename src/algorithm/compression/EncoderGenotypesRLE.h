@@ -10,7 +10,7 @@
 #include "../../core/base/GTRecords.h"
 #include "../../core/StreamContainer.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Algorithm{
 
 #define PACK_RLE_BIALLELIC(A, B, SHIFT, ADD) BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD) | BCF::BCF_UNPACK_GENOTYPE(B) << (ADD) | (A & ADD)

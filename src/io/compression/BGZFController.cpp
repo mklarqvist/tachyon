@@ -5,7 +5,7 @@
 #include "../../third_party/zlib/zlib.h"
 #include "BGZFController.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace IO {
 
 
@@ -104,7 +104,7 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	const header_type* h = reinterpret_cast<const header_type*>(&input.data[0]);
 	input.pointer = IO::Constants::BGZF_BLOCK_HEADER_LENGTH;
 	if(!h->Validate()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "BCF") << "Failed to validate!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		return false;
 	}
@@ -117,7 +117,7 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 
 	stream.read(&input.data[IO::Constants::BGZF_BLOCK_HEADER_LENGTH], (h->BSIZE + 1) - IO::Constants::BGZF_BLOCK_HEADER_LENGTH);
 	if(!stream.good()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
 		return false;
 	}
 
@@ -127,7 +127,7 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	this->buffer.reset();
 
 	if(!this->Inflate(input, this->buffer)){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "BCF") << "Failed inflate!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Failed inflate!" << std::endl;
 		return false;
 	}
 

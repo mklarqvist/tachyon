@@ -1,7 +1,7 @@
 #include "../support/helpers.h"
 #include "reader.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 
 reader::reader() : filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
 reader::reader(std::string input) : filename_(input), filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
@@ -22,14 +22,14 @@ bool reader::open(std::string filename){
 bool reader::open(void){
 	// Check that filename is set
 	if(this->filename_.size() == 0){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "IO") << "No input file given..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IO") << "No input file given..." << std::endl;
 		return false;
 	}
 
 	// Open stream at the end of the file
 	this->stream_.open(this->filename_, std::ios::binary | std::ios::ate);
 	if(!this->good()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "IO") << "Failed to open file..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IO") << "Failed to open file..." << std::endl;
 		return false;
 	}
 
@@ -39,7 +39,7 @@ bool reader::open(void){
 
 	// If filesize is 0 return
 	if(this->filesize_ <= 0){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "IO") << "File size is 0..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IO") << "File size is 0..." << std::endl;
 		return false;
 	}
 
@@ -47,7 +47,7 @@ bool reader::open(void){
 	this->end_ = 0;
 
 	if(!SILENT)
-		std::cerr << Tomahawk::Helpers::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
+		std::cerr << Helpers::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
 
 	return(true);
 }
@@ -109,7 +109,7 @@ bool reader::getLine(void){ // Read until finding a new line into buffer
 
 	if((this->stream_.fail()) && (this->capacity_ - this->end_ - 1 == 0)){
 		if(!SILENT)
-			std::cerr << Tomahawk::Helpers::timestamp("LOG", "IO") << "Resizing buffer from: " << this->capacity_ << " -> " << this->capacity_*2 << std::endl;
+			std::cerr << Helpers::timestamp("LOG", "IO") << "Resizing buffer from: " << this->capacity_ << " -> " << this->capacity_*2 << std::endl;
 
 		this->resize();
 		this->stream_.clear();
@@ -117,8 +117,8 @@ bool reader::getLine(void){ // Read until finding a new line into buffer
 	}
 
 	if(this->stream_.fail()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "IO") << "IO stream failed!" << std::endl;
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "IO") << "Stream position: " << this->stream_.tellg() << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IO") << "IO stream failed!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IO") << "Stream position: " << this->stream_.tellg() << std::endl;
 		return false;
 	}
 

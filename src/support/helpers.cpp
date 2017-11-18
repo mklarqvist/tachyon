@@ -5,7 +5,7 @@
 #include "helpers.h"
 #include "MagicConstants.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Helpers{
 
 int isBigEndian(){
@@ -194,7 +194,7 @@ bool matchPositionalStringTWO(const std::string& param){
 bool parsePositionalStringTWO(const std::string& param){
 	std::size_t found = param.find(',');
 	if(found != std::string::npos){
-		std::vector<std::string> ret = Tomahawk::Helpers::split(param, ',');
+		std::vector<std::string> ret = Helpers::split(param, ',');
 		if(ret.size() != 2){
 			std::cerr << Helpers::timestamp("LOG") << "Illegal TWO region format!" << std::endl;
 			return 1;

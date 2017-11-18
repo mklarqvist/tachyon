@@ -7,7 +7,7 @@
 #include "../compression/BGZFController.h"
 
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace BCF {
 
 class BCFReader{

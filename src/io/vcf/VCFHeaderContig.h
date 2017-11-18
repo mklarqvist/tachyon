@@ -1,7 +1,7 @@
 #ifndef VCF_VCFHEADERCONTIG_H_
 #define VCF_VCFHEADERCONTIG_H_
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace VCF{
 
 struct VCFHeaderContig{

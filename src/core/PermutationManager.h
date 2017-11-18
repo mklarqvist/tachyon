@@ -1,7 +1,7 @@
 #ifndef PERMUTATIONMANAGER_H_
 #define PERMUTATIONMANAGER_H_
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 // Manages the PPA array and the Occ function

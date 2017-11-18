@@ -12,7 +12,7 @@
 
 #include "TypeDefinitions.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Helpers{
 
 int isBigEndian(void);
@@ -51,14 +51,14 @@ std::string ToString(const T& data){
 
 template <class T>
 std::string ToPrettyString(const T& data){
-	return Tomahawk::Helpers::NumberThousandsSeparator(std::to_string(data));
+	return Helpers::NumberThousandsSeparator(std::to_string(data));
 }
 
 template <class T>
 std::string ToPrettyString(const std::vector<T>& data){
 	std::string ret;
 	for(U32 i = 0; i < data.size() - 1; ++i){
-		ret += Tomahawk::Helpers::NumberThousandsSeparator(std::to_string(data[i]));
+		ret += Helpers::NumberThousandsSeparator(std::to_string(data[i]));
 		ret += ", ";
 	}
 	ret += std::to_string(data[data.size()-1]);

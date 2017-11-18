@@ -7,7 +7,7 @@
 #include "TGZFController.h"
 #include "GZFConstants.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace IO {
 
 TGZFController::TGZFController() : compression_level(Z_DEFAULT_COMPRESSION), bit_window(Constants::GZIP_WINDOW_BITS){}
@@ -209,7 +209,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	const header_type* h = reinterpret_cast<const header_type*>(&input.data[0]);
 	input.pointer = IO::Constants::TGZF_BLOCK_HEADER_LENGTH;
 	if(!h->Validate()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		return false;
 	}
@@ -222,7 +222,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 
 	stream.read(&input.data[IO::Constants::TGZF_BLOCK_HEADER_LENGTH], h->BSIZE - IO::Constants::TGZF_BLOCK_HEADER_LENGTH);
 	if(!stream.good()){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "TGZF") << "Truncated file..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "TGZF") << "Truncated file..." << std::endl;
 		return false;
 	}
 
@@ -232,7 +232,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	this->buffer.reset();
 
 	if(!this->Inflate(input, this->buffer)){
-		std::cerr << Tomahawk::Helpers::timestamp("ERROR", "TGZF") << "Failed inflate!" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "TGZF") << "Failed inflate!" << std::endl;
 		return false;
 	}
 

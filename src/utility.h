@@ -6,19 +6,19 @@
 #include "support/MagicConstants.h"
 
 // Declare extern
-std::string Tomahawk::Constants::LITERAL_COMMAND_LINE;
-std::string Tomahawk::Constants::INTERPRETED_COMMAND;
+std::string Tachyon::Constants::LITERAL_COMMAND_LINE;
+std::string Tachyon::Constants::INTERPRETED_COMMAND;
 
 void programMessage(const bool separator = true){
-	std::cerr << "Program: " << Tomahawk::Constants::PROGRAM_NAME << " " << VERSION << std::endl;
+	std::cerr << "Program: " << Tachyon::Constants::PROGRAM_NAME << " " << VERSION << std::endl;
 	std::cerr << "Contact: Marcus D. R. Klarqvist <mk819@cam.ac.uk>" << std::endl;
-	std::cerr << "Documentation: https://github.com/mklarqvist/Tomahawk" << std::endl;
+	std::cerr << "Documentation: https://github.com/mklarqvist/Tachyon" << std::endl;
 	std::cerr << "License: MIT" << std::endl;
 	if(separator) std::cerr << "----------" << std::endl;
 }
 
 void programHelp(void){
-	std::cerr << "Usage: " << Tomahawk::Constants::PROGRAM_NAME << " [--version] [--help] <commands> <argument>" << std::endl;
+	std::cerr << "Usage: " << Tachyon::Constants::PROGRAM_NAME << " [--version] [--help] <commands> <argument>" << std::endl;
 	std::cerr << "Commands: import, view, calc, sort, index, stats, concat, tajima, fst, abba, sfs" << std::endl;
 }
 

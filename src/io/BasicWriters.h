@@ -10,7 +10,7 @@
 #include "../io/BasicBuffer.h"
 #include "../support/MagicConstants.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace IO{
 
 class GenericWriterInterace {

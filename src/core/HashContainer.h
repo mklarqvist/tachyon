@@ -3,7 +3,7 @@
 
 #include "../algorithm/OpenHashTable.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 namespace Support{
 

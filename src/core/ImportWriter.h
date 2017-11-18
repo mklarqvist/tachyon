@@ -9,7 +9,7 @@
 #include "base/EntryColdMeta.h"
 #include "StreamContainer.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 
 inline bool bytePreprocessor(const U32* const data, const size_t& size, char* destination){
 	if(size == 0) return false;

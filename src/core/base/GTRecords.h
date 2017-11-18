@@ -1,7 +1,7 @@
 #ifndef CORE_BASE_GTRECORDS_H_
 #define CORE_BASE_GTRECORDS_H_
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Core{
 
 // We CANNOT place phasing template parameter

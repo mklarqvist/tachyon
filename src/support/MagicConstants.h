@@ -6,7 +6,7 @@
 
 extern int SILENT;
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Constants{
 
 extern std::string LITERAL_COMMAND_LINE;
@@ -17,8 +17,8 @@ const float PROGRAM_VERSION = 0.4; // major
 
 const double ALLOWED_ROUNDING_ERROR = 0.001;
 
-const std::string PROGRAM_NAME = "totempole";
-const std::string OUTPUT_SUFFIX = "tot";
+const std::string PROGRAM_NAME = "tachyon";
+const std::string OUTPUT_SUFFIX = "tyn";
 
 // Headers
 const char* const WRITE_HEADER_MAGIC = "TOTEMPOLE\1";
@@ -51,12 +51,7 @@ const BYTE REF_ALT_G = 2;
 const BYTE REF_ALT_C = 3;
 const BYTE REF_ALT_N = 4;
 
-
-
-// EOF
-//const char* const TOMAHAWK_EOF_MARKER = "We will be known forever by the tracks we leave" - Santee Sioux Native Americans from Dakota;
-//const U32 TOMAHAWK_EOF_MARKER_LENGTH = 31;
-
+//EOF
 const BYTE eof_length = 6;
 const U64 eof[6] = {2336361506924422487, 7959953386435011938, 8243124871055238688, 2334386829831791136, 8583987794834190964, 28464622577219173};
 // EOF poem: "We will be known forever by the tracks we leave"

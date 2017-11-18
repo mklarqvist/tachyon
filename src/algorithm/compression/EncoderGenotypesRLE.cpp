@@ -1,6 +1,6 @@
 #include "EncoderGenotypesRLE.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Algorithm{
 
 bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa){

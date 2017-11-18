@@ -2,7 +2,7 @@
 
 #include "BCFEntry.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace BCF {
 
 BCFEntry::BCFEntry(void):
@@ -236,27 +236,27 @@ void BCFEntry::SetRefAlt(void){
 	this->ref_alt = 0;
 	// Set mock ref-alt if not simple
 	if(this->alleles[0].length != 1 || this->alleles[1].length != 1){
-		this->ref_alt ^= Tomahawk::Constants::REF_ALT_N << 4;
-		this->ref_alt ^= Tomahawk::Constants::REF_ALT_N;
+		this->ref_alt ^= Tachyon::Constants::REF_ALT_N << 4;
+		this->ref_alt ^= Tachyon::Constants::REF_ALT_N;
 		return;
 	}
 
 	switch(this->alleles[0].data[0]){
-	case 'A': this->ref_alt ^= Tomahawk::Constants::REF_ALT_A << 4; break;
-	case 'T': this->ref_alt ^= Tomahawk::Constants::REF_ALT_T << 4; break;
-	case 'G': this->ref_alt ^= Tomahawk::Constants::REF_ALT_G << 4; break;
-	case 'C': this->ref_alt ^= Tomahawk::Constants::REF_ALT_C << 4; break;
+	case 'A': this->ref_alt ^= Tachyon::Constants::REF_ALT_A << 4; break;
+	case 'T': this->ref_alt ^= Tachyon::Constants::REF_ALT_T << 4; break;
+	case 'G': this->ref_alt ^= Tachyon::Constants::REF_ALT_G << 4; break;
+	case 'C': this->ref_alt ^= Tachyon::Constants::REF_ALT_C << 4; break;
 	default:
 		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
 		exit(1);
 	}
 
 	switch(this->alleles[1].data[0]){
-	case 'A': this->ref_alt ^= Tomahawk::Constants::REF_ALT_A << 0; break;
-	case 'T': this->ref_alt ^= Tomahawk::Constants::REF_ALT_T << 0; break;
-	case 'G': this->ref_alt ^= Tomahawk::Constants::REF_ALT_G << 0; break;
-	case 'C': this->ref_alt ^= Tomahawk::Constants::REF_ALT_C << 0; break;
-	case '.': this->ref_alt ^= Tomahawk::Constants::REF_ALT_N << 0; break;
+	case 'A': this->ref_alt ^= Tachyon::Constants::REF_ALT_A << 0; break;
+	case 'T': this->ref_alt ^= Tachyon::Constants::REF_ALT_T << 0; break;
+	case 'G': this->ref_alt ^= Tachyon::Constants::REF_ALT_G << 0; break;
+	case 'C': this->ref_alt ^= Tachyon::Constants::REF_ALT_C << 0; break;
+	case '.': this->ref_alt ^= Tachyon::Constants::REF_ALT_N << 0; break;
 	default:
 		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
 		exit(1);

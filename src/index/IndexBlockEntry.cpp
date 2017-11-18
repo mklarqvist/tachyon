@@ -1,13 +1,13 @@
 #include <cmath>
 #include "IndexBlockEntry.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace Index{
 
 IndexBlockEntryBase::IndexBlockEntryBase() :
+	offset_end_of_block(0),
 	contigID(-1),
 	n_variants(0),
-	offset_streams_begin(0),
 	l_ppa(0),
 	l_meta(0),
 	l_meta_complex(0),

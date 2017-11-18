@@ -10,7 +10,7 @@
 #include "../support/TypeDefinitions.h"
 #include "../third_party/xxhash/xxhash.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 namespace Hash {
 
 #define HASH_CONSTANT1 452930477

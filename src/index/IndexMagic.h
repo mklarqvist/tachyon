@@ -1,7 +1,7 @@
 #ifndef INDEX_INDEXMAGIC_H_
 #define INDEX_INDEXMAGIC_H_
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 
 template <U16 length>

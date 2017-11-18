@@ -6,7 +6,7 @@
 
 #include "ImportWriter.h"
 
-namespace Tomahawk {
+namespace Tachyon {
 
 ImportWriter::ImportWriter() :
 	n_blocksWritten(0),

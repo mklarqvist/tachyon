@@ -3,7 +3,7 @@
 
 #include "GZFConstants.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 
 #pragma pack(1)

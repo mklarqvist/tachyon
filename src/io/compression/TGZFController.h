@@ -9,7 +9,7 @@
 #include "../BasicBuffer.h"
 #include "GZFHeader.h"
 
-namespace Tomahawk{
+namespace Tachyon{
 namespace IO{
 
 class TGZFController{
