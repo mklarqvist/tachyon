@@ -338,9 +338,8 @@ public:
 	 word-type to fit min(x) and max(x) in the worst case.
 	 At this stage all integer values in the stream is of
 	 type S32. No other values can be shrunk
-
 	 */
-	void reformatStream(void){
+	void reformat(void){
 		// Recode integer types
 		if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1)){
 			return;

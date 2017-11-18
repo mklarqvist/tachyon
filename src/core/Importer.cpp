@@ -137,78 +137,9 @@ bool Importer::BuildBCF(void){
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
-		for(U32 i = 0; i < this->info_fields.size(); ++i){
-			if(this->block.info_containers[i].buffer_data.size() == 0)
-				continue;
-
-			this->block.info_containers[i].checkUniformity();
-			this->block.info_containers[i].reformatStream();
-			this->block.info_containers[i].checkSum();
-
-			Compression::DeflateCodec comp;
-			comp.encode(this->block.info_containers[i]);
-
-			//cont.Deflate(this->info_containers[i].buffer_data);
-			this->block.info_containers[i].header.uLength = this->block.info_containers[i].buffer_data.pointer;
-			//this->info_containers[i].header.cLength = cont.buffer.pointer;
-			this->block.info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
-			if(this->block.info_containers[i].header.controller.mixedStride == false)
-				this->block.index_entry.info_offsets[i].update(i, this->block.info_containers[i].header);
-			//this->writer_.streamTomahawk << this->info_containers[i].header;
-			//this->writer_.streamTomahawk << cont;
-			std::cerr << this->info_fields[i] << '\t' << this->block.info_containers[i].buffer_data.size() << '\t' << 0 << std::endl;
-			//cont.Clear();
-
-			if(this->block.info_containers[i].header.controller.mixedStride){
-				std::cerr << "stride: " << this->block.info_containers[i].header.stride << '\t' << (U32)this->block.info_containers[i].header.controller.type << std::endl;
-				this->block.index_entry.info_offsets[i].update(0, this->block.info_containers[i].header, this->block.info_containers[i].header_stride);
-
-				//cont.Deflate(this->info_containers[i].buffer_strides);
-				//this->info_containers[i].header_stride.uLength = this->info_containers[i].buffer_strides.pointer;
-				//this->block.info_containers[i].header_stride.cLength = cont.buffer.pointer;
-				//this->writer_.streamTomahawk << this->info_containers[i].header_stride;
-				//this->writer_.streamTomahawk << cont;
-				std::cerr << this->info_fields[i] << "-ADD\t" << this->block.info_containers[i].buffer_strides.size() << '\t' << 0 << std::endl;
-				//cont.Clear();
-			}
-		}
-
-		std::cerr << "FORMAT: " << std::endl;
-		for(U32 i = 0; i < this->format_fields.size(); ++i){
-			if(this->block.format_containers[i].buffer_data.size() == 0)
-				continue;
-
-			this->block.format_containers[i].checkUniformity();
-			this->block.format_containers[i].reformatStream();
-			this->block.format_containers[i].checkSum();
-
-			Compression::DeflateCodec comp;
-			comp.encode(this->block.format_containers[i]);
-
-			//cont.Deflate(this->format_containers[i].buffer_data);
-			this->block.format_containers[i].header.uLength = this->block.format_containers[i].buffer_data.pointer;
-			//this->format_containers[i].header.cLength = cont.buffer.pointer;
-			this->block.format_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
-			if(this->block.format_containers[i].header.controller.mixedStride == false)
-				this->block.index_entry.format_offsets[i].update(0, this->block.format_containers[i].header);
-			//this->writer_.streamTomahawk << this->format_containers[i].header;
-			//this->writer_.streamTomahawk << cont;
-			//std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << 0 << std::endl;
-			//cont.Clear();
-			if(this->block.format_containers[i].header.controller.mixedStride){
-				std::cerr << "stride: " << this->block.format_containers[i].header.stride << '\t' << (U32)this->block.format_containers[i].header.controller.type << std::endl;
-				this->block.index_entry.format_offsets[i].update(i, this->block.format_containers[i].header, this->block.format_containers[i].header_stride);
-
-				//cont.Deflate(this->format_containers[i].buffer_strides);
-				//this->format_containers[i].header_stride.uLength = this->format_containers[i].buffer_strides.pointer;
-				//this->block.format_containers[i].header_stride.cLength = cont.buffer.pointer;
-				//this->writer_.streamTomahawk << this->format_containers[i].header_stride;
-				//this->writer_.streamTomahawk << cont;
-				std::cerr << this->format_fields[i] << "-ADD\t" << this->block.format_containers[i].buffer_strides.size() << std::endl;
-				//cont.Clear();
-			}
-		}
-
+		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO, this->info_fields);
+		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields);
+		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields);
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->writer_.streamTomahawk << this->block.index_entry;

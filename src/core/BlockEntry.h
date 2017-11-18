@@ -11,6 +11,9 @@ class BlockEntry{
 	typedef Core::EntryHotMetaBase meta_type;
 	typedef Core::EntryColdMeta meta_cold_type;
 	typedef Index::IndexBlockEntry index_entry_type;
+	typedef Core::Support::HashContainer hash_container_type;
+	typedef Core::Support::HashVectorContainer hash_vector_container_type;
+	typedef Index::IndexBlockEntryOffsets offset_type;
 
 public:
 	BlockEntry() :
@@ -36,8 +39,6 @@ public:
 		this->gt_simple_container.resize(s);
 	}
 
-	// Build Occ function
-	// Todo: read and write operations
 	void clear(){
 		for(U32 i = 0; i < 100; ++i){
 			this->info_containers[i].reset();
@@ -53,15 +54,61 @@ public:
 	}
 
 	inline void allocateOffsets(const U32& info, const U32& format, const U32& filter){
-		//std::cerr << "in allocate: " << this->index_entry.contigID << std::endl;
-		//std::cerr << info << '\t' << format << '\t' << filter << std::endl;
 		this->index_entry.allocateOffsets(info, format, filter);
 	}
 
-	// Sketch:
-	// 1) Load index header
-	// 2) Load bit vectors
-	// 3) Construct local key-value hash table
+
+	inline void updateContainer(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, hash_container_type& v){
+		// Determine target
+		switch(target){
+		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+			return(this->updateContainer(v, this->info_containers, this->index_entry.info_offsets, this->index_entry.n_info_streams));
+			break;
+		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams));
+			break;
+		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER) :
+		return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams));
+			break;
+		default: std::cerr << "unknown target type" << std::endl; exit(1);
+		}
+	}
+
+private:
+	void updateContainer(hash_container_type& v, stream_container* container, offset_type* offset, const U32& length){
+		for(U32 i = 0; i < length; ++i){
+			if(container[i].buffer_data.size() == 0)
+				continue;
+
+			// Check if stream is uniform in content
+			container[i].checkUniformity();
+			// Reformat stream to use as small word size as possible
+			container[i].reformat();
+			// Add CRC32 checksum for sanity
+			container[i].checkSum();
+
+			// Set uncompressed length
+			container[i].header.uLength = container[i].buffer_data.pointer;
+
+			// Update offset value if stride is not mixed
+			if(container[i].header.controller.mixedStride == false)
+				offset[i].update(i, container[i].header);
+
+			std::cerr << v[i] << '\t' << container[i].buffer_data.size() << '\t' << 0 << std::endl;
+
+			// If we have mixed striding
+			if(container[i].header.controller.mixedStride){
+				std::cerr << "stride: " << container[i].header.stride << '\t' << (U32)container[i].header.controller.type << std::endl;
+
+				// Update offset with mixed stride
+				offset[i].update(0, container[i].header, container[i].header_stride);
+
+				//container[i].header_stride.uLength = container[i].buffer_strides.pointer;
+				//container[i].header_stride.cLength = cont.buffer.pointer;
+				std::cerr << v[i] << "-ADD\t" << container[i].buffer_strides.size() << '\t' << 0 << std::endl;
+			}
+		}
+	}
 
 public:
 	index_entry_type  index_entry;
