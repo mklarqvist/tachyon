@@ -79,20 +79,25 @@ public:
 	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(new header_stride_type){
 		*this->header_stride = s;
 	}
+
 	~IndexBlockEntryOffsets(void){ delete this->header_stride; }
 
 	bool update(const U32& key, const header_type& h){
 		this->key = key;
-		this->header = h;
+		//this->header = h;
 		return true;
 	}
 
 	bool update(const U32& key, const header_type& h, const header_stride_type& s){
 		this->key = key;
-		this->header = h;
+		//this->header = h;
+		std::cerr << "Addresses: " << &s << '\t' << this->header_stride << std::endl;
 		delete this->header_stride;
-		this->header_stride = new header_stride_type;
-		*this->header_stride = s;
+		this->header_stride = new header_stride_type(s);
+		//std::cerr << "after delete update: " << (this->header_stride->extra == nullptr) << std::endl;
+		//std::cerr << "Return values: " << (this->header_stride->extra == nullptr) << '\t' << (s.extra == nullptr) << std::endl;
+		//std::cerr << (void*)this->header_stride->extra << '\t' << (void*)s.extra << std::endl;
+
 		return true;
 	}
 
@@ -160,10 +165,10 @@ public:
 	}
 
 	void reset(void){
+		this->offset_end_of_block = 0;
 		this->controller.clear();
 		this->contigID = -1;
 		this->n_variants = 0;
-		this->offset_end_of_block = 0;
 		this->l_ppa = 0;
 		this->l_meta = 0;
 		this->l_gt_rle = 0;

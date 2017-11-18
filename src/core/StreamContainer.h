@@ -60,7 +60,7 @@ public:
  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
  ^       ^       ^               ^               ^               ^               ^
  |       |       |               |               |               |               |
- CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   CRC             POSSIBLE PARAMETERS
+ CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   CRC             POSSIBLE COMPRESSION PARAMETERS
                  OFFSET
 */
 struct StreamContainerHeader{
@@ -77,9 +77,61 @@ struct StreamContainerHeader{
 		extra(nullptr)
 	{}
 
-	virtual ~StreamContainerHeader(){
-		delete [] this->extra;
+	StreamContainerHeader(const StreamContainerHeader& other) :
+		controller(other.controller),
+		stride(other.stride),
+		offset(other.offset),
+		cLength(other.cLength),
+		uLength(other.uLength),
+		crc(other.crc),
+		n_extra(other.n_extra),
+		extra(nullptr)
+	{
+		if(other.extra != nullptr){
+			this->extra = new char[n_extra];
+			memcpy(this->extra, other.extra, other.n_extra);
+		}
 	}
+
+	/* noexcept needed to enable optimizations in containers */
+	StreamContainerHeader(StreamContainerHeader&& other) noexcept :
+		controller(other.controller),
+		stride(other.stride),
+		offset(other.offset),
+		cLength(other.cLength),
+		uLength(other.uLength),
+		crc(other.crc),
+		n_extra(other.n_extra),
+		extra(other.extra)
+	{
+		other.extra = nullptr;
+	}
+
+	StreamContainerHeader& operator=(const StreamContainerHeader& other){
+		StreamContainerHeader tmp(other); // re-use copy-constructor
+		*this = std::move(tmp);           // re-use move-assignment
+		return *this;
+	}
+
+	/** Move assignment operator */
+	StreamContainerHeader& operator=(StreamContainerHeader&& other) noexcept{
+		std::cerr << "container header move assign" << std::endl;
+		this->controller = other.controller;
+		this->stride = other.stride;
+		this->offset = other.offset;
+		this->cLength = other.cLength;
+		this->uLength = other.uLength;
+		this->crc = other.crc;
+		this->n_extra = other.n_extra;
+
+		std::cerr << this->crc << '\t' << other.crc << std::endl;
+		delete [] this->extra;
+		this->extra = other.extra;
+		other.extra = nullptr;
+		return *this;
+	}
+
+	virtual ~StreamContainerHeader(){ delete [] this->extra; }
 
 	inline void reset(void){
 		this->stride = -1;
@@ -126,14 +178,13 @@ public:
 
 /*
  If stride is mixed then use this
- secondary structure. Stride is always
- a single unsigned integer
+ secondary structure
  +---+---+---+---+---+---+---+---+---+---+---+
  |   2   |       4       |       4       | X ~
  +---+---+---+---+---+---+---+---+---+---+---+
  ^       ^               ^               ^
  |       |               |               |
- CNT     COMP LENGTH     UNCOMP LENGTH   POSSIBLE PARAMETERS
+ CNT     COMP LENGTH     UNCOMP LENGTH   POSSIBLE COMPRESSION PARAMETERS
 
 */
 struct StreamContainerHeaderStride{
@@ -147,7 +198,68 @@ struct StreamContainerHeaderStride{
 		n_extra(0),
 		extra(nullptr)
 	{}
+
+	StreamContainerHeaderStride(const StreamContainerHeaderStride& other) :
+		controller(other.controller),
+		cLength(other.cLength),
+		uLength(other.uLength),
+		crc(other.crc),
+		n_extra(other.n_extra),
+		extra(nullptr)
+	{
+		if(other.extra != nullptr){
+			this->extra = new char[n_extra];
+			memcpy(this->extra, other.extra, other.n_extra);
+		}
+		std::cerr << "copy ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
+	}
+
+	/* noexcept needed to enable optimizations in containers */
+	StreamContainerHeaderStride(StreamContainerHeaderStride&& other) noexcept :
+		controller(other.controller),
+		cLength(other.cLength),
+		uLength(other.uLength),
+		crc(other.crc),
+		n_extra(other.n_extra),
+		extra(other.extra)
+	{
+		other.extra = nullptr;
+		std::cerr << "move ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
+		exit(1);
+	}
+
+	StreamContainerHeaderStride& operator=(const StreamContainerHeaderStride& other){
+		StreamContainerHeaderStride tmp(other); // re-use copy-constructor
+		*this = std::move(tmp);                 // re-use move-assignment
+		std::cerr << "copy assign ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
+		exit(1);
+		return *this;
+	}
+
+	/** Move assignment operator */
+	StreamContainerHeaderStride& operator=(StreamContainerHeaderStride&& other) noexcept{
+		// prevent self-move
+		if(this!=&other){
+			std::cerr << "container stride header move assign" << std::endl;
+			this->controller = other.controller;
+			this->cLength = other.cLength;
+			this->uLength = other.uLength;
+			this->crc = other.crc;
+			this->n_extra = other.n_extra;
+
+			if(other.extra != nullptr){
+				delete [] this->extra;
+				this->extra = other.extra;
+				other.extra = nullptr;
+			}
+		}
+		std::cerr << "move assign ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
+		exit(1);
+		return *this;
+	}
+
 	~StreamContainerHeaderStride(){
+		std::cerr << "calling dtor: " << (this->extra == nullptr) << std::endl;
 		delete [] this->extra;
 	}
 
@@ -210,7 +322,7 @@ public:
 
 	inline void operator++(void){ ++this->n_entries; }
 
-	inline void addStride(const U32& value){ this->buffer_strides += value; }
+	inline void addStride(const U32& value){ this->buffer_strides += (U32)value; }
 
 	inline void operator+=(const SBYTE& value){
 		//assert(this->header.controller.type == 0);
@@ -303,16 +415,16 @@ public:
 		if(this->n_entries == 0)
 			return false;
 
-		const U32 stride_size = this->header.stride;
+		const S16& stride_size = this->header.stride;
 		if(stride_size == -1)
 			return false;
 
 		U32 stride_update = stride_size;
 
 		switch(this->header.controller.type){
-		case CORE_TYPE::TYPE_32B: stride_update *= sizeof(S32);   break;
+		case CORE_TYPE::TYPE_32B:   stride_update *= sizeof(S32);   break;
 		case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); break;
-		case CORE_TYPE::TYPE_8B: stride_update *= sizeof(char);  break;
+		case CORE_TYPE::TYPE_8B:    stride_update *= sizeof(char);  break;
 		default: return false; break;
 		}
 
@@ -461,23 +573,19 @@ public:
 
 	void reformatStride(void){
 		// Recode integer types
-		if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 1)){
+		if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 0)){
 			return;
 		}
 
 		// At this point all integers are S32
-		const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_strides.data);
-		S32 min = dat[0];
-		S32 max = dat[0];
+		const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides.data);
+		U32 max = dat[0];
 
 		for(U32 j = 1; j < this->n_entries; ++j){
-			if(dat[j] < min) min = dat[j];
 			if(dat[j] > max) max = dat[j];
 		}
 
-		BYTE byte_width = 0;
-		if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
-		else byte_width = ceil(ceil(log2(max + 1))/8);
+		BYTE byte_width = ceil(ceil(log2(max + 1))/8);
 
 		if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 		else if(byte_width > 4) byte_width = 8;
@@ -486,58 +594,29 @@ public:
 		// This cannot ever be uniform
 		buffer_type buffer(this->buffer_strides.pointer);
 
-		// Is non-negative
-		if(min >= 0){
-			this->header_stride.controller.signedness = 0;
+		if(byte_width == 1){
+			this->header_stride.controller.type = TYPE_8B;
 
-			if(byte_width == 1){
-				this->header_stride.controller.type = TYPE_8B;
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (BYTE)dat[j];
+		} else if(byte_width == 2){
+			this->header_stride.controller.type = TYPE_16B;
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (BYTE)dat[j];
-			} else if(byte_width == 2){
-				this->header_stride.controller.type = TYPE_16B;
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U16)dat[j];
+		} else if(byte_width == 4){
+			this->header_stride.controller.type = TYPE_32B;
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U16)dat[j];
-			} else if(byte_width == 4){
-				this->header_stride.controller.type = TYPE_32B;
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U32)dat[j];
+		} else if(byte_width == 8){
+			this->header_stride.controller.type = TYPE_64B;
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U32)dat[j];
-			} else if(byte_width == 8){
-				this->header_stride.controller.type = TYPE_64B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U64)dat[j];
-			} else {
-				std::cerr << "illegal" << std::endl;
-				exit(1);
-			}
-		}
-		// Is negative
-		else {
-			this->header_stride.controller.signedness = 1;
-
-			if(byte_width == 1){
-				this->header_stride.controller.type = TYPE_8B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (SBYTE)dat[j];
-			} else if(byte_width == 2){
-				this->header_stride.controller.type = TYPE_16B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (S16)dat[j];
-			} else if(byte_width == 4){
-				this->header_stride.controller.type = TYPE_32B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (S32)dat[j];
-			} else {
-				std::cerr << "illegal" << std::endl;
-				exit(1);
-			}
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U64)dat[j];
+		} else {
+			std::cerr << "illegal" << std::endl;
+			exit(1);
 		}
 		std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
 		memcpy(this->buffer_strides.data, buffer.data, buffer.pointer);

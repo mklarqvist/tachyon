@@ -65,10 +65,10 @@ public:
 			return(this->updateContainer(v, this->info_containers, this->index_entry.info_offsets, this->index_entry.n_info_streams));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-		return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams));
+			return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER) :
-		return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams));
+			return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
@@ -91,20 +91,21 @@ private:
 			container[i].header.uLength = container[i].buffer_data.pointer;
 
 			// Update offset value if stride is not mixed
-			if(container[i].header.controller.mixedStride == false)
-				offset[i].update(i, container[i].header);
+			if(container[i].header.controller.mixedStride == false){
+				std::cerr << "set header: " << i << std::endl;
+				offset[i].update(v[i], container[i].header);
+			}
 
-			std::cerr << v[i] << '\t' << container[i].buffer_data.size() << '\t' << container[i].header.stride << '\t' << container[i].header.controller.mixedStride << std::endl;
+			std::cerr << i << "->" << v[i] << '\t' << container[i].buffer_data.size() << '\t' << container[i].header.stride << '\t' << container[i].header.controller.mixedStride << std::endl;
 
 			// If we have mixed striding
 			if(container[i].header.controller.mixedStride){
-				std::cerr << "stride: " << container[i].header.stride << '\t' << (U32)container[i].header.controller.type << std::endl;
-
 				// Reformat stream to use as small word size as possible
 				container[i].reformatStride();
 
 				// Update offset with mixed stride
-				//offset[i].update(0, container[i].header, container[i].header_stride);
+				std::cerr << "set mixed header: " << i << std::endl;
+				offset[i].update(v[i], container[i].header, container[i].header_stride);
 
 				//container[i].header_stride.uLength = container[i].buffer_strides.pointer;
 				//container[i].header_stride.cLength = cont.buffer.pointer;
