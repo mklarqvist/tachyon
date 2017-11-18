@@ -80,9 +80,6 @@ bool Importer::BuildBCF(void){
 	this->block.resize(resize_to);
 
 
-	IO::TGZFController cont;
-	cont.buffer.resize(256000);
-
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
 			break;
@@ -104,30 +101,30 @@ bool Importer::BuildBCF(void){
 		//Index::IndexBlockEntry block_entry;
 		//++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
 
-		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		this->block.index_entry.controller.hasGT = 1;
 		this->block.index_entry.controller.isDiploid = 1;
 		//cont.Clear();
 
 		//cont.Deflate(this->meta_cold_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
 		//cont.Clear();
 
 		//cont.setCompression(-1);
 		//cont.setWindowSize(-15);
 		//cont.Deflate(this->gt_rle_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
 		//cont.Clear();
 
 
 		//cont.Deflate(this->gt_simple_container.buffer_data);
 		//this->writer_.streamTomahawk << cont;
-		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 		//cont.Clear();
 
-		// Reset permutator
+		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
 		this->block.index_entry.n_format_streams = this->format_fields.size();
 		this->block.index_entry.n_filter_streams = this->filter_fields.size();
@@ -156,10 +153,10 @@ bool Importer::BuildBCF(void){
 			//this->info_containers[i].header.cLength = cont.buffer.pointer;
 			this->block.info_containers[i].header.offset = this->writer_.streamTomahawk.tellp();
 			if(this->block.info_containers[i].header.controller.mixedStride == false)
-				this->block.index_entry.info_offsets[i].update(0, this->block.info_containers[i].header);
+				this->block.index_entry.info_offsets[i].update(i, this->block.info_containers[i].header);
 			//this->writer_.streamTomahawk << this->info_containers[i].header;
 			//this->writer_.streamTomahawk << cont;
-			std::cerr << this->info_fields[i] << '\t' << this->block.info_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+			std::cerr << this->info_fields[i] << '\t' << this->block.info_containers[i].buffer_data.size() << '\t' << 0 << std::endl;
 			//cont.Clear();
 
 			if(this->block.info_containers[i].header.controller.mixedStride){
@@ -168,10 +165,10 @@ bool Importer::BuildBCF(void){
 
 				//cont.Deflate(this->info_containers[i].buffer_strides);
 				//this->info_containers[i].header_stride.uLength = this->info_containers[i].buffer_strides.pointer;
-				this->block.info_containers[i].header_stride.cLength = cont.buffer.pointer;
+				//this->block.info_containers[i].header_stride.cLength = cont.buffer.pointer;
 				//this->writer_.streamTomahawk << this->info_containers[i].header_stride;
 				//this->writer_.streamTomahawk << cont;
-				std::cerr << this->info_fields[i] << "-ADD\t" << this->block.info_containers[i].buffer_strides.size() << '\t' << cont.buffer.size() << std::endl;
+				std::cerr << this->info_fields[i] << "-ADD\t" << this->block.info_containers[i].buffer_strides.size() << '\t' << 0 << std::endl;
 				//cont.Clear();
 			}
 		}
@@ -196,15 +193,15 @@ bool Importer::BuildBCF(void){
 				this->block.index_entry.format_offsets[i].update(0, this->block.format_containers[i].header);
 			//this->writer_.streamTomahawk << this->format_containers[i].header;
 			//this->writer_.streamTomahawk << cont;
-			//std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << cont.buffer.size() << std::endl;
+			//std::cerr << this->format_fields[i] << '\t' << this->format_containers[i].buffer_data.size() << '\t' << 0 << std::endl;
 			//cont.Clear();
 			if(this->block.format_containers[i].header.controller.mixedStride){
 				std::cerr << "stride: " << this->block.format_containers[i].header.stride << '\t' << (U32)this->block.format_containers[i].header.controller.type << std::endl;
-				this->block.index_entry.format_offsets[i].update(0, this->block.format_containers[i].header, this->block.format_containers[i].header_stride);
+				this->block.index_entry.format_offsets[i].update(i, this->block.format_containers[i].header, this->block.format_containers[i].header_stride);
 
 				//cont.Deflate(this->format_containers[i].buffer_strides);
 				//this->format_containers[i].header_stride.uLength = this->format_containers[i].buffer_strides.pointer;
-				this->block.format_containers[i].header_stride.cLength = cont.buffer.pointer;
+				//this->block.format_containers[i].header_stride.cLength = cont.buffer.pointer;
 				//this->writer_.streamTomahawk << this->format_containers[i].header_stride;
 				//this->writer_.streamTomahawk << cont;
 				std::cerr << this->format_fields[i] << "-ADD\t" << this->block.format_containers[i].buffer_strides.size() << std::endl;
