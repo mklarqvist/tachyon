@@ -94,14 +94,17 @@ private:
 			if(container[i].header.controller.mixedStride == false)
 				offset[i].update(i, container[i].header);
 
-			std::cerr << v[i] << '\t' << container[i].buffer_data.size() << '\t' << 0 << std::endl;
+			std::cerr << v[i] << '\t' << container[i].buffer_data.size() << '\t' << container[i].header.stride << '\t' << container[i].header.controller.mixedStride << std::endl;
 
 			// If we have mixed striding
 			if(container[i].header.controller.mixedStride){
 				std::cerr << "stride: " << container[i].header.stride << '\t' << (U32)container[i].header.controller.type << std::endl;
 
+				// Reformat stream to use as small word size as possible
+				container[i].reformatStride();
+
 				// Update offset with mixed stride
-				offset[i].update(0, container[i].header, container[i].header_stride);
+				//offset[i].update(0, container[i].header, container[i].header_stride);
 
 				//container[i].header_stride.uLength = container[i].buffer_strides.pointer;
 				//container[i].header_stride.cLength = cont.buffer.pointer;

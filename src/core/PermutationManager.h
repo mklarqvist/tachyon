@@ -31,7 +31,8 @@ public:
 	// Lookup
 	// Convenience function used during import only
 	U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA)); }
-	U32&  operator[](const U32& p)  const{ return(*reinterpret_cast<U32*>(&this->PPA[p * sizeof(U32)]));  }
+	U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA[p * sizeof(U32)])); }
+	//bool validate(void);
 
 public:
 	// Not written to disk

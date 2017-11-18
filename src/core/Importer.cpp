@@ -255,6 +255,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
+			target_container.header_stride.controller.type = Core::CORE_TYPE::TYPE_32B;
+			target_container.header_stride.controller.signedness = 1;
 			// Set all integer types to U32
 			// Change to smaller type later if required
 			if(info_value_type == 0)      target_container.setType(Core::CORE_TYPE::TYPE_32B);
@@ -313,6 +315,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
+			target_container.header_stride.controller.type = Core::CORE_TYPE::TYPE_32B;
+			target_container.header_stride.controller.signedness = 1;
 			// Set all integer types to U32
 			// Change to smaller type later if required
 			if(info_value_type == 0)      target_container.setType(Core::CORE_TYPE::TYPE_32B);

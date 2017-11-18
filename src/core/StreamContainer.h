@@ -185,6 +185,8 @@ class StreamContainer{
 	typedef IO::BasicBuffer buffer_type;
 	typedef StreamContainerHeader header_type;
 	typedef StreamContainerHeaderStride header_stride_type;
+public:
+	enum CONTAINER_TARGET{CONTAINER_DATA, CONTAINER_STRIDE};
 
 public:
 	StreamContainer() :
@@ -204,64 +206,64 @@ public:
 	inline void setType(const CORE_TYPE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
 	inline const bool checkStrideSize(const S32& value) const{ return this->header.stride == value; }
-	inline void setMixedStrides(void){ this->header.stride = -1; }
+	inline void setMixedStrides(void){ this->header.stride = -1; this->header.controller.mixedStride = true; }
 
-	inline void operator++(void){ ++this->n_additions; }
+	inline void operator++(void){ ++this->n_entries; }
 
 	inline void addStride(const U32& value){ this->buffer_strides += value; }
 
 	inline void operator+=(const SBYTE& value){
 		//assert(this->header.controller.type == 0);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const BYTE& value){
 		//assert(this->header.controller.type == 1);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const S16& value){
 		//assert(this->header.controller.type == 2);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const U16& value){
 		//assert(this->header.controller.type == 3);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const S32& value){
 		//assert(this->header.controller.type == 4);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const U32& value){
 		//assert(this->header.controller.type == 5);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const U64& value){
 		//assert(this->header.controller.type == 6);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const float& value){
 		//assert(this->header.controller.type == 7);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	inline void operator+=(const double& value){
 		//assert(this->header.controller.type == 8);
 		this->buffer_data += value;
-		++this->n_entries;
+		++this->n_additions;
 	}
 
 	void reset(void){
@@ -346,7 +348,7 @@ public:
 		}
 
 		// At this point all integers are S32
-		const S32* dat = reinterpret_cast<const S32*>(this->buffer_data.data);
+		const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data.data);
 		S32 min = dat[0];
 		S32 max = dat[0];
 
@@ -396,7 +398,6 @@ public:
 		// Not unfirom
 		else {
 			buffer_type buffer(this->buffer_data.pointer);
-			dat = reinterpret_cast<const S32*>(this->buffer_data.data);
 
 			// Is non-negative
 			if(min >= 0){
@@ -406,22 +407,22 @@ public:
 					this->header.controller.type = TYPE_8B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (BYTE)*(dat++);
+						buffer += (BYTE)dat[j];
 				} else if(byte_width == 2){
 					this->header.controller.type = TYPE_16B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (U16)*(dat++);
+						buffer += (U16)dat[j];
 				} else if(byte_width == 4){
 					this->header.controller.type = TYPE_32B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (U32)*(dat++);
+						buffer += (U32)dat[j];
 				} else if(byte_width == 8){
 					this->header.controller.type = TYPE_64B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (U64)*(dat++);
+						buffer += (U64)dat[j];
 				} else {
 					std::cerr << "illegal" << std::endl;
 					exit(1);
@@ -435,27 +436,113 @@ public:
 					this->header.controller.type = TYPE_8B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (SBYTE)*(dat++);
+						buffer += (SBYTE)dat[j];
 				} else if(byte_width == 2){
 					this->header.controller.type = TYPE_16B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (S16)*(dat++);
+						buffer += (S16)dat[j];
 				} else if(byte_width == 4){
 					this->header.controller.type = TYPE_32B;
 
 					for(U32 j = 0; j < this->n_entries; ++j)
-						buffer += (S32)*(dat++);
+						buffer += (S32)dat[j];
 				} else {
 					std::cerr << "illegal" << std::endl;
 					exit(1);
 				}
 			}
-			std::cerr << "swap: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
+			std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
 			memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
 			this->buffer_data.pointer = buffer.pointer;
 			buffer.deleteAll();
 		}
+	}
+
+	void reformatStride(void){
+		// Recode integer types
+		if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 1)){
+			return;
+		}
+
+		// At this point all integers are S32
+		const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_strides.data);
+		S32 min = dat[0];
+		S32 max = dat[0];
+
+		for(U32 j = 1; j < this->n_entries; ++j){
+			if(dat[j] < min) min = dat[j];
+			if(dat[j] > max) max = dat[j];
+		}
+
+		BYTE byte_width = 0;
+		if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
+		else byte_width = ceil(ceil(log2(max + 1))/8);
+
+		if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
+		else if(byte_width > 4) byte_width = 8;
+		if(byte_width == 0) byte_width = 1;
+
+		// This cannot ever be uniform
+		buffer_type buffer(this->buffer_strides.pointer);
+
+		// Is non-negative
+		if(min >= 0){
+			this->header_stride.controller.signedness = 0;
+
+			if(byte_width == 1){
+				this->header_stride.controller.type = TYPE_8B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (BYTE)dat[j];
+			} else if(byte_width == 2){
+				this->header_stride.controller.type = TYPE_16B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (U16)dat[j];
+			} else if(byte_width == 4){
+				this->header_stride.controller.type = TYPE_32B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (U32)dat[j];
+			} else if(byte_width == 8){
+				this->header_stride.controller.type = TYPE_64B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (U64)dat[j];
+			} else {
+				std::cerr << "illegal" << std::endl;
+				exit(1);
+			}
+		}
+		// Is negative
+		else {
+			this->header_stride.controller.signedness = 1;
+
+			if(byte_width == 1){
+				this->header_stride.controller.type = TYPE_8B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (SBYTE)dat[j];
+			} else if(byte_width == 2){
+				this->header_stride.controller.type = TYPE_16B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (S16)dat[j];
+			} else if(byte_width == 4){
+				this->header_stride.controller.type = TYPE_32B;
+
+				for(U32 j = 0; j < this->n_entries; ++j)
+					buffer += (S32)dat[j];
+			} else {
+				std::cerr << "illegal" << std::endl;
+				exit(1);
+			}
+		}
+		std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
+		memcpy(this->buffer_strides.data, buffer.data, buffer.pointer);
+		this->buffer_strides.pointer = buffer.pointer;
+		buffer.deleteAll();
 	}
 
 	/////////////////////
@@ -499,8 +586,8 @@ public:
 	header_type header;
 	header_stride_type header_stride;
 	// Not written - used internally only
-	U32 n_entries;   // number of entries
-	U32 n_additions; // number of times added
+	U32 n_entries;   // number of container entries
+	U32 n_additions; // number of times an addition operation was executed
 	// Buffers
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
