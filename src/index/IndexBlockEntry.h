@@ -76,21 +76,22 @@ struct IndexBlockEntryOffsets{
 public:
 	IndexBlockEntryOffsets(void) : key(0), header_stride(nullptr){}
 	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h), header_stride(nullptr){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(new header_stride_type){
-		*this->header_stride = s;
-	}
+	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(new header_stride_type(s)){}
 
-	~IndexBlockEntryOffsets(void){ delete this->header_stride; }
+	~IndexBlockEntryOffsets(void){
+		std::cerr << "calling dtor for block-offset" << std::endl;
+		// delete this->header_stride;
+	}
 
 	bool update(const U32& key, const header_type& h){
 		this->key = key;
-		//this->header = h;
+		this->header = h;
 		return true;
 	}
 
 	bool update(const U32& key, const header_type& h, const header_stride_type& s){
 		this->key = key;
-		//this->header = h;
+		this->header = h;
 		std::cerr << "Addresses: " << &s << '\t' << this->header_stride << std::endl;
 		delete this->header_stride;
 		this->header_stride = new header_stride_type(s);

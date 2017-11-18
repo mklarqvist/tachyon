@@ -140,6 +140,8 @@ struct StreamContainerHeader{
 		this->uLength = 0;
 		this->crc = 0;
 		this->n_extra = 0;
+		delete [] this->extra;
+		this->extra = nullptr;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -199,7 +201,7 @@ struct StreamContainerHeaderStride{
 		extra(nullptr)
 	{}
 
-	StreamContainerHeaderStride(const StreamContainerHeaderStride& other) :
+	StreamContainerHeaderStride(const self_type& other) :
 		controller(other.controller),
 		cLength(other.cLength),
 		uLength(other.uLength),
@@ -211,11 +213,11 @@ struct StreamContainerHeaderStride{
 			this->extra = new char[n_extra];
 			memcpy(this->extra, other.extra, other.n_extra);
 		}
-		std::cerr << "copy ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
+		std::cerr << "copy ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << '\t' << this << '\t' << &other << std::endl;
 	}
 
 	/* noexcept needed to enable optimizations in containers */
-	StreamContainerHeaderStride(StreamContainerHeaderStride&& other) noexcept :
+	StreamContainerHeaderStride(self_type&& other) noexcept :
 		controller(other.controller),
 		cLength(other.cLength),
 		uLength(other.uLength),
@@ -228,8 +230,8 @@ struct StreamContainerHeaderStride{
 		exit(1);
 	}
 
-	StreamContainerHeaderStride& operator=(const StreamContainerHeaderStride& other){
-		StreamContainerHeaderStride tmp(other); // re-use copy-constructor
+	self_type& operator=(const self_type& other){
+		self_type tmp(other); // re-use copy-constructor
 		*this = std::move(tmp);                 // re-use move-assignment
 		std::cerr << "copy assign ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
 		exit(1);
@@ -237,7 +239,7 @@ struct StreamContainerHeaderStride{
 	}
 
 	/** Move assignment operator */
-	StreamContainerHeaderStride& operator=(StreamContainerHeaderStride&& other) noexcept{
+	self_type& operator=(self_type&& other) noexcept{
 		// prevent self-move
 		if(this!=&other){
 			std::cerr << "container stride header move assign" << std::endl;
@@ -259,8 +261,17 @@ struct StreamContainerHeaderStride{
 	}
 
 	~StreamContainerHeaderStride(){
-		std::cerr << "calling dtor: " << (this->extra == nullptr) << std::endl;
+		std::cerr << "calling dtor for " << this << '\t' << (this->extra == nullptr) << std::endl;
 		delete [] this->extra;
+	}
+
+	inline void reset(void){
+		this->cLength = 0;
+		this->uLength = 0;
+		this->crc = 0;
+		this->n_extra = 0;
+		delete [] this->extra;
+		this->extra = nullptr;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -384,6 +395,7 @@ public:
 		this->buffer_data.reset();
 		this->buffer_strides.reset();
 		this->header.reset();
+		this->header_stride.reset();
 	}
 
 	inline void resize(const U32 size){
