@@ -107,15 +107,28 @@ struct StreamContainerHeader{
 		other.extra = nullptr;
 	}
 
+	 // copy assignment
 	StreamContainerHeader& operator=(const StreamContainerHeader& other){
-		StreamContainerHeader tmp(other); // re-use copy-constructor
-		*this = std::move(tmp);           // re-use move-assignment
+		this->controller = other.controller;
+		this->stride = other.stride;
+		this->offset = other.offset;
+		this->cLength = other.cLength;
+		this->uLength = other.uLength;
+		this->crc = other.crc;
+
+		if(other.n_extra > 0){
+			char* tmp = new char[other.n_extra];
+			memcpy(tmp, other.extra, other.n_extra);
+			delete[] this->extra;
+			this->extra = tmp;
+			this->n_extra = other.n_extra;
+		} else this->extra = nullptr;
 		return *this;
 	}
 
+
 	/** Move assignment operator */
 	StreamContainerHeader& operator=(StreamContainerHeader&& other) noexcept{
-		std::cerr << "container header move assign" << std::endl;
 		this->controller = other.controller;
 		this->stride = other.stride;
 		this->offset = other.offset;
@@ -123,15 +136,16 @@ struct StreamContainerHeader{
 		this->uLength = other.uLength;
 		this->crc = other.crc;
 		this->n_extra = other.n_extra;
-
-		std::cerr << this->crc << '\t' << other.crc << std::endl;
 		delete [] this->extra;
 		this->extra = other.extra;
 		other.extra = nullptr;
 		return *this;
 	}
 
-	virtual ~StreamContainerHeader(){ delete [] this->extra; }
+	~StreamContainerHeader(){
+		std::cerr << "dtor " << this << std::endl;
+		delete [] this->extra;
+	}
 
 	inline void reset(void){
 		this->stride = -1;
@@ -197,8 +211,8 @@ struct StreamContainerHeaderStride{
 		cLength(0),
 		uLength(0),
 		crc(0),
-		n_extra(0),
-		extra(nullptr)
+		n_extra(0)
+		//extra(nullptr)
 	{}
 
 	StreamContainerHeaderStride(const self_type& other) :
@@ -206,14 +220,15 @@ struct StreamContainerHeaderStride{
 		cLength(other.cLength),
 		uLength(other.uLength),
 		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(nullptr)
+		n_extra(other.n_extra)
+		//extra(nullptr)
 	{
+		/*
 		if(other.extra != nullptr){
 			this->extra = new char[n_extra];
 			memcpy(this->extra, other.extra, other.n_extra);
 		}
-		std::cerr << "copy ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << '\t' << this << '\t' << &other << std::endl;
+		*/
 	}
 
 	/* noexcept needed to enable optimizations in containers */
@@ -222,19 +237,15 @@ struct StreamContainerHeaderStride{
 		cLength(other.cLength),
 		uLength(other.uLength),
 		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(other.extra)
+		n_extra(other.n_extra)
+		//extra(other.extra)
 	{
-		other.extra = nullptr;
-		std::cerr << "move ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
-		exit(1);
+		//other.extra = nullptr;
 	}
 
 	self_type& operator=(const self_type& other){
 		self_type tmp(other); // re-use copy-constructor
 		*this = std::move(tmp);                 // re-use move-assignment
-		std::cerr << "copy assign ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
-		exit(1);
 		return *this;
 	}
 
@@ -242,27 +253,25 @@ struct StreamContainerHeaderStride{
 	self_type& operator=(self_type&& other) noexcept{
 		// prevent self-move
 		if(this!=&other){
-			std::cerr << "container stride header move assign" << std::endl;
 			this->controller = other.controller;
 			this->cLength = other.cLength;
 			this->uLength = other.uLength;
 			this->crc = other.crc;
 			this->n_extra = other.n_extra;
 
+			/*
 			if(other.extra != nullptr){
 				delete [] this->extra;
 				this->extra = other.extra;
 				other.extra = nullptr;
 			}
+			*/
 		}
-		std::cerr << "move assign ctor: " << (this->extra == nullptr) << '\t' << (other.extra == nullptr) << std::endl;
-		exit(1);
 		return *this;
 	}
 
 	~StreamContainerHeaderStride(){
-		std::cerr << "calling dtor for " << this << '\t' << (this->extra == nullptr) << std::endl;
-		delete [] this->extra;
+		//delete [] this->extra;
 	}
 
 	inline void reset(void){
@@ -270,8 +279,8 @@ struct StreamContainerHeaderStride{
 		this->uLength = 0;
 		this->crc = 0;
 		this->n_extra = 0;
-		delete [] this->extra;
-		this->extra = nullptr;
+		//delete [] this->extra;
+		//this->extra = nullptr;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -279,8 +288,8 @@ struct StreamContainerHeaderStride{
 		stream.write(reinterpret_cast<const char*>(&entry.cLength), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.crc),     sizeof(U32));
-		if(entry.n_extra > 0)
-			stream.write(entry.extra, entry.n_extra);
+		//if(entry.n_extra > 0)
+		//	stream.write(entry.extra, entry.n_extra);
 
 		return(stream);
 	}
@@ -299,7 +308,7 @@ public:
 	U32 uLength;
 	U32 crc;
 	U32 n_extra; // not written; used internally only
-	char* extra; // extra length is encoder specific
+	//char* extra; // extra length is encoder specific
 };
 
 // Stream container for importing

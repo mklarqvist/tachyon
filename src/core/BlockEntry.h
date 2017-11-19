@@ -8,8 +8,6 @@ class BlockEntry{
 	typedef BlockEntry self_type;
 	typedef Core::StreamContainer stream_container;
 	typedef Core::PermutationManager permutation_type;
-	typedef Core::EntryHotMetaBase meta_type;
-	typedef Core::EntryColdMeta meta_cold_type;
 	typedef Index::IndexBlockEntry index_entry_type;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
@@ -40,6 +38,7 @@ public:
 	}
 
 	void clear(){
+		this->index_entry.reset();
 		for(U32 i = 0; i < 100; ++i){
 			this->info_containers[i].reset();
 			this->format_containers[i].reset();
@@ -49,7 +48,6 @@ public:
 		this->meta_cold_container.reset();
 		this->gt_rle_container.reset();
 		this->gt_simple_container.reset();
-		this->index_entry.reset();
 		this->ppa_manager.reset();
 	}
 

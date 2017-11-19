@@ -67,7 +67,6 @@ private:
 
 private:
 	U32 checkpoint_size;      // number of variants until checkpointing
-	U32 block_flush_limit;    // limit in bytes when to flush to disk
 	std::string inputFile;    // input file name
 	std::string outputPrefix; // output file prefix
 	reader_type reader_;      // reader

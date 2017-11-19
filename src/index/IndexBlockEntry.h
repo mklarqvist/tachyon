@@ -60,7 +60,7 @@ public:
 
 	template <class T>
 	const bool operator[](const T& p) const{
-		std::cerr << (U32)p << " byte: " << (U32)p/8 << " remainder: " << (U32)p%8 << " shift: " << std::bitset<8>((1 << (p % 8))) << std::endl;
+		//std::cerr << (U32)p << " byte: " << (U32)p/8 << " remainder: " << (U32)p%8 << " shift: " << std::bitset<8>((1 << (p % 8))) << std::endl;
 		return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8));
 	}
 
@@ -74,13 +74,11 @@ struct IndexBlockEntryOffsets{
 	typedef Core::StreamContainerHeaderStride header_stride_type;
 
 public:
-	IndexBlockEntryOffsets(void) : key(0), header_stride(nullptr){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h), header_stride(nullptr){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(new header_stride_type(s)){}
-
+	IndexBlockEntryOffsets(void) : key(0){}
+	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h){}
+	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
 	~IndexBlockEntryOffsets(void){
-		std::cerr << "calling dtor for block-offset" << std::endl;
-		// delete this->header_stride;
+		std::cerr << "dtor offsets" << std::endl;
 	}
 
 	bool update(const U32& key, const header_type& h){
@@ -92,13 +90,7 @@ public:
 	bool update(const U32& key, const header_type& h, const header_stride_type& s){
 		this->key = key;
 		this->header = h;
-		std::cerr << "Addresses: " << &s << '\t' << this->header_stride << std::endl;
-		delete this->header_stride;
-		this->header_stride = new header_stride_type(s);
-		//std::cerr << "after delete update: " << (this->header_stride->extra == nullptr) << std::endl;
-		//std::cerr << "Return values: " << (this->header_stride->extra == nullptr) << '\t' << (s.extra == nullptr) << std::endl;
-		//std::cerr << (void*)this->header_stride->extra << '\t' << (void*)s.extra << std::endl;
-
+		this->header_stride = s;
 		return true;
 	}
 
@@ -106,7 +98,7 @@ public:
 		stream.write(reinterpret_cast<const char*>(&entry.key), sizeof(U32));
 		stream << entry.header;
 		if(entry.header.controller.mixedStride)
-			stream << *entry.header_stride;
+			stream << entry.header_stride;
 
 		return(stream);
 	}
@@ -114,7 +106,7 @@ public:
 public:
 	U32 key;
 	header_type header;
-	header_stride_type* header_stride;
+	header_stride_type header_stride;
 };
 
 struct IndexBlockEntryBase{

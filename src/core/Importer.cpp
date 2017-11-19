@@ -6,7 +6,6 @@ namespace Tachyon {
 
 Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
 	checkpoint_size(checkpoint),
-	block_flush_limit(65536),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
 	reader_(inputFile),
@@ -129,6 +128,7 @@ bool Importer::BuildBCF(void){
 		this->permutator.reset();
 		this->resetHashes();
 		this->block.clear();
+		std::cerr << "end of reset" << std::endl;
 	}
 
 	/*
