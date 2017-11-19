@@ -89,7 +89,7 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 
 // Clear data if present
 	// Allocate new bit-vectors
-	if(target != nullptr){ delete [] target; }
+	delete [] target;
 	target = new bit_vector[patterns.size()];
 
 	// Allocate memory for these bit-vectors

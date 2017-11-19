@@ -98,31 +98,12 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
-		//Index::IndexBlockEntry block_entry;
-		//++this->header_->getContig(reader[0].body->CHROM); // update block count for this contigID
-
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		this->block.index_entry.controller.hasGT = 1;
 		this->block.index_entry.controller.isDiploid = 1;
-		//cont.Clear();
-
-		//cont.Deflate(this->meta_cold_container.buffer_data);
-		//this->writer_.streamTomahawk << cont;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
-		//cont.Clear();
-
-		//cont.setCompression(-1);
-		//cont.setWindowSize(-15);
-		//cont.Deflate(this->gt_rle_container.buffer_data);
-		//this->writer_.streamTomahawk << cont;
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
-		//cont.Clear();
-
-
-		//cont.Deflate(this->gt_simple_container.buffer_data);
-		//this->writer_.streamTomahawk << cont;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
-		//cont.Clear();
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -142,7 +123,7 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields);
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
-		this->writer_.streamTomahawk << this->block.index_entry;
+		this->writer_.streamTomahawk << this->block;
 		std::cerr << "Header size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->permutator.reset();

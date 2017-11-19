@@ -114,6 +114,25 @@ private:
 		}
 	}
 
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream << entry.index_entry;
+		//stream << entry.ppa_manager;
+		stream << entry.meta_hot_container;
+		stream << entry.meta_cold_container;
+		stream << entry.gt_rle_container;
+		stream << entry.gt_simple_container;
+		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+			stream << entry.info_containers[i];
+
+		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
+			stream << entry.format_containers[i];
+
+		for(U32 i = 0; i < entry.index_entry.n_filter_streams; ++i)
+			stream << entry.filter_containers[i];
+
+		return(stream);
+	}
+
 public:
 	index_entry_type  index_entry;
 	permutation_type  ppa_manager;

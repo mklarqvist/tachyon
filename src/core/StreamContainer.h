@@ -672,6 +672,14 @@ public:
 		return true;
 	}
 
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		// Headers are written elsewhere
+		stream << entry.buffer_data;
+		if(entry.header.controller.mixedStride)
+			stream << entry.buffer_strides;
+		return(stream);
+	}
+
 public:
 	// Headers
 	header_type header;
