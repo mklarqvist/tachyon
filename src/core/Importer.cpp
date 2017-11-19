@@ -1,6 +1,5 @@
 #include <fstream>
 #include "Importer.h"
-#include "../algorithm/compression/CompressionContainer.h"
 
 namespace Tachyon {
 
@@ -104,6 +103,10 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 
+		stream_container test;
+		std::cerr << "outside: " << test.n_additions << std::endl;
+		std::cerr << "other: " << this->block.info_containers[0].n_additions << std::endl;
+
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
 		this->block.index_entry.n_format_streams = this->format_fields.size();
@@ -117,13 +120,14 @@ bool Importer::BuildBCF(void){
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
-		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO, this->info_fields);
+		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields);
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->writer_.streamTomahawk << this->block;
 		std::cerr << "Header size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+		std::cerr << "cid: " << this->block.index_entry.contigID << '\t' << this->block.index_entry.info_offsets[0].key << '\t' << this->block.index_entry.info_offsets[0].header.uLength << '\t' << &this->block.index_entry.info_offsets[0] << std::endl;
 
 		this->permutator.reset();
 		this->resetHashes();

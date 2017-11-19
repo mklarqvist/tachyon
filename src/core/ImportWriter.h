@@ -89,11 +89,6 @@ public:
 
 	void CheckOutputNames(const std::string& input);
 
-private:
-	S32 recodeStream(stream_container& stream);
-	S32 recodeStreamStride(stream_container& stream);
-	bool checkUniformity(stream_container& stream);
-
 public:
 	// Stream information
 	std::ofstream streamTomahawk;   // stream for data

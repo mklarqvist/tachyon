@@ -1,5 +1,5 @@
-#ifndef HASHCONTAINER_H_
-#define HASHCONTAINER_H_
+#ifndef CORE_HASHCONTAINER_H_
+#define CORE_HASHCONTAINER_H_
 
 #include "../algorithm/OpenHashTable.h"
 
@@ -129,4 +129,4 @@ private:
 
 
 
-#endif /* HASHCONTAINER_H_ */
+#endif /* CORE_HASHCONTAINER_H_ */

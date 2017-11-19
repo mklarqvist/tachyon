@@ -1,6 +1,14 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
+#include "base/StreamContainerHeaderController.h"
+#include "base/StreamContainerHeader.h"
+#include "StreamContainer.h"
+#include "PermutationManager.h"
+#include "HashContainer.h"
+#include "../index/IndexBlockEntry.h"
+#include "../io/bcf/BCFReader.h"
+
 namespace Tachyon{
 namespace Core{
 
@@ -78,12 +86,18 @@ private:
 			if(container[i].buffer_data.size() == 0)
 				continue;
 
+			std::cerr << "here" << std::endl;
+
 			// Check if stream is uniform in content
 			container[i].checkUniformity();
+			std::cerr << "here" << std::endl;
+			std::cerr << this->info_containers[0].n_entries << std::endl;
 			// Reformat stream to use as small word size as possible
 			container[i].reformat();
+			std::cerr << "here" << std::endl;
 			// Add CRC32 checksum for sanity
 			container[i].checkSum();
+			std::cerr << "here" << std::endl;
 
 			// Set uncompressed length
 			container[i].header.uLength = container[i].buffer_data.pointer;
@@ -119,6 +133,7 @@ private:
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;
 		stream << entry.gt_simple_container;
+
 		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
 			stream << entry.info_containers[i];
 

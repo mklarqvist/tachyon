@@ -1,5 +1,5 @@
-#ifndef PERMUTATIONMANAGER_H_
-#define PERMUTATIONMANAGER_H_
+#ifndef ALGORITHM_PERMUTATIONMANAGER_H_
+#define ALGORITHM_PERMUTATIONMANAGER_H_
 
 namespace Tachyon{
 namespace Core{
@@ -46,4 +46,4 @@ public:
 }
 }
 
-#endif /* PERMUTATIONMANAGER_H_ */
+#endif /* ALGORITHM_PERMUTATIONMANAGER_H_ */

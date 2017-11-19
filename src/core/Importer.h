@@ -1,16 +1,12 @@
 #ifndef TOMAHAWKIMPORTER_H_
 #define TOMAHAWKIMPORTER_H_
 
-#include "base/EntryHotMeta.h"
-#include "../algorithm/compression/EncoderGenotypesRLE.h"
-#include "../index/IndexEntry.h"
-#include "../index/IndexBlockEntry.h"
-#include "../algorithm/permutation/RadixSortGT.h"
-#include "StreamContainer.h"
-#include "PermutationManager.h"
-#include "ImportWriter.h"
-#include "HashContainer.h"
+#include "../support/TypeDefinitions.h"
+#include "../support/helpers.h"
+#include "../io/bcf/BCFReader.h"
 #include "BlockEntry.h"
+#include "ImportWriter.h"
+#include "../algorithm/permutation/RadixSortGT.h"
 
 namespace Tachyon {
 
@@ -71,7 +67,6 @@ private:
 	std::string outputPrefix; // output file prefix
 	reader_type reader_;      // reader
 	writer_type writer_;      // writer
-
 
 	totempole_entry_type totempole_entry;  // totempole entry for indexing
 	radix_sorter_type permutator;

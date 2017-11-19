@@ -74,11 +74,13 @@ struct IndexBlockEntryOffsets{
 	typedef Core::StreamContainerHeaderStride header_stride_type;
 
 public:
-	IndexBlockEntryOffsets(void) : key(0){}
+	IndexBlockEntryOffsets(void) : key(0){
+		std::cerr << "ctor offset: " << this << std::endl;
+	}
 	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h){}
 	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
 	~IndexBlockEntryOffsets(void){
-		std::cerr << "dtor offsets" << std::endl;
+		std::cerr << "dtor offsets: " << this << std::endl;
 	}
 
 	bool update(const U32& key, const header_type& h){
@@ -232,18 +234,21 @@ public:
 		if(size == 0) return;
 		delete [] this->info_offsets;
 		this->info_offsets = new offset_type[size];
+		std::cerr << "Allocating INFO: " << size << '\t' << this->info_offsets << '\t' << &this->info_offsets[0] << std::endl;
 	}
 
 	void allocateFormatOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
 		this->format_offsets = new offset_type[size];
+		std::cerr << "Allocating FORMAT: " << size << '\t' << this->format_offsets << '\t' << &this->format_offsets[0] << std::endl;
 	}
 
 	void allocateFilterOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->filter_offsets;
 		this->filter_offsets = new offset_type[size];
+		std::cerr << "Allocating FILTER: " << size << '\t' << this->filter_offsets << '\t' << &this->filter_offsets[0] << std::endl;
 	}
 
 
