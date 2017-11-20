@@ -4,16 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/core/BlockEntry.cpp \
 ../src/core/ImportWriter.cpp \
 ../src/core/Importer.cpp \
 ../src/core/StreamContainer.cpp 
 
 OBJS += \
+./src/core/BlockEntry.o \
 ./src/core/ImportWriter.o \
 ./src/core/Importer.o \
 ./src/core/StreamContainer.o 
 
 CPP_DEPS += \
+./src/core/BlockEntry.d \
 ./src/core/ImportWriter.d \
 ./src/core/Importer.d \
 ./src/core/StreamContainer.d 

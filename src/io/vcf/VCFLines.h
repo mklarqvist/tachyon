@@ -76,7 +76,7 @@ public:
 		uint32_t search_position = 0;
 		uint32_t delimiters_found = 0;
 		while(true){ // while there is samples in line
-			const char* found = std::find(&this->inputData_[search_position], &this->inputData_[this->dataLength_], Tachyon::Constants::VCF_DELIMITER);
+			const char* found = std::find(&this->inputData_[search_position], &this->inputData_[this->dataLength_], '\t');
 
 			if(*found != VCF::Constants::VCF_DELIMITER){
 				//std::cerr << "break no match " << (*found == '\n') << '\t' << (int)*found << '\t' << *found << '\t' << found - this->inputData_ << '/' << this->dataLength_ << std::endl;

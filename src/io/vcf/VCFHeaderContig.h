@@ -8,13 +8,13 @@ struct VCFHeaderContig{
 	typedef VCFHeaderContig self_type;
 
 public:
-	VCFHeaderContig() : length(0), tomahawkBlocks(0){}
+	VCFHeaderContig() : length(0), blocks(0){}
 	~VCFHeaderContig(){}
 
-	inline void operator++(void){ ++this->tomahawkBlocks; }
-	inline void operator--(void){ --this->tomahawkBlocks; }
-	template <class T> inline void operator+=(const T value){ this->tomahawkBlocks += value; }
-	template <class T> inline void operator-=(const T value){ this->tomahawkBlocks -= value; }
+	inline void operator++(void){ ++this->blocks; }
+	inline void operator--(void){ --this->blocks; }
+	template <class T> inline void operator+=(const T value){ this->blocks += value; }
+	template <class T> inline void operator-=(const T value){ this->blocks -= value; }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& contig){
 		out << contig.name << '\t' << contig.length;
@@ -26,7 +26,7 @@ public:
 	U32 length;
 	// keep track of how many blocks we've seen for this contig
 	// used during import
-	U32 tomahawkBlocks;
+	U32 blocks;
 };
 
 }

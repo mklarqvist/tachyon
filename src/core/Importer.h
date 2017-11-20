@@ -1,5 +1,5 @@
-#ifndef TOMAHAWKIMPORTER_H_
-#define TOMAHAWKIMPORTER_H_
+#ifndef CORE_IMPORTER_H_
+#define CORE_IMPORTER_H_
 
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
@@ -71,7 +71,7 @@ private:
 	totempole_entry_type totempole_entry;  // totempole entry for indexing
 	radix_sorter_type permutator;
 	header_type* header_;     // header
-	encoder_type encoder;   // RLE packer
+	encoder_type encoder;     // RLE packer
 
 	block_type block;
 
@@ -84,6 +84,6 @@ private:
 };
 
 
-} /* namespace Tomahawk */
+} /* namespace Tachyon */
 
-#endif /* TOMAHAWKIMPORTER_H_ */
+#endif /* CORE_IMPORTER_H_ */

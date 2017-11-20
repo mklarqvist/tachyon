@@ -1,13 +1,9 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
-#include "base/StreamContainerHeaderController.h"
-#include "base/StreamContainerHeader.h"
-#include "StreamContainer.h"
 #include "PermutationManager.h"
-#include "HashContainer.h"
 #include "../index/IndexBlockEntry.h"
-#include "../io/bcf/BCFReader.h"
+#include "StreamContainer.h"
 
 namespace Tachyon{
 namespace Core{
@@ -160,7 +156,5 @@ public:
 
 }
 }
-
-
 
 #endif /* CORE_BLOCKENTRY_H_ */

@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2016-2017 Genome Research Ltd.
-Author: Marcus D. R. Klarqvist <mk21@sanger.ac.uk>
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -113,17 +113,6 @@ int main(int argc, char** argv){
 		programMessage();
 		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
-
-	//Tomahawk::TomahawkImportWriter writer;
-	//writer.test();
-	/*
-	Tomahawk::Index::IndexBlockEntryBase b;
-	std::cerr << b.contigID << std::endl;
-	Tomahawk::Index::IndexBlockEntry e;
-	std::cerr << e.contigID << std::endl;
-	return(1);
-	*/
-
 
 	Tachyon::Importer importer(input, output, checkpoint);
 

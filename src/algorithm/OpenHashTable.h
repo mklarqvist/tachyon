@@ -1,5 +1,5 @@
-#ifndef OPENHASHTABLE_H_
-#define OPENHASHTABLE_H_
+#ifndef ALGORITHM_OPENHASHTABLE_H_
+#define ALGORITHM_OPENHASHTABLE_H_
 
 #include <atomic>
 #include <cstring>
@@ -197,4 +197,4 @@ void HashTable<T, K>::clear(void){
 }
 
 
-#endif /* OPENHASHTABLE_H_ */
+#endif /* ALGORITHM_OPENHASHTABLE_H_ */

@@ -96,16 +96,13 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
-		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		this->block.index_entry.controller.hasGT = 1;
 		this->block.index_entry.controller.isDiploid = 1;
+
+		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
-
-		stream_container test;
-		std::cerr << "outside: " << test.n_additions << std::endl;
-		std::cerr << "other: " << this->block.info_containers[0].n_additions << std::endl;
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -113,6 +110,11 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_filter_streams = this->filter_fields.size();
 		this->block.index_entry.n_variants = reader.size();
 		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
+
+		Index::IndexBlockEntryBase testBase;
+		std::cerr << "external: " << testBase.contigID << std::endl;
+		Index::IndexBlockEntry test;
+		std::cerr << "external: " << test.contigID << std::endl;
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);

@@ -20,7 +20,7 @@
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.639451169" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" useByScannerDiscovery="false"/>
 							<option id="cdt.managedbuild.option.gnu.cross.path.1512816234" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" useByScannerDiscovery="false"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.1350459350" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<builder buildPath="${workspace_loc:/Tomahawk_rewrite}/build" id="cdt.managedbuild.builder.gnu.cross.1750567232" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.builder.gnu.cross"/>
+							<builder buildPath="${workspace_loc:/Tachyon}/build" id="cdt.managedbuild.builder.gnu.cross.1750567232" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.773076487" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option id="gnu.c.compiler.option.optimization.level.1087624297" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.c.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.dialect.std.752679132" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.c99" valueType="enumerated"/>
@@ -51,18 +51,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="third_party|algorithm|algorithm/compression|algorithm/permutation|core|core/base|index|io|io/bcf|io/compression|support|io/vcf" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
-						<entry excluding="compression|permutation" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src/algorithm"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/algorithm/compression"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/algorithm/permutation"/>
-						<entry excluding="base" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/core/base"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/index"/>
-						<entry excluding="vcf|bcf|compression|support" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/bcf"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/compression"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/io/vcf"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src/support"/>
+						<entry excluding="third_party" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
 						<entry excluding="FiniteStateEntropy/Visual|xxhash/xxhsum.c|zlib/win32|zlib/doc|zlib/msdos|zlib/as400|zlib/examples|zlib/test|zlib/contrib|FiniteStateEntropy/lib/Archives|FiniteStateEntropy/programs|zlib/qnx|third_party/zlib/old|zlib/watcom|zlib/nintendods|zlib/amiga" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src/third_party"/>
 					</sourceEntries>
 				</configuration>
@@ -71,15 +60,15 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="Tomahawk_rewrite.null.1534595450" name="Tomahawk_rewrite"/>
+		<project id="Tachyon.null.1534595450" name="Tachyon"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="build">
-			<resource resourceType="PROJECT" workspacePath="/Tomahawk_rewrite"/>
+			<resource resourceType="PROJECT" workspacePath="/Tachyon"/>
 		</configuration>
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/Tomahawk_rewrite"/>
+			<resource resourceType="PROJECT" workspacePath="/Tachyon"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">

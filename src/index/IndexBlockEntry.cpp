@@ -60,6 +60,7 @@ void IndexBlockEntry::reset(void){
 }
 
 bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
+	std::cerr << "internal bitvector: " << this->contigID << std::endl;
 	if(values.size() == 0)
 		return false;
 

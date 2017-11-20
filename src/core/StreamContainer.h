@@ -1,14 +1,8 @@
 #ifndef CORE_STREAMCONTAINER_H_
 #define CORE_STREAMCONTAINER_H_
 
-#include "../support/TypeDefinitions.h"
-#include "../support/helpers.h"
-#include "../third_party/zlib/zconf.h"
-#include "../third_party/zlib/zlib.h"
 #include "base/StreamContainerHeaderController.h"
 #include "base/StreamContainerHeader.h"
-#include "../io/BasicBuffer.h"
-#include "../algorithm/OpenHashTable.h"
 
 namespace Tachyon{
 namespace Core{

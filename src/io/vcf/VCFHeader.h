@@ -1,5 +1,5 @@
-#ifndef VCFHEADER_H_
-#define VCFHEADER_H_
+#ifndef VCF_VCFHEADER_H_
+#define VCF_VCFHEADER_H_
 
 #include <algorithm>
 

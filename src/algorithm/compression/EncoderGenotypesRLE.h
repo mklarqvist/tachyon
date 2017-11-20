@@ -322,8 +322,8 @@ bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, container_type& runs, 
 
 	// Genotype maps
 	// Map to 0,1,4,5
-	const BYTE*    map = Constants::TOMAHAWK_ALLELE_REDUCED_MAP;
-	if(shift == 2) map = Constants::TOMAHAWK_ALLELE_SELF_MAP;
+	const BYTE*    map = Constants::ALLELE_REDUCED_MAP;
+	if(shift == 2) map = Constants::ALLELE_SELF_MAP;
 
 	//std::cerr << ppa[0] << std::endl;
 	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);

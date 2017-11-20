@@ -5,10 +5,11 @@
 #include <bitset>
 
 #include "../io/BasicBuffer.h"
-#include "../algorithm/OpenHashTable.h"
-#include "../core/StreamContainer.h"
+#include "../core/base/StreamContainerHeaderController.h"
+#include "../core/base/StreamContainerHeader.h"
+#include "IndexBlockEntryOffsets.h"
+#include "IndexBlockEntryBitvector.h"
 #include "../core/HashContainer.h"
-#include "../core/base/EntryHotMeta.h"
 
 namespace Tachyon{
 namespace Index{
@@ -45,71 +46,6 @@ public:
 		unused: 14;
 };
 
-// Size of entries in these records are
-// inferred from the number of INFO/FORMAT/FILTER
-// entries in all the records in a block
-struct IndexBlockEntryBitvector{
-	typedef IndexBlockEntryBitvector self_type;
-
-public:
-	IndexBlockEntryBitvector() : bit_bytes(nullptr){}
-	~IndexBlockEntryBitvector(){ delete [] this->bit_bytes; }
-
-	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
-	inline void allocate(const U32& w){ this->bit_bytes = new BYTE[w]; memset(this->bit_bytes, 0, w); }
-
-	template <class T>
-	const bool operator[](const T& p) const{
-		//std::cerr << (U32)p << " byte: " << (U32)p/8 << " remainder: " << (U32)p%8 << " shift: " << std::bitset<8>((1 << (p % 8))) << std::endl;
-		return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8));
-	}
-
-public:
-	BYTE* bit_bytes;
-};
-
-struct IndexBlockEntryOffsets{
-	typedef IndexBlockEntryOffsets self_type;
-	typedef Core::StreamContainerHeader header_type;
-	typedef Core::StreamContainerHeaderStride header_stride_type;
-
-public:
-	IndexBlockEntryOffsets(void) : key(0){
-		std::cerr << "ctor offset: " << this << std::endl;
-	}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
-	~IndexBlockEntryOffsets(void){
-		std::cerr << "dtor offsets: " << this << std::endl;
-	}
-
-	bool update(const U32& key, const header_type& h){
-		this->key = key;
-		this->header = h;
-		return true;
-	}
-
-	bool update(const U32& key, const header_type& h, const header_stride_type& s){
-		this->key = key;
-		this->header = h;
-		this->header_stride = s;
-		return true;
-	}
-
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.key), sizeof(U32));
-		stream << entry.header;
-		if(entry.header.controller.mixedStride)
-			stream << entry.header_stride;
-
-		return(stream);
-	}
-
-public:
-	U32 key;
-	header_type header;
-	header_stride_type header_stride;
-};
 
 struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
@@ -204,7 +140,6 @@ public:
 	U16 n_info_patterns;
 	U16 n_format_patterns;
 	U16 n_filter_patterns;
-
 	// END OF FIXED SIZE
 };
 
@@ -234,23 +169,19 @@ public:
 		if(size == 0) return;
 		delete [] this->info_offsets;
 		this->info_offsets = new offset_type[size];
-		std::cerr << "Allocating INFO: " << size << '\t' << this->info_offsets << '\t' << &this->info_offsets[0] << std::endl;
 	}
 
 	void allocateFormatOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
 		this->format_offsets = new offset_type[size];
-		std::cerr << "Allocating FORMAT: " << size << '\t' << this->format_offsets << '\t' << &this->format_offsets[0] << std::endl;
 	}
 
 	void allocateFilterOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->filter_offsets;
 		this->filter_offsets = new offset_type[size];
-		std::cerr << "Allocating FILTER: " << size << '\t' << this->filter_offsets << '\t' << &this->filter_offsets[0] << std::endl;
 	}
-
 
 	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
 		this->allocateInfoOffsets(info);

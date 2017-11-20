@@ -7,17 +7,17 @@ namespace Core{
 // We CANNOT place phasing template parameter
 // since if we set it to 0 then we have a
 // 0 width bit field which is illegal
-// To solve this we introduce the TomahawkRunNoPhase
+// To solve this we introduce the TachyonRunNoPhase
 // data structure below
 #pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TomahawkRun{
+struct TachyonRun{
 private:
-	typedef TomahawkRun self_type;
+	typedef TachyonRun self_type;
 
 public:
-	TomahawkRun();	// Disallowed ctor
-	~TomahawkRun(); // Disallowed dtor
+	TachyonRun();	// Disallowed ctor
+	~TachyonRun(); // Disallowed dtor
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << (U32)entry.alleleA
@@ -34,13 +34,13 @@ public:
 
 #pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TomahawkRunNoPhase{
+struct TachyonRunNoPhase{
 private:
-	typedef TomahawkRunNoPhase self_type;
+	typedef TachyonRunNoPhase self_type;
 
 public:
-	TomahawkRunNoPhase();  // Disallowed ctor
-	~TomahawkRunNoPhase(); // Disallowed dtor
+	TachyonRunNoPhase();  // Disallowed ctor
+	~TachyonRunNoPhase(); // Disallowed dtor
 
 	T alleleA: (1 + missing),
 	  alleleB: (1 + missing),
@@ -49,13 +49,13 @@ public:
 
 #pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TomahawkRunPacked{
+struct TachyonRunPacked{
 private:
-	typedef TomahawkRunPacked self_type;
+	typedef TachyonRunPacked self_type;
 
 public:
-	TomahawkRunPacked();  // Disallowed ctor
-	~TomahawkRunPacked(); // Disallowed dtor
+	TachyonRunPacked();  // Disallowed ctor
+	~TachyonRunPacked(); // Disallowed dtor
 
 	T phasing: 1,
 	  alleles: 2*(1 + missing),
@@ -64,13 +64,13 @@ public:
 
 #pragma pack(1)
 template <class T>
-struct TomahawkRunSimple{
+struct TachyonRunSimple{
 private:
-	typedef TomahawkRunSimple<T> self_type;
+	typedef TachyonRunSimple<T> self_type;
 
 public:
-	TomahawkRunSimple();  // Disallowed ctor
-	~TomahawkRunSimple(); // Disallowed dtor
+	TachyonRunSimple();  // Disallowed ctor
+	~TachyonRunSimple(); // Disallowed dtor
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << (entry.alleleA == 0 ? '.' : (U16)entry.alleleA - 1)

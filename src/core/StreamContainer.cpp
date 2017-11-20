@@ -1,3 +1,9 @@
+#include "../support/TypeDefinitions.h"
+#include "../support/helpers.h"
+#include "../third_party/zlib/zconf.h"
+#include "../third_party/zlib/zlib.h"
+#include "../io/BasicBuffer.h"
+#include "../algorithm/OpenHashTable.h"
 #include "StreamContainer.h"
 
 namespace Tachyon{

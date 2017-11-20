@@ -1,5 +1,5 @@
-#ifndef BCFREADER_H_
-#define BCFREADER_H_
+#ifndef BCF_BCFREADER_H_
+#define BCF_BCFREADER_H_
 
 #include <cassert>
 
@@ -62,4 +62,4 @@ public:
 }
 }
 
-#endif /* BCFREADER_H_ */
+#endif /* BCF_BCFREADER_H_ */

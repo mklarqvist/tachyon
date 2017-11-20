@@ -264,6 +264,4 @@ public:
 }
 }
 
-
-
 #endif /* CORE_BASE_STREAMCONTAINERHEADER_H_ */

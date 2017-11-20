@@ -82,19 +82,22 @@ public:
 public:
 	controller_byte controller;
 	U64 position;
-	// most sites are bi-allelic and simple SNVs
+
+	// Most sites are bi-allelic and simple SNVs
 	// sites that are not bi-allelic and not simple
 	// will be encoded in the complex meta section
 	BYTE ref_alt;
+
 	// AF is pre-computed
-	//float MGF;
 	float AF;
+
 	// FILTER map
 	U16 FILTER_map_ID;
 	// INFO map
 	U16 INFO_map_ID;
 	// FORMAT map
 	U16 FORMAT_map_ID;
+
 	// Hot-cold split structure. pointer to cold data
 	// since a pointer cannot be read from a byte
 	// stream as its memory location changes

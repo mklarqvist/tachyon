@@ -1,5 +1,5 @@
-#ifndef VCFHEADERCONSTANTS_H_
-#define VCFHEADERCONSTANTS_H_
+#ifndef VCF_VCFHEADERCONSTANTS_H_
+#define VCF_VCFHEADERCONSTANTS_H_
 
 #include <string>
 #include "../../support/TypeDefinitions.h"
