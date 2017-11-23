@@ -125,7 +125,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	U32 target_ID = 0;
 	for(U32 j = 0; j < this->n_samples; ++j){
 		// Determine correct bin
-		switch(this->GT_array[(*this)[j]]){
+		switch(this->GT_array[(*this->manager)[j]]){
 		case 0:  target_ID = 0; break;
 		case 1:  target_ID = 3; break;
 		case 2:  target_ID = 4; break;
@@ -139,7 +139,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 		}
 
 		// Update bin i at position i with ppa[j]
-		this->bins[target_ID][this->p_i[target_ID]] = (*this)[j];
+		this->bins[target_ID][this->p_i[target_ID]] = (*this->manager)[j];
 		++this->p_i[target_ID];
 	} // end loop over individuals at position i
 
@@ -148,13 +148,14 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < 9; ++i){
 		// Copy data in bin i to current position
-		//std::cerr << i << '\t' << cum_pos*sizeof(U32) << '\t' << this->p_i[i] << std::endl;
+		//std::cerr << i << '\t' << cum_pos*sizeof(U32) << '\t' << this->p_i[i] << '\t';
 		memcpy(&this->manager->PPA[cum_pos*sizeof(U32)], this->bins[i], this->p_i[i]*sizeof(U32));
 
 		// Update cumulative position and reset
 		cum_pos += this->p_i[i];
 		this->p_i[i] = 0;
 	}
+	//std::cerr << std::endl;
 	// Make sure the cumulative position
 	// equals the number of samples in the
 	// dataset
@@ -183,7 +184,7 @@ void RadixSortGT::outputGT(const bcf_reader_type& reader){
 		}
 
 		for(U32 k = 0; k < this->n_samples; ++k){
-			std::cerr << (int)this->GT_array[(*this)[k]];
+			std::cerr << (int)this->GT_array[(*this->manager)[k]];
 		}
 		std::cerr << std::endl;
 	}

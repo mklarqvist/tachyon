@@ -85,13 +85,11 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 			// ID: contig name
 			// length: for length is bp
 			for(U32 i = 0; i < line.size(); ++i){
-				if(strncmp(&line[i].KEY[0], "ID", 2) == 0 && line[i].KEY.size() == 2){
+				if(strncasecmp(&line[i].KEY[0], "ID", 2) == 0 && line[i].KEY.size() == 2){
 					contig.name = std::string(line[i].VALUE);
-					//std::cerr << std::string(line[i].VALUE, line[i].lVALUE) << std::endl;
 					++found;
-				} else if(strncmp(&line[i].KEY[0], "length", 6) == 0 && line[i].KEY.size() == 6){
+				} else if(strncasecmp(&line[i].KEY[0], "length", 6) == 0 && line[i].KEY.size() == 6){
 					contig.length = atoi(&line[i].VALUE[0]);
-					//std::cerr << contig.length << std::endl;
 					++found;
 				}
 			}
@@ -105,6 +103,9 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 			this->contigs.push_back(contig);
 		}
 
+		// Also store the line as an object
+		// and as a literal string as observed
+		// in the VCF header
 		this->lines.push_back(line); // parseable lines
 		this->literal_lines.push_back(std::string(data, length + 1));
 		return true;

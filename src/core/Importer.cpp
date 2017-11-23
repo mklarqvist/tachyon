@@ -70,6 +70,7 @@ bool Importer::BuildBCF(void){
 	this->encoder.setSamples(this->header_->samples);
 	this->block.ppa_manager.setSamples(this->header_->samples);
 	this->permutator.manager = &this->block.ppa_manager;
+	this->permutator.setSamples(this->header_->samples);
 
 	if(!this->writer_.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
@@ -102,10 +103,6 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.controller.isDiploid = true;
 		this->block.index_entry.controller.isGTPermuted = true;
 
-		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -131,6 +128,12 @@ bool Importer::BuildBCF(void){
 		deflater.encode(this->block.meta_hot_container);
 		deflater.encode(this->block.meta_cold_container);
 
+
+		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
+		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
+		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
+		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
+
 		for(U32 i = 0; i < this->info_fields.size(); ++i){
 			deflater.encode(this->block.info_containers[i]);
 			if(this->block.info_containers[i].header.controller.mixedStride == true)
@@ -154,7 +157,8 @@ bool Importer::BuildBCF(void){
 		this->writer_.streamTomahawk << this->block;
 		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
-		this->permutator.reset();
+		// Reset inside block
+		// this->permutator.reset();
 		this->resetHashes();
 		this->block.clear();
 	}

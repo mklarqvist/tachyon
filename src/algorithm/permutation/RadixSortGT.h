@@ -36,7 +36,7 @@ public:
 
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
-	inline const U32& operator[](const U32& p) const{return((*this->manager)[p]); }
+	//inline U32& operator[](const U32& p) const{return((*this->manager)[p]); }
 	//inline const U32* getPPA(void) const{return(this->ppa); }
 
 	// Debug functions

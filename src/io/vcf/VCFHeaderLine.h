@@ -29,19 +29,19 @@ private:
 	typedef VCFHeaderLineKeyValue key_value;
 
 public:
-	VCFHeaderLine(const char* data, const U32 size) : size_(size), data_(data){}
+	VCFHeaderLine(const char* data, const U32 size) : size_(size), data(data){}
 	~VCFHeaderLine(){}
 
-	inline const U32 size(void) const{ return this->pairs_.size(); }
-	inline const key_value& operator[](const U32 p) const{ return this->pairs_[p]; }
-	inline bool isValid(void) const{ return(this->size_ > 2 && (this->data_[0] == '#' && this->data_[1] == '#')); }
+	inline const U32 size(void) const{ return this->pairs.size(); }
+	inline const key_value& operator[](const U32 p) const{ return this->pairs[p]; }
+	inline bool isValid(void) const{ return(this->size_ > 2 && (this->data[0] == '#' && this->data[1] == '#')); }
 	inline bool isCONTIG(void) const{
-		return(strncasecmp(&Constants::HEADER_CONTIG[0], &this->data_[0], Constants::HEADER_CONTIG.size()) == 0);
+		return(strncasecmp(&Constants::HEADER_CONTIG[0], &this->data[0], Constants::HEADER_CONTIG.size()) == 0);
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& pair){
-		out << pair.data_ << '\n';
-		for(U32 i = 0; i < pair.pairs_.size(); ++i)
+		out << pair.data << '\n';
+		for(U32 i = 0; i < pair.pairs.size(); ++i)
 			out << i << '/' << pair.size() << '\t' << pair[i] << '\n';
 
 		return(out);
@@ -57,21 +57,21 @@ public:
 
 
 		// Attempt to find an equal sign
-		const char* match = std::find(this->data_, &this->data_[this->size_], '=');
+		const char* match = std::find(this->data, &this->data[this->size_], '=');
 		if(*match != '='){
 			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match..." << std::endl;
 			return false;
 		}
 
-		if(this->data_[match-this->data_+1] != '<'){
+		if(this->data[match-this->data+1] != '<'){
 			std::cerr << "is text only: " << std::endl;
-			std::cerr << std::string(this->data_, this->size_+1) << std::endl;
+			std::cerr << std::string(this->data, this->size_+1) << std::endl;
 			return true;
 		}
 
 		// Find first equal sign
 		// If next symbol is < then parse it
-		std::string test(&this->data_[match-this->data_+2], this->size_ - (match-this->data_+2));
+		std::string test(&this->data[match-this->data+2], this->size_ - (match-this->data+2));
 		std::vector<std::string> x = Helpers::split(test, ',');
 		std::cerr << test << std::endl;
 
@@ -86,7 +86,7 @@ public:
 				std::cerr << "impossible: " << y.size() << std::endl;
 				exit(1);
 			}
-			this->pairs_.push_back(key_value(y[0], y[1]));
+			this->pairs.push_back(key_value(y[0], y[1]));
 
 		}
 		return true;
@@ -94,8 +94,8 @@ public:
 
 public:
 	U32 size_;
-	const char* data_;
-	std::vector<key_value> pairs_;
+	const char* data;
+	std::vector<key_value> pairs;
 };
 
 }
