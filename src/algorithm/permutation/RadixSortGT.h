@@ -36,7 +36,7 @@ public:
 
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
-	inline const U32& operator[](const U32& p) const{return(this->manager[p]); }
+	inline const U32& operator[](const U32& p) const{return((*this->manager)[p]); }
 	//inline const U32* getPPA(void) const{return(this->ppa); }
 
 	// Debug functions
@@ -49,7 +49,7 @@ public:
 	//U32* ppa;      // position prefix array
 	BYTE* GT_array;// packed genotype array
 	U32** bins;    // bin i
-	manager_type manager; // permutation manager
+	manager_type* manager; // permutation manager
 	U64 cumulative_AAC;
 	U64 cumulative_total;
 };

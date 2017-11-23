@@ -8,29 +8,11 @@ RadixSortGT::RadixSortGT() :
 	position(0),
 	GT_array(nullptr),
 	bins(new U32*[9]),
+	manager(nullptr),
 	cumulative_AAC(0),
 	cumulative_total(0)
 {
 	memset(&p_i, 0, sizeof(U32)*9);
-}
-
-RadixSortGT::RadixSortGT(const U64 n_samples) :
-	n_samples(n_samples),
-	position(0),
-	GT_array(new BYTE[this->n_samples]),
-	bins(new U32*[9]),
-	manager(this->n_samples),
-	cumulative_AAC(0),
-	cumulative_total(0)
-{
-	memset(&p_i, 0, sizeof(U32)*9);
-	for(U32 i = 0; i < 9; ++i){
-		this->bins[i] = new U32[n_samples];
-		memset(this->bins[i], 0, sizeof(U32)*n_samples);
-	}
-
-	this->manager.setSamples(n_samples);
-	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
 }
 
 RadixSortGT::~RadixSortGT(){
@@ -56,7 +38,7 @@ void RadixSortGT::setSamples(const U64 n_samples){
 
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
 
-	this->manager.setSamples(n_samples);
+	this->manager->setSamples(n_samples);
 }
 
 void RadixSortGT::reset(void){
@@ -64,7 +46,7 @@ void RadixSortGT::reset(void){
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
 	memset(&p_i, 0, sizeof(U32)*9);
 
-	this->manager.reset();
+	this->manager->reset();
 
 	this->cumulative_AAC = 0;
 	this->cumulative_total = 0;
@@ -167,7 +149,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	for(U32 i = 0; i < 9; ++i){
 		// Copy data in bin i to current position
 		//std::cerr << i << '\t' << cum_pos*sizeof(U32) << '\t' << this->p_i[i] << std::endl;
-		memcpy(&this->manager.PPA[cum_pos*sizeof(U32)], this->bins[i], this->p_i[i]*sizeof(U32));
+		memcpy(&this->manager->PPA[cum_pos*sizeof(U32)], this->bins[i], this->p_i[i]*sizeof(U32));
 
 		// Update cumulative position and reset
 		cum_pos += this->p_i[i];

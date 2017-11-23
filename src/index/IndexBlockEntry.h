@@ -22,11 +22,12 @@ public:
 	IndexBlockEntryController():
 		hasGT(0),
 		isDiploid(0),
+		isGTPermuted(0),
 		unused(0)
 	{}
 	~IndexBlockEntryController(){}
 
-	inline void clear(){ memset(this, 0, sizeof(BYTE)); }
+	inline void clear(){ memset(this, 0, sizeof(U16)); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
@@ -43,7 +44,8 @@ public:
 public:
 	U16 hasGT: 1,
 	    isDiploid: 1,
-		unused: 14;
+		isGTPermuted: 1,
+		unused: 13;
 };
 
 
@@ -114,14 +116,19 @@ public:
 	}
 
 public:
-	U32 offset_end_of_block; // allows jumping to the next block
-	controller_type controller;    // bit flags
+	 // allows jumping to the next block when streaming
+	// over the file and not using the index
+	U32 offset_end_of_block;
+	// bit flags
+	controller_type controller;
 	S32 contigID;       // contig identifier
 	U16 n_variants;     // number of variants in this block
 
 	// Virtual offsets to the start of various
 	// basic fields:
 	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
+	// Only GT_SIMPLE is redundant as all other values
+	// are stored in the offset array
 	U32 l_ppa;
 	U32 l_meta;
 	U32 l_meta_complex;

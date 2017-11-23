@@ -66,7 +66,8 @@ bool Importer::BuildBCF(void){
 
 	// Spawn RLE controller and update PPA controller
 	this->encoder.setSamples(this->header_->samples);
-	this->permutator.setSamples(this->header_->samples);
+	this->block.ppa_manager.setSamples(this->header_->samples);
+	this->permutator.manager = &this->block.ppa_manager;
 
 	if(!this->writer_.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
@@ -76,7 +77,6 @@ bool Importer::BuildBCF(void){
 	// Resize containers
 	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
-
 
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
@@ -96,8 +96,9 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
-		this->block.index_entry.controller.hasGT = 1;
-		this->block.index_entry.controller.isDiploid = 1;
+		this->block.index_entry.controller.hasGT = true;
+		this->block.index_entry.controller.isDiploid = true;
+		this->block.index_entry.controller.isGTPermuted = true;
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
@@ -170,7 +171,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	U64 n_runs = 0;
 
 	meta_type meta;
-	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager.get()))
+	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get()))
 		return false;
 
 	if(!this->parseBCFBody(meta, entry)){

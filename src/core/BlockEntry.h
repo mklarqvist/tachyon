@@ -29,6 +29,7 @@ public:
 			this->filter_containers[i].resize(65536*4);
 		}
 	}
+
 	~BlockEntry(){
 		delete [] this->info_containers;
 	}
@@ -117,7 +118,7 @@ private:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
-		//stream << entry.ppa_manager;
+		stream << entry.ppa_manager;
 		stream << entry.meta_hot_container;
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;
