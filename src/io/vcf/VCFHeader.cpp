@@ -18,11 +18,11 @@ VCFHeader::~VCFHeader(){
 }
 
 bool VCFHeader::parse(reader& stream){
-	if(!this->__parseFirstLine(stream))
+	if(!this->parseFirstLine(stream))
 		return false;
 
 	// Read remainder lines
-	if(!this->__parseHeaderLines(stream))
+	if(!this->parseHeaderLines(stream))
 		return false;
 
 	if(!this->buildContigTable())
@@ -37,7 +37,7 @@ bool VCFHeader::parse(reader& stream){
 	stream.stream_.seekg(curPos);
 
 	// Read samples line
-	if(!this->__parseSampleLine(stream))
+	if(!this->parseSampleLine(stream))
 		return false;
 
 	return true;
@@ -45,18 +45,18 @@ bool VCFHeader::parse(reader& stream){
 
 bool VCFHeader::parse(const char* const data, const U32& length){
 	U32 offset = 0;
-	if(!this->__parseFirstLine(data, offset))
+	if(!this->parseFirstLine(data, offset))
 		return false;
 
 	// Read remainder lines
-	if(!this->__parseHeaderLines(data, offset))
+	if(!this->parseHeaderLines(data, offset))
 		return false;
 
 	if(!this->buildContigTable())
 		return false;
 
 	// Read samples line
-	if(!this->__parseSampleLine(data, offset, length))
+	if(!this->parseSampleLine(data, offset, length))
 		return false;
 
 	return true;
@@ -64,17 +64,16 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 
 void VCFHeader::buildSampleTable(U64 samples){
 	this->samples = samples;
-	if(this->sampleHashTable != nullptr)
-		delete this->sampleHashTable;
+	delete this->sampleHashTable;
 
 	if(this->samples < 1024)
-		this->sampleHashTable = new hash_table(1024);
+		this->sampleHashTable = new hash_table_type(1024);
 	else
-		this->sampleHashTable = new hash_table(this->samples * 2);
+		this->sampleHashTable = new hash_table_type(this->samples * 2);
 }
 
 bool VCFHeader::checkLine(const char* data, const U32 length){
-	VCFHeaderLine line(data, length);
+	header_line_type line(data, length);
 	if(line.Parse()){
 		// If the line is a contig line: make sure it is legal
 		// for our purposes
@@ -118,19 +117,17 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 bool VCFHeader::buildContigTable(void){
 	S32* retValue;
 
-	if(this->contigsHashTable)
-		delete this->contigsHashTable;
+	delete this->contigsHashTable;
 
 	if(this->contigs.size() < 1024)
-		this->contigsHashTable = new hash_table(1024);
+		this->contigsHashTable = new hash_table_type(1024);
 	else
-		this->contigsHashTable = new hash_table(this->contigs.size() * 2);
+		this->contigsHashTable = new hash_table_type(this->contigs.size() * 2);
 
 	if(!SILENT)
 		std::cerr << Helpers::timestamp("LOG", "VCF") << "Constructing lookup table for " << this->contigs.size() << " contigs..." << std::endl;
 
 	for(U32 i = 0; i < this->contigs.size(); ++i){
-		//std::cerr << this->contigs[i] << std::endl;
 		if(!(*this).getContig(this->contigs[i].name, retValue)){
 			(*this).addContig(this->contigs[i].name, i);
 		} else {
@@ -142,7 +139,7 @@ bool VCFHeader::buildContigTable(void){
 	return true;
 }
 
-bool VCFHeader::__parseFirstLine(reader& stream){
+bool VCFHeader::parseFirstLine(reader& stream){
 	if(!stream.good()){
 		this->error_bit = STREAM_BAD;
 		return false;
@@ -172,7 +169,7 @@ bool VCFHeader::__parseFirstLine(reader& stream){
 	return true;
 }
 
-bool VCFHeader::__parseFirstLine(const char* const data, U32& offset){
+bool VCFHeader::parseFirstLine(const char* const data, U32& offset){
 	offset = 4;
 	if(strncmp(&data[offset], &VCF::Constants::HEADER_VCF_FORMAT[0], VCF::Constants::HEADER_VCF_FORMAT.size()) != 0){
 		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Invalid VCF format..." << std::endl;
@@ -193,7 +190,7 @@ bool VCFHeader::__parseFirstLine(const char* const data, U32& offset){
 	return true;
 }
 
-bool VCFHeader::__parseHeaderLines(reader& stream){
+bool VCFHeader::parseHeaderLines(reader& stream){
 	while(stream.getLine()){
 		if(stream.buffer_[1] != '#')
 			break;
@@ -215,7 +212,7 @@ bool VCFHeader::__parseHeaderLines(reader& stream){
 	return true;
 }
 
-bool VCFHeader::__parseHeaderLines(const char* const data, U32& offset){
+bool VCFHeader::parseHeaderLines(const char* const data, U32& offset){
 	std::istringstream is(&data[offset]);
 	std::string line;
 	while(std::getline(is, line)){
@@ -234,7 +231,7 @@ bool VCFHeader::__parseHeaderLines(const char* const data, U32& offset){
 	return true;
 }
 
-bool VCFHeader::__parseSampleLine(reader& stream){
+bool VCFHeader::parseSampleLine(reader& stream){
 	// At broken position is main header line
 	// Validate header
 	if(strncmp(&VCF::Constants::HEADER_COLUMN[0], &stream.buffer_[0], VCF::Constants::HEADER_COLUMN.size()) != 0){
@@ -271,10 +268,7 @@ bool VCFHeader::__parseSampleLine(reader& stream){
 			continue;
 		}
 
-		//std::cerr << sampleName << std::endl;
-
-		if(!this->getSample(sampleName, retValue))
-			this->addSample(sampleName);
+		if(!this->getSample(sampleName, retValue)) this->addSample(sampleName);
 		else {
 			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
@@ -287,7 +281,7 @@ bool VCFHeader::__parseSampleLine(reader& stream){
 	return true;
 }
 
-bool VCFHeader::__parseSampleLine(const char* const data, U32& offset, const U32& length){
+bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& length){
 	// At broken position is main header line
 	// Validate header
 	if(strncmp(&VCF::Constants::HEADER_COLUMN[0], &data[offset], VCF::Constants::HEADER_COLUMN.size()) != 0){

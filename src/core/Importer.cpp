@@ -1,6 +1,7 @@
 #include <fstream>
 #include "Importer.h"
 #include "base/EntryColdMeta.h"
+#include "../algorithm/compression/CompressionContainer.h"
 
 namespace Tachyon {
 
@@ -14,7 +15,7 @@ Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 ch
 {
 }
 
-Importer::~Importer(){}
+Importer::~Importer(){ this->recode_buffer.deleteAll(); }
 
 void Importer::resetHashes(void){
 	this->info_fields.clear();
@@ -123,6 +124,31 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,  this->recode_buffer);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->recode_buffer);
+
+		Compression::DeflateCodec deflater;
+		deflater.encode(this->block.gt_rle_container);
+		deflater.encode(this->block.gt_simple_container);
+		deflater.encode(this->block.meta_hot_container);
+		deflater.encode(this->block.meta_cold_container);
+
+		for(U32 i = 0; i < this->info_fields.size(); ++i){
+			deflater.encode(this->block.info_containers[i]);
+			if(this->block.info_containers[i].header.controller.mixedStride == true)
+				deflater.encodeStrides(this->block.info_containers[i]);
+		}
+
+		for(U32 i = 0; i < this->format_fields.size(); ++i){
+			deflater.encode(this->block.format_containers[i]);
+			if(this->block.format_containers[i].header.controller.mixedStride == true)
+				deflater.encodeStrides(this->block.format_containers[i]);
+		}
+
+		for(U32 i = 0; i < this->filter_fields.size(); ++i){
+			deflater.encode(this->block.filter_containers[i]);
+			if(this->block.filter_containers[i].header.controller.mixedStride == true)
+				deflater.encodeStrides(this->block.filter_containers[i]);
+		}
+
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->writer_.streamTomahawk << this->block;

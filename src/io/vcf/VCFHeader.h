@@ -5,10 +5,10 @@
 
 #include "../../support/helpers.h"
 #include "../reader.h"
-#include "../../io/compression/TGZFController.h"
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderContig.h"
 #include "VCFHeaderLine.h"
+#include "../BasicBuffer.h"
 #include "../../algorithm/OpenHashTable.h"
 
 
@@ -17,10 +17,10 @@ namespace VCF{
 
 class VCFHeader {
 	typedef VCFHeader self_type;
-	typedef Hash::HashTable<std::string, S32> hash_table;
+	typedef Hash::HashTable<std::string, S32> hash_table_type;
 	typedef VCFHeaderContig contig_type;
-	typedef IO::TGZFController tgzf_type;
 	typedef IO::BasicBuffer buffer_type;
+	typedef VCFHeaderLine header_line_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
@@ -54,22 +54,6 @@ public:
 	bool parse(reader& stream);
 	bool parse(const char* const data, const U32& length);
 
-	bool writeTGZFLiterals(std::ofstream& stream) const{
-		buffer_type temp;
-		tgzf_type tgzf_controller;
-
-		for(U32 i = 0; i < this->literal_lines.size(); ++i){
-			std::cerr << this->literal_lines[i] << std::endl;
-			temp += this->literal_lines[i];
-		}
-		tgzf_controller.Deflate(temp);
-		stream.write(&temp.data[0], temp.size());
-		tgzf_controller.Clear();
-		temp.deleteAll();
-
-		return true;
-	}
-
 private:
 	// These functions are unsafe as they require contigHashTable to be
 	// set prior to calling
@@ -87,25 +71,24 @@ private:
 	bool checkLine(const char* data, const U32 length);
 	bool buildContigTable(void);
 	void buildSampleTable(U64 samples);
-	bool __parseFirstLine(reader& stream);
-	bool __parseHeaderLines(reader& stream);
-	bool __parseSampleLine(reader& stream);
-
-	bool __parseFirstLine(const char* const data, U32& offset);
-	bool __parseHeaderLines(const char* const data, U32& offset);
-	bool __parseSampleLine(const char* const data, U32& offset, const U32& length);
+	bool parseFirstLine(reader& stream);
+	bool parseHeaderLines(reader& stream);
+	bool parseSampleLine(reader& stream);
+	bool parseFirstLine(const char* const data, U32& offset);
+	bool parseHeaderLines(const char* const data, U32& offset);
+	bool parseSampleLine(const char* const data, U32& offset, const U32& length);
 
 public:
-	VCF_ERROR_TYPE error_bit;				// parse error bit
-	U64 samples;							// number of samples
-	float version;							// VCF version
-	std::string literal;					// string copy of header data
-	std::vector<contig_type> contigs;		// contigs
-	std::vector<std::string> sampleNames;	// sample names
-	std::vector<VCFHeaderLine> lines;		// header lines
+	VCF_ERROR_TYPE error_bit;               // parse error bit
+	U64 samples;                            // number of samples
+	float version;                          // VCF version
+	std::string literal;                    // string copy of header data
+	std::vector<contig_type> contigs;       // contigs
+	std::vector<std::string> sampleNames;   // sample names
+	std::vector<header_line_type> lines;    // header lines
 	std::vector<std::string> literal_lines; // vcf line literals
-	hash_table* contigsHashTable;			// hash table for contig names
-	hash_table* sampleHashTable;			// hash table for sample names
+	hash_table_type* contigsHashTable;     // hash table for contig names
+	hash_table_type* sampleHashTable;      // hash table for sample names
 };
 
 }

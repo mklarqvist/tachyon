@@ -14,6 +14,7 @@ private:
 	struct VCFHeaderLineKeyValue{
 		typedef VCFHeaderLineKeyValue self_type;
 
+		VCFHeaderLineKeyValue(const std::string& key, const std::string& value) : KEY(key), VALUE(value){}
 		VCFHeaderLineKeyValue(){}
 		~VCFHeaderLineKeyValue(){}
 
@@ -54,6 +55,7 @@ public:
 			return false;
 		}
 
+
 		// Attempt to find an equal sign
 		const char* match = std::find(this->data_, &this->data_[this->size_], '=');
 		if(*match != '='){
@@ -61,74 +63,32 @@ public:
 			return false;
 		}
 
-		U32 matchPos = match - this->data_ + 1;
-		if(this->data_[matchPos] == '<'){
-			if(this->data_[this->size_] != '>'){
-				std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data_[this->size_] << std::endl;
-				return false;
+		if(this->data_[match-this->data_+1] != '<'){
+			std::cerr << "is text only: " << std::endl;
+			std::cerr << std::string(this->data_, this->size_+1) << std::endl;
+			return true;
+		}
+
+		// Find first equal sign
+		// If next symbol is < then parse it
+		std::string test(&this->data_[match-this->data_+2], this->size_ - (match-this->data_+2));
+		std::vector<std::string> x = Helpers::split(test, ',');
+		std::cerr << test << std::endl;
+
+		for(U32 i = 0; i < x.size(); ++i){
+			std::cerr << x[i] << std::endl;
+			std::vector<std::string> y = Helpers::split(x[i], '=');
+
+			for(U32 j = 0; j < y.size(); ++j)
+				std::cerr << '\t' << y[j] << std::endl;
+
+			if(y.size() != 2){
+				std::cerr << "impossible: " << y.size() << std::endl;
+				exit(1);
 			}
+			this->pairs_.push_back(key_value(y[0], y[1]));
 
-			++matchPos;
-			// Sweep over and assert it is valid
-			while(this->nextKey(matchPos)){
-				// nothing in body
-			}
-
-			// Todo
-			//for(U32 i = 0; i < this->pairs_.size(); ++i){
-			//	std::cerr << i << '\t' << this->pairs_[i].KEY << '\t' << this->pairs_[i].VALUE << std::endl;
-			//}
-
-		} else {
-			//Todo: this value is just text
 		}
-		return true;
-	}
-
-private:
-	bool nextKey(U32& startPos){
-		if(this->data_[startPos] == '>')
-			return false;
-
-		const char* match = std::find(&this->data_[startPos], &this->data_[this->size_], '=');
-		if(*match != '='){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
-			return false;
-		}
-		U32 matchPos = match - this->data_;
-		VCFHeaderLineKeyValue entry;
-		entry.KEY = std::string(&this->data_[startPos], matchPos - startPos);
-		//entry.lKEY = matchPos - startPos;
-		//std::cerr << "Startpos: " << startPos << "->" << matchPos - 1 << " length " << matchPos - startPos - 1 << std::endl;
-
-		startPos = matchPos + 1;
-
-		char match_token = ',';
-		BYTE adjust_value = 0;
-		if(this->data_[startPos] == '"'){
-			//std::cerr << "Search for quotes at pos " << startPos << std::endl;
-			match_token = '"';
-			adjust_value = 1;
-		}
-
-		match = std::find(&this->data_[startPos + adjust_value], &this->data_[this->size_], match_token);
-		//std::cerr << "match is " << *match << " at " << match - this->data_ << std::endl;
-		if(*match == '>'){
-			entry.VALUE = std::string(&this->data_[startPos],this->size_ - startPos);
-			//entry.lVALUE = this->size_ - startPos;
-			startPos = matchPos + 1;
-			this->pairs_.push_back(entry);
-			return false;
-		} else if(*match != match_token){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
-			return false;
-		}
-
-		matchPos = match - this->data_;
-		entry.VALUE = std::string(&this->data_[startPos], matchPos - startPos + adjust_value);
-		//entry.lVALUE = matchPos - startPos + adjust_value;
-		startPos = matchPos + 1;
-		this->pairs_.push_back(entry);
 		return true;
 	}
 
