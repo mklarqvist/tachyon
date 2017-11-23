@@ -71,7 +71,7 @@ bool StreamContainer::checkUniformity(void){
  At this stage all integer values in the stream is of
  type S32. No other values can be shrunk
  */
-void StreamContainer::reformat(void){
+void StreamContainer::reformat(buffer_type& buffer){
 	// Recode integer types
 	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1)){
 		return;
@@ -131,7 +131,8 @@ void StreamContainer::reformat(void){
 	}
 	// Not unfirom
 	else {
-		buffer_type buffer(this->buffer_data.pointer);
+		buffer.reset();
+		buffer.resize(this->buffer_data.pointer);
 
 		// Is non-negative
 		if(min >= 0){
@@ -189,11 +190,10 @@ void StreamContainer::reformat(void){
 		std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
 		memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
 		this->buffer_data.pointer = buffer.pointer;
-		buffer.deleteAll();
 	}
 }
 
-void StreamContainer::reformatStride(void){
+void StreamContainer::reformatStride(buffer_type& buffer){
 	// Recode integer types
 	if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 0)){
 		return;
@@ -214,7 +214,9 @@ void StreamContainer::reformatStride(void){
 	if(byte_width == 0) byte_width = 1;
 
 	// This cannot ever be uniform
-	buffer_type buffer(this->buffer_strides.pointer);
+	buffer.reset();
+	buffer.resize(this->buffer_strides.pointer);
+
 
 	if(byte_width == 1){
 		this->header_stride.controller.type = TYPE_8B;
@@ -243,7 +245,6 @@ void StreamContainer::reformatStride(void){
 	std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
 	memcpy(this->buffer_strides.data, buffer.data, buffer.pointer);
 	this->buffer_strides.pointer = buffer.pointer;
-	buffer.deleteAll();
 }
 
 /////////////////////

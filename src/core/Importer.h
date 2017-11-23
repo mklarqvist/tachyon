@@ -84,6 +84,10 @@ private:
 	hash_vector_container_type info_patterns;
 	hash_vector_container_type format_patterns;
 	hash_vector_container_type filter_patterns;
+
+	// Recycled buffer used to encode
+	// or recode streams
+	buffer_type recode_buffer;
 };
 
 

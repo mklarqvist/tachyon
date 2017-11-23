@@ -118,8 +118,8 @@ public:
 
 	bool checkSum(bool both = false);
 	bool checkUniformity(void);
-	void reformat(void);
-	void reformatStride(void);
+	void reformat(buffer_type& buffer);
+	void reformatStride(buffer_type& buffer);
 	bool read(std::istream& stream, buffer_type& temp_buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

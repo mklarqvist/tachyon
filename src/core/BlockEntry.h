@@ -16,6 +16,7 @@ class BlockEntry{
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Index::IndexBlockEntryOffsets offset_type;
+	typedef IO::BasicBuffer buffer_type;
 
 public:
 	BlockEntry() :
@@ -61,24 +62,24 @@ public:
 	}
 
 
-	inline void updateContainer(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, hash_container_type& v){
+	inline void updateContainer(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, hash_container_type& v, buffer_type& buffer){
 		// Determine target
 		switch(target){
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(v, this->info_containers, this->index_entry.info_offsets, this->index_entry.n_info_streams));
+			return(this->updateContainer(v, this->info_containers, this->index_entry.info_offsets, this->index_entry.n_info_streams, buffer));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams));
+			return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams, buffer));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER) :
-			return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams));
+			return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams, buffer));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
 	}
 
 private:
-	void updateContainer(hash_container_type& v, stream_container* container, offset_type* offset, const U32& length){
+	void updateContainer(hash_container_type& v, stream_container* container, offset_type* offset, const U32& length, buffer_type& buffer){
 		for(U32 i = 0; i < length; ++i){
 			if(container[i].buffer_data.size() == 0)
 				continue;
@@ -87,7 +88,7 @@ private:
 			container[i].checkUniformity();
 			std::cerr << this->info_containers[0].n_entries << std::endl;
 			// Reformat stream to use as small word size as possible
-			container[i].reformat();
+			container[i].reformat(buffer);
 			// Add CRC32 checksum for sanity
 			container[i].checkSum();
 
@@ -104,7 +105,7 @@ private:
 			// If we have mixed striding
 			if(container[i].header.controller.mixedStride){
 				// Reformat stream to use as small word size as possible
-				container[i].reformatStride();
+				container[i].reformatStride(buffer);
 
 				// Update offset with mixed stride
 				offset[i].update(v[i], container[i].header, container[i].header_stride);
