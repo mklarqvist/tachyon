@@ -79,19 +79,19 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 
 			switch(cost.word_width){
 			case 1:
-				this->EncodeRLESimple<BYTE>(line, simple, n_runs);
+				this->EncodeRLESimple<BYTE>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 0;
 				break;
 			case 2:
-				this->EncodeRLESimple<U16>(line, simple, n_runs);
+				this->EncodeRLESimple<U16>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 1;
 				break;
 			case 4:
-				this->EncodeRLESimple<U32>(line, simple, n_runs);
+				this->EncodeRLESimple<U32>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 2;
 				break;
 			case 8:
-				this->EncodeRLESimple<U64>(line, simple, n_runs);
+				this->EncodeRLESimple<U64>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 3;
 				break;
 			default:
@@ -110,9 +110,9 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 			meta_base.controller.rle = false;
 			meta_base.controller.rle_type = 0;
 
-			if(line.body->n_allele + 1 < 8)          this->EncodeSimple<BYTE>(line, simple, n_runs);
-			else if(line.body->n_allele + 1 < 128)   this->EncodeSimple<U16> (line, simple, n_runs);
-			else if(line.body->n_allele + 1 < 32768) this->EncodeSimple<U32> (line, simple, n_runs);
+			if(line.body->n_allele + 1 < 8)          this->EncodeSimple<BYTE>(line, simple, n_runs, ppa);
+			else if(line.body->n_allele + 1 < 128)   this->EncodeSimple<U16> (line, simple, n_runs, ppa);
+			else if(line.body->n_allele + 1 < 32768) this->EncodeSimple<U32> (line, simple, n_runs, ppa);
 			else {
 				std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 							 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "

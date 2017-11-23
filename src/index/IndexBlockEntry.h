@@ -54,6 +54,7 @@ public:
 struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
 	typedef IndexBlockEntryController controller_type;
+	typedef IndexBlockEntryOffsets offset_type;
 
 public:
 	IndexBlockEntryBase();
@@ -64,11 +65,11 @@ public:
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.l_ppa), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.l_meta), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.l_meta_complex), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.l_gt_rle), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.l_gt_simple), sizeof(U32));
+		stream << entry.offset_ppa;
+		stream << entry.offset_hot_meta;
+		stream << entry.offset_cold_meta;
+		stream << entry.offset_gt_rle;
+		stream << entry.offset_gt_simple;
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams), sizeof(U16));
@@ -84,11 +85,11 @@ public:
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),  sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.l_ppa), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.l_meta), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.l_meta_complex), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.l_gt_rle), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.l_gt_simple), sizeof(U32));
+		stream >> entry.offset_ppa;
+		stream >> entry.offset_hot_meta;
+		stream >> entry.offset_cold_meta;
+		stream >> entry.offset_gt_rle;
+		stream >> entry.offset_gt_simple;
 		stream.read(reinterpret_cast<char*>(&entry.n_info_streams), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_format_streams), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams), sizeof(U16));
@@ -104,11 +105,13 @@ public:
 		this->controller.clear();
 		this->contigID = -1;
 		this->n_variants = 0;
-		this->l_ppa = 0;
-		this->l_meta = 0;
-		this->l_gt_rle = 0;
-		this->l_gt_simple = 0;
-		this->l_meta_complex = 0;
+
+		this->offset_ppa.clear();
+		this->offset_hot_meta.clear();
+		this->offset_cold_meta.clear();
+		this->offset_gt_rle.clear();
+		this->offset_gt_simple.clear();
+
 		this->n_info_streams = 0;
 		this->n_format_streams = 0;
 		this->n_filter_streams = 0;
@@ -131,11 +134,16 @@ public:
 	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
 	// Only GT_SIMPLE is redundant as all other values
 	// are stored in the offset array
-	U32 l_ppa;
-	U32 l_meta;
-	U32 l_meta_complex;
-	U32 l_gt_rle;
-	U32 l_gt_simple;
+	//U32 l_ppa;
+	//U32 l_meta;
+	//U32 l_meta_complex;
+	//U32 l_gt_rle;
+	//U32 l_gt_simple;
+	offset_type offset_ppa;
+	offset_type offset_hot_meta;
+	offset_type offset_cold_meta;
+	offset_type offset_gt_rle;
+	offset_type offset_gt_simple;
 
 	// Number of INFO/FORMAT/FILTER streams
 	// in this block

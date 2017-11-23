@@ -31,11 +31,26 @@ public:
 		return true;
 	}
 
+	void clear(void){
+		this->key = 0;
+		this->header.reset();
+		this->header_stride.reset();
+	}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.key), sizeof(U32));
 		stream << entry.header;
 		if(entry.header.controller.mixedStride)
 			stream << entry.header_stride;
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.key), sizeof(U32));
+		stream >> entry.header;
+		if(entry.header.controller.mixedStride)
+			stream >> entry.header_stride;
 
 		return(stream);
 	}

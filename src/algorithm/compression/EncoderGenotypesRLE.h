@@ -255,9 +255,9 @@ public:
 private:
 	const rle_helper_type assessRLEBiallelic(const bcf_type& line, const U32* const ppa);
 	const rle_helper_type assessRLEnAllelic(const bcf_type& line, const U32* const ppa);
-	template <class T> bool EncodeSimple(const bcf_type& line, container_type& runs, U64& n_runs);
+	template <class T> bool EncodeSimple(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 	template <class T> bool EncodeRLE(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing = true, const bool hasMixedPhase = true);
-	template <class T> bool EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs);
+	template <class T> bool EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 
 private:
 	U64 n_samples;             // number of samples
@@ -265,7 +265,7 @@ private:
 };
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& simple, U64& n_runs){
+bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& simple, U64& n_runs, const U32* const ppa){
 	BYTE shift_size = 3;
 	if(sizeof(T) == 2) shift_size = 7;
 	if(sizeof(T) == 4) shift_size = 15;
@@ -278,8 +278,11 @@ bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& sim
 	// allele A | alleleB | isPhased
 	if(sizeof(T) <= 2){
 		for(U32 i = 0; i < this->n_samples * 2; i += 2){
-			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
+			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+
+			//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+			//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
 							 ((fmt_type_value1 >> 1) << 1) |
 							 (fmt_type_value2 & 1);
@@ -287,8 +290,10 @@ bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& sim
 		}
 	} else if(sizeof(T) == 4){
 		for(U32 i = 0; i < this->n_samples * 4; i += 4){
-			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
-			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
+			//const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
+			//const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
+			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[0]]);
+			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[0]+2]);
 			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
 							 ((fmt_type_value1 >> 1) << 1) |
 							 (fmt_type_value2 & 1);
@@ -401,7 +406,7 @@ bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, container_type& runs, 
 }
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs){
+bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa){
 	U32 internal_pos = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength = 0;
 	T length = 1;
@@ -409,8 +414,11 @@ bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& 
 
 	const BYTE shift = ceil(log2(line.body->n_allele + 1));
 
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
+	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+
+	//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+	//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 	T packed = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift);
 
 	// MSB contains phasing information
@@ -420,8 +428,11 @@ bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& 
 	const T limit = pow(2, 8*sizeof(T) - (2*shift+1)) - 1;
 
 	for(U32 i = 2; i < this->n_samples * 2; i += 2){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
+		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+
+		//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
+		//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 		const T packed_internal = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift);
 
 		if(packed != packed_internal || length == limit){
