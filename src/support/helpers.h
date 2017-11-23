@@ -83,6 +83,8 @@ inline std::string secondsToTimestring(const double& value){
 	return(retVal);
 }
 
+bool HexToBytes(const std::string& hex, uint8_t* target);
+
 }
 }
 

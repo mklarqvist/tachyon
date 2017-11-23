@@ -135,18 +135,31 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 
 		for(U32 i = 0; i < this->info_fields.size(); ++i){
+			if(this->block.info_containers[i].header.controller.uniform == true || this->block.info_containers[i].n_entries == 0)
+				continue;
+
+			deflater.encrypt(this->block.info_containers[i]);
+
 			deflater.encode(this->block.info_containers[i]);
 			if(this->block.info_containers[i].header.controller.mixedStride == true)
 				deflater.encodeStrides(this->block.info_containers[i]);
 		}
 
 		for(U32 i = 0; i < this->format_fields.size(); ++i){
+			if(this->block.format_containers[i].header.controller.uniform == true || this->block.format_containers[i].n_entries == 0)
+				continue;
+
+
 			deflater.encode(this->block.format_containers[i]);
 			if(this->block.format_containers[i].header.controller.mixedStride == true)
 				deflater.encodeStrides(this->block.format_containers[i]);
 		}
 
 		for(U32 i = 0; i < this->filter_fields.size(); ++i){
+			if(this->block.filter_containers[i].header.controller.uniform == true || this->block.filter_containers[i].n_entries == 0)
+				continue;
+
+
 			deflater.encode(this->block.filter_containers[i]);
 			if(this->block.filter_containers[i].header.controller.mixedStride == true)
 				deflater.encodeStrides(this->block.filter_containers[i]);

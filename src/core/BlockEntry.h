@@ -86,7 +86,6 @@ private:
 
 			// Check if stream is uniform in content
 			container[i].checkUniformity();
-			std::cerr << this->info_containers[0].n_entries << std::endl;
 			// Reformat stream to use as small word size as possible
 			container[i].reformat(buffer);
 			// Add CRC32 checksum for sanity

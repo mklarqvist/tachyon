@@ -23,6 +23,7 @@ public:
 		hasGT(0),
 		isDiploid(0),
 		isGTPermuted(0),
+		anyEncrypted(0),
 		unused(0)
 	{}
 	~IndexBlockEntryController(){}
@@ -45,7 +46,8 @@ public:
 	U16 hasGT: 1,
 	    isDiploid: 1,
 		isGTPermuted: 1,
-		unused: 13;
+		anyEncrypted: 1,
+		unused: 12;
 };
 
 

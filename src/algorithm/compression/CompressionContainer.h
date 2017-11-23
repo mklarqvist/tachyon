@@ -60,6 +60,20 @@ public:
 		return true;
 	}
 
+	bool encrypt(stream_type& stream){
+		const std::string key_hex = "FC6F9E22E83EFF8C8120CF233E05CB2EFCC20EBB1212DF44AF919184595A5355";
+		const std::string iv_hex = "E3C2AA42EE6F0DBB7556D1D38290DE7A";
+
+		// Todo: fix
+		uint8_t key[32]; memset(key, 0x00, 32);
+		uint8_t iv[16];  memset(iv, 0x00, 16);
+		Helpers::HexToBytes(key_hex, &key[0]);
+		Helpers::HexToBytes(iv_hex, &iv[0]);
+		//AES_CBC_encrypt_buffer(reinterpret_cast<uint8_t*>(this->buffer.data), reinterpret_cast<uint8_t*>(stream.buffer_data.data), stream.buffer_data.pointer, &key[0], &iv[0]);
+		//AES_ECB_encrypt(reinterpret_cast<uint8_t*>(stream.buffer_data.data),&key[0],reinterpret_cast<uint8_t*>(this->buffer.data),stream.buffer_data.pointer);
+		return(true);
+	}
+
 	const bool decode(stream_type& stream){ return false; }
 
 private:

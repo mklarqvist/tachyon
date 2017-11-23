@@ -72,19 +72,14 @@ bool StreamContainer::checkUniformity(void){
  type S32. No other values can be shrunk
  */
 void StreamContainer::reformat(buffer_type& buffer){
-	// Recode integer types
-	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1)){
+	// Recode integer types only
+	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1))
 		return;
-	}
-
-	std::cerr << "in reformat: " << this->n_entries << std::endl;
 
 	// At this point all integers are S32
 	const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data.data);
 	S32 min = dat[0];
 	S32 max = dat[0];
-
-	std::cerr << "in reformat: " << this->n_entries << std::endl;
 
 	for(U32 j = 1; j < this->n_entries; ++j){
 		if(dat[j] < min) min = dat[j];
@@ -92,8 +87,8 @@ void StreamContainer::reformat(buffer_type& buffer){
 	}
 
 	BYTE byte_width = 0;
-	if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1))+1)/8);  // One bit is used for sign
-	else byte_width = ceil(ceil(log2(max + 1))/8);
+	if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
+	else byte_width = ceil(ceil(log2(max + 1)) / 8);
 
 	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;

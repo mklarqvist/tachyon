@@ -20,6 +20,7 @@ RM := rm
 -include src/core/base/subdir.mk
 -include src/core/subdir.mk
 -include src/algorithm/permutation/subdir.mk
+-include src/algorithm/encryption/subdir.mk
 -include src/algorithm/compression/subdir.mk
 -include src/subdir.mk
 -include subdir.mk
@@ -57,7 +58,7 @@ all: tachyon
 tachyon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -pthread -lcrypto -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build

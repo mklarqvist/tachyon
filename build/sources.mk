@@ -24,6 +24,7 @@ CPP_DEPS :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 src/algorithm/compression \
+src/algorithm/encryption \
 src/algorithm/permutation \
 src/core \
 src/core/base \

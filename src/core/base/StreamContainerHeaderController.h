@@ -19,11 +19,12 @@ public:
 		type(0),
 		encoder(0),
 		uniform(0),
-		unused(0)
+		encryption(0)
 	{}
 	~StreamContainerHeaderController(){}
 
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
+	inline bool isEncrypted(void) const{ return(this->encryption > 0); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
@@ -44,7 +45,7 @@ public:
 		type: 6,    // base typing (extra bits saved for future use)
 		encoder: 5, // encoder bits (0 = uncompressed)
 		uniform: 1, // triggered if all values are the same
-		unused: 2;
+		encryption: 2;
 };
 
 }

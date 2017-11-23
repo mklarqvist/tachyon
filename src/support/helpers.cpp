@@ -212,5 +212,18 @@ bool parsePositionalStringTWO(const std::string& param){
 	return(matchPositionalStringTWO(param));
 }
 
+bool HexToBytes(const std::string& hex, uint8_t* target){
+	if(hex.size() % 2 != 0){
+		std::cerr << "ilelgal uneven hex" << std::endl;
+		return false;
+	}
+
+	U32 p = 0;
+	for (U32 i = 0; i < hex.length(); i += 2, ++p)
+		target[p] = (char) strtol(&hex[i], NULL, 16);
+
+	return true;
+}
+
 }
 }
