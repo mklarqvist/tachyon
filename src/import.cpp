@@ -114,6 +114,18 @@ int main(int argc, char** argv){
 		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
+	Tachyon::Core::StreamContainerHeader testBase;
+	std::cerr << "external: " << testBase.stride << std::endl;
+	Tachyon::Core::StreamContainerHeaderStride test;
+	std::cerr << "external: " << test.crc << std::endl;
+	Tachyon::Core::StreamContainer stream;
+	std::cerr << stream.header.stride << std::endl;
+	std::cerr << stream.header_stride.crc << std::endl;
+	Tachyon::Index::IndexBlockEntryBase base;
+	std::cerr << "base: " << base.contigID << std::endl;
+	Tachyon::Index::IndexBlockEntry full;
+	std::cerr << "total: " << full.contigID << std::endl;
+
 	Tachyon::Importer importer(input, output, checkpoint);
 
 	if(!importer.Build())

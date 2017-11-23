@@ -82,25 +82,19 @@ private:
 			if(container[i].buffer_data.size() == 0)
 				continue;
 
-			std::cerr << "here" << std::endl;
-
 			// Check if stream is uniform in content
 			container[i].checkUniformity();
-			std::cerr << "here" << std::endl;
 			std::cerr << this->info_containers[0].n_entries << std::endl;
 			// Reformat stream to use as small word size as possible
 			container[i].reformat();
-			std::cerr << "here" << std::endl;
 			// Add CRC32 checksum for sanity
 			container[i].checkSum();
-			std::cerr << "here" << std::endl;
 
 			// Set uncompressed length
 			container[i].header.uLength = container[i].buffer_data.pointer;
 
 			// Update offset value if stride is not mixed
 			if(container[i].header.controller.mixedStride == false){
-				std::cerr << "set header: " << i << std::endl;
 				offset[i].update(v[i], container[i].header);
 			}
 
@@ -112,7 +106,6 @@ private:
 				container[i].reformatStride();
 
 				// Update offset with mixed stride
-				std::cerr << "set mixed header: " << i << std::endl;
 				offset[i].update(v[i], container[i].header, container[i].header_stride);
 
 				//container[i].header_stride.uLength = container[i].buffer_strides.pointer;

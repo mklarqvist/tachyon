@@ -111,10 +111,6 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_variants = reader.size();
 		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
 
-		Index::IndexBlockEntryBase testBase;
-		std::cerr << "external: " << testBase.contigID << std::endl;
-		Index::IndexBlockEntry test;
-		std::cerr << "external: " << test.contigID << std::endl;
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
@@ -128,13 +124,11 @@ bool Importer::BuildBCF(void){
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->writer_.streamTomahawk << this->block;
-		std::cerr << "Header size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
-		std::cerr << "cid: " << this->block.index_entry.contigID << '\t' << this->block.index_entry.info_offsets[0].key << '\t' << this->block.index_entry.info_offsets[0].header.uLength << '\t' << &this->block.index_entry.info_offsets[0] << std::endl;
+		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->permutator.reset();
 		this->resetHashes();
 		this->block.clear();
-		std::cerr << "end of reset" << std::endl;
 	}
 
 	/*

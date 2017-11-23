@@ -15,8 +15,7 @@ namespace Tachyon{
 namespace VCF{
 
 //
-#pragma pack(1)
-struct VCFDiploidGenotype{
+struct __attribute__((packed)) VCFDiploidGenotype{
 public:
 	VCFDiploidGenotype(); // Has no ctor or dtor
 	~VCFDiploidGenotype();

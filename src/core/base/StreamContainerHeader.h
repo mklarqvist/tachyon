@@ -1,7 +1,10 @@
 #ifndef CORE_BASE_STREAMCONTAINERHEADER_H_
 #define CORE_BASE_STREAMCONTAINERHEADER_H_
 
+#include <iostream>
 #include <fstream>
+
+#include "../../support/TypeDefinitions.h"
 
 namespace Tachyon{
 namespace Core{
@@ -95,10 +98,7 @@ struct StreamContainerHeader{
 		return *this;
 	}
 
-	~StreamContainerHeader(){
-		std::cerr << "dtor header " << this << std::endl;
-		delete [] this->extra;
-	}
+	~StreamContainerHeader(){delete [] this->extra;}
 
 	inline void reset(void){
 		this->stride = -1;

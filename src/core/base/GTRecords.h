@@ -9,9 +9,8 @@ namespace Core{
 // 0 width bit field which is illegal
 // To solve this we introduce the TachyonRunNoPhase
 // data structure below
-#pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TachyonRun{
+struct __attribute__((packed)) TachyonRun{
 private:
 	typedef TachyonRun self_type;
 
@@ -32,9 +31,8 @@ public:
 	  runs:    sizeof(T)*8 - (2 * (1 + missing) + 1);
 };
 
-#pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TachyonRunNoPhase{
+struct __attribute__((packed)) TachyonRunNoPhase{
 private:
 	typedef TachyonRunNoPhase self_type;
 
@@ -47,9 +45,8 @@ public:
 	  runs:    sizeof(T)*8 - (2 * (1 + missing));
 };
 
-#pragma pack(1)
 template <class T, BYTE missing = 1>
-struct TachyonRunPacked{
+struct __attribute__((packed)) TachyonRunPacked{
 private:
 	typedef TachyonRunPacked self_type;
 
@@ -62,9 +59,8 @@ public:
 	  runs:    sizeof(T)*8 - (2 * (1 + missing) + 1);
 };
 
-#pragma pack(1)
 template <class T>
-struct TachyonRunSimple{
+struct __attribute__((packed)) TachyonRunSimple{
 private:
 	typedef TachyonRunSimple<T> self_type;
 

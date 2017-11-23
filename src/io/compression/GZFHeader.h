@@ -6,8 +6,7 @@
 namespace Tachyon{
 namespace IO{
 
-#pragma pack(1)
-struct __headerBase{
+struct __attribute__((packed)) __headerBase{
 private:
 	typedef __headerBase self_type;
 
@@ -72,8 +71,7 @@ public:
   block to 2^32 bytes and adds and an extra "BC" field in the gzip header which
   records the size.
 */
-#pragma pack(1)
-struct TGZFHeader : public __headerBase{
+struct __attribute__((packed)) TGZFHeader : public __headerBase{
 private:
 	typedef TGZFHeader self_type;
 	typedef __headerBase parent_type;
@@ -121,8 +119,7 @@ public:
   block to 2^16 bytes and adds and an extra "BC" field in the gzip header which
   records the size.
 */
-#pragma pack(1)
-struct BGZFHeader : public __headerBase{
+struct __attribute__((packed)) BGZFHeader : public __headerBase{
 private:
 	typedef BGZFHeader self_type;
 	typedef __headerBase parent_type;

@@ -15,8 +15,7 @@ namespace Core{
  Number of runs can be inferred from the sample
  number and byte length of the stream
  */
-#pragma pack(1)
-struct EntryHotMetaBase{
+struct __attribute__((packed)) EntryHotMetaBase{
 	typedef EntryHotMetaBase self_type;
 	typedef IO::BasicBuffer buffer_type;
 
@@ -117,9 +116,8 @@ public:
  regarding a variant line such as position, if any genotypes
  are missing and if the all the data is phased.
  */
-#pragma pack(1)
 template <class T>
-struct EntryHotMeta : public EntryHotMetaBase{
+struct __attribute__((packed)) EntryHotMeta : public EntryHotMetaBase{
 	typedef EntryHotMeta self_type;
 
 public:

@@ -1,20 +1,22 @@
-#ifndef CORE_TOMAHAWKBLOCKITERATOR_H_
-#define CORE_TOMAHAWKBLOCKITERATOR_H_
+#ifndef CORE_TachyonBLOCKITERATOR_H_
+#define CORE_TachyonBLOCKITERATOR_H_
 
+/*
 #include "base/EntryHotMeta.h"
+#include "base/EntryColdMeta.h"
 #include "base/GTRecords.h"
 
 namespace Tachyon{
 
 template <class T>
-class TomahawkBlockIterator{
-	typedef TomahawkBlockIterator self_type;
+class TachyonBlockIterator{
+	typedef TachyonBlockIterator self_type;
 	typedef Support::EntryHotMeta<T> meta_type;
 	typedef Support::EntryColdMeta meta_complex_type;
 	typedef Totempole::IndexEntry totempole_entry_type;
 
 public:
-	TomahawkBlockIterator(char* data, const U64& size, const totempole_entry_type& totempole) :
+	TachyonBlockIterator(char* data, const U64& size, const totempole_entry_type& totempole) :
 		position(0),
 		p_rle(0),
 		p_simple(0),
@@ -31,7 +33,7 @@ public:
 		this->upper_limit = this->meta[0].n_runs;
 	}
 
-	~TomahawkBlockIterator(){}
+	~TachyonBlockIterator(){}
 
 	bool operator++(void){
 		if(this->position + 1 == this->totempole.n_variants) return false;
@@ -67,35 +69,35 @@ public:
 	}
 
 	template <class S, BYTE missing = 1>
-	const bool nextRun(const Support::TomahawkRun<S, missing>*& run){
+	const bool nextRun(const Support::TachyonRun<S, missing>*& run){
 		if(this->pointer == this->upper_limit)
 			return false;
 
 		//run = this->encoding_RLE;
-		run = reinterpret_cast<const Support::TomahawkRun<S, missing>*>(this->encoding_RLE);
+		run = reinterpret_cast<const Support::TachyonRun<S, missing>*>(this->encoding_RLE);
 		++this->pointer;
 		this->encoding_RLE += sizeof(S);
 		return true;
 	}
 
 	template <class S, BYTE missing = 1>
-	const bool nextRun(const Support::TomahawkRunNoPhase<S, missing>*& run){
+	const bool nextRun(const Support::TachyonRunNoPhase<S, missing>*& run){
 		if(this->pointer == this->upper_limit)
 			return false;
 
 		//run = this->encoding_RLE;
-		run = reinterpret_cast<const Support::TomahawkRunNoPhase<S, missing>*>(this->encoding_RLE);
+		run = reinterpret_cast<const Support::TachyonRunNoPhase<S, missing>*>(this->encoding_RLE);
 		++this->pointer;
 		this->encoding_RLE += sizeof(S);
 		return true;
 	}
 
 	template <class S>
-	const bool nextRunSimple(const Support::TomahawkRunSimple<S>*& field){
+	const bool nextRunSimple(const Support::TachyonRunSimple<S>*& field){
 		if(this->pointer == this->upper_limit)
 			return false;
 
-		field = reinterpret_cast<const Support::TomahawkRunSimple<S>*>(this->encoding_simple);
+		field = reinterpret_cast<const Support::TachyonRunSimple<S>*>(this->encoding_simple);
 		++this->pointer;
 		this->encoding_simple += sizeof(S);
 		return true;
@@ -142,5 +144,6 @@ private:
 };
 
 }
+*/
 
-#endif /* CORE_TOMAHAWKBLOCKITERATOR_H_ */
+#endif /* CORE_TachyonBLOCKITERATOR_H_ */

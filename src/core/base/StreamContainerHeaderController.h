@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#include "../../support/TypeDefinitions.h"
+
 namespace Tachyon{
 namespace Core{
 

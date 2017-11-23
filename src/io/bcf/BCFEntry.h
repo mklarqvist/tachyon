@@ -14,28 +14,23 @@ const BYTE BCF_UNPACK_TOMAHAWK[3] = {2, 0, 1};
 #define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TOMAHAWK[(A >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
 
-#pragma pack(1)
-struct BCFAtomicBase{
+struct __attribute__((packed)) BCFAtomicBase{
 	BYTE low: 4, high: 4;
 };
 
-#pragma pack(1)
-struct BCFAtomicSBYTE{
+struct __attribute__((packed)) BCFAtomicSBYTE{
 	SBYTE low: 4, high: 4;
 };
 
-#pragma pack(1)
-struct BCFAtomicS16{
+struct __attribute__((packed)) BCFAtomicS16{
 	S16 low: 4, high: 12;
 };
 
-#pragma pack(1)
-struct BCFAtomicS32{
+struct __attribute__((packed)) BCFAtomicS32{
 	S32 low: 4, high: 28;
 };
 
-#pragma pack(1)
-struct BCFEntryBody{
+struct __attribute__((packed)) BCFEntryBody{
 	typedef BCFEntryBody self_type;
 
 	BCFEntryBody(); // disallow ctor and dtor
