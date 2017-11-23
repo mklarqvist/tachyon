@@ -1,13 +1,10 @@
 #ifndef CORE_TOMAHAWKIMPORTWRITER_H_
 #define CORE_TOMAHAWKIMPORTWRITER_H_
 
+#include <cassert>
 #include <fstream>
 
-#include "../index/IndexEntry.h"
-#include "../index/IndexBlockEntry.h"
-#include "../algorithm/compression/EncoderGenotypesRLE.h"
-#include "base/EntryColdMeta.h"
-#include "StreamContainer.h"
+#include "../support/TypeDefinitions.h"
 
 namespace Tachyon {
 
@@ -73,19 +70,13 @@ inline bool bytePreprocessBits(const char* const data, const size_t& size, char*
 }
 
 class ImportWriter {
-	typedef IO::TGZFController tgzf_controller_type;
-	typedef BCF::BCFEntry bcf_entry_type;
-	typedef Core::StreamContainer stream_container;
-
 public:
 	ImportWriter();
 	~ImportWriter();
 
 	bool Open(const std::string output);
+	bool WriteHeader(void);
 	void WriteFinal(void);
-
-	// flush and write
-	bool flush(void);
 
 	void CheckOutputNames(const std::string& input);
 

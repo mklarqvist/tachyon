@@ -5,8 +5,10 @@
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
 #include "BlockEntry.h"
-#include "ImportWriter.h"
 #include "../algorithm/permutation/RadixSortGT.h"
+#include "../algorithm/compression/EncoderGenotypesRLE.h"
+#include "../index/IndexEntry.h"
+#include "ImportWriter.h"
 
 namespace Tachyon {
 
@@ -17,7 +19,7 @@ class Importer {
 	typedef ImportWriter writer_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Algorithm::EncoderGenotypesRLE encoder_type;
-	typedef Totempole::IndexEntry totempole_entry_type;
+	typedef Totempole::IndexEntry index_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Algorithm::RadixSortGT radix_sorter_type;
@@ -58,7 +60,6 @@ private:
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
 private:
-	bool permutateData(bcf_reader_type& reader);
 	void resetHashes(void);
 
 private:
@@ -68,13 +69,15 @@ private:
 	reader_type reader_;      // reader
 	writer_type writer_;      // writer
 
-	totempole_entry_type totempole_entry;  // totempole entry for indexing
+	index_entry_type index_entry;  // totempole entry for indexing
 	radix_sorter_type permutator;
 	header_type* header_;     // header
 	encoder_type encoder;     // RLE packer
 
 	block_type block;
 
+	// Use during import
+	// Never stored
 	hash_container_type info_fields;
 	hash_container_type format_fields;
 	hash_container_type filter_fields;

@@ -1,5 +1,6 @@
 #include <fstream>
 #include "Importer.h"
+#include "base/EntryColdMeta.h"
 
 namespace Tachyon {
 
@@ -202,7 +203,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	}
 
 	// Update number of entries in block
-	++this->totempole_entry.n_variants;
+	++this->index_entry.n_variants;
 
 
 	return true;
