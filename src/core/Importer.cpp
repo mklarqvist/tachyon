@@ -194,7 +194,7 @@ bool Importer::BuildBCF(void){
 bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header_->getContig(entry.body->CHROM).length){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << (*this->header_)[entry.body->CHROM].name << ':' << entry.body->POS+1 << " > reported max size of contig (" << (*this->header_)[entry.body->CHROM].length << ")..." << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header_->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header_->getContig(entry.body->CHROM).length << ")..." << std::endl;
 		return false;
 	}
 
@@ -255,6 +255,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FILTER value
 		// Filter fields have no values
 		this->filter_fields.setGet(val);
+		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
 	}
 
 	// At INFO
@@ -263,6 +264,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
 		const U32 mapID = this->info_fields.setGet(val);
+		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
 
 		//
 		stream_container& target_container = this->block.info_containers[mapID];
@@ -323,6 +325,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextFormat(val, info_length, info_value_type, internal_pos)){
 		// Hash FORMAT values
 		const U32 mapID = this->format_fields.setGet(val);
+		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
 
 		//
 		stream_container& target_container = this->block.format_containers[mapID];

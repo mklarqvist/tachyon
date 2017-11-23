@@ -59,6 +59,16 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 	if(!this->parseSampleLine(data, offset, length))
 		return false;
 
+	for(U32 i = 0 ; i < this->lines.size(); ++i){
+		if(this->lines[i].isIndexable == false)
+			continue;
+
+		// Todo: fix
+		const BYTE val = 0;
+		map_entry_type map_value(this->lines[i].pairs[0].VALUE, val);
+		this->map.push_back(map_value);
+	}
+
 	return true;
 }
 

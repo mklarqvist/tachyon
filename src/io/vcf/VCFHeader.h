@@ -15,12 +15,21 @@
 namespace Tachyon {
 namespace VCF{
 
+struct VCFHeaderMapEntry{
+	typedef VCFHeaderMapEntry self_type;
+	VCFHeaderMapEntry(const std::string& id, const BYTE& type) : ID(id), TYPE(type){}
+
+	std::string ID;
+	BYTE TYPE;
+};
+
 class VCFHeader {
 	typedef VCFHeader self_type;
 	typedef Hash::HashTable<std::string, S32> hash_table_type;
 	typedef VCFHeaderContig contig_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
+	typedef VCFHeaderMapEntry map_entry_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
@@ -38,7 +47,7 @@ public:
 	inline void setVersion(float version){ this->version = version; }
 	inline const float& getVersion(void) const{ return(this->version); }
 	inline U32 getContigs(void) const{ return this->contigs.size(); }
-	inline const contig_type& operator[](const U32 p) const{ return(this->contigs[p]); }
+	//inline const contig_type& operator[](const U32 p) const{ return(this->contigs[p]); }
 	inline contig_type& getContig(const U32 p){ return this->contigs[p]; }
 	inline U32 getLines(void) const{ return this->lines.size(); }
 	inline const U64& size(void) const{ return this->samples; }
@@ -53,6 +62,8 @@ public:
 
 	bool parse(reader& stream);
 	bool parse(const char* const data, const U32& length);
+
+	FORCE_INLINE const map_entry_type& operator[](const U32& p) const{ return(this->map[p]); }
 
 private:
 	// These functions are unsafe as they require contigHashTable to be
@@ -87,6 +98,7 @@ public:
 	std::vector<std::string> sampleNames;   // sample names
 	std::vector<header_line_type> lines;    // header lines
 	std::vector<std::string> literal_lines; // vcf line literals
+	std::vector<map_entry_type> map;
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names
 };

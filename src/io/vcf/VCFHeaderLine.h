@@ -1,6 +1,7 @@
 #ifndef VCF_VCFHEADERLINE_H_
 #define VCF_VCFHEADERLINE_H_
 
+#include <cassert>
 #include <algorithm> // for std::find
 
 namespace Tachyon{
@@ -29,7 +30,7 @@ private:
 	typedef VCFHeaderLineKeyValue key_value;
 
 public:
-	VCFHeaderLine(const char* data, const U32 size) : size_(size), data(data){}
+	VCFHeaderLine(const char* data, const U32 size) : isIndexable(false), size_(size), data(data){}
 	~VCFHeaderLine(){}
 
 	inline const U32 size(void) const{ return this->pairs.size(); }
@@ -55,7 +56,6 @@ public:
 			return false;
 		}
 
-
 		// Attempt to find an equal sign
 		const char* match = std::find(this->data, &this->data[this->size_], '=');
 		if(*match != '='){
@@ -63,39 +63,87 @@ public:
 			return false;
 		}
 
-		if(this->data[match-this->data+1] != '<'){
+		if(this->data[match - this->data + 1] != '<'){
 			std::cerr << "is text only: " << std::endl;
 			std::cerr << std::string(this->data, this->size_+1) << std::endl;
+			this->isIndexable = false;
 			return true;
 		}
 
-		// Find first equal sign
-		// If next symbol is < then parse it
-		std::string test(&this->data[match-this->data+2], this->size_ - (match-this->data+2));
-		std::vector<std::string> x = Helpers::split(test, ',');
-		std::cerr << test << std::endl;
+		//std::string(this->data + 2, match - this->data - 2);
+		if(strncasecmp(this->data + 2, "FORMAT", match - this->data - 2) == 0){
+			this->isIndexable = true;
+		} else if(strncasecmp(this->data + 2, "FILTER", match - this->data - 2) == 0){
+			this->isIndexable = true;
+		} else if(strncasecmp(this->data + 2, "INFO", match - this->data - 2) == 0){
+			this->isIndexable = true;
+		}
 
-		for(U32 i = 0; i < x.size(); ++i){
-			std::cerr << x[i] << std::endl;
-			std::vector<std::string> y = Helpers::split(x[i], '=');
-
-			for(U32 j = 0; j < y.size(); ++j)
-				std::cerr << '\t' << y[j] << std::endl;
-
-			if(y.size() != 2){
-				std::cerr << "impossible: " << y.size() << std::endl;
-				exit(1);
+		U32 matchPos = match - this->data + 1;
+		if(this->data[matchPos] == '<'){
+			if(this->data[this->size_] != '>'){
+				std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data[this->size_] << std::endl;
+				return false;
 			}
-			this->pairs.push_back(key_value(y[0], y[1]));
+
+			++matchPos;
+
+			// Sweep over and assert it is valid
+			while(this->nextKey(matchPos)){
+				// nothing in body
+			}
 
 		}
+
+		return true;
+	}
+
+private:
+	bool nextKey(U32& startPos){
+		if(this->data[startPos] == '>')
+			return false;
+
+		const char* match = std::find(&this->data[startPos], &this->data[this->size_], '=');
+		if(*match != '='){
+			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
+			return false;
+		}
+		U32 matchPos = match - this->data;
+		key_value entry;
+		entry.KEY = std::string(&this->data[startPos], matchPos - startPos);
+
+		startPos = matchPos + 1;
+
+		char match_token = ',';
+		BYTE adjust_value = 0;
+		if(this->data[startPos] == '"'){
+			match_token = '"';
+			adjust_value = 1;
+		}
+
+		match = std::find(&this->data[startPos + adjust_value], &this->data[this->size_], match_token);
+		if(*match == '>'){
+			entry.VALUE = std::string(&this->data[startPos],this->size_ - startPos);
+			startPos = matchPos + 1;
+			this->pairs.push_back(entry);
+			return false;
+		} else if(*match != match_token){
+			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
+			return false;
+		}
+
+		matchPos = match - this->data;
+		entry.VALUE = std::string(&this->data[startPos], matchPos - startPos + adjust_value);
+		startPos = matchPos + 1;
+		this->pairs.push_back(entry);
 		return true;
 	}
 
 public:
-	U32 size_;
-	const char* data;
-	std::vector<key_value> pairs;
+	bool isIndexable; // if this record should form part of the primary map
+	U32 size_; // size in bytes
+	const char* data; // pointer to data
+	std::vector<key_value> pairs; // key-value pairs
 };
 
 }
