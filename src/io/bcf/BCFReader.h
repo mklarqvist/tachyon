@@ -44,6 +44,9 @@ public:
 	void resize(void);
 	void resize(const U32 new_size);
 
+	entry_type& first(void){ return((*this)[0]); }
+	entry_type& last(void){ return((*this)[this->n_entries - 1]); }
+
 public:
 	std::ifstream stream;
 	U64 filesize;

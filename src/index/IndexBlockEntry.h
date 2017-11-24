@@ -134,11 +134,6 @@ public:
 	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
 	// Only GT_SIMPLE is redundant as all other values
 	// are stored in the offset array
-	//U32 l_ppa;
-	//U32 l_meta;
-	//U32 l_meta_complex;
-	//U32 l_gt_rle;
-	//U32 l_gt_simple;
 	offset_type offset_ppa;
 	offset_type offset_hot_meta;
 	offset_type offset_cold_meta;

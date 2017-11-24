@@ -89,7 +89,7 @@ private:
 			// Reformat stream to use as small word size as possible
 			container[i].reformat(buffer);
 			// Add CRC32 checksum for sanity
-			container[i].checkSum();
+			container[i].generateCRC();
 
 			// Set uncompressed length
 			container[i].header.uLength = container[i].buffer_data.pointer;
@@ -118,7 +118,7 @@ private:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
-		//stream << entry.ppa_manager;
+		stream << entry.ppa_manager;
 		stream << entry.meta_hot_container;
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;

@@ -9,7 +9,7 @@
 namespace Tachyon{
 namespace Core{
 
-bool StreamContainer::checkSum(bool both){
+bool StreamContainer::generateCRC(bool both){
 	if(this->buffer_data.size() == 0)
 		return false;
 

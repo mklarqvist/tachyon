@@ -87,7 +87,7 @@ bool Importer::BuildBCF(void){
 			break;
 
 		// Reset permutate
-		std::cerr << "reader: " << reader.size() << std::endl;
+		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
 		if(!this->permutator.build(reader)){
 			std::cerr << "fail permutator" << std::endl;
 			return false;
@@ -102,11 +102,11 @@ bool Importer::BuildBCF(void){
 
 		//std::string hexKey = "D26E140AE8D10352F2D7CBE25DC83396135F7588B583BBD28D280EEED4ED6EAD";
 		//std::string hexIV = "EB9AF575716202471F658C1BC7695767";
-		BYTE key[32]; BYTE iv[16]; BYTE salt[12];
+		BYTE key[32]; BYTE iv[16];
 		//Helpers::HexToBytes(hexKey, &key[0]);
 		//Helpers::HexToBytes(hexIV, &iv[0]);
 
-		if(Encryption::aes_init(key, 32, salt, &key[0], &iv[0]) == -1){
+		if(Encryption::aes_init(key, 32, &key[0], &iv[0]) == -1){
 			std::cerr << "failed init" << std::endl;
 			exit(1);
 		}
@@ -120,11 +120,6 @@ bool Importer::BuildBCF(void){
 		for(U32 i = 0; i < 16; ++i)
 			printf("%02X", iv[i]);
 		std::cerr << std::endl;
-		std::cerr << "salt: ";
-		for(U32 i = 0; i < 32; ++i)
-			printf("%02X", salt[i]);
-		std::cerr << std::endl;
-		//std::cerr << std::dec << std::endl;
 
 		BYTE outstream[this->block.gt_rle_container.buffer_data.pointer+16536];
 		int ret_length = Encryption::aes_encrypt((BYTE*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer, key, iv, &outstream[0]);
@@ -143,7 +138,6 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.controller.hasGT = true;
 		this->block.index_entry.controller.isDiploid = true;
 		this->block.index_entry.controller.isGTPermuted = true;
-
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -169,6 +163,7 @@ bool Importer::BuildBCF(void){
 		if(this->block.meta_hot_container.n_entries) deflater.encode(this->block.meta_hot_container);
 		if(this->block.meta_cold_container.n_entries) deflater.encode(this->block.meta_cold_container);
 
+		deflater.encode(this->block.ppa_manager);
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;

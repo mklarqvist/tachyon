@@ -12,10 +12,12 @@ private:
 protected:
 	typedef Core::StreamContainer stream_type;
 	typedef IO::BasicBuffer buffer_type;
+	typedef Core::PermutationManager permutation_type;
 
 public:
 	CompressionContainer(){}
 	virtual ~CompressionContainer(){}
+	virtual const bool encode(permutation_type& manager) =0;
 	virtual const bool encode(stream_type& stream) =0;
 	virtual const bool encodeStrides(stream_type& stream) =0;
 	virtual const bool decode(stream_type& stream) =0;
@@ -62,18 +64,32 @@ public:
 		return true;
 	}
 
-	bool encrypt(stream_type& stream){
-		const std::string key_hex = "FC6F9E22E83EFF8C8120CF233E05CB2EFCC20EBB1212DF44AF919184595A5355";
-		const std::string iv_hex = "E3C2AA42EE6F0DBB7556D1D38290DE7A";
+	const bool encode(permutation_type& manager){
+		this->buffer.reset();
+		this->buffer.resize(manager.n_samples*sizeof(U32));
+		// First
+		const BYTE w = ceil(log2(manager.n_samples+1) / 8);
+		if(w == 1){
+			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (BYTE)manager[i];
+		} else if(w == 2){
+			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U16)manager[i];
+		} else if(w == 3 || w == 4){
+			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U32)manager[i];
+		} else {
+			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U64)manager[i];
+		}
+		memcpy(manager.PPA.data, this->buffer.data, this->buffer.pointer);
+		manager.PPA.pointer = this->buffer.pointer;
 
-		// Todo: fix
-		uint8_t key[32]; memset(key, 0x00, 32);
-		uint8_t iv[16];  memset(iv, 0x00, 16);
-		Helpers::HexToBytes(key_hex, &key[0]);
-		Helpers::HexToBytes(iv_hex, &iv[0]);
-		//AES_CBC_encrypt_buffer(reinterpret_cast<uint8_t*>(this->buffer.data), reinterpret_cast<uint8_t*>(stream.buffer_data.data), stream.buffer_data.pointer, &key[0], &iv[0]);
-		//AES_ECB_encrypt(reinterpret_cast<uint8_t*>(stream.buffer_data.data),&key[0],reinterpret_cast<uint8_t*>(this->buffer.data),stream.buffer_data.pointer);
-		return(true);
+
+		this->controller.Deflate(manager.PPA);
+		manager.c_length = this->controller.buffer.size();
+		//stream.header.controller.encoder = Core::ENCODE_DEFLATE;
+		std::cerr << "DEFLATE PPA: " << manager.PPA.pointer << '\t' << this->controller.buffer.size() << std::endl;
+		memcpy(manager.PPA.data, this->controller.buffer.data, this->controller.buffer.pointer);
+		manager.PPA.pointer = this->controller.buffer.pointer;
+		this->controller.Clear();
+		return true;
 	}
 
 	const bool decode(stream_type& stream){ return false; }

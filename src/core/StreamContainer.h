@@ -116,7 +116,7 @@ public:
 		this->buffer_strides.resize(size);
 	}
 
-	bool checkSum(bool both = false);
+	bool generateCRC(bool both = false);
 	bool checkUniformity(void);
 	void reformat(buffer_type& buffer);
 	void reformatStride(buffer_type& buffer);
@@ -131,13 +131,14 @@ public:
 	}
 
 public:
-	// Headers
+	// Headers - written elsewhere
 	header_type header;
 	header_stride_type header_stride;
 	// Not written - used internally only
 	U32 n_entries;   // number of container entries
 	U32 n_additions; // number of times an addition operation was executed
-	// Buffers
+	// Buffers - only bit that are written to disk
+	// from here
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
 };
