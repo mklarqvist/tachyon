@@ -40,6 +40,7 @@ public:
 		this->controller.Deflate(stream.buffer_data);
 		stream.header.uLength = stream.buffer_data.pointer;
 		stream.header.cLength = this->controller.buffer.size();
+		stream.header.controller.encoder = Core::ENCODE_DEFLATE;
 		std::cerr << "DEFLATE: " << stream.buffer_data.pointer << '\t' << this->controller.buffer.size() << std::endl;
 		memcpy(stream.buffer_data.data, this->controller.buffer.data, this->controller.buffer.pointer);
 		stream.buffer_data.pointer = this->controller.buffer.pointer;
@@ -53,6 +54,7 @@ public:
 		this->controller.Deflate(stream.buffer_strides);
 		stream.header.uLength = stream.buffer_strides.pointer;
 		stream.header.cLength = this->controller.buffer.size();
+		stream.header.controller.encoder = Core::ENCODE_DEFLATE;
 		std::cerr << "DEFLATE: " << stream.buffer_strides.pointer << '\t' << this->controller.buffer.size() << std::endl;
 		memcpy(stream.buffer_strides.data, this->controller.buffer.data, this->controller.buffer.pointer);
 		stream.buffer_strides.pointer = this->controller.buffer.pointer;

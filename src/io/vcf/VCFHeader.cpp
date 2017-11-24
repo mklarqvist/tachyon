@@ -8,13 +8,15 @@ VCFHeader::VCFHeader() :
 	samples(0),
 	version(0),
 	contigsHashTable(nullptr),
-	sampleHashTable(nullptr)
+	sampleHashTable(nullptr),
+	map_lookup(nullptr)
 {
 }
 
 VCFHeader::~VCFHeader(){
 	delete this->contigsHashTable;
 	delete this->sampleHashTable;
+	delete this->map_lookup;
 }
 
 bool VCFHeader::parse(reader& stream){
@@ -67,6 +69,14 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		const BYTE val = 0;
 		map_entry_type map_value(this->lines[i].pairs[0].VALUE, val);
 		this->map.push_back(map_value);
+	}
+
+	if(this->map.size()*10 < 1024)
+		this->map_lookup = new hash_table_map_type(1024);
+	else this->map_lookup = new hash_table_map_type(this->map.size()*10);
+
+	for(U32 i = 0 ; i < this->lines.size(); ++i){
+		//this->map_lookup->SetItem(&i, this->map[i]);
 	}
 
 	return true;

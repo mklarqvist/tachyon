@@ -2,6 +2,7 @@
 #include "Importer.h"
 #include "base/EntryColdMeta.h"
 #include "../algorithm/compression/CompressionContainer.h"
+#include "../algorithm/encryption/openssl_aes.h"
 
 namespace Tachyon {
 
@@ -99,6 +100,46 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
+		//std::string hexKey = "D26E140AE8D10352F2D7CBE25DC83396135F7588B583BBD28D280EEED4ED6EAD";
+		//std::string hexIV = "EB9AF575716202471F658C1BC7695767";
+		BYTE key[32]; BYTE iv[16]; BYTE salt[12];
+		//Helpers::HexToBytes(hexKey, &key[0]);
+		//Helpers::HexToBytes(hexIV, &iv[0]);
+
+		if(Encryption::aes_init(key, 32, salt, &key[0], &iv[0]) == -1){
+			std::cerr << "failed init" << std::endl;
+			exit(1);
+		}
+
+		//char tempBuff[1000];
+		std::cerr << "key: ";
+		for(U32 i = 0; i < 32; ++i)
+			printf("%02X", key[i]);
+		std::cerr << std::endl;
+		std::cerr << "iv: ";
+		for(U32 i = 0; i < 16; ++i)
+			printf("%02X", iv[i]);
+		std::cerr << std::endl;
+		std::cerr << "salt: ";
+		for(U32 i = 0; i < 32; ++i)
+			printf("%02X", salt[i]);
+		std::cerr << std::endl;
+		//std::cerr << std::dec << std::endl;
+
+		BYTE outstream[this->block.gt_rle_container.buffer_data.pointer+16536];
+		int ret_length = Encryption::aes_encrypt((BYTE*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer, key, iv, &outstream[0]);
+		std::cerr << "encrypted: " << this->block.gt_rle_container.buffer_data.pointer << " -> " << ret_length << std::endl;
+		BYTE retstream[this->block.gt_rle_container.buffer_data.pointer+16536];
+		//key[0] = 21; // introduce error
+		int ret_dec_length = Encryption::aes_decrypt(outstream, ret_length, key, iv, retstream);
+		std::cerr << "decrypted: " << ret_length << " -> " << ret_dec_length << std::endl;
+
+		U32 crcStart = crc32(0, NULL, 0);
+		crcStart = crc32(crcStart, (Bytef*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer);
+		U32 crcEnd = crc32(0, NULL, 0);
+		crcEnd = crc32(crcEnd, (Bytef*)retstream, ret_dec_length);
+		std::cerr << crcStart << '\t' << crcEnd << '\t' << (crcStart == crcEnd) << std::endl;
+
 		this->block.index_entry.controller.hasGT = true;
 		this->block.index_entry.controller.isDiploid = true;
 		this->block.index_entry.controller.isGTPermuted = true;
@@ -123,10 +164,10 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->recode_buffer);
 
 		Compression::DeflateCodec deflater;
-		deflater.encode(this->block.gt_rle_container);
-		deflater.encode(this->block.gt_simple_container);
-		deflater.encode(this->block.meta_hot_container);
-		deflater.encode(this->block.meta_cold_container);
+		if(this->block.gt_rle_container.n_entries) deflater.encode(this->block.gt_rle_container);
+		if(this->block.gt_simple_container.n_entries) deflater.encode(this->block.gt_simple_container);
+		if(this->block.meta_hot_container.n_entries) deflater.encode(this->block.meta_hot_container);
+		if(this->block.meta_cold_container.n_entries) deflater.encode(this->block.meta_cold_container);
 
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
@@ -138,7 +179,7 @@ bool Importer::BuildBCF(void){
 			if(this->block.info_containers[i].header.controller.uniform == true || this->block.info_containers[i].n_entries == 0)
 				continue;
 
-			deflater.encrypt(this->block.info_containers[i]);
+			// deflater.encrypt(this->block.info_containers[i]);
 
 			deflater.encode(this->block.info_containers[i]);
 			if(this->block.info_containers[i].header.controller.mixedStride == true)

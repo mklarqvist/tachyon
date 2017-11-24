@@ -60,7 +60,7 @@ bool StreamContainer::checkUniformity(void){
 	this->buffer_data.pointer = stride_size;
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
-	this->header.controller.encoder = 0;
+	this->header.controller.encoder = Core::ENCODE_NONE;
 
 	return(true);
 }

@@ -26,6 +26,7 @@ struct VCFHeaderMapEntry{
 class VCFHeader {
 	typedef VCFHeader self_type;
 	typedef Hash::HashTable<std::string, S32> hash_table_type;
+	typedef Hash::HashTable<S32, U32> hash_table_map_type;
 	typedef VCFHeaderContig contig_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
@@ -101,6 +102,7 @@ public:
 	std::vector<map_entry_type> map;
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names
+	hash_table_map_type* map_lookup;       // hash map from name to identifier
 };
 
 }

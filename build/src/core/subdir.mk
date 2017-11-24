@@ -30,4 +30,11 @@ src/core/%.o: ../src/core/%.cpp
 	@echo 'Finished building: $<'
 	@echo ' '
 
+src/core/Importer.o: ../src/core/Importer.cpp
+	@echo 'Building file: $<'
+	@echo 'Invoking: Cross G++ Compiler'
+	g++ -std=c++0x -I/Users/mk21/homebrew/opt/openssl/include/ -O3 -march=native -mtune=native -ftree-vectorize -pipe -frename-registers -funroll-loops -g -Wall -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"src/core/Importer.d" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
 
