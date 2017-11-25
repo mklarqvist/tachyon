@@ -48,27 +48,6 @@ inline bool bytePreprocessorRevert(const char* const data, const size_t& size, c
 	return true;
 }
 
-inline bool bytePreprocessBits(const char* const data, const size_t& size, char* destination){
-	if(size == 0) return false;
-
-	BYTE* dest = reinterpret_cast<BYTE*>(destination);
-	const BYTE* const d = reinterpret_cast<const BYTE* const>(data);
-	BYTE* target[8];
-	const U32 s = size/8;
-	for(U32 i = 0; i < 8; ++i)
-		target[7-i] = &dest[s*i];
-
-	U32 k = 0; U32 p = 0;
-	for(U32 i = 0; i < size; ++i, ++k){
-		for(U32 j = 0; j < 8; ++j)
-			target[j][p] |= ((d[i] & (1 << j)) >> j) << k;
-
-		if(i % 7 == 0){ k = 0; ++p; }
-	}
-
-	return true;
-}
-
 class ImportWriter {
 public:
 	ImportWriter();

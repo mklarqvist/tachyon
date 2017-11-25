@@ -8,6 +8,9 @@ namespace Tachyon {
 
 Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
 	checkpoint_size(checkpoint),
+	total_gt_cost(0),
+	total_ppa_cost(0),
+	total_rest_cost(0),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
 	reader_(inputFile),
@@ -88,10 +91,12 @@ bool Importer::BuildBCF(void){
 
 		// Reset permutate
 		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
+
 		if(!this->permutator.build(reader)){
 			std::cerr << "fail permutator" << std::endl;
 			return false;
 		}
+
 
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
@@ -206,10 +211,16 @@ bool Importer::BuildBCF(void){
 		this->writer_.streamTomahawk << this->block;
 		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
+		this->total_gt_cost += this->block.gt_rle_container.buffer_data.pointer;
+		this->total_gt_cost += this->block.gt_simple_container.buffer_data.pointer;
+		this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
+		std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
+
 		// Reset inside block
 		// this->permutator.reset();
 		this->resetHashes();
 		this->block.clear();
+		this->permutator.reset();
 	}
 
 	/*

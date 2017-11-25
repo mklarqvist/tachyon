@@ -114,8 +114,6 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	else this->cumulative_AAC += ref;
 	this->cumulative_total += alt + ref;
 
-	//if(alt < 50) return false;
-
 	// Build PPA
 	// 3^2 = 9 state radix sort over
 	// states: alleles \in {00, 01, 11}

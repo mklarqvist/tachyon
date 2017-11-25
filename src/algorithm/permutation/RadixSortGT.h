@@ -4,6 +4,10 @@
 #include "../../io/bcf/BCFReader.h"
 #include "../../core/PermutationManager.h"
 
+// Todo: test
+// if #common variants over some threshold then sort on those only
+// beause they will dominate the RLE cost
+
 namespace Tachyon {
 namespace Algorithm {
 

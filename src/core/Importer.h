@@ -64,6 +64,9 @@ private:
 
 private:
 	U32 checkpoint_size;      // number of variants until checkpointing
+	U64 total_gt_cost;
+	U64 total_ppa_cost;
+	U64 total_rest_cost;
 	std::string inputFile;    // input file name
 	std::string outputPrefix; // output file prefix
 	reader_type reader_;      // reader

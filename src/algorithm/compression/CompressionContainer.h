@@ -6,6 +6,27 @@
 namespace Tachyon{
 namespace Compression{
 
+inline bool bytePreprocessBits(const char* const data, const size_t& size, char* destination){
+	if(size == 0) return false;
+
+	BYTE* dest = reinterpret_cast<BYTE*>(destination);
+	const BYTE* const d = reinterpret_cast<const BYTE* const>(data);
+	BYTE* target[8];
+	const U32 s = size/8;
+	for(U32 i = 0; i < 8; ++i)
+		target[7-i] = &dest[s*i];
+
+	U32 k = 0; U32 p = 0;
+	for(U32 i = 0; i < size; ++i, ++k){
+		for(U32 j = 0; j < 8; ++j)
+			target[j][p] |= ((d[i] & (1 << j)) >> j) << k;
+
+		if(i % 7 == 0){ k = 0; ++p; }
+	}
+
+	return true;
+}
+
 class CompressionContainer{
 private:
 	typedef CompressionContainer self_type;
@@ -73,13 +94,24 @@ public:
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (BYTE)manager[i];
 		} else if(w == 2){
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U16)manager[i];
+			memset(manager.PPA.data, 0, this->buffer.pointer);
+			manager.PPA.pointer = this->buffer.pointer;
+			const U32 block_size = this->buffer.pointer / w;
+			std::cerr << "repacking to: " << block_size << " @ " << (int)w << std::endl;
+			bytePreprocessBits(&this->buffer.data[0], manager.PPA.pointer, &manager.PPA.data[0]);
+
+			//for(U32 i = 0; i < manager.PPA.pointer; ++i)
+			//	std::cerr << std::bitset<8>(manager.PPA.data[i]);
+			//std::cerr << std::endl;
+
 		} else if(w == 3 || w == 4){
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U32)manager[i];
 		} else {
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U64)manager[i];
 		}
-		memcpy(manager.PPA.data, this->buffer.data, this->buffer.pointer);
-		manager.PPA.pointer = this->buffer.pointer;
+		//memcpy(manager.PPA.data, this->buffer.data, this->buffer.pointer);
+		//manager.PPA.pointer = this->buffer.pointer;
+
 
 
 		this->controller.Deflate(manager.PPA);

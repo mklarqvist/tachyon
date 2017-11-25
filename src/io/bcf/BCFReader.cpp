@@ -137,8 +137,9 @@ bool BCFReader::getVariants(const U32 entries, bool across_contigs){
 		}
 		this->entries[this->n_entries].parse();
 		if(this->n_entries == 0) firstPos = this->entries[0].body->POS + 1;
-		if((this->entries[this->n_entries].body->POS + 1) - firstPos > 15e3){
+		if((this->entries[this->n_entries].body->POS + 1) - firstPos > 30e3){
 			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << std::endl;
+			++this->n_entries;
 			break;
 		}
 		++this->n_entries;
