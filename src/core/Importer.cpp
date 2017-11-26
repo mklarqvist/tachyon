@@ -115,14 +115,16 @@ bool Importer::BuildBCF(void){
 
 		//std::string hexKey = "D26E140AE8D10352F2D7CBE25DC83396135F7588B583BBD28D280EEED4ED6EAD";
 		//std::string hexIV = "EB9AF575716202471F658C1BC7695767";
-		BYTE key[32]; BYTE iv[16];
+		//BYTE key[32]; BYTE iv[16];
 		//Helpers::HexToBytes(hexKey, &key[0]);
 		//Helpers::HexToBytes(hexIV, &iv[0]);
 
+		/*
 		if(Encryption::aes_init(key, 32, &key[0], &iv[0]) == -1){
 			std::cerr << "failed init" << std::endl;
 			exit(1);
 		}
+		*/
 
 		//char tempBuff[1000];
 		/*
@@ -136,6 +138,7 @@ bool Importer::BuildBCF(void){
 		std::cerr << std::endl;
 		 */
 
+		/*
 		BYTE outstream[this->block.gt_rle_container.buffer_data.pointer+16536];
 		int ret_length = Encryption::aes_encrypt((BYTE*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer, key, iv, &outstream[0]);
 		std::cerr << "encrypted: " << this->block.gt_rle_container.buffer_data.pointer << " -> " << ret_length << std::endl;
@@ -149,6 +152,7 @@ bool Importer::BuildBCF(void){
 		U32 crcEnd = crc32(0, NULL, 0);
 		crcEnd = crc32(crcEnd, (Bytef*)retstream, ret_dec_length);
 		std::cerr << crcStart << '\t' << crcEnd << '\t' << (crcStart == crcEnd) << std::endl;
+		*/
 
 		this->block.index_entry.controller.hasGT = true;
 		this->block.index_entry.controller.isDiploid = true;
@@ -174,22 +178,37 @@ bool Importer::BuildBCF(void){
 
 
 		// Todo: fix so that their counts are updated whenever something is added
+		comp2.setCompressionLevel(2);
 		comp2.encode(this->block.ppa_manager);
+
+		comp2.setCompressionLevel(14);
+		//comp2.assessLevel(this->block.gt_rle_container);
 		comp2.encode(this->block.gt_rle_container);
 		comp2.encode(this->block.gt_simple_container);
+
+		comp2.setCompressionLevel(1);
+		//comp2.assessLevel(this->block.meta_hot_container);
 		comp2.encode(this->block.meta_hot_container);
+
+		comp2.setCompressionLevel(14);
+		//comp2.assessLevel(this->block.meta_cold_container);
 		comp2.encode(this->block.meta_cold_container);
+
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 
+		comp2.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.uniform == true)
 				continue;
 
+			//comp2.assessLevel(this->block.info_containers[i]);
 			comp2.encode(this->block.info_containers[i]);
+
+
 			if(this->block.info_containers[i].header.controller.mixedStride == true)
 				comp2.encodeStrides(this->block.info_containers[i]);
 		}
