@@ -1,7 +1,9 @@
 #ifndef CORE_BASE_STREAMCONTAINERHEADERCONTROLLER_H_
 #define CORE_BASE_STREAMCONTAINERHEADERCONTROLLER_H_
 
+#include <string>
 #include <fstream>
+#include <cstring>
 
 #include "../../support/TypeDefinitions.h"
 

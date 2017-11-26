@@ -4,6 +4,7 @@
 #include "PermutationManager.h"
 #include "../index/IndexBlockEntry.h"
 #include "StreamContainer.h"
+#include "../io/vcf/VCFHeader.h"
 
 namespace Tachyon{
 namespace Core{
@@ -75,6 +76,45 @@ public:
 			return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams, buffer));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
+		}
+	}
+
+	void write(std::ofstream& stream, const VCF::VCFHeader& header){
+		U64 startPos = stream.tellp();
+		stream << this->index_entry;
+		std::cout << "Index\t" << (U64)stream.tellp() - startPos << '\n';
+		startPos = stream.tellp();
+		stream << this->ppa_manager;
+		std::cout << "PPA\t" << (U64)stream.tellp() - startPos << '\n';
+		startPos = stream.tellp();
+		stream << this->meta_hot_container;
+		std::cout << "META-HOT\t" << (U64)stream.tellp() - startPos << '\n';
+		startPos = stream.tellp();
+		stream << this->meta_cold_container;
+		std::cout << "META-COLD\t" << (U64)stream.tellp() - startPos << '\n';
+		startPos = stream.tellp();
+		stream << this->gt_rle_container;
+		std::cout << "GT-RLE\t" << (U64)stream.tellp() - startPos << '\n';
+		startPos = stream.tellp();
+		stream << this->gt_simple_container;
+		std::cout << "GT-SIMPLE\t" << (U64)stream.tellp() - startPos << '\n';
+
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+			startPos = stream.tellp();
+			stream << this->info_containers[i];
+			std::cout << "INFO-" << header[this->index_entry.info_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
+		}
+
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+			startPos = stream.tellp();
+			stream << this->format_containers[i];
+			std::cout << "FORMAT-" << header[this->index_entry.format_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
+		}
+
+		for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
+			startPos = stream.tellp();
+			stream << this->filter_containers[i];
+			std::cout << "FILTER-" << header[this->index_entry.filter_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
 		}
 	}
 

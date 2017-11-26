@@ -64,6 +64,8 @@ public:
 		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block),  sizeof(U32));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),    sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),    sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
 		stream << entry.offset_ppa;
 		stream << entry.offset_hot_meta;
@@ -84,6 +86,8 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),  sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),  sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),  sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
 		stream >> entry.offset_ppa;
 		stream >> entry.offset_hot_meta;
@@ -104,6 +108,8 @@ public:
 		this->offset_end_of_block = 0;
 		this->controller.clear();
 		this->contigID = -1;
+		this->minPosition = 0;
+		this->maxPosition = 0;
 		this->n_variants = 0;
 
 		this->offset_ppa.clear();
@@ -127,6 +133,8 @@ public:
 	// bit flags
 	controller_type controller;
 	S32 contigID;       // contig identifier
+	U64 minPosition;
+	U64 maxPosition;
 	U16 n_variants;     // number of variants in this block
 
 	// Virtual offsets to the start of various

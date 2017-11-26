@@ -14,7 +14,7 @@ CPP_DEPS += \
 src/algorithm/encryption/openssl_aes: ../src/algorithm/encryption/openssl_aes.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross GCC Compiler'
-	gcc -std=c99 -I/Users/mk21/homebrew/opt/openssl/include/ -O3 -march=native -mtune=native -ftree-vectorize -pipe -frename-registers -funroll-loops -g -Wall -c -fmessage-length=0 -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"src/algorithm/encryption/openssl_aes.d" -o "$@" "$<"
+	gcc -std=c99 -I/Users/mk21/homebrew/opt/openssl/include/ -O3 -march=native -mtune=native -g -Wall -c -fmessage-length=0 -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"src/algorithm/encryption/openssl_aes.d" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

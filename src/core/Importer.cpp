@@ -85,12 +85,20 @@ bool Importer::BuildBCF(void){
 	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
 
+	//Compression::DeflateCodec deflater;
+	Compression::ZSTDCodec comp2;
+
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
 			break;
 
+		// Debug; check BCFReader timings
+		//continue;
+
 		// Reset permutate
 		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
+		this->block.index_entry.minPosition = reader.first().body->POS;
+		this->block.index_entry.maxPosition = reader.last().body->POS;
 
 		if(!this->permutator.build(reader)){
 			std::cerr << "fail permutator" << std::endl;
@@ -117,6 +125,7 @@ bool Importer::BuildBCF(void){
 		}
 
 		//char tempBuff[1000];
+		/*
 		std::cerr << "key: ";
 		for(U32 i = 0; i < 32; ++i)
 			printf("%02X", key[i]);
@@ -125,6 +134,7 @@ bool Importer::BuildBCF(void){
 		for(U32 i = 0; i < 16; ++i)
 			printf("%02X", iv[i]);
 		std::cerr << std::endl;
+		 */
 
 		BYTE outstream[this->block.gt_rle_container.buffer_data.pointer+16536];
 		int ret_length = Encryption::aes_encrypt((BYTE*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer, key, iv, &outstream[0]);
@@ -162,53 +172,52 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->recode_buffer);
 
-		Compression::DeflateCodec deflater;
-		if(this->block.gt_rle_container.n_entries) deflater.encode(this->block.gt_rle_container);
-		if(this->block.gt_simple_container.n_entries) deflater.encode(this->block.gt_simple_container);
-		if(this->block.meta_hot_container.n_entries) deflater.encode(this->block.meta_hot_container);
-		if(this->block.meta_cold_container.n_entries) deflater.encode(this->block.meta_cold_container);
 
-		deflater.encode(this->block.ppa_manager);
+		// Todo: fix so that their counts are updated whenever something is added
+		comp2.encode(this->block.ppa_manager);
+		comp2.encode(this->block.gt_rle_container);
+		comp2.encode(this->block.gt_simple_container);
+		comp2.encode(this->block.meta_hot_container);
+		comp2.encode(this->block.meta_cold_container);
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
 
-		for(U32 i = 0; i < this->info_fields.size(); ++i){
-			if(this->block.info_containers[i].header.controller.uniform == true || this->block.info_containers[i].n_entries == 0)
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			if(this->block.info_containers[i].header.controller.uniform == true)
 				continue;
 
-			// deflater.encrypt(this->block.info_containers[i]);
-
-			deflater.encode(this->block.info_containers[i]);
+			comp2.encode(this->block.info_containers[i]);
 			if(this->block.info_containers[i].header.controller.mixedStride == true)
-				deflater.encodeStrides(this->block.info_containers[i]);
+				comp2.encodeStrides(this->block.info_containers[i]);
 		}
 
-		for(U32 i = 0; i < this->format_fields.size(); ++i){
-			if(this->block.format_containers[i].header.controller.uniform == true || this->block.format_containers[i].n_entries == 0)
+		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			if(this->block.format_containers[i].header.controller.uniform == true)
 				continue;
 
 
-			deflater.encode(this->block.format_containers[i]);
+			comp2.encode(this->block.format_containers[i]);
 			if(this->block.format_containers[i].header.controller.mixedStride == true)
-				deflater.encodeStrides(this->block.format_containers[i]);
+				comp2.encodeStrides(this->block.format_containers[i]);
 		}
 
-		for(U32 i = 0; i < this->filter_fields.size(); ++i){
-			if(this->block.filter_containers[i].header.controller.uniform == true || this->block.filter_containers[i].n_entries == 0)
+		for(U32 i = 0; i < this->block.index_entry.n_filter_streams; ++i){
+			if(this->block.filter_containers[i].header.controller.uniform == true)
 				continue;
 
 
-			deflater.encode(this->block.filter_containers[i]);
+			comp2.encode(this->block.filter_containers[i]);
 			if(this->block.filter_containers[i].header.controller.mixedStride == true)
-				deflater.encodeStrides(this->block.filter_containers[i]);
+				comp2.encodeStrides(this->block.filter_containers[i]);
 		}
 
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
-		this->writer_.streamTomahawk << this->block;
+		//this->writer_.streamTomahawk << this->block;
+		this->block.write(this->writer_.streamTomahawk, *this->header_);
 		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->total_gt_cost += this->block.gt_rle_container.buffer_data.pointer;

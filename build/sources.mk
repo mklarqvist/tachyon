@@ -35,7 +35,7 @@ src/io/compression \
 src/io \
 src/io/vcf \
 src/support \
-src/third_party/FiniteStateEntropy/lib \
+src/third_party \
 src/third_party/xxhash \
 src/third_party/zlib \
 
