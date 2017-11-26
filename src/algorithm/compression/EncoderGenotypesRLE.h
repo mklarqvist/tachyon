@@ -304,6 +304,7 @@ bool EncoderGenotypesRLE::EncodeSimple(const bcf_type& line, container_type& sim
 		exit(1);
 	}
 	n_runs = this->n_samples;
+	simple.n_additions += n_runs;
 
 	return(true);
 }
@@ -398,6 +399,7 @@ bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, container_type& runs, 
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
+	runs.n_additions += n_runs;
 
 	// Calculate basic stats
 	this->helper.calculateMGF();
@@ -476,6 +478,8 @@ bool EncoderGenotypesRLE::EncodeRLESimple(const bcf_type& line, container_type& 
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
+
+	runs.n_additions += n_runs;
 
 	return(true);
 }

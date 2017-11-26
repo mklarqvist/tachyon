@@ -102,6 +102,7 @@ struct StreamContainerHeader{
 	~StreamContainerHeader(){delete [] this->extra;}
 
 	inline void reset(void){
+		this->controller.clear();
 		this->stride = -1;
 		this->offset = 0;
 		this->cLength = 0;
@@ -226,6 +227,7 @@ struct StreamContainerHeaderStride{
 	}
 
 	inline void reset(void){
+		this->controller.clear();
 		this->cLength = 0;
 		this->uLength = 0;
 		this->crc = 0;

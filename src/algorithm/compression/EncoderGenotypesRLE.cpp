@@ -25,6 +25,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.anyMissing = cost.hasMissing;
 		meta_base.controller.biallelic = true;
+		++runs.n_entries;
 
 		switch(cost.word_width){
 		case 1:
@@ -76,6 +77,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 			//std::cerr << line.body->POS+1 << "\t1\t0" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << cost.n_runs*cost.word_width << std::endl;
 
 			meta_base.controller.rle = true;
+			++simple.n_entries;
 
 			switch(cost.word_width){
 			case 1:
@@ -109,6 +111,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 
 			meta_base.controller.rle = false;
 			meta_base.controller.rle_type = 0;
+			++simple.n_entries;
 
 			if(line.body->n_allele + 1 < 8)          this->EncodeSimple<BYTE>(line, simple, n_runs, ppa);
 			else if(line.body->n_allele + 1 < 128)   this->EncodeSimple<U16> (line, simple, n_runs, ppa);

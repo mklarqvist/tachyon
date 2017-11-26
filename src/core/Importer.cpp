@@ -88,6 +88,7 @@ bool Importer::BuildBCF(void){
 	//Compression::DeflateCodec deflater;
 	Compression::ZSTDCodec comp2;
 
+	// Start import
 	while(true){
 		if(!reader.getVariants(this->checkpoint_size))
 			break;
@@ -172,33 +173,32 @@ bool Importer::BuildBCF(void){
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 		std::cerr << "INFO: " << std::endl;
-		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,  this->recode_buffer);
+		this->block.updateContainer(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->recode_buffer);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
 		this->block.updateContainer(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->recode_buffer);
 
 
-		// Todo: fix so that their counts are updated whenever something is added
 		comp2.setCompressionLevel(2);
 		comp2.encode(this->block.ppa_manager);
 
 		comp2.setCompressionLevel(14);
 		//comp2.assessLevel(this->block.gt_rle_container);
-		comp2.encode(this->block.gt_rle_container);
-		comp2.encode(this->block.gt_simple_container);
+		if(this->block.gt_rle_container.n_entries) comp2.encode(this->block.gt_rle_container);
+		if(this->block.gt_simple_container.n_entries) comp2.encode(this->block.gt_simple_container);
 
 		comp2.setCompressionLevel(1);
 		//comp2.assessLevel(this->block.meta_hot_container);
-		comp2.encode(this->block.meta_hot_container);
+		if(this->block.meta_hot_container.n_entries) comp2.encode(this->block.meta_hot_container);
 
 		comp2.setCompressionLevel(14);
 		//comp2.assessLevel(this->block.meta_cold_container);
-		comp2.encode(this->block.meta_cold_container);
+		if(this->block.meta_cold_container.n_entries) comp2.encode(this->block.meta_cold_container);
 
 
-		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << '\t' << 0 << std::endl;
-		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << '\t' << 0 << std::endl;
+		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << std::endl;
+		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << std::endl;
+		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
+		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
 		comp2.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
@@ -319,6 +319,11 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
 	}
+
+	++this->block.meta_cold_container.n_entries;
+	++this->block.meta_cold_container.n_additions;
+	++this->block.meta_hot_container.n_entries;
+	++this->block.meta_hot_container.n_additions;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;

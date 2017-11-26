@@ -86,25 +86,6 @@ public:
 		return true;
 	}
 
-	const int assessLevel(stream_type& stream){
-		this->buffer.reset();
-		this->buffer.resize(stream.buffer_data.pointer + 65536);
-		double prevRatio = 0;
-		for(S32 i = 1; i <= 22; ++i){
-			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_data.data, stream.buffer_data.pointer, i);
-			if(ZSTD_isError(ret)){
-				std::cerr << "error: " << ZSTD_getErrorCode(ret) << std::endl;
-				//exit(1);
-			}
-			const double ratio = (double)stream.buffer_data.pointer/ret;
-			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << i << ": " << stream.buffer_data.pointer << '\t' << ret << '\t' << ratio << std::endl;
-			//if(ratio - prevRatio < 0.05) return(i);
-			prevRatio = ratio;
-
-		}
-		return true;
-	}
-
 	const bool encodeStrides(stream_type& stream){
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_strides.pointer + 65536);
