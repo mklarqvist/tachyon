@@ -34,8 +34,10 @@ public:
 	}
 
 	bool nextBlock(){
-		if(this->stream.tellg() == this->filesize)
+		if(this->stream.tellg() == this->filesize){
+			std::cerr << "eof all done" << std::endl;
 			return false;
+		}
 
 		this->stream >> this->block;
 		return true;
