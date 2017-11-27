@@ -50,11 +50,13 @@ public:
 	}
 
 	void clear(){
-		this->index_entry.reset();
-		for(U32 i = 0; i < 100; ++i){
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 			this->info_containers[i].reset();
+
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
 			this->format_containers[i].reset();
-		}
+
+		this->index_entry.reset();
 		this->meta_hot_container.reset();
 		this->meta_cold_container.reset();
 		this->gt_rle_container.reset();
@@ -200,12 +202,19 @@ private:
 	// We should only read the entries we're actually interested in!!!!!
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.index_entry;
+		std::cerr << "After index" << std::endl;
 		stream >> entry.ppa_manager;
+		std::cerr << "After ppa" << std::endl;
 		stream >> entry.meta_hot_container;
+		std::cerr << "After meta hot" << std::endl;
 		stream >> entry.meta_cold_container;
+		std::cerr << "After meta cold" << std::endl;
 		stream >> entry.gt_rle_container;
+		std::cerr << "After gt rle" << std::endl;
 		stream >> entry.gt_simple_container;
+		std::cerr << "After gt simple0" << std::endl;
 
+		std::cerr << "info_streams: " << entry.index_entry.n_info_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
 			stream >> entry.info_containers[i];
 			std::cerr << "info" << i << ": " <<  entry.info_containers[i].header.uLength << '\t' << entry.info_containers[i].header.crc << std::endl;
@@ -213,9 +222,13 @@ private:
 				std::cerr << "ENCODE_NONE | CRC check: " << (entry.info_containers[i].checkCRC() ? "PASS" : "FAIL") << std::endl;
 			}
 		}
+		std::cerr << "after info" << std::endl;
 
+		std::cerr << "info_streams: " << entry.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream >> entry.format_containers[i];
+
+		std::cerr << "after format" << std::endl;
 
 		U64 eof_marker;
 		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));

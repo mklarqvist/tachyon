@@ -230,7 +230,6 @@ bool Importer::BuildBCF(void){
 		this->block.clear();
 		this->permutator.reset();
 		this->writer_.streamTomahawk.flush();
-		return true;
 	}
 
 	/*

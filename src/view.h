@@ -101,7 +101,9 @@ int view(int argc, char** argv){
 
 	Tachyon::Core::TachyonReader reader(input);
 	reader.open(input);
-	reader.nextBlock();
+	while(reader.nextBlock()){
+		reader.block.clear();
+	}
 
 	return 0;
 }

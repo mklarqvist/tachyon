@@ -73,7 +73,6 @@ public:
 		stream << entry.offset_cold_meta;
 		stream << entry.offset_gt_rle;
 		stream << entry.offset_gt_simple;
-		std::cerr << "writing: " << entry.n_info_streams << '\t' << entry.n_format_streams << std::endl;
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
@@ -121,10 +120,12 @@ public:
 		this->offset_gt_simple.clear();
 
 		this->n_info_streams = 0;
-		this->n_format_streams = 0;
-		this->n_filter_streams = 0;
 		this->n_info_patterns = 0;
+
+		this->n_format_streams = 0;
 		this->n_format_patterns = 0;
+
+		this->n_filter_streams = 0;
 		this->n_filter_patterns = 0;
 	}
 

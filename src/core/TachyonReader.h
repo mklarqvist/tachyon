@@ -34,6 +34,9 @@ public:
 	}
 
 	bool nextBlock(){
+		if(this->stream.tellg() == this->filesize)
+			return false;
+
 		this->stream >> this->block;
 		return true;
 	}

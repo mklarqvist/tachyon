@@ -171,8 +171,8 @@ public:
 	const bool encodeStrides(stream_type& stream){
 		if(stream.buffer_strides.pointer < 50){
 			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
-			stream.header_stride.uLength = stream.buffer_data.pointer;
-			stream.header_stride.cLength = stream.buffer_data.pointer;
+			stream.header_stride.uLength = stream.buffer_strides.pointer;
+			stream.header_stride.cLength = stream.buffer_strides.pointer;
 			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small stride: no compression... " << stream.buffer_data.pointer << std::endl;
 			return true;
 		}

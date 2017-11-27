@@ -7,6 +7,8 @@ namespace Index{
 IndexBlockEntryBase::IndexBlockEntryBase() :
 	offset_end_of_block(0),
 	contigID(-1),
+	minPosition(0),
+	maxPosition(0),
 	n_variants(0),
 	n_info_streams(0),
 	n_format_streams(0),

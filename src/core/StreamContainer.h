@@ -141,9 +141,11 @@ public:
 			stream >> entry.header_stride;
 
 		entry.buffer_data.resize(entry.header.uLength);
+		std::cerr << "reading: " << entry.header.cLength << '/' << entry.header_stride.uLength << " -> " << entry.buffer_data.capacity() << std::endl;
 		stream.read(entry.buffer_data.data, entry.header.cLength);
 		if(entry.header.controller.mixedStride){
 			entry.buffer_strides.resize(entry.header_stride.uLength);
+			std::cerr << "reading stride: " << entry.header_stride.cLength << " -> " << entry.buffer_strides.capacity() << std::endl;
 			stream.read(entry.buffer_strides.data, entry.header_stride.cLength);
 		}
 		return(stream);
