@@ -78,7 +78,7 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
 
-// Clear data if present
+	// Clear data if present
 	// Allocate new bit-vectors
 	delete [] target;
 	target = new bit_vector[patterns.size()];
@@ -89,15 +89,17 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){
+		/*
 		// Dump data
 		std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			std::cerr << patterns[i][j] << '\t';
 		}
 		std::cerr << std::endl;
+		*/
 
 		//
-		std::cerr << i << '\t';
+		//std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			U32 retval = 0;
 			if(!values.getRaw(patterns[i][j], retval)){
@@ -105,17 +107,17 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 				exit(1);
 			}
 			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
-			std::cerr << retval << '\t';
+			//std::cerr << retval << '\t';
 		}
-		std::cerr << std::endl;
+		//std::cerr << std::endl;
 
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < bitvector_width; ++j)
-			std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
+		//std::cerr << i << '\t';
+		//for(U32 j = 0; j < bitvector_width; ++j)
+		//	std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
 
-		std::cerr << std::endl << std::endl;
+		//std::cerr << std::endl << std::endl;
 	}
-	std::cerr << std::endl;
+	//std::cerr << std::endl;
 
 	return true;
 }

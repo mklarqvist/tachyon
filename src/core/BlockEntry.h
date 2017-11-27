@@ -91,6 +91,7 @@ public:
 		std::cout << "Index\t" << (U64)stream.tellp() - startPos << '\n';
 		startPos = stream.tellp();
 		stream << this->ppa_manager;
+		std::cerr << "PPA-v: " << this->ppa_manager.c_length << '\t' << this->ppa_manager.crc << std::endl;
 		std::cout << "PPA\t" << (U64)stream.tellp() - startPos << '\n';
 		startPos = stream.tellp();
 		stream << this->meta_hot_container;
@@ -116,6 +117,14 @@ public:
 			stream << this->format_containers[i];
 			std::cout << "FORMAT-" << header[this->index_entry.format_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
 		}
+
+		std::cerr << Helpers::timestamp("DEBUG") << std::endl;
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
+			std::cerr << this->index_entry.info_offsets[i].key << '\t';
+		std::cerr << std::endl;
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
+				std::cerr << this->index_entry.format_offsets[i].key << '\t';
+			std::cerr << std::endl;
 	}
 
 	void updateBaseContainers(buffer_type& buffer){
@@ -168,7 +177,7 @@ private:
 		container.reformat(buffer);
 
 		// Add CRC32 checksum for sanity
-		container.generateCRC();
+		container.generateCRC(true);
 
 		// Set uncompressed length
 		container.header.uLength = container.buffer_data.pointer;

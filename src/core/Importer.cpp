@@ -85,8 +85,8 @@ bool Importer::BuildBCF(void){
 	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
 
-	//Compression::DeflateCodec deflater;
-	Compression::ZSTDCodec comp2;
+	// Todo: dynamically select compression decorator
+	Compression::ZSTDCodec zstd;
 
 	// Start import
 	while(true){
@@ -98,6 +98,7 @@ bool Importer::BuildBCF(void){
 
 		// Reset permutate
 		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
+		this->block.index_entry.contigID = reader.first().body->CHROM;
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
 
@@ -168,6 +169,7 @@ bool Importer::BuildBCF(void){
 
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
@@ -177,38 +179,29 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->recode_buffer);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
 
-		comp2.setCompressionLevel(2);
-		comp2.encode(this->block.ppa_manager);
+		zstd.setCompressionLevel(2);
+		zstd.encode(this->block.ppa_manager);
+		if(this->block.meta_hot_container.n_entries) zstd.encode(this->block.meta_hot_container);
 
-		comp2.setCompressionLevel(14);
-		if(this->block.gt_rle_container.n_entries) comp2.encode(this->block.gt_rle_container);
-		if(this->block.gt_simple_container.n_entries) comp2.encode(this->block.gt_simple_container);
-
-		comp2.setCompressionLevel(1);
-		//comp2.assessLevel(this->block.meta_hot_container);
-		if(this->block.meta_hot_container.n_entries) comp2.encode(this->block.meta_hot_container);
-
-		comp2.setCompressionLevel(14);
-		//comp2.assessLevel(this->block.meta_cold_container);
-		if(this->block.meta_cold_container.n_entries) comp2.encode(this->block.meta_cold_container);
-
+		zstd.setCompressionLevel(14);
+		if(this->block.gt_rle_container.n_entries) zstd.encode(this->block.gt_rle_container);
+		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
+		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
 
 		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << std::endl;
 		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
-		comp2.setCompressionLevel(6);
+		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.uniform == true)
 				continue;
 
-			//comp2.assessLevel(this->block.info_containers[i]);
-			comp2.encode(this->block.info_containers[i]);
-
+			zstd.encode(this->block.info_containers[i]);
 
 			if(this->block.info_containers[i].header.controller.mixedStride == true){
-				comp2.encodeStrides(this->block.info_containers[i]);
+				zstd.encodeStrides(this->block.info_containers[i]);
 			}
 		}
 
@@ -216,12 +209,10 @@ bool Importer::BuildBCF(void){
 			if(this->block.format_containers[i].header.controller.uniform == true)
 				continue;
 
-
-			comp2.encode(this->block.format_containers[i]);
+			zstd.encode(this->block.format_containers[i]);
 			if(this->block.format_containers[i].header.controller.mixedStride == true)
-				comp2.encodeStrides(this->block.format_containers[i]);
+				zstd.encodeStrides(this->block.format_containers[i]);
 		}
-
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		//this->writer_.streamTomahawk << this->block;
