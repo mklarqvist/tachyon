@@ -168,23 +168,19 @@ bool Importer::BuildBCF(void){
 
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
 		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
-		std::cerr << "INFO: " << std::endl;
 
 		this->block.updateBaseContainers(this->recode_buffer);
 
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->recode_buffer);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->recode_buffer);
 
 		comp2.setCompressionLevel(2);
 		comp2.encode(this->block.ppa_manager);
 
 		comp2.setCompressionLevel(14);
-		//comp2.assessLevel(this->block.gt_rle_container);
 		if(this->block.gt_rle_container.n_entries) comp2.encode(this->block.gt_rle_container);
 		if(this->block.gt_simple_container.n_entries) comp2.encode(this->block.gt_simple_container);
 
@@ -211,8 +207,9 @@ bool Importer::BuildBCF(void){
 			comp2.encode(this->block.info_containers[i]);
 
 
-			if(this->block.info_containers[i].header.controller.mixedStride == true)
+			if(this->block.info_containers[i].header.controller.mixedStride == true){
 				comp2.encodeStrides(this->block.info_containers[i]);
+			}
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
@@ -225,19 +222,10 @@ bool Importer::BuildBCF(void){
 				comp2.encodeStrides(this->block.format_containers[i]);
 		}
 
-		for(U32 i = 0; i < this->block.index_entry.n_filter_streams; ++i){
-			if(this->block.filter_containers[i].header.controller.uniform == true)
-				continue;
-
-
-			comp2.encode(this->block.filter_containers[i]);
-			if(this->block.filter_containers[i].header.controller.mixedStride == true)
-				comp2.encodeStrides(this->block.filter_containers[i]);
-		}
-
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
 		//this->writer_.streamTomahawk << this->block;
+		this->block.updateOffsets();
 		this->block.write(this->writer_.streamTomahawk, *this->header_);
 		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 

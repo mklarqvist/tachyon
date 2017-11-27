@@ -5,6 +5,8 @@
 #include "zstd.h"
 #include "common/zstd_errors.h"
 #include "../../third_party/r16N.h"
+#include "../../third_party/zlib/zconf.h"
+#include "../../third_party/zlib/zlib.h"
 
 namespace Tachyon{
 namespace Compression{
@@ -62,6 +64,49 @@ public:
 
 	void setCompressionLevel(const int& c){ this->compression_level = c; }
 
+	const bool assess(stream_type& stream){
+		this->buffer.reset();
+		this->buffer.resize(stream.buffer_strides.pointer + 65536);
+		//for(S32 i = 1; i <= 22; ++i){
+			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
+			if(ZSTD_isError(ret)){
+				std::cerr << "error: " << ZSTD_getErrorCode(ret) << std::endl;
+				//exit(1);
+			}
+			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << this->compression_level << ": " << stream.buffer_strides.pointer << '\t' << ret << '\t' << (double)stream.buffer_strides.pointer/ret << "-fold" << std::endl;
+		//}
+
+		U32 out_size = this->buffer.capacity();
+		rans_compress_to_4x16((BYTE*)stream.buffer_strides.data, stream.buffer_strides.pointer, (BYTE*)this->buffer.data, &out_size, 0);
+		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0\t" << stream.buffer_strides.pointer << "\t" << out_size << '\t' << (double)stream.buffer_strides.pointer/out_size << std::endl;
+
+		/*
+		U32 crc = crc32(0, NULL, 0);
+		crc = crc32(crc, (Bytef*)stream.buffer_data.data, stream.buffer_data.pointer);
+
+
+
+		buffer_type test(this->buffer);
+		U32 out2 = stream.buffer_data.pointer;
+		rans_uncompress_to_4x16((BYTE*)this->buffer.data, out_size, (BYTE*)&test.data[0], &out2, 0);
+		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0-RE\t" << out_size << "\t" << out2 << std::endl;
+
+		U32 crc2 = crc32(0, NULL, 0);
+		crc2 = crc32(crc2, (Bytef*)test.data, out2);
+
+		std::cerr << crc << '\t' << crc2 << '\t' << (crc == crc2) << std::endl;
+
+		test.deleteAll();
+	*/
+
+		/*
+		out_size = this->buffer.capacity();
+		rans_compress_to_4x16((BYTE*)&stream.buffer_data.data[stream.buffer_data.pointer-1], stream.buffer_data.pointer, (BYTE*)this->buffer.data, &out_size, 1);
+		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS1\t" << stream.buffer_data.pointer << "\t" << out_size << '\t' << (double)stream.buffer_data.pointer/out_size << std::endl;
+		*/
+		return true;
+	}
+
 	const bool encode(stream_type& stream){
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_data.pointer + 65536);
@@ -77,11 +122,12 @@ public:
 		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
 		stream.header.uLength = stream.buffer_data.pointer;
 		stream.header.cLength = ret;
-		stream.header.controller.encoder = Core::ENCODE_DEFLATE;
-		//std::cerr << "DEFLATE STRIDE: " << stream.buffer_strides.pointer << '\t' << this->controller.buffer.size() << std::endl;
-
+		stream.header.controller.encoder = Core::ENCODE_ZSTD;
 		memcpy(stream.buffer_data.data, this->buffer.data, ret);
 		stream.buffer_data.pointer = ret;
+		stream.header.n_extra = 1;
+		stream.header.extra = new char[sizeof(BYTE)];
+		stream.header.extra[0] = (BYTE)this->compression_level;
 
 		return true;
 	}
@@ -89,26 +135,20 @@ public:
 	const bool encodeStrides(stream_type& stream){
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_strides.pointer + 65536);
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "buffer size: " << this->buffer.capacity() << " and input: " << stream.buffer_data.pointer << std::endl;
-
-		//for(S32 i = 1; i <= 22; ++i){
-			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
-			if(ZSTD_isError(ret)){
-				std::cerr << "error: " << ZSTD_getErrorCode(ret) << std::endl;
-				//exit(1);
-			}
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << 8 << ": " << ret << '\t' << (ret == ZSTD_CONTENTSIZE_UNKNOWN) << '\t' << (ret == ZSTD_CONTENTSIZE_ERROR) << std::endl;
-		//}
-
+		size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
+		if(ZSTD_isError(ret)){
+			std::cerr << "error: " << ZSTD_getErrorCode(ret) << std::endl;
+		}
 		std::cerr << Helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides.pointer/ret << "-fold"  << std::endl;
-
 
 		stream.header_stride.uLength = stream.buffer_strides.pointer;
 		stream.header_stride.cLength = ret;
-		stream.header_stride.controller.encoder = Core::ENCODE_DEFLATE;
-		//std::cerr << "DEFLATE STRIDE: " << stream.buffer_strides.pointer << '\t' << this->controller.buffer.size() << std::endl;
+		stream.header_stride.controller.encoder = Core::ENCODE_ZSTD;
 		memcpy(stream.buffer_strides.data, this->buffer.data, ret);
 		stream.buffer_strides.pointer = ret;
+		stream.header_stride.n_extra = 1;
+		stream.header_stride.extra = new char[sizeof(BYTE)];
+		stream.header_stride.extra[0] = (BYTE)this->compression_level;
 
 		return true;
 	}
@@ -125,26 +165,13 @@ public:
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U16)manager[i];
 			memset(manager.PPA.data, 0, this->buffer.pointer);
 			manager.PPA.pointer = this->buffer.pointer;
-			const U32 block_size = this->buffer.pointer / w;
-			std::cerr << "repacking to: " << block_size << " @ " << (int)w << std::endl;
 			bytePreprocessBits(&this->buffer.data[0], manager.PPA.pointer, &manager.PPA.data[0]);
-
-			//for(U32 i = 0; i < manager.PPA.pointer; ++i)
-			//	std::cerr << std::bitset<8>(manager.PPA.data[i]);
-			//std::cerr << std::endl;
 
 		} else if(w == 3 || w == 4){
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U32)manager[i];
 		} else {
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U64)manager[i];
 		}
-		//memcpy(manager.PPA.data, this->buffer.data, this->buffer.pointer);
-		//manager.PPA.pointer = this->buffer.pointer;
-		//this->buffer.reset();
-
-		//U32 out_size = this->buffer.capacity();
-		//rans_compress_to_4x16((BYTE*)manager.PPA.data, manager.PPA.pointer, (BYTE*)this->buffer.data, &out_size, 1);
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << manager.PPA.pointer << " and out: " << out_size << std::endl;
 
 		size_t ret = ZSTD_compress(this->buffer.data, this->buffer.pointer, manager.PPA.data, manager.PPA.pointer, this->compression_level);
 		if(ZSTD_isError(ret)){

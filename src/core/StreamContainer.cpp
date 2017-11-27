@@ -72,11 +72,11 @@ bool StreamContainer::checkUniformity(void){
 
 	for(U32 i = 1; i < this->n_entries; ++i){
 		if(XXH64(&this->buffer_data.data[i*stride_update], stride_update, 2147483647) != first_hash){
-			std::cerr << "not uniform" << std::endl;
+			//std::cerr << "not uniform" << std::endl;
 			return(false);
 		}
 	}
-	std::cerr << "is uniform" << std::endl;
+	//std::cerr << "is uniform" << std::endl;
 
 	this->n_entries = 1;
 	this->n_additions = 1;
@@ -143,7 +143,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 			}
 		}
 		// done
-		std::cerr << "swap: uniform" << std::endl;
+		//std::cerr << "swap: uniform" << std::endl;
 		return;
 	}
 	// Not unfirom
@@ -204,7 +204,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 				exit(1);
 			}
 		}
-		std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
+		//std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
 		memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
 		this->buffer_data.pointer = buffer.pointer;
 		this->header.uLength = this->buffer_data.pointer;
@@ -260,7 +260,7 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 		std::cerr << "illegal" << std::endl;
 		exit(1);
 	}
-	std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
+	//std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
 	memcpy(this->buffer_strides.data, buffer.data, buffer.pointer);
 	this->buffer_strides.pointer = buffer.pointer;
 }

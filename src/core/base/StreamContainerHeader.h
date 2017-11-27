@@ -133,6 +133,11 @@ struct StreamContainerHeader{
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
+		if(entry.n_extra > 0){
+			delete [] entry.extra;
+			entry.extra = new char[entry.n_extra];
+			stream.read(entry.extra, entry.n_extra);
+		}
 		return(stream);
 	}
 
@@ -252,6 +257,11 @@ struct StreamContainerHeaderStride{
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
+		if(entry.n_extra > 0){
+			delete [] entry.extra;
+			entry.extra = new char[entry.n_extra];
+			stream.read(entry.extra, entry.n_extra);
+		}
 		return(stream);
 	}
 

@@ -61,21 +61,21 @@ public:
 	virtual ~IndexBlockEntryBase();
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block),  sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition),    sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),    sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition), sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition), sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
 		stream << entry.offset_ppa;
 		stream << entry.offset_hot_meta;
 		stream << entry.offset_cold_meta;
 		stream << entry.offset_gt_rle;
 		stream << entry.offset_gt_simple;
-		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns), sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns),   sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
 
@@ -85,19 +85,19 @@ public:
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.contigID),  sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition),  sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition),  sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.contigID),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),  sizeof(U16));
 		stream >> entry.offset_ppa;
 		stream >> entry.offset_hot_meta;
 		stream >> entry.offset_cold_meta;
 		stream >> entry.offset_gt_rle;
 		stream >> entry.offset_gt_simple;
-		stream.read(reinterpret_cast<char*>(&entry.n_info_streams), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_format_streams), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_info_patterns), sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_info_streams),    sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_format_streams),  sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams),  sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_info_patterns),   sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
 
@@ -197,16 +197,9 @@ public:
 		this->format_offsets = new offset_type[size];
 	}
 
-	void allocateFilterOffsets(const U32& size){
-		if(size == 0) return;
-		delete [] this->filter_offsets;
-		this->filter_offsets = new offset_type[size];
-	}
-
 	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
 		this->allocateInfoOffsets(info);
 		this->allocateFormatOffsets(format);
-		this->allocateFilterOffsets(filter);
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -220,10 +213,6 @@ public:
 		std::cerr << "Writing: " << entry.n_format_streams << " FORMAT headers..." << std::endl;
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream << entry.format_offsets[i];
-
-		std::cerr << "Writing: " << entry.n_filter_streams << " FILTER headers..." << std::endl;
-		for(U32 i = 0; i < entry.n_filter_streams; ++i)
-			stream << entry.filter_offsets[i];
 
 		// write
 		if(entry.n_info_patterns > 0){
@@ -271,7 +260,6 @@ public:
 	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
 	offset_type* info_offsets;
 	offset_type* format_offsets;
-	offset_type* filter_offsets;
 
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;

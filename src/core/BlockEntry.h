@@ -22,13 +22,11 @@ class BlockEntry{
 public:
 	BlockEntry() :
 		info_containers(new stream_container[100]),
-		format_containers(new stream_container[100]),
-		filter_containers(new stream_container[100])
+		format_containers(new stream_container[100])
 	{
 		for(U32 i = 0; i < 100; ++i){
 			this->info_containers[i].resize(65536*4);
 			this->format_containers[i].resize(65536*4);
-			this->filter_containers[i].resize(65536*4);
 		}
 
 		// Always of type struct
@@ -55,7 +53,6 @@ public:
 		for(U32 i = 0; i < 100; ++i){
 			this->info_containers[i].reset();
 			this->format_containers[i].reset();
-			this->filter_containers[i].reset();
 		}
 		this->meta_hot_container.reset();
 		this->meta_cold_container.reset();
@@ -82,9 +79,6 @@ public:
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 			return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams, buffer));
-			break;
-		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FILTER) :
-			return(this->updateContainer(v, this->filter_containers, this->index_entry.filter_offsets, this->index_entry.n_filter_streams, buffer));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
@@ -122,12 +116,6 @@ public:
 			stream << this->format_containers[i];
 			std::cout << "FORMAT-" << header[this->index_entry.format_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
 		}
-
-		for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
-			startPos = stream.tellp();
-			stream << this->filter_containers[i];
-			std::cout << "FILTER-" << header[this->index_entry.filter_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
-		}
 	}
 
 	void updateBaseContainers(buffer_type& buffer){
@@ -136,6 +124,25 @@ public:
 		this->updateContainer(this->meta_hot_container, this->index_entry.offset_hot_meta, buffer, 0);
 		this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
 	}
+
+	void updateOffsets(void){
+		this->index_entry.offset_gt_rle.header = this->gt_rle_container.header;
+		this->index_entry.offset_gt_rle.header_stride = this->gt_rle_container.header_stride;
+		this->index_entry.offset_gt_simple.header = this->gt_simple_container.header;
+		this->index_entry.offset_gt_simple.header_stride = this->gt_simple_container.header_stride;
+		this->index_entry.offset_hot_meta.header = this->meta_hot_container.header;
+		this->index_entry.offset_cold_meta.header = this->meta_cold_container.header;
+
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+			if(this->info_containers[i].header.controller.mixedStride == false) this->index_entry.info_offsets[i].update(this->info_containers[i].header);
+			else this->index_entry.info_offsets[i].update(this->info_containers[i].header, this->info_containers[i].header_stride);
+		}
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+			if(this->format_containers[i].header.controller.mixedStride == false) this->index_entry.format_offsets[i].update(this->format_containers[i].header);
+			else this->index_entry.format_offsets[i].update(this->format_containers[i].header, this->format_containers[i].header_stride);
+		}
+
+		}
 
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_type* offset, const U32& length, buffer_type& buffer){
@@ -148,6 +155,8 @@ private:
 	}
 
 	void updateContainer(stream_container& container, offset_type& offset, buffer_type& buffer, const U32& key){
+		offset.update(key);
+
 		if(container.buffer_data.size() == 0)
 			return;
 
@@ -164,23 +173,15 @@ private:
 		// Set uncompressed length
 		container.header.uLength = container.buffer_data.pointer;
 
-		// Update offset value if stride is not mixed
-		if(container.header.controller.mixedStride == false){
-			offset.update(key, container.header);
-		}
-
-		std::cerr << key << '\t' << container.buffer_data.size() << '\t' << container.header.stride << '\t' << container.header.controller.mixedStride << std::endl;
+		//std::cerr << key << '\t' << container.buffer_data.size() << '\t' << container.header.stride << '\t' << container.header.controller.mixedStride << std::endl;
 
 		// If we have mixed striding
 		if(container.header.controller.mixedStride){
 			// Reformat stream to use as small word size as possible
 			container.reformatStride(buffer);
 
-			// Update offset with mixed stride
-			offset.update(key, container.header, container.header_stride);
-
 			container.header_stride.uLength = container.buffer_strides.pointer;
-			std::cerr << key << "-ADD\t" << container.buffer_strides.size() << '\t' << 0 << std::endl;
+			//std::cerr << key << "-ADD\t" << container.buffer_strides.size() << '\t' << 0 << std::endl;
 		}
 	}
 
@@ -198,9 +199,6 @@ private:
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];
 
-		for(U32 i = 0; i < entry.index_entry.n_filter_streams; ++i)
-			stream << entry.filter_containers[i];
-
 		return(stream);
 	}
 
@@ -213,7 +211,6 @@ public:
 	stream_container  gt_simple_container;
 	stream_container* info_containers;
 	stream_container* format_containers;
-	stream_container* filter_containers;
 };
 
 }

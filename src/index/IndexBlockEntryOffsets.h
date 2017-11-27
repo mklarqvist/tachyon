@@ -18,6 +18,11 @@ public:
 	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
 	~IndexBlockEntryOffsets(void){}
 
+	bool update(const U32& key){
+		this->key = key;
+		return true;
+	}
+
 	bool update(const U32& key, const header_type& h){
 		this->key = key;
 		this->header = h;
@@ -26,6 +31,17 @@ public:
 
 	bool update(const U32& key, const header_type& h, const header_stride_type& s){
 		this->key = key;
+		this->header = h;
+		this->header_stride = s;
+		return true;
+	}
+
+	bool update(const header_type& h){
+		this->header = h;
+		return true;
+	}
+
+	bool update(const header_type& h, const header_stride_type& s){
 		this->header = h;
 		this->header_stride = s;
 		return true;

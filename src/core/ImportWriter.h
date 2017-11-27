@@ -56,7 +56,6 @@ public:
 	bool Open(const std::string output);
 	bool WriteHeader(void);
 	void WriteFinal(void);
-
 	void CheckOutputNames(const std::string& input);
 
 public:
