@@ -29,6 +29,27 @@ bool StreamContainer::generateCRC(bool both){
 	return true;
 }
 
+bool StreamContainer::checkCRC(int target){
+	if(target == 0){
+		if(this->buffer_data.size() == 0)
+			return true;
+
+		// Checksum for main buffer
+		U32 crc = crc32(0, NULL, 0);
+		crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
+		return(crc == this->header.crc);
+	} else if(target == 1){
+		if(this->buffer_strides.size() == 0)
+			return true;
+
+		// Checksum for main buffer
+		U32 crc = crc32(0, NULL, 0);
+		crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+		return(crc == this->header.crc);
+	}
+	return true;
+}
+
 bool StreamContainer::checkUniformity(void){
 	if(this->n_entries == 0)
 		return false;
@@ -39,10 +60,11 @@ bool StreamContainer::checkUniformity(void){
 
 	U32 stride_update = stride_size;
 
+	BYTE word_width = sizeof(char);
 	switch(this->header.controller.type){
-	case CORE_TYPE::TYPE_32B:   stride_update *= sizeof(S32);   break;
-	case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); break;
-	case CORE_TYPE::TYPE_8B:    stride_update *= sizeof(char);  break;
+	case CORE_TYPE::TYPE_32B:   stride_update *= sizeof(S32);   word_width = sizeof(S32);   break;
+	case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); word_width = sizeof(float); break;
+	case CORE_TYPE::TYPE_8B:    stride_update *= sizeof(char);  word_width = sizeof(char);  break;
 	default: return false; break;
 	}
 
@@ -57,10 +79,12 @@ bool StreamContainer::checkUniformity(void){
 	std::cerr << "is uniform" << std::endl;
 
 	this->n_entries = 1;
-	this->buffer_data.pointer = stride_size;
+	this->n_additions = 1;
+	this->buffer_data.pointer = stride_size * word_width;
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
 	this->header.controller.encoder = Core::ENCODE_NONE;
+	this->header.uLength = this->buffer_data.pointer;
 
 	return(true);
 }
@@ -99,9 +123,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 	// word-size
 	if(this->header.controller.uniform){
 		// Non-negative
-		this->buffer_data.pointer = 0;
-		this->n_entries = 1;
-		this->n_additions = 1;
+		// Controller for the unform case has already been setup
 		if(min >= 0){
 			this->header.controller.signedness = 0;
 			switch(byte_width){
@@ -185,6 +207,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 		std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
 		memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
 		this->buffer_data.pointer = buffer.pointer;
+		this->header.uLength = this->buffer_data.pointer;
 	}
 }
 

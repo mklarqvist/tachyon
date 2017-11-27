@@ -9,7 +9,7 @@ namespace Tachyon{
 namespace Core{
 
 enum CORE_TYPE{TYPE_8B, TYPE_16B, TYPE_32B, TYPE_64B,
-			   TYPE_FLOAT, TYPE_DOUBLE};
+			   TYPE_FLOAT, TYPE_DOUBLE, TYPE_STRUCT};
 
 enum CORE_COMPRESSION{ENCODE_NONE, ENCODE_DEFLATE, ENCODE_FSE};
 
@@ -117,6 +117,8 @@ public:
 	}
 
 	bool generateCRC(bool both = false);
+	bool checkCRC(int target = 0);
+
 	bool checkUniformity(void);
 	void reformat(buffer_type& buffer);
 	void reformatStride(buffer_type& buffer);
