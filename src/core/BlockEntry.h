@@ -17,6 +17,7 @@ class BlockEntry{
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Index::IndexBlockEntryOffsets offset_type;
+	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
 	typedef IO::BasicBuffer buffer_type;
 
 public:
@@ -60,9 +61,9 @@ public:
 		this->gt_simple_container.reset();
 		this->ppa_manager.reset();
 
-		this->gt_rle_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+		this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
 		this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
-		this->meta_hot_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+		this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
 		this->meta_cold_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
 	}
 
@@ -134,27 +135,8 @@ public:
 		this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
 	}
 
-	void updateOffsets(void){
-		this->index_entry.offset_gt_rle.header = this->gt_rle_container.header;
-		this->index_entry.offset_gt_rle.header_stride = this->gt_rle_container.header_stride;
-		this->index_entry.offset_gt_simple.header = this->gt_simple_container.header;
-		this->index_entry.offset_gt_simple.header_stride = this->gt_simple_container.header_stride;
-		this->index_entry.offset_hot_meta.header = this->meta_hot_container.header;
-		this->index_entry.offset_cold_meta.header = this->meta_cold_container.header;
-
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
-			if(this->info_containers[i].header.controller.mixedStride == false) this->index_entry.info_offsets[i].update(this->info_containers[i].header);
-			else this->index_entry.info_offsets[i].update(this->info_containers[i].header, this->info_containers[i].header_stride);
-		}
-		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
-			if(this->format_containers[i].header.controller.mixedStride == false) this->index_entry.format_offsets[i].update(this->format_containers[i].header);
-			else this->index_entry.format_offsets[i].update(this->format_containers[i].header, this->format_containers[i].header_stride);
-		}
-
-		}
-
 private:
-	void updateContainer(hash_container_type& v, stream_container* container, offset_type* offset, const U32& length, buffer_type& buffer){
+	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
 		for(U32 i = 0; i < length; ++i){
 			if(container[i].buffer_data.size() == 0)
 				continue;
@@ -163,8 +145,8 @@ private:
 		}
 	}
 
-	void updateContainer(stream_container& container, offset_type& offset, buffer_type& buffer, const U32& key){
-		offset.update(key);
+	void updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){
+		offset.key = key;
 
 		if(container.buffer_data.size() == 0)
 			return;
@@ -207,6 +189,23 @@ private:
 
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];
+
+		return(stream);
+	}
+
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		stream >> entry.index_entry;
+		stream >> entry.ppa_manager;
+		stream >> entry.meta_hot_container;
+		stream >> entry.meta_cold_container;
+		stream >> entry.gt_rle_container;
+		stream >> entry.gt_simple_container;
+
+		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+			stream >> entry.info_containers[i];
+
+		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
+			stream >> entry.format_containers[i];
 
 		return(stream);
 	}

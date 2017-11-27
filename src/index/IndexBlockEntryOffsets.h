@@ -7,6 +7,32 @@
 namespace Tachyon{
 namespace Index{
 
+struct IndexBlockEntryHeaderOffsets{
+	typedef IndexBlockEntryHeaderOffsets self_type;
+
+	IndexBlockEntryHeaderOffsets() : key(0), offset(0){}
+
+	void clear(void){
+		this->key = 0;
+		this->offset = 0;
+	}
+
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream << entry.key;
+		stream << entry.offset;
+		return stream;
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream >> entry.key;
+		stream >> entry.offset;
+		return stream;
+	}
+
+	U32 key;
+	U32 offset;
+};
+
 struct IndexBlockEntryOffsets{
 	typedef IndexBlockEntryOffsets self_type;
 	typedef Core::StreamContainerHeader header_type;

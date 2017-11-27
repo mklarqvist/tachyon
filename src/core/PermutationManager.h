@@ -56,7 +56,16 @@ public:
 		stream << manager.u_length;
 		stream << manager.c_length;
 		stream << manager.crc;
-		stream.write(manager.PPA.data, manager.PPA.pointer);
+		stream.write(manager.PPA.data, manager.c_length);
+		return(stream);
+	}
+
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& manager){
+		stream >> manager.u_length;
+		stream >> manager.c_length;
+		stream >> manager.crc;
+		manager.PPA.resize(manager.u_length);
+		stream.read(manager.PPA.data, manager.c_length);
 		return(stream);
 	}
 

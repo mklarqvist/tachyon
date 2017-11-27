@@ -55,6 +55,7 @@ struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
 	typedef IndexBlockEntryController controller_type;
 	typedef IndexBlockEntryOffsets offset_type;
+	typedef IndexBlockEntryHeaderOffsets offset_minimal_type;
 
 public:
 	IndexBlockEntryBase();
@@ -82,7 +83,7 @@ public:
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),    sizeof(U32));
@@ -142,11 +143,11 @@ public:
 	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
 	// Only GT_SIMPLE is redundant as all other values
 	// are stored in the offset array
-	offset_type offset_ppa;
-	offset_type offset_hot_meta;
-	offset_type offset_cold_meta;
-	offset_type offset_gt_rle;
-	offset_type offset_gt_simple;
+	offset_minimal_type offset_ppa;
+	offset_minimal_type offset_hot_meta;
+	offset_minimal_type offset_cold_meta;
+	offset_minimal_type offset_gt_rle;
+	offset_minimal_type offset_gt_simple;
 
 	// Number of INFO/FORMAT/FILTER streams
 	// in this block
@@ -175,6 +176,7 @@ private:
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef IndexBlockEntryOffsets offset_type;
+	typedef IndexBlockEntryHeaderOffsets offset_minimal_type;
 
 public:
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
@@ -188,13 +190,13 @@ public:
 	void allocateInfoOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->info_offsets;
-		this->info_offsets = new offset_type[size];
+		this->info_offsets = new offset_minimal_type[size];
 	}
 
 	void allocateFormatOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
-		this->format_offsets = new offset_type[size];
+		this->format_offsets = new offset_minimal_type[size];
 	}
 
 	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
@@ -239,6 +241,46 @@ public:
 		return(stream);
 	}
 
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		IndexBlockEntryBase* base = reinterpret_cast<IndexBlockEntryBase*>(&entry);
+		stream >> *base;
+
+		std::cerr << "Reading: " << entry.n_info_streams << " INFO headers..." << std::endl;
+		for(U32 i = 0; i < entry.n_info_streams; ++i)
+			stream >> entry.info_offsets[i];
+
+		std::cerr << "Reading: " << entry.n_format_streams << " FORMAT headers..." << std::endl;
+		for(U32 i = 0; i < entry.n_format_streams; ++i)
+			stream >> entry.format_offsets[i];
+
+		// write
+		if(entry.n_info_patterns > 0){
+			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
+			std::cerr << "Read info bit vectors... " << entry.n_info_patterns << std::endl;
+			entry.info_bit_vectors = new bit_vector[entry.n_info_patterns];
+			for(U32 i = 0; i < entry.n_info_patterns; ++i)
+				stream.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+		}
+
+		if(entry.n_format_patterns > 0){
+			std::cerr << "Reading format bit vectors... " << entry.n_format_patterns << std::endl;
+			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
+			entry.format_bit_vectors = new bit_vector[entry.n_format_patterns];
+			for(U32 i = 0; i < entry.n_format_patterns; ++i)
+				stream.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+		}
+
+		if(entry.n_filter_patterns > 0){
+			std::cerr << "Reading filter bit vectors... " << entry.n_filter_patterns << std::endl;
+			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
+			entry.filter_bit_vectors = new bit_vector[entry.n_filter_patterns];
+			for(U32 i = 0; i < entry.n_filter_patterns; ++i)
+				stream.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
+		}
+
+		return(stream);
+	}
+
 	/////////////////////////
 	// Import functionality
 	/////////////////////////
@@ -258,8 +300,8 @@ public:
 	// GLOBAL KEY | OFFSET
 	// These contain the local map to a stream ID
 	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
-	offset_type* info_offsets;
-	offset_type* format_offsets;
+	offset_minimal_type* info_offsets;
+	offset_minimal_type* format_offsets;
 
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;

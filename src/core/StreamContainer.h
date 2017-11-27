@@ -125,10 +125,23 @@ public:
 	bool read(std::istream& stream, buffer_type& temp_buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		// Headers are written elsewhere
+		stream << entry.header;
+		stream << entry.header_stride;
 		stream << entry.buffer_data;
 		if(entry.header.controller.mixedStride)
 			stream << entry.buffer_strides;
+		return(stream);
+	}
+
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		stream >> entry.header;
+		stream >> entry.header_stride;
+		entry.buffer_data.resize(entry.header.uLength);
+		stream.read(entry.buffer_data.data, entry.header.cLength);
+		if(entry.header.controller.mixedStride){
+			entry.buffer_strides.resize(entry.header_stride.uLength);
+			stream.read(entry.buffer_strides.data, entry.header_stride.cLength);
+		}
 		return(stream);
 	}
 

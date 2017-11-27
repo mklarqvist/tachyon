@@ -215,10 +215,9 @@ bool Importer::BuildBCF(void){
 		}
 
 		const size_t curPos = this->writer_.streamTomahawk.tellp();
-		//this->writer_.streamTomahawk << this->block;
-		this->block.updateOffsets();
-		this->block.write(this->writer_.streamTomahawk, *this->header_);
-		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+		this->writer_.streamTomahawk << this->block;
+		//this->block.write(this->writer_.streamTomahawk, *this->header_);
+		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->total_gt_cost += this->block.gt_rle_container.buffer_data.pointer;
 		this->total_gt_cost += this->block.gt_simple_container.buffer_data.pointer;
