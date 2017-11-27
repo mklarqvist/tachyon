@@ -18,14 +18,14 @@ struct IndexBlockEntryHeaderOffsets{
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream << entry.key;
-		stream << entry.offset;
+		stream.write(reinterpret_cast<const char*>(&entry.key), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
 		return stream;
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream >> entry.key;
-		stream >> entry.offset;
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.key),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.offset), sizeof(U32));
 		return stream;
 	}
 
@@ -88,7 +88,7 @@ public:
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.key), sizeof(U32));
 		stream >> entry.header;
 		if(entry.header.controller.mixedStride)

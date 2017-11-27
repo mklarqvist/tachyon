@@ -73,6 +73,7 @@ public:
 		stream << entry.offset_cold_meta;
 		stream << entry.offset_gt_rle;
 		stream << entry.offset_gt_simple;
+		std::cerr << "writing: " << entry.n_info_streams << '\t' << entry.n_format_streams << std::endl;
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
@@ -128,8 +129,9 @@ public:
 	}
 
 public:
-	 // allows jumping to the next block when streaming
+	// allows jumping to the next block when streaming
 	// over the file and not using the index
+	// EOF marker is at this position - sizeof(EOF marker)
 	U32 offset_end_of_block;
 	// bit flags
 	controller_type controller;
@@ -206,7 +208,7 @@ public:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const IndexBlockEntryBase* const base = reinterpret_cast<const IndexBlockEntryBase* const>(&entry);
-		stream << base;
+		stream << *base;
 
 		std::cerr << "Writing: " << entry.n_info_streams << " INFO headers..." << std::endl;
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
@@ -246,10 +248,12 @@ public:
 		stream >> *base;
 
 		std::cerr << "Reading: " << entry.n_info_streams << " INFO headers..." << std::endl;
+		entry.info_offsets = new offset_minimal_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream >> entry.info_offsets[i];
 
 		std::cerr << "Reading: " << entry.n_format_streams << " FORMAT headers..." << std::endl;
+		entry.format_offsets = new offset_minimal_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream >> entry.format_offsets[i];
 
@@ -258,24 +262,30 @@ public:
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
 			std::cerr << "Read info bit vectors... " << entry.n_info_patterns << std::endl;
 			entry.info_bit_vectors = new bit_vector[entry.n_info_patterns];
-			for(U32 i = 0; i < entry.n_info_patterns; ++i)
+			for(U32 i = 0; i < entry.n_info_patterns; ++i){
+				entry.info_bit_vectors[i].allocate(info_bitvector_width);
 				stream.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+			}
 		}
 
 		if(entry.n_format_patterns > 0){
 			std::cerr << "Reading format bit vectors... " << entry.n_format_patterns << std::endl;
 			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 			entry.format_bit_vectors = new bit_vector[entry.n_format_patterns];
-			for(U32 i = 0; i < entry.n_format_patterns; ++i)
+			for(U32 i = 0; i < entry.n_format_patterns; ++i){
+				entry.format_bit_vectors[i].allocate(format_bitvector_width);
 				stream.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+			}
 		}
 
 		if(entry.n_filter_patterns > 0){
 			std::cerr << "Reading filter bit vectors... " << entry.n_filter_patterns << std::endl;
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 			entry.filter_bit_vectors = new bit_vector[entry.n_filter_patterns];
-			for(U32 i = 0; i < entry.n_filter_patterns; ++i)
+			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+				entry.filter_bit_vectors[i].allocate(filter_bitvector_width);
 				stream.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
+			}
 		}
 
 		return(stream);

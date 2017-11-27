@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <cstring>
-
+#include <iostream>
 #include "../../support/TypeDefinitions.h"
 
 namespace Tachyon{
@@ -33,13 +33,12 @@ public:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
-		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(c), sizeof(U16));
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& controller){
-		U16* c = reinterpret_cast<U16*>(&controller);
-		stream.read(reinterpret_cast<char*>(c), sizeof(U16));
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& controller){
+		stream.read(reinterpret_cast<char*>(&controller), sizeof(U16));
 		return(stream);
 	}
 

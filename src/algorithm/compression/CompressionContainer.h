@@ -231,6 +231,7 @@ public:
 		U32 crc = crc32(0, NULL, 0);
 		crc = crc32(crc, (Bytef*)this->buffer.data, this->buffer.pointer);
 		manager.crc = crc;
+		manager.u_length = this->buffer.pointer;
 		bytePreprocessBits(&this->buffer.data[0], manager.PPA.pointer, &manager.PPA.data[0]);
 
 		size_t ret = ZSTD_compress(this->buffer.data, this->buffer.pointer, manager.PPA.data, manager.PPA.pointer, this->compression_level);

@@ -53,17 +53,18 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& manager){
-		stream << manager.u_length;
-		stream << manager.c_length;
-		stream << manager.crc;
+		stream.write(reinterpret_cast<const char*>(&manager.u_length), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&manager.c_length), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&manager.crc), sizeof(U32));
 		stream.write(manager.PPA.data, manager.c_length);
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& manager){
-		stream >> manager.u_length;
-		stream >> manager.c_length;
-		stream >> manager.crc;
+		stream.read(reinterpret_cast<char*>(&manager.u_length), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&manager.c_length), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&manager.crc), sizeof(U32));
+		std::cerr << "ppa read: " << manager.u_length << '\t' << manager.c_length << '\t' << manager.crc << std::endl;
 		manager.PPA.resize(manager.u_length);
 		stream.read(manager.PPA.data, manager.c_length);
 		return(stream);

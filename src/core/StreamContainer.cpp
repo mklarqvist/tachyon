@@ -80,11 +80,14 @@ bool StreamContainer::checkUniformity(void){
 
 	this->n_entries = 1;
 	this->n_additions = 1;
+	// Data pointers are updated in case there is no reformatting
+	// see StreamContainer::reformat()
 	this->buffer_data.pointer = stride_size * word_width;
+	this->header.uLength = stride_size * word_width;
+	this->header.cLength = stride_size * word_width;
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
 	this->header.controller.encoder = Core::ENCODE_NONE;
-	this->header.uLength = this->buffer_data.pointer;
 
 	return(true);
 }
@@ -122,6 +125,8 @@ void StreamContainer::reformat(buffer_type& buffer){
 	// Here we re-encode values using the smallest possible
 	// word-size
 	if(this->header.controller.uniform){
+		this->buffer_data.reset();
+
 		// Non-negative
 		// Controller for the unform case has already been setup
 		if(min >= 0){
@@ -143,7 +148,9 @@ void StreamContainer::reformat(buffer_type& buffer){
 			}
 		}
 		// done
-		//std::cerr << "swap: uniform" << std::endl;
+		this->header.uLength = this->buffer_data.pointer;
+		this->header.cLength = this->buffer_data.pointer;
+
 		return;
 	}
 	// Not unfirom
@@ -276,7 +283,7 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 // 5) Load stride header
 // 6) Read stride data into temp buffer
 // 7) Decompress into local buffer
-bool StreamContainer::read(std::istream& stream, buffer_type& temp_buffer){
+bool StreamContainer::read(std::ifstream& stream, buffer_type& temp_buffer){
 	stream >> this->header;
 	// Todo: currently no encoding-specific fields
 	stream.read(temp_buffer.data, this->header.cLength);

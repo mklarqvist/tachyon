@@ -1,5 +1,53 @@
-#ifndef CORE_TachyonBLOCKITERATOR_H_
-#define CORE_TachyonBLOCKITERATOR_H_
+#ifndef CORE_TACHYONREADER_H_
+#define CORE_TACHYONREADER_H_
+
+#include "BlockEntry.h"
+
+namespace Tachyon{
+namespace Core{
+
+class TachyonReader{
+public:
+
+	TachyonReader() : filesize(0){}
+	TachyonReader(const std::string& filename) : input_file(filename), filesize(0){}
+	~TachyonReader(){}
+
+	bool open(void);
+	bool open(const std::string& filename){
+		if(filename.size() == 0){
+			std::cerr << "no filename" << std::endl;
+			return false;
+		}
+		this->stream.open(filename, std::ios::binary | std::ios::in | std::ios::ate);
+		this->filesize = (U64)this->stream.tellg();
+		if(!this->stream.good()){
+			std::cerr << "failed to read file" << std::endl;
+			return false;
+		}
+		this->stream.seekg(0);
+		if(!this->stream.good()){
+			std::cerr << "failed to rewrind" << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	bool nextBlock(){
+		this->stream >> this->block;
+		return true;
+	}
+	bool seekBlock(const U32& b);
+
+public:
+	std::string input_file;
+	std::ifstream stream;
+	U64 filesize;
+	Core::BlockEntry block;
+};
+
+}
+}
 
 /*
 #include "base/EntryHotMeta.h"
@@ -146,4 +194,4 @@ private:
 }
 */
 
-#endif /* CORE_TachyonBLOCKITERATOR_H_ */
+#endif /* CORE_TACHYONREADER_H_ */

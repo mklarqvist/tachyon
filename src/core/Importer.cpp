@@ -214,7 +214,7 @@ bool Importer::BuildBCF(void){
 				zstd.encodeStrides(this->block.format_containers[i]);
 		}
 
-		const size_t curPos = this->writer_.streamTomahawk.tellp();
+		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->writer_.streamTomahawk << this->block;
 		//this->block.write(this->writer_.streamTomahawk, *this->header_);
 		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
@@ -229,6 +229,8 @@ bool Importer::BuildBCF(void){
 		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
+		this->writer_.streamTomahawk.flush();
+		return true;
 	}
 
 	/*

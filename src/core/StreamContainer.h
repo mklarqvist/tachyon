@@ -118,24 +118,28 @@ public:
 
 	bool generateCRC(bool both = false);
 	bool checkCRC(int target = 0);
-
 	bool checkUniformity(void);
 	void reformat(buffer_type& buffer);
 	void reformatStride(buffer_type& buffer);
-	bool read(std::istream& stream, buffer_type& temp_buffer);
+	bool read(std::ifstream& stream, buffer_type& temp_buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.header;
-		stream << entry.header_stride;
+		if(entry.header.controller.mixedStride)
+			stream << entry.header_stride;
+
 		stream << entry.buffer_data;
 		if(entry.header.controller.mixedStride)
 			stream << entry.buffer_strides;
+
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.header;
-		stream >> entry.header_stride;
+		if(entry.header.controller.mixedStride)
+			stream >> entry.header_stride;
+
 		entry.buffer_data.resize(entry.header.uLength);
 		stream.read(entry.buffer_data.data, entry.header.cLength);
 		if(entry.header.controller.mixedStride){

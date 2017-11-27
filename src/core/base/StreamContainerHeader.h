@@ -120,19 +120,22 @@ struct StreamContainerHeader{
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.crc),    sizeof(U32));
-		if(entry.n_extra > 0)
+		stream.write(reinterpret_cast<const char*>(&entry.n_extra),sizeof(U16));
+		if(entry.n_extra > 0){
 			stream.write(entry.extra, entry.n_extra);
+		}
 
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.stride),  sizeof(S16));
 		stream.read(reinterpret_cast<char*>(&entry.offset),  sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_extra), sizeof(U16));
 		if(entry.n_extra > 0){
 			delete [] entry.extra;
 			entry.extra = new char[entry.n_extra];
@@ -148,7 +151,7 @@ public:
 	U32 cLength;
 	U32 uLength;
 	U32 crc;
-	U32 n_extra; // not written; used internally only
+	U16 n_extra;
 	char* extra; // extra length is encoder specific
 };
 
@@ -246,17 +249,19 @@ struct StreamContainerHeaderStride{
 		stream.write(reinterpret_cast<const char*>(&entry.cLength), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.crc),     sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_extra), sizeof(U16));
 		if(entry.n_extra > 0)
 			stream.write(entry.extra, entry.n_extra);
 
 		return(stream);
 	}
 
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_extra), sizeof(U16));
 		if(entry.n_extra > 0){
 			delete [] entry.extra;
 			entry.extra = new char[entry.n_extra];
@@ -270,7 +275,7 @@ public:
 	U32 cLength;
 	U32 uLength;
 	U32 crc;
-	U32 n_extra; // not written; used internally only
+	U16 n_extra;
 	char* extra; // extra length is encoder specific
 };
 

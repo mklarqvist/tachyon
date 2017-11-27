@@ -158,12 +158,13 @@ private:
 		// Reformat stream to use as small word size as possible
 		container.reformat(buffer);
 
-		// Add CRC32 checksum for sanity
-		container.generateCRC(true);
-
 		// Set uncompressed length
 		container.header.uLength = container.buffer_data.pointer;
 
+		// Add CRC32 checksum for sanity
+		container.generateCRC(true);
+
+		//std::cerr << "update: " << key << '\t' << container.header.uLength << '/' << container.buffer_data.pointer << '\t' << container.header.controller.uniform << std::endl;
 		//std::cerr << key << '\t' << container.buffer_data.size() << '\t' << container.header.stride << '\t' << container.header.controller.mixedStride << std::endl;
 
 		// If we have mixed striding
@@ -190,9 +191,13 @@ private:
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];
 
+		stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
+
 		return(stream);
 	}
 
+	// Todo: Temporary!
+	// We should only read the entries we're actually interested in!!!!!
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.index_entry;
 		stream >> entry.ppa_manager;
@@ -201,11 +206,21 @@ private:
 		stream >> entry.gt_rle_container;
 		stream >> entry.gt_simple_container;
 
-		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
 			stream >> entry.info_containers[i];
+			std::cerr << "info" << i << ": " <<  entry.info_containers[i].header.uLength << '\t' << entry.info_containers[i].header.crc << std::endl;
+			if(entry.info_containers[i].header.controller.encoder == ENCODE_NONE){
+				std::cerr << "ENCODE_NONE | CRC check: " << (entry.info_containers[i].checkCRC() ? "PASS" : "FAIL") << std::endl;
+			}
+		}
 
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream >> entry.format_containers[i];
+
+		U64 eof_marker;
+		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
+		std::cerr << "eof: " << eof_marker << std::endl;
+		assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
 
 		return(stream);
 	}

@@ -24,9 +24,9 @@ DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 
 #include "utility.h"
-#include "core/Importer.h"
+#include "core/TachyonReader.h"
 
-void import_usage(void){
+void view_usage(void){
 	programMessage();
 	std::cerr <<
 	"About:  Convert VCF/BCF->TWK/; subset and slice TWK/TWO data\n"
@@ -42,12 +42,7 @@ void import_usage(void){
 	"  -s       Hide all program messages [null]\n";
 }
 
-int main(int argc, char** argv){
-	if(Tachyon::Helpers::isBigEndian()){
-		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Tomahawk does not support big endian systems..." << std::endl;
-		return(1);
-	}
-
+int view(int argc, char** argv){
 	if(argc == 1){
 		programMessage();
 		programHelpDetailed();
@@ -64,7 +59,6 @@ int main(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
-		{"checkpoint",		optional_argument, 0,  'c' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
 	};
@@ -72,7 +66,6 @@ int main(int argc, char** argv){
 	std::string input;
 	std::string output;
 	SILENT = 0;
-	S32 checkpoint = 500;
 
 	while ((c = getopt_long(argc, argv, "i:o:c:s?", long_options, &option_index)) != -1){
 		switch (c){
@@ -85,14 +78,6 @@ int main(int argc, char** argv){
 		case 'o':
 			output = std::string(optarg);
 			break;
-		case 'c':
-			checkpoint = atoi(optarg);
-			if(checkpoint < 0){
-				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to < 0..." << std::endl;
-				return(1);
-			}
-			break;
-
 		case 's':
 			SILENT = 1;
 			break;
@@ -111,13 +96,12 @@ int main(int argc, char** argv){
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
+		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 
-	Tachyon::Importer importer(input, output, checkpoint);
-
-	if(!importer.Build())
-		return 1;
+	Tachyon::Core::TachyonReader reader(input);
+	reader.open(input);
+	reader.nextBlock();
 
 	return 0;
 }
