@@ -221,7 +221,6 @@ public:
 			memset(manager.PPA.data, 0, this->buffer.pointer);
 			manager.PPA.pointer = this->buffer.pointer;
 
-
 		} else if(w == 3 || w == 4){
 			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U32)manager[i];
 		} else {

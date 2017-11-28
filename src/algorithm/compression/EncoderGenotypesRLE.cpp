@@ -12,7 +12,6 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base
 	}
 
 	// Update basic values for a meta entry
-	meta_base.position = (U32)line.body->POS + 1; // Base-1
 	meta_base.ref_alt = line.ref_alt;
 	meta_base.controller.simple = line.isSimple();
 
