@@ -5,46 +5,50 @@
 
 namespace Tachyon{
 namespace Core{
-/*
- TomahawkEntryMetaBase is used for reinterpreting
- byte streams of TomahawkEntryMeta
- Number of runs can be inferred from the sample
- number and byte length of the stream
+
+struct MetaHotController{
+	explicit MetaHotController(void) :
+		anyMissing(0),
+		allPhased(0),
+		mixed_phasing(0),
+		biallelic(0),
+		simple(0),
+		rle(0),
+		rle_type(0),
+		diploid(0),
+		mixed_ploidy(0),
+		unused(6)
+	{}
+	~MetaHotController(){}
+
+	U16 anyMissing: 1,  // any missing
+        allPhased: 1,   // all phased
+		mixed_phasing: 1,// has mixed phasing
+		biallelic: 1,   // is biallelic
+		simple: 1,      // is simple SNV->SNV
+		rle: 1,         // uses RLE compression
+		rle_type: 2,   // type of RLE (BYTE, U16, U32, U64)
+		diploid: 1,    // is diploid
+		mixed_ploidy: 1, // has mixed ploidy (e.g. X chromosome or CNV)
+		unused: 6; // reserved
+};
+
+/**
+ * MetaHot:
+ * @brief Contains the hot component of the hot-cold split of a variant site meta information
+ * Hot sub-structure of a variant sites meta information. This
+ * structure requires a CPU that allows non-aligned memory access.
+ * Using a packed entry permits the reinterpret_cast of this
+ * struct directly from a byte stream.
+ *
  */
-struct __attribute__((packed)) EntryHotMeta{
-	typedef EntryHotMeta self_type;
+struct __attribute__((packed)) MetaHot{
+	typedef MetaHot self_type;
 	typedef IO::BasicBuffer buffer_type;
+	typedef MetaHotController controller_type;
 
 public:
-	typedef struct __meta_controller{
-		explicit __meta_controller(void) :
-				anyMissing(0),
-				allPhased(0),
-				mixed_phasing(0),
-				biallelic(0),
-				simple(0),
-				rle(0),
-				rle_type(0),
-				diploid(0),
-				mixed_ploidy(0),
-				unused(6)
-		{}
-		~__meta_controller(){}
-
-		U16  anyMissing: 1,  // any missing
-             allPhased: 1,   // all phased
-			 mixed_phasing: 1,// has mixed phasing
-			 biallelic: 1,   // is biallelic
-			 simple: 1,      // is simple SNV->SNV
-			 rle: 1,         // uses RLE compression
-			 rle_type: 2,   // type of RLE (BYTE, U16, U32, U64)
-			 diploid: 1,    // is diploid
-			 mixed_ploidy: 1, // has mixed ploidy (e.g. X chromosome or CNV)
-			 unused: 6; // reserved
-	} controller_type;
-
-public:
-	EntryHotMeta() :
+	MetaHot() :
 		position(0),
 		ref_alt(0),
 		AF(0),
@@ -55,15 +59,15 @@ public:
 		virtual_offset_gt(0),
 		n_runs(0)
 	{}
-	~EntryHotMeta(){}
+	~MetaHot(){}
 
 	inline const bool isSingleton(void) const{ return(this->AF == 0); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
-
 	inline const U32& getRuns(void) const{ return(this->n_runs); }
+
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
 			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
@@ -91,22 +95,37 @@ public:
 	}
 
 public:
+	/**< Controller bit-fields for a variant site */
 	controller_type controller;
+
+	/**< Genomic position in base-0 encoded as the actual
+	 * position minus the smallest position in the block
+	 * (see BlockEntry.minPosition)
+	 */
 	U32 position; // is block.minPosition + position
 
-	// Most sites are bi-allelic and simple SNVs
-	// sites that are not bi-allelic and not simple
-	// will be encoded in the complex meta section
+	/**< Heuristic approach storing the reference/alternative
+	 * allele information in all cases where the variant site
+	 * is bi-allelic and simple SNV->SNV change. If this
+	 * is true then we can store the reference/alternative
+	 * in a single byte as two nibbles (4 bits). If the variant
+	 * site does not meet this criterion then the allele data
+	 * is stored in the cold meta sub-structure.
+	 */
 	BYTE ref_alt;
 
-	// AF is pre-computed
+	/**< Allele frequency is precomputed as it is frequently
+	 * used in several population-genetics approaches
+	 */
 	float AF;
 
-	// FILTER map
+	/**< Fields describing set-membership to various filter,
+	 * info, and format pattern vectors. These patterns are
+	 * implicitly encoded in the block header index (see
+	 * BlockEntry)
+	 */
 	U16 FILTER_map_ID;
-	// INFO map
 	U16 INFO_map_ID;
-	// FORMAT map
 	U16 FORMAT_map_ID;
 
 	// Hot-cold split structure. pointer to cold data

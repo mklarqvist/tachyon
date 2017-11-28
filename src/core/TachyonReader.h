@@ -58,8 +58,10 @@ public:
 			Decorator::MetaHotDecorator d(this->block.meta_hot_container, this->block.index_entry.minPosition);
 			//const Core::EntryHotMeta* hot = nullptr;
 			std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
+			U32 prevpos = d[0].position;
 			for(U32 i = 0; i < d.size(); ++i){
-				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position  << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt>>4] << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt&15] << std::endl;
+				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position  << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt>>4] << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt&15] << '\t' << d[i].position - prevpos  << std::endl;
+				prevpos = d[i].position;
 			}
 		}
 		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){

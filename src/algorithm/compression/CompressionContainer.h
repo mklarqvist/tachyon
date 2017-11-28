@@ -126,6 +126,7 @@ public:
 				std::cerr << "error: " << ZSTD_getErrorCode(ret) << std::endl;
 				//exit(1);
 			}
+
 			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << 8 << ": " << ret << '\t' << (ret == ZSTD_CONTENTSIZE_UNKNOWN) << '\t' << (ret == ZSTD_CONTENTSIZE_ERROR) << std::endl;
 		//}
 

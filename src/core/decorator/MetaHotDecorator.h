@@ -8,7 +8,7 @@ namespace Decorator{
 class MetaHotDecorator{
 	typedef MetaHotDecorator self_type;
 	typedef Core::StreamContainer container_type;
-	typedef Core::EntryHotMeta entry_type;
+	typedef Core::MetaHot entry_type;
 
 public:
 	MetaHotDecorator() : n_entries(0), pos(0), curpos(0), position_offset(0), entries(nullptr){}

@@ -212,7 +212,7 @@ class EncoderGenotypesRLE {
 	typedef EncoderGenotypesRLE self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef Core::EntryHotMeta meta_type;
+	typedef Core::MetaHot meta_type;
 	typedef EncoderGenotypesRLEHelper helper_type;
 	typedef Core::StreamContainer container_type;
 

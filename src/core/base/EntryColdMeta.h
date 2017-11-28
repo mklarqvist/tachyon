@@ -9,6 +9,24 @@
 namespace Tachyon{
 namespace Core{
 
+/** ColdMetaAllele:
+ *  @brief Contains parts of the cold component of the hot-cold split of a variant site meta information
+ *  This is a supportive structure. It keeps allele information
+ *  as a typed string. This data structure is always cast
+ *  directly from pre-loaded byte streams.
+ */
+struct ColdMetaAllele{
+	ColdMetaAllele(const char* const in) :
+		l_allele(*reinterpret_cast<const U16* const>(&in[0])),
+		allele(&in[sizeof(U16)])
+	{}
+	~ColdMetaAllele(void){} // do nothing
+	inline const U32 size(void) const{ return(this->l_allele + sizeof(U16)); }
+
+	const U16& l_allele;            /**< Byte length of allele data */
+	const char* const allele; /**< Char array of allele */
+};
+
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted
 struct EntryColdMeta{
