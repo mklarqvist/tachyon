@@ -1,6 +1,7 @@
 #ifndef CORE_BASE_ENTRYHOTMETA_H_
 #define CORE_BASE_ENTRYHOTMETA_H_
 
+/*======  Dependencies  ======*/
 #include "../../io/BasicBuffer.h"
 
 namespace Tachyon{
@@ -36,16 +37,79 @@ struct MetaHotController{
 	 * 9) If there is mixed ploidy
 	 * 10) Reserved for future use
 	 */
-	U16 anyMissing: 1,   // any missing
-        allPhased: 1,    // all phased
-		mixed_phasing: 1,// has mixed phasing
-		biallelic: 1,    // is biallelic
-		simple: 1,       // is simple SNV->SNV
-		rle: 1,          // uses RLE compression
-		rle_type: 2,     // type of RLE (BYTE, U16, U32, U64)
-		diploid: 1,      // is diploid
-		mixed_ploidy: 1, // has mixed ploidy (e.g. X chromosome or CNV)
-		unused: 6;       // reserved
+	U16 anyMissing:    1, // any missing
+        allPhased:     1, // all phased
+		mixed_phasing: 1, // has mixed phasing
+		biallelic:     1, // is biallelic
+		simple:        1, // is simple SNV->SNV
+		rle:           1, // uses RLE compression
+		rle_type:      2, // type of RLE (BYTE, U16, U32, U64)
+		diploid:       1, // is diploid
+		mixed_ploidy:  1, // has mixed ploidy (e.g. X chromosome or CNV)
+		unused:        6; // reserved
+};
+
+/**
+ * MetaHotRefAlt:
+ * @brief Supportive structure for internal use only. Helper for ref/alt allele encodings
+ * Heuristic approach storing the reference/alternative
+ * allele information in all cases where the variant site
+ * is bi-allelic and simple SNV->SNV change. If this
+ * is true then we can store the reference/alternative
+ * in a single byte as two nibbles (4 bits). If the variant
+ * site does not meet this criterion then the allele data
+ * is stored in the cold meta sub-structure.
+ */
+struct MetaHotRefAlt{
+private:
+	typedef MetaHotRefAlt self_type;
+
+public:
+	MetaHotRefAlt() : ref(0), alt(0){}
+	~MetaHotRefAlt(){}
+
+	void operator=(const BYTE& other){
+		this->alt = (other & 15) << 4;
+		this->ref |= (other & 15);
+	}
+
+	void setMissing(void){
+		this->ref = Tachyon::Constants::REF_ALT_N;
+		this->alt = Tachyon::Constants::REF_ALT_N;
+	}
+
+	bool setRef(const char& c){
+		switch(c){
+		case 'A': this->ref = Tachyon::Constants::REF_ALT_A; break;
+		case 'T': this->ref = Tachyon::Constants::REF_ALT_T; break;
+		case 'G': this->ref = Tachyon::Constants::REF_ALT_G; break;
+		case 'C': this->ref = Tachyon::Constants::REF_ALT_C; break;
+		default:
+			std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	bool setAlt(const char& c){
+		switch(c){
+		case 'A': this->alt = Tachyon::Constants::REF_ALT_A; break;
+		case 'T': this->alt = Tachyon::Constants::REF_ALT_T; break;
+		case 'G': this->alt = Tachyon::Constants::REF_ALT_G; break;
+		case 'C': this->alt = Tachyon::Constants::REF_ALT_C; break;
+		case 'N': this->alt = Tachyon::Constants::REF_ALT_N; break;
+		default:
+			std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	inline const char getRef(void) const{ return(Constants::REF_ALT_LOOKUP[this->ref]); }
+	inline const char getAlt(void) const{ return(Constants::REF_ALT_LOOKUP[this->alt]); }
+
+	BYTE ref: 4,
+	     alt: 4;
 };
 
 /**
@@ -62,11 +126,12 @@ private:
 	typedef MetaHot self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef MetaHotController controller_type;
+	typedef MetaHotRefAlt allele_type;
 
 public:
+	// ctor
 	MetaHot() :
 		position(0),
-		ref_alt(0),
 		AF(0),
 		FILTER_map_ID(0),
 		INFO_map_ID(0),
@@ -75,6 +140,8 @@ public:
 		virtual_offset_gt(0),
 		n_objects(0)
 	{}
+
+	// dtor
 	~MetaHot(){}
 
 	// Supportive boolean functions
@@ -85,13 +152,13 @@ public:
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 
 	// Supportive functions
-	inline const U32& getRuns(void) const{ return(this->n_objects); }
+	inline const U32& getObjects(void) const{ return(this->n_objects); }
 
 	// Used for debugging only
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
 			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
-			   (int)entry.ref_alt << '\t' <<
+			   entry.ref_alt.getRef() << '\t' << entry.ref_alt.getAlt() << '\t' <<
 			   entry.AF << '\t' <<
 			   entry.virtual_offset_cold_meta << '\t' <<
 			   entry.virtual_offset_gt << '\t' <<
@@ -101,9 +168,9 @@ public:
 
 	// Overload operator+= for basic buffer
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
-		buffer += *reinterpret_cast<const U16* const>(&entry.controller);
+		buffer += (U16)*reinterpret_cast<const U16* const>(&entry.controller);
 		buffer += entry.position;
-		buffer += entry.ref_alt;
+		buffer += (BYTE)*reinterpret_cast<const BYTE* const>(&entry.ref_alt);
 		buffer += entry.AF;
 		buffer += entry.FILTER_map_ID;
 		buffer += entry.INFO_map_ID;
@@ -122,7 +189,7 @@ public:
 	 * position minus the smallest position in the block
 	 * (see BlockEntry.minPosition)
 	 */
-	U32 position; // is block.minPosition + position
+	U32 position;
 
 	/**< Heuristic approach storing the reference/alternative
 	 * allele information in all cases where the variant site
@@ -132,7 +199,7 @@ public:
 	 * site does not meet this criterion then the allele data
 	 * is stored in the cold meta sub-structure.
 	 */
-	BYTE ref_alt;
+	allele_type ref_alt;
 
 	/**< Allele frequency is precomputed as it is frequently
 	 * used in several population-genetics approaches
