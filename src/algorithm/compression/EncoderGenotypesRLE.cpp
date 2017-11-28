@@ -3,7 +3,7 @@
 namespace Tachyon{
 namespace Algorithm{
 
-bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_base_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "

@@ -5,6 +5,7 @@
 #include "common/zstd_errors.h"
 #include "BlockEntry.h"
 #include "../algorithm/compression/CompressionContainer.h"
+#include "decorator/MetaHotDecorator.h"
 
 namespace Tachyon{
 namespace Core{
@@ -15,7 +16,6 @@ class TachyonReader{
 	typedef IO::BasicBuffer buffer_type;
 
 public:
-
 	TachyonReader() : filesize(0){}
 	TachyonReader(const std::string& filename) : input_file(filename), filesize(0){}
 	~TachyonReader(){}
@@ -55,6 +55,12 @@ public:
 		this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.meta_hot_container.header.uLength + 16536);
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_hot_container);
+			Decorator::MetaHotDecorator d(this->block.meta_hot_container, this->block.index_entry.minPosition);
+			//const Core::EntryHotMeta* hot = nullptr;
+			std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
+			for(U32 i = 0; i < d.size(); ++i){
+				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position  << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt>>4] << '\t' << Constants::REF_ALT_LOOKUP[d[i].ref_alt&15] << std::endl;
+			}
 		}
 		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_cold_container);

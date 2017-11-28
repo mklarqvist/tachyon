@@ -11,8 +11,8 @@ namespace Core{
  Number of runs can be inferred from the sample
  number and byte length of the stream
  */
-struct __attribute__((packed)) EntryHotMetaBase{
-	typedef EntryHotMetaBase self_type;
+struct __attribute__((packed)) EntryHotMeta{
+	typedef EntryHotMeta self_type;
 	typedef IO::BasicBuffer buffer_type;
 
 public:
@@ -44,7 +44,7 @@ public:
 	} controller_type;
 
 public:
-	EntryHotMetaBase() :
+	EntryHotMeta() :
 		position(0),
 		ref_alt(0),
 		AF(0),
@@ -52,9 +52,10 @@ public:
 		INFO_map_ID(0),
 		FORMAT_map_ID(0),
 		virtual_offset_cold_meta(0),
-		virtual_offset_gt(0)
+		virtual_offset_gt(0),
+		n_runs(0)
 	{}
-	~EntryHotMetaBase(){}
+	~EntryHotMeta(){}
 
 	inline const bool isSingleton(void) const{ return(this->AF == 0); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
@@ -62,13 +63,15 @@ public:
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 
+	inline const U32& getRuns(void) const{ return(this->n_runs); }
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
-			   (int)*reinterpret_cast<const U16* const>(&entry.controller) << '\t' <<
+			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
 			   (int)entry.ref_alt << '\t' <<
 			   entry.AF << '\t' <<
 			   entry.virtual_offset_cold_meta << '\t' <<
-			   entry.virtual_offset_gt;
+			   entry.virtual_offset_gt << '\t' <<
+			   entry.n_runs;
 		return(out);
 	}
 
@@ -83,6 +86,7 @@ public:
 		buffer += entry.FORMAT_map_ID;
 		buffer += entry.virtual_offset_cold_meta;
 		buffer += entry.virtual_offset_gt;
+		buffer += entry.n_runs;
 		return(buffer);
 	}
 
@@ -117,37 +121,8 @@ public:
 	// this allows fast iteration when switching between
 	// the two compression approaches
 	U32 virtual_offset_gt;
-};
-
-/*
- TomahawkEntryMetaRLE encodes for the basic information
- regarding a variant line such as position, if any genotypes
- are missing and if the all the data is phased.
- */
-template <class T>
-struct __attribute__((packed)) EntryHotMeta : public EntryHotMetaBase{
-	typedef EntryHotMeta self_type;
-
-public:
-	EntryHotMeta() : n_runs(0){}
-	~EntryHotMeta(){}
-
-	inline const bool isValid(void) const{ return(this->n_runs > 0); }
-	inline const T& getRuns(void) const{ return(this->n_runs); }
-
-	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' <<
-			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
-			   (int)entry.ref_alt << '\t' <<
-			   entry.AF << '\t' <<
-			   entry.virtual_offset_cold_meta << '\t' <<
-			   entry.virtual_offset_gt << '\t' <<
-			   entry.n_runs;
-		return(out);
-	}
-
-public:
-	T n_runs; // number of runs
+	// Runs
+	U32 n_runs;
 };
 
 }

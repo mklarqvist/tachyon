@@ -25,7 +25,7 @@ class Importer {
 	typedef Algorithm::RadixSortGT radix_sorter_type;
 	typedef Core::StreamContainer stream_container;
 	typedef Core::PermutationManager permutation_type;
-	typedef Core::EntryHotMetaBase meta_type;
+	typedef Core::EntryHotMeta meta_type;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Core::BlockEntry block_type;

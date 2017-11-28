@@ -212,7 +212,7 @@ class EncoderGenotypesRLE {
 	typedef EncoderGenotypesRLE self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef Core::EntryHotMetaBase meta_base_type;
+	typedef Core::EntryHotMeta meta_type;
 	typedef EncoderGenotypesRLEHelper helper_type;
 	typedef Core::StreamContainer container_type;
 
@@ -249,7 +249,7 @@ public:
 	}
 
 	~EncoderGenotypesRLE(){}
-	bool Encode(const bcf_type& line, meta_base_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa);
+	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
 
 private:

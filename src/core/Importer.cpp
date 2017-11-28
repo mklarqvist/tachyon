@@ -273,7 +273,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	U64 n_runs = 0;
 
 	meta_type meta;
-	meta.position = this->block.index_entry.minPosition - entry.body->POS;
+	meta.position = entry.body->POS - this->block.index_entry.minPosition;
 	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get()))
 		return false;
 
@@ -303,16 +303,8 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Update number of entries in block
 	++this->index_entry.n_variants;
 
+	meta.n_runs = n_runs;
 	this->block.meta_hot_container.buffer_data += meta;
-	switch(w){
-	case 1: this->block.meta_hot_container.buffer_data += (BYTE)n_runs; break;
-	case 2: this->block.meta_hot_container.buffer_data += (U16) n_runs; break;
-	case 4: this->block.meta_hot_container.buffer_data += (U32) n_runs; break;
-	case 8: this->block.meta_hot_container.buffer_data += (U64) n_runs; break;
-	default:
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
-		exit(1); // unrecoverable error
-	}
 
 	return true;
 }
