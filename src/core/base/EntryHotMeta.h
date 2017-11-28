@@ -7,6 +7,7 @@ namespace Tachyon{
 namespace Core{
 
 struct MetaHotController{
+	// Ctor
 	explicit MetaHotController(void) :
 		anyMissing(0),
 		allPhased(0),
@@ -19,18 +20,32 @@ struct MetaHotController{
 		mixed_ploidy(0),
 		unused(6)
 	{}
+
+	// Dtor
 	~MetaHotController(){}
 
-	U16 anyMissing: 1,  // any missing
-        allPhased: 1,   // all phased
+	/**< Controller field. Describes
+	 * 1) If any of the genotypes have missing values
+	 * 2) If all the genotypes are phased or not
+	 * 3) If there is mixed phases in the genotypes
+	 * 4) If variant site is biallelic
+	 * 5) If the genotypes requires "simple" encoding
+	 * 6) If the genotypes are run-length encoded or not
+	 * 7) What machine word-size the run-length encoded objects are
+	 * 8) If the variant site is diploid
+	 * 9) If there is mixed ploidy
+	 * 10) Reserved for future use
+	 */
+	U16 anyMissing: 1,   // any missing
+        allPhased: 1,    // all phased
 		mixed_phasing: 1,// has mixed phasing
-		biallelic: 1,   // is biallelic
-		simple: 1,      // is simple SNV->SNV
-		rle: 1,         // uses RLE compression
-		rle_type: 2,   // type of RLE (BYTE, U16, U32, U64)
-		diploid: 1,    // is diploid
+		biallelic: 1,    // is biallelic
+		simple: 1,       // is simple SNV->SNV
+		rle: 1,          // uses RLE compression
+		rle_type: 2,     // type of RLE (BYTE, U16, U32, U64)
+		diploid: 1,      // is diploid
 		mixed_ploidy: 1, // has mixed ploidy (e.g. X chromosome or CNV)
-		unused: 6; // reserved
+		unused: 6;       // reserved
 };
 
 /**
@@ -43,6 +58,7 @@ struct MetaHotController{
  *
  */
 struct __attribute__((packed)) MetaHot{
+private:
 	typedef MetaHot self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef MetaHotController controller_type;
@@ -61,13 +77,17 @@ public:
 	{}
 	~MetaHot(){}
 
+	// Supportive boolean functions
 	inline const bool isSingleton(void) const{ return(this->AF == 0); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+
+	// Supportive functions
 	inline const U32& getRuns(void) const{ return(this->n_objects); }
 
+	// Used for debugging only
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
 			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
