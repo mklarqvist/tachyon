@@ -247,7 +247,41 @@ public:
 		return true;
 	}
 
-	const bool decode(stream_type& stream){ return false; }
+	const bool decode(stream_type& stream){
+		if(stream.header.controller.encoder != Core::ENCODE_ZSTD){
+			std::cerr << "wrong codec" << std::endl;
+			return false;
+		}
+
+		stream.buffer_data_uncompressed.resize(stream.header.uLength + 16536);
+		int ret = ZSTD_decompress(stream.buffer_data_uncompressed.data,
+								  stream.buffer_data_uncompressed.capacity(),
+								  stream.buffer_data.data,
+								  stream.buffer_data.pointer);
+
+		assert(ret >= 0);
+		stream.buffer_data_uncompressed.pointer = ret;
+		assert((U32)ret == stream.header.uLength);
+		std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+
+		if(stream.header.controller.mixedStride){
+			if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD)
+				return true;
+
+			stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);
+			int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.data,
+									  stream.buffer_strides_uncompressed.capacity(),
+									  stream.buffer_strides.data,
+									  stream.buffer_strides.pointer);
+
+			assert(ret_stride >= 0);
+			stream.buffer_strides_uncompressed.pointer = ret;
+			assert((U32)ret_stride == stream.header_stride.uLength);
+			std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+		}
+
+		return true;
+	}
 
 private:
 	int compression_level;

@@ -4,6 +4,7 @@
 #include "zstd.h"
 #include "common/zstd_errors.h"
 #include "BlockEntry.h"
+#include "../algorithm/compression/CompressionContainer.h"
 
 namespace Tachyon{
 namespace Core{
@@ -53,17 +54,35 @@ public:
 		this->stream >> this->block;
 		this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.meta_hot_container.header.uLength + 16536);
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			int ret = ZSTD_decompress(this->block.meta_hot_container.buffer_data_uncompressed.data,
-									  this->block.meta_hot_container.buffer_data_uncompressed.capacity(),
-									  this->block.meta_hot_container.buffer_data.data,
-									  this->block.meta_hot_container.buffer_data.pointer);
-
-			assert(ret >= 0);
-			this->block.meta_cold_container.buffer_data_uncompressed.pointer = ret;
-			//std::cerr << "de: " << ret << " expected: " << this->block.meta_hot_container.header.uLength << std::endl;
-			assert((U32)ret == this->block.meta_hot_container.header.uLength);
+			this->zstd.decode(this->block.meta_hot_container);
+		}
+		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->zstd.decode(this->block.meta_cold_container);
+		}
+		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->zstd.decode(this->block.gt_rle_container);
+		}
+		if(this->block.gt_simple_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->zstd.decode(this->block.gt_simple_container);
 		}
 
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
+				this->zstd.decode(this->block.info_containers[i]);
+			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
+				std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+			}
+		}
+
+		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
+				this->zstd.decode(this->block.format_containers[i]);
+			} else if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_NONE){
+				std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+			}
+		}
+
+		/*
 		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->block.gt_rle_container.buffer_data_uncompressed.resize(this->block.gt_rle_container.header.uLength + 16536);
 			int retRLE = ZSTD_decompress(this->block.gt_rle_container.buffer_data_uncompressed.data,
@@ -74,10 +93,11 @@ public:
 			this->block.gt_rle_container.buffer_data_uncompressed.pointer = retRLE;
 			assert((U32)retRLE == this->block.gt_rle_container.header.uLength);
 		}
+		*/
 
-		const Core::EntryHotMeta<U16>* const meta = reinterpret_cast<const Core::EntryHotMeta<U16>* const>(this->block.meta_hot_container.buffer_data_uncompressed.data);
-		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i)
-			std::cout << meta[i] << '\n';
+		//const Core::EntryHotMeta<U16>* const meta = reinterpret_cast<const Core::EntryHotMeta<U16>* const>(this->block.meta_hot_container.buffer_data_uncompressed.data);
+		//for(U32 i = 0; i < this->block.index_entry.n_variants; ++i)
+		//	std::cout << meta[i] << '\n';
 
 		return true;
 	}
@@ -89,6 +109,7 @@ public:
 	U64 filesize;
 	block_entry_type block;
 	buffer_type buffer;
+	Compression::ZSTDCodec zstd;
 };
 
 }
