@@ -28,12 +28,12 @@ src/algorithm/encryption \
 src/algorithm/permutation \
 src/core \
 src/core/base \
-src \
 src/index \
 src/io/bcf \
 src/io/compression \
 src/io \
 src/io/vcf \
+src \
 src/support \
 src/third_party \
 src/third_party/xxhash \

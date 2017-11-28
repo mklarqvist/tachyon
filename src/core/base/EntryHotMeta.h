@@ -15,7 +15,7 @@ namespace Core{
  Number of runs can be inferred from the sample
  number and byte length of the stream
  */
-struct __attribute__((__packed__)) EntryHotMetaBase{
+struct __attribute__((packed)) EntryHotMetaBase{
 	typedef EntryHotMetaBase self_type;
 	typedef IO::BasicBuffer buffer_type;
 
@@ -45,7 +45,6 @@ public:
 	EntryHotMetaBase() :
 		position(0),
 		ref_alt(0),
-		//MGF(0),
 		AF(0),
 		FILTER_map_ID(0),
 		INFO_map_ID(0),
@@ -60,7 +59,12 @@ public:
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.AF << '\t' << entry.virtual_offset_cold_meta << '\t' << entry.virtual_offset_gt;
+		out << entry.position << '\t' <<
+			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
+			   (int)entry.ref_alt << '\t' <<
+			   entry.AF << '\t' <<
+			   entry.virtual_offset_cold_meta << '\t' <<
+			   entry.virtual_offset_gt;
 		return(out);
 	}
 
@@ -117,7 +121,7 @@ public:
  are missing and if the all the data is phased.
  */
 template <class T>
-struct __attribute__((__packed__)) EntryHotMeta : public EntryHotMetaBase{
+struct __attribute__((packed)) EntryHotMeta : public EntryHotMetaBase{
 	typedef EntryHotMeta self_type;
 
 public:
@@ -128,7 +132,13 @@ public:
 	inline const T& getRuns(void) const{ return(this->n_runs); }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' << (int)entry.controller.biallelic << ',' << (int)entry.controller.simple << '\t' << (int)entry.ref_alt << '\t' << entry.n_runs << '\t' << entry.AF << '\t' << entry.n_runs;
+		out << entry.position << '\t' <<
+			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
+			   (int)entry.ref_alt << '\t' <<
+			   entry.AF << '\t' <<
+			   entry.virtual_offset_cold_meta << '\t' <<
+			   entry.virtual_offset_gt << '\t' <<
+			   entry.n_runs;
 		return(out);
 	}
 

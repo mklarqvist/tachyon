@@ -198,6 +198,7 @@ bool Importer::BuildBCF(void){
 			if(this->block.info_containers[i].header.controller.uniform == true)
 				continue;
 
+			//zstd.assess(this->block.info_containers[i]);
 			zstd.encode(this->block.info_containers[i]);
 
 			if(this->block.info_containers[i].header.controller.mixedStride == true){
@@ -220,8 +221,8 @@ bool Importer::BuildBCF(void){
 		//this->block.write(this->writer_.streamTomahawk, *this->header_);
 		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
-		this->total_gt_cost += this->block.gt_rle_container.buffer_data.pointer;
-		this->total_gt_cost += this->block.gt_simple_container.buffer_data.pointer;
+		this->total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
+		this->total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
 		this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
 		std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
 
@@ -285,19 +286,9 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	if((w > 2) & (w < 4)) w = 4;
 	else if(w > 4) w = 8;
 
-	this->block.meta_hot_container.buffer_data += meta;
-	switch(w){
-	case 1: this->block.meta_hot_container.buffer_data += (BYTE)n_runs; break;
-	case 2: this->block.meta_hot_container.buffer_data += (U16)n_runs; break;
-	case 4: this->block.meta_hot_container.buffer_data += (U32)n_runs; break;
-	case 8: this->block.meta_hot_container.buffer_data += (U64)n_runs; break;
-	default:
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
-		exit(1); // unrecoverable error
-	}
-
 	// Complex meta data
 	Core::EntryColdMeta test;
+	meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data.pointer;
 	if(!test.write(entry, this->block.meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
@@ -311,6 +302,16 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Update number of entries in block
 	++this->index_entry.n_variants;
 
+	this->block.meta_hot_container.buffer_data += meta;
+	switch(w){
+	case 1: this->block.meta_hot_container.buffer_data += (BYTE)n_runs; break;
+	case 2: this->block.meta_hot_container.buffer_data += (U16)n_runs; break;
+	case 4: this->block.meta_hot_container.buffer_data += (U32)n_runs; break;
+	case 8: this->block.meta_hot_container.buffer_data += (U64)n_runs; break;
+	default:
+		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
+		exit(1); // unrecoverable error
+	}
 
 	return true;
 }

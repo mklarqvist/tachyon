@@ -244,7 +244,7 @@ private:
 		//std::cerr << "meta data: " << entry.meta_hot_container.buffer_data.pointer << std::endl;
 		stream >> entry.meta_cold_container;
 		stream >> entry.gt_rle_container;
-		std::cerr << entry.gt_rle_container.buffer_data.pointer << std::endl;
+		std::cerr << entry.gt_rle_container.buffer_data.pointer << '\t' << entry.index_entry.n_variants << std::endl;
 		stream >> entry.gt_simple_container;
 
 		stream.seekg(end_of_block);

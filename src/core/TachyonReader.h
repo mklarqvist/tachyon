@@ -52,17 +52,30 @@ public:
 
 		this->stream >> this->block;
 		this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.meta_hot_container.header.uLength + 16536);
-		int ret = ZSTD_decompress(this->block.meta_hot_container.buffer_data_uncompressed.data,
-				                  this->block.meta_hot_container.buffer_data_uncompressed.capacity(),
-								  this->block.meta_hot_container.buffer_data.data,
-								  this->block.meta_hot_container.buffer_data.pointer);
+		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			int ret = ZSTD_decompress(this->block.meta_hot_container.buffer_data_uncompressed.data,
+									  this->block.meta_hot_container.buffer_data_uncompressed.capacity(),
+									  this->block.meta_hot_container.buffer_data.data,
+									  this->block.meta_hot_container.buffer_data.pointer);
 
-		this->block.meta_cold_container.buffer_data_uncompressed.pointer = ret;
-		std::cerr << "de: " << ret << " expected: " << this->block.meta_hot_container.header.uLength << std::endl;
+			assert(ret >= 0);
+			this->block.meta_cold_container.buffer_data_uncompressed.pointer = ret;
+			//std::cerr << "de: " << ret << " expected: " << this->block.meta_hot_container.header.uLength << std::endl;
+			assert((U32)ret == this->block.meta_hot_container.header.uLength);
+		}
+
+		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->block.gt_rle_container.buffer_data_uncompressed.resize(this->block.gt_rle_container.header.uLength + 16536);
+			int retRLE = ZSTD_decompress(this->block.gt_rle_container.buffer_data_uncompressed.data,
+									  this->block.gt_rle_container.buffer_data_uncompressed.capacity(),
+									  this->block.gt_rle_container.buffer_data.data,
+									  this->block.gt_rle_container.buffer_data.pointer);
+			assert(retRLE >= 0);
+			this->block.gt_rle_container.buffer_data_uncompressed.pointer = retRLE;
+			assert((U32)retRLE == this->block.gt_rle_container.header.uLength);
+		}
+
 		const Core::EntryHotMeta<U16>* const meta = reinterpret_cast<const Core::EntryHotMeta<U16>* const>(this->block.meta_hot_container.buffer_data_uncompressed.data);
-		//std::cerr << std::bitset<8>((int)*reinterpret_cast<const BYTE* const>(&meta[0].controller)) << std::endl;
-		//std::cerr << *reinterpret_cast<const U64* const>(&this->block.meta_hot_container.buffer_data_uncompressed.data[sizeof(BYTE)]) << std::endl;
-
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i)
 			std::cout << meta[i] << '\n';
 
@@ -80,150 +93,5 @@ public:
 
 }
 }
-
-/*
-#include "base/EntryHotMeta.h"
-#include "base/EntryColdMeta.h"
-#include "base/GTRecords.h"
-
-namespace Tachyon{
-
-template <class T>
-class TachyonBlockIterator{
-	typedef TachyonBlockIterator self_type;
-	typedef Support::EntryHotMeta<T> meta_type;
-	typedef Support::EntryColdMeta meta_complex_type;
-	typedef Totempole::IndexEntry totempole_entry_type;
-
-public:
-	TachyonBlockIterator(char* data, const U64& size, const totempole_entry_type& totempole) :
-		position(0),
-		p_rle(0),
-		p_simple(0),
-		pointer(0),
-		upper_limit(0),
-		width(size),
-		totempole(totempole),
-		data(data),
-		meta(reinterpret_cast<const meta_type*>(data)),
-		encoding_RLE(&data[0]),
-		encoding_simple(&data[0]),
-		meta_complex(&data[0])
-	{
-		this->upper_limit = this->meta[0].n_runs;
-	}
-
-	~TachyonBlockIterator(){}
-
-	bool operator++(void){
-		if(this->position + 1 == this->totempole.n_variants) return false;
-		++this->position;
-		this->pointer = 0;
-
-		this->upper_limit = this->getMeta().n_runs;
-		if(this->getMeta().controller.biallelic){
-			this->encoding_RLE = &this->data[0];
-			++this->p_rle;
-		}
-		else {
-			this->encoding_simple = &this->data[0];
-			++this->p_simple;
-		}
-
-		return true;
-	}
-
-	inline const bool isRLE(void) const{ return(this->meta[this->position].isRLE()); }
-	inline const U32& size(void) const{ return(this->upper_limit); }
-
-	template <class S>
-	const bool nextRun(const S*& run){
-		if(this->pointer == this->upper_limit)
-			return false;
-
-		//run = this->encoding_RLE;
-		run = reinterpret_cast<const S*>(this->encoding_RLE);
-		++this->pointer;
-		this->encoding_RLE += sizeof(S);
-		return true;
-	}
-
-	template <class S, BYTE missing = 1>
-	const bool nextRun(const Support::TachyonRun<S, missing>*& run){
-		if(this->pointer == this->upper_limit)
-			return false;
-
-		//run = this->encoding_RLE;
-		run = reinterpret_cast<const Support::TachyonRun<S, missing>*>(this->encoding_RLE);
-		++this->pointer;
-		this->encoding_RLE += sizeof(S);
-		return true;
-	}
-
-	template <class S, BYTE missing = 1>
-	const bool nextRun(const Support::TachyonRunNoPhase<S, missing>*& run){
-		if(this->pointer == this->upper_limit)
-			return false;
-
-		//run = this->encoding_RLE;
-		run = reinterpret_cast<const Support::TachyonRunNoPhase<S, missing>*>(this->encoding_RLE);
-		++this->pointer;
-		this->encoding_RLE += sizeof(S);
-		return true;
-	}
-
-	template <class S>
-	const bool nextRunSimple(const Support::TachyonRunSimple<S>*& field){
-		if(this->pointer == this->upper_limit)
-			return false;
-
-		field = reinterpret_cast<const Support::TachyonRunSimple<S>*>(this->encoding_simple);
-		++this->pointer;
-		this->encoding_simple += sizeof(S);
-		return true;
-	}
-
-	template <class S>
-	const bool nextRunSimple(const S*& field){
-		if(this->pointer == this->upper_limit)
-			return false;
-
-		field = reinterpret_cast<const S*>(this->encoding_simple);
-		++this->pointer;
-		this->encoding_simple += sizeof(S);
-		return true;
-	}
-
-	inline const meta_type& getMeta(void) const{ return(this->meta[this->position]); }
-	inline meta_complex_type& getMetaComplex(void){
-		return(*reinterpret_cast<meta_complex_type*>(&this->meta_complex[this->meta[this->position].virtual_offset_cold_meta]));
-	}
-
-	bool countGenotypes(void);
-	bool countGenotypesGroup(void);
-
-private:
-	bool __countGenotypesRLE(void);
-	bool __countGenotypesRLEGroup(void);
-	bool __countGenotypesSimple(void);
-	bool __countGenotypesSimpleGroup(void);
-
-private:
-	U32 position;    // current meta position
-	U32 p_rle;       // position RLE
-	U32 p_simple;    // position simple
-	U32 pointer;     // iterator pointer
-	U32 upper_limit; // relative upper bounds in iterator
-	const U64 width;
-	const totempole_entry_type& totempole;
-	const char* const data;
-	const meta_type* meta;
-	const char* encoding_RLE;
-	const char* encoding_simple;
-	char* meta_complex;
-};
-
-}
-*/
 
 #endif /* CORE_TACHYONREADER_H_ */
