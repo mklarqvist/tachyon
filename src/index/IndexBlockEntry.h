@@ -14,6 +14,8 @@
 namespace Tachyon{
 namespace Index{
 
+#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U16) + 2*sizeof(U32)*5 + 6*sizeof(U16)
+
 // Controller
 struct IndexBlockEntryController{
 	typedef IndexBlockEntryController self_type;
@@ -49,7 +51,6 @@ public:
 		anyEncrypted: 1,
 		unused: 12;
 };
-
 
 struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
@@ -211,31 +212,26 @@ public:
 		const IndexBlockEntryBase* const base = reinterpret_cast<const IndexBlockEntryBase* const>(&entry);
 		stream << *base;
 
-		std::cerr << "Writing: " << entry.n_info_streams << " INFO headers..." << std::endl;
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream << entry.info_offsets[i];
 
-		std::cerr << "Writing: " << entry.n_format_streams << " FORMAT headers..." << std::endl;
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream << entry.format_offsets[i];
 
 		// write
 		if(entry.n_info_patterns > 0){
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
-			std::cerr << "Writing info bit vectors... " << entry.n_info_patterns << std::endl;
 			for(U32 i = 0; i < entry.n_info_patterns; ++i)
 				stream.write((const char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
 		}
 
 		if(entry.n_format_patterns > 0){
-			std::cerr << "Writing format bit vectors... " << entry.n_format_patterns << std::endl;
 			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 			for(U32 i = 0; i < entry.n_format_patterns; ++i)
 				stream.write((const char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
 		}
 
 		if(entry.n_filter_patterns > 0){
-			std::cerr << "Writing filter bit vectors... " << entry.n_filter_patterns << std::endl;
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 			for(U32 i = 0; i < entry.n_filter_patterns; ++i)
 				stream.write((const char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
@@ -248,20 +244,16 @@ public:
 		IndexBlockEntryBase* base = reinterpret_cast<IndexBlockEntryBase*>(&entry);
 		stream >> *base;
 
-		std::cerr << "Reading: " << entry.n_info_streams << " INFO headers..." << std::endl;
 		entry.info_offsets = new offset_minimal_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream >> entry.info_offsets[i];
 
-		std::cerr << "Reading: " << entry.n_format_streams << " FORMAT headers..." << std::endl;
 		entry.format_offsets = new offset_minimal_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream >> entry.format_offsets[i];
 
-		// write
 		if(entry.n_info_patterns > 0){
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
-			std::cerr << "Read info bit vectors... " << entry.n_info_patterns << std::endl;
 			entry.info_bit_vectors = new bit_vector[entry.n_info_patterns];
 			for(U32 i = 0; i < entry.n_info_patterns; ++i){
 				entry.info_bit_vectors[i].allocate(info_bitvector_width);
@@ -270,7 +262,6 @@ public:
 		}
 
 		if(entry.n_format_patterns > 0){
-			std::cerr << "Reading format bit vectors... " << entry.n_format_patterns << std::endl;
 			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 			entry.format_bit_vectors = new bit_vector[entry.n_format_patterns];
 			for(U32 i = 0; i < entry.n_format_patterns; ++i){
@@ -280,7 +271,6 @@ public:
 		}
 
 		if(entry.n_filter_patterns > 0){
-			std::cerr << "Reading filter bit vectors... " << entry.n_filter_patterns << std::endl;
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 			entry.filter_bit_vectors = new bit_vector[entry.n_filter_patterns];
 			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
@@ -299,6 +289,23 @@ public:
 	// resize these these pointers to fit the
 	// data we want to store
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
+
+	const U32 getDiskSize(void) const{
+		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
+		total_size += 2*sizeof(U32)*this->n_info_streams;
+		total_size += 2*sizeof(U32)*this->n_format_streams;
+
+		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
+		total_size += this->n_info_patterns*info_bitvector_width;
+
+		BYTE format_bitvector_width = ceil((float)this->n_format_streams/8);
+		total_size += this->n_format_patterns*format_bitvector_width;
+
+		BYTE filter_bitvector_width = ceil((float)this->n_filter_streams/8);
+		total_size += this->n_filter_patterns*filter_bitvector_width;
+
+		return total_size;
+	}
 
 private:
 	bool __constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns);

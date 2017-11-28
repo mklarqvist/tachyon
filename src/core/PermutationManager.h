@@ -64,11 +64,13 @@ public:
 		stream.read(reinterpret_cast<char*>(&manager.u_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.c_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.crc), sizeof(U32));
-		std::cerr << "ppa read: " << manager.u_length << '\t' << manager.c_length << '\t' << manager.crc << std::endl;
 		manager.PPA.resize(manager.u_length);
 		stream.read(manager.PPA.data, manager.c_length);
+		manager.PPA.pointer = manager.c_length;
 		return(stream);
 	}
+
+	inline const U32 getDiskSize(void) const{ return(sizeof(U32)*3 + this->PPA.pointer); }
 
 public:
 	// Not written to disk

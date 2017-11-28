@@ -214,10 +214,11 @@ bool Importer::BuildBCF(void){
 				zstd.encodeStrides(this->block.format_containers[i]);
 		}
 
-		//const size_t curPos = this->writer_.streamTomahawk.tellp();
+		const size_t curPos = this->writer_.streamTomahawk.tellp();
+		this->block.updateOffsets();
 		this->writer_.streamTomahawk << this->block;
 		//this->block.write(this->writer_.streamTomahawk, *this->header_);
-		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->total_gt_cost += this->block.gt_rle_container.buffer_data.pointer;
 		this->total_gt_cost += this->block.gt_simple_container.buffer_data.pointer;
@@ -284,11 +285,12 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	if((w > 2) & (w < 4)) w = 4;
 	else if(w > 4) w = 8;
 
+	this->block.meta_hot_container.buffer_data += meta;
 	switch(w){
-	case 1: this->block.meta_hot_container += (BYTE)n_runs; break;
-	case 2: this->block.meta_hot_container += (U16)n_runs; break;
-	case 4: this->block.meta_hot_container += (U32)n_runs; break;
-	case 8: this->block.meta_hot_container += (U64)n_runs; break;
+	case 1: this->block.meta_hot_container.buffer_data += (BYTE)n_runs; break;
+	case 2: this->block.meta_hot_container.buffer_data += (U16)n_runs; break;
+	case 4: this->block.meta_hot_container.buffer_data += (U32)n_runs; break;
+	case 8: this->block.meta_hot_container.buffer_data += (U64)n_runs; break;
 	default:
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word-size!" << std::endl;
 		exit(1); // unrecoverable error

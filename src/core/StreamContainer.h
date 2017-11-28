@@ -37,7 +37,12 @@ public:
 		buffer_strides(start_size)
 	{}
 
-	~StreamContainer(){ this->buffer_data.deleteAll(); this->buffer_strides.deleteAll(); }
+	~StreamContainer(){
+		this->buffer_data.deleteAll();
+		this->buffer_strides.deleteAll();
+		this->buffer_data_uncompressed.deleteAll();
+		this->buffer_strides_uncompressed.deleteAll();
+	}
 
 	inline void setType(const CORE_TYPE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
@@ -109,6 +114,8 @@ public:
 		this->buffer_strides.reset();
 		this->header.reset();
 		this->header_stride.reset();
+		this->buffer_data_uncompressed.reset();
+		this->buffer_strides_uncompressed.reset();
 	}
 
 	inline void resize(const U32 size){
@@ -141,18 +148,30 @@ public:
 			stream >> entry.header_stride;
 
 		entry.buffer_data.resize(entry.header.uLength);
-		std::cerr << "reading: " << entry.header.cLength << '/' << entry.header_stride.uLength << " -> " << entry.buffer_data.capacity() << std::endl;
 		stream.read(entry.buffer_data.data, entry.header.cLength);
+		entry.buffer_data.pointer = entry.header.cLength;
 		if(entry.header.controller.mixedStride){
 			entry.buffer_strides.resize(entry.header_stride.uLength);
-			std::cerr << "reading stride: " << entry.header_stride.cLength << " -> " << entry.buffer_strides.capacity() << std::endl;
 			stream.read(entry.buffer_strides.data, entry.header_stride.cLength);
+			entry.buffer_strides.pointer = entry.header_stride.cLength;
 		}
 		return(stream);
 	}
 
+	inline const U32 getDiskSize(void) const{
+		U32 total_size = 0;
+		total_size += header.getDiskSize();
+		if(this->header.controller.mixedStride)
+			total_size += header_stride.getDiskSize();
+
+		total_size += this->buffer_data.pointer;
+		if(this->header.controller.mixedStride)
+			total_size += this->buffer_strides.pointer;
+
+		return(total_size);
+	}
+
 public:
-	// Headers - written elsewhere
 	header_type header;
 	header_stride_type header_stride;
 	// Not written - used internally only
@@ -162,6 +181,11 @@ public:
 	// from here
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
+	// These buffers are for internal use only
+	// They are used during decompression and are
+	// not written to disk
+	buffer_type buffer_data_uncompressed;
+	buffer_type buffer_strides_uncompressed;
 };
 
 }

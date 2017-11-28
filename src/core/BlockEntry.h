@@ -137,6 +137,34 @@ public:
 		this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
 	}
 
+	void updateOffsets(void){
+		U32 cum_size = this->index_entry.getDiskSize();
+		this->index_entry.offset_ppa.offset = cum_size;
+		cum_size += this->ppa_manager.getDiskSize();
+		this->index_entry.offset_hot_meta.offset = cum_size;
+		cum_size += this->meta_hot_container.getDiskSize();
+		this->index_entry.offset_cold_meta.offset = cum_size;
+		cum_size += this->meta_cold_container.getDiskSize();
+		this->index_entry.offset_gt_rle.offset = cum_size;
+		cum_size += this->gt_rle_container.getDiskSize();
+		this->index_entry.offset_gt_simple.offset = cum_size;
+		cum_size += this->gt_simple_container.getDiskSize();
+
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+			this->index_entry.info_offsets[i].offset = cum_size;
+			cum_size += this->info_containers[i].getDiskSize();
+		}
+
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+			this->index_entry.format_offsets[i].offset = cum_size;
+			cum_size += this->format_containers[i].getDiskSize();
+		}
+
+		cum_size += sizeof(U64);
+		this->index_entry.offset_end_of_block = cum_size;
+		std::cerr << cum_size << std::endl;
+	}
+
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
 		for(U32 i = 0; i < length; ++i){
@@ -202,38 +230,50 @@ private:
 	// We should only read the entries we're actually interested in!!!!!
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.index_entry;
-		std::cerr << "After index" << std::endl;
-		stream >> entry.ppa_manager;
-		std::cerr << "After ppa" << std::endl;
-		stream >> entry.meta_hot_container;
-		std::cerr << "After meta hot" << std::endl;
-		stream >> entry.meta_cold_container;
-		std::cerr << "After meta cold" << std::endl;
-		stream >> entry.gt_rle_container;
-		std::cerr << "After gt rle" << std::endl;
-		stream >> entry.gt_simple_container;
-		std::cerr << "After gt simple0" << std::endl;
+		//std::cerr << entry.index_entry.contigID << ":" << entry.index_entry.minPosition << "-" << entry.index_entry.maxPosition << std::endl;
+		//std::cerr << entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset << std::endl;
+		const U64 end_of_block = (U64)stream.tellg() + (entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset) - sizeof(U64);
+		//stream.seekg(curpos + (entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset) - sizeof(U64));
 
-		std::cerr << "info_streams: " << entry.index_entry.n_info_streams << std::endl;
+		// i.e. search to meta hot
+		const U32 hot_offset = entry.index_entry.offset_hot_meta.offset - entry.index_entry.offset_ppa.offset;
+		//std::cerr << "seeking to: " << ((U64)stream.tellg() + hot_offset) << std::endl;
+		stream.seekg((U64)stream.tellg() + hot_offset);
+		stream >> entry.meta_hot_container;
+		//std::cerr << (int)entry.meta_hot_container.header.extra[0] << std::endl;
+		//std::cerr << "meta data: " << entry.meta_hot_container.buffer_data.pointer << std::endl;
+		stream >> entry.meta_cold_container;
+		stream >> entry.gt_rle_container;
+		std::cerr << entry.gt_rle_container.buffer_data.pointer << std::endl;
+		stream >> entry.gt_simple_container;
+
+		stream.seekg(end_of_block);
+
+		/*
+
+		stream >> entry.ppa_manager;
+		stream >> entry.meta_hot_container;
+		stream >> entry.meta_cold_container;
+		stream >> entry.gt_rle_container;
+		stream >> entry.gt_simple_container;
+
+		//std::cerr << "info_streams: " << entry.index_entry.n_info_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
 			stream >> entry.info_containers[i];
-			std::cerr << "info" << i << ": " <<  entry.info_containers[i].header.uLength << '\t' << entry.info_containers[i].header.crc << std::endl;
 			if(entry.info_containers[i].header.controller.encoder == ENCODE_NONE){
 				std::cerr << "ENCODE_NONE | CRC check: " << (entry.info_containers[i].checkCRC() ? "PASS" : "FAIL") << std::endl;
 			}
 		}
-		std::cerr << "after info" << std::endl;
 
-		std::cerr << "info_streams: " << entry.index_entry.n_format_streams << std::endl;
+		//std::cerr << "info_streams: " << entry.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream >> entry.format_containers[i];
-
-		std::cerr << "after format" << std::endl;
+		*/
 
 		U64 eof_marker;
 		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-		std::cerr << "eof: " << eof_marker << std::endl;
 		assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
+
 
 		return(stream);
 	}

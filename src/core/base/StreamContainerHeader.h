@@ -144,6 +144,14 @@ struct StreamContainerHeader{
 		return(stream);
 	}
 
+	const U32 getDiskSize(void) const{
+		U32 total_size = 3*sizeof(U16) + sizeof(U32)*4;
+		if(this->n_extra > 0)
+			total_size += this->n_extra;
+
+		return total_size;
+	}
+
 public:
 	controller_type controller;
 	S16 stride;
@@ -268,6 +276,14 @@ struct StreamContainerHeaderStride{
 			stream.read(entry.extra, entry.n_extra);
 		}
 		return(stream);
+	}
+
+	const U32 getDiskSize(void) const{
+		U32 total_size = 2*sizeof(U16) + sizeof(U32)*3;
+		if(this->n_extra > 0)
+			total_size += this->n_extra;
+
+		return total_size;
 	}
 
 public:

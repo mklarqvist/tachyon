@@ -15,7 +15,7 @@ namespace Core{
  Number of runs can be inferred from the sample
  number and byte length of the stream
  */
-struct __attribute__((packed)) EntryHotMetaBase{
+struct __attribute__((__packed__)) EntryHotMetaBase{
 	typedef EntryHotMetaBase self_type;
 	typedef IO::BasicBuffer buffer_type;
 
@@ -117,7 +117,7 @@ public:
  are missing and if the all the data is phased.
  */
 template <class T>
-struct __attribute__((packed)) EntryHotMeta : public EntryHotMetaBase{
+struct __attribute__((__packed__)) EntryHotMeta : public EntryHotMetaBase{
 	typedef EntryHotMeta self_type;
 
 public:
