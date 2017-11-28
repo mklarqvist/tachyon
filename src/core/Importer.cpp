@@ -303,7 +303,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Update number of entries in block
 	++this->index_entry.n_variants;
 
-	meta.n_runs = n_runs;
+	meta.n_objects = n_runs;
 	this->block.meta_hot_container.buffer_data += meta;
 
 	return true;

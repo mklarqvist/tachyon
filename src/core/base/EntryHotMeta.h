@@ -57,7 +57,7 @@ public:
 		FORMAT_map_ID(0),
 		virtual_offset_cold_meta(0),
 		virtual_offset_gt(0),
-		n_runs(0)
+		n_objects(0)
 	{}
 	~MetaHot(){}
 
@@ -66,7 +66,7 @@ public:
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
-	inline const U32& getRuns(void) const{ return(this->n_runs); }
+	inline const U32& getRuns(void) const{ return(this->n_objects); }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
@@ -75,7 +75,7 @@ public:
 			   entry.AF << '\t' <<
 			   entry.virtual_offset_cold_meta << '\t' <<
 			   entry.virtual_offset_gt << '\t' <<
-			   entry.n_runs;
+			   entry.n_objects;
 		return(out);
 	}
 
@@ -90,7 +90,7 @@ public:
 		buffer += entry.FORMAT_map_ID;
 		buffer += entry.virtual_offset_cold_meta;
 		buffer += entry.virtual_offset_gt;
-		buffer += entry.n_runs;
+		buffer += entry.n_objects;
 		return(buffer);
 	}
 
@@ -128,20 +128,19 @@ public:
 	U16 INFO_map_ID;
 	U16 FORMAT_map_ID;
 
-	// Hot-cold split structure. pointer to cold data
-	// since a pointer cannot be read from a byte
-	// stream as its memory location changes
-	// we have to provide the pointer as an ABSOLUTE
-	// virtual stream offset relative to the complex
-	// start position into the complex byte stream
+	/**< This is the virtual pointer offset into the
+	 * cold sub-structure of the hot-cold split.
+	 */
 	U32 virtual_offset_cold_meta;
-	// offset to the byte end of this entry in the stream
-	// (either RLE or simple stream depending on context)
-	// this allows fast iteration when switching between
-	// the two compression approaches
+
+	/**< Virtual file offset into the appropriate genotype
+	 * container stream. What container is targetted is
+	 * encoded in the controller.
+	 */
 	U32 virtual_offset_gt;
-	// Runs
-	U32 n_runs;
+
+	/**< Number of genotype entries encoded */
+	U32 n_objects;
 };
 
 }
