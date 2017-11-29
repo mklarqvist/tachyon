@@ -108,6 +108,7 @@ public:
 	inline const char getRef(void) const{ return(Constants::REF_ALT_LOOKUP[this->ref]); }
 	inline const char getAlt(void) const{ return(Constants::REF_ALT_LOOKUP[this->alt]); }
 
+public:
 	BYTE ref: 4,
 	     alt: 4;
 };
@@ -154,6 +155,7 @@ public:
 	// Supportive functions
 	inline const U32& getObjects(void) const{ return(this->n_objects); }
 
+private:
 	// Used for debugging only
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<

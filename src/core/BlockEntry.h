@@ -209,7 +209,8 @@ private:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
-		if(entry.index_entry.controller.hasGTPermuted) stream << entry.ppa_manager;
+		if(entry.index_entry.controller.hasGTPermuted)
+			stream << entry.ppa_manager;
 		stream << entry.meta_hot_container;
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;

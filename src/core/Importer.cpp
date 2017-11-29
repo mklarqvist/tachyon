@@ -75,7 +75,6 @@ bool Importer::BuildBCF(void){
 	this->block.ppa_manager.setSamples(this->header_->samples);
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header_->samples);
-	this->block.index_entry.controller.hasGTPermuted = false;
 
 	if(!this->writer_.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
@@ -103,13 +102,15 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
 
+		this->block.index_entry.controller.hasGTPermuted = true;
 
-		/*
-		if(!this->permutator.build(reader)){
-			std::cerr << "fail permutator" << std::endl;
-			return false;
+		// Permute or not?
+		if(this->block.index_entry.controller.hasGTPermuted){
+			if(!this->permutator.build(reader)){
+				std::cerr << "fail permutator" << std::endl;
+				return false;
+			}
 		}
-		*/
 
 
 		for(U32 i = 0; i < reader.size(); ++i){
@@ -118,6 +119,9 @@ bool Importer::BuildBCF(void){
 				return false;
 			}
 		}
+
+		this->block.index_entry.controller.hasGT = true;
+		this->block.index_entry.controller.isDiploid = true;
 
 		//std::string hexKey = "D26E140AE8D10352F2D7CBE25DC83396135F7588B583BBD28D280EEED4ED6EAD";
 		//std::string hexIV = "EB9AF575716202471F658C1BC7695767";
@@ -159,10 +163,6 @@ bool Importer::BuildBCF(void){
 		crcEnd = crc32(crcEnd, (Bytef*)retstream, ret_dec_length);
 		std::cerr << crcStart << '\t' << crcEnd << '\t' << (crcStart == crcEnd) << std::endl;
 		*/
-
-		this->block.index_entry.controller.hasGT = true;
-		this->block.index_entry.controller.isDiploid = true;
-		this->block.index_entry.controller.hasGTPermuted = true;
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -227,7 +227,7 @@ bool Importer::BuildBCF(void){
 
 		this->total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
 		this->total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
-		this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
+		if(this->block.index_entry.controller.hasGTPermuted) this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
 		std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
 
 		// Reset inside block
