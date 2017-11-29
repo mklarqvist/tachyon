@@ -7,6 +7,7 @@
 namespace Tachyon {
 
 Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
+	permute(true),
 	checkpoint_size(checkpoint),
 	total_gt_cost(0),
 	total_ppa_cost(0),
@@ -102,7 +103,7 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
 
-		this->block.index_entry.controller.hasGTPermuted = true;
+		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
 		if(this->block.index_entry.controller.hasGTPermuted){

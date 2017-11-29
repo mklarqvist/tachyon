@@ -22,6 +22,16 @@ public:
 	{}
 	~IndexEntry(){}
 
+	void reset(void){
+		this->contigID = 0;
+		this->n_variants = 0;
+		this->byte_offset = 0;
+		this->byte_offset_end = 0;
+		this->minPosition = 0;
+		this->maxPosition = 0;
+	}
+
+private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.contigID), sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants), sizeof(U16));
@@ -43,15 +53,6 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.maxPosition), sizeof(U64));
 
 		return(stream);
-	}
-
-	void reset(void){
-		this->contigID = 0;
-		this->n_variants = 0;
-		this->byte_offset = 0;
-		this->byte_offset_end = 0;
-		this->minPosition = 0;
-		this->maxPosition = 0;
 	}
 
 public:

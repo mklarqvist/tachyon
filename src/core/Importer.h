@@ -30,29 +30,12 @@ class Importer {
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Core::BlockEntry block_type;
 
-	/*
-	 This supportive structure keeps track of the current and
-	 previous contig identifiers and the previous obseved position.
-	 This information is necessary to guarantee the sort-order of
-	 the output Tomahawk file required for indexing.
-	 Note that contigID is a pointer as this is required by our
-	 hash-table implementation as a return value
-	 */
-	struct __InternalHelper{
-		__InternalHelper():
-			contigID(nullptr),
-			prevcontigID(-1),
-			previous_position(-1)
-		{}
-		S32* contigID;			// current contigID
-		S32 prevcontigID;		// previous contigID
-		S32 previous_position;	// current position
-	} sort_order_helper;
-
 public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size);
 	~Importer();
 	bool Build();
+
+	inline void setPermute(const bool yes){ this->permute = yes; }
 
 private:
 	bool BuildBCF();  // import a BCF file
@@ -63,16 +46,19 @@ private:
 	void resetHashes(void);
 
 private:
+	bool permute;
 	U32 checkpoint_size;      // number of variants until checkpointing
+	// Temp fields
 	U64 total_gt_cost;
 	U64 total_ppa_cost;
 	U64 total_rest_cost;
+	// Read/write fields
 	std::string inputFile;    // input file name
 	std::string outputPrefix; // output file prefix
 	reader_type reader_;      // reader
 	writer_type writer_;      // writer
 
-	index_entry_type index_entry;  // totempole entry for indexing
+	index_entry_type index_entry;  // Header index
 	radix_sorter_type permutator;
 	header_type* header_;     // header
 	encoder_type encoder;     // RLE packer

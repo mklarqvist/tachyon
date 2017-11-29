@@ -59,7 +59,10 @@ int import(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
+
 		{"checkpoint",		optional_argument, 0,  'c' },
+		{"permute",		no_argument, 0,  'p' },
+		{"no-permute",		no_argument, 0,  'P' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
 	};
@@ -68,8 +71,9 @@ int import(int argc, char** argv){
 	std::string output;
 	SILENT = 0;
 	S32 checkpoint = 500;
+	bool permute = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:s?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:c:spP?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -87,7 +91,8 @@ int import(int argc, char** argv){
 				return(1);
 			}
 			break;
-
+		case 'p': permute = true;  break;
+		case 'P': permute = false; break;
 		case 's':
 			SILENT = 1;
 			break;
@@ -110,6 +115,7 @@ int import(int argc, char** argv){
 	}
 
 	Tachyon::Importer importer(input, output, checkpoint);
+	importer.setPermute(permute);
 
 	if(!importer.Build())
 		return 1;
