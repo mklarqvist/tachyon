@@ -11,10 +11,6 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		return false;
 	}
 
-	// Update basic values for a meta entry
-	meta_base.ref_alt = line.ref_alt;
-	meta_base.controller.simple = line.isSimple();
-
 	// Assess cost and encode
 	rle_helper_type cost;
 	if(line.body->n_allele == 2){

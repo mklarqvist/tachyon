@@ -35,14 +35,14 @@ struct MetaHotController{
 	 * 7) What machine word-size the run-length encoded objects are
 	 * 8) If the variant site is diploid
 	 * 9) If there is mixed ploidy
-	 * 10) Reserved for future use
+	 * 10-16) Reserved for future use
 	 */
 	U16 anyMissing:    1, // any missing
         allPhased:     1, // all phased
-		mixed_phasing: 1, // has mixed phasing
-		biallelic:     1, // is biallelic
-		simple:        1, // is simple SNV->SNV
-		rle:           1, // uses RLE compression
+        mixed_phasing: 1, // has mixed phasing
+        biallelic:     1, // is biallelic
+        simple:        1, // is simple SNV->SNV
+        rle:           1, // uses RLE compression
 		rle_type:      2, // type of RLE (BYTE, U16, U32, U64)
 		diploid:       1, // is diploid
 		mixed_ploidy:  1, // has mixed ploidy (e.g. X chromosome or CNV)
@@ -69,8 +69,8 @@ public:
 	~MetaHotRefAlt(){}
 
 	void operator=(const BYTE& other){
-		this->alt = (other & 15) << 4;
-		this->ref |= (other & 15);
+		this->alt = (other & 15);
+		this->ref = ((other >> 4) & 15);
 	}
 
 	void setMissing(void){

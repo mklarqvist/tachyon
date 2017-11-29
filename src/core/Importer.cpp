@@ -75,6 +75,7 @@ bool Importer::BuildBCF(void){
 	this->block.ppa_manager.setSamples(this->header_->samples);
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header_->samples);
+	this->block.index_entry.controller.hasGTPermuted = false;
 
 	if(!this->writer_.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
@@ -102,10 +103,13 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
 
+
+		/*
 		if(!this->permutator.build(reader)){
 			std::cerr << "fail permutator" << std::endl;
 			return false;
 		}
+		*/
 
 
 		for(U32 i = 0; i < reader.size(); ++i){
@@ -158,7 +162,7 @@ bool Importer::BuildBCF(void){
 
 		this->block.index_entry.controller.hasGT = true;
 		this->block.index_entry.controller.isDiploid = true;
-		this->block.index_entry.controller.isGTPermuted = true;
+		this->block.index_entry.controller.hasGTPermuted = true;
 
 		// Update head meta
 		this->block.index_entry.n_info_streams = this->info_fields.size();
@@ -180,7 +184,7 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
 
 		zstd.setCompressionLevel(2);
-		zstd.encode(this->block.ppa_manager);
+		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
 		if(this->block.meta_hot_container.n_entries) zstd.encode(this->block.meta_hot_container);
 
 		zstd.setCompressionLevel(14);
@@ -274,6 +278,8 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 
 	meta_type meta;
 	meta.position = entry.body->POS - this->block.index_entry.minPosition;
+	meta.ref_alt = entry.ref_alt;
+	meta.controller.simple = entry.isSimple();
 	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get()))
 		return false;
 
