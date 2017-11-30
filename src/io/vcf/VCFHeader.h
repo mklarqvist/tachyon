@@ -9,9 +9,9 @@
 #include "VCFHeaderLine.h"
 #include "../BasicBuffer.h"
 #include "../../algorithm/OpenHashTable.h"
-#include "../../core/base/HeaderContig.h"
-#include "../../core/base/HeaderMapEntry.h"
-#include "../../core/base/HeaderSample.h"
+#include "../../core/base/header/HeaderContig.h"
+#include "../../core/base/header/HeaderMapEntry.h"
+#include "../../core/base/header/HeaderSample.h"
 
 namespace Tachyon {
 namespace VCF{
@@ -83,6 +83,27 @@ private:
 	bool parseFirstLine(const char* const data, U32& offset);
 	bool parseHeaderLines(const char* const data, U32& offset);
 	bool parseSampleLine(const char* const data, U32& offset, const U32& length);
+
+private:
+	// Output only
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		const U32 n_contigs = entry.contigs.size();
+		const U32 n_samples = entry.sampleNames.size();
+		const U32 n_meta_fields = entry.map.size();
+		stream.write(reinterpret_cast<const char*>(&n_contigs),sizeof(U32));
+		for(U32 i = 0; i < n_contigs; ++i)
+			stream << entry.contigs[i];
+
+		stream.write(reinterpret_cast<const char*>(&n_samples),sizeof(U32));
+		for(U32 i = 0; i < n_samples; ++i)
+			stream << entry.sampleNames[i];
+
+		stream.write(reinterpret_cast<const char*>(&n_meta_fields),sizeof(U32));
+		for(U32 i = 0; i < n_meta_fields; ++i)
+			stream << entry.map[i];
+
+		return(stream);
+	}
 
 public:
 	VCF_ERROR_TYPE error_bit;               // parse error bit

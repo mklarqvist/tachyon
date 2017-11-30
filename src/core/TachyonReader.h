@@ -6,6 +6,7 @@
 #include "BlockEntry.h"
 #include "../algorithm/compression/CompressionContainer.h"
 #include "iterator/MetaIterator.h"
+#include "base/header/Header.h"
 
 namespace Tachyon{
 namespace Core{
@@ -14,6 +15,7 @@ class TachyonReader{
 	typedef TachyonReader self_type;
 	typedef Core::BlockEntry block_entry_type;
 	typedef IO::BasicBuffer buffer_type;
+	typedef Header header_type;
 
 public:
 	TachyonReader() : filesize(0){}
@@ -37,6 +39,13 @@ public:
 			std::cerr << "failed to rewrind" << std::endl;
 			return false;
 		}
+
+		this->stream << this->header;
+		if(!this->stream.good()){
+			std::cerr << "failed to get header" << std::endl;
+			return false;
+		}
+
 		return true;
 	}
 
@@ -113,20 +122,16 @@ public:
 		std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
-			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-				// Check if field is set
-				std::cerr << "filter set = " << this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k] << std::endl;
-				// Lookup what that field is
-				this->block.index_entry.filter_offsets[k].key;
 
-			}
 
 			//std::cerr << std::bitset<8>(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID].bit_bytes[0]) << std::endl;
 			/*
-			if(it.current().hot->INFO_map_ID == 0){
+			if(it.current().cold.n_allele == 2){
 				++it;
 				continue;
 			}
+			*/
+			/*
 			std::cout << m.hot->INFO_map_ID << '\t';
 			for(U32 j = 0; j < this->block.index_entry.l_info_bitvector; ++j)
 				std::cout << std::bitset<8>(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].bit_bytes[j]) << ' ';
@@ -137,7 +142,7 @@ public:
 			*/
 
 			//std::cout << *m.hot << '\n';
-			std::cout << this->block.index_entry.contigID << '\t';
+			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
 			if(m.cold.n_ID == 0) std::cout.put('.');
 			else std::cout.write(m.cold.ID, m.cold.n_ID);
@@ -155,7 +160,29 @@ public:
 				}
 				std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 			}
-			std::cout << '\t' << m.cold.QUAL << '\t' << "PASS" << '\n';
+
+			std::cout << '\t' << m.cold.QUAL << '\t';
+			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+				// Check if field is set
+				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+				// Lookup what that field is
+					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+				}
+
+			}
+
+
+
+			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
+				// Check if field is set
+				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
+				// Lookup what that field is
+					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size()) << ';';
+				}
+
+			}
+			std::cout << '\n';
+
 			++it;
 		}
 
@@ -169,6 +196,7 @@ public:
 	std::ifstream stream;
 	U64 filesize;
 	block_entry_type block;
+	header_type header;
 	buffer_type buffer;
 	Compression::ZSTDCodec zstd;
 };

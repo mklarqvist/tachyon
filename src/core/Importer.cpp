@@ -82,6 +82,8 @@ bool Importer::BuildBCF(void){
 		return false;
 	}
 
+	this->writer_.streamTomahawk << *this->header_;
+
 	// Resize containers
 	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
@@ -199,12 +201,12 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
-		for(U32 i = 0; i < this->header_->contigs.size(); ++i){
-			std::cerr << "contig " << i << '\t' << this->header_->contigs[i] << std::endl;
-		}
-		for(U32 i = 0; i < this->header_->map.size(); ++i){
-		std::cerr << "Head: " << i << '\t' << (*this->header_)[i].ID << "\t" << (int)(*this->header_)[i].TYPE << std::endl;
-		}
+		//for(U32 i = 0; i < this->header_->contigs.size(); ++i){
+		//	std::cerr << "contig " << i << '\t' << this->header_->contigs[i] << std::endl;
+		//}
+		//for(U32 i = 0; i < this->header_->map.size(); ++i){
+		//std::cerr << "Head: " << i << '\t' << (*this->header_)[i].ID << "\t" << (int)(*this->header_)[i].TYPE << std::endl;
+		//}
 
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
