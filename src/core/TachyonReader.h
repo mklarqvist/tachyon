@@ -68,9 +68,11 @@ public:
 			//std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
 			//U32 prevpos = d[0].position;
 			for(U32 i = 0; i < d.size(); ++i){
+				Core::MetaEntry m(&d[i], this->block.meta_cold_container);
+				if(m.cold.n_allele == 2) continue;
 				//std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
 				//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-				Core::MetaEntry m(&d[i], this->block.meta_cold_container);
+
 				//std::cout << *m.hot << '\n';
 				std::cout << this->block.index_entry.contigID << '\t';
 				std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';

@@ -21,12 +21,7 @@ public:
 			return false;
 
 		this->clear();
-		std::cerr << container.buffer_data_uncompressed.pointer << std::endl;
 		this->entries = reinterpret_cast<const entry_type* const>(container.buffer_data_uncompressed.data);
-		std::cout << this->entries[0] << std::endl;
-		std::cout << &this->entries[1] - this->entries << '\t' << sizeof(entry_type) << std::endl;
-		std::cout << this->entries[1] << std::endl;
-		std::cout << (container.buffer_data_uncompressed.pointer % sizeof(entry_type)) << std::endl;
 		this->position_offset = offest;
 		assert((container.buffer_data_uncompressed.pointer % sizeof(entry_type)) == 0);
 		this->n_entries = container.buffer_data_uncompressed.pointer / sizeof(entry_type);
