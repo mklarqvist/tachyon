@@ -168,16 +168,13 @@ public:
 				// Lookup what that field is
 					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
 				}
-
 			}
-
-
 
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
 				// Check if field is set
 				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
 				// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size()) << ';';
+					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size()) << '=' << ';';
 				}
 
 			}

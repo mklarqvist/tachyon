@@ -13,7 +13,21 @@ private:
 	typedef Hash::HashTable<std::string, S32> hash_table_type;
 
 public:
-	explicit Header(void) : n_contigs(0), n_samples(0), n_entries(0), contigs(nullptr), samples(nullptr), entries(nullptr), htable_contigs(nullptr), htable_samples(nullptr), htable_entries(nullptr){}
+	explicit Header(void) :
+		version_major(0),
+		version_minor(0),
+		version_patch(0),
+		n_contigs(0),
+		n_samples(0),
+		n_entries(0),
+		contigs(nullptr),
+		samples(nullptr),
+		entries(nullptr),
+		htable_contigs(nullptr),
+		htable_samples(nullptr),
+		htable_entries(nullptr)
+	{}
+
 	~Header(){
 		delete [] this->contigs;
 		delete [] this->samples;
@@ -29,6 +43,12 @@ public:
 
 private:
 	friend std::ifstream& operator<<(std::ifstream& stream, self_type& entry){
+		entry.file_header_string.resize(Constants::FILE_HEADER.size());
+		stream.read(&entry.file_header_string[0], Constants::FILE_HEADER.size());
+		stream.read(reinterpret_cast<char*>(&entry.version_major),sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.version_minor),sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.version_patch),sizeof(U16));
+
 		stream.read(reinterpret_cast<char*>(&entry.n_contigs),sizeof(U32));
 		entry.contigs = new contig_type[entry.n_contigs];
 		for(U32 i = 0; i < entry.n_contigs; ++i)
@@ -48,6 +68,10 @@ private:
 	}
 
 public:
+	std::string file_header_string;
+	U16 version_major;
+	U16 version_minor;
+	U16 version_patch;
 	U32 n_contigs;
 	U32 n_samples;
 	U32 n_entries;

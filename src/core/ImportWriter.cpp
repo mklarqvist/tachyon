@@ -36,6 +36,19 @@ bool ImportWriter::Open(const std::string output){
 	return true;
 }
 
+bool ImportWriter::WriteHeader(void){
+	if(!this->streamTomahawk.good()){
+		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
+		return false;
+	}
+
+	this->streamTomahawk.write(&Constants::FILE_HEADER[0], Constants::FILE_HEADER.size());
+	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),sizeof(U16));
+	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),sizeof(U16));
+	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_PATCH),sizeof(U16));
+	return true;
+}
+
 void ImportWriter::WriteFinal(void){
 
 }

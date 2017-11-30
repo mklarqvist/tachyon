@@ -82,6 +82,10 @@ bool Importer::BuildBCF(void){
 		return false;
 	}
 
+	if(!this->writer_.WriteHeader()){
+		std::cerr << "failed" << std::endl;
+		return false;
+	}
 	this->writer_.streamTomahawk << *this->header_;
 
 	// Resize containers
