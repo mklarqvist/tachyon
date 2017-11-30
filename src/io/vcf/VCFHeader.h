@@ -11,7 +11,7 @@
 #include "../../algorithm/OpenHashTable.h"
 #include "../../core/base/HeaderContig.h"
 #include "../../core/base/HeaderMapEntry.h"
-
+#include "../../core/base/HeaderSample.h"
 
 namespace Tachyon {
 namespace VCF{
@@ -24,6 +24,7 @@ class VCFHeader {
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
 	typedef Core::HeaderMapEntry map_entry_type;
+	typedef Core::HeaderSample header_sample_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
@@ -68,7 +69,7 @@ private:
 	}
 
 	inline void addSample(const std::string& sample){
-		this->sampleNames.push_back(sample);
+		this->sampleNames.push_back(header_sample_type(sample));
 		this->sampleHashTable->SetItem(&sample[0], &sample, this->sampleNames.size()-1, sample.size());
 	}
 
@@ -93,7 +94,7 @@ public:
 	std::vector<contig_type> contigs;       // contigs
 	// Sample names are written to disk as
 	// U32 l_name; char[l_name]
-	std::vector<std::string> sampleNames;   // sample names
+	std::vector<header_sample_type> sampleNames;   // sample names
 	std::vector<header_line_type> lines;    // header lines
 	std::vector<std::string> literal_lines; // vcf line literals
 	// These entries are read from disk as
