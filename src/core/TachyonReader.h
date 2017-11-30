@@ -5,9 +5,7 @@
 #include "common/zstd_errors.h"
 #include "BlockEntry.h"
 #include "../algorithm/compression/CompressionContainer.h"
-#include "decorator/MetaHotDecorator.h"
-#include "base/MetaCold.h"
-#include "base/MetaEntry.h"
+#include "iterator/MetaIterator.h"
 
 namespace Tachyon{
 namespace Core{
@@ -106,21 +104,28 @@ public:
 		//	std::cout << meta[i] << '\n';
 
 		// Todo: MetaIterator
-		Decorator::MetaHotDecorator d(this->block.meta_hot_container, this->block.index_entry.minPosition);
+		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+		//Iterator::MetaHotIterator d(this->block.meta_hot_container);
 		//const Core::EntryHotMeta* hot = nullptr;
 		//std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
 		//U32 prevpos = d[0].position;
 
-		for(U32 i = 0; i < d.size(); ++i){
-			Core::MetaEntry m(&d[i], this->block.meta_cold_container);
-			if(d[i].INFO_map_ID == 0) continue;
-			std::cout << d[i].INFO_map_ID << '\t';
+		std::cerr << it.size() << std::endl;
+		for(U32 i = 0; i < it.size(); ++i){
+			const Core::MetaEntry& m = it.current();
+			/*
+			if(it.current().hot->INFO_map_ID == 0){
+				++it;
+				continue;
+			}
+			std::cout << m.hot->INFO_map_ID << '\t';
 			for(U32 j = 0; j < this->block.index_entry.l_info_bitvector; ++j)
-				std::cout << std::bitset<8>(this->block.index_entry.info_bit_vectors[d[i].INFO_map_ID].bit_bytes[j]) << ' ';
+				std::cout << std::bitset<8>(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].bit_bytes[j]) << ' ';
 			std::cout << '\n';
 			//if(m.cold.n_allele == 2) continue;
 			//std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
 			//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
+			*/
 
 			//std::cout << *m.hot << '\n';
 			std::cout << this->block.index_entry.contigID << '\t';
@@ -142,7 +147,9 @@ public:
 				std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 			}
 			std::cout << '\t' << m.cold.QUAL << '\t' << "PASS" << '\n';
+			++it;
 		}
+
 
 		return true;
 	}

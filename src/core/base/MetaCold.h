@@ -79,17 +79,21 @@ public:
 
 	void operator()(char* in){
 		const U16 prev_n_allele = this->n_allele;
+
+		// Interpret body
 		this->QUAL = *reinterpret_cast<float*>(in);
 		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(float)]);
 		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)]);
 		this->ID = &in[sizeof(float) + 2*sizeof(U16)];
 
 		// Only update if we need to
+		// Otherwise keep overwriting
 		if(prev_n_allele < this->n_allele){
 			delete [] this->alleles;
 			this->alleles = new allele_type[this->n_allele];
 		}
 
+		// Overload allele data
 		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
 		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i](&in[cumpos]);

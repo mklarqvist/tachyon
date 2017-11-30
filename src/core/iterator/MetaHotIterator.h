@@ -1,39 +1,39 @@
-#ifndef CORE_DECORATOR_METAHOTDECORATOR_H_
-#define CORE_DECORATOR_METAHOTDECORATOR_H_
+#ifndef CORE_ITERATOR_METAHOTITERATOR_H_
+#define CORE_ITERATOR_METAHOTITERATOR_H_
 
 namespace Tachyon{
 namespace Core{
-namespace Decorator{
+namespace Iterator{
 
-class MetaHotDecorator{
-	typedef MetaHotDecorator self_type;
+class MetaHotIterator{
+	typedef MetaHotIterator self_type;
 	typedef Core::StreamContainer container_type;
 	typedef Core::MetaHot entry_type;
 
 public:
-	MetaHotDecorator() : n_entries(0), pos(0), position_offset(0), entries(nullptr){}
-	MetaHotDecorator(container_type& container, const U64& offset) : n_entries(0), pos(0), position_offset(offset), entries(nullptr){
-		this->set(container, offset);
+	MetaHotIterator() : n_entries(0), pos(0), entries(nullptr){}
+	MetaHotIterator(container_type& container) : n_entries(0), pos(0), entries(nullptr){
+		this->set(container);
 	}
-	~MetaHotDecorator(){}
-	bool set(container_type& container, const U64& offest){
+	~MetaHotIterator(){}
+	bool set(container_type& container){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
 		this->clear();
 		this->entries = reinterpret_cast<const entry_type* const>(container.buffer_data_uncompressed.data);
-		this->position_offset = offest;
 		assert((container.buffer_data_uncompressed.pointer % sizeof(entry_type)) == 0);
 		this->n_entries = container.buffer_data_uncompressed.pointer / sizeof(entry_type);
 		return true;
 	}
-	inline bool operator()(container_type& container, const U64& offset){
-		return(this->set(container,offset));
+
+	inline bool operator()(container_type& container){
+		return(this->set(container));
 	}
+
 	void clear(void){
 		this->n_entries = 0;
 		this->pos = 0;
-		this->position_offset = 0;
 		entries = nullptr;
 	}
 
@@ -69,9 +69,8 @@ public:
 	}
 
 private:
-	size_t n_entries;
+	S32 n_entries;
 	S32 pos;
-	U64 position_offset;
 	const entry_type* entries;
 };
 
@@ -79,4 +78,4 @@ private:
 }
 }
 
-#endif /* CORE_DECORATOR_METAHOTDECORATOR_H_ */
+#endif /* CORE_ITERATOR_METAHOTITERATOR_H_ */

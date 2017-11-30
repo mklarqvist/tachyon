@@ -23,6 +23,4 @@ struct BlockEntrySettings{
 }
 }
 
-
-
 #endif /* CORE_BLOCKENTRYSETTINGS_H_ */

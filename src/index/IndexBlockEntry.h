@@ -16,7 +16,10 @@ namespace Index{
 
 #define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U16) + 2*sizeof(U32)*5 + 6*sizeof(U16)
 
-// Controller
+/** @brief Controller flags for an IndexBlockEntry
+ * This structure is for internal use only and describes
+ * various internal states as flags.
+ */
 struct IndexBlockEntryController{
 	typedef IndexBlockEntryController self_type;
 
@@ -52,6 +55,14 @@ public:
 		unused: 12;
 };
 
+/** @brief Fixed-sized components of an IndexBlockEntry
+ * For internal use only. This is a subcomponent of fixed
+ * size describing:
+ * 1) Contig, minimum and maximum genomic coordinates
+ * 2) Offsets into the containers
+ * 3) Number of containers and ID patterns
+ * 4) Controller flags
+ */
 struct IndexBlockEntryBase{
 	typedef IndexBlockEntryBase self_type;
 	typedef IndexBlockEntryController controller_type;
@@ -143,11 +154,13 @@ public:
 	// over the file and not using the index
 	// EOF marker is at this position - sizeof(EOF marker)
 	U32 offset_end_of_block;
-	// bit flags
+	// Controller bit flags
 	controller_type controller;
+
+	// Genomic information
 	S32 contigID;       // contig identifier
-	U64 minPosition;
-	U64 maxPosition;
+	U64 minPosition;    // minimum coordinate in this block
+	U64 maxPosition;    // maximum coordinate in this block
 	U16 n_variants;     // number of variants in this block
 
 	// Virtual offsets to the start of various
@@ -174,12 +187,11 @@ public:
 	U16 n_format_patterns;
 	U16 n_filter_patterns;
 
-	// Not written or read
+	// Not written or read from disk
+	// Used internally only
 	BYTE l_info_bitvector;
 	BYTE l_format_bitvector;
 	BYTE l_filter_bitvector;
-
-	// END OF FIXED SIZE
 };
 
 struct IndexBlockEntry : public IndexBlockEntryBase{
