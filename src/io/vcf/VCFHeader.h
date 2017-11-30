@@ -6,10 +6,10 @@
 #include "../../support/helpers.h"
 #include "../reader.h"
 #include "VCFHeaderConstants.h"
-#include "VCFHeaderContig.h"
 #include "VCFHeaderLine.h"
 #include "../BasicBuffer.h"
 #include "../../algorithm/OpenHashTable.h"
+#include "../../core/base/HeaderContig.h"
 
 
 namespace Tachyon {
@@ -27,7 +27,7 @@ class VCFHeader {
 	typedef VCFHeader self_type;
 	typedef Hash::HashTable<std::string, S32> hash_table_type;
 	typedef Hash::HashTable<S32, U32> hash_table_map_type;
-	typedef VCFHeaderContig contig_type;
+	typedef Core::HeaderContig contig_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
 	typedef VCFHeaderMapEntry map_entry_type;

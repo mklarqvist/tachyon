@@ -16,7 +16,7 @@ class BCFReader{
 	typedef IO::BGZFController bgzf_controller_type;
 	typedef IO::BGZFHeader bgzf_type;
 	typedef VCF::VCFHeader header_type;
-	typedef VCF::VCFHeaderContig contig_type;
+	typedef Core::HeaderContig contig_type;
 	typedef BCFEntry entry_type;
 
 public:

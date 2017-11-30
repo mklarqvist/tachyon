@@ -199,6 +199,13 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
+		for(U32 i = 0; i < this->header_->contigs.size(); ++i){
+			std::cerr << "contig " << i << '\t' << this->header_->contigs[i] << std::endl;
+		}
+		for(U32 i = 0; i < this->header_->map.size(); ++i){
+		std::cerr << "Head: " << i << '\t' << (*this->header_)[i].ID << "\t" << (int)(*this->header_)[i].TYPE << std::endl;
+		}
+
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.uniform == true)
@@ -270,8 +277,8 @@ bool Importer::BuildBCF(void){
 
 bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Assert position is in range
-	if(entry.body->POS + 1 > this->header_->getContig(entry.body->CHROM).length){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header_->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header_->getContig(entry.body->CHROM).length << ")..." << std::endl;
+	if(entry.body->POS + 1 > this->header_->getContig(entry.body->CHROM).bp_length){
+		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header_->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header_->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
 		return false;
 	}
 

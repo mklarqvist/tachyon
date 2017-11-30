@@ -107,9 +107,10 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 			for(U32 i = 0; i < line.size(); ++i){
 				if(strncasecmp(&line[i].KEY[0], "ID", 2) == 0 && line[i].KEY.size() == 2){
 					contig.name = std::string(line[i].VALUE);
+					contig.l_name = contig.name.size();
 					++found;
 				} else if(strncasecmp(&line[i].KEY[0], "length", 6) == 0 && line[i].KEY.size() == 6){
-					contig.length = atoi(&line[i].VALUE[0]);
+					contig.bp_length = atoi(&line[i].VALUE[0]);
 					++found;
 				}
 			}
@@ -118,7 +119,7 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 			if(found != 2){
 				std::cerr << Helpers::timestamp("WARNING","VCF") << "Illegal contig entry line with no length defined!" << std::endl;
 				std::cerr << Helpers::timestamp("WARNING","VCF") << "Offending line: " << std::string(data, length+1) << std::endl;
-				contig.length = std::numeric_limits<U32>::max();
+				contig.bp_length = std::numeric_limits<U32>::max();
 			}
 			this->contigs.push_back(contig);
 		}
