@@ -1,9 +1,9 @@
-#include "EntryColdMeta.h"
+#include "MetaCold.h"
 
 namespace Tachyon{
 namespace Core{
 
-EntryColdMeta::EntryColdMeta(void) :
+MetaCold::MetaCold(void) :
 		QUAL(0),
 		n_allele(0),
 		n_ID(0),
@@ -11,11 +11,11 @@ EntryColdMeta::EntryColdMeta(void) :
 		alleles(nullptr)
 	{}
 
-EntryColdMeta::~EntryColdMeta(void){
+MetaCold::~MetaCold(void){
 	delete [] this->alleles;
 }
 
-bool EntryColdMeta::write(const bcf_type& entry, stream_container& buffer){
+bool MetaCold::write(const bcf_type& entry, stream_container& buffer){
 	// Write out data
 	// offset is
 	buffer.buffer_data += entry.body->QUAL;

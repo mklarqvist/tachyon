@@ -1,8 +1,8 @@
 #include <fstream>
 #include "Importer.h"
-#include "base/EntryColdMeta.h"
 #include "../algorithm/compression/CompressionContainer.h"
 #include "../algorithm/encryption/openssl_aes.h"
+#include "base/MetaCold.h"
 
 namespace Tachyon {
 
@@ -295,7 +295,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	else if(w > 4) w = 8;
 
 	// Complex meta data
-	Core::EntryColdMeta test;
+	Core::MetaCold test;
 	meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data.pointer;
 	if(!test.write(entry, this->block.meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;

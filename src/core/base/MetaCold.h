@@ -1,5 +1,5 @@
-#ifndef CORE_BASE_ENTRYCOLDMETA_H_
-#define CORE_BASE_ENTRYCOLDMETA_H_
+#ifndef CORE_BASE_METACOLD_H_
+#define CORE_BASE_METACOLD_H_
 
 #include <cassert>
 
@@ -28,8 +28,11 @@ public:
 	{}
 	~ColdMetaAllele(void){} // do nothing
 
-	inline const U32 size(void) const{ return(this->l_allele + sizeof(U16)); }
+	inline const U32 objectSize(void) const{ return(this->l_allele + sizeof(U16)); }
+	inline const U16& size(void) const{ return(this->l_allele); }
+	inline const std::string toString(void) const{ return(std::string(this->allele, this->l_allele)); }
 
+private:
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
 		// Write out allele
 		buffer += (U16)entry.l_allele;
@@ -45,16 +48,16 @@ public:
 
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted
-struct EntryColdMeta{
+struct MetaCold{
 private:
-	typedef EntryColdMeta self_type;
+	typedef MetaCold self_type;
 	typedef BCF::BCFEntry bcf_type;
 	typedef Core::StreamContainer stream_container;
 	typedef ColdMetaAllele allele_type;
 
 public:
-	explicit EntryColdMeta(void);
-	~EntryColdMeta(void);
+	explicit MetaCold(void);
+	~MetaCold(void);
 
 	// Parse everything in this entry
 	bool parse(void);
@@ -74,8 +77,10 @@ public:
 	float QUAL;
 	/**< Number of alleles */
 	U16 n_allele;
-	// Byte length of variant name (ID)
-	// Names are limited to 16 bits
+	/**< Variant name (ID). Length is bytes
+	 * and actual char* data
+	 * Names are limited to 16 bits
+	 */
 	U16 n_ID;
 	char* ID;
 	// allele info
@@ -86,4 +91,4 @@ public:
 }
 }
 
-#endif /* CORE_BASE_ENTRYCOLDMETA_H_ */
+#endif /* CORE_BASE_METACOLD_H_ */

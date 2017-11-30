@@ -6,8 +6,8 @@
 #include <cassert>
 
 #include "../../io/bcf/BCFEntry.h"
-#include "../../core/base/EntryHotMeta.h"
 #include "../../core/base/GTRecords.h"
+#include "../../core/base/MetaHot.h"
 #include "../../core/StreamContainer.h"
 
 namespace Tachyon{

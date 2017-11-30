@@ -1,5 +1,5 @@
-#ifndef CORE_BASE_ENTRYHOTMETA_H_
-#define CORE_BASE_ENTRYHOTMETA_H_
+#ifndef CORE_BASE_METAHOT_H_
+#define CORE_BASE_METAHOT_H_
 
 /*======  Dependencies  ======*/
 #include "../../io/BasicBuffer.h"
@@ -171,8 +171,8 @@ private:
 	// Overload operator+= for basic buffer
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
 		buffer += (U16)*reinterpret_cast<const U16* const>(&entry.controller);
-		buffer += entry.position;
 		buffer += (BYTE)*reinterpret_cast<const BYTE* const>(&entry.ref_alt);
+		buffer += entry.position;
 		buffer += entry.AF;
 		buffer += entry.FILTER_map_ID;
 		buffer += entry.INFO_map_ID;
@@ -187,12 +187,6 @@ public:
 	/**< Controller bit-fields for a variant site */
 	controller_type controller;
 
-	/**< Genomic position in base-0 encoded as the actual
-	 * position minus the smallest position in the block
-	 * (see BlockEntry.minPosition)
-	 */
-	U32 position;
-
 	/**< Heuristic approach storing the reference/alternative
 	 * allele information in all cases where the variant site
 	 * is bi-allelic and simple SNV->SNV change. If this
@@ -202,6 +196,13 @@ public:
 	 * is stored in the cold meta sub-structure.
 	 */
 	allele_type ref_alt;
+
+	/**< Genomic position in base-0 encoded as the actual
+	 * position minus the smallest position in the block
+	 * (see BlockEntry.minPosition)
+	 */
+	U32 position;
+
 
 	/**< Allele frequency is precomputed as it is frequently
 	 * used in several population-genetics approaches
@@ -235,4 +236,4 @@ public:
 }
 }
 
-#endif /* CORE_BASE_ENTRYHOTMETA_H_ */
+#endif /* CORE_BASE_METAHOT_H_ */

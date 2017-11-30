@@ -6,6 +6,7 @@
 #include "BlockEntry.h"
 #include "../algorithm/compression/CompressionContainer.h"
 #include "decorator/MetaHotDecorator.h"
+#include "base/MetaCold.h"
 
 namespace Tachyon{
 namespace Core{
@@ -52,7 +53,11 @@ public:
 		}
 
 		this->stream >> this->block;
-		this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.meta_hot_container.header.uLength + 16536);
+
+		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->zstd.decode(this->block.meta_cold_container);
+		}
+
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_hot_container);
 			Decorator::MetaHotDecorator d(this->block.meta_hot_container, this->block.index_entry.minPosition);
@@ -61,12 +66,12 @@ public:
 			U32 prevpos = d[0].position;
 			for(U32 i = 0; i < d.size(); ++i){
 				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << std::endl;
+				const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
+				std::cout << cold.QUAL << '\t' << cold.n_allele << std::endl;
 				prevpos = d[i].position;
 			}
 		}
-		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.meta_cold_container);
-		}
+
 		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.gt_rle_container);
 		}
