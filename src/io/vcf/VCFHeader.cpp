@@ -106,8 +106,7 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 			// length: for length is bp
 			for(U32 i = 0; i < line.size(); ++i){
 				if(strncasecmp(&line[i].KEY[0], "ID", 2) == 0 && line[i].KEY.size() == 2){
-					contig.name = std::string(line[i].VALUE);
-					contig.l_name = contig.name.size();
+					contig.name = line[i].VALUE;
 					++found;
 				} else if(strncasecmp(&line[i].KEY[0], "length", 6) == 0 && line[i].KEY.size() == 6){
 					contig.bp_length = atoi(&line[i].VALUE[0]);

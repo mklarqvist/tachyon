@@ -10,18 +10,11 @@
 #include "../BasicBuffer.h"
 #include "../../algorithm/OpenHashTable.h"
 #include "../../core/base/HeaderContig.h"
+#include "../../core/base/HeaderMapEntry.h"
 
 
 namespace Tachyon {
 namespace VCF{
-
-struct VCFHeaderMapEntry{
-	typedef VCFHeaderMapEntry self_type;
-	VCFHeaderMapEntry(const std::string& id, const BYTE& type) : ID(id), TYPE(type){}
-
-	std::string ID;
-	BYTE TYPE;
-};
 
 class VCFHeader {
 	typedef VCFHeader self_type;
@@ -30,7 +23,7 @@ class VCFHeader {
 	typedef Core::HeaderContig contig_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
-	typedef VCFHeaderMapEntry map_entry_type;
+	typedef Core::HeaderMapEntry map_entry_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
@@ -95,11 +88,18 @@ public:
 	U64 samples;                            // number of samples
 	float version;                          // VCF version
 	std::string literal;                    // string copy of header data
+	// Contigs are written to disk as an
+	// object
 	std::vector<contig_type> contigs;       // contigs
+	// Sample names are written to disk as
+	// U32 l_name; char[l_name]
 	std::vector<std::string> sampleNames;   // sample names
 	std::vector<header_line_type> lines;    // header lines
 	std::vector<std::string> literal_lines; // vcf line literals
+	// These entries are read from disk as
+	// U32 l_name; BYTE type; char[l_name]
 	std::vector<map_entry_type> map;
+	// Constructed during run-time
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names
 	hash_table_map_type* map_lookup;       // hash map from name to identifier
