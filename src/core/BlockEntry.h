@@ -233,13 +233,13 @@ private:
 		stream >> entry.index_entry;
 		//std::cerr << entry.index_entry.contigID << ":" << entry.index_entry.minPosition << "-" << entry.index_entry.maxPosition << std::endl;
 		//std::cerr << entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset << std::endl;
-		const U64 end_of_block = (U64)stream.tellg() + (entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset) - sizeof(U64);
+		//const U64 end_of_block = (U64)stream.tellg() + (entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset) - sizeof(U64);
 		//stream.seekg(curpos + (entry.index_entry.offset_end_of_block - entry.index_entry.offset_ppa.offset) - sizeof(U64));
 
 		// i.e. search to meta hot
-		const U32 hot_offset = entry.index_entry.offset_hot_meta.offset - entry.index_entry.offset_ppa.offset;
+		//const U32 hot_offset = entry.index_entry.offset_hot_meta.offset - entry.index_entry.offset_ppa.offset;
 		//std::cerr << "seeking to: " << ((U64)stream.tellg() + hot_offset) << std::endl;
-		stream.seekg((U64)stream.tellg() + hot_offset);
+		//stream.seekg((U64)stream.tellg() + hot_offset);
 		//stream >> entry.meta_hot_container;
 		//std::cerr << (int)entry.meta_hot_container.header.extra[0] << std::endl;
 		//std::cerr << "meta data: " << entry.meta_hot_container.buffer_data.pointer << std::endl;
@@ -251,14 +251,14 @@ private:
 		//stream.seekg(end_of_block);
 
 
-		//if(entry.index_entry.controller.hasGTPermuted) stream >> entry.ppa_manager;
+		if(entry.index_entry.controller.hasGTPermuted) stream >> entry.ppa_manager;
 		stream >> entry.meta_hot_container;
 		stream >> entry.meta_cold_container;
-		//stream >> entry.gt_rle_container;
-		//stream >> entry.gt_simple_container;
-		stream.seekg(end_of_block);
+		stream >> entry.gt_rle_container;
+		stream >> entry.gt_simple_container;
+		//stream.seekg(end_of_block);
 
-		/*
+
 		//std::cerr << "info_streams: " << entry.index_entry.n_info_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
 			stream >> entry.info_containers[i];
@@ -270,7 +270,7 @@ private:
 		//std::cerr << "info_streams: " << entry.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream >> entry.format_containers[i];
-		*/
+
 
 		U64 eof_marker;
 		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
