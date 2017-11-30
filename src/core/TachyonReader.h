@@ -65,9 +65,13 @@ public:
 			std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
 			U32 prevpos = d[0].position;
 			for(U32 i = 0; i < d.size(); ++i){
-				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << std::endl;
-				const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-				std::cout << cold.QUAL << '\t' << cold.n_allele << std::endl;
+				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
+				//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
+				Core::MetaCold cold;
+				cold(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
+				std::cout << cold.QUAL << '\t' << cold.n_allele << '\t' << cold.ID << '\n';
+				for(U32 i = 0; i < cold.n_allele; ++i)
+					std::cout << cold.alleles[i].allele << '\n';
 				prevpos = d[i].position;
 			}
 		}

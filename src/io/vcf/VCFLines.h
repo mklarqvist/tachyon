@@ -15,7 +15,8 @@ namespace Tachyon{
 namespace VCF{
 
 //
-struct __attribute__((packed)) VCFDiploidGenotype{
+#pragma pack(push, 1)
+struct __attribute__((packed, aligned(1))) VCFDiploidGenotype{
 public:
 	VCFDiploidGenotype(); // Has no ctor or dtor
 	~VCFDiploidGenotype();
@@ -32,6 +33,7 @@ public:
 		return stream;
 	}
 };
+#pragma pack(pop)
 
 class VCFLineDataInterface{
 public:

@@ -28,6 +28,11 @@ public:
 	{}
 	~ColdMetaAllele(void){} // do nothing
 
+	void operator()(char* in){
+		this->l_allele = *reinterpret_cast<U16*>(in);
+		this->allele = reinterpret_cast<char*>(&in[sizeof(U16)]);
+	}
+
 	inline const U32 objectSize(void) const{ return(this->l_allele + sizeof(U16)); }
 	inline const U16& size(void) const{ return(this->l_allele); }
 	inline const std::string toString(void) const{ return(std::string(this->allele, this->l_allele)); }
@@ -58,6 +63,19 @@ private:
 public:
 	explicit MetaCold(void);
 	~MetaCold(void);
+
+	void operator()(char* in){
+		this->QUAL = *reinterpret_cast<float*>(in);
+		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(float)]);
+		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float)+sizeof(U16)]);
+		this->ID = &in[sizeof(float)+2*sizeof(U16)];
+		this->alleles = new allele_type[this->n_allele];
+		U32 cumpos = sizeof(float)+2*sizeof(U16)+this->n_ID;
+		for(U32 i = 0; i < this->n_allele; ++i){
+			this->alleles[i](&in[cumpos]);
+			cumpos += this->alleles[i].objectSize();
+		}
+	}
 
 	// Parse everything in this entry
 	bool parse(void);
