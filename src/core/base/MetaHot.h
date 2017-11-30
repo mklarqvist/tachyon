@@ -122,7 +122,8 @@ public:
  * struct directly from a byte stream.
  *
  */
-struct __attribute__((packed)) MetaHot{
+#pragma pack(push, 1)
+struct __attribute__((packed, aligned(1))) MetaHot{
 private:
 	typedef MetaHot self_type;
 	typedef IO::BasicBuffer buffer_type;
@@ -232,6 +233,7 @@ public:
 	/**< Number of genotype entries encoded */
 	U32 n_objects;
 };
+#pragma pack(pop)
 
 }
 }
