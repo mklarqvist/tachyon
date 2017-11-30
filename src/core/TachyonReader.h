@@ -7,6 +7,7 @@
 #include "../algorithm/compression/CompressionContainer.h"
 #include "decorator/MetaHotDecorator.h"
 #include "base/MetaCold.h"
+#include "base/MetaEntry.h"
 
 namespace Tachyon{
 namespace Core{
@@ -67,12 +68,14 @@ public:
 			for(U32 i = 0; i < d.size(); ++i){
 				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
 				//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-				Core::MetaCold cold;
-				cold(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-				std::cout << cold.QUAL << '\t' << cold.n_allele << '\t' << cold.ID << '\n';
-				for(U32 i = 0; i < cold.n_allele; ++i)
-					std::cout << cold.alleles[i].allele << '\n';
-				prevpos = d[i].position;
+				Core::MetaEntry m(&d[i], this->block.meta_cold_container);
+				//Core::MetaCold cold(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
+				std::cout << m.cold.QUAL << '\t' << m.cold.n_allele << '\t' << m.cold.ID << '\n';
+				if(!(d[i].controller.biallelic && d[i].controller.simple)){
+					for(U32 i = 0; i < m.cold.n_allele; ++i)
+						std::cout << m.cold.alleles[i].allele << '\n';
+					prevpos = m.hot->position;
+				}
 			}
 		}
 

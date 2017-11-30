@@ -11,9 +11,7 @@ MetaCold::MetaCold(void) :
 		alleles(nullptr)
 	{}
 
-MetaCold::~MetaCold(void){
-	delete [] this->alleles;
-}
+MetaCold::~MetaCold(void){ delete [] this->alleles; }
 
 bool MetaCold::write(const bcf_type& entry, stream_container& buffer){
 	// Write out data

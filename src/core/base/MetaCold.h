@@ -62,15 +62,35 @@ private:
 
 public:
 	explicit MetaCold(void);
+	MetaCold(char* in) :
+		QUAL(*reinterpret_cast<float*>(in)),
+		n_allele(*reinterpret_cast<U16*>(&in[sizeof(float)])),
+		n_ID(*reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)])),
+		ID(&in[sizeof(float) + 2*sizeof(U16)]),
+		alleles(new allele_type[this->n_allele])
+	{
+		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
+		for(U32 i = 0; i < this->n_allele; ++i){
+			this->alleles[i](&in[cumpos]);
+			cumpos += this->alleles[i].objectSize();
+		}
+	}
 	~MetaCold(void);
 
 	void operator()(char* in){
+		const U16 prev_n_allele = this->n_allele;
 		this->QUAL = *reinterpret_cast<float*>(in);
 		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(float)]);
-		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float)+sizeof(U16)]);
-		this->ID = &in[sizeof(float)+2*sizeof(U16)];
-		this->alleles = new allele_type[this->n_allele];
-		U32 cumpos = sizeof(float)+2*sizeof(U16)+this->n_ID;
+		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)]);
+		this->ID = &in[sizeof(float) + 2*sizeof(U16)];
+
+		// Only update if we need to
+		if(prev_n_allele < this->n_allele){
+			delete [] this->alleles;
+			this->alleles = new allele_type[this->n_allele];
+		}
+
+		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
 		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i](&in[cumpos]);
 			cumpos += this->alleles[i].objectSize();
@@ -89,6 +109,14 @@ public:
 	// Write out entry using BCF entry as template
 	// and injects into buffer
 	bool write(const bcf_type& entry, stream_container& buffer);
+
+	std::vector<std::string> getAlleleStrings(void) const{
+		std::vector<std::string> ret;
+		for(U32 i = 0; i < this->n_allele; ++i)
+			ret.push_back(this->alleles[i].toString());
+
+		return(ret);
+	}
 
 public:
 	/**< Quality field */
