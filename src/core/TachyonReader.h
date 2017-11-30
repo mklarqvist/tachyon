@@ -61,24 +61,40 @@ public:
 
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_hot_container);
+
+			// Todo: MetaIterator
 			Decorator::MetaHotDecorator d(this->block.meta_hot_container, this->block.index_entry.minPosition);
 			//const Core::EntryHotMeta* hot = nullptr;
-			std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
-			U32 prevpos = d[0].position;
+			//std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
+			//U32 prevpos = d[0].position;
 			for(U32 i = 0; i < d.size(); ++i){
-				std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
+				//std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
 				//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
 				Core::MetaEntry m(&d[i], this->block.meta_cold_container);
-				//Core::MetaCold cold(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-				std::cout << m.cold.QUAL << '\t' << m.cold.n_allele << '\t' << m.cold.ID << '\n';
-				if(!(d[i].controller.biallelic && d[i].controller.simple)){
-					for(U32 i = 0; i < m.cold.n_allele; ++i)
-						std::cout << m.cold.alleles[i].allele << '\n';
-					prevpos = m.hot->position;
+				//std::cout << *m.hot << '\n';
+				std::cout << this->block.index_entry.contigID << '\t';
+				std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+				if(m.cold.n_ID == 0) std::cout.put('.');
+				else std::cout.write(m.cold.ID, m.cold.n_ID);
+				std::cout << '\t';
+				if(m.hot->controller.biallelic && m.hot->controller.simple){
+					std::cout << m.hot->ref_alt.getRef() << '\t' << m.hot->ref_alt.getAlt();
 				}
+				else {
+					std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
+					std::cout << '\t';
+					U32 i = 1;
+					for(; i < m.cold.n_allele - 1; ++i){
+						std::cout.write(m.cold.alleles[i].allele, m.cold.alleles[i].l_allele);
+						std::cout.put(',');
+					}
+					std::cout.write(m.cold.alleles[i].allele, m.cold.alleles[i].l_allele);
+				}
+				std::cout << '\t' << m.cold.QUAL << '\t' << "PASS" << '\n';
 			}
 		}
 
+		/*
 		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.gt_rle_container);
 		}
@@ -101,6 +117,7 @@ public:
 				std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
 			}
 		}
+		*/
 
 		/*
 		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){

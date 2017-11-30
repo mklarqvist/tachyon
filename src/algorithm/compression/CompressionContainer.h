@@ -262,7 +262,7 @@ public:
 		assert(ret >= 0);
 		stream.buffer_data_uncompressed.pointer = ret;
 		assert((U32)ret == stream.header.uLength);
-		std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+		//std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 
 		if(stream.header.controller.mixedStride){
 			if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD)
@@ -277,7 +277,7 @@ public:
 			assert(ret_stride >= 0);
 			stream.buffer_strides_uncompressed.pointer = ret_stride;
 			assert((U32)ret_stride == stream.header_stride.uLength);
-			std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+			//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 		}
 
 		return true;
