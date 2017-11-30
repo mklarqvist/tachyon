@@ -26,6 +26,7 @@ IndexBlockEntryBase::~IndexBlockEntryBase(){}
 IndexBlockEntry::IndexBlockEntry():
 	info_offsets(nullptr),
 	format_offsets(nullptr),
+	filter_offsets(nullptr),
 	info_bit_vectors(nullptr),
 	format_bit_vectors(nullptr),
 	filter_bit_vectors(nullptr)
@@ -34,6 +35,7 @@ IndexBlockEntry::IndexBlockEntry():
 IndexBlockEntry::~IndexBlockEntry(){
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
+	delete [] this->filter_offsets;
 	delete [] this->info_bit_vectors;
 	delete [] this->format_bit_vectors;
 	delete [] this->filter_bit_vectors;
@@ -44,8 +46,10 @@ void IndexBlockEntry::reset(void){
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
+	delete [] this->filter_offsets;
 	this->info_offsets = nullptr;
 	this->format_offsets = nullptr;
+	this->filter_offsets = nullptr;
 
 	delete [] this->info_bit_vectors;
 	delete [] this->format_bit_vectors;

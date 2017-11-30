@@ -127,6 +127,4 @@ private:
 }
 }
 
-
-
 #endif /* CORE_HASHCONTAINER_H_ */

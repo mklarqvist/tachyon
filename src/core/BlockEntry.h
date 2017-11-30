@@ -87,6 +87,12 @@ public:
 		}
 	}
 
+	inline void updateFilterOffsets(hash_container_type& v){
+		for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
+			this->index_entry.filter_offsets[i].key = v[i];
+		}
+	}
+
 	// For debugging
 	void write(std::ofstream& stream, const VCF::VCFHeader& header){
 		U64 startPos = stream.tellp();

@@ -176,13 +176,14 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
-		std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
-		std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
+		//std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
+		//std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 
 		this->block.updateBaseContainers(this->recode_buffer);
 
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->recode_buffer);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->recode_buffer);
+		this->block.updateFilterOffsets(this->filter_fields);
 
 		zstd.setCompressionLevel(2);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);

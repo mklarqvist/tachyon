@@ -229,9 +229,16 @@ public:
 		this->format_offsets = new offset_minimal_type[size];
 	}
 
+	void allocateFilterOffsets(const U32& size){
+		if(size == 0) return;
+		delete [] this->filter_offsets;
+		this->filter_offsets = new offset_minimal_type[size];
+	}
+
 	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
 		this->allocateInfoOffsets(info);
 		this->allocateFormatOffsets(format);
+		this->allocateFilterOffsets(filter);
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -243,6 +250,9 @@ public:
 
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream << entry.format_offsets[i];
+
+		for(U32 i = 0; i < entry.n_filter_streams; ++i)
+			stream << entry.filter_offsets[i];
 
 		// write
 		if(entry.n_info_patterns > 0){
@@ -277,6 +287,10 @@ public:
 		entry.format_offsets = new offset_minimal_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream >> entry.format_offsets[i];
+
+		entry.filter_offsets = new offset_minimal_type[entry.n_filter_streams];
+		for(U32 i = 0; i < entry.n_filter_streams; ++i)
+			stream >> entry.filter_offsets[i];
 
 		if(entry.n_info_patterns > 0){
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
@@ -317,6 +331,7 @@ public:
 		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
 		total_size += 2*sizeof(U32)*this->n_info_streams;
 		total_size += 2*sizeof(U32)*this->n_format_streams;
+		total_size += 2*sizeof(U32)*this->n_filter_streams;
 
 		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
 		total_size += this->n_info_patterns*info_bitvector_width;
@@ -343,6 +358,7 @@ public:
 	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
 	offset_minimal_type* info_offsets;
 	offset_minimal_type* format_offsets;
+	offset_minimal_type* filter_offsets;
 
 	// Structure of bit-vectors
 	bit_vector* info_bit_vectors;

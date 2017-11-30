@@ -113,6 +113,15 @@ public:
 		std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
+			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+				// Check if field is set
+				std::cerr << "filter set = " << this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k] << std::endl;
+				// Lookup what that field is
+				this->block.index_entry.filter_offsets[k].key;
+
+			}
+
+			//std::cerr << std::bitset<8>(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID].bit_bytes[0]) << std::endl;
 			/*
 			if(it.current().hot->INFO_map_ID == 0){
 				++it;
