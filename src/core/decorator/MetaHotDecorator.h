@@ -11,8 +11,8 @@ class MetaHotDecorator{
 	typedef Core::MetaHot entry_type;
 
 public:
-	MetaHotDecorator() : n_entries(0), pos(0), curpos(0), position_offset(0), entries(nullptr){}
-	MetaHotDecorator(container_type& container, const U64& offset) : n_entries(0), pos(0), curpos(0), position_offset(offset), entries(nullptr){
+	MetaHotDecorator() : n_entries(0), pos(0), position_offset(0), entries(nullptr){}
+	MetaHotDecorator(container_type& container, const U64& offset) : n_entries(0), pos(0), position_offset(offset), entries(nullptr){
 		this->set(container, offset);
 	}
 	~MetaHotDecorator(){}
@@ -33,7 +33,6 @@ public:
 	void clear(void){
 		this->n_entries = 0;
 		this->pos = 0;
-		this->curpos = 0;
 		this->position_offset = 0;
 		entries = nullptr;
 	}
@@ -46,6 +45,7 @@ public:
 		++this->pos;
 		return true;
 	}
+
 	bool previousEntry(const entry_type*& entry){
 		if(this->pos == 0)
 			return false;
@@ -70,8 +70,7 @@ public:
 
 private:
 	size_t n_entries;
-	size_t pos;
-	size_t curpos;
+	S32 pos;
 	U64 position_offset;
 	const entry_type* entries;
 };

@@ -15,7 +15,10 @@ IndexBlockEntryBase::IndexBlockEntryBase() :
 	n_filter_streams(0),
 	n_info_patterns(0),
 	n_format_patterns(0),
-	n_filter_patterns(0)
+	n_filter_patterns(0),
+	l_info_bitvector(0),
+	l_format_bitvector(0),
+	l_filter_bitvector(0)
 {}
 
 IndexBlockEntryBase::~IndexBlockEntryBase(){}

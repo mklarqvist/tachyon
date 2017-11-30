@@ -103,6 +103,10 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
 
+		entry.l_info_bitvector = ceil((float)entry.n_info_streams/8);
+		entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
+		entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
+
 		return(stream);
 	}
 
@@ -128,6 +132,10 @@ public:
 
 		this->n_filter_streams = 0;
 		this->n_filter_patterns = 0;
+
+		this->l_info_bitvector = 0;
+		this->l_format_bitvector = 0;
+		this->l_filter_bitvector = 0;
 	}
 
 public:
@@ -165,6 +173,12 @@ public:
 	U16 n_info_patterns;
 	U16 n_format_patterns;
 	U16 n_filter_patterns;
+
+	// Not written or read
+	BYTE l_info_bitvector;
+	BYTE l_format_bitvector;
+	BYTE l_filter_bitvector;
+
 	// END OF FIXED SIZE
 };
 
