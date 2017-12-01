@@ -74,6 +74,7 @@ class ContainerIteratorData : public ContainerIteratorBase<T>{
 private:
 	typedef ContainerIteratorData self_type;
 	typedef StreamContainerHeader header_type;
+	typedef IO::BasicBuffer buffer_type;
 
 public:
 	ContainerIteratorData(buffer_type& buffer, header_type& header);
@@ -88,6 +89,7 @@ class ContainerIteratorStride : public ContainerIteratorBase<T>{
 private:
 	typedef ContainerIteratorStride self_type;
 	typedef StreamContainerHeaderStride header_type;
+	typedef IO::BasicBuffer buffer_type;
 
 public:
 	ContainerIteratorStride(buffer_type& buffer, header_type& header);
@@ -132,6 +134,7 @@ public:
 	{
 
 	}
+
 	~ContainerIterator(){
 		// Do not delete container. It's allocated externally
 		delete this->data_iterator;
@@ -147,21 +150,23 @@ public:
 		delete this->stride_iterator; this->stride_iterator = nullptr;
 
 		// Data iterator
+		// Note that the TYPE_STRUCT is not defined here
+		// as they have their own iterators
 		if(this->container->header.controller.signedness == 0){
 			switch(this->container->header.controller.type){
-			case(Core::TYPE_8B)  : this->data_iterator = new data_iterator_byte_type(this->container->buffer_data_uncompressed, this->container->header); break;
-			case(Core::TYPE_16B) : this->data_iterator = new data_iterator_u16_type (this->container->buffer_data_uncompressed, this->container->header); break;
-			case(Core::TYPE_32B) : this->data_iterator = new data_iterator_u32_type (this->container->buffer_data_uncompressed, this->container->header); break;
-			case(Core::TYPE_64B) : this->data_iterator = new data_iterator_u64_type (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_8B)     : this->data_iterator = new data_iterator_byte_type  (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_16B)    : this->data_iterator = new data_iterator_u16_type   (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_32B)    : this->data_iterator = new data_iterator_u32_type   (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_64B)    : this->data_iterator = new data_iterator_u64_type   (this->container->buffer_data_uncompressed, this->container->header); break;
 			case(Core::TYPE_FLOAT)  : this->data_iterator = new data_iterator_float_type (this->container->buffer_data_uncompressed, this->container->header); break;
 			case(Core::TYPE_DOUBLE) : this->data_iterator = new data_iterator_double_type(this->container->buffer_data_uncompressed, this->container->header); break;
 			default: std::cerr << "illegal type!" << std::endl; exit(1); break;
 			}
 		} else {
 			switch(this->container->header.controller.type){
-			case(Core::TYPE_8B)  : this->data_iterator = new data_iterator_char_type(this->container->buffer_data_uncompressed, this->container->header); break;
-			case(Core::TYPE_16B) : this->data_iterator = new data_iterator_s16_type (this->container->buffer_data_uncompressed, this->container->header); break;
-			case(Core::TYPE_32B) : this->data_iterator = new data_iterator_s32_type (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_8B)     : this->data_iterator = new data_iterator_char_type  (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_16B)    : this->data_iterator = new data_iterator_s16_type   (this->container->buffer_data_uncompressed, this->container->header); break;
+			case(Core::TYPE_32B)    : this->data_iterator = new data_iterator_s32_type   (this->container->buffer_data_uncompressed, this->container->header); break;
 			case(Core::TYPE_FLOAT)  : this->data_iterator = new data_iterator_float_type (this->container->buffer_data_uncompressed, this->container->header); break;
 			case(Core::TYPE_DOUBLE) : this->data_iterator = new data_iterator_double_type(this->container->buffer_data_uncompressed, this->container->header); break;
 			default: std::cerr << "illegal type!" << std::endl; exit(1); break;
@@ -174,19 +179,19 @@ public:
 			// Stride iterator
 			if(this->container->header_stride.controller.signedness == 0){
 				switch(this->container->header_stride.controller.type){
-				case(Core::TYPE_8B)  : this->stride_iterator = new stride_iterator_byte_type(this->container->buffer_strides_uncompressed, this->container->header_stride); break;
-				case(Core::TYPE_16B) : this->stride_iterator = new stride_iterator_u16_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
-				case(Core::TYPE_32B) : this->stride_iterator = new stride_iterator_u32_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
-				case(Core::TYPE_64B) : this->stride_iterator = new stride_iterator_u64_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_8B)     : this->stride_iterator = new stride_iterator_byte_type  (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_16B)    : this->stride_iterator = new stride_iterator_u16_type   (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_32B)    : this->stride_iterator = new stride_iterator_u32_type   (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_64B)    : this->stride_iterator = new stride_iterator_u64_type   (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				case(Core::TYPE_FLOAT)  : this->stride_iterator = new stride_iterator_float_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				case(Core::TYPE_DOUBLE) : this->stride_iterator = new stride_iterator_double_type(this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				default: std::cerr << "illegal type!" << std::endl; exit(1); break;
 				}
 			} else {
 				switch(this->container->header_stride.controller.type){
-				case(Core::TYPE_8B)  : this->stride_iterator = new stride_iterator_char_type(this->container->buffer_strides_uncompressed, this->container->header_stride); break;
-				case(Core::TYPE_16B) : this->stride_iterator = new stride_iterator_s16_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
-				case(Core::TYPE_32B) : this->stride_iterator = new stride_iterator_s32_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_8B)     : this->stride_iterator = new stride_iterator_char_type  (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_16B)    : this->stride_iterator = new stride_iterator_s16_type   (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
+				case(Core::TYPE_32B)    : this->stride_iterator = new stride_iterator_s32_type   (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				case(Core::TYPE_FLOAT)  : this->stride_iterator = new stride_iterator_float_type (this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				case(Core::TYPE_DOUBLE) : this->stride_iterator = new stride_iterator_double_type(this->container->buffer_strides_uncompressed, this->container->header_stride); break;
 				default: std::cerr << "illegal type!" << std::endl; exit(1); break;

@@ -7,6 +7,7 @@
 #include "../algorithm/compression/CompressionContainer.h"
 #include "iterator/MetaIterator.h"
 #include "base/header/Header.h"
+#include "iterator/ContainerIterator.h"
 
 namespace Tachyon{
 namespace Core{
