@@ -21,7 +21,7 @@ const U16 TACHYON_VERSION_PATCH = 0;
 /*------   Basics   ------*/
 const std::string PROGRAM_NAME = "tachyon";
 const std::string OUTPUT_SUFFIX = "yon"; // yonder
-const std::string FILE_HEADER = "TACHYON\0";
+const std::string FILE_HEADER = "TACHYON\7";
 
 /*------   Genotype packing   ------*/
 const BYTE ALLELE_PACK_WIDTH = 2; // bit / allele
