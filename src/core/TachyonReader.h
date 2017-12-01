@@ -82,7 +82,7 @@ public:
 			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
 				this->zstd.decode(this->block.info_containers[i]);
 			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
 			}
 		}
 
@@ -90,7 +90,7 @@ public:
 			if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
 				this->zstd.decode(this->block.format_containers[i]);
 			} else if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
 			}
 		}
 
@@ -119,7 +119,7 @@ public:
 		//std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
 		//U32 prevpos = d[0].position;
 
-		std::cerr << it.size() << std::endl;
+		//std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
 
