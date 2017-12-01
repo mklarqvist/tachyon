@@ -13,8 +13,8 @@ protected:
 	typedef IO::BasicBuffer buffer_type;
 
 public:
-	ContainerIteratorDataInterface();
-	virtual ~ContainerIteratorDataInterface();
+	ContainerIteratorDataInterface(buffer_type& buffer) : position(0), n_entries(0), buffer(buffer){}
+	virtual ~ContainerIteratorDataInterface(){}
 
 public:
 	U32 position;        // iterator position
@@ -22,17 +22,47 @@ public:
 	buffer_type& buffer; // buffer reference
 };
 
-template <class T>
-class ContainerIteratorBase : public ContainerIteratorDataInterface{
+class ContainerIteratorDataBase : public ContainerIteratorDataInterface{
 private:
-	typedef ContainerIteratorBase self_type;
+	typedef ContainerIteratorDataBase self_type;
+
+protected:
+	typedef StreamContainerHeader header_type;
+
+public:
+	ContainerIteratorDataBase(buffer_type& buffer, const header_type& header) : ContainerIteratorDataInterface(buffer), header(header){}
+	~ContainerIteratorDataBase(){}
+
+public:
+	const header_type& header;
+};
+
+class ContainerIteratorStridesBase : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorStridesBase self_type;
+
+protected:
+	typedef StreamContainerHeaderStride header_type;
+
+public:
+	ContainerIteratorStridesBase(buffer_type& buffer, const header_type& header) : ContainerIteratorDataInterface(buffer), header(header){}
+	~ContainerIteratorStridesBase(){}
+
+public:
+	const header_type& header;
+};
+
+template <class T>
+class ContainerIteratorData : public ContainerIteratorDataBase{
+private:
+	typedef ContainerIteratorDataBase self_type;
 	typedef const T* const_pointer;
 	typedef const T* const const_pointer_final;
 	typedef const T& const_reference;
 
 public:
-	ContainerIteratorBase();
-	~ContainerIteratorBase();
+	ContainerIteratorData(buffer_type& buffer, const header_type& header) : ContainerIteratorDataBase(buffer, header){}
+	~ContainerIteratorData(){}
 
 	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
 	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
@@ -70,56 +100,75 @@ public:
 };
 
 template <class T>
-class ContainerIteratorData : public ContainerIteratorBase<T>{
-private:
-	typedef ContainerIteratorData self_type;
-	typedef StreamContainerHeader header_type;
-	typedef IO::BasicBuffer buffer_type;
-
-public:
-	ContainerIteratorData(buffer_type& buffer, header_type& header);
-	virtual ~ContainerIteratorData();
-
-public:
-	header_type& header; // header reference
-};
-
-template <class T>
-class ContainerIteratorStride : public ContainerIteratorBase<T>{
+class ContainerIteratorStride : public ContainerIteratorStridesBase{
 private:
 	typedef ContainerIteratorStride self_type;
-	typedef StreamContainerHeaderStride header_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef const T* const_pointer;
+	typedef const T* const const_pointer_final;
+	typedef const T& const_reference;
 
 public:
-	ContainerIteratorStride(buffer_type& buffer, header_type& header);
-	virtual ~ContainerIteratorStride();
+	ContainerIteratorStride(buffer_type& buffer, const header_type& header) : ContainerIteratorStridesBase(buffer, header){}
+	~ContainerIteratorStride(){}
 
-public:
-	header_type& header; // header reference
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)*sizeof(T)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(T)])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(T)])); }
+	inline void operator++(){
+		if(this->position == this->n_entries) return;
+		++this->position;
+	}
+
+	inline void operator--(){
+		if(this->position == 0) return;
+		--this->position;
+	}
+
+	inline void operator+=(const U32& p){
+		if(this->position + p > this->n_entries){
+			this->position = this->n_entries;
+			return;
+		}
+		this->position += p;
+	}
+
+	inline void operator-=(const U32& p){
+		if(this->position - p < 0){
+			this->position = 0;
+			return;
+		}
+		this->position -= p;
+	}
 };
 
 class ContainerIterator{
 private:
-	typedef ContainerIterator self_type;
-	typedef ContainerIteratorData<BYTE>   data_iterator_byte_type;
-	typedef ContainerIteratorData<U16>    data_iterator_u16_type;
-	typedef ContainerIteratorData<U32>    data_iterator_u32_type;
-	typedef ContainerIteratorData<U64>    data_iterator_u64_type;
-	typedef ContainerIteratorData<char>   data_iterator_char_type;
-	typedef ContainerIteratorData<S16>    data_iterator_s16_type;
-	typedef ContainerIteratorData<S32>    data_iterator_s32_type;
-	typedef ContainerIteratorData<float>  data_iterator_float_type;
-	typedef ContainerIteratorData<double> data_iterator_double_type;
-	typedef ContainerIteratorStride<BYTE> stride_iterator_byte_type;
-	typedef ContainerIteratorStride<U16>  stride_iterator_u16_type;
-	typedef ContainerIteratorStride<U32>  stride_iterator_u32_type;
-	typedef ContainerIteratorStride<U64>  stride_iterator_u64_type;
-	typedef ContainerIteratorStride<char> stride_iterator_char_type;
-	typedef ContainerIteratorStride<S16>  stride_iterator_s16_type;
-	typedef ContainerIteratorStride<S32>  stride_iterator_s32_type;
-	typedef ContainerIteratorStride<float>   stride_iterator_float_type;
-	typedef ContainerIteratorStride<double>  stride_iterator_double_type;
+	typedef ContainerIterator               self_type;
+	typedef ContainerIteratorDataBase       data_iterator_base;
+	typedef ContainerIteratorStridesBase    strides_iterator_base;
+	typedef ContainerIteratorData<BYTE>     data_iterator_byte_type;
+	typedef ContainerIteratorData<U16>      data_iterator_u16_type;
+	typedef ContainerIteratorData<U32>      data_iterator_u32_type;
+	typedef ContainerIteratorData<U64>      data_iterator_u64_type;
+	typedef ContainerIteratorData<char>     data_iterator_char_type;
+	typedef ContainerIteratorData<S16>      data_iterator_s16_type;
+	typedef ContainerIteratorData<S32>      data_iterator_s32_type;
+	typedef ContainerIteratorData<float>    data_iterator_float_type;
+	typedef ContainerIteratorData<double>   data_iterator_double_type;
+	typedef ContainerIteratorStride<BYTE>   stride_iterator_byte_type;
+	typedef ContainerIteratorStride<U16>    stride_iterator_u16_type;
+	typedef ContainerIteratorStride<U32>    stride_iterator_u32_type;
+	typedef ContainerIteratorStride<U64>    stride_iterator_u64_type;
+	typedef ContainerIteratorStride<char>   stride_iterator_char_type;
+	typedef ContainerIteratorStride<S16>    stride_iterator_s16_type;
+	typedef ContainerIteratorStride<S32>    stride_iterator_s32_type;
+	typedef ContainerIteratorStride<float>  stride_iterator_float_type;
+	typedef ContainerIteratorStride<double> stride_iterator_double_type;
 
 protected:
 	typedef StreamContainer container_type;
@@ -208,8 +257,8 @@ public:
 	U32 n_entries; // number of entries
 	U32 position;  // iterator position
 	container_type* container;                  // reference container
-	data_iterator_byte_type* data_iterator;     // recast me as the correct base type
-	stride_iterator_byte_type* stride_iterator; // recast me as the correct base type
+	data_iterator_base* data_iterator;     // recast me as the correct base type
+	strides_iterator_base* stride_iterator;   // recast me as the correct base type
 };
 
 }
