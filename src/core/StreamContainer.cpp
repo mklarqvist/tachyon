@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 #include "../third_party/zlib/zconf.h"
@@ -70,6 +72,8 @@ bool StreamContainer::checkUniformity(void){
 	if(this->n_entries == 0)
 		return false;
 
+	// We know the data cannot be uniform if
+	// the stride size is uneven
 	const S16& stride_size = this->header.stride;
 	if(stride_size == -1)
 		return false;
@@ -91,12 +95,6 @@ bool StreamContainer::checkUniformity(void){
 			//std::cerr << "not uniform" << std::endl;
 			return(false);
 		}
-	}
-
-	//std::cerr << "is uniform" << std::endl;
-	if(this->header.stride > 256){
-		std::cerr << "uniform with non-1 stride: " << (int)this->header.stride << std::endl;
-		exit(1);
 	}
 
 	this->n_entries = 1;
@@ -123,6 +121,9 @@ void StreamContainer::reformat(buffer_type& buffer){
 	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1))
 		return;
 
+	if(this->header.controller.uniform == true)
+		return;
+
 	// At this point all integers are S32
 	const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data.data);
 	S32 min = dat[0];
@@ -144,101 +145,82 @@ void StreamContainer::reformat(buffer_type& buffer){
 	// Phase 2
 	// Here we re-encode values using the smallest possible
 	// word-size
-	if(this->header.controller.uniform){
-		this->buffer_data.reset();
 
-		// Non-negative
-		// Controller for the unform case has already been setup
-		if(min >= 0){
-			this->header.controller.signedness = 0;
-			switch(byte_width){
-			case 1: this->buffer_data += (BYTE)min; this->header.controller.type = TYPE_8B;  break;
-			case 2: this->buffer_data += (U16)min;  this->header.controller.type = TYPE_16B; break;
-			case 4: this->buffer_data += (U32)min;  this->header.controller.type = TYPE_32B; break;
-			case 8: this->buffer_data += (U64)min;  this->header.controller.type = TYPE_64B; break;
-			default: std::cerr << "illegal: " << std::endl; exit(1);
-			}
+	buffer.reset();
+	buffer.resize(this->buffer_data.pointer);
+
+	// Is non-negative
+	if(min >= 0){
+		this->header.controller.signedness = 0;
+
+		if(byte_width == 1){
+			this->header.controller.type = TYPE_8B;
+
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (BYTE)dat[j];
+
+		} else if(byte_width == 2){
+			this->header.controller.type = TYPE_16B;
+
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U16)dat[j];
+
+		} else if(byte_width == 4){
+			this->header.controller.type = TYPE_32B;
+
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U32)dat[j];
+
+		} else if(byte_width == 8){
+			this->header.controller.type = TYPE_64B;
+
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (U64)dat[j];
+
 		} else {
-			this->header.controller.signedness = 1;
-			switch(byte_width){
-			case 1: this->buffer_data += (SBYTE)min; this->header.controller.type = TYPE_8B;  break;
-			case 2: this->buffer_data += (S16)min;   this->header.controller.type = TYPE_16B; break;
-			case 4: this->buffer_data += (S32)min;   this->header.controller.type = TYPE_32B; break;
-			default: std::cerr << "illegal" << std::endl; exit(1);
-			}
+			std::cerr << "illegal" << std::endl;
+			exit(1);
 		}
-		// done
-		this->header.uLength = this->buffer_data.pointer;
-		this->header.cLength = this->buffer_data.pointer;
-
-		return;
 	}
-	// Not unfirom
+	// Is negative
 	else {
-		buffer.reset();
-		buffer.resize(this->buffer_data.pointer);
+		this->header.controller.signedness = 1;
 
-		// Is non-negative
-		if(min >= 0){
-			this->header.controller.signedness = 0;
+		if(byte_width == 1){
+			this->header.controller.type = TYPE_8B;
 
-			if(byte_width == 1){
-				this->header.controller.type = TYPE_8B;
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (SBYTE)dat[j];
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (BYTE)dat[j];
-			} else if(byte_width == 2){
-				this->header.controller.type = TYPE_16B;
+		} else if(byte_width == 2){
+			this->header.controller.type = TYPE_16B;
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U16)dat[j];
-			} else if(byte_width == 4){
-				this->header.controller.type = TYPE_32B;
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (S16)dat[j];
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U32)dat[j];
-			} else if(byte_width == 8){
-				this->header.controller.type = TYPE_64B;
+		} else if(byte_width == 4){
+			this->header.controller.type = TYPE_32B;
 
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (U64)dat[j];
-			} else {
-				std::cerr << "illegal" << std::endl;
-				exit(1);
-			}
+			for(U32 j = 0; j < this->n_entries; ++j)
+				buffer += (S32)dat[j];
+
+		} else {
+			std::cerr << "illegal" << std::endl;
+			exit(1);
 		}
-		// Is negative
-		else {
-			this->header.controller.signedness = 1;
-
-			if(byte_width == 1){
-				this->header.controller.type = TYPE_8B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (SBYTE)dat[j];
-			} else if(byte_width == 2){
-				this->header.controller.type = TYPE_16B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (S16)dat[j];
-			} else if(byte_width == 4){
-				this->header.controller.type = TYPE_32B;
-
-				for(U32 j = 0; j < this->n_entries; ++j)
-					buffer += (S32)dat[j];
-			} else {
-				std::cerr << "illegal" << std::endl;
-				exit(1);
-			}
-		}
-		//std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
-		memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
-		this->buffer_data.pointer = buffer.pointer;
-		this->header.uLength = this->buffer_data.pointer;
 	}
+
+
+	//std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
+	memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
+	this->buffer_data.pointer = buffer.pointer;
+	this->header.uLength = this->buffer_data.pointer;
 }
 
 void StreamContainer::reformatStride(buffer_type& buffer){
+	if(this->header.controller.mixedStride == false)
+		return;
+
 	// Recode integer types
 	if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 0)){
 		return;

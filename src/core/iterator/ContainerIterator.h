@@ -53,6 +53,7 @@ public:
 	}
 
 	inline void operator+=(const U32& p){
+		//std::cerr << "adding " << p << " going from : " << this->position << " -> " << this->position + p << std::endl;
 		if(this->position + p >= this->n_entries){
 			this->position = this->n_entries - 1;
 			return;
@@ -115,10 +116,11 @@ public:
 	// Output functions
 	inline void toString(std::ostream& stream, const U32& stride){
 		//std::cerr << "in tostring: " << this->position << '/' << this->n_entries << std::endl;
-		const T* r = this->currentAt();
 		if(stride == 1){
-			stream << *r;
+			//std::cerr << &this->buffer.data[this->position*sizeof(T)] - this->buffer.data << std::endl;
+			stream << this->current();
 		} else {
+			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
 				stream << *r << ';';
 				++r;
@@ -182,8 +184,7 @@ public:
 	ContainerIteratorVoid(buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
-		//this->n_entries = buffer.pointer / sizeof(T);
-		//assert(buffer.pointer % sizeof(T) == 0);
+		this->n_entries = 0;
 	}
 	~ContainerIteratorVoid(){}
 
@@ -217,7 +218,6 @@ protected:
 public:
 	explicit ContainerIterator(void) :
 		position(0),
-		fixed_stride_size(0),
 		hasStrideIteratorSet(false),
 		container(nullptr),
 		data_iterator(nullptr),
@@ -242,7 +242,7 @@ public:
 		delete this->data_iterator;   this->data_iterator   = nullptr;
 		delete this->stride_iterator; this->stride_iterator = nullptr;
 		this->hasStrideIteratorSet = false;
-		this->fixed_stride_size = 0;
+		this->position = 0;
 
 		/*
 		std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
@@ -250,7 +250,8 @@ public:
 				 c.buffer_data_uncompressed.pointer << '\t' <<
 				 c.header.controller.type << '\t' <<
 				 c.header.controller.signedness << std::endl;
-		 */
+		*/
+
 
 		if(c.header.controller.signedness == false){
 			switch(c.header.controller.type){
@@ -261,15 +262,17 @@ public:
 			case(Core::TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorVoid(this->container->buffer_data_uncompressed);         break;
+			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
 		} else {
 			switch(c.header.controller.type){
 			case(Core::TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
+			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
 		}
-		std::cerr << Helpers::timestamp("LOG","ITERATOR") << this->data_iterator->n_entries << std::endl;
+		//std::cerr << Helpers::timestamp("LOG","ITERATOR-AFTER") << this->data_iterator->n_entries << std::endl;
 
 
 		//this->data_iterator = new data_iterator_type(this->container->buffer_data_uncompressed);
@@ -285,13 +288,17 @@ public:
 				case(Core::TYPE_16B): this->stride_iterator = new ContainerIteratorType<U16>(this->container->buffer_strides_uncompressed);  break;
 				case(Core::TYPE_32B): this->stride_iterator = new ContainerIteratorType<U32>(this->container->buffer_strides_uncompressed);  break;
 				case(Core::TYPE_64B): this->stride_iterator = new ContainerIteratorType<U64>(this->container->buffer_strides_uncompressed);  break;
+				default: std::cerr << Helpers::timestamp("ERROR") << "Illegal stride type" << std::endl; exit(1); break;
 			}
+
 			// Stride iterator
 			//this->stride_iterator = new stride_iterator_type(this->container->buffer_strides_uncompressed);
 			this->stride_iterator->setType(this->container->header_stride);
 			//std::cerr << Helpers::timestamp("LOG","ITERATOR") << "STRIDE: " << this->stride_iterator->n_entries << std::endl;
-
+			//std::cerr << "setting stride: " << this->stride_iterator->n_entries << std::endl;
+			assert(this->stride_iterator->n_entries != 0);
 		}
+		//std::cerr << Helpers::timestamp("LOG","STRIDE-AFTER") << this->container->header.stride << std::endl;
 	}
 
 	inline const bool isUniform(void) const{ return(this->container->header.controller.uniform); }
@@ -300,29 +307,31 @@ public:
 
 	inline bool toString(std::ostream& stream){
 		if(this->stride_iterator != nullptr){
-			//std::cerr << this->stride_iterator->n_entries << '\t' << this->stride_iterator->position << '\t' << this->stride_iterator->getCurrentStride() << std::endl;
-
+			//std::cerr << '\n' << this->stride_iterator->n_entries << '\t' << this->stride_iterator->position << '\t' << this->stride_iterator->getCurrentStride() << std::endl;
 			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
 		} else {
-			//std::cerr << "no stride" << std::endl;
-			this->data_iterator->toString(stream, 1);
+			//std::cerr << "\nno stride=" << this->container->header.stride << std::endl;
+			this->data_iterator->toString(stream, this->container->header.stride);
 		}
+
+		//if(this->position == 6)
+		//	exit(1);
 
 		return(true);
 	}
 
 	void operator++(void){
+		++this->position;
 		if(this->hasStrideIteratorSet){
 			*this->data_iterator += this->stride_iterator->getCurrentStride();
 			++(*this->stride_iterator);
 		} else {
-			++(*this->data_iterator);
+			*this->data_iterator += this->container->header.stride;
 		}
 	}
 
 public:
 	U32 position;         // iterator position
-	BYTE fixed_stride_size;
 	bool hasStrideIteratorSet;
 	container_type* container;              // reference container
 	data_iterator_type* data_iterator;      // recast me as the correct base type

@@ -87,16 +87,25 @@ public:
 				this->block.info_containers[i].buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
 				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
 				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
+				if(this->block.info_containers[i].header.controller.mixedStride){
+					this->block.info_containers[i].buffer_strides_uncompressed.resize(this->block.info_containers->buffer_strides.pointer + 16536);
+					memcpy(this->block.info_containers[i].buffer_strides_uncompressed.data, this->block.info_containers[i].buffer_strides.data, this->block.info_containers[i].buffer_strides.pointer);
+					this->block.info_containers[i].buffer_strides_uncompressed.pointer = this->block.info_containers[i].buffer_strides.pointer;
+
+				}
 			}
 
+			/*
 			std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
 							(this->block.info_containers[i].header.controller.uniform ? "UNIFORM" : "NON-UNIFORM") << '\t' <<
 							this->block.info_containers[i].buffer_data_uncompressed.pointer << '\t' <<
 							this->block.info_containers[i].header.controller.type << '\t' <<
-							this->block.info_containers[i].header.controller.signedness << "\tuncompressed: " << this->block.info_containers[i].buffer_data.pointer << '\t' << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << std::endl;
+							this->block.info_containers[i].header.controller.signedness << "\tcompressed: " <<
+							this->block.info_containers[i].buffer_data.pointer << '\t' <<
+							this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << std::endl;
+			*/
 
-
-			std::cerr << (this->block.info_containers[i].header.controller.type == Core::TYPE_BOOLEAN) << std::endl;
+			//std::cerr << (this->block.info_containers[i].header.controller.type == Core::TYPE_BOOLEAN) << std::endl;
 			//assert(this->block.info_containers[i].buffer_data_uncompressed.pointer > 0);
 		}
 
@@ -113,6 +122,8 @@ public:
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			info_iterators[i](this->block.info_containers[i]);
+			//std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
+			//		info_iterators[i].data_iterator->n_entries << std::endl;
 		}
 
 		//std::cerr << it.size() << std::endl;
@@ -168,31 +179,22 @@ public:
 
 			U32 set = 0;
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
-
+				//std::cerr << k << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << '\t' <<
+				//		this->header.entries[k].ID << std::endl;
 
 				// Check if field is set
 				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
-				// Lookup what that field is
+					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
+					// Lookup what that field is
 					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0],
 							         this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size());
 					std::cout.put('=');
-					//std::cerr << "checking: " << k << std::endl;
 					info_iterators[k].toString(std::cout);
-					//std::cerr << "after to string" << std::endl;
-					/*
-					if(k == 0){
-						for(U32 p = 0; p < info0_stride_iterator.current(); ++p){
-							std::cout << info0_iterator.current() << ';';
-							++info0_iterator;
-						}
-						++info0_stride_iterator;
-					}
-					*/
-					//std::cerr << "set: " << set << '/' << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].fields_set << std::endl;
 					if(set + 1 != this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].fields_set)
 						std::cout.put(';');
 					++info_iterators[k];
 					++set;
+					std::cout.flush();
 				}
 
 

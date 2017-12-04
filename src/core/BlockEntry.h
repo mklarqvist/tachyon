@@ -191,6 +191,7 @@ private:
 			}
 
 			this->updateContainer(container[i], offset[i], buffer, v[i]);
+			assert(container[i].header.stride != 0);
 		}
 
 	}
