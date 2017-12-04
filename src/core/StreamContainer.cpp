@@ -92,9 +92,10 @@ bool StreamContainer::checkUniformity(void){
 			return(false);
 		}
 	}
+
 	//std::cerr << "is uniform" << std::endl;
-	if(stride_size != 1){
-		std::cerr << "uniform with non-1 stride: " << (int)stride_size << std::endl;
+	if(this->header.stride > 256){
+		std::cerr << "uniform with non-1 stride: " << (int)this->header.stride << std::endl;
 		exit(1);
 	}
 
@@ -108,11 +109,6 @@ bool StreamContainer::checkUniformity(void){
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
 	this->header.controller.encoder = Core::ENCODE_NONE;
-	this->header_stride.controller.uniform = true;
-	this->header_stride.uLength = stride_size;
-	this->header_stride.cLength = stride_size;
-	this->header_stride.controller.encoder = Core::ENCODE_NONE;
-
 	return(true);
 }
 

@@ -205,6 +205,10 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
+		for(U32 i = 0; i < this->info_fields.size(); ++i){
+			std::cerr << i << "->" << this->info_fields[i] << std::endl;
+		}
+
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.uniform == true)
@@ -347,11 +351,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	BYTE info_value_type;
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
-		if(this->header_->map[val].ID == "PASS"){
-
-			std::cerr << this->header_->map[val].ID << std::endl;
-			exit(1);
-		}
 		const U32 mapID = this->info_fields.setGet(val);
 
 		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;

@@ -88,6 +88,7 @@ public:
 				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
 				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
 			}
+
 			std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
 							(this->block.info_containers[i].header.controller.uniform ? "UNIFORM" : "NON-UNIFORM") << '\t' <<
 							this->block.info_containers[i].buffer_data_uncompressed.pointer << '\t' <<
@@ -95,7 +96,8 @@ public:
 							this->block.info_containers[i].header.controller.signedness << "\tuncompressed: " << this->block.info_containers[i].buffer_data.pointer << '\t' << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << std::endl;
 
 
-			assert(this->block.info_containers[i].buffer_data_uncompressed.pointer > 0);
+			std::cerr << (this->block.info_containers[i].header.controller.type == Core::TYPE_BOOLEAN) << std::endl;
+			//assert(this->block.info_containers[i].buffer_data_uncompressed.pointer > 0);
 		}
 
 
@@ -164,7 +166,10 @@ public:
 				}
 			}
 
+			U32 set = 0;
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
+
+
 				// Check if field is set
 				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
 				// Lookup what that field is
@@ -183,8 +188,11 @@ public:
 						++info0_stride_iterator;
 					}
 					*/
-					std::cout.put(';');
+					//std::cerr << "set: " << set << '/' << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].fields_set << std::endl;
+					if(set + 1 != this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].fields_set)
+						std::cout.put(';');
 					++info_iterators[k];
+					++set;
 				}
 
 

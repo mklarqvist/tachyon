@@ -173,15 +173,30 @@ public:
 
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
-		for(U32 i = 0; i < length; ++i)
+		for(U32 i = 0; i < length; ++i){
+			offset[i].key = v[i];
+
+			if(container[i].n_entries > 0 && container[i].buffer_data.pointer == 0){
+				container[i].header.controller.type = CORE_TYPE::TYPE_BOOLEAN;
+				container[i].header.controller.uniform = true;
+				container[i].header.stride = 0;
+				container[i].header.uLength = 0;
+				container[i].header.cLength = 0;
+				container[i].header.controller.mixedStride = false;
+				container[i].header.controller.encoder = Core::ENCODE_NONE;
+				container[i].n_entries = 1;
+				container[i].n_additions = 1;
+				container[i].header.controller.signedness = 0;
+				continue;
+			}
+
 			this->updateContainer(container[i], offset[i], buffer, v[i]);
+		}
 
 	}
 
 	void updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){
-		offset.key = key;
-
-		if(container.buffer_data.size() == 0)
+		if(container.buffer_data.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
 			return;
 
 		// Check if stream is uniform in content
@@ -221,8 +236,11 @@ private:
 		stream << entry.gt_rle_container;
 		stream << entry.gt_simple_container;
 
-		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
+			//std::cerr << i << "->" << entry.index_entry.info_offsets[i].key << '\t' << entry.info_containers[i].buffer_data.pointer << std::endl;
+			assert(entry.index_entry.info_offsets[i].key != 0);
 			stream << entry.info_containers[i];
+		}
 
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];

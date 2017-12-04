@@ -11,7 +11,7 @@ struct IndexBlockEntryBitvector{
 	typedef IndexBlockEntryBitvector self_type;
 
 public:
-	IndexBlockEntryBitvector() : bit_bytes(nullptr){}
+	IndexBlockEntryBitvector() : fields_set(0), bit_bytes(nullptr){}
 	~IndexBlockEntryBitvector(){ delete [] this->bit_bytes; }
 
 	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
@@ -21,6 +21,7 @@ public:
 	inline const bool operator[](const T& p) const{ return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8)); }
 
 public:
+	U16 fields_set; // when reading only
 	BYTE* bit_bytes;
 };
 

@@ -298,6 +298,9 @@ public:
 			for(U32 i = 0; i < entry.n_info_patterns; ++i){
 				entry.info_bit_vectors[i].allocate(info_bitvector_width);
 				stream.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+				for(U32 j = 0; j < info_bitvector_width*8; ++j)
+					if(entry.info_bit_vectors[i][j]) ++entry.info_bit_vectors[i].fields_set;
+
 			}
 		}
 
@@ -307,6 +310,8 @@ public:
 			for(U32 i = 0; i < entry.n_format_patterns; ++i){
 				entry.format_bit_vectors[i].allocate(format_bitvector_width);
 				stream.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+				for(U32 j = 0; j < format_bitvector_width*8; ++j)
+					if(entry.format_bit_vectors[i][j]) ++entry.format_bit_vectors[i].fields_set;
 			}
 		}
 
@@ -316,6 +321,8 @@ public:
 			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
 				entry.filter_bit_vectors[i].allocate(filter_bitvector_width);
 				stream.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
+				for(U32 j = 0; j < filter_bitvector_width*8; ++j)
+					if(entry.filter_bit_vectors[i][j]) ++entry.filter_bit_vectors[i].fields_set;
 			}
 		}
 

@@ -128,6 +128,52 @@ public:
 	}
 };
 
+template <>
+class ContainerIteratorType<char> : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorType self_type;
+	typedef const char* const_pointer;
+	typedef const char* const const_pointer_final;
+	typedef const char& const_reference;
+
+public:
+	ContainerIteratorType(buffer_type& buffer) :
+		ContainerIteratorDataInterface(buffer)
+	{
+		this->n_entries = buffer.pointer / sizeof(char);
+		assert(buffer.pointer % sizeof(char) == 0);
+	}
+	~ContainerIteratorType(){}
+
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p])); }
+
+	// Dangerous functions
+	const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+
+	// Output functions
+	inline void toString(std::ostream& stream, const U32& stride){
+		//std::cerr << "in tostring: " << this->position << '/' << this->n_entries << std::endl;
+		const char* r = this->currentAt();
+		if(stride == 1){
+			stream << *r;
+		} else {
+			for(U32 i = 0; i < stride - 1; ++i){
+				stream << *r;
+				++r;
+			}
+			stream << *r;
+		}
+	}
+};
+
 class ContainerIteratorVoid : public ContainerIteratorDataInterface{
 private:
 	typedef ContainerIteratorVoid self_type;
@@ -152,6 +198,10 @@ public:
 	inline void* last(void) const{
 		if(this->n_entries - 1 < 0) return(this->first());
 		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
+	}
+
+	inline void toString(std::ostream& stream, const U32& stride){
+		stream << 1;
 	}
 };
 
@@ -210,6 +260,7 @@ public:
 			case(Core::TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
 			case(Core::TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
+			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorVoid(this->container->buffer_data_uncompressed);         break;
 			}
 		} else {
 			switch(c.header.controller.type){
