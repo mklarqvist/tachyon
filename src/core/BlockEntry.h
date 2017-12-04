@@ -173,12 +173,9 @@ public:
 
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
-		for(U32 i = 0; i < length; ++i){
-			if(container[i].buffer_data.size() == 0)
-				continue;
-
+		for(U32 i = 0; i < length; ++i)
 			this->updateContainer(container[i], offset[i], buffer, v[i]);
-		}
+
 	}
 
 	void updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){
@@ -215,8 +212,10 @@ private:
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
+
 		if(entry.index_entry.controller.hasGTPermuted)
 			stream << entry.ppa_manager;
+
 		stream << entry.meta_hot_container;
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;

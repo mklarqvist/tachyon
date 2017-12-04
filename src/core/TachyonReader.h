@@ -84,8 +84,20 @@ public:
 				this->zstd.decode(this->block.info_containers[i]);
 			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
 				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+				this->block.info_containers[i].buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
+				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
+				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
 			}
+			std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
+							(this->block.info_containers[i].header.controller.uniform ? "UNIFORM" : "NON-UNIFORM") << '\t' <<
+							this->block.info_containers[i].buffer_data_uncompressed.pointer << '\t' <<
+							this->block.info_containers[i].header.controller.type << '\t' <<
+							this->block.info_containers[i].header.controller.signedness << "\tuncompressed: " << this->block.info_containers[i].buffer_data.pointer << '\t' << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << std::endl;
+
+
+			assert(this->block.info_containers[i].buffer_data_uncompressed.pointer > 0);
 		}
+
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
@@ -95,30 +107,11 @@ public:
 			}
 		}
 
-
-		/*
-		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->block.gt_rle_container.buffer_data_uncompressed.resize(this->block.gt_rle_container.header.uLength + 16536);
-			int retRLE = ZSTD_decompress(this->block.gt_rle_container.buffer_data_uncompressed.data,
-									  this->block.gt_rle_container.buffer_data_uncompressed.capacity(),
-									  this->block.gt_rle_container.buffer_data.data,
-									  this->block.gt_rle_container.buffer_data.pointer);
-			assert(retRLE >= 0);
-			this->block.gt_rle_container.buffer_data_uncompressed.pointer = retRLE;
-			assert((U32)retRLE == this->block.gt_rle_container.header.uLength);
-		}
-		*/
-
-		//const Core::EntryHotMeta<U16>* const meta = reinterpret_cast<const Core::EntryHotMeta<U16>* const>(this->block.meta_hot_container.buffer_data_uncompressed.data);
-		//for(U32 i = 0; i < this->block.index_entry.n_variants; ++i)
-		//	std::cout << meta[i] << '\n';
-
-		// Todo: MetaIterator
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		//Iterator::MetaHotIterator d(this->block.meta_hot_container);
-		//const Core::EntryHotMeta* hot = nullptr;
-		//std::cerr << this->block.index_entry.maxPosition - this->block.index_entry.minPosition << " bp" << std::endl;
-		//U32 prevpos = d[0].position;
+		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			info_iterators[i](this->block.info_containers[i]);
+		}
 
 		//std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
@@ -175,16 +168,58 @@ public:
 				// Check if field is set
 				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
 				// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size()) << '=' << ';';
+					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0],
+							         this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size());
+					std::cout.put('=');
+					//std::cerr << "checking: " << k << std::endl;
+					info_iterators[k].toString(std::cout);
+					//std::cerr << "after to string" << std::endl;
+					/*
+					if(k == 0){
+						for(U32 p = 0; p < info0_stride_iterator.current(); ++p){
+							std::cout << info0_iterator.current() << ';';
+							++info0_iterator;
+						}
+						++info0_stride_iterator;
+					}
+					*/
+					std::cout.put(';');
+					++info_iterators[k];
 				}
+
 
 			}
 			std::cout << '\n';
-
 			++it;
 		}
 
+		/*
+		Iterator::ContainerIterator cit;
+		cit(this->block.info_containers[0]);
+		std::cerr << "type for iterator: " << cit.data_iterator->header.controller.type << std::endl;
+		std::cerr << "mixed? : " << cit.data_iterator->header.controller.mixedStride << std::endl;
+		std::cerr << "uniform? : " << cit.data_iterator->header.controller.uniform << std::endl;
 
+		Iterator::ContainerIteratorData<U16> re_cit(cit.container->buffer_data_uncompressed, cit.container->header);
+
+		if(this->block.info_containers[0].header.controller.mixedStride){
+			std::cerr << "type for stride: " << cit.stride_iterator->header.controller.type << std::endl;
+
+			Iterator::ContainerIteratorStride<BYTE> s_cit(cit.container->buffer_strides_uncompressed, cit.container->header_stride);
+			std::cerr << this->header.entries[this->block.index_entry.info_offsets->key].ID << '\t' << re_cit.buffer.pointer << std::endl;
+
+			for(U32 i = 0; i < s_cit.n_entries; ++i){
+				for(U32 j = 0; j < s_cit.current(); ++j){
+					std::cerr << re_cit.current() << ',';
+					++re_cit;
+				}
+				std::cerr << std::endl;
+				++s_cit;
+			}
+		}
+		*/
+
+		delete [] info_iterators;
 		return true;
 	}
 	bool seekBlock(const U32& b);
