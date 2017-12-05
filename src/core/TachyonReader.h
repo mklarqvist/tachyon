@@ -173,10 +173,7 @@ public:
 				if(target_info_vector[k]){
 					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
 					// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0],
-							         this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size());
-					std::cout.put('=');
-					info_iterators[k].toString(std::cout);
+					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
 					if(set + 1 != target_info_vector.fields_set)
 						std::cout.put(';');
 

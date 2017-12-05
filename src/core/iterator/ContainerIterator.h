@@ -40,8 +40,16 @@ public:
 		}
 	}
 
+	// Comparison operators
+	// Must be overloaded
+	virtual const bool operator>(const U32& cmp) const{ return false; }
+	virtual const bool operator<(const U32& cmp) const{ return false; }
+	virtual const bool operator==(const U32& cmp) const{ return false; }
+	virtual const bool operator>=(const U32& cmp) const{ return false; }
+	virtual const bool operator<=(const U32& cmp) const{ return false; }
+
+	// Increment/decrement operators
 	inline void operator++(){
-		//std::cerr << "pos: " << this->position << '/' << this->n_entries << std::endl;
 		if(this->position + 1 == this->n_entries) return;
 		++this->position;
 	}
@@ -52,7 +60,6 @@ public:
 	}
 
 	inline void operator+=(const U32& p){
-		//std::cerr << "adding " << p << " going from : " << this->position << " -> " << this->position + p << std::endl;
 		if(this->position + p >= this->n_entries){
 			this->position = this->n_entries - 1;
 			return;
@@ -68,15 +75,15 @@ public:
 		this->position -= p;
 	}
 
-	virtual const U32 getCurrentStride(void) const{ std::cerr << "illegal use" << std::endl; return(0); }
-	virtual void toString(std::ostream& stream, const U32& stride){
-		std::cerr << "illegal use of base class" << std::endl;
-	}
+	// Virtual functions
+	// Has to be overloaded in base class
+	virtual const U32 getCurrentStride(void) const =0;
+	virtual void toString(std::ostream& stream, const U32& stride) =0;
 
 public:
 	S32 position;        // iterator position
 	S32 n_entries;       // size
-	BYTE type_size;
+	BYTE type_size;      // sizeof(TYPE)
 	buffer_type& buffer; // buffer reference
 };
 
@@ -132,7 +139,7 @@ public:
 template <>
 class ContainerIteratorType<char> : public ContainerIteratorDataInterface{
 private:
-	typedef ContainerIteratorType self_type;
+	typedef ContainerIteratorType<char> self_type;
 	typedef const char* const_pointer;
 	typedef const char* const const_pointer_final;
 	typedef const char& const_reference;
@@ -175,17 +182,64 @@ public:
 	}
 };
 
-class ContainerIteratorVoid : public ContainerIteratorDataInterface{
+template <>
+class ContainerIteratorType<BYTE> : public ContainerIteratorDataInterface{
 private:
-	typedef ContainerIteratorVoid self_type;
+	typedef ContainerIteratorType<BYTE> self_type;
+	typedef const BYTE* const_pointer;
+	typedef const BYTE* const const_pointer_final;
+	typedef const BYTE& const_reference;
 
 public:
-	ContainerIteratorVoid(buffer_type& buffer) :
+	ContainerIteratorType(buffer_type& buffer) :
+		ContainerIteratorDataInterface(buffer)
+	{
+		this->n_entries = buffer.pointer / sizeof(BYTE);
+		assert(buffer.pointer % sizeof(BYTE) == 0);
+	}
+	~ContainerIteratorType(){}
+
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p])); }
+
+	// Dangerous functions
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+
+	// Output functions
+	void toString(std::ostream& stream, const U32& stride){
+		//std::cerr << "in tostring: " << this->position << '/' << this->n_entries << std::endl;
+		const BYTE* r = this->currentAt();
+		if(stride == 1){
+			stream << (U32)*r;
+		} else {
+			for(U32 i = 0; i < stride - 1; ++i){
+				stream << (U32)*r;
+				++r;
+			}
+			stream << (U32)*r;
+		}
+	}
+};
+
+template <>
+class ContainerIteratorType<void> : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorType<void> self_type;
+
+public:
+	ContainerIteratorType(buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
 		this->n_entries = 0;
 	}
-	~ContainerIteratorVoid(){}
+	~ContainerIteratorType(){}
 
 	template <class T>
 	inline const T& operator[](const U32& p) const{ return(*reinterpret_cast<const T* const>(&this->buffer.data[p*sizeof(T)])); }
@@ -199,6 +253,10 @@ public:
 		if(this->n_entries - 1 < 0) return(this->first());
 		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
 	}
+
+	// Dangerous functions
+	inline const U32 getCurrentStride(void) const{ return(0); }
+
 
 	inline void toString(std::ostream& stream, const U32& stride){}
 };
@@ -241,15 +299,6 @@ public:
 		this->hasStrideIteratorSet = false;
 		this->position = 0;
 
-		/*
-		std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
-				(c.header.controller.uniform ? "UNIFORM" : "NON-UNIFORM") << '\t' <<
-				 c.buffer_data_uncompressed.pointer << '\t' <<
-				 c.header.controller.type << '\t' <<
-				 c.header.controller.signedness << std::endl;
-		*/
-
-
 		if(c.header.controller.signedness == false){
 			switch(c.header.controller.type){
 			case(Core::TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
@@ -258,7 +307,7 @@ public:
 			case(Core::TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
 			case(Core::TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
-			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorVoid(this->container->buffer_data_uncompressed);         break;
+			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);         break;
 			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
 		} else {
@@ -269,10 +318,6 @@ public:
 			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
 		}
-		//std::cerr << Helpers::timestamp("LOG","ITERATOR-AFTER") << this->data_iterator->n_entries << std::endl;
-
-
-		//this->data_iterator = new data_iterator_type(this->container->buffer_data_uncompressed);
 		this->data_iterator->setType(this->container->header.controller.type);
 
 
@@ -289,35 +334,56 @@ public:
 			}
 
 			// Stride iterator
-			//this->stride_iterator = new stride_iterator_type(this->container->buffer_strides_uncompressed);
 			this->stride_iterator->setType(this->container->header_stride.controller.type);
-			//std::cerr << Helpers::timestamp("LOG","ITERATOR") << "STRIDE: " << this->stride_iterator->n_entries << std::endl;
-			//std::cerr << "setting stride: " << this->stride_iterator->n_entries << std::endl;
-			//std::cerr << this->container->buffer_strides.pointer << '\t' << this->container->buffer_strides_uncompressed.pointer << '\t' << this->container->header_stride.cLength << '\t' << this->container->header_stride.uLength << '\t' << this->container->header_stride.controller.type << std::endl;
 			assert(this->stride_iterator->n_entries != 0);
 		}
-		//std::cerr << Helpers::timestamp("LOG","STRIDE-AFTER") << this->container->header.stride << std::endl;
 	}
 
 	inline const bool isUniform(void) const{ return(this->container->header.controller.uniform); }
 	inline const bool isUniformStrides(void) const{ return(this->container->header_stride.controller.uniform); }
 	inline const bool hasStrides(void) const{ return(this->container->header.controller.mixedStride); }
 
-	inline bool toString(std::ostream& stream){
-		if(this->stride_iterator != nullptr){
-			//std::cerr << '\n' << this->stride_iterator->n_entries << '\t' << this->stride_iterator->position << '\t' << this->stride_iterator->getCurrentStride() << std::endl;
-			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
-		} else {
-			//std::cerr << "\nno stride=" << this->container->header.stride << std::endl;
-			this->data_iterator->toString(stream, this->container->header.stride);
+	/**<
+	 *
+	 * @param stream
+	 * @param field_name
+	 * @return
+	 */
+	inline bool toString(std::ostream& stream, const std::string& field_name){
+		if(field_name.size() == 0){
+			std::cerr << "impossible length" << std::endl;
+			return false;
 		}
 
-		//if(this->position == 6)
-		//	exit(1);
+		// Inject key string
+		stream.write(&field_name[0], field_name.size());
+		// Inject an equal sign if the encoded type is not
+		// a BOOLEAN
+		if(this->container->header.controller.type != Core::TYPE_BOOLEAN)
+			stream.put('=');
+
+		// Call toString function on iterators
+		return(this->toString(stream));
+	}
+
+	/**< @brief Returns records from the data stream as a parsed string
+	 * Records in the iterator return
+	 *
+	 * @param stream
+	 * @return
+	 */
+	inline bool toString(std::ostream& stream){
+		if(this->stride_iterator != nullptr)
+			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
+		else
+			this->data_iterator->toString(stream, this->container->header.stride);
 
 		return(true);
 	}
 
+	/**<
+	 *
+	 */
 	void operator++(void){
 		++this->position;
 		if(this->hasStrideIteratorSet){
