@@ -187,28 +187,9 @@ public:
 
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){
 		if(stride == 1){
-			stream << this->current();
+			stream.put(this->current());
 		} else {
 			const_pointer_final c = this->currentAt();
-			for(U32 i = 0; i < stride; ++i){
-				/*
-				if(c[i] == '\0'){
-					std::cerr << "cannot write null terminator" << std::endl;
-					std::cerr << "writing char: " << (void*)this->currentAt() << '\t' << (this->currentAt() - this->buffer.data) << '\t' << stride << std::endl;
-
-					for(U32 j = 0; j < stride; ++j){
-						std::cerr << c[j];
-					}
-					std::cerr << std::endl;
-					for(U32 j = 0; j < stride; ++j){
-						std::cerr << std::bitset<8>(c[j]) << " ";
-					}
-					std::cerr << std::endl;
-
-					exit(1);
-				}
-				*/
-			}
 			stream.write(this->currentAt(), stride);
 		}
 	}

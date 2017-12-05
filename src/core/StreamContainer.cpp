@@ -85,6 +85,7 @@ bool StreamContainer::checkUniformity(void){
 	case CORE_TYPE::TYPE_32B:   stride_update *= sizeof(S32);   word_width = sizeof(S32);   break;
 	case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); word_width = sizeof(float); break;
 	case CORE_TYPE::TYPE_8B:    stride_update *= sizeof(char);  word_width = sizeof(char);  break;
+	case CORE_TYPE::TYPE_CHAR:  stride_update *= sizeof(char);  word_width = sizeof(char);  break;
 	default: return false; break;
 	}
 
@@ -134,12 +135,21 @@ void StreamContainer::reformat(buffer_type& buffer){
 		if(dat[j] > max) max = dat[j];
 	}
 
+
+
 	BYTE byte_width = 0;
-	if(min < 0) byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
+	if(min < 0){
+		byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
+		const BYTE byte_width_max = ceil(ceil(log2(max + 1)) / 8);
+		if(byte_width_max > byte_width){
+			byte_width = byte_width_max;
+		}
+	}
 	else byte_width = ceil(ceil(log2(max + 1)) / 8);
 
 	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
+
 	if(byte_width == 0) byte_width = 1;
 
 	// Phase 2
@@ -231,9 +241,8 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides.data);
 	U32 max = dat[0];
 
-	for(U32 j = 1; j < this->n_entries; ++j){
+	for(U32 j = 1; j < this->n_entries; ++j)
 		if(dat[j] > max) max = dat[j];
-	}
 
 	BYTE byte_width = ceil(ceil(log2(max + 1))/8);
 
@@ -245,27 +254,30 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 	buffer.reset();
 	buffer.resize(this->buffer_strides.pointer);
 
-
 	if(byte_width == 1){
 		this->header_stride.controller.type = TYPE_8B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			buffer += (BYTE)dat[j];
+
 	} else if(byte_width == 2){
 		this->header_stride.controller.type = TYPE_16B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			buffer += (U16)dat[j];
+
 	} else if(byte_width == 4){
 		this->header_stride.controller.type = TYPE_32B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			buffer += (U32)dat[j];
+
 	} else if(byte_width == 8){
 		this->header_stride.controller.type = TYPE_64B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			buffer += (U64)dat[j];
+
 	} else {
 		std::cerr << "illegal" << std::endl;
 		exit(1);

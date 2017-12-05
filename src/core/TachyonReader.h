@@ -139,6 +139,9 @@ public:
 				std::cerr << "fixed : " << info_iterators[i].container->header.stride << std::endl;
 			} else std::cerr << "variable: " << info_iterators[i].stride_iterator->n_entries << std::endl;
 			*/
+			if(this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID == "SVLEN"){
+				std::cerr << info_iterators[i].data_iterator->n_entries << '\t' << info_iterators[i].container->header.stride << "\ttype: " << (U16)info_iterators[i].container->header.controller.type << ':' << info_iterators[i].container->header.controller.signedness << std::endl;
+			}
 		}
 
 		//std::cerr << it.size() << std::endl;
@@ -177,6 +180,8 @@ public:
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
 			const U32* const firstKey = target_info_vector.firstKey();
 			const U32& n_keys = target_info_vector.n_keys;
+
+			// Todo: SVLEN is incorrectly casted
 
 			// This is in-order
 			for(U32 k = 0; k < n_keys; ++k){
