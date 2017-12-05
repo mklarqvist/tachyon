@@ -123,7 +123,7 @@ public:
 			}
 		}
 
-		std::cout << "first\n\n" << std::endl;
+		//std::cout << "first\n\n" << std::endl;
 
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
@@ -209,6 +209,7 @@ public:
 			std::cout << '\n';
 			++it;
 		}
+		//exit(1);
 
 		/*
 		Iterator::ContainerIterator cit;

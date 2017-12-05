@@ -24,17 +24,15 @@ public:
 
 	virtual ~ContainerIteratorDataInterface(){}
 
-	template <class T>
-	inline void setType(const T& v){ this->type_size = sizeof(T); }
-
-	inline void setType(const Core::CORE_TYPE& type){
+	void setType(const U16& type){
 		switch(type){
-			case(Core::TYPE_8B):    this->type_size = 1; break;
-			case(Core::TYPE_16B):   this->type_size = 2; break;
+			case(Core::TYPE_BOOLEAN): this->type_size = 0; break;
+			case(Core::TYPE_8B):      this->type_size = 1; break;
+			case(Core::TYPE_16B):     this->type_size = 2; break;
 			case(Core::TYPE_32B):
-			case(Core::TYPE_FLOAT): this->type_size = 4; break;
+			case(Core::TYPE_FLOAT):   this->type_size = 4; break;
 			case(Core::TYPE_DOUBLE):
-			case(Core::TYPE_64B):   this->type_size = 8; break;
+			case(Core::TYPE_64B):     this->type_size = 8; break;
 			default:
 				std::cerr << Helpers::timestamp("ERROR") << std::endl;
 				exit(1);
@@ -43,6 +41,7 @@ public:
 	}
 
 	inline void operator++(){
+		//std::cerr << "pos: " << this->position << '/' << this->n_entries << std::endl;
 		if(this->position + 1 == this->n_entries) return;
 		++this->position;
 	}
@@ -75,8 +74,8 @@ public:
 	}
 
 public:
-	U32 position;        // iterator position
-	U32 n_entries;       // size
+	S32 position;        // iterator position
+	S32 n_entries;       // size
 	BYTE type_size;
 	buffer_type& buffer; // buffer reference
 };
@@ -111,10 +110,10 @@ public:
 	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(T)])); }
 
 	// Dangerous functions
-	const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
 
 	// Output functions
-	inline void toString(std::ostream& stream, const U32& stride){
+	void toString(std::ostream& stream, const U32& stride){
 		//std::cerr << "in tostring: " << this->position << '/' << this->n_entries << std::endl;
 		if(stride == 1){
 			//std::cerr << &this->buffer.data[this->position*sizeof(T)] - this->buffer.data << std::endl;
@@ -158,10 +157,10 @@ public:
 	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p])); }
 
 	// Dangerous functions
-	const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
 
 	// Output functions
-	inline void toString(std::ostream& stream, const U32& stride){
+	void toString(std::ostream& stream, const U32& stride){
 		//std::cerr << "in tostring: " << this->position << '/' << this->n_entries << std::endl;
 		const char* r = this->currentAt();
 		if(stride == 1){
@@ -276,7 +275,7 @@ public:
 
 
 		//this->data_iterator = new data_iterator_type(this->container->buffer_data_uncompressed);
-		this->data_iterator->setType(this->container->header);
+		this->data_iterator->setType(this->container->header.controller.type);
 
 
 		// Construct this iterator if there is a mixed stride
@@ -293,7 +292,7 @@ public:
 
 			// Stride iterator
 			//this->stride_iterator = new stride_iterator_type(this->container->buffer_strides_uncompressed);
-			this->stride_iterator->setType(this->container->header_stride);
+			this->stride_iterator->setType(this->container->header_stride.controller.type);
 			//std::cerr << Helpers::timestamp("LOG","ITERATOR") << "STRIDE: " << this->stride_iterator->n_entries << std::endl;
 			//std::cerr << "setting stride: " << this->stride_iterator->n_entries << std::endl;
 			//std::cerr << this->container->buffer_strides.pointer << '\t' << this->container->buffer_strides_uncompressed.pointer << '\t' << this->container->header_stride.cLength << '\t' << this->container->header_stride.uLength << '\t' << this->container->header_stride.controller.type << std::endl;

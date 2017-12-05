@@ -129,7 +129,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 	S32 min = dat[0];
 	S32 max = dat[0];
 
-	for(U32 j = 1; j < this->n_entries; ++j){
+	for(U32 j = 1; j < this->n_additions; ++j){
 		if(dat[j] < min) min = dat[j];
 		if(dat[j] > max) max = dat[j];
 	}
@@ -156,25 +156,25 @@ void StreamContainer::reformat(buffer_type& buffer){
 		if(byte_width == 1){
 			this->header.controller.type = TYPE_8B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (BYTE)dat[j];
 
 		} else if(byte_width == 2){
 			this->header.controller.type = TYPE_16B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (U16)dat[j];
 
 		} else if(byte_width == 4){
 			this->header.controller.type = TYPE_32B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (U32)dat[j];
 
 		} else if(byte_width == 8){
 			this->header.controller.type = TYPE_64B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (U64)dat[j];
 
 		} else {
@@ -189,19 +189,19 @@ void StreamContainer::reformat(buffer_type& buffer){
 		if(byte_width == 1){
 			this->header.controller.type = TYPE_8B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (SBYTE)dat[j];
 
 		} else if(byte_width == 2){
 			this->header.controller.type = TYPE_16B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (S16)dat[j];
 
 		} else if(byte_width == 4){
 			this->header.controller.type = TYPE_32B;
 
-			for(U32 j = 0; j < this->n_entries; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j)
 				buffer += (S32)dat[j];
 
 		} else {
@@ -223,7 +223,8 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 
 	// Recode integer types
 	if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 0)){
-		return;
+		std::cerr << "illegal at this point" << std::endl;
+		exit(1);
 	}
 
 	// At this point all integers are S32
