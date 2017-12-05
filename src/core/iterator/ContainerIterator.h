@@ -121,7 +121,7 @@ public:
 		} else {
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				stream << *r << ';';
+				stream << *r << ',';
 				++r;
 			}
 			stream << *r;
@@ -200,9 +200,7 @@ public:
 		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
 	}
 
-	inline void toString(std::ostream& stream, const U32& stride){
-		stream << 1;
-	}
+	inline void toString(std::ostream& stream, const U32& stride){}
 };
 
 class ContainerIterator{

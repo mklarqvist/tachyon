@@ -136,26 +136,6 @@ public:
 		//std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
-
-
-			//std::cerr << std::bitset<8>(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID].bit_bytes[0]) << std::endl;
-			/*
-			if(it.current().cold.n_allele == 2){
-				++it;
-				continue;
-			}
-			*/
-			/*
-			std::cout << m.hot->INFO_map_ID << '\t';
-			for(U32 j = 0; j < this->block.index_entry.l_info_bitvector; ++j)
-				std::cout << std::bitset<8>(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].bit_bytes[j]) << ' ';
-			std::cout << '\n';
-			//if(m.cold.n_allele == 2) continue;
-			//std::cout << d[i] << '\t' << this->block.index_entry.minPosition + d[i].position << '\t' << d[i].position - prevpos  << '\n';
-			//const Core::MetaCold& cold = *reinterpret_cast<const Core::MetaCold* const>(&this->block.meta_cold_container.buffer_data_uncompressed[d[i].virtual_offset_cold_meta]);
-			*/
-
-			//std::cout << *m.hot << '\n';
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
 			if(m.cold.n_ID == 0) std::cout.put('.');
@@ -185,23 +165,23 @@ public:
 			}
 
 			U32 set = 0;
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
-				//std::cerr << k << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << '\t' <<
-				//		this->header.entries[k].ID << std::endl;
+				// Todo: we need to know the pattern order
 
 				// Check if field is set
-				if(this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k]){
+				if(target_info_vector[k]){
 					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
 					// Lookup what that field is
 					std::cout.write(&this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID[0],
 							         this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID.size());
 					std::cout.put('=');
 					info_iterators[k].toString(std::cout);
-					if(set + 1 != this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID].fields_set)
+					if(set + 1 != target_info_vector.fields_set)
 						std::cout.put(';');
+
 					++info_iterators[k];
 					++set;
-					std::cout.flush();
 				}
 
 
