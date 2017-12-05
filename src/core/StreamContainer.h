@@ -8,10 +8,19 @@
 namespace Tachyon{
 namespace Core{
 
-enum CORE_TYPE{TYPE_8B, TYPE_16B, TYPE_32B, TYPE_64B,
-			   TYPE_FLOAT, TYPE_DOUBLE, TYPE_BOOLEAN, TYPE_STRUCT};
+enum CORE_TYPE{TYPE_8B,
+	           TYPE_16B,
+			   TYPE_32B,
+			   TYPE_64B,
+			   TYPE_FLOAT,
+			   TYPE_DOUBLE,
+			   TYPE_BOOLEAN,
+			   TYPE_STRUCT};
 
-enum CORE_COMPRESSION{ENCODE_NONE, ENCODE_ZSTD, ENCODE_FSE, ENCODE_RANS};
+enum CORE_COMPRESSION{ENCODE_NONE,
+	                  ENCODE_ZSTD,
+					  ENCODE_FSE,
+					  ENCODE_RANS};
 
 
 // Stream container for importing
@@ -20,9 +29,6 @@ class StreamContainer{
 	typedef IO::BasicBuffer buffer_type;
 	typedef StreamContainerHeader header_type;
 	typedef StreamContainerHeaderStride header_stride_type;
-
-public:
-	enum CONTAINER_TARGET{CONTAINER_DATA, CONTAINER_STRIDE};
 
 public:
 	StreamContainer() :

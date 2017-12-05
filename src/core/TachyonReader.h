@@ -123,14 +123,17 @@ public:
 			}
 		}
 
-		//std::cout << "first\n\n" << std::endl;
+		std::cout << "first\n\n" << std::endl;
 
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			info_iterators[i].setup(this->block.info_containers[i]);
-			//std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
-			//		info_iterators[i].data_iterator->n_entries << std::endl;
+			std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
+					info_iterators[i].data_iterator->n_entries << '\t';
+			if(info_iterators[i].stride_iterator == nullptr){
+				std::cerr << "fixed : " << info_iterators[i].container->header.stride << std::endl;
+			} else std::cerr << "variable: " << info_iterators[i].stride_iterator->n_entries << std::endl;
 		}
 
 		//std::cerr << it.size() << std::endl;
@@ -168,12 +171,22 @@ public:
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
 				// Todo: we need to know the pattern order
+				//if(k == 11) continue;
+				//if(k == 16) continue;
 
 				// Check if field is set
 				if(target_info_vector[k]){
 					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
 					// Lookup what that field is
+					if( k == 16){
+						std::cout << this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID << "=" << 0;
+						std::cerr << "TYPE: " << (int)info_iterators[k].container->header.controller.type << std::endl;
+						std::cerr << "OUTPUT: " << info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID) << std::endl;
+						exit(1);
+					} else {
+
 					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
+					}
 					if(set + 1 != target_info_vector.fields_set)
 						std::cout.put(';');
 
@@ -213,6 +226,10 @@ public:
 			}
 		}
 		*/
+		std::cout << "last\n" << std::endl;
+
+		if((this->block.index_entry.minPosition + it.first().hot->position + 1 ) >= 118222)
+			exit(1);
 
 		delete [] info_iterators;
 		return true;

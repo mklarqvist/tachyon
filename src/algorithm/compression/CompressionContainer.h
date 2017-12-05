@@ -265,9 +265,11 @@ public:
 		assert((U32)ret == stream.header.uLength);
 		//std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 
+		/*
 		if(stream.header.controller.mixedStride){
 			this->decodeStrides(stream);
 		}
+		*/
 
 		return true;
 	}

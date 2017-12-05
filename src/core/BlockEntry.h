@@ -184,8 +184,8 @@ private:
 				container[i].header.cLength = 0;
 				container[i].header.controller.mixedStride = false;
 				container[i].header.controller.encoder = Core::ENCODE_NONE;
-				container[i].n_entries = 1;
-				container[i].n_additions = 1;
+				container[i].n_entries = 0;
+				container[i].n_additions = 0;
 				container[i].header.controller.signedness = 0;
 				continue;
 			}

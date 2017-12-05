@@ -371,6 +371,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_8B);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
+
 		++target_container;
 		if(!target_container.checkStrideSize(info_length))
 			target_container.setMixedStrides();
