@@ -87,7 +87,6 @@ public:
 				this->block.info_containers[i].buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
 				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
 				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
-
 			}
 
 			if(this->block.info_containers[i].header.controller.mixedStride){
@@ -120,10 +119,14 @@ public:
 				this->zstd.decode(this->block.format_containers[i]);
 			} else if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_NONE){
 				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+				this->block.format_containers[i].buffer_data_uncompressed.resize(this->block.format_containers->buffer_data.pointer + 16536);
+				memcpy(this->block.format_containers[i].buffer_data_uncompressed.data, this->block.format_containers[i].buffer_data.data, this->block.format_containers[i].buffer_data.pointer);
+				this->block.format_containers[i].buffer_data_uncompressed.pointer = this->block.format_containers[i].buffer_data.pointer;
+
 			}
 		}
 
-		std::cout << "first\n\n" << std::endl;
+		//std::cout << "first\n\n" << std::endl;
 
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
@@ -178,15 +181,29 @@ public:
 				if(target_info_vector[k]){
 					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
 					// Lookup what that field is
-					if( k == 16){
-						std::cout << this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID << "=" << 0;
+					/*
+					if( k > 4 ){
+						//std::cout << this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID << "=" << 0;
 						std::cerr << "TYPE: " << (int)info_iterators[k].container->header.controller.type << std::endl;
 						std::cerr << "OUTPUT: " << info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID) << std::endl;
-						exit(1);
+						//exit(1);
 					} else {
 
 					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
 					}
+					*/
+					//if(k != 18)
+						info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
+					/*
+						else {
+						std::cerr << k << " TYPE: " << (int)info_iterators[k].container->header.controller.type << std::endl;
+						info_iterators[k].toString(std::cerr, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
+						std::cerr << std::endl;
+						std::cerr << info_iterators[k].container->buffer_data_uncompressed.data << std::endl;
+						std::cerr << info_iterators[k].container->buffer_data.data << std::endl;
+					}
+					*/
+
 					if(set + 1 != target_info_vector.fields_set)
 						std::cout.put(';');
 
@@ -226,10 +243,10 @@ public:
 			}
 		}
 		*/
-		std::cout << "last\n" << std::endl;
+		//std::cout << "last\n" << std::endl;
 
-		if((this->block.index_entry.minPosition + it.first().hot->position + 1 ) >= 118222)
-			exit(1);
+		//if((this->block.index_entry.minPosition + it.first().hot->position + 1 ) >= 118222)
+		//	exit(1);
 
 		delete [] info_iterators;
 		return true;

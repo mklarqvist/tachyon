@@ -193,7 +193,6 @@ private:
 			this->updateContainer(container[i], offset[i], buffer, v[i]);
 			assert(container[i].header.stride != 0);
 		}
-
 	}
 
 	void updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){

@@ -27,6 +27,7 @@ public:
 	void setType(const U16& type){
 		switch(type){
 			case(Core::TYPE_BOOLEAN): this->type_size = 0; break;
+			case(Core::TYPE_CHAR):
 			case(Core::TYPE_8B):      this->type_size = 1; break;
 			case(Core::TYPE_16B):     this->type_size = 2; break;
 			case(Core::TYPE_32B):
@@ -68,7 +69,7 @@ public:
 
 	inline void operator+=(const U32& p){
 		if(this->position + p >= this->n_entries){
-			this->position = this->n_entries - 1;
+
 			return;
 		}
 		this->position += p;
@@ -86,6 +87,7 @@ public:
 	// Has to be overloaded in base class
 	virtual const U32 getCurrentStride(void) const =0;
 	virtual void toString(std::ostream& stream, const U32& stride) =0;
+	virtual void toStringNoSeparator(std::ostream& stream, const U32& stride) =0;
 
 public:
 	S32 position;        // iterator position
@@ -125,6 +127,7 @@ public:
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
 
 	// Output functions
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
 		if(stride == 1){
 			stream << this->current();
@@ -175,10 +178,36 @@ public:
 			stream << this->current();
 		} else {
 			const_pointer r = this->currentAt();
-			for(U32 i = 0; i < stride; ++i){
-				stream << *r;
+			for(U32 i = 0; i < stride - 1; ++i){
+				stream << *r << ',';
 				++r;
 			}
+			stream << *r;
+		}
+	}
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){
+		if(stride == 1){
+			stream << this->current();
+		} else {
+			const_pointer_final c = this->currentAt();
+			for(U32 i = 0; i < stride; ++i){
+				if(c[i] == '\0'){
+					std::cerr << "cannot write null terminator" << std::endl;
+					std::cerr << "writing char: " << (void*)this->currentAt() << '\t' << (this->currentAt() - this->buffer.data) << '\t' << stride << std::endl;
+
+					for(U32 j = 0; j < stride; ++j){
+						std::cerr << c[j];
+					}
+					std::cerr << std::endl;
+					for(U32 j = 0; j < stride; ++j){
+						std::cerr << std::bitset<8>(c[j]) << " ";
+					}
+					std::cerr << std::endl;
+
+					exit(1);
+				}
+			}
+			stream.write(this->currentAt(), stride);
 		}
 	}
 };
@@ -214,9 +243,10 @@ public:
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
 
 	// Output functions
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
 		if(stride == 1){
-			stream << this->current();
+			stream << (U32)this->current();
 		} else {
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
@@ -257,6 +287,7 @@ public:
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return(0); }
 	// Output
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	inline void toString(std::ostream& stream, const U32& stride){}
 };
 
@@ -329,6 +360,7 @@ public:
 			}
 		} else {
 			switch(container.header.controller.type){
+			case(Core::TYPE_CHAR):     this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed);   break;
 			case(Core::TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
@@ -381,7 +413,9 @@ public:
 		stream.put('=');
 
 		// Call toString function on iterators
-		return(this->toString(stream));
+		if(this->container->header.controller.type != Core::TYPE_CHAR)
+			return(this->toString(stream));
+		else return(this->toStringNoSeparator(stream));
 	}
 
 	/**< @brief Returns records from the data stream as a parsed string
@@ -395,6 +429,15 @@ public:
 			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
 		else
 			this->data_iterator->toString(stream, this->container->header.stride);
+
+		return(true);
+	}
+
+	inline bool toStringNoSeparator(std::ostream& stream){
+		if(this->stride_iterator != nullptr)
+			this->data_iterator->toStringNoSeparator(stream, this->stride_iterator->getCurrentStride());
+		else
+			this->data_iterator->toStringNoSeparator(stream, this->container->header.stride);
 
 		return(true);
 	}

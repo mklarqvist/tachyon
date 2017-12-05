@@ -368,7 +368,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			else if(info_value_type == 2) target_container.setType(Core::CORE_TYPE::TYPE_32B);
 			else if(info_value_type == 3) target_container.setType(Core::CORE_TYPE::TYPE_32B);
 			else if(info_value_type == 5) target_container.setType(Core::CORE_TYPE::TYPE_FLOAT);
-			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_8B);
+			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_CHAR);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
 
@@ -430,7 +430,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			else if(info_value_type == 2) target_container.setType(Core::CORE_TYPE::TYPE_32B);
 			else if(info_value_type == 3) target_container.setType(Core::CORE_TYPE::TYPE_32B);
 			else if(info_value_type == 5) target_container.setType(Core::CORE_TYPE::TYPE_FLOAT);
-			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_8B);
+			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_CHAR);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
 		++target_container;
