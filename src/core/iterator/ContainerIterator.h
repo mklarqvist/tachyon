@@ -13,7 +13,7 @@ protected:
 	typedef IO::BasicBuffer buffer_type;
 
 public:
-	ContainerIteratorDataInterface(buffer_type& buffer) :
+	ContainerIteratorDataInterface(const buffer_type& buffer) :
 		position(0),
 		n_entries(0),
 		type_size(1),
@@ -84,10 +84,8 @@ public:
 	S32 position;        // iterator position
 	S32 n_entries;       // size
 	BYTE type_size;      // sizeof(TYPE)
-	buffer_type& buffer; // buffer reference
+	const buffer_type& buffer; // buffer reference
 };
-
-
 
 template <class T>
 class ContainerIteratorType : public ContainerIteratorDataInterface{
@@ -98,7 +96,7 @@ private:
 	typedef const T& const_reference;
 
 public:
-	ContainerIteratorType(buffer_type& buffer) :
+	ContainerIteratorType(const buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
 		this->n_entries = buffer.pointer / sizeof(T);
@@ -145,7 +143,7 @@ private:
 	typedef const char& const_reference;
 
 public:
-	ContainerIteratorType(buffer_type& buffer) :
+	ContainerIteratorType(const buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
 		this->n_entries = buffer.pointer / sizeof(char);
@@ -191,7 +189,7 @@ private:
 	typedef const BYTE& const_reference;
 
 public:
-	ContainerIteratorType(buffer_type& buffer) :
+	ContainerIteratorType(const buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
 		this->n_entries = buffer.pointer / sizeof(BYTE);
@@ -234,7 +232,7 @@ private:
 	typedef ContainerIteratorType<void> self_type;
 
 public:
-	ContainerIteratorType(buffer_type& buffer) :
+	ContainerIteratorType(const buffer_type& buffer) :
 		ContainerIteratorDataInterface(buffer)
 	{
 		this->n_entries = 0;
@@ -278,9 +276,17 @@ public:
 		data_iterator(nullptr),
 		stride_iterator(nullptr)
 	{
-		// Number of entries is
-		// a) For data: buffer.pointer / sizeof(dataType)
-		// b) For strides: buffer.pointer / sizeof(strideType)
+
+	}
+
+	ContainerIterator(const container_type& container) :
+		position(0),
+		hasStrideIteratorSet(false),
+		container(&container),
+		data_iterator(nullptr),
+		stride_iterator(nullptr)
+	{
+		this->setup(container);
 	}
 
 	~ContainerIterator(){
@@ -289,7 +295,17 @@ public:
 		delete this->stride_iterator;
 	}
 
-	void operator()(container_type& c){
+	/**< @brief Overloaded operator for setup() synonym
+	 *
+	 * @param c
+	 */
+	inline void operator()(const container_type& c){ this->setup(c); }
+
+	/**< @brief Overloader for
+	 *
+	 * @param c
+	 */
+	void setup(const container_type& c){
 		// Store container reference
 		this->container = &c;
 
@@ -319,6 +335,8 @@ public:
 			}
 		}
 		this->data_iterator->setType(this->container->header.controller.type);
+		if(c.header.controller.type != Core::TYPE_BOOLEAN)
+			assert(this->data_iterator->n_entries != 0);
 
 
 		// Construct this iterator if there is a mixed stride
@@ -397,7 +415,7 @@ public:
 public:
 	U32 position;         // iterator position
 	bool hasStrideIteratorSet;
-	container_type* container;              // reference container
+	const container_type* container;              // reference container
 	data_iterator_type* data_iterator;      // recast me as the correct base type
 	stride_iterator_type* stride_iterator;
 };

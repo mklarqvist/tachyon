@@ -128,7 +128,7 @@ public:
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			info_iterators[i](this->block.info_containers[i]);
+			info_iterators[i].setup(this->block.info_containers[i]);
 			//std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
 			//		info_iterators[i].data_iterator->n_entries << std::endl;
 		}
