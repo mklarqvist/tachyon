@@ -36,6 +36,11 @@ public:
 	template <class T>
 	inline const bool operator[](const T& p) const{ return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8)); }
 
+	inline const U32& head(void) const{ return(this->keys[0]); }
+	inline const U32& tail(void) const{
+		if(this->n_keys == 0) return(this->tail());
+		return(this->keys[this->n_keys - 1]);
+	}
 	inline const U32* const firstKey(void) const{ return(&this->keys[0]); }
 	inline const U32* const lastKey(void) const {
 		if(this->n_keys == 0) return(this->firstKey());
@@ -43,25 +48,23 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-			stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
-			for(U32 i = 0; i < entry.n_keys; ++i)
-				stream.write(reinterpret_cast<const char*>(&entry.keys[i]), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
+		for(U32 i = 0; i < entry.n_keys; ++i)
+			stream.write(reinterpret_cast<const char*>(&entry.keys[i]), sizeof(U32));
 
-			return(stream);
-		}
+		return(stream);
+	}
 
-		friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-			stream.read(reinterpret_cast<char*>(&entry.n_keys), sizeof(U32));
-			entry.keys = new U32[entry.n_keys];
-			for(U32 i = 0; i < entry.n_keys; ++i)
-				stream.read(reinterpret_cast<char*>(&entry.keys[i]), sizeof(U32));
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.n_keys), sizeof(U32));
+		entry.keys = new U32[entry.n_keys];
+		for(U32 i = 0; i < entry.n_keys; ++i)
+			stream.read(reinterpret_cast<char*>(&entry.keys[i]), sizeof(U32));
 
-			return(stream);
-		}
+		return(stream);
+	}
 
-		inline const U32 getBaseSize(void) const{
-			return(sizeof(U32) + sizeof(U32)*this->n_keys);
-		}
+	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
 public:
 	U32 n_keys;

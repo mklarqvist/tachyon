@@ -175,9 +175,29 @@ public:
 			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
-			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
-				// Todo: we need to know the pattern order
+			const U32* const firstKey = target_info_vector.firstKey();
+			const U32& n_keys = target_info_vector.n_keys;
 
+			// This is in-order
+			for(U32 k = 0; k < n_keys; ++k){
+				//std::cerr << firstKey[k] << std::endl;
+				// Check if field is set
+				const U32& current_key = firstKey[k];
+				if(target_info_vector[current_key]){
+					info_iterators[current_key].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[current_key].key).ID);
+
+					if(set + 1 != target_info_vector.fields_set)
+						std::cout.put(';');
+
+					++info_iterators[current_key];
+					++set;
+				}
+			}
+
+			//set = 0;
+			/*
+			// This is out-of-order but correct
+			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
 				// Check if field is set
 				if(target_info_vector[k]){
 					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
@@ -189,6 +209,7 @@ public:
 					++set;
 				}
 			}
+			*/
 			std::cout << '\n';
 			++it;
 		}
