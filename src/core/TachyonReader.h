@@ -87,11 +87,16 @@ public:
 				this->block.info_containers[i].buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
 				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
 				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
-				if(this->block.info_containers[i].header.controller.mixedStride){
+
+			}
+
+			if(this->block.info_containers[i].header.controller.mixedStride){
+				if(this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
+					this->zstd.decodeStrides(this->block.info_containers[i]);
+				} else if (this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
 					this->block.info_containers[i].buffer_strides_uncompressed.resize(this->block.info_containers->buffer_strides.pointer + 16536);
 					memcpy(this->block.info_containers[i].buffer_strides_uncompressed.data, this->block.info_containers[i].buffer_strides.data, this->block.info_containers[i].buffer_strides.pointer);
 					this->block.info_containers[i].buffer_strides_uncompressed.pointer = this->block.info_containers[i].buffer_strides.pointer;
-
 				}
 			}
 
@@ -117,6 +122,8 @@ public:
 				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
 			}
 		}
+
+		std::cout << "first\n\n" << std::endl;
 
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];

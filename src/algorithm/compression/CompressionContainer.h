@@ -49,6 +49,7 @@ public:
 	virtual const bool encode(stream_type& stream) =0;
 	virtual const bool encodeStrides(stream_type& stream) =0;
 	virtual const bool decode(stream_type& stream) =0;
+	virtual const bool decodeStrides(stream_type& stream) =0;
 
 protected:
 	buffer_type buffer;
@@ -265,20 +266,36 @@ public:
 		//std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 
 		if(stream.header.controller.mixedStride){
-			if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD)
-				return true;
-
-			stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);
-			int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.data,
-									  stream.buffer_strides_uncompressed.capacity(),
-									  stream.buffer_strides.data,
-									  stream.buffer_strides.pointer);
-
-			assert(ret_stride >= 0);
-			stream.buffer_strides_uncompressed.pointer = ret_stride;
-			assert((U32)ret_stride == stream.header_stride.uLength);
-			//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+			this->decodeStrides(stream);
 		}
+
+		return true;
+	}
+
+	const bool decodeStrides(stream_type& stream){
+		if(!stream.header.controller.mixedStride)
+			return false;
+
+		if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD){
+			std::cerr << "wrong codec" << std::endl;
+			return false;
+		}
+
+
+		if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD)
+			return true;
+
+		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);
+		int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.data,
+								  stream.buffer_strides_uncompressed.capacity(),
+								  stream.buffer_strides.data,
+								  stream.buffer_strides.pointer);
+
+		assert(ret_stride >= 0);
+		stream.buffer_strides_uncompressed.pointer = ret_stride;
+		assert((U32)ret_stride == stream.header_stride.uLength);
+		//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+
 
 		return true;
 	}

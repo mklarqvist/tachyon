@@ -296,6 +296,7 @@ public:
 			this->stride_iterator->setType(this->container->header_stride);
 			//std::cerr << Helpers::timestamp("LOG","ITERATOR") << "STRIDE: " << this->stride_iterator->n_entries << std::endl;
 			//std::cerr << "setting stride: " << this->stride_iterator->n_entries << std::endl;
+			//std::cerr << this->container->buffer_strides.pointer << '\t' << this->container->buffer_strides_uncompressed.pointer << '\t' << this->container->header_stride.cLength << '\t' << this->container->header_stride.uLength << '\t' << this->container->header_stride.controller.type << std::endl;
 			assert(this->stride_iterator->n_entries != 0);
 		}
 		//std::cerr << Helpers::timestamp("LOG","STRIDE-AFTER") << this->container->header.stride << std::endl;
