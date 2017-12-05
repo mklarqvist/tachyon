@@ -257,20 +257,26 @@ public:
 		// write
 		if(entry.n_info_patterns > 0){
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
-			for(U32 i = 0; i < entry.n_info_patterns; ++i)
+			for(U32 i = 0; i < entry.n_info_patterns; ++i){
+				stream << entry.info_bit_vectors[i];
 				stream.write((const char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+			}
 		}
 
 		if(entry.n_format_patterns > 0){
 			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
-			for(U32 i = 0; i < entry.n_format_patterns; ++i)
+			for(U32 i = 0; i < entry.n_format_patterns; ++i){
+				stream << entry.format_bit_vectors[i];
 				stream.write((const char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+			}
 		}
 
 		if(entry.n_filter_patterns > 0){
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
-			for(U32 i = 0; i < entry.n_filter_patterns; ++i)
+			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+				stream << entry.filter_bit_vectors[i];
 				stream.write((const char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
+			}
 		}
 
 		return(stream);
@@ -296,6 +302,7 @@ public:
 			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
 			entry.info_bit_vectors = new bit_vector[entry.n_info_patterns];
 			for(U32 i = 0; i < entry.n_info_patterns; ++i){
+				stream >> entry.info_bit_vectors[i];
 				entry.info_bit_vectors[i].allocate(info_bitvector_width);
 				stream.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
 				for(U32 j = 0; j < info_bitvector_width*8; ++j)
@@ -308,6 +315,7 @@ public:
 			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 			entry.format_bit_vectors = new bit_vector[entry.n_format_patterns];
 			for(U32 i = 0; i < entry.n_format_patterns; ++i){
+				stream >> entry.format_bit_vectors[i];
 				entry.format_bit_vectors[i].allocate(format_bitvector_width);
 				stream.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
 				for(U32 j = 0; j < format_bitvector_width*8; ++j)
@@ -319,6 +327,7 @@ public:
 			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 			entry.filter_bit_vectors = new bit_vector[entry.n_filter_patterns];
 			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+				stream >> entry.filter_bit_vectors[i];
 				entry.filter_bit_vectors[i].allocate(filter_bitvector_width);
 				stream.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
 				for(U32 j = 0; j < filter_bitvector_width*8; ++j)
@@ -341,12 +350,21 @@ public:
 		total_size += 2*sizeof(U32)*this->n_filter_streams;
 
 		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
+		for(U32 i = 0; i < this->n_info_patterns; ++i)
+			total_size += this->info_bit_vectors[i].getBaseSize();
+
 		total_size += this->n_info_patterns*info_bitvector_width;
 
 		BYTE format_bitvector_width = ceil((float)this->n_format_streams/8);
+		for(U32 i = 0; i < this->n_format_patterns; ++i)
+			total_size += this->format_bit_vectors[i].getBaseSize();
+
 		total_size += this->n_format_patterns*format_bitvector_width;
 
 		BYTE filter_bitvector_width = ceil((float)this->n_filter_streams/8);
+		for(U32 i = 0; i < this->n_filter_patterns; ++i)
+			total_size += this->filter_bit_vectors[i].getBaseSize();
+
 		total_size += this->n_filter_patterns*filter_bitvector_width;
 
 		return total_size;

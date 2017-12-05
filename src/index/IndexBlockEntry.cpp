@@ -94,7 +94,7 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 
 	// Allocate memory for these bit-vectors
 	for(U32 i = 0; i < patterns.size(); ++i)
-		target[i].allocate(bitvector_width);
+		target[i].allocate(patterns[i].size(), bitvector_width);
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){
@@ -117,6 +117,8 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 			}
 			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
 			//std::cerr << retval << '\t';
+			target[i].keys[j] = patterns[i][j];
+			//std::cerr << target[i].keys[j] << std::endl;
 		}
 		//std::cerr << std::endl;
 
