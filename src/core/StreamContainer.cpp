@@ -140,7 +140,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 	BYTE byte_width = 0;
 	if(min < 0){
 		byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
-		const BYTE byte_width_max = ceil(ceil(log2(max + 1)) / 8);
+		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1)) + 1) / 8);
 		if(byte_width_max > byte_width){
 			byte_width = byte_width_max;
 		}

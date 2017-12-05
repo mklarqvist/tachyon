@@ -139,9 +139,9 @@ public:
 				std::cerr << "fixed : " << info_iterators[i].container->header.stride << std::endl;
 			} else std::cerr << "variable: " << info_iterators[i].stride_iterator->n_entries << std::endl;
 			*/
-			if(this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID == "SVLEN"){
-				std::cerr << info_iterators[i].data_iterator->n_entries << '\t' << info_iterators[i].container->header.stride << "\ttype: " << (U16)info_iterators[i].container->header.controller.type << ':' << info_iterators[i].container->header.controller.signedness << std::endl;
-			}
+			//if(this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID == "SVLEN"){
+			//	std::cerr << info_iterators[i].data_iterator->n_entries << '\t' << info_iterators[i].container->header.stride << "\ttype: " << (U16)info_iterators[i].container->header.controller.type << ':' << info_iterators[i].container->header.controller.signedness << std::endl;
+			//}
 		}
 
 		//std::cerr << it.size() << std::endl;
@@ -218,6 +218,7 @@ public:
 			std::cout << '\n';
 			++it;
 		}
+		std::cout.flush();
 
 		delete [] info_iterators;
 		return true;
