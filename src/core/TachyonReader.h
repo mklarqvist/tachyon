@@ -172,39 +172,15 @@ public:
 				}
 			}
 
+			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
 			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
 				// Todo: we need to know the pattern order
-				//if(k == 11) continue;
-				//if(k == 16) continue;
 
 				// Check if field is set
 				if(target_info_vector[k]){
-					//std::cout << this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID][k] << " is set: " << this->header.entries[k].ID << std::endl;
-					// Lookup what that field is
-					/*
-					if( k > 4 ){
-						//std::cout << this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID << "=" << 0;
-						std::cerr << "TYPE: " << (int)info_iterators[k].container->header.controller.type << std::endl;
-						std::cerr << "OUTPUT: " << info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID) << std::endl;
-						//exit(1);
-					} else {
-
 					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
-					}
-					*/
-					//if(k != 18)
-						info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
-					/*
-						else {
-						std::cerr << k << " TYPE: " << (int)info_iterators[k].container->header.controller.type << std::endl;
-						info_iterators[k].toString(std::cerr, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
-						std::cerr << std::endl;
-						std::cerr << info_iterators[k].container->buffer_data_uncompressed.data << std::endl;
-						std::cerr << info_iterators[k].container->buffer_data.data << std::endl;
-					}
-					*/
 
 					if(set + 1 != target_info_vector.fields_set)
 						std::cout.put(';');
@@ -212,43 +188,10 @@ public:
 					++info_iterators[k];
 					++set;
 				}
-
-
 			}
 			std::cout << '\n';
 			++it;
 		}
-		//exit(1);
-
-		/*
-		Iterator::ContainerIterator cit;
-		cit(this->block.info_containers[0]);
-		std::cerr << "type for iterator: " << cit.data_iterator->header.controller.type << std::endl;
-		std::cerr << "mixed? : " << cit.data_iterator->header.controller.mixedStride << std::endl;
-		std::cerr << "uniform? : " << cit.data_iterator->header.controller.uniform << std::endl;
-
-		Iterator::ContainerIteratorData<U16> re_cit(cit.container->buffer_data_uncompressed, cit.container->header);
-
-		if(this->block.info_containers[0].header.controller.mixedStride){
-			std::cerr << "type for stride: " << cit.stride_iterator->header.controller.type << std::endl;
-
-			Iterator::ContainerIteratorStride<BYTE> s_cit(cit.container->buffer_strides_uncompressed, cit.container->header_stride);
-			std::cerr << this->header.entries[this->block.index_entry.info_offsets->key].ID << '\t' << re_cit.buffer.pointer << std::endl;
-
-			for(U32 i = 0; i < s_cit.n_entries; ++i){
-				for(U32 j = 0; j < s_cit.current(); ++j){
-					std::cerr << re_cit.current() << ',';
-					++re_cit;
-				}
-				std::cerr << std::endl;
-				++s_cit;
-			}
-		}
-		*/
-		//std::cout << "last\n" << std::endl;
-
-		//if((this->block.index_entry.minPosition + it.first().hot->position + 1 ) >= 118222)
-		//	exit(1);
 
 		delete [] info_iterators;
 		return true;

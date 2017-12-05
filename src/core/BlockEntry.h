@@ -210,18 +210,15 @@ private:
 		container.header.uLength = container.buffer_data.pointer;
 
 		// Add CRC32 checksum for sanity
-		container.generateCRC(true);
-
-		//std::cerr << "update: " << key << '\t' << container.header.uLength << '/' << container.buffer_data.pointer << '\t' << container.header.controller.uniform << std::endl;
-		//std::cerr << key << '\t' << container.buffer_data.size() << '\t' << container.header.stride << '\t' << container.header.controller.mixedStride << std::endl;
+		if(!container.header.controller.mixedStride)
+			container.generateCRC(false);
 
 		// If we have mixed striding
 		if(container.header.controller.mixedStride){
 			// Reformat stream to use as small word size as possible
 			container.reformatStride(buffer);
-
 			container.header_stride.uLength = container.buffer_strides.pointer;
-			//std::cerr << key << "-ADD\t" << container.buffer_strides.size() << '\t' << 0 << std::endl;
+			container.generateCRC(true);
 		}
 	}
 

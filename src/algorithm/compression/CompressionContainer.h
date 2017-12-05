@@ -263,6 +263,7 @@ public:
 		assert(ret >= 0);
 		stream.buffer_data_uncompressed.pointer = ret;
 		assert((U32)ret == stream.header.uLength);
+		assert(stream.checkCRC(0));
 		//std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 
 		/*
@@ -297,7 +298,7 @@ public:
 		stream.buffer_strides_uncompressed.pointer = ret_stride;
 		assert((U32)ret_stride == stream.header_stride.uLength);
 		//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
-
+		assert(stream.checkCRC(1));
 
 		return true;
 	}
