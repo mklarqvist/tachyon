@@ -132,11 +132,13 @@ public:
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			info_iterators[i].setup(this->block.info_containers[i]);
+			/*
 			std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
 					info_iterators[i].data_iterator->n_entries << '\t';
 			if(info_iterators[i].stride_iterator == nullptr){
 				std::cerr << "fixed : " << info_iterators[i].container->header.stride << std::endl;
 			} else std::cerr << "variable: " << info_iterators[i].stride_iterator->n_entries << std::endl;
+			*/
 		}
 
 		//std::cerr << it.size() << std::endl;

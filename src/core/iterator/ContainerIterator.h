@@ -175,22 +175,23 @@ public:
 	// Output functions
 	void toString(std::ostream& stream, const U32& stride){
 		if(stride == 1){
-			stream << this->current();
+			stream << (S32)this->current();
 		} else {
-			const_pointer r = this->currentAt();
+			const_pointer_final c = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				stream << *r << ',';
-				++r;
+				stream << (S32)c[i] << ',';
 			}
-			stream << *r;
+			stream << (S32)c[stride-1];
 		}
 	}
+
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){
 		if(stride == 1){
 			stream << this->current();
 		} else {
 			const_pointer_final c = this->currentAt();
 			for(U32 i = 0; i < stride; ++i){
+				/*
 				if(c[i] == '\0'){
 					std::cerr << "cannot write null terminator" << std::endl;
 					std::cerr << "writing char: " << (void*)this->currentAt() << '\t' << (this->currentAt() - this->buffer.data) << '\t' << stride << std::endl;
@@ -206,6 +207,7 @@ public:
 
 					exit(1);
 				}
+				*/
 			}
 			stream.write(this->currentAt(), stride);
 		}
