@@ -147,7 +147,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 		// Check break condition for window
 		if((this->entries[i].body->POS + 1) - firstPos > bp_window){
-			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries].body->POS + 1) - firstPos << ")" << std::endl;
+			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[i].body->POS + 1) - firstPos << ")" << std::endl;
 			break;
 		}
 

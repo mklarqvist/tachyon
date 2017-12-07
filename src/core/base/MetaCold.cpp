@@ -4,12 +4,12 @@ namespace Tachyon{
 namespace Core{
 
 MetaCold::MetaCold(void) :
-		QUAL(0),
-		n_allele(0),
-		n_ID(0),
-		ID(nullptr),
-		alleles(nullptr)
-	{}
+	QUAL(0),
+	n_allele(0),
+	n_ID(0),
+	ID(nullptr),
+	alleles(nullptr)
+{}
 
 MetaCold::~MetaCold(void){ delete [] this->alleles; }
 
@@ -21,7 +21,7 @@ bool MetaCold::write(const bcf_type& entry, stream_container& buffer){
 
 	// Write out ID
 	buffer.buffer_data += (U16)entry.l_ID;
-	buffer.buffer_data.Add(entry.ID, entry.l_ID);
+	if((U16)entry.l_ID) buffer.buffer_data.Add(entry.ID, entry.l_ID);
 
 	// Write out alleles
 	for(U32 i = 0; i < entry.body->n_allele; ++i){

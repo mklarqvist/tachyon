@@ -65,10 +65,27 @@ public:
 
 		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_cold_container);
+		} else if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_NONE){
+			//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+			this->block.meta_cold_container.buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
+			memcpy(this->block.meta_cold_container.buffer_data_uncompressed.data, this->block.meta_cold_container.buffer_data.data, this->block.meta_cold_container.buffer_data.pointer);
+			this->block.meta_cold_container.buffer_data_uncompressed.pointer = this->block.meta_cold_container.buffer_data.pointer;
+		}
+		else {
+			std::cerr << "NOT ALLOWED COLD" << std::endl;
+			exit(1);
 		}
 
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_hot_container);
+		} else if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_NONE){
+			//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
+			this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
+			memcpy(this->block.meta_hot_container.buffer_data_uncompressed.data, this->block.meta_hot_container.buffer_data.data, this->block.meta_hot_container.buffer_data.pointer);
+			this->block.meta_hot_container.buffer_data_uncompressed.pointer = this->block.meta_hot_container.buffer_data.pointer;
+		} else {
+			std::cerr << "NOT ALLOWED HOT" << std::endl;
+			exit(1);
 		}
 
 
@@ -128,8 +145,12 @@ public:
 
 		//std::cout << "first\n\n" << std::endl;
 
+		//std::cout << "Expect\t" << this->block.index_entry.minPosition+1 << "\t" << this->block.index_entry.maxPosition+1 << std::endl;
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+		//std::cout << "Observe\t" << this->block.index_entry.minPosition + it.first().hot->position + 1 << '\t' << this->block.index_entry.minPosition + it.last().hot->position + 1 << std::endl;
+
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			info_iterators[i].setup(this->block.info_containers[i]);
 			/*
@@ -147,6 +168,12 @@ public:
 		//std::cerr << it.size() << std::endl;
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
+			//if(this->block.index_entry.minPosition + m.hot->position + 1 < 234003207) continue;
+			//std::cerr.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
+			//std::cerr << this->block.index_entry.minPosition + m.hot->position + 1 << std::endl;
+
+			//std::cout << "meta offsets: " << m.hot->virtual_offset_cold_meta << '\t' << m.cold.n_ID << std::endl;
+
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
 			if(m.cold.n_ID == 0) std::cout.put('.');

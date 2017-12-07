@@ -84,7 +84,8 @@ public:
 		this->QUAL = *reinterpret_cast<float*>(in);
 		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(float)]);
 		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)]);
-		this->ID = &in[sizeof(float) + 2*sizeof(U16)];
+		if(this->n_ID) this->ID = &in[sizeof(float) + 2*sizeof(U16)];
+		else this->ID = nullptr;
 
 		// Only update if we need to
 		// Otherwise keep overwriting

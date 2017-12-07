@@ -115,7 +115,7 @@ bool Importer::BuildBCF(void){
 		}
 
 #endif
-		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
+		std::cerr << Helpers::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.first().body->POS+1 << "->" << reader.last().body->POS+1 << std::endl;
 		this->block.index_entry.contigID = reader.first().body->CHROM;
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
@@ -211,10 +211,10 @@ bool Importer::BuildBCF(void){
 		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
 		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
 
-		std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << std::endl;
-		std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << std::endl;
-		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
-		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
+		//std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << std::endl;
+		//std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << std::endl;
+		//std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
+		//std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
@@ -238,16 +238,16 @@ bool Importer::BuildBCF(void){
 				zstd.encodeStrides(this->block.format_containers[i]);
 		}
 
-		const size_t curPos = this->writer_.streamTomahawk.tellp();
+		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
 		this->writer_.streamTomahawk << this->block;
 		//this->block.write(this->writer_.streamTomahawk, *this->header_);
-		std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
 		this->total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
 		this->total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
 		if(this->block.index_entry.controller.hasGTPermuted) this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
-		std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
+		//std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
 
 		// Reset inside block
 		// this->permutator.reset();
@@ -301,8 +301,10 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	meta.position = entry.body->POS - this->block.index_entry.minPosition;
 	meta.ref_alt = entry.ref_alt;
 	meta.controller.simple = entry.isSimple();
-	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get()))
+	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get())){
+		std::cerr << "faild gt encode" << std::endl;
 		return false;
+	}
 
 	if(!this->parseBCFBody(meta, entry)){
 		std::cerr << "bad" << std::endl;

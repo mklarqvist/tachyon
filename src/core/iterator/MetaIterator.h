@@ -29,7 +29,7 @@ public:
 		hot_iterator(container),
 		container_hot(&container),
 		container_cold(nullptr),
-		operator_function(&self_type::__operatorBoth)
+		operator_function(&self_type::__operatorHotOnly)
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
@@ -59,8 +59,8 @@ public:
 	}
 
 	inline const entry_type& last(void){
-		if(this->n_position == 0) return(this->*operator_function)(0);
-		return(this->*operator_function)(this->n_position - 1);
+		if(this->n_entries == 0) return(this->*operator_function)(0);
+		return(this->*operator_function)(this->n_entries - 1);
 	}
 
 	inline const entry_type& operator[](const U32& p){
