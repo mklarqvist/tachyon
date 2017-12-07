@@ -44,12 +44,61 @@ protected:
 
 public:
 	CompressionContainer(){}
-	virtual ~CompressionContainer(){}
+	virtual ~CompressionContainer(){ this->buffer.deleteAll(); }
 	virtual const bool encode(permutation_type& manager) =0;
 	virtual const bool encode(stream_type& stream) =0;
 	virtual const bool encodeStrides(stream_type& stream) =0;
 	virtual const bool decode(stream_type& stream) =0;
 	virtual const bool decodeStrides(stream_type& stream) =0;
+
+protected:
+	buffer_type buffer;
+};
+
+class UncompressedCodec{
+private:
+	typedef UncompressedCodec self_type;
+protected:
+	typedef Core::StreamContainer stream_type;
+	typedef IO::BasicBuffer buffer_type;
+	typedef Core::PermutationManager permutation_type;
+
+public:
+	UncompressedCodec(){}
+	~UncompressedCodec(){}
+	const bool encode(permutation_type& manager){ return false; }
+	const bool encode(stream_type& stream){ return false; }
+	const bool encodeStrides(stream_type& stream){ return false; }
+
+	const bool decode(stream_type& stream){
+		if(stream.header.controller.encoder != Core::ENCODE_NONE){
+			std::cerr << "wrong codec" << std::endl;
+			return false;
+		}
+		stream.buffer_data_uncompressed.resize(stream.buffer_data.pointer + 16536);
+		memcpy(stream.buffer_data_uncompressed.data, stream.buffer_data.data, stream.buffer_data.pointer);
+		stream.buffer_data_uncompressed.pointer = stream.buffer_data.pointer;
+		assert(stream.checkCRC(0));
+		return true;
+	}
+
+	const bool decodeStrides(stream_type& stream){
+		if(!stream.header.controller.mixedStride){
+			std::cerr << "has no mixed stride" << std::endl;
+			return false;
+		}
+
+		if(stream.header_stride.controller.encoder != Core::ENCODE_NONE){
+			std::cerr << "wrong codec" << std::endl;
+			return false;
+		}
+
+		stream.buffer_strides_uncompressed.resize(stream.buffer_strides.pointer + 16536);
+		memcpy(stream.buffer_strides_uncompressed.data, stream.buffer_strides.data, stream.buffer_strides.pointer);
+		stream.buffer_strides_uncompressed.pointer = stream.buffer_strides.pointer;
+		assert(stream.checkCRC(1));
+		return true;
+	}
 
 protected:
 	buffer_type buffer;

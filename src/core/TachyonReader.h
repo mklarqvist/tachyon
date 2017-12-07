@@ -21,7 +21,7 @@ class TachyonReader{
 public:
 	TachyonReader() : filesize(0){}
 	TachyonReader(const std::string& filename) : input_file(filename), filesize(0){}
-	~TachyonReader(){}
+	~TachyonReader(){ }
 
 	bool open(void);
 	bool open(const std::string& filename){
@@ -61,15 +61,39 @@ public:
 			return false;
 		}
 
+		// Load data
 		this->stream >> this->block;
 
+		// At this stage we know how many patterns there are
+		// and how many streams there are
+		std::vector<U32> keys_im_interested_in = {3,2,1};
+		/*
+		std::sort(keys_im_interested_in.begin(), keys_im_interested_in.end());
+		std::vector< std::vector<U32> > keys_that_exists(this->block.index_entry.n_info_patterns);
+
+		for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
+			for(U32 k = 0; k < keys_im_interested_in.size(); ++k){
+				if(this->block.index_entry.info_bit_vectors[i][keys_im_interested_in[k]]){
+					std::cerr << this->header.entries[keys_im_interested_in[k]].ID << '\t' << i << std::endl;
+					keys_that_exists[i].push_back(keys_im_interested_in[k]);
+				}
+			}
+		}
+		std::cerr << "keys that exists: ";
+		for(U32 i = 0; i < keys_that_exists.size(); ++i){
+			for(U32 j = 0; j < keys_that_exists[i].size(); ++j){
+				std::cerr << keys_that_exists[i][j] << ';';
+			}
+			std::cerr << ' ';
+		}
+		std::cerr << std::endl;
+		*/
+
+		// Phase 1: Decode data
 		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_cold_container);
 		} else if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_NONE){
-			//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
-			this->block.meta_cold_container.buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
-			memcpy(this->block.meta_cold_container.buffer_data_uncompressed.data, this->block.meta_cold_container.buffer_data.data, this->block.meta_cold_container.buffer_data.pointer);
-			this->block.meta_cold_container.buffer_data_uncompressed.pointer = this->block.meta_cold_container.buffer_data.pointer;
+			this->no_codec.decode(this->block.meta_cold_container);
 		}
 		else {
 			std::cerr << "NOT ALLOWED COLD" << std::endl;
@@ -79,10 +103,7 @@ public:
 		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.meta_hot_container);
 		} else if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_NONE){
-			//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
-			this->block.meta_hot_container.buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
-			memcpy(this->block.meta_hot_container.buffer_data_uncompressed.data, this->block.meta_hot_container.buffer_data.data, this->block.meta_hot_container.buffer_data.pointer);
-			this->block.meta_hot_container.buffer_data_uncompressed.pointer = this->block.meta_hot_container.buffer_data.pointer;
+			this->no_codec.decode(this->block.meta_hot_container);
 		} else {
 			std::cerr << "NOT ALLOWED HOT" << std::endl;
 			exit(1);
@@ -91,89 +112,68 @@ public:
 
 		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.gt_rle_container);
+		}  else if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_NONE){
+			this->no_codec.decode(this->block.gt_rle_container);
+		} else {
+			std::cerr << "NOT ALLOWED HOT" << std::endl;
+			exit(1);
 		}
+
 		if(this->block.gt_simple_container.header.controller.encoder == Core::ENCODE_ZSTD){
 			this->zstd.decode(this->block.gt_simple_container);
+		}  else if(this->block.gt_simple_container.header.controller.encoder == Core::ENCODE_NONE){
+			this->no_codec.decode(this->block.gt_simple_container);
+		} else {
+			std::cerr << "NOT ALLOWED HOT" << std::endl;
+			exit(1);
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
 				this->zstd.decode(this->block.info_containers[i]);
 			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.info_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
-				this->block.info_containers[i].buffer_data_uncompressed.resize(this->block.info_containers->buffer_data.pointer + 16536);
-				memcpy(this->block.info_containers[i].buffer_data_uncompressed.data, this->block.info_containers[i].buffer_data.data, this->block.info_containers[i].buffer_data.pointer);
-				this->block.info_containers[i].buffer_data_uncompressed.pointer = this->block.info_containers[i].buffer_data.pointer;
+				this->no_codec.decode(this->block.info_containers[i]);
 			}
 
 			if(this->block.info_containers[i].header.controller.mixedStride){
 				if(this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
 					this->zstd.decodeStrides(this->block.info_containers[i]);
 				} else if (this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
-					this->block.info_containers[i].buffer_strides_uncompressed.resize(this->block.info_containers->buffer_strides.pointer + 16536);
-					memcpy(this->block.info_containers[i].buffer_strides_uncompressed.data, this->block.info_containers[i].buffer_strides.data, this->block.info_containers[i].buffer_strides.pointer);
-					this->block.info_containers[i].buffer_strides_uncompressed.pointer = this->block.info_containers[i].buffer_strides.pointer;
+					this->no_codec.decodeStrides(this->block.info_containers[i]);
 				}
 			}
-
-			/*
-			std::cerr << Helpers::timestamp("LOG","ITERATOR") <<
-							(this->block.info_containers[i].header.controller.uniform ? "UNIFORM" : "NON-UNIFORM") << '\t' <<
-							this->block.info_containers[i].buffer_data_uncompressed.pointer << '\t' <<
-							this->block.info_containers[i].header.controller.type << '\t' <<
-							this->block.info_containers[i].header.controller.signedness << "\tcompressed: " <<
-							this->block.info_containers[i].buffer_data.pointer << '\t' <<
-							this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << std::endl;
-			*/
-
-			//std::cerr << (this->block.info_containers[i].header.controller.type == Core::TYPE_BOOLEAN) << std::endl;
-			//assert(this->block.info_containers[i].buffer_data_uncompressed.pointer > 0);
 		}
-
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
 				this->zstd.decode(this->block.format_containers[i]);
 			} else if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_NONE){
 				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
-				this->block.format_containers[i].buffer_data_uncompressed.resize(this->block.format_containers->buffer_data.pointer + 16536);
-				memcpy(this->block.format_containers[i].buffer_data_uncompressed.data, this->block.format_containers[i].buffer_data.data, this->block.format_containers[i].buffer_data.pointer);
-				this->block.format_containers[i].buffer_data_uncompressed.pointer = this->block.format_containers[i].buffer_data.pointer;
-
+				this->zstd.decodeStrides(this->block.format_containers[i]);
 			}
+
+			if(this->block.format_containers[i].header.controller.mixedStride){
+				if(this->block.format_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
+					this->zstd.decodeStrides(this->block.format_containers[i]);
+				} else if (this->block.format_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
+					this->no_codec.decodeStrides(this->block.format_containers[i]);
+				}
+			}
+
 		}
 
-		//std::cout << "first\n\n" << std::endl;
-
-		//std::cout << "Expect\t" << this->block.index_entry.minPosition+1 << "\t" << this->block.index_entry.maxPosition+1 << std::endl;
+		// Phase 2 construct iterators
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		//std::cout << "Observe\t" << this->block.index_entry.minPosition + it.first().hot->position + 1 << '\t' << this->block.index_entry.minPosition + it.last().hot->position + 1 << std::endl;
-
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+		// Setup containers
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
 			info_iterators[i].setup(this->block.info_containers[i]);
-			/*
-			std::cerr << i << "->" << this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID << '\t' <<
-					info_iterators[i].data_iterator->n_entries << '\t';
-			if(info_iterators[i].stride_iterator == nullptr){
-				std::cerr << "fixed : " << info_iterators[i].container->header.stride << std::endl;
-			} else std::cerr << "variable: " << info_iterators[i].stride_iterator->n_entries << std::endl;
-			*/
-			//if(this->header.getEntry(this->block.index_entry.info_offsets[i].key).ID == "SVLEN"){
-			//	std::cerr << info_iterators[i].data_iterator->n_entries << '\t' << info_iterators[i].container->header.stride << "\ttype: " << (U16)info_iterators[i].container->header.controller.type << ':' << info_iterators[i].container->header.controller.signedness << std::endl;
-			//}
-		}
 
-		//std::cerr << it.size() << std::endl;
+
+		// Phase 3 perform iterations
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();
-			//if(this->block.index_entry.minPosition + m.hot->position + 1 < 234003207) continue;
-			//std::cerr.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			//std::cerr << this->block.index_entry.minPosition + m.hot->position + 1 << std::endl;
-
-			//std::cout << "meta offsets: " << m.hot->virtual_offset_cold_meta << '\t' << m.cold.n_ID << std::endl;
-
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
 			if(m.cold.n_ID == 0) std::cout.put('.');
@@ -208,6 +208,22 @@ public:
 			const U32* const firstKey = target_info_vector.firstKey();
 			const U32& n_keys = target_info_vector.n_keys;
 
+			for(U32 k = 0; k < keys_im_interested_in.size(); ++k){
+				// If this key is set
+				if(target_info_vector[keys_im_interested_in[k]]){
+					info_iterators[keys_im_interested_in[k]].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[keys_im_interested_in[k]].key).ID);
+
+					if(set + 1 != keys_im_interested_in.size())
+						std::cout.put(';');
+
+					++info_iterators[keys_im_interested_in[k]];
+					++set;
+				}
+
+			}
+			std::cout << '\n';
+
+			/*
 			// This is in-order
 			for(U32 k = 0; k < n_keys; ++k){
 				//std::cerr << firstKey[k] << std::endl;
@@ -223,24 +239,8 @@ public:
 					++set;
 				}
 			}
-
-			//set = 0;
-			/*
-			// This is out-of-order but correct
-			for(U32 k = 0; k < this->block.index_entry.n_info_streams; ++k){
-				// Check if field is set
-				if(target_info_vector[k]){
-					info_iterators[k].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[k].key).ID);
-
-					if(set + 1 != target_info_vector.fields_set)
-						std::cout.put(';');
-
-					++info_iterators[k];
-					++set;
-				}
-			}
-			*/
 			std::cout << '\n';
+			*/
 			++it;
 		}
 		std::cout.flush();
@@ -254,10 +254,12 @@ public:
 	std::string input_file;
 	std::ifstream stream;
 	U64 filesize;
+
 	block_entry_type block;
 	header_type header;
-	buffer_type buffer;
+
 	Compression::ZSTDCodec zstd;
+	Compression::UncompressedCodec no_codec;
 };
 
 }

@@ -16,8 +16,10 @@ struct BlockEntrySettings{
 	bool constructOccTable;
 
 	std::vector<std::string> load_samples;
-	std::vector<std::string> load_info_names;
-	std::vector<std::string> load_format_names;
+	std::vector<std::string> load_info_names;   // has to be in order
+	std::vector<std::string> load_format_names; // has to be in order
+	std::vector<U32> load_info_ID;
+	std::vector<U32> load_format_ID;
 };
 
 }
