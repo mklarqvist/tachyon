@@ -181,7 +181,7 @@ public:
 public:
 	header_type header;
 	header_stride_type header_stride;
-	// Not written - used internally only
+	// Not written - used internally only during import
 	U32 n_entries;   // number of container entries
 	U32 n_additions; // number of times an addition operation was executed
 	// Buffers - only bit that are written to disk

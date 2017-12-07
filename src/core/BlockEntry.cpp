@@ -138,31 +138,12 @@ void BlockEntry::updateContainer(stream_container& container, offset_minimal_typ
 	}
 }
 
-bool BlockEntry::read(std::ifstream& stream, const settings_type& settings){
+bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
+	settings.load_info_ID_loaded.clear();
+
 	const U64 start_offset = (U64)stream.tellg();
 	stream >> this->index_entry;
 	const U64 end_of_block = start_offset + this->index_entry.offset_end_of_block;
-	//stream.seekg(end_of_block - sizeof(U64));
-
-	//std::cerr << this->index_this->contigID << ":" << this->index_this->minPosition << "-" << this->index_this->maxPosition << std::endl;
-	//std::cerr << this->index_this->offset_end_of_block - this->index_this->offset_ppa.offset << std::endl;
-	//const U64 end_of_block = (U64)stream.tellg() + (this->index_this->offset_end_of_block - this->index_this->offset_ppa.offset) - sizeof(U64);
-	//stream.seekg(curpos + (this->index_this->offset_end_of_block - this->index_this->offset_ppa.offset) - sizeof(U64));
-
-	// i.e. search to meta hot
-	//const U32 hot_offset = this->index_this->offset_hot_meta.offset - this->index_this->offset_ppa.offset;
-	//std::cerr << "seeking to: " << ((U64)stream.tellg() + hot_offset) << std::endl;
-	//stream.seekg((U64)stream.tellg() + hot_offset);
-	//stream >> this->meta_hot_container;
-	//std::cerr << (int)this->meta_hot_container.header.extra[0] << std::endl;
-	//std::cerr << "meta data: " << this->meta_hot_container.buffer_data.pointer << std::endl;
-	//stream >> this->meta_cold_container;
-	//stream >> this->gt_rle_container;
-	//std::cerr << this->gt_rle_container.buffer_data.pointer << '\t' << this->index_this->n_variants << std::endl;
-	//stream >> this->gt_simple_container;
-
-	//stream.seekg(end_of_block);
-
 
 	if(settings.loadPPA){
 		if(this->index_entry.controller.hasGTPermuted){
@@ -170,18 +151,22 @@ bool BlockEntry::read(std::ifstream& stream, const settings_type& settings){
 			stream >> this->ppa_manager;
 		}
 	}
+
 	if(settings.loadMetaHot){
 		stream.seekg(start_offset + this->index_entry.offset_hot_meta.offset);
 		stream >> this->meta_hot_container;
 	}
+
 	if(settings.loadMetaCold){
 		stream.seekg(start_offset + this->index_entry.offset_cold_meta.offset);
 		stream >> this->meta_cold_container;
 	}
+
 	if(settings.loadGT){
 		stream.seekg(start_offset + this->index_entry.offset_gt_rle.offset);
 		stream >> this->gt_rle_container;
 	}
+
 	if(settings.loadGTSimple){
 		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
@@ -191,39 +176,40 @@ bool BlockEntry::read(std::ifstream& stream, const settings_type& settings){
 		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 			stream >> this->info_containers[i];
-	} else {
-		std::cerr << "here" << std::endl;
-		std::vector< std::pair<U32,U32> > available_info_keys;
+
+	} else if(settings.load_info_ID.size() > 0) {
+		BlockEntrySettingsMap map_entry;
 		// Cycle over all the keys we are interested in
+		U32 target_stream_id = 0;
 		for(U32 i = 0; i < settings.load_info_ID.size(); ++i){
 			// Cycle over all available streams in this block
 			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
 				//std::cerr << "checking: " << this->index_entry.info_offsets[j].key << std::endl;
 				if(this->index_entry.info_offsets[j].key == settings.load_info_ID[i]){
-					std::cerr << i << ',' << j << '\t' << this->index_entry.info_offsets[j].key << '\t' << settings.load_info_ID[i] << std::endl;
-					available_info_keys.push_back( std::pair<U32,U32>(j, this->index_entry.info_offsets[j].offset));
+					//std::cerr << "Matched: " << i << ',' << j << '\t' << this->index_entry.info_offsets[j].key << "==" << settings.load_info_ID[i] << std::endl;
+					settings.load_info_ID_loaded.push_back( BlockEntrySettingsMap(settings.load_info_ID[i], target_stream_id++, j, this->index_entry.info_offsets[j].offset));
 					break;
 				}
 			}
 		}
 
 		// Ascertain that random access is linearly forward
-		std::sort(available_info_keys.begin(), available_info_keys.end());
+		std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
 
 		// Todo: have to jump to next info block we know exists
-
-		for(U32 i = 0; i < available_info_keys.size(); ++i){
-			std::cerr << "key: " << available_info_keys[i].first << std::endl;
-			std::cerr << this->index_entry.info_offsets[available_info_keys[i].first].key << '\t' << start_offset + this->index_entry.info_offsets[available_info_keys[i].first].offset << '=' << start_offset + available_info_keys[i].second << std::endl;
-			stream.seekg(start_offset + available_info_keys[i].second);
+		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
+			//std::cerr << "key: " << settings.load_info_ID_loaded[i].target_stream_local << std::endl;
+			//std::cerr << this->index_entry.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].key << '\t' << start_offset + this->index_entry.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].offset << '=' << start_offset + settings.load_info_ID_loaded[i].offset << std::endl;
+			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset);
 			if(!stream.good()){
 				std::cerr << "failed seek!" << std::endl;
 				return false;
 			}
 			stream >> this->info_containers[i];
+			// Store which keys existed
+			//std::cerr << "pushing back: " << settings.load_info_ID_loaded[i].target_stream << std::endl;
 		}
-	}
-	//stream.seekg(end_of_block - sizeof(U64));
+	} // end case load_info_ID
 
 	if(settings.loadFormatAll){
 		stream.seekg(start_offset + this->index_entry.format_offsets[0].offset);

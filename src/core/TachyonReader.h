@@ -72,16 +72,79 @@ public:
 			exit(1);
 		}
 
+		//temp
+		//std::cerr << "loaded: " << this->settings.load_info_ID_loaded.size() << std::endl;
+		for(U32 i = 0; i < this->settings.load_info_ID_loaded.size(); ++i){
+			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
+				this->zstd.decode(this->block.info_containers[i]);
+			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
+				this->no_codec.decode(this->block.info_containers[i]);
+			}
+
+			if(this->block.info_containers[i].header.controller.mixedStride){
+				if(this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
+					this->zstd.decodeStrides(this->block.info_containers[i]);
+				} else if (this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
+					this->no_codec.decodeStrides(this->block.info_containers[i]);
+				}
+			}
+		}
+
+		// Phase 2 construct iterators
+		//Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->settings.load_info_ID_loaded.size()];
+
+		// Setup containers
+		for(U32 i = 0; i < this->settings.load_info_ID_loaded.size(); ++i)
+			info_iterators[i].setup(this->block.info_containers[i]);
+
+
+		// Phase 3 perform iterations
 		Iterator::MetaIterator it(this->block.meta_hot_container);
 		for(U32 i = 0; i < it.size(); ++i){
-			std::cout << it.current().hot->position << '\n';
+			const Core::MetaEntry& m = it.current();
+			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
+			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+
+			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+				// Check if field is set
+				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+				// Lookup what that field is
+					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+				}
+			}
+
+			// Cycle over streams that are set in the given bit-vector
+			U32 set = 0;
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
+
+			//std::cerr << "loaded size: " << this->settings.load_info_ID_loaded.size() << std::endl;
+			for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
+				//std::cerr << k << '/' << this->settings.load_info_ID_loaded.size() << '\t' << this->settings.load_info_ID_loaded[k].key << ':' << this->settings.load_info_ID_loaded[k].target_stream_local << std::endl;
+				//std::cerr << this->settings.load_info_ID_loaded[k].key << ": " << this->header.entries[this->settings.load_info_ID_loaded[k].key].ID << std::endl;
+
+				// If this key is set
+				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
+					info_iterators[this->settings.load_info_ID_loaded[k].target_stream].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[this->settings.load_info_ID_loaded[k].target_stream].key).ID);
+
+					if(set + 1 != this->settings.load_info_ID_loaded.size())
+						std::cout.put(';');
+
+					++info_iterators[this->settings.load_info_ID_loaded[k].target_stream];
+					++set;
+				}
+
+			}
+			std::cout << '\n';
 			++it;
 		}
 
+		std::cout.flush();
+		delete [] info_iterators;
 
 		return true;
 
-		// Load data
+		// Load ALL data
 		this->stream >> this->block;
 
 		// At this stage we know how many patterns there are
@@ -184,7 +247,7 @@ public:
 
 		// Phase 2 construct iterators
 		//Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		//Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)

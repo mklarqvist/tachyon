@@ -56,7 +56,7 @@ public:
 	void updateBaseContainers(buffer_type& buffer);
 	void updateOffsets(void);
 
-	bool read(std::ifstream& stream, const settings_type& settings);
+	bool read(std::ifstream& stream, settings_type& settings);
 
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer);

@@ -4,6 +4,20 @@
 namespace Tachyon{
 namespace Core{
 
+struct BlockEntrySettingsMap{
+	typedef BlockEntrySettingsMap self_type;
+
+	BlockEntrySettingsMap() : key(0), target_stream(-1), target_stream_local(-1), offset(0){}
+	BlockEntrySettingsMap(const U32& key, const S32 target_stream, const S32 target_stream_disk, const U32& offset) : key(key), target_stream(target_stream), target_stream_local(target_stream_disk), offset(offset){}
+
+	inline bool operator<(const self_type& other) const{ return(this->offset < other.offset); }
+
+	U32 key;
+	S32 target_stream;
+	S32 target_stream_local;
+	U32 offset;
+};
+
 struct BlockEntrySettings{
 	BlockEntrySettings() :
 		loadPPA(false),
@@ -40,6 +54,10 @@ struct BlockEntrySettings{
 	std::vector<std::string> load_format_names; // has to be in order
 	std::vector<U32> load_info_ID;
 	std::vector<U32> load_format_ID;
+
+
+	std::vector<BlockEntrySettingsMap> load_info_ID_loaded;
+	std::vector<BlockEntrySettingsMap> load_format_ID_loaded;
 };
 
 }
