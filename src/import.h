@@ -29,16 +29,13 @@ DEALINGS IN THE SOFTWARE.
 void import_usage(void){
 	programMessage();
 	std::cerr <<
-	"About:  Convert VCF/BCF->TWK/; subset and slice TWK/TWO data\n"
-	"        Only biallelic diploid genotypes from SNVs will be retained\n"
-	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.twk>\n\n"
+	"Brief:  Convert VCF/BCF -> YON/\n"
+	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.bcf> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input Tomahawk (required)\n"
 	"  -o FILE  output file prefix (required)\n"
-	"  -c INT   checkpoint size in number of variants (default: 500)\n"
-	"  -h FLOAT Hardy-Weinberg P-value cutoff (default: 0)\n"
-	"  -m FLOAT Minor-genotype frequency (MGF) cutoff (default: 0)\n"
-	"  -n FLOAT Missingness percentage cutoff (default: 0.2)\n"
+	"  -c INT   Import checkpoint size in number of variants\n"
+	"  -C FLOAT Import checkpoint size in bases\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -60,7 +57,8 @@ int import(int argc, char** argv){
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
 
-		{"checkpoint",		optional_argument, 0,  'c' },
+		{"checkpoint-variants",		optional_argument, 0,  'c' },
+		{"checkpoint-bases",		optional_argument, 0,  'C' },
 		{"permute",		no_argument, 0,  'p' },
 		{"no-permute",		no_argument, 0,  'P' },
 		{"silent",		no_argument, 0,  's' },
@@ -70,7 +68,8 @@ int import(int argc, char** argv){
 	std::string input;
 	std::string output;
 	SILENT = 0;
-	S32 checkpoint = 500;
+	S32 checkpoint_n_variants = 500;
+	double checkpoint_bp_window = 30e3;
 	bool permute = true;
 
 	while ((c = getopt_long(argc, argv, "i:o:c:spP?", long_options, &option_index)) != -1){
@@ -85,9 +84,16 @@ int import(int argc, char** argv){
 			output = std::string(optarg);
 			break;
 		case 'c':
-			checkpoint = atoi(optarg);
-			if(checkpoint < 0){
-				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to < 0..." << std::endl;
+			checkpoint_n_variants = atoi(optarg);
+			if(checkpoint_n_variants <= 0){
+				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				return(1);
+			}
+			break;
+		case 'C':
+			checkpoint_bp_window = atof(optarg);
+			if(checkpoint_bp_window <= 0){
+				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
@@ -114,7 +120,7 @@ int import(int argc, char** argv){
 		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
-	Tachyon::Importer importer(input, output, checkpoint);
+	Tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
 	importer.setPermute(permute);
 
 	if(!importer.Build())

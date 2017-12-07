@@ -6,9 +6,12 @@
 
 namespace Tachyon {
 
-Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint) :
+#define IMPORT_ASSERT 1
+
+Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_n_snps, const double checkpoint_bases) :
 	permute(true),
-	checkpoint_size(checkpoint),
+	checkpoint_n_snps(checkpoint_n_snps),
+	checkpoint_bases(checkpoint_bases),
 	total_gt_cost(0),
 	total_ppa_cost(0),
 	total_rest_cost(0),
@@ -83,32 +86,39 @@ bool Importer::BuildBCF(void){
 	}
 
 	if(!this->writer_.WriteHeader()){
-		std::cerr << "failed" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
 		return false;
 	}
 	this->writer_.streamTomahawk << *this->header_;
 
 	// Resize containers
-	const U32 resize_to = this->checkpoint_size * sizeof(U32) * this->header_->samples;
+	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
 
 	// Todo: dynamically select compression decorator
 	Compression::ZSTDCodec zstd;
 
 	// Start import
+	U32 previousFirst = 0; U32 previousLast = 0;
+	U64 n_variants_read = 0;
 	while(true){
-		if(!reader.getVariants(this->checkpoint_size))
+		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases))
 			break;
 
-		// Debug; check BCFReader timings
-		//continue;
+		// Debug assertion
+#if IMPORT_ASSERT == 1
+		assert(previousLast >= previousFirst);
+		if(!(reader.first().body->POS >= previousFirst && reader.first().body->POS >= previousLast)){
+			std::cerr << Helpers::timestamp("ERROR","IMPORT") << reader.first().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
+			std::cerr << reader[reader.n_entries].body->POS << std::endl;
+			exit(1);
+		}
 
-		// Reset permutate
+#endif
 		std::cerr << "reader: " << reader.size() << '\t' << reader.first().body->POS+1 << '\t' << reader.last().body->POS+1 << std::endl;
 		this->block.index_entry.contigID = reader.first().body->CHROM;
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
-
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
@@ -126,6 +136,7 @@ bool Importer::BuildBCF(void){
 				return false;
 			}
 		}
+		n_variants_read += reader.size();
 
 		this->block.index_entry.controller.hasGT = true;
 		this->block.index_entry.controller.isDiploid = true;
@@ -205,10 +216,6 @@ bool Importer::BuildBCF(void){
 		std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
-		for(U32 i = 0; i < this->info_fields.size(); ++i){
-			std::cerr << i << "->" << this->info_fields[i] << std::endl;
-		}
-
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(this->block.info_containers[i].header.controller.uniform == true)
@@ -248,6 +255,8 @@ bool Importer::BuildBCF(void){
 		this->block.clear();
 		this->permutator.reset();
 		this->writer_.streamTomahawk.flush();
+		previousFirst = reader.first().body->POS;
+		previousLast  = reader.last().body->POS;
 	}
 
 	/*
@@ -274,7 +283,7 @@ bool Importer::BuildBCF(void){
 
 													 << " blocks..." << std::endl;
 	 */
-	std::cerr << "all done" << std::endl;
+	std::cerr << "all done: " << n_variants_read << std::endl;
 	return(true);
 }
 

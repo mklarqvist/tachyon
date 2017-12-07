@@ -93,53 +93,10 @@ public:
 		}
 	}
 
-	// For debugging
-	void write(std::ofstream& stream, const VCF::VCFHeader& header){
-		U64 startPos = stream.tellp();
-		stream << this->index_entry;
-		std::cout << "Index\t" << (U64)stream.tellp() - startPos << '\n';
-		startPos = stream.tellp();
-		stream << this->ppa_manager;
-		std::cerr << "PPA-v: " << this->ppa_manager.c_length << '\t' << this->ppa_manager.crc << std::endl;
-		std::cout << "PPA\t" << (U64)stream.tellp() - startPos << '\n';
-		startPos = stream.tellp();
-		stream << this->meta_hot_container;
-		std::cout << "META-HOT\t" << (U64)stream.tellp() - startPos << '\n';
-		startPos = stream.tellp();
-		stream << this->meta_cold_container;
-		std::cout << "META-COLD\t" << (U64)stream.tellp() - startPos << '\n';
-		startPos = stream.tellp();
-		stream << this->gt_rle_container;
-		std::cout << "GT-RLE\t" << (U64)stream.tellp() - startPos << '\n';
-		startPos = stream.tellp();
-		stream << this->gt_simple_container;
-		std::cout << "GT-SIMPLE\t" << (U64)stream.tellp() - startPos << '\n';
-
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
-			startPos = stream.tellp();
-			stream << this->info_containers[i];
-			std::cout << "INFO-" << header[this->index_entry.info_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
-		}
-
-		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
-			startPos = stream.tellp();
-			stream << this->format_containers[i];
-			std::cout << "FORMAT-" << header[this->index_entry.format_offsets[i].key].ID << '\t' << (U64)stream.tellp() - startPos << '\n';
-		}
-
-		std::cerr << Helpers::timestamp("DEBUG") << std::endl;
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
-			std::cerr << this->index_entry.info_offsets[i].key << '\t';
-		std::cerr << std::endl;
-		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
-				std::cerr << this->index_entry.format_offsets[i].key << '\t';
-			std::cerr << std::endl;
-	}
-
 	void updateBaseContainers(buffer_type& buffer){
-		this->updateContainer(this->gt_rle_container, this->index_entry.offset_gt_rle, buffer, 0);
+		this->updateContainer(this->gt_rle_container,    this->index_entry.offset_gt_rle,    buffer, 0);
 		this->updateContainer(this->gt_simple_container, this->index_entry.offset_gt_simple, buffer, 0);
-		this->updateContainer(this->meta_hot_container, this->index_entry.offset_hot_meta, buffer, 0);
+		this->updateContainer(this->meta_hot_container,  this->index_entry.offset_hot_meta,  buffer, 0);
 		this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
 	}
 

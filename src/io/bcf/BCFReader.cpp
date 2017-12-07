@@ -86,9 +86,9 @@ bool BCFReader::nextVariant(BCFEntry& entry){
 	return true;
 }
 
-bool BCFReader::getVariants(const U32 entries, bool across_contigs){
+bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool across_contigs){
 	delete [] this->entries;
-	this->entries = new entry_type[entries];
+	this->entries = new entry_type[n_variants];
 	this->n_entries = 0;
 
 	// EOF
@@ -96,7 +96,7 @@ bool BCFReader::getVariants(const U32 entries, bool across_contigs){
 		return false;
 
 	U32 firstPos = 0;
-	for(U32 i = 0; i < entries; ++i){
+	for(U32 i = 0; i < n_variants; ++i){
 		if(this->current_pointer == this->bgzf_controller.buffer.size()){
 			if(!this->nextBlock()){
 				return(this->size() > 0);
@@ -105,23 +105,23 @@ bool BCFReader::getVariants(const U32 entries, bool across_contigs){
 
 		if(this->current_pointer + 8 > this->bgzf_controller.buffer.size()){
 			const S32 partial = (S32)this->bgzf_controller.buffer.size() - this->current_pointer;
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
+			this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 			if(!this->nextBlock()){
 				std::cerr << Helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
 				return false;
 			}
 
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[0], 8 - partial);
+			this->entries[i].add(&this->bgzf_controller.buffer[0], 8 - partial);
 			this->current_pointer = 8 - partial;
 		} else {
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], 8);
+			this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], 8);
 			this->current_pointer += 8;
 		}
 
-		U64 remainder = this->entries[this->n_entries].sizeBody();
+		U64 remainder = this->entries[i].sizeBody();
 		while(remainder > 0){
 			if(this->current_pointer + remainder > this->bgzf_controller.buffer.size()){
-				this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
+				this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 				remainder -= this->bgzf_controller.buffer.size() - this->current_pointer;
 				if(!this->nextBlock()){
 					std::cerr << Helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
@@ -129,20 +129,27 @@ bool BCFReader::getVariants(const U32 entries, bool across_contigs){
 				}
 
 			} else {
-				this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], remainder);
+				this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], remainder);
 				this->current_pointer += remainder;
 				remainder = 0;
 				break;
 			}
 		}
-		this->entries[this->n_entries].parse();
-		if(this->n_entries == 0) firstPos = this->entries[0].body->POS + 1;
-		if((this->entries[this->n_entries].body->POS + 1) - firstPos > 30e3){
-			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << std::endl;
-			++this->n_entries;
+
+		// Interpret char stream
+		this->entries[i].parse();
+
+		// Check position
+		if(this->n_entries == 0)
+			firstPos = this->entries[0].body->POS + 1;
+
+		++this->n_entries;
+
+		// Check break condition for window
+		if((this->entries[i].body->POS + 1) - firstPos > bp_window){
+			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries].body->POS + 1) - firstPos << ")" << std::endl;
 			break;
 		}
-		++this->n_entries;
 
 	}
 

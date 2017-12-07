@@ -33,7 +33,7 @@ public:
 	bool parseHeader(void);
 	bool open(const std::string input);
 
-	bool getVariants(const U32 number, bool across_contigs = false); // get N number of variants into buffer
+	bool getVariants(const U32 n_variants, const double bp_window, bool across_contigs = false); // get N number of variants into buffer
 
 	// Iterator functions
 	inline entry_type& operator[](const U32& p){ return(this->entries[p]); }

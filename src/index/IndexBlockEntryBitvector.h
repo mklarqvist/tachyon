@@ -11,7 +11,7 @@ struct IndexBlockEntryBitvector{
 	typedef IndexBlockEntryBitvector self_type;
 
 public:
-	IndexBlockEntryBitvector() : n_keys(0), fields_set(0), keys(nullptr), bit_bytes(nullptr){}
+	IndexBlockEntryBitvector() : n_keys(0), keys(nullptr), bit_bytes(nullptr){}
 	~IndexBlockEntryBitvector(){
 		delete [] this->keys;
 		delete [] this->bit_bytes;
@@ -68,7 +68,6 @@ public:
 
 public:
 	U32 n_keys;
-	U16 fields_set; // when reading only
 	U32* keys;
 	BYTE* bit_bytes;
 };

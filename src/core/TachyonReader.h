@@ -181,8 +181,6 @@ public:
 			const U32* const firstKey = target_info_vector.firstKey();
 			const U32& n_keys = target_info_vector.n_keys;
 
-			// Todo: SVLEN is incorrectly casted
-
 			// This is in-order
 			for(U32 k = 0; k < n_keys; ++k){
 				//std::cerr << firstKey[k] << std::endl;
@@ -191,7 +189,7 @@ public:
 				if(target_info_vector[current_key]){
 					info_iterators[current_key].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[current_key].key).ID);
 
-					if(set + 1 != target_info_vector.fields_set)
+					if(set + 1 != target_info_vector.n_keys)
 						std::cout.put(';');
 
 					++info_iterators[current_key];
