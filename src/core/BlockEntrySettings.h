@@ -5,6 +5,26 @@ namespace Tachyon{
 namespace Core{
 
 struct BlockEntrySettings{
+	BlockEntrySettings() :
+		loadPPA(false),
+		loadGT(false),
+		loadGTSimple(false),
+		loadMetaHot(false),
+		loadMetaCold(false),
+		loadInfoAll(false),
+		loadFormatAll(false),
+		constructOccTable(false)
+	{}
+
+	void loadAll(void){
+		this->loadPPA = true;
+		this->loadGT = true;
+		this->loadGTSimple = true;
+		this->loadMetaCold = true;
+		this->loadMetaHot = true;
+		this->loadInfoAll = true;
+		this->loadFormatAll = true;
+	}
 
 	bool loadPPA;
 	bool loadGT;

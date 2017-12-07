@@ -100,6 +100,11 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::Core::TachyonReader reader(input);
+	reader.settings.loadMetaHot = true;
+	// Todo: deduplicate and move to function in settings class
+	reader.settings.load_info_ID.push_back(1);
+	reader.settings.load_info_ID.push_back(3);
+	reader.settings.load_info_ID.push_back(15);
 	reader.open(input);
 	while(reader.nextBlock()){
 		reader.block.clear();

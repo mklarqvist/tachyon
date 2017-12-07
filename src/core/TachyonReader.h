@@ -61,6 +61,26 @@ public:
 			return false;
 		}
 
+		this->block.read(stream, this->settings);
+
+		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
+			this->zstd.decode(this->block.meta_hot_container);
+		} else if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_NONE){
+			this->no_codec.decode(this->block.meta_hot_container);
+		} else {
+			std::cerr << "NOT ALLOWED HOT" << std::endl;
+			exit(1);
+		}
+
+		Iterator::MetaIterator it(this->block.meta_hot_container);
+		for(U32 i = 0; i < it.size(); ++i){
+			std::cout << it.current().hot->position << '\n';
+			++it;
+		}
+
+
+		return true;
+
 		// Load data
 		this->stream >> this->block;
 
@@ -163,7 +183,7 @@ public:
 		}
 
 		// Phase 2 construct iterators
-		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+		//Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
@@ -255,6 +275,7 @@ public:
 	std::ifstream stream;
 	U64 filesize;
 
+	BlockEntrySettings settings;
 	block_entry_type block;
 	header_type header;
 
