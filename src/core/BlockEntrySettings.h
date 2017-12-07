@@ -11,6 +11,7 @@ struct BlockEntrySettingsMap{
 	BlockEntrySettingsMap(const U32& key, const S32 target_stream, const S32 target_stream_disk, const U32& offset) : key(key), target_stream(target_stream), target_stream_local(target_stream_disk), offset(offset){}
 
 	inline bool operator<(const self_type& other) const{ return(this->offset < other.offset); }
+	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
 	U32 key;
 	S32 target_stream;

@@ -63,93 +63,8 @@ public:
 
 		this->block.read(stream, this->settings);
 
-		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.meta_hot_container);
-		} else if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_NONE){
-			this->no_codec.decode(this->block.meta_hot_container);
-		} else {
-			std::cerr << "NOT ALLOWED HOT" << std::endl;
-			exit(1);
-		}
-
-		//temp
-		//std::cerr << "loaded: " << this->settings.load_info_ID_loaded.size() << std::endl;
-		for(U32 i = 0; i < this->settings.load_info_ID_loaded.size(); ++i){
-			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
-				this->zstd.decode(this->block.info_containers[i]);
-			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				this->no_codec.decode(this->block.info_containers[i]);
-			}
-
-			if(this->block.info_containers[i].header.controller.mixedStride){
-				if(this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
-					this->zstd.decodeStrides(this->block.info_containers[i]);
-				} else if (this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
-					this->no_codec.decodeStrides(this->block.info_containers[i]);
-				}
-			}
-		}
-
-		// Phase 2 construct iterators
-		//Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->settings.load_info_ID_loaded.size()];
-
-		// Setup containers
-		for(U32 i = 0; i < this->settings.load_info_ID_loaded.size(); ++i)
-			info_iterators[i].setup(this->block.info_containers[i]);
 
 
-		// Phase 3 perform iterations
-		Iterator::MetaIterator it(this->block.meta_hot_container);
-		for(U32 i = 0; i < it.size(); ++i){
-			const Core::MetaEntry& m = it.current();
-			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
-
-			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-				// Check if field is set
-				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
-				// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
-				}
-			}
-
-			// Cycle over streams that are set in the given bit-vector
-			U32 set = 0;
-			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
-
-			//std::cerr << "loaded size: " << this->settings.load_info_ID_loaded.size() << std::endl;
-			for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
-				//std::cerr << k << '/' << this->settings.load_info_ID_loaded.size() << '\t' << this->settings.load_info_ID_loaded[k].key << ':' << this->settings.load_info_ID_loaded[k].target_stream_local << std::endl;
-				//std::cerr << this->settings.load_info_ID_loaded[k].key << ": " << this->header.entries[this->settings.load_info_ID_loaded[k].key].ID << std::endl;
-
-				// If this key is set
-				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
-					info_iterators[this->settings.load_info_ID_loaded[k].target_stream].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[this->settings.load_info_ID_loaded[k].target_stream].key).ID);
-
-					if(set + 1 != this->settings.load_info_ID_loaded.size())
-						std::cout.put(';');
-
-					++info_iterators[this->settings.load_info_ID_loaded[k].target_stream];
-					++set;
-				}
-
-			}
-			std::cout << '\n';
-			++it;
-		}
-
-		std::cout.flush();
-		delete [] info_iterators;
-
-		return true;
-
-		// Load ALL data
-		this->stream >> this->block;
-
-		// At this stage we know how many patterns there are
-		// and how many streams there are
-		std::vector<U32> keys_im_interested_in = {3,2,1};
 		/*
 		std::sort(keys_im_interested_in.begin(), keys_im_interested_in.end());
 		std::vector< std::vector<U32> > keys_that_exists(this->block.index_entry.n_info_patterns);
@@ -246,8 +161,8 @@ public:
 		}
 
 		// Phase 2 construct iterators
-		//Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		//Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
@@ -288,23 +203,43 @@ public:
 			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
-			const U32* const firstKey = target_info_vector.firstKey();
-			const U32& n_keys = target_info_vector.n_keys;
+			const U32 n_keys = target_info_vector.n_keys;
+			const U32* const firstKey = &target_info_vector.keys[0];
 
-			for(U32 k = 0; k < keys_im_interested_in.size(); ++k){
-				// If this key is set
-				if(target_info_vector[keys_im_interested_in[k]]){
-					info_iterators[keys_im_interested_in[k]].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[keys_im_interested_in[k]].key).ID);
+			for(U32 k = 0; k < n_keys; ++k){
+				//std::cerr << firstKey[k] << std::endl;
+				// Check if field is set
+				const U32& current_key = firstKey[k];
+				if(target_info_vector[current_key]){
+					info_iterators[current_key].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[current_key].key).ID);
 
-					if(set + 1 != keys_im_interested_in.size())
+					if(set + 1 != target_info_vector.n_keys)
 						std::cout.put(';');
 
-					++info_iterators[keys_im_interested_in[k]];
+					++info_iterators[current_key];
+					++set;
+				}
+			}
+			std::cout << '\n';
+
+			/*
+			 for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
+				//std::cerr << k << '/' << this->settings.load_info_ID_loaded.size() << '\t' << this->settings.load_info_ID_loaded[k].key << ':' << this->settings.load_info_ID_loaded[k].target_stream_local << std::endl;
+				//std::cerr << this->settings.load_info_ID_loaded[k].key << ": " << this->header.entries[this->settings.load_info_ID_loaded[k].key].ID << std::endl;
+
+				// If this key is set
+				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
+					info_iterators[this->settings.load_info_ID_loaded[k].target_stream].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[this->settings.load_info_ID_loaded[k].target_stream].key).ID);
+
+					if(set + 1 != this->settings.load_info_ID_loaded.size())
+						std::cout.put(';');
+
+					++info_iterators[this->settings.load_info_ID_loaded[k].target_stream];
 					++set;
 				}
 
 			}
-			std::cout << '\n';
+			 */
 
 			/*
 			// This is in-order
