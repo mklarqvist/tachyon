@@ -113,6 +113,7 @@ int view(int argc, char** argv){
 	*/
 	reader.open(input);
 	while(reader.nextBlock()){
+		reader.toVCF();
 		reader.block.clear();
 	}
 

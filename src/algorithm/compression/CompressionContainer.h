@@ -11,6 +11,8 @@
 namespace Tachyon{
 namespace Compression{
 
+// Lower bounds threshold in fold-change for compression
+// to be kept
 #define MIN_COMPRESSION_FOLD 1.05
 
 inline bool bytePreprocessBits(const char* const data, const U32& size, char* destination){

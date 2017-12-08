@@ -4,7 +4,7 @@
 #include "zstd.h"
 #include "common/zstd_errors.h"
 #include "BlockEntry.h"
-#include "../algorithm/compression/CompressionContainer.h"
+#include "../algorithm/compression/CompressionManager.h"
 #include "iterator/MetaIterator.h"
 #include "base/header/Header.h"
 #include "iterator/ContainerIterator.h"
@@ -88,78 +88,23 @@ public:
 		*/
 
 		// Phase 1: Decode data
-		if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.meta_cold_container);
-		} else if(this->block.meta_cold_container.header.controller.encoder == Core::ENCODE_NONE){
-			this->no_codec.decode(this->block.meta_cold_container);
-		}
-		else {
-			std::cerr << "NOT ALLOWED COLD" << std::endl;
-			exit(1);
-		}
-
-		if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.meta_hot_container);
-		} else if(this->block.meta_hot_container.header.controller.encoder == Core::ENCODE_NONE){
-			this->no_codec.decode(this->block.meta_hot_container);
-		} else {
-			std::cerr << "NOT ALLOWED HOT" << std::endl;
-			exit(1);
-		}
-
-
-		if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.gt_rle_container);
-		}  else if(this->block.gt_rle_container.header.controller.encoder == Core::ENCODE_NONE){
-			this->no_codec.decode(this->block.gt_rle_container);
-		} else {
-			std::cerr << "NOT ALLOWED HOT" << std::endl;
-			exit(1);
-		}
-
-		if(this->block.gt_simple_container.header.controller.encoder == Core::ENCODE_ZSTD){
-			this->zstd.decode(this->block.gt_simple_container);
-		}  else if(this->block.gt_simple_container.header.controller.encoder == Core::ENCODE_NONE){
-			this->no_codec.decode(this->block.gt_simple_container);
-		} else {
-			std::cerr << "NOT ALLOWED HOT" << std::endl;
-			exit(1);
-		}
-
+		if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
-				this->zstd.decode(this->block.info_containers[i]);
-			} else if(this->block.info_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				this->no_codec.decode(this->block.info_containers[i]);
-			}
-
-			if(this->block.info_containers[i].header.controller.mixedStride){
-				if(this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
-					this->zstd.decodeStrides(this->block.info_containers[i]);
-				} else if (this->block.info_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
-					this->no_codec.decodeStrides(this->block.info_containers[i]);
-				}
-			}
+			if(!this->codec_manager.decompress(this->block.info_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
 		}
-
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_ZSTD){
-				this->zstd.decode(this->block.format_containers[i]);
-			} else if(this->block.format_containers[i].header.controller.encoder == Core::ENCODE_NONE){
-				//std::cerr << "ENCODE_NONE | CRC check " << (this->block.format_containers[i].checkCRC(3) ? "PASS" : "FAIL") << std::endl;
-				this->zstd.decodeStrides(this->block.format_containers[i]);
-			}
-
-			if(this->block.format_containers[i].header.controller.mixedStride){
-				if(this->block.format_containers[i].header_stride.controller.encoder == Core::ENCODE_ZSTD){
-					this->zstd.decodeStrides(this->block.format_containers[i]);
-				} else if (this->block.format_containers[i].header_stride.controller.encoder == Core::ENCODE_NONE){
-					this->no_codec.decodeStrides(this->block.format_containers[i]);
-				}
-			}
-
+			if(!this->codec_manager.decompress(this->block.format_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
 		}
 
+		return true;
+	}
+
+	bool seekBlock(const U32& b);
+
+	bool toVCF(void){
 		// Phase 2 construct iterators
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
@@ -169,7 +114,7 @@ public:
 			info_iterators[i].setup(this->block.info_containers[i]);
 
 		// Phase 3 perform iterations
-		for(U32 i = 0; i < it.size(); ++i){
+		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
 			const Core::MetaEntry& m = it.current();
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
@@ -265,7 +210,6 @@ public:
 		delete [] info_iterators;
 		return true;
 	}
-	bool seekBlock(const U32& b);
 
 public:
 	std::string input_file;
@@ -276,8 +220,7 @@ public:
 	block_entry_type block;
 	header_type header;
 
-	Compression::ZSTDCodec zstd;
-	Compression::UncompressedCodec no_codec;
+	Compression::CompressionManager codec_manager;
 };
 
 }
