@@ -72,7 +72,7 @@ int import(int argc, char** argv){
 	double checkpoint_bp_window = 30e3;
 	bool permute = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:spP?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:c:C:spP?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;

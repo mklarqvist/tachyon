@@ -12,9 +12,6 @@ Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 ch
 	permute(true),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
-	total_gt_cost(0),
-	total_ppa_cost(0),
-	total_rest_cost(0),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
 	reader_(inputFile),
@@ -240,13 +237,15 @@ bool Importer::BuildBCF(void){
 
 		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
-		this->writer_.streamTomahawk << this->block;
+		//this->writer_.streamTomahawk << this->block;
+		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
+
 		//this->block.write(this->writer_.streamTomahawk, *this->header_);
 		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
 
-		this->total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
-		this->total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
-		if(this->block.index_entry.controller.hasGTPermuted) this->total_ppa_cost += this->block.ppa_manager.PPA.pointer;
+		this->import_compressed_stats.total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
+		this->import_compressed_stats.total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
+		if(this->block.index_entry.controller.hasGTPermuted) this->import_compressed_stats.total_ppa_cost += this->block.ppa_manager.PPA.pointer;
 		//std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
 
 		// Reset inside block
@@ -258,6 +257,7 @@ bool Importer::BuildBCF(void){
 		previousFirst = reader.first().body->POS;
 		previousLast  = reader.last().body->POS;
 	}
+	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
 
 	/*
 	// This only happens if there are no valid entries in the file

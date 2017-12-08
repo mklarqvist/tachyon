@@ -6,6 +6,7 @@
 #include "StreamContainer.h"
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
+#include "ImporterStats.h"
 
 namespace Tachyon{
 namespace Core{
@@ -21,6 +22,7 @@ class BlockEntry{
 	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
+	typedef Tachyon::Support::ImporterStats import_stats_type;
 
 public:
 	BlockEntry();
@@ -57,6 +59,45 @@ public:
 	void updateOffsets(void);
 
 	bool read(std::ifstream& stream, settings_type& settings);
+
+	bool write(std::ofstream& stream, import_stats_type& stats){
+		U64 last_pos = stream.tellp();
+		stream << this->index_entry;
+		stats.total_header_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+
+		if(this->index_entry.controller.hasGTPermuted){
+			stream << this->ppa_manager;
+			stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
+			last_pos = stream.tellp();
+		}
+
+		stream << this->meta_hot_container;
+		stream << this->meta_cold_container;
+		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+		stream << this->gt_rle_container;
+		stream << this->gt_simple_container;
+		stats.total_gt_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+			assert(this->index_entry.info_offsets[i].key != 0);
+			stream << this->info_containers[i];
+		}
+		stats.total_info_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+
+		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
+			stream << this->format_containers[i];
+
+		stats.total_format_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+
+		stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
+
+		return(true);
+	}
 
 private:
 	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer);

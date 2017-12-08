@@ -9,6 +9,7 @@
 #include "../algorithm/compression/EncoderGenotypesRLE.h"
 #include "../index/IndexEntry.h"
 #include "ImportWriter.h"
+#include "ImporterStats.h"
 
 namespace Tachyon {
 
@@ -29,6 +30,7 @@ class Importer {
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Core::BlockEntry block_type;
+	typedef Support::ImporterStats import_stats_type;
 
 public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
@@ -49,10 +51,10 @@ private:
 	bool permute;
 	U32 checkpoint_n_snps;      // number of variants until checkpointing
 	double checkpoint_bases;
-	// Temp fields
-	U64 total_gt_cost;
-	U64 total_ppa_cost;
-	U64 total_rest_cost;
+
+	import_stats_type import_uncompressed_stats;
+	import_stats_type import_compressed_stats;
+
 	// Read/write fields
 	std::string inputFile;    // input file name
 	std::string outputPrefix; // output file prefix
