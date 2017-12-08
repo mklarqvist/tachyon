@@ -9,12 +9,14 @@ BlockEntry::BlockEntry() :
 	info_containers(new stream_container[100]),
 	format_containers(new stream_container[100])
 {
+	// Initiate 100 start containers for each
+	// input field type
 	for(U32 i = 0; i < 100; ++i){
 		this->info_containers[i].resize(65536*4);
 		this->format_containers[i].resize(65536*4);
 	}
 
-	// Always of type struct
+	// Base container streams are always of type TYPE_STRUCT
 	this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
 	this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
 	this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
@@ -122,6 +124,19 @@ void BlockEntry::updateOffsets(void){
 	this->index_entry.offset_end_of_block = cum_size;
 }
 
+/**< @brief Update base container header data and evaluate output byte streams
+ * Internal use only (import): Collectively updates base
+ * container offsets and checks/builds
+ * 1) If the byte stream is uniform
+ * 2) Generates CRC checksums for both data and strides
+ * 3) Reformat (change used word-size) for strides and data; if possible
+ *
+ * @param v         Hashing container for identifier keys
+ * @param container Data container
+ * @param offset    Offset record
+ * @param length    Iterator length
+ * @param buffer    Supportive buffer
+ */
 void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
 	for(U32 i = 0; i < length; ++i){
 		offset[i].key = v[i];
@@ -148,6 +163,13 @@ void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_cont
 	}
 }
 
+/**<
+ *
+ * @param container Data container
+ * @param offset    Offset record
+ * @param buffer    Supportive buffer
+ * @param key       Identifier key
+ */
 void BlockEntry::updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){
 	if(container.buffer_data.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
 		return;
@@ -175,6 +197,13 @@ void BlockEntry::updateContainer(stream_container& container, offset_minimal_typ
 	}
 }
 
+/**< @brief Reads one or more separate digital objects from disk
+ * Primary function for reading data from disk. Data
+ * read in this way is not checked for integrity here.
+ * @param stream   Input stream
+ * @param settings Settings record describing reading parameters
+ * @return         Returns FALSE if there was a problem
+ */
 bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
 
@@ -223,7 +252,6 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
 				//std::cerr << "checking: " << this->index_entry.info_offsets[j].key << std::endl;
 				if(this->index_entry.info_offsets[j].key == settings.load_info_ID[i]){
-					//std::cerr << "Matched: " << i << ',' << j << '\t' << this->index_entry.info_offsets[j].key << "==" << settings.load_info_ID[i] << std::endl;
 					settings.load_info_ID_loaded.push_back( BlockEntrySettingsMap(settings.load_info_ID[i], target_stream_id++, j, this->index_entry.info_offsets[j].offset));
 					break;
 				}
@@ -235,16 +263,14 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 
 		// Todo: have to jump to next info block we know exists
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
-			//std::cerr << "key: " << settings.load_info_ID_loaded[i].target_stream_local << std::endl;
-			//std::cerr << this->index_entry.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].key << '\t' << start_offset + this->index_entry.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].offset << '=' << start_offset + settings.load_info_ID_loaded[i].offset << std::endl;
 			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset);
 			if(!stream.good()){
 				std::cerr << "failed seek!" << std::endl;
 				return false;
 			}
+
+			// Read data
 			stream >> this->info_containers[i];
-			// Store which keys existed
-			//std::cerr << "pushing back: " << settings.load_info_ID_loaded[i].target_stream << std::endl;
 		}
 	} // end case load_info_ID
 

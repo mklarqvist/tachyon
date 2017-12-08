@@ -238,18 +238,41 @@ bool Importer::BuildBCF(void){
 		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
 		//this->writer_.streamTomahawk << this->block;
-		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
 
-		//this->block.write(this->writer_.streamTomahawk, *this->header_);
-		//std::cerr << "Block size: " << (size_t)this->writer_.streamTomahawk.tellp() - curPos << std::endl;
+		// Todo: need to write a stream decorator
+		if(!this->block.digest_controller.initialize()){
+			std::cerr << "failed to init sha5" << std::endl;
+			return false;
+		}
+
+		if(!this->block.digest_controller.update(this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer)){
+			std::cerr << "failed to update sha5" << std::endl;
+			return false;
+		}
+		if(!this->block.digest_controller.update(this->block.gt_simple_container.buffer_data.data, this->block.gt_simple_container.buffer_data.pointer)){
+			std::cerr << "failed to update sha5" << std::endl;
+			return false;
+		}
+		if(!this->block.digest_controller.update(this->block.meta_hot_container.buffer_data.data, this->block.meta_hot_container.buffer_data.pointer)){
+			std::cerr << "failed to update sha5" << std::endl;
+			return false;
+		}
+		std::cerr << std::hex;
+		for(U32 i = 0; i < 64; ++i)
+			std::cerr << std::hex << (int)this->block.digest_controller.sha512_digest[i];
+
+		std::cerr << std::dec << std::endl;
+		if(!this->block.digest_controller.finalize()){
+			std::cerr << "failed finalize" << std::endl;
+		}
+
+		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
 
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
 		if(this->block.index_entry.controller.hasGTPermuted) this->import_compressed_stats.total_ppa_cost += this->block.ppa_manager.PPA.pointer;
 		//std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
 
-		// Reset inside block
-		// this->permutator.reset();
 		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
@@ -259,31 +282,6 @@ bool Importer::BuildBCF(void){
 	}
 	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
 
-	/*
-	// This only happens if there are no valid entries in the file
-	if(this->sort_order_helper.contigID == nullptr){
-		std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Did not import any variants..." << std::endl;
-		return false;
-	}
-
-
-	++this->header_->getContig(*this->sort_order_helper.contigID);
-	this->writer_.flush(this->permutator.getPPA());
-	this->writer_.WriteFinal();
-	this->writer_.n_variants_written += reader.size();
-
-	if(this->writer_.getVariantsWritten() == 0){
-		std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Did not import any variants..." << std::endl;
-		return false;
-	}
-
-	if(!SILENT)
-		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Wrote: " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.getVariantsWritten()))
-														 << " variants to " << Helpers::NumberThousandsSeparator(std::to_string(this->writer_.blocksWritten()))
-
-													 << " blocks..." << std::endl;
-	 */
-	std::cerr << "all done: " << n_variants_read << std::endl;
 	return(true);
 }
 
