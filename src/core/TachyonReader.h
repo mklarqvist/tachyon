@@ -168,7 +168,6 @@ public:
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
 			info_iterators[i].setup(this->block.info_containers[i]);
 
-
 		// Phase 3 perform iterations
 		for(U32 i = 0; i < it.size(); ++i){
 			const Core::MetaEntry& m = it.current();

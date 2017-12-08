@@ -10,8 +10,10 @@
 namespace Tachyon{
 namespace Core{
 
-enum CORE_ENCRYPTION{ENCRYPTION_NONE, ENCRYPTION_AES_128, ENCRYPTION_AES_256, ENCRYPTION_RSA_4096};
-enum CORE_ENCODING{ENCODING_NONE, ENCODING_DEFLATE};
+enum CORE_ENCRYPTION{ENCRYPTION_NONE,
+	                 ENCRYPTION_AES_128,
+					 ENCRYPTION_AES_256,
+					 ENCRYPTION_RSA_4096};
 
 // Controller type for stream container
 struct StreamContainerHeaderController{

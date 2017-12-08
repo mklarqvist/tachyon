@@ -15,9 +15,9 @@ BlockEntry::BlockEntry() :
 	}
 
 	// Always of type struct
-	this->gt_rle_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+	this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
 	this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
-	this->meta_hot_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+	this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
 	this->meta_cold_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
 }
 
@@ -25,6 +25,11 @@ BlockEntry::~BlockEntry(){
 	delete [] this->info_containers;
 }
 
+/**< @brief Recycle structure without releasing memory
+ * Internal use only: Clears data by resetting
+ * pointers and values without releasing and
+ * reallocating the memory
+ */
 void BlockEntry::clear(){
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 		this->info_containers[i].reset();
@@ -39,12 +44,17 @@ void BlockEntry::clear(){
 	this->gt_simple_container.reset();
 	this->ppa_manager.reset();
 
+	// Base container data types are alwats TYPE_STRUCT
 	this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
 	this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
 	this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
 	this->meta_cold_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
 }
 
+/**< @brief Resize base container buffer streams
+ * Internal use only
+ * @param s Size in bytes
+ */
 void BlockEntry::resize(const U32 s){
 	if(s == 0) return;
 	this->meta_hot_container.resize(s);
@@ -53,6 +63,15 @@ void BlockEntry::resize(const U32 s){
 	this->gt_simple_container.resize(s);
 }
 
+/**< @brief Update base container header data and evaluate output byte streams
+ * Internal use only (import): Collectively updates base
+ * container offsets and checks/builds
+ * 1) If the byte stream is uniform
+ * 2) Generates CRC checksums for both data and strides
+ * 3) Reformat (change used word-size) for strides and data; if possible
+ *
+ * @param buffer Supportive buffer for re-packing data if necessary
+ */
 void BlockEntry::updateBaseContainers(buffer_type& buffer){
 	this->updateContainer(this->gt_rle_container,    this->index_entry.offset_gt_rle,    buffer, 0);
 	this->updateContainer(this->gt_simple_container, this->index_entry.offset_gt_simple, buffer, 0);
@@ -60,16 +79,29 @@ void BlockEntry::updateBaseContainers(buffer_type& buffer){
 	this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
 }
 
+/**< @brief Updates the local (relative to block start) virtual file offsets
+ *  Internal use only (import): This functions updates
+ *  relative (virtual) file offsets into the byte stream
+ *  where a target container/object begins. This update
+ *  allows random access by having the block-header only
+ *
+ *  Each digital object must have an associated getDiskSize()
+ *  function that returns its byte length.
+ */
 void BlockEntry::updateOffsets(void){
 	U32 cum_size = this->index_entry.getDiskSize();
 	this->index_entry.offset_ppa.offset = cum_size;
 	cum_size += this->ppa_manager.getDiskSize();
+
 	this->index_entry.offset_hot_meta.offset = cum_size;
 	cum_size += this->meta_hot_container.getDiskSize();
+
 	this->index_entry.offset_cold_meta.offset = cum_size;
 	cum_size += this->meta_cold_container.getDiskSize();
+
 	this->index_entry.offset_gt_rle.offset = cum_size;
 	cum_size += this->gt_rle_container.getDiskSize();
+
 	this->index_entry.offset_gt_simple.offset = cum_size;
 	cum_size += this->gt_simple_container.getDiskSize();
 
@@ -83,15 +115,19 @@ void BlockEntry::updateOffsets(void){
 		cum_size += this->format_containers[i].getDiskSize();
 	}
 
+	// Size of EOF marker
 	cum_size += sizeof(U64);
+
+	// Update final size
 	this->index_entry.offset_end_of_block = cum_size;
-	std::cerr << cum_size << std::endl;
 }
 
 void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
 	for(U32 i = 0; i < length; ++i){
 		offset[i].key = v[i];
 
+		// If the data container has entries in it but has
+		// no actual data then it is a BOOLEAN
 		if(container[i].n_entries > 0 && container[i].buffer_data.pointer == 0){
 			container[i].header.controller.type = CORE_TYPE::TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
@@ -106,6 +142,7 @@ void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_cont
 			continue;
 		}
 
+		// If the data type is not a BOOLEAN
 		this->updateContainer(container[i], offset[i], buffer, v[i]);
 		assert(container[i].header.stride != 0);
 	}
@@ -224,7 +261,6 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 
 	return(true);
 }
-
 
 }
 }
