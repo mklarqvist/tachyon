@@ -148,9 +148,9 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 	if(this->formatPointer == this->body->n_fmt)
 		return false;
 
-	std::cerr << this->formatPointer << '\t' << this->body->n_fmt << std::endl;
+	//std::cerr << this->formatPointer << '\t' << this->body->n_fmt << std::endl;
 	const base_type& format_key = *reinterpret_cast<const base_type* const>(&this->data[position++]);
-	std::cerr << (int)format_key.high << '\t' << (int)format_key.low << std::endl;
+	//std::cerr << (int)format_key.high << '\t' << (int)format_key.low << std::endl;
 	#if BCF_ASSERT == 1
 	// This first bit returns a single identifier
 	// to a field. It should always be a single

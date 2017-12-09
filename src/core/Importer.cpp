@@ -240,6 +240,7 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
+		std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->block.index_entry.format_offsets[i].key].update(this->block.format_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
@@ -250,6 +251,7 @@ bool Importer::BuildBCF(void){
 				continue;
 
 			zstd.encode(this->block.format_containers[i]);
+
 			if(this->block.format_containers[i].header.controller.mixedStride == true)
 				zstd.encodeStrides(this->block.format_containers[i]);
 		}
@@ -429,7 +431,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 #endif
 
 	while(entry.nextFormat(val, info_length, info_value_type, internal_pos)){
-		std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
+		//std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
 		// Hash INFO values
 		const U32 mapID = this->format_fields.setGet(val);
 		stream_container& target_container = this->block.format_containers[mapID];
@@ -453,30 +455,31 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			target_container.setMixedStrides();
 
 		target_container.addStride(info_length);
+		target_container.resize(1000 * this->header_->samples * info_length * sizeof(U64));
 
 		// Flags and integers
 		// These are BCF value types
 		if(info_value_type <= 3){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getInteger(info_value_type, internal_pos);
-			}
+				for(U32 j = 0; j < info_length; ++j){
+					target_container += entry.getInteger(info_value_type, internal_pos);
+				}
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getFloat(internal_pos);
-			}
+				for(U32 j = 0; j < info_length; ++j){
+					target_container += entry.getFloat(internal_pos);
+				}
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getChar(internal_pos);
-			}
+				for(U32 j = 0; j < info_length; ++j){
+					target_container += entry.getChar(internal_pos);
+				}
 			}
 		}
 		// Illegal: parsing error
@@ -484,8 +487,12 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
-		std::cerr << Helpers::timestamp("LOG","END") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
-
+		//std::cerr << Helpers::timestamp("LOG","END") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
+		if(internal_pos != entry.pointer){
+			std::cerr << "incorrect: " << internal_pos << '/' << entry.pointer << std::endl;
+			std::cerr << Helpers::timestamp("LOG","END") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
+			exit(1);
+		}
 	}
 
 	// Hash FILTER pattern
@@ -506,8 +513,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 	// Store this map in the meta
 	meta.FILTER_map_ID = mapID;
-
-
 
 	// Hash INFO pattern
 	const U64 hash_info_vector = entry.hashInfo();
@@ -532,7 +537,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	// Hash FORMAT pattern
 	const U64 hash_format_vector = entry.hashFormat();
 
-	 mapID = 0;
+	mapID = 0;
 	if(this->format_patterns.getRaw(hash_format_vector, mapID)){
 	} else {
 		std::vector<U32> ret_pattern;
