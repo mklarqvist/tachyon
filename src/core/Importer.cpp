@@ -3,6 +3,7 @@
 #include "../algorithm/compression/CompressionContainer.h"
 #include "../algorithm/encryption/openssl_aes.h"
 #include "base/MetaCold.h"
+#include "../algorithm/DigitalDigestController.h"
 
 namespace Tachyon {
 
@@ -92,8 +93,16 @@ bool Importer::BuildBCF(void){
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples;
 	this->block.resize(resize_to);
 
-	// Todo: dynamically select compression decorator
 	Compression::ZSTDCodec zstd;
+
+	// Digest controller
+	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
+	for(U32 i = 0; i < this->header_->map.size(); ++i){
+		if(!digests[i].initialize()){
+			std::cerr << "failed to init sha512" << std::endl;
+			return false;
+		}
+	}
 
 	// Start import
 	U32 previousFirst = 0; U32 previousLast = 0;
@@ -215,6 +224,11 @@ bool Importer::BuildBCF(void){
 
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){
+				std::cerr << "failed to digest" << std::endl;
+				return false;
+			}
+
 			if(this->block.info_containers[i].header.controller.uniform == true)
 				continue;
 
@@ -227,6 +241,11 @@ bool Importer::BuildBCF(void){
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			if(!digests[this->block.index_entry.format_offsets[i].key].update(this->block.format_containers[i])){
+				std::cerr << "failed to digest" << std::endl;
+				return false;
+			}
+
 			if(this->block.format_containers[i].header.controller.uniform == true)
 				continue;
 
@@ -238,33 +257,6 @@ bool Importer::BuildBCF(void){
 		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
 		//this->writer_.streamTomahawk << this->block;
-
-		// Todo: need to write a stream decorator
-		if(!this->block.digest_controller.initialize()){
-			std::cerr << "failed to init sha5" << std::endl;
-			return false;
-		}
-
-		if(!this->block.digest_controller.update(this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer)){
-			std::cerr << "failed to update sha5" << std::endl;
-			return false;
-		}
-		if(!this->block.digest_controller.update(this->block.gt_simple_container.buffer_data.data, this->block.gt_simple_container.buffer_data.pointer)){
-			std::cerr << "failed to update sha5" << std::endl;
-			return false;
-		}
-		if(!this->block.digest_controller.update(this->block.meta_hot_container.buffer_data.data, this->block.meta_hot_container.buffer_data.pointer)){
-			std::cerr << "failed to update sha5" << std::endl;
-			return false;
-		}
-		std::cerr << std::hex;
-		for(U32 i = 0; i < 64; ++i)
-			std::cerr << std::hex << (int)this->block.digest_controller.sha512_digest[i];
-
-		std::cerr << std::dec << std::endl;
-		if(!this->block.digest_controller.finalize()){
-			std::cerr << "failed finalize" << std::endl;
-		}
 
 		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
 
@@ -281,6 +273,25 @@ bool Importer::BuildBCF(void){
 		previousLast  = reader.last().body->POS;
 	}
 	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
+
+	// Finalize SHA-512 digests
+	const U64 digests_start = this->writer_.streamTomahawk.tellp();
+	for(U32 i = 0; i < this->header_->map.size(); ++i){
+		digests[i].finalize();
+		this->writer_.streamTomahawk << digests[i];
+		std::cerr << std::hex;
+		for(U32 j = 0; j < 64; ++j)
+			std::cerr << std::hex << (int)digests[i].sha512_digest[j];
+
+		std::cerr << std::dec << std::endl;
+	}
+	delete [] digests;
+
+	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
+	BYTE eof_data[32];
+	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
+	this->writer_.streamTomahawk.write((char*)&eof_data[0], 32);
+	this->writer_.streamTomahawk.flush();
 
 	return(true);
 }
@@ -361,10 +372,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
 		const U32 mapID = this->info_fields.setGet(val);
-
-		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
-
-		//
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
@@ -422,11 +429,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 #endif
 
 	while(entry.nextFormat(val, info_length, info_value_type, internal_pos)){
-		// Hash FORMAT values
+		std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
+		// Hash INFO values
 		const U32 mapID = this->format_fields.setGet(val);
-		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
-
-		//
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
@@ -442,31 +447,36 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_CHAR);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
+
 		++target_container;
 		if(!target_container.checkStrideSize(info_length))
 			target_container.setMixedStrides();
 
 		target_container.addStride(info_length);
 
-		//std::cerr << val << '\t' << mapID << '\t' << info_length << '\t' << (U32)info_value_type << std::endl;
-
 		// Flags and integers
 		// These are BCF value types
 		if(info_value_type <= 3){
+			for(U32 s = 0; s < this->header_->samples; ++s){
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getInteger(info_value_type, internal_pos);
+			}
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
+			for(U32 s = 0; s < this->header_->samples; ++s){
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getFloat(internal_pos);
+			}
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
+			for(U32 s = 0; s < this->header_->samples; ++s){
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getChar(internal_pos);
+			}
 			}
 		}
 		// Illegal: parsing error
@@ -474,6 +484,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
+		std::cerr << Helpers::timestamp("LOG","END") << val << '\t' << info_length << '\t' << (int)info_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
+
 	}
 
 	// Hash FILTER pattern

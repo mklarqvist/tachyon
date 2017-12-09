@@ -56,7 +56,7 @@ private:
 	}
 
 public:
-	// Move out to global index
+	// Global index
 	S32 contigID;       // this data is duplicated
 	U16 n_variants;     // this data is duplicated
 	U64 byte_offset;	// tellg() position in stream for start of record in Tomahawk file

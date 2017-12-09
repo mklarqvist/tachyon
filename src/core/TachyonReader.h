@@ -17,6 +17,8 @@ class TachyonReader{
 	typedef Core::BlockEntry block_entry_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Header header_type;
+	typedef Compression::CompressionManager codec_manager_type;
+	typedef BlockEntrySettings settings_type;
 
 public:
 	TachyonReader() : filesize(0){}
@@ -64,6 +66,7 @@ public:
 		this->block.read(stream, this->settings);
 
 		// Phase 1: Decode data
+		// Todo:API: decode available data
 		if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
@@ -91,6 +94,11 @@ public:
 			it.set(this->block.meta_hot_container, this->block.meta_cold_container);
 		} else if(this->settings.loadMetaCold && !this->settings.loadMetaHot){
 			std::cerr << "illegal to load only cold meta" << std::endl;
+			return false;
+		}
+
+		if(this->settings.load_info_ID_loaded.size() > 0 && this->settings.loadMetaHot == false){
+			std::cerr << "not legal" << std::endl;
 			return false;
 		}
 
@@ -135,7 +143,7 @@ public:
 			}
 
 			// Cycle over streams that are set in the given bit-vector
-			//U32 set = 0;
+			U32 set = 0;
 			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
 			//bool seen11 = false;
 			for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
@@ -144,12 +152,15 @@ public:
 
 				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
 					//std::cerr << "match: " << k << '\t' << this->settings.load_info_ID_loaded[k].target_stream_local << '\t' << this->settings.load_info_ID_loaded[k].offset->key << std::endl;
+					if(set++ != 0)
+						std::cout.put(';');
+
 					info_iterators[this->settings.load_info_ID_loaded[k].iterator_index].toString(
 							std::cout,
 							this->header.getEntry(this->settings.load_info_ID_loaded[k].offset->key).ID);
 
 					//if(set + 1 != this->settings.load_info_ID_loaded.size())
-					std::cout.put(';');
+
 
 					++info_iterators[this->settings.load_info_ID_loaded[k].iterator_index];
 					//if(this->settings.load_info_ID_loaded[k].key == 11) exit(1);
@@ -216,7 +227,6 @@ public:
 			const U32* const firstKey = &target_info_vector.keys[0];
 
 			for(U32 k = 0; k < n_keys; ++k){
-				//std::cerr << firstKey[k] << std::endl;
 				// Check if field is set
 				const U32& current_key = firstKey[k];
 				if(target_info_vector[current_key]){
@@ -230,44 +240,6 @@ public:
 				}
 			}
 			std::cout << '\n';
-
-			/*
-			 for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
-				//std::cerr << k << '/' << this->settings.load_info_ID_loaded.size() << '\t' << this->settings.load_info_ID_loaded[k].key << ':' << this->settings.load_info_ID_loaded[k].target_stream_local << std::endl;
-				//std::cerr << this->settings.load_info_ID_loaded[k].key << ": " << this->header.entries[this->settings.load_info_ID_loaded[k].key].ID << std::endl;
-
-				// If this key is set
-				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
-					info_iterators[this->settings.load_info_ID_loaded[k].target_stream].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[this->settings.load_info_ID_loaded[k].target_stream].key).ID);
-
-					if(set + 1 != this->settings.load_info_ID_loaded.size())
-						std::cout.put(';');
-
-					++info_iterators[this->settings.load_info_ID_loaded[k].target_stream];
-					++set;
-				}
-
-			}
-			 */
-
-			/*
-			// This is in-order
-			for(U32 k = 0; k < n_keys; ++k){
-				//std::cerr << firstKey[k] << std::endl;
-				// Check if field is set
-				const U32& current_key = firstKey[k];
-				if(target_info_vector[current_key]){
-					info_iterators[current_key].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[current_key].key).ID);
-
-					if(set + 1 != target_info_vector.n_keys)
-						std::cout.put(';');
-
-					++info_iterators[current_key];
-					++set;
-				}
-			}
-			std::cout << '\n';
-			*/
 			++it;
 		}
 		std::cout.flush();
@@ -281,11 +253,11 @@ public:
 	std::ifstream stream;
 	U64 filesize;
 
-	BlockEntrySettings settings;
+	settings_type settings;
 	block_entry_type block;
 	header_type header;
 
-	Compression::CompressionManager codec_manager;
+	codec_manager_type codec_manager;
 };
 
 }

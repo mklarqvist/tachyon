@@ -13,8 +13,8 @@ struct EncryptionDecorator{
 	bool decrypt(stream_container& container);
 
 public:
-	BYTE key[32]; // 256 bit key
-	BYTE iv[16]; // 128 bit initiation vector
+	BYTE key[32];  // 256 bit key
+	BYTE iv[16];   // 128 bit initiation vector
 	BYTE salt[12]; // salt for taste
 	buffer_type buffer;
 };

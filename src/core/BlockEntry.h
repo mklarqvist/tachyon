@@ -7,7 +7,6 @@
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
 #include "ImporterStats.h"
-#include "../algorithm/DigitalDigestController.h"
 
 namespace Tachyon{
 namespace Core{
@@ -24,7 +23,6 @@ class BlockEntry{
 	typedef IO::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
 	typedef Tachyon::Support::ImporterStats import_stats_type;
-	typedef Algorithm::DigitalDigestController digest_controller_type;
 
 public:
 	BlockEntry();
@@ -155,7 +153,6 @@ private:
 	}
 
 public:
-	digest_controller_type digest_controller;
 	index_entry_type  index_entry;
 	permutation_type  ppa_manager;
 	stream_container  meta_hot_container;

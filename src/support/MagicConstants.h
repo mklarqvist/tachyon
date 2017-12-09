@@ -52,9 +52,13 @@ const BYTE REF_ALT_G = 2;
 const BYTE REF_ALT_C = 3;
 const BYTE REF_ALT_N = 4;
 
-// BLOCK EOF
+/*------   EOF markers   ------*/
+// EOF markers
+// 64-bit XXHASH of "TACHYON-BLOCK-EOF"
 const U64 TACHYON_BLOCK_EOF = 7964708207515128046;
-const U64 TACHYON_FILE_EOF = 1404072766443001870;
+// 32b SHA-256 digest
+// echo -n "TACHYON-EOF" | openssl dgst -sha256
+const std::string TACHYON_FILE_EOF = "fa20427e118a1f0c7e1195e4f85e15e74368b112e70dd89fd02772e1d90cb5dd";
 
 }
 }
