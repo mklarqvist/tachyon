@@ -63,30 +63,6 @@ public:
 
 		this->block.read(stream, this->settings);
 
-
-
-		/*
-		std::sort(keys_im_interested_in.begin(), keys_im_interested_in.end());
-		std::vector< std::vector<U32> > keys_that_exists(this->block.index_entry.n_info_patterns);
-
-		for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
-			for(U32 k = 0; k < keys_im_interested_in.size(); ++k){
-				if(this->block.index_entry.info_bit_vectors[i][keys_im_interested_in[k]]){
-					std::cerr << this->header.entries[keys_im_interested_in[k]].ID << '\t' << i << std::endl;
-					keys_that_exists[i].push_back(keys_im_interested_in[k]);
-				}
-			}
-		}
-		std::cerr << "keys that exists: ";
-		for(U32 i = 0; i < keys_that_exists.size(); ++i){
-			for(U32 j = 0; j < keys_that_exists[i].size(); ++j){
-				std::cerr << keys_that_exists[i][j] << ';';
-			}
-			std::cerr << ' ';
-		}
-		std::cerr << std::endl;
-		*/
-
 		// Phase 1: Decode data
 		if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
@@ -104,8 +80,95 @@ public:
 
 	bool seekBlock(const U32& b);
 
+	bool toVCFPartial(void){
+		// Phase 1 construct iterators
+		Iterator::MetaIterator it;
+		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+
+		if(this->settings.loadMetaHot && !this->settings.loadMetaCold){
+			it.set(this->block.meta_hot_container);
+		} else if(this->settings.loadMetaHot && this->settings.loadMetaCold){
+			it.set(this->block.meta_hot_container, this->block.meta_cold_container);
+		} else if(this->settings.loadMetaCold && !this->settings.loadMetaHot){
+			std::cerr << "illegal to load only cold meta" << std::endl;
+			return false;
+		}
+
+		// Setup containers
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
+			info_iterators[i].setup(this->block.info_containers[i]);
+
+		// Phase 2 perform iterations
+		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
+			const Core::MetaEntry& m = it.current();
+			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
+			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+			// If we have cold meta
+			if(this->settings.loadMetaCold){
+				if(m.cold.n_ID == 0) std::cout.put('.');
+				else std::cout.write(m.cold.ID, m.cold.n_ID);
+				std::cout << '\t';
+				if(m.hot->controller.biallelic && m.hot->controller.simple){
+					std::cout << m.hot->ref_alt.getRef() << '\t' << m.hot->ref_alt.getAlt();
+				}
+				else {
+					std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
+					std::cout << '\t';
+					U16 j = 1;
+					for(; j < m.cold.n_allele - 1; ++j){
+						std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
+						std::cout.put(',');
+					}
+					std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
+				}
+
+				std::cout << '\t' << m.cold.QUAL << '\t';
+			}
+
+			// Filter streams
+			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+				// Check if field is set
+				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+				// Lookup what that field is
+					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+				}
+			}
+
+			// Cycle over streams that are set in the given bit-vector
+			//U32 set = 0;
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
+			//bool seen11 = false;
+			for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
+				// If this key is set
+				//std::cerr << k << '\t' << this->settings.load_info_ID_loaded[k].key << '\t' << this->settings.load_info_ID_loaded[k].target_stream << '\t' << this->settings.load_info_ID_loaded[k].target_stream_local << " validate: " << this->block.index_entry.info_offsets[this->settings.load_info_ID_loaded[k].target_stream_local].key << std::endl;
+
+				if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
+					//std::cerr << "match: " << k << '\t' << this->settings.load_info_ID_loaded[k].target_stream_local << '\t' << this->settings.load_info_ID_loaded[k].offset->key << std::endl;
+					info_iterators[this->settings.load_info_ID_loaded[k].iterator_index].toString(
+							std::cout,
+							this->header.getEntry(this->settings.load_info_ID_loaded[k].offset->key).ID);
+
+					//if(set + 1 != this->settings.load_info_ID_loaded.size())
+					std::cout.put(';');
+
+					++info_iterators[this->settings.load_info_ID_loaded[k].iterator_index];
+					//if(this->settings.load_info_ID_loaded[k].key == 11) exit(1);
+					//++set;
+				}
+			}
+			//if(seen11) exit(1);
+			std::cout.put('\n');
+
+			++it;
+		}
+		std::cout.flush();
+
+		delete [] info_iterators;
+		return true;
+	}
+
 	bool toVCF(void){
-		// Phase 2 construct iterators
+		// Phase 1 construct iterators
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
@@ -113,7 +176,9 @@ public:
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
 			info_iterators[i].setup(this->block.info_containers[i]);
 
-		// Phase 3 perform iterations
+		// Todo: format
+
+		// Phase 2 perform iterations
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
 			const Core::MetaEntry& m = it.current();
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';

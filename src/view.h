@@ -100,20 +100,23 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::Core::TachyonReader reader(input);
-	reader.settings.loadAll();
-	/*
+	//reader.settings.loadAll();
+
 	reader.settings.loadMetaHot = true;
+	//reader.settings.loadMetaCold = true;
 	// Todo: deduplicate and move to function in settings class
-	reader.settings.load_info_ID.push_back(14);
+	reader.settings.load_info_ID.push_back(5);
 	reader.settings.load_info_ID.push_back(15);
-	reader.settings.load_info_ID.push_back(16);
-	reader.settings.load_info_ID.push_back(1);
-	reader.settings.load_info_ID.push_back(4);
-	reader.settings.load_info_ID.push_back(9);
-	*/
+	//reader.settings.load_info_ID.push_back(18);
+	reader.settings.load_info_ID.push_back(11);
+	reader.settings.load_info_ID.push_back(24);
+	//reader.settings.load_info_ID.push_back(11);
+	reader.settings.load_info_ID.push_back(25);
+
 	reader.open(input);
 	while(reader.nextBlock()){
-		reader.toVCF();
+		//reader.toVCF();
+		reader.toVCFPartial();
 		reader.block.clear();
 	}
 

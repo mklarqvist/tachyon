@@ -24,7 +24,7 @@ public:
 		} else if(container.header.controller.encoder == Core::ENCODE_NONE){
 			if(!this->no_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
 		} else {
-			std::cerr << "ILLEGAL CODED" << std::endl;
+			std::cerr << "ILLEGAL CODEC" << std::endl;
 			return false;
 		}
 

@@ -246,14 +246,19 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	} else if(settings.load_info_ID.size() > 0) {
 		BlockEntrySettingsMap map_entry;
 		// Cycle over all the keys we are interested in
-		U32 target_stream_id = 0;
+		U32 iterator_index = 0;
 		for(U32 i = 0; i < settings.load_info_ID.size(); ++i){
 			// Cycle over all available streams in this block
 			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
 				// If there is a match
 				// Push back field into map
 				if(this->index_entry.info_offsets[j].key == settings.load_info_ID[i]){
-					settings.load_info_ID_loaded.push_back( BlockEntrySettingsMap(settings.load_info_ID[i], target_stream_id++, j, this->index_entry.info_offsets[j].offset));
+					settings.load_info_ID_loaded.push_back(
+							BlockEntrySettingsMap(
+									iterator_index++,
+									j,                        // local index id
+									&this->index_entry.info_offsets[j]) // offset
+									);
 					break;
 				}
 			}
@@ -264,14 +269,14 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 
 		// Todo: have to jump to next info block we know exists
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
-			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset);
+			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset->offset);
 			if(!stream.good()){
 				std::cerr << Helpers::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
 				return false;
 			}
 
 			// Read data
-			stream >> this->info_containers[i];
+			stream >> this->info_containers[settings.load_info_ID_loaded[i].iterator_index];
 		}
 	} // end case load_info_ID
 

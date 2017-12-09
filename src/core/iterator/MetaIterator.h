@@ -21,6 +21,18 @@ private:
 	typedef const entry_type& (self_type::*operator_function_type)(const U32& p);
 
 public:
+	MetaIterator() :
+		loadCold(false),
+		n_position(0),
+		n_entries(0),
+		last_modified(-1),
+		container_hot(nullptr),
+		container_cold(nullptr),
+		operator_function(nullptr)
+	{
+
+	}
+
 	MetaIterator(container_type& container) :
 		loadCold(false),
 		n_position(0),
@@ -47,6 +59,25 @@ public:
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+	}
+
+	bool set(container_type& container){
+		this->container_hot = &container;
+		this->hot_iterator.set(container);
+		this->operator_function = &self_type::__operatorHotOnly;
+		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
+		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		return true;
+	}
+
+	bool set(container_type& container_hot, container_type& container_cold){
+		this->container_hot = &container_hot;
+		this->container_cold = &container_cold;
+		this->hot_iterator.set(container_hot);
+		this->operator_function = &self_type::__operatorBoth;
+		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
+		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		return true;
 	}
 
 

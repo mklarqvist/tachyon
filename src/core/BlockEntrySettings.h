@@ -6,17 +6,36 @@ namespace Core{
 
 struct BlockEntrySettingsMap{
 	typedef BlockEntrySettingsMap self_type;
+	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
 
-	BlockEntrySettingsMap() : key(0), target_stream(-1), target_stream_local(-1), offset(0){}
-	BlockEntrySettingsMap(const U32& key, const S32 target_stream, const S32 target_stream_disk, const U32& offset) : key(key), target_stream(target_stream), target_stream_local(target_stream_disk), offset(offset){}
+	BlockEntrySettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
+	BlockEntrySettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
+	~BlockEntrySettingsMap(){}
 
-	inline bool operator<(const self_type& other) const{ return(this->offset < other.offset); }
+	BlockEntrySettingsMap(const BlockEntrySettingsMap& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
+	BlockEntrySettingsMap(BlockEntrySettingsMap&& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
+	BlockEntrySettingsMap& operator=(const BlockEntrySettingsMap& other){
+		this->iterator_index = other.iterator_index;
+		this->target_stream_local = other.target_stream_local;
+		this->offset = other.offset;
+		return *this;
+	}
+	BlockEntrySettingsMap& operator=(BlockEntrySettingsMap&& other){
+		if(this!=&other) // prevent self-move
+		{
+			this->iterator_index = other.iterator_index;
+			this->target_stream_local = other.target_stream_local;
+			this->offset = other.offset;
+		}
+		return *this;
+	}
+
+	inline bool operator<(const self_type& other) const{ return(this->offset->offset < other.offset->offset); }
 	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
-	U32 key;
-	S32 target_stream;
+	U32 iterator_index;
 	S32 target_stream_local;
-	U32 offset;
+	const offset_minimal_type* offset;
 };
 
 struct BlockEntrySettings{
