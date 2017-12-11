@@ -130,7 +130,7 @@ public:
 		this->buffer_strides.resize(size);
 	}
 
-	bool generateCRC(bool both = false);
+	const bool generateCRC(void);
 	bool checkCRC(int target = 0);
 	bool checkUniformity(void);
 	void reformat(buffer_type& buffer);

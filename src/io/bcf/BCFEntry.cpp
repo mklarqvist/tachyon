@@ -166,9 +166,11 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 	const base_type& format_value = *reinterpret_cast<const base_type* const>(&this->data[position++]);
 	length = format_value.high;
 	if(length == 15){
+		//std::cerr << "format is vector" << std::endl;
 		const base_type& array_base = *reinterpret_cast<const base_type* const>(&this->data[position++]);
 		length = this->getInteger(array_base.low, position);
 	}
+	//std::cerr << (int)format_value.high << '\t' << (int)format_value.low << std::endl;
 	value_type = format_value.low;
 
 	return true;

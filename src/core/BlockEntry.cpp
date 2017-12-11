@@ -184,16 +184,11 @@ void BlockEntry::updateContainer(stream_container& container, offset_minimal_typ
 	// Set uncompressed length
 	container.header.uLength = container.buffer_data.pointer;
 
-	// Add CRC32 checksum for sanity
-	if(!container.header.controller.mixedStride)
-		container.generateCRC(false);
-
 	// If we have mixed striding
-	if(container.header.controller.mixedStride){
+	if(container.header.controller.mixedStride == true){
 		// Reformat stream to use as small word size as possible
 		container.reformatStride(buffer);
 		container.header_stride.uLength = container.buffer_strides.pointer;
-		container.generateCRC(true);
 	}
 }
 
@@ -210,6 +205,7 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	const U64 start_offset = (U64)stream.tellg();
 	stream >> this->index_entry;
 	const U64 end_of_block = start_offset + this->index_entry.offset_end_of_block;
+
 
 	if(settings.loadPPA){
 		if(this->index_entry.controller.hasGTPermuted){
@@ -238,12 +234,17 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->gt_simple_container;
 	}
 
+	// Load all info
 	if(settings.loadInfoAll){
 		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 			stream >> this->info_containers[i];
+			std::cerr << "loaded: " << this->index_entry.info_offsets[i].key << '\t' << this->info_containers[i].header.cLength << std::endl;
+		}
 
-	} else if(settings.load_info_ID.size() > 0) {
+	}
+	// If we have supplied a list of identifiers
+	else if(settings.load_info_ID.size() > 0) {
 		BlockEntrySettingsMap map_entry;
 		// Cycle over all the keys we are interested in
 		U32 iterator_index = 0;
@@ -289,6 +290,7 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	stream.seekg(end_of_block - sizeof(U64));
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
+	std::cerr << end_of_block << '\t' << (U64)stream.tellg() << std::endl;
 	assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
 
 	return(true);

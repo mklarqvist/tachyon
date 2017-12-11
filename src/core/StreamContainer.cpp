@@ -11,21 +11,28 @@
 namespace Tachyon{
 namespace Core{
 
-bool StreamContainer::generateCRC(bool both){
-	if(this->buffer_data.size() == 0)
-		return false;
+const bool StreamContainer::generateCRC(void){
+	if(this->buffer_data.size() == 0){
+		this->header.crc = 0;
+	} else {
 
-	// Checksum for main buffer
-	U32 crc = crc32(0, NULL, 0);
-	crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
-	this->header.crc = crc;
+		// Checksum for main buffer
+		U32 crc = crc32(0, NULL, 0);
+		crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
+		this->header.crc = crc;
+	}
 
-	// Checksum for strides
-	if(both){
-		if(this->buffer_strides.size() > 0){
-			crc = crc32(0, NULL, 0);
-			crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
-			this->header_stride.crc = crc;
+	if(this->header.controller.mixedStride == true){
+		if(this->buffer_data.size() == 0){
+			this->header_stride.crc = 0;
+		} else {
+			// Checksum for strides
+			U32 crc = crc32(0, NULL, 0);
+			if(this->buffer_strides.size() > 0){
+				crc = crc32(0, NULL, 0);
+				crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+				this->header_stride.crc = crc;
+			}
 		}
 	}
 	return true;
@@ -47,6 +54,8 @@ bool StreamContainer::checkCRC(int target){
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
 		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
+		std::cerr << this->buffer_strides_uncompressed.pointer << ',' << this->buffer_strides.pointer << '\t' << this->header_stride.uLength << '/' << this->header_stride.cLength << std::endl;
+		std::cerr << crc << '/' << this->header_stride.crc << std::endl;
 		return(crc == this->header_stride.crc);
 	} else if(target == 3){
 		if(this->buffer_data.size() == 0)

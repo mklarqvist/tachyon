@@ -48,6 +48,23 @@ public:
 			std::cerr << "failed to get header" << std::endl;
 			return false;
 		}
+		const U64 return_pos = this->stream.tellg();
+
+		this->stream.seekg(this->filesize - 32);
+		BYTE eof_data[32];
+		Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
+		BYTE eof_match[32];
+		this->stream.read((char*)&eof_match[0], 32);
+		for(U32 i = 0; i < 32; ++i){
+			if(eof_data[i] != eof_match[i]){
+				std::cerr << "File is truncated!" << std::endl;
+				return false;
+			}
+		}
+		this->stream.seekg(this->filesize - 32 - sizeof(U64));
+		this->stream.read((char*)reinterpret_cast<char*>(&this->l_data), sizeof(U64));
+		std::cerr << this->l_data << std::endl;
+		this->stream.seekg(return_pos);
 
 		return true;
 	}
@@ -58,7 +75,7 @@ public:
 			return false;
 		}
 
-		if((U64)this->stream.tellg() == this->filesize){
+		if((U64)this->stream.tellg() == this->l_data){
 			std::cerr << "eof all done" << std::endl;
 			return false;
 		}
@@ -72,6 +89,7 @@ public:
 		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			std::cerr << "checking: " << i << std::endl;
 			if(!this->codec_manager.decompress(this->block.info_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
 		}
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
@@ -111,6 +129,7 @@ public:
 			const Core::MetaEntry& m = it.current();
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
 			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+
 			// If we have cold meta
 			if(this->settings.loadMetaCold){
 				if(m.cold.n_ID == 0) std::cout.put('.');
@@ -184,8 +203,10 @@ public:
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
 			info_iterators[i].setup(this->block.info_containers[i]);
+		}
 
 		// Todo: format
 
@@ -252,6 +273,7 @@ public:
 	std::string input_file;
 	std::ifstream stream;
 	U64 filesize;
+	U64 l_data;
 
 	settings_type settings;
 	block_entry_type block;

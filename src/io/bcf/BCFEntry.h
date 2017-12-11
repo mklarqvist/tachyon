@@ -7,7 +7,9 @@
 namespace Tachyon {
 namespace BCF {
 
+// Enforce assertions of correctness
 #define BCF_ASSERT 1
+// Hash-specific seed
 #define BCF_HASH_SEED 452930477
 
 const BYTE BCF_UNPACK_TOMAHAWK[3] = {2, 0, 1};
@@ -19,24 +21,13 @@ struct __attribute__((packed, aligned(1))) BCFAtomicBase{
 	BYTE low: 4, high: 4;
 };
 
-struct __attribute__((packed, aligned(1))) BCFAtomicSBYTE{
-	SBYTE low: 4, high: 4;
-};
-
-struct __attribute__((packed, aligned(1))) BCFAtomicS16{
-	S16 low: 4, high: 12;
-};
-
-struct __attribute__((packed, aligned(1))) BCFAtomicS32{
-	S32 low: 4, high: 28;
-};
-
 struct __attribute__((packed, aligned(1))) BCFEntryBody{
 	typedef BCFEntryBody self_type;
 
-	BCFEntryBody(); // disallow ctor and dtor
-	~BCFEntryBody();
+	BCFEntryBody(); // disallow ctor
+	~BCFEntryBody(); // disallow dtor
 
+	// For debugging only
 	friend std::ostream& operator<<(std::ostream& os, const self_type& header){
 		os << "l_shared\t" << (U32)header.l_shared << '\n';
 		os << "l_indiv\t" << (U32)header.l_indiv << '\n';
@@ -69,13 +60,19 @@ struct BCFTypeString{
 };
 
 struct BCFEntry{
+	typedef BCFEntry self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BCFEntryBody body_type;
 	typedef BCFTypeString string_type;
 	typedef BCFAtomicBase base_type;
 
-	BCFEntry(void);
-	~BCFEntry(void);
+	BCFEntry(void);  // ctor
+	~BCFEntry(void); // dtor
+	BCFEntry(BCFEntry&& other) noexcept; // move ctor
+	self_type& operator=(const self_type& other); // copy assign
+	self_type& operator=(self_type&& other) noexcept; // move assign ctor
+
+
 
 	void resize(const U32 size);
 	void add(const char* const data, const U32 length);
@@ -110,6 +107,7 @@ struct BCFEntry{
 	double getMissingness(const U64& samples) const;
 	inline const bool& good(void) const{ return(this->isGood); }
 
+	// BCF retriever functions
 	inline const SBYTE& getSBYTE(U32& pos){ return(*reinterpret_cast<const SBYTE* const>(&this->data[pos++])); }
 
 	inline const S16& getS16(U32& pos){
@@ -130,7 +128,7 @@ struct BCFEntry{
 		case(1): value = *reinterpret_cast<const SBYTE* const>(&this->data[pos++]); break;
 		case(2): value = *reinterpret_cast<const S16* const>(&this->data[pos]); pos+=sizeof(S16);  break;
 		case(3): value = *reinterpret_cast<const S32* const>(&this->data[pos]); pos+=sizeof(S32);  break;
-		case(0): std::cerr << "FLAG value" << std::endl; break;
+		case(0): break; // Is a FLAG value
 		default: std::cerr << "illegal" << std::endl; exit(1);
 		}
 		return value;
@@ -142,12 +140,10 @@ struct BCFEntry{
 		return val;
 	}
 
-	inline const char getChar(U32& pos){
-		return(*reinterpret_cast<const char* const>(&this->data[pos++]));
-	}
+	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
 
 	inline const U64 hashFilter(void){return(XXH64((const void*)this->filterID, sizeof(U32)*this->filterPointer, BCF_HASH_SEED));}
-	inline const U64 hashInfo(void){return(XXH64((const void*)this->infoID, sizeof(U32)*this->infoPointer, BCF_HASH_SEED));}
+	inline const U64 hashInfo(void)  {return(XXH64((const void*)this->infoID,   sizeof(U32)*this->infoPointer,   BCF_HASH_SEED));}
 	inline const U64 hashFormat(void){return(XXH64((const void*)this->formatID, sizeof(U32)*this->formatPointer, BCF_HASH_SEED));}
 
 	// Iterators over fields
@@ -156,13 +152,13 @@ struct BCFEntry{
 	bool nextFormat(S32& value, U32& length, BYTE& value_type, U32& position);
 
 public:
-	U32 pointer; // byte width
-	U32 limit;   // capacity
+	U32 pointer;     // byte width
+	U32 limit;       // capacity
 	U32 l_ID;
 	U32 p_genotypes; // position genotype data begin
-	BYTE ref_alt; // parsed
+	BYTE ref_alt;    // parsed
 	bool isGood;
-	char* data; // hard copy data to buffer, interpret internally
+	char* data;      // hard copy data to buffer, interpret internally
 	body_type* body; // BCF2 body
 	string_type* alleles; // pointer to pointer of ref alleles and their lengths
 	char* ID;
@@ -177,6 +173,7 @@ public:
 	U16 filterPointer;
 	U16 infoPointer;
 	U16 formatPointer;
+
 	// FILTER
 	U32* filterID;
 	// INFO

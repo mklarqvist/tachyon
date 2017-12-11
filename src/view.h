@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2016-2017 Genome Research Ltd.
+Copyright (C) 2017-current Genome Research Ltd.
 Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,16 +29,13 @@ DEALINGS IN THE SOFTWARE.
 void view_usage(void){
 	programMessage();
 	std::cerr <<
-	"About:  Convert VCF/BCF->TWK/; subset and slice TWK/TWO data\n"
-	"        Only biallelic diploid genotypes from SNVs will be retained\n"
-	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.twk>\n\n"
+	"About:  Convert YON->VCF/BCF/\n"
+	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input Tomahawk (required)\n"
-	"  -o FILE  output file prefix (required)\n"
+	"  -o FILE  output file prefix or - for stdout\n"
 	"  -c INT   checkpoint size in number of variants (default: 500)\n"
-	"  -h FLOAT Hardy-Weinberg P-value cutoff (default: 0)\n"
-	"  -m FLOAT Minor-genotype frequency (MGF) cutoff (default: 0)\n"
-	"  -n FLOAT Missingness percentage cutoff (default: 0.2)\n"
+	"  -C INT   checkpoint bp width (default: 30000)\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -101,10 +98,16 @@ int view(int argc, char** argv){
 
 	Tachyon::Core::TachyonReader reader(input);
 	//reader.settings.loadAll();
+	//reader.settings.loadPPA = false;
 
 	reader.settings.loadMetaHot = true;
-	//reader.settings.loadMetaCold = true;
+	reader.settings.loadMetaCold = true;
 	// Todo: deduplicate and move to function in settings class
+	for(U32 i = 0; i < 100; ++i)
+		reader.settings.load_info_ID.push_back(i);
+
+	/*
+
 	reader.settings.load_info_ID.push_back(5);
 	reader.settings.load_info_ID.push_back(15);
 	reader.settings.load_info_ID.push_back(16);
@@ -114,8 +117,13 @@ int view(int argc, char** argv){
 	reader.settings.load_info_ID.push_back(24);
 	reader.settings.load_info_ID.push_back(11);
 	reader.settings.load_info_ID.push_back(25);
+	*/
 
-	reader.open(input);
+	if(!reader.open(input)){
+		std::cerr << "failed to open" << std::endl;
+		return 1;
+	}
+
 	while(reader.nextBlock()){
 		//reader.toVCF();
 		reader.toVCFPartial();

@@ -9,11 +9,13 @@ BCFReader::BCFReader() :
 		state(bcf_reader_state::BCF_INIT),
 		n_entries(0),
 		n_capacity(0),
+		n_carry_over(0),
 		entries(nullptr)
 {}
 
 BCFReader::~BCFReader(){
-	delete [] this->entries;
+	delete [] *this->entries;
+	//delete this->entries;
 }
 
 
@@ -87,15 +89,37 @@ bool BCFReader::nextVariant(BCFEntry& entry){
 }
 
 bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool across_contigs){
-	delete [] this->entries;
-	this->entries = new entry_type[n_variants];
-	this->n_entries = 0;
+	if(this->n_entries == 0 && this->n_carry_over == 0)
+		this->entries = new entry_type*[n_variants + 1];
+
+
+	for(U32 i = 0; i < this->n_entries; ++i)
+		delete this->entries[i];
+
+	// If there is any carry over
+	U32 firstPos = 0;
+	S32 firstContig = -1;
+	if(this->n_carry_over == 1){
+		this->entries[0] = this->entries[this->n_entries];
+		this->n_entries = 1;
+		firstPos = this->entries[0]->body->POS;
+		firstContig = this->entries[0]->body->CHROM;
+		//std::cerr << Helpers::timestamp("LOG", "SWITCHING") << firstPos << '\t' << firstContig << std::endl;
+	} else {
+		// Only set this to 0 if there is no carry
+		// over data from the previous cycle
+		this->n_entries = 0;
+	}
+
+	// Entries
+	//this->entries = new entry_type*[n_variants];
+	this->n_carry_over = 0;
 
 	// EOF
 	if(this->state == bcf_reader_state::BCF_EOF)
 		return false;
 
-	U32 firstPos = 0;
+
 	for(U32 i = 0; i < n_variants; ++i){
 		if(this->current_pointer == this->bgzf_controller.buffer.size()){
 			if(!this->nextBlock()){
@@ -103,25 +127,27 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			}
 		}
 
+		this->entries[this->n_entries] = new entry_type;
+
 		if(this->current_pointer + 8 > this->bgzf_controller.buffer.size()){
 			const S32 partial = (S32)this->bgzf_controller.buffer.size() - this->current_pointer;
-			this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
+			this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 			if(!this->nextBlock()){
 				std::cerr << Helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
 				return false;
 			}
 
-			this->entries[i].add(&this->bgzf_controller.buffer[0], 8 - partial);
+			this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[0], 8 - partial);
 			this->current_pointer = 8 - partial;
 		} else {
-			this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], 8);
+			this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], 8);
 			this->current_pointer += 8;
 		}
 
-		U64 remainder = this->entries[i].sizeBody();
+		U64 remainder = this->entries[this->n_entries]->sizeBody();
 		while(remainder > 0){
 			if(this->current_pointer + remainder > this->bgzf_controller.buffer.size()){
-				this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
+				this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 				remainder -= this->bgzf_controller.buffer.size() - this->current_pointer;
 				if(!this->nextBlock()){
 					std::cerr << Helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
@@ -129,7 +155,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 				}
 
 			} else {
-				this->entries[i].add(&this->bgzf_controller.buffer[this->current_pointer], remainder);
+				this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], remainder);
 				this->current_pointer += remainder;
 				remainder = 0;
 				break;
@@ -137,20 +163,41 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		}
 
 		// Interpret char stream
-		this->entries[i].parse();
+		this->entries[this->n_entries]->parse();
+		//std::cerr << this->entries[this->n_entries]->body->CHROM << ':' << this->entries[this->n_entries]->body->POS+1 << std::endl;
+
 
 		// Check position
-		if(this->n_entries == 0)
-			firstPos = this->entries[0].body->POS + 1;
+		if(this->n_entries == 0){
+			firstPos = this->entries[0]->body->POS;
+			firstContig = this->entries[0]->body->CHROM;
+		}
 
-		++this->n_entries;
+
+		// Make sure that data does not span over
+		// multiple CHROM fields
+		// Note: this should be toggleable as a
+		// passable parameter
+		// Note: This property is maintainable only
+		// when the input file is sorted
+		if(!across_contigs){
+			if(this->entries[this->n_entries]->body->CHROM != firstContig){
+				std::cerr << Helpers::timestamp("LOG","CONTIG") << "Switch in CHROM: " << firstContig << "->" << this->entries[this->n_entries]->body->CHROM << std::endl;
+				std::cerr << "Last is now: " << this->last().body->CHROM << ':' << this->last().body->POS << std::endl;
+				this->n_carry_over = 1;
+				return(this->size() > 0);
+			}
+		}
 
 		// Check break condition for window
-		if((this->entries[i].body->POS + 1) - firstPos > bp_window){
-			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[i].body->POS + 1) - firstPos << ")" << std::endl;
+		if(this->entries[this->n_entries]->body->POS - firstPos > bp_window){
+			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries]->body->POS) - firstPos << ")" << std::endl;
+			++this->n_entries;
 			break;
 		}
 
+		// Increment entries in return block
+		++this->n_entries;
 	}
 
 	return(this->size() > 0);
