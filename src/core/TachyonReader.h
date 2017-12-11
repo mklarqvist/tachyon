@@ -247,11 +247,21 @@ public:
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
+			for(U32 i = 0; i < this->header.n_entries; ++i){
+				std::cerr << i << '\t' << this->header.entries[i].ID << std::endl;
+			}
+
+			std::cerr << "\nSet membership: " << m.hot->INFO_map_ID << std::endl;
+			for(U32 k = 0; k < n_keys; ++k){
+				std::cerr << firstKey[k] << "->" << this->block.index_entry.info_offsets[firstKey[k]].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID << std::endl;
+			}
+			std::cerr << std::endl;
+
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
 				const U32& current_key = firstKey[k];
 				if(target_info_vector[current_key]){
-					info_iterators[current_key].toString(std::cout, this->header.getEntry(this->block.index_entry.info_offsets[current_key].key).ID);
+					info_iterators[current_key].toString(std::cout, this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID);
 
 					if(set + 1 != target_info_vector.n_keys)
 						std::cout.put(';');

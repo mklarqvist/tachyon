@@ -75,10 +75,10 @@ void BlockEntry::resize(const U32 s){
  * @param buffer Supportive buffer for re-packing data if necessary
  */
 void BlockEntry::updateBaseContainers(buffer_type& buffer){
-	this->updateContainer(this->gt_rle_container,    this->index_entry.offset_gt_rle,    buffer, 0);
-	this->updateContainer(this->gt_simple_container, this->index_entry.offset_gt_simple, buffer, 0);
-	this->updateContainer(this->meta_hot_container,  this->index_entry.offset_hot_meta,  buffer, 0);
-	this->updateContainer(this->meta_cold_container, this->index_entry.offset_cold_meta, buffer, 0);
+	this->updateContainer(this->gt_rle_container,    buffer);
+	this->updateContainer(this->gt_simple_container, buffer);
+	this->updateContainer(this->meta_hot_container,  buffer);
+	this->updateContainer(this->meta_cold_container, buffer);
 }
 
 /**< @brief Updates the local (relative to block start) virtual file offsets
@@ -131,15 +131,13 @@ void BlockEntry::updateOffsets(void){
  * 2) Generates CRC checksums for both data and strides
  * 3) Reformat (change used word-size) for strides and data; if possible
  *
- * @param v         Hashing container for identifier keys
  * @param container Data container
- * @param offset    Offset record
  * @param length    Iterator length
  * @param buffer    Supportive buffer
  */
-void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer){
+void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length, buffer_type& buffer){
 	for(U32 i = 0; i < length; ++i){
-		offset[i].key = v[i];
+		//offset[i].key = v[i];
 
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
@@ -158,7 +156,7 @@ void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_cont
 		}
 
 		// If the data type is not a BOOLEAN
-		this->updateContainer(container[i], offset[i], buffer, v[i]);
+		this->updateContainer(container[i], buffer);
 		assert(container[i].header.stride != 0);
 	}
 }
@@ -170,7 +168,7 @@ void BlockEntry::BlockEntry::updateContainer(hash_container_type& v, stream_cont
  * @param buffer    Supportive buffer
  * @param key       Identifier key
  */
-void BlockEntry::updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key){
+void BlockEntry::updateContainer(stream_container& container, buffer_type& buffer){
 	if(container.buffer_data.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
 		return;
 

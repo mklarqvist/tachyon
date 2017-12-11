@@ -365,7 +365,7 @@ public:
 	}
 
 private:
-	bool __constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns);
+	bool __constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
 	// Virtual offsets into various

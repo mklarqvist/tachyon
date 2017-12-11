@@ -36,23 +36,23 @@ public:
 	}
 
 
-	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, hash_container_type& v, buffer_type& buffer){
+	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, buffer_type& buffer){
 		// Determine target
 		switch(target){
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(v, this->info_containers, this->index_entry.info_offsets, this->index_entry.n_info_streams, buffer));
+			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams, buffer));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(v, this->format_containers, this->index_entry.format_offsets, this->index_entry.n_format_streams, buffer));
+			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams, buffer));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
 	}
 
 	inline void updateFilterOffsets(hash_container_type& v){
-		for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
-			this->index_entry.filter_offsets[i].key = v[i];
-		}
+		//for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
+		//	this->index_entry.filter_offsets[i].key = v[i];
+		//}
 	}
 
 	void updateBaseContainers(buffer_type& buffer);
@@ -65,24 +65,29 @@ public:
 		stream << this->index_entry;
 		stats.total_header_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
+		std::cerr << "write index" << std::endl;
 
 		if(this->index_entry.controller.hasGTPermuted){
 			stream << this->ppa_manager;
 			stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
 			last_pos = stream.tellp();
+			std::cerr << "write ppa" << std::endl;
 		}
 
 		stream << this->meta_hot_container;
 		stream << this->meta_cold_container;
 		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
+		std::cerr << "write meta" << std::endl;
 		last_pos = stream.tellp();
 		stream << this->gt_rle_container;
 		stream << this->gt_simple_container;
 		stats.total_gt_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
+		std::cerr << "write gt" << std::endl;
 
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
-			assert(this->index_entry.info_offsets[i].key != 0);
+			//assert(this->index_entry.info_offsets[i].key != 0);
+			std::cerr << "write info " << i << std::endl;
 			stream << this->info_containers[i];
 		}
 		stats.total_info_cost += (U64)stream.tellp() - last_pos;
@@ -100,8 +105,8 @@ public:
 	}
 
 private:
-	void updateContainer(hash_container_type& v, stream_container* container, offset_minimal_type* offset, const U32& length, buffer_type& buffer);
-	void updateContainer(stream_container& container, offset_minimal_type& offset, buffer_type& buffer, const U32& key);
+	void updateContainer(stream_container* container, const U32& length, buffer_type& buffer);
+	void updateContainer(stream_container& container, buffer_type& buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
@@ -116,7 +121,7 @@ private:
 
 		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
 			//std::cerr << i << "->" << entry.index_entry.info_offsets[i].key << '\t' << entry.info_containers[i].buffer_data.pointer << std::endl;
-			assert(entry.index_entry.info_offsets[i].key != 0);
+			//assert(entry.index_entry.info_offsets[i].key != 0);
 			stream << entry.info_containers[i];
 		}
 

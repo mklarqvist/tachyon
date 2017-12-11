@@ -1,4 +1,6 @@
 #include <cmath>
+#include <cassert>
+
 #include "IndexBlockEntry.h"
 
 namespace Tachyon{
@@ -67,15 +69,15 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	switch(target){
 	case(INDEX_BLOCK_TARGET::INDEX_INFO)   :
 		this->n_info_patterns = patterns.size();
-		return(this->__constructBitVector(this->info_bit_vectors, values, patterns));
+		return(this->__constructBitVector(this->info_bit_vectors, this->info_offsets,  values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 		this->n_format_patterns = patterns.size();
-		return(this->__constructBitVector(this->format_bit_vectors, values, patterns));
+		return(this->__constructBitVector(this->format_bit_vectors, this->format_offsets, values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FILTER) :
 		this->n_filter_patterns = patterns.size();
-		return(this->__constructBitVector(this->filter_bit_vectors, values, patterns));
+		return(this->__constructBitVector(this->filter_bit_vectors, this->filter_offsets, values, patterns));
 		break;
 	default: std::cerr << "unknown target type" << std::endl; exit(1);
 	}
@@ -83,7 +85,7 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	return false;
 }
 
-bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_type& values, hash_vector_container_type& patterns){
+bool IndexBlockEntry::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
 
@@ -98,17 +100,17 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){
-		/*
+
 		// Dump data
 		std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			std::cerr << patterns[i][j] << '\t';
 		}
 		std::cerr << std::endl;
-		*/
+
 
 		//
-		//std::cerr << i << '\t';
+		std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			U32 retval = 0;
 			if(!values.getRaw(patterns[i][j], retval)){
@@ -116,19 +118,30 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, hash_container_t
 				exit(1);
 			}
 			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
-			//std::cerr << retval << '\t';
+			std::cerr << retval << '\t';
 			target[i].keys[j] = retval;
+			offset[retval].key = patterns[i][j];
 			//std::cerr << target[i].keys[j] << std::endl;
 		}
-		//std::cerr << std::endl;
+		std::cerr << std::endl;
 
-		//std::cerr << i << '\t';
-		//for(U32 j = 0; j < bitvector_width; ++j)
-		//	std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
+		std::cerr << i << '\t';
+		for(U32 j = 0; j < bitvector_width; ++j)
+			std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
 
-		//std::cerr << std::endl << std::endl;
+		std::cerr << std::endl;
+
+		std::cerr << i << '\t';
+		for(U32 j = 0; j < patterns[i].size(); ++j){
+
+			std::cerr << offset[target[i].keys[j]].key << '\t';
+		}
+
+
+		std::cerr << std::endl << std::endl;
 	}
-	//std::cerr << std::endl;
+	std::cerr << std::endl;
+	//assert(this->info_offsets[0].key == 15);
 
 	return true;
 }
