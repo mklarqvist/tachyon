@@ -405,13 +405,17 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// These are BCF value types
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getInteger(info_value_type, internal_pos);
+				const S32 val = entry.getInteger(info_value_type, internal_pos);
+				std::cerr << val << std::endl;
+				target_container += val;
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
 			for(U32 j = 0; j < info_length; ++j){
-				target_container += entry.getFloat(internal_pos);
+				const float f = entry.getFloat(internal_pos);
+				std::cerr << f << std::endl;
+				target_container += f;
 			}
 		}
 		// Chars
@@ -439,6 +443,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	// in the meta header structure
 	assert(internal_pos == (entry.body->l_shared + sizeof(U32)*2));
 #endif
+
+	exit(1);
 
 	BYTE format_value_type = 0;
 	while(entry.nextFormat(val, info_length, format_value_type, internal_pos)){

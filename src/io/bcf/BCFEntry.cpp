@@ -130,6 +130,7 @@ bool BCFEntry::nextInfo(S32& value, U32& length, BYTE& value_type, U32& position
 
 	// INFO identifier
 	value = this->getInteger(info_key.low, position);
+	std::cerr << "internal: " << value << std::endl;
 	this->infoID[this->infoPointer++] = value;
 
 	// Data for this identifier
