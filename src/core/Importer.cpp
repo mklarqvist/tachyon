@@ -201,17 +201,14 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
-		std::cerr << "afer bit" << std::endl;
 		//std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
 		//std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
 
 		this->block.updateBaseContainers(this->recode_buffer);
-		std::cerr << "afer updat base" << std::endl;
 
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->recode_buffer);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
 		//this->block.updateFilterOffsets(this->filter_fields);
-		std::cerr << "afer updates" << std::endl;
 
 		zstd.setCompressionLevel(2);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
@@ -229,16 +226,16 @@ bool Importer::BuildBCF(void){
 
 		zstd.setCompressionLevel(6);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
-			//if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){
-			//	std::cerr << "failed to digest" << std::endl;
-			//	return false;
-			//}
+			//std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
+			if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){
+				std::cerr << "failed to digest" << std::endl;
+				return false;
+			}
 
 			zstd.encode(this->block.info_containers[i]);
 		}
 
-		std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
+		//std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->block.index_entry.format_offsets[i].key].update(this->block.format_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
@@ -247,19 +244,19 @@ bool Importer::BuildBCF(void){
 
 			zstd.encode(this->block.format_containers[i]);
 		}
-		std::cerr << "afer compresion" << std::endl;
+		//std::cerr << "afer compresion" << std::endl;
 
 		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
-		std::cerr << "afer update offsets" << std::endl;
+		//std::cerr << "afer update offsets" << std::endl;
 		//this->writer_.streamTomahawk << this->block;
 
 		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
-		std::cerr << "afer writes" << std::endl;
+		//std::cerr << "afer writes" << std::endl;
 
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << i << "->" << this->block.index_entry.info_offsets[i].key << std::endl;
-		}
+		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+		//	std::cerr << i << "->" << this->block.index_entry.info_offsets[i].key << std::endl;
+		//}
 
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
@@ -368,7 +365,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FILTER value
 		// Filter fields have no values
 		this->filter_fields.setGet(val);
-		//std::cerr << val << "->" << (*this->header_)[val].ID << std::endl;
+		//std::cerr << "FILTER: " << val << "->" << (*this->header_)[val].ID << std::endl;
 	}
 
 	// At INFO
@@ -376,9 +373,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	BYTE info_value_type;
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
-		std::cerr << this->header_->map[val].ID << std::endl;
 		const U32 mapID = this->info_fields.setGet(val);
-		std::cerr << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		//std::cerr << Helpers::timestamp("DEBUG") << "Field: " << this->header_->map[val].ID << '\t' << val << "->" << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
@@ -406,7 +403,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
 				const S32 val = entry.getInteger(info_value_type, internal_pos);
-				std::cerr << val << std::endl;
+				//std::cerr << val << std::endl;
 				target_container += val;
 			}
 		}
@@ -414,16 +411,16 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		else if(info_value_type == 5){
 			for(U32 j = 0; j < info_length; ++j){
 				const float f = entry.getFloat(internal_pos);
-				std::cerr << f << std::endl;
+				//std::cerr << f << std::endl;
 				target_container += f;
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
-			std::cerr << info_length << std::endl;
+			//std::cerr << info_length << std::endl;
 			for(U32 j = 0; j < info_length; ++j){
 				const char c = entry.getChar(internal_pos);
-				std::cerr << c << std::endl;
+				//std::cerr << c << std::endl;
 				target_container +=  c;
 			}
 		}
@@ -432,9 +429,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible in info: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
-		std::cerr << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		//std::cerr << "IFNO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 	}
-	std::cerr << std::endl;
+	//std::cerr << std::endl;
 
 #if BCF_ASSERT == 1
 	// Assert all FILTER and INFO data have been successfully
@@ -444,7 +441,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	assert(internal_pos == (entry.body->l_shared + sizeof(U32)*2));
 #endif
 
-	exit(1);
+	//exit(1);
 
 	BYTE format_value_type = 0;
 	while(entry.nextFormat(val, info_length, format_value_type, internal_pos)){

@@ -122,15 +122,16 @@ bool BCFEntry::nextInfo(S32& value, U32& length, BYTE& value_type, U32& position
 
 	const base_type& info_key = *reinterpret_cast<const base_type* const>(&this->data[position++]);
 	#if BCF_ASSERT == 1
-	// This first bit returns a single identifier
+	// The first object returns a single identifier
 	// to a field. It should always be a single
 	// value
 	assert(info_key.high == 1);
 	#endif
 
 	// INFO identifier
+	//std::cerr << "info_key: " << (int)info_key.high << '\t' << (int)info_key.low << " position: " << position << std::endl;
 	value = this->getInteger(info_key.low, position);
-	std::cerr << "internal: " << value << std::endl;
+	//std::cerr << "internal: " << value << '\t' << std::bitset<32>(value) << " position: " << position << std::endl;
 	this->infoID[this->infoPointer++] = value;
 
 	// Data for this identifier
@@ -141,6 +142,7 @@ bool BCFEntry::nextInfo(S32& value, U32& length, BYTE& value_type, U32& position
 		length = this->getInteger(array_base.low, position);
 	}
 	value_type = info_value.low;
+	//std::cerr << "ret: " << (int)length << '\t' << (int)info_value.low << std::endl;
 
 	return true;
 }

@@ -65,29 +65,29 @@ public:
 		stream << this->index_entry;
 		stats.total_header_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
-		std::cerr << "write index" << std::endl;
+		//std::cerr << "write index" << std::endl;
 
 		if(this->index_entry.controller.hasGTPermuted){
 			stream << this->ppa_manager;
 			stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
 			last_pos = stream.tellp();
-			std::cerr << "write ppa" << std::endl;
+			//std::cerr << "write ppa" << std::endl;
 		}
 
 		stream << this->meta_hot_container;
 		stream << this->meta_cold_container;
 		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
-		std::cerr << "write meta" << std::endl;
+		//std::cerr << "write meta" << std::endl;
 		last_pos = stream.tellp();
 		stream << this->gt_rle_container;
 		stream << this->gt_simple_container;
 		stats.total_gt_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
-		std::cerr << "write gt" << std::endl;
+		//std::cerr << "write gt" << std::endl;
 
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 			//assert(this->index_entry.info_offsets[i].key != 0);
-			std::cerr << "write info " << i << std::endl;
+			//std::cerr << "write info " << i << std::endl;
 			stream << this->info_containers[i];
 		}
 		stats.total_info_cost += (U64)stream.tellp() - last_pos;
