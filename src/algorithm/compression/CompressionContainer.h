@@ -4,7 +4,6 @@
 #include "../../io/compression/TGZFController.h"
 #include "zstd.h"
 #include "common/zstd_errors.h"
-#include "../../third_party/r16N.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 
@@ -131,9 +130,9 @@ public:
 			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << this->compression_level << ": " << stream.buffer_strides.pointer << '\t' << ret << '\t' << (double)stream.buffer_strides.pointer/ret << "-fold" << std::endl;
 		//}
 
-		U32 out_size = this->buffer.capacity();
-		rans_compress_to_4x16((BYTE*)stream.buffer_strides.data, stream.buffer_strides.pointer, (BYTE*)this->buffer.data, &out_size, 0);
-		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0\t" << stream.buffer_strides.pointer << "\t" << out_size << '\t' << (double)stream.buffer_strides.pointer/out_size << std::endl;
+		//U32 out_size = this->buffer.capacity();
+		//rans_compress_to_4x16((BYTE*)stream.buffer_strides.data, stream.buffer_strides.pointer, (BYTE*)this->buffer.data, &out_size, 0);
+		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0\t" << stream.buffer_strides.pointer << "\t" << out_size << '\t' << (double)stream.buffer_strides.pointer/out_size << std::endl;
 
 		/*
 		U32 crc = crc32(0, NULL, 0);

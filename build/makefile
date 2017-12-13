@@ -10,7 +10,6 @@ RM := rm
 -include sources.mk
 -include src/third_party/zlib/subdir.mk
 -include src/third_party/xxhash/subdir.mk
--include src/third_party/subdir.mk
 -include src/support/subdir.mk
 -include src/io/vcf/subdir.mk
 -include src/io/compression/subdir.mk
@@ -20,7 +19,6 @@ RM := rm
 -include src/core/base/subdir.mk
 -include src/core/subdir.mk
 -include src/algorithm/permutation/subdir.mk
--include src/algorithm/encryption/subdir.mk
 -include src/algorithm/compression/subdir.mk
 -include src/subdir.mk
 -include subdir.mk
@@ -58,7 +56,7 @@ all: tachyon
 tachyon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -L/media/klarqv01/43f895f1-ba84-4abf-b6e7-1510057cc713/Repos2/zstd/lib -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/Users/mk21/Tools/zstd/lib -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
