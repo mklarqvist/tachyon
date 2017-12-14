@@ -3,6 +3,7 @@
 
 #include "../../io/compression/TGZFController.h"
 #include "zstd.h"
+#include "dictBuilder/zdict.h"
 #include "common/zstd_errors.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
@@ -115,6 +116,15 @@ public:
 	ZSTDCodec() : compression_level(0){}
 	~ZSTDCodec(){ }
 
+	void buildDictionary(buffer_type& buffer, buffer_type& dict_buffer, const U32& n_entries, const size_t* lengths){
+		const size_t ret = ZDICT_trainFromBuffer(dict_buffer.data, dict_buffer.capacity(), buffer.data, lengths, n_entries);
+		if(ZSTD_isError(ret)){
+			std::cerr << "error zstd: " << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			exit(1);
+		}
+		dict_buffer.pointer = ret;
+	}
+
 	void setCompressionLevel(const int& c){ this->compression_level = c; }
 
 	// not used
@@ -124,7 +134,7 @@ public:
 		//for(S32 i = 1; i <= 22; ++i){
 			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
 			if(ZSTD_isError(ret)){
-				std::cerr << "error zstd: " << ZSTD_getErrorCode(ret) << std::endl;
+				std::cerr << "error zstd: " << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 				//exit(1);
 			}
 			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << this->compression_level << ": " << stream.buffer_strides.pointer << '\t' << ret << '\t' << (double)stream.buffer_strides.pointer/ret << "-fold" << std::endl;

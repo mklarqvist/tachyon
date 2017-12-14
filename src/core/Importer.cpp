@@ -54,6 +54,115 @@ bool Importer::Build(){
 	return true;
 }
 
+bool Importer::BuildCompressionDictionaries(){
+	bcf_reader_type reader;
+	if(!reader.open(this->inputFile)){
+		std::cerr << Helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
+		return false;
+	}
+
+	this->header_ = &reader.header;
+	if(this->header_->samples == 0){
+		std::cerr << Helpers::timestamp("ERROR", "BCF") << "No samples detected in header..." << std::endl;
+		return false;
+	}
+
+	if(this->header_->samples == 1){
+		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tachyon::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
+		return false;
+	}
+
+	// Spawn RLE controller and update PPA controller
+	this->encoder.setSamples(this->header_->samples);
+	this->block.ppa_manager.setSamples(this->header_->samples);
+	this->permutator.manager = &this->block.ppa_manager;
+	this->permutator.setSamples(this->header_->samples);
+
+	// Resize containers
+	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
+	this->block.resize(resize_to);
+
+	Compression::ZSTDCodec zstd;
+
+	buffer_type* main_buffer = new buffer_type[this->header_->map.size()];
+	for(U32 i = 0; i < this->header_->map.size(); ++i){
+		main_buffer[i].resize(110e6);
+	}
+
+	std::vector< std::vector<size_t> > lengths(this->header_->map.size());
+
+	// Start import
+	U64 n_variants_read = 0;
+	while(true){
+		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases))
+			break;
+
+		for(U32 i = 0; i < reader.size(); ++i){
+			if(!this->parseBCFLine(reader[i])){
+				std::cerr << "failed to parse" << std::endl;
+				return false;
+			}
+		}
+		n_variants_read += reader.size();
+
+		this->block.index_entry.n_info_streams = this->info_fields.size();
+		this->block.index_entry.n_format_streams = this->format_fields.size();
+		this->block.index_entry.n_filter_streams = this->filter_fields.size();
+		this->block.index_entry.n_variants = reader.size();
+		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.updateBaseContainers(this->recode_buffer);
+		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->recode_buffer);
+		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
+		this->block.updateOffsets();
+
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			std::cerr << i << '\t' << this->block.info_containers[i].buffer_data.pointer << std::endl;
+			if(this->block.info_containers[i].header.controller.uniform == false){
+				if(main_buffer[this->block.index_entry.info_offsets[i].key].pointer < 100e6){
+					main_buffer[this->block.index_entry.info_offsets[i].key] += this->block.info_containers[i].buffer_data;
+					lengths[this->block.index_entry.info_offsets[i].key].push_back(this->block.info_containers[i].buffer_data.pointer);
+				}
+			}
+		}
+
+		this->resetHashes();
+		this->block.clear();
+		this->permutator.reset();
+	}
+
+	std::cerr << " done import bit" << std::endl;
+	for(U32 i = 0; i < this->header_->map.size(); ++i){
+		if(lengths[i].size() == 0 || main_buffer[i].size() < 100e3){
+			std::cerr << "no size; continue" << std::endl;
+			main_buffer[i].deleteAll();
+			continue;
+		}
+		std::cerr << this->header_->map[i].ID << '\t' << lengths[i][0] << '\t' << lengths[i].size() << '\t' << Helpers::ToPrettyString(main_buffer[i].size()) << std::endl;
+
+		buffer_type dictionary(main_buffer[i].pointer);
+		if(dictionary.size() < 10e6)
+			dictionary.resize(10e6);
+
+		//for(U32 j = 0; j < lengths[i].size(); ++j)
+		//	std::cerr << lengths[i][j] <<',';
+		//std::cerr << std::endl;
+		zstd.buildDictionary(main_buffer[i], dictionary, lengths[i].size(), &lengths[i][0]);
+		std::cerr << "Dictionary size: " << Helpers::ToPrettyString(dictionary.pointer) << std::endl;
+		dictionary.deleteAll();
+		main_buffer[i].deleteAll();
+	}
+
+
+
+	//main_buffer.deleteAll();
+	//dictionary.deleteAll();
+
+	return(true);
+}
+
 bool Importer::BuildBCF(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
@@ -210,11 +319,11 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
 		//this->block.updateFilterOffsets(this->filter_fields);
 
-		zstd.setCompressionLevel(2);
+		zstd.setCompressionLevel(20);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
 		if(this->block.meta_hot_container.n_entries) zstd.encode(this->block.meta_hot_container);
 
-		zstd.setCompressionLevel(14);
+		zstd.setCompressionLevel(20);
 		if(this->block.gt_rle_container.n_entries) zstd.encode(this->block.gt_rle_container);
 		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
 		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
@@ -224,7 +333,7 @@ bool Importer::BuildBCF(void){
 		//std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
 		//std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
 
-		zstd.setCompressionLevel(6);
+		zstd.setCompressionLevel(20);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
 			if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){

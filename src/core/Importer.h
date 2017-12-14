@@ -36,6 +36,7 @@ public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
 	~Importer();
 	bool Build();
+	bool BuildCompressionDictionaries();
 
 	inline void setPermute(const bool yes){ this->permute = yes; }
 

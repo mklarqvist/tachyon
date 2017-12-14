@@ -123,8 +123,9 @@ int import(int argc, char** argv){
 	Tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
 	importer.setPermute(permute);
 
-	if(!importer.Build())
-		return 1;
+	//if(!importer.Build())
+	//	return 1;
+	importer.BuildCompressionDictionaries();
 
 	return 0;
 }
