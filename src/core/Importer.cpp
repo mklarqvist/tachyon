@@ -1,7 +1,7 @@
 #include <fstream>
 #include "Importer.h"
 #include "../algorithm/compression/CompressionContainer.h"
-
+#include "../algorithm/compression/CompressionDictionaryManager.h"
 #include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
 
@@ -54,7 +54,7 @@ bool Importer::Build(){
 	return true;
 }
 
-bool Importer::BuildCompressionDictionaries(){
+bool Importer::BuildCompressionDictionaries(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
 		std::cerr << Helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
@@ -84,12 +84,9 @@ bool Importer::BuildCompressionDictionaries(){
 
 	Compression::ZSTDCodec zstd;
 
-	buffer_type* main_buffer = new buffer_type[this->header_->map.size()];
-	for(U32 i = 0; i < this->header_->map.size(); ++i){
-		main_buffer[i].resize(110e6);
-	}
-
-	std::vector< std::vector<size_t> > lengths(this->header_->map.size());
+	Algorithm::Compression::CompressionDictionaryManager dmanager;
+	dmanager.resizeAll(110e6);
+	dmanager.allocateFields(this->header_->map.size(), 110e6);
 
 	// Start import
 	U64 n_variants_read = 0;
@@ -118,14 +115,14 @@ bool Importer::BuildCompressionDictionaries(){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
 		this->block.updateOffsets();
 
+		dmanager.gt_rle += this->block.gt_rle_container;
+		dmanager.gt_simple += this->block.gt_simple_container;
+		dmanager.meta_hot += this->block.meta_hot_container;
+		dmanager.meta_cold += this->block.meta_cold_container;
+
+
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << i << '\t' << this->block.info_containers[i].buffer_data.pointer << std::endl;
-			if(this->block.info_containers[i].header.controller.uniform == false){
-				if(main_buffer[this->block.index_entry.info_offsets[i].key].pointer < 100e6){
-					main_buffer[this->block.index_entry.info_offsets[i].key] += this->block.info_containers[i].buffer_data;
-					lengths[this->block.index_entry.info_offsets[i].key].push_back(this->block.info_containers[i].buffer_data.pointer);
-				}
-			}
+			dmanager.map_fields[this->block.index_entry.info_offsets[i].key] += this->block.info_containers[i];
 		}
 
 		this->resetHashes();
@@ -134,31 +131,15 @@ bool Importer::BuildCompressionDictionaries(){
 	}
 
 	std::cerr << " done import bit" << std::endl;
+	dmanager.gt_rle.buildDictionary();
+	dmanager.gt_simple.buildDictionary();
+	dmanager.meta_cold.buildDictionary();
+	dmanager.meta_hot.buildDictionary();
+
 	for(U32 i = 0; i < this->header_->map.size(); ++i){
-		if(lengths[i].size() == 0 || main_buffer[i].size() < 100e3){
-			std::cerr << "no size; continue" << std::endl;
-			main_buffer[i].deleteAll();
-			continue;
-		}
-		std::cerr << this->header_->map[i].ID << '\t' << lengths[i][0] << '\t' << lengths[i].size() << '\t' << Helpers::ToPrettyString(main_buffer[i].size()) << std::endl;
-
-		buffer_type dictionary(main_buffer[i].pointer);
-		if(dictionary.size() < 10e6)
-			dictionary.resize(10e6);
-
-		//for(U32 j = 0; j < lengths[i].size(); ++j)
-		//	std::cerr << lengths[i][j] <<',';
-		//std::cerr << std::endl;
-		zstd.buildDictionary(main_buffer[i], dictionary, lengths[i].size(), &lengths[i][0]);
-		std::cerr << "Dictionary size: " << Helpers::ToPrettyString(dictionary.pointer) << std::endl;
-		dictionary.deleteAll();
-		main_buffer[i].deleteAll();
+		std::cerr << "Field; " << this->header_->map[i].ID << std::endl;
+		dmanager.map_fields[i].buildDictionary();
 	}
-
-
-
-	//main_buffer.deleteAll();
-	//dictionary.deleteAll();
 
 	return(true);
 }
@@ -319,8 +300,9 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
 		//this->block.updateFilterOffsets(this->filter_fields);
 
-		zstd.setCompressionLevel(20);
+		zstd.setCompressionLevel(6);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
+		zstd.setCompressionLevel(20);
 		if(this->block.meta_hot_container.n_entries) zstd.encode(this->block.meta_hot_container);
 
 		zstd.setCompressionLevel(20);
