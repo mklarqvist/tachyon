@@ -1,7 +1,7 @@
 #include <fstream>
+
 #include "Importer.h"
 #include "../algorithm/compression/CompressionContainer.h"
-#include "../algorithm/compression/CompressionDictionaryManager.h"
 #include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
 
