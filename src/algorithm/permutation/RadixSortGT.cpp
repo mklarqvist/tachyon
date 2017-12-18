@@ -10,7 +10,9 @@ RadixSortGT::RadixSortGT() :
 	bins(new U32*[9]),
 	manager(nullptr),
 	cumulative_AAC(0),
-	cumulative_total(0)
+	cumulative_total(0),
+	n_gt_matrix(0),
+	GT_matrix(nullptr)
 {
 	memset(&p_i, 0, sizeof(U32)*9);
 }
@@ -74,6 +76,76 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 	return(this->position > 0);
 }
 
+bool RadixSortGT::buildPairwiseHamming(const bcf_reader_type& reader){
+	if(reader.size() == 0)
+		return false;
+
+	this->GT_matrix = new BYTE*[reader.size()];
+
+	// Cycle over BCF entries
+	for(U32 i = 0; i < reader.size(); ++i){
+		this->GT_matrix[i] = new BYTE[this->n_samples];
+
+		// Has to be biallelic
+		// otherwise skip
+		if(!reader[i].isBiallelic())
+			continue;
+
+		if(!this->pairwiseHammingUpdate(reader[i]))
+			continue;
+
+	}
+
+	this->buildTest();
+
+	for(U32 i = 0; i < reader.size(); ++i){
+		delete [] this->GT_matrix[i];
+	}
+	delete this->GT_matrix;
+	this->n_gt_matrix = 0;
+
+	// Return TRUE if the number of parsed
+	// entries is > 0
+	return true;
+}
+
+bool RadixSortGT::pairwiseHammingUpdate(const bcf_entry_type& entry){
+	if(!entry.isBiallelic())
+		return false;
+
+	U32 internal_pos = entry.p_genotypes;
+	U32 k = 0;
+	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
+		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
+		const BYTE packed = (BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1);
+		this->GT_matrix[this->n_gt_matrix][k] = packed;
+	}
+	++this->n_gt_matrix;
+
+	return true;
+
+}
+
+bool RadixSortGT::buildTest(void){
+	// Start with current neighbour cost
+	//const U32 n_entries = this->n_samples*this->n_samples/2 - this->n_samples;
+	//U32* distances = new U32[n_entries];
+	std::vector< std::pair<U32, U32> >(this->n_samples);
+
+
+	U32 m = 0;
+	for(U32 i = 0; i < this->n_samples - 1; ++i){
+		U32 hamming = 0;
+		for(U32 k = 0; k < this->n_gt_matrix; ++k){
+			if(this->GT_matrix[k][i] != this->GT_matrix[k][i+1]) ++hamming;
+		}
+		std::cerr << hamming << std::endl;
+	}
+
+	return true;
+}
+
 bool RadixSortGT::update(const bcf_entry_type& entry){
 	// Check again because we might use it
 	// iteratively at some point in time
@@ -97,7 +169,6 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	// ./. -> 1010b = 10 -> 8
 	//
 	// Update GT_array
-	U32 alt = 0, ref = 0;
 	U32 internal_pos = entry.p_genotypes;
 	U32 k = 0;
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
@@ -105,14 +176,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const BYTE packed = (BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_array[k] = packed;
-		if(BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) == 1) ++alt;
-		else ++ref;
-		if(BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1) == 1) ++alt;
-		else ++ref;
 	}
-	if(alt <= ref) this->cumulative_AAC += alt;
-	else this->cumulative_AAC += ref;
-	this->cumulative_total += alt + ref;
 
 	// Build PPA
 	// 3^2 = 9 state radix sort over
@@ -163,29 +227,6 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	++this->position;
 
 	return true;
-}
-
-void RadixSortGT::outputGT(const bcf_reader_type& reader){
-	if(reader.size() == 0)
-		return;
-
-	for(U32 i = 0; i < reader.size(); ++i){
-		if(!reader[i].isBiallelic())
-			continue;
-
-		U32 internal_pos = reader[i].p_genotypes;
-		for(U32 k = 0; k < 2*this->n_samples; k += 2, ++k){
-			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&reader[i].data[internal_pos++]);
-			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&reader[i].data[internal_pos++]);
-			const BYTE packed = (BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1);
-			this->GT_array[k] = packed;
-		}
-
-		for(U32 k = 0; k < this->n_samples; ++k){
-			std::cerr << (int)this->GT_array[(*this->manager)[k]];
-		}
-		std::cerr << std::endl;
-	}
 }
 
 

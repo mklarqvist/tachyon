@@ -113,8 +113,29 @@ private:
 	typedef IO::TGZFController controller_type;
 
 public:
-	ZSTDCodec() : compression_level(0){}
-	~ZSTDCodec(){ }
+	ZSTDCodec() : compression_level(0), cdict(nullptr){}
+	~ZSTDCodec(){
+		if(this->cdict != nullptr)
+		ZSTD_freeCDict(this->cdict);
+	}
+
+	bool loadDictionary(const std::string file){
+		std::ifstream stream(file, std::ios::binary | std::ios::ate);
+		if(!stream.good()){
+			std::cerr << "cannot open file: " << file << std::endl;
+		}
+		const size_t filesize = stream.tellg();
+		stream.seekg(0);
+		char* buffer = new char[filesize];
+		stream.read(buffer, filesize);
+		if(!stream.good()){
+			std::cerr << "could not load data from: " << file << std::endl;
+		}
+		stream.close();
+
+		this->cdict = ZSTD_createCDict(buffer, filesize, this->compression_level);
+		return true;
+	}
 
 	void buildDictionary(buffer_type& buffer, buffer_type& dict_buffer, const U32& n_entries, const size_t* lengths){
 		const size_t ret = ZDICT_trainFromBuffer(dict_buffer.data, dict_buffer.capacity(), buffer.data, lengths, n_entries);
@@ -223,6 +244,64 @@ public:
 			return(this->encodeStrides(stream));
 		else return true;
 	}
+
+	const bool encodeUsingDictionary(stream_type& stream){
+		stream.generateCRC();
+
+		if(stream.header.controller.uniform || stream.buffer_data.pointer < 50){
+			stream.header.controller.encoder = Core::ENCODE_NONE;
+			//stream.header.uLength = stream.buffer_data.pointer;
+			stream.header.cLength = stream.buffer_data.pointer;
+			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small: no compression... " << stream.buffer_data.pointer << std::endl;
+			if(stream.header.controller.mixedStride == true)
+				return(this->encodeStrides(stream));
+			else return true;
+		}
+
+		this->buffer.reset();
+		this->buffer.resize(stream.buffer_data.pointer + 65536);
+		//for(S32 i = 1; i <= 22; ++i){
+		ZSTD_CCtx* cctx = ZSTD_createCCtx();
+		size_t ret = ZSTD_compress_usingCDict(cctx,
+											  this->buffer.data, this->buffer.capacity(),
+											  stream.buffer_data.data, stream.buffer_data.pointer,
+											  this->cdict);
+
+		if(ZSTD_isError(ret)){
+			std::cerr << "error zstd encode__: " << ZSTD_getErrorCode(ret) << std::endl;
+			exit(1);
+		}
+
+		ZSTD_freeCCtx(cctx);
+
+		const float fold = (float)stream.buffer_data.pointer/ret;
+		if(fold < MIN_COMPRESSION_FOLD){
+			stream.header.controller.encoder = Core::ENCODE_NONE;
+			//stream.header.uLength = stream.buffer_data.pointer;
+			stream.header.cLength = stream.buffer_data.pointer;
+			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Bad compression. Ignoring... " << stream.buffer_data.pointer << std::endl;
+
+			if(stream.header.controller.mixedStride == true)
+				return(this->encodeStrides(stream));
+			else return true;
+		}
+
+		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
+		//std::cerr << "uniform: " << (int)stream.header.controller.uniform << '\t' << (int)stream.header.controller.type << std::endl;
+		//stream.header.uLength = stream.buffer_data.pointer;
+		stream.header.cLength = ret;
+		stream.header.controller.encoder = Core::ENCODE_ZSTD;
+		memcpy(stream.buffer_data.data, this->buffer.data, ret);
+		stream.buffer_data.pointer = ret;
+		stream.header.n_extra = 1;
+		stream.header.extra = new char[sizeof(BYTE)];
+		stream.header.extra[0] = (BYTE)this->compression_level;
+
+		if(stream.header.controller.mixedStride == true)
+			return(this->encodeStrides(stream));
+		else return true;
+	}
+
 
 	const bool encodeStrides(stream_type& stream){
 		if(stream.header_stride.controller.uniform || stream.buffer_strides.pointer < 50){
@@ -361,6 +440,7 @@ public:
 
 private:
 	int compression_level;
+	ZSTD_CDict* cdict;
 };
 
 }

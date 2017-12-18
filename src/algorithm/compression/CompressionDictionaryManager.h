@@ -42,6 +42,8 @@ public:
 			return false;
 		}
 		this->buffer_dictionary.resize(this->buffer_data.pointer * 1.2);
+
+
 		const size_t ret = ZDICT_trainFromBuffer(this->buffer_dictionary.data, this->buffer_dictionary.capacity(), this->buffer_data.data, &this->lengths[0], this->lengths.size());
 		if(ZSTD_isError(ret)){
 			std::cerr << "error zstd: " << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;

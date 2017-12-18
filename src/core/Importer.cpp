@@ -115,11 +115,10 @@ bool Importer::BuildCompressionDictionaries(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
 		this->block.updateOffsets();
 
-		dmanager.gt_rle += this->block.gt_rle_container;
+		dmanager.gt_rle    += this->block.gt_rle_container;
 		dmanager.gt_simple += this->block.gt_simple_container;
-		dmanager.meta_hot += this->block.meta_hot_container;
+		dmanager.meta_hot  += this->block.meta_hot_container;
 		dmanager.meta_cold += this->block.meta_cold_container;
-
 
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			dmanager.map_fields[this->block.index_entry.info_offsets[i].key] += this->block.info_containers[i];
@@ -131,7 +130,10 @@ bool Importer::BuildCompressionDictionaries(void){
 	}
 
 	std::cerr << " done import bit" << std::endl;
+	std::ofstream out("/media/klarqv01/NVMe/1kgp3/1kgp3_dictionary.yon.dict", std::ios::out|std::ios::binary);
 	dmanager.gt_rle.buildDictionary();
+	out.write(dmanager.gt_rle.buffer_dictionary.data, dmanager.gt_rle.buffer_dictionary.pointer);
+	out.close();
 	dmanager.gt_simple.buildDictionary();
 	dmanager.meta_cold.buildDictionary();
 	dmanager.meta_hot.buildDictionary();
@@ -184,6 +186,10 @@ bool Importer::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	Compression::ZSTDCodec zstd;
+	//if(!zstd.loadDictionary("/media/klarqv01/NVMe/1kgp3/1kgp3_dictionary.yon.dict")){
+	//	std::cerr << "cannot load dict" << std::endl;
+	//	return false;
+	//}
 
 	// Digest controller
 	std::cerr << "setting up digests for: " << this->header_->map.size() << std::endl;
@@ -220,13 +226,13 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
+
 		if(this->block.index_entry.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << "fail permutator" << std::endl;
 				return false;
 			}
 		}
-
 
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
@@ -291,33 +297,23 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 
-		//std::cerr << "PATTERNS: " << this->info_patterns.size() << '\t' << this->format_patterns.size() << '\t' << this->filter_patterns.size() << std::endl;
-		//std::cerr << "VALUES: " << this->info_fields.size() << '\t' << this->format_fields.size() << '\t' << this->filter_fields.size() << std::endl;
-
 		this->block.updateBaseContainers(this->recode_buffer);
-
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->recode_buffer);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
-		//this->block.updateFilterOffsets(this->filter_fields);
 
 		zstd.setCompressionLevel(6);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
-		zstd.setCompressionLevel(20);
-		if(this->block.meta_hot_container.n_entries) zstd.encode(this->block.meta_hot_container);
 
 		zstd.setCompressionLevel(20);
-		if(this->block.gt_rle_container.n_entries) zstd.encode(this->block.gt_rle_container);
+		if(this->block.meta_hot_container.n_entries)  zstd.encode(this->block.meta_hot_container);
+
+		zstd.setCompressionLevel(20);
+		if(this->block.gt_rle_container.n_entries)    zstd.encode(this->block.gt_rle_container);
 		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
 		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
 
-		//std::cerr <<"META-HOT\t" << this->block.meta_hot_container.buffer_data.size() << std::endl;
-		//std::cerr <<"META-COLD\t" << this->block.meta_cold_container.buffer_data.size() << std::endl;
-		//std::cerr <<"GT RLE\t" << this->block.gt_rle_container.buffer_data.size() << std::endl;
-		//std::cerr <<"GT SIMPLE\t" << this->block.gt_simple_container.buffer_data.size() << std::endl;
-
 		zstd.setCompressionLevel(20);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
 			if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
 				return false;
@@ -326,7 +322,6 @@ bool Importer::BuildBCF(void){
 			zstd.encode(this->block.info_containers[i]);
 		}
 
-		//std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->block.index_entry.format_offsets[i].key].update(this->block.format_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
@@ -335,32 +330,21 @@ bool Importer::BuildBCF(void){
 
 			zstd.encode(this->block.format_containers[i]);
 		}
-		//std::cerr << "afer compresion" << std::endl;
-
-		//const size_t curPos = this->writer_.streamTomahawk.tellp();
 		this->block.updateOffsets();
-		//std::cerr << "afer update offsets" << std::endl;
-		//this->writer_.streamTomahawk << this->block;
-
 		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
-		//std::cerr << "afer writes" << std::endl;
-
-		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-		//	std::cerr << i << "->" << this->block.index_entry.info_offsets[i].key << std::endl;
-		//}
 
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
 		this->import_compressed_stats.total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
-		if(this->block.index_entry.controller.hasGTPermuted) this->import_compressed_stats.total_ppa_cost += this->block.ppa_manager.PPA.pointer;
-		//std::cerr << Helpers::timestamp("LOG","UPDATE") << this->total_gt_cost << '\t' << (double)this->total_gt_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << this->total_ppa_cost << '\t' << (double)this->total_ppa_cost/this->writer_.streamTomahawk.tellp()*100 << "%\t" << (this->total_gt_cost+this->total_ppa_cost) << '\t' << (double)(this->total_ppa_cost+this->total_gt_cost)/this->writer_.streamTomahawk.tellp()*100 << '%' << std::endl;
+		if(this->block.index_entry.controller.hasGTPermuted)
+			this->import_compressed_stats.total_ppa_cost += this->block.ppa_manager.PPA.pointer;
 
 		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
 		this->writer_.streamTomahawk.flush();
-		previousFirst = reader.first().body->POS;
-		previousLast  = reader.last().body->POS;
 		previousContigID = reader.first().body->CHROM;
+		previousFirst    = reader.first().body->POS;
+		previousLast     = reader.last().body->POS;
 	}
 	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
 	this->writer_.streamTomahawk.flush();
@@ -465,7 +449,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
 		const U32 mapID = this->info_fields.setGet(val);
-		//std::cerr << Helpers::timestamp("DEBUG") << "Field: " << this->header_->map[val].ID << '\t' << val << "->" << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		std::cerr << Helpers::timestamp("DEBUG") << "Field: " << this->header_->map[val].ID << '\t' << val << "->" << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
@@ -494,7 +478,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
 				const S32 val = entry.getInteger(info_value_type, internal_pos);
-				//std::cerr << val << std::endl;
+				std::cerr << val << std::endl;
 				target_container += val;
 			}
 		}
@@ -502,7 +486,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		else if(info_value_type == 5){
 			for(U32 j = 0; j < info_length; ++j){
 				const float f = entry.getFloat(internal_pos);
-				//std::cerr << f << std::endl;
+				std::cerr << f << std::endl;
 				target_container += f;
 			}
 		}
@@ -511,7 +495,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			//std::cerr << info_length << std::endl;
 			for(U32 j = 0; j < info_length; ++j){
 				const char c = entry.getChar(internal_pos);
-				//std::cerr << c << std::endl;
+				std::cerr << c << std::endl;
 				target_container +=  c;
 			}
 		}
@@ -520,8 +504,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible in info: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
-		//std::cerr << "IFNO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		std::cerr << "INFO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 	}
+	exit(1);
 	//std::cerr << std::endl;
 
 #if BCF_ASSERT == 1

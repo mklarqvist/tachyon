@@ -1,4 +1,5 @@
 #include <cassert>
+#include <bitset>
 
 #include "BCFEntry.h"
 
