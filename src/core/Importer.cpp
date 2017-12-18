@@ -54,98 +54,6 @@ bool Importer::Build(){
 	return true;
 }
 
-bool Importer::BuildCompressionDictionaries(void){
-	bcf_reader_type reader;
-	if(!reader.open(this->inputFile)){
-		std::cerr << Helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
-		return false;
-	}
-
-	this->header_ = &reader.header;
-	if(this->header_->samples == 0){
-		std::cerr << Helpers::timestamp("ERROR", "BCF") << "No samples detected in header..." << std::endl;
-		return false;
-	}
-
-	if(this->header_->samples == 1){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tachyon::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
-		return false;
-	}
-
-	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header_->samples);
-	this->block.ppa_manager.setSamples(this->header_->samples);
-	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header_->samples);
-
-	// Resize containers
-	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
-	this->block.resize(resize_to);
-
-	Compression::ZSTDCodec zstd;
-
-	Algorithm::Compression::CompressionDictionaryManager dmanager;
-	dmanager.resizeAll(110e6);
-	dmanager.allocateFields(this->header_->map.size(), 110e6);
-
-	// Start import
-	U64 n_variants_read = 0;
-	while(true){
-		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases))
-			break;
-
-		for(U32 i = 0; i < reader.size(); ++i){
-			if(!this->parseBCFLine(reader[i])){
-				std::cerr << "failed to parse" << std::endl;
-				return false;
-			}
-		}
-		n_variants_read += reader.size();
-
-		this->block.index_entry.n_info_streams = this->info_fields.size();
-		this->block.index_entry.n_format_streams = this->format_fields.size();
-		this->block.index_entry.n_filter_streams = this->filter_fields.size();
-		this->block.index_entry.n_variants = reader.size();
-		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.updateBaseContainers(this->recode_buffer);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->recode_buffer);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
-		this->block.updateOffsets();
-
-		dmanager.gt_rle    += this->block.gt_rle_container;
-		dmanager.gt_simple += this->block.gt_simple_container;
-		dmanager.meta_hot  += this->block.meta_hot_container;
-		dmanager.meta_cold += this->block.meta_cold_container;
-
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			dmanager.map_fields[this->block.index_entry.info_offsets[i].key] += this->block.info_containers[i];
-		}
-
-		this->resetHashes();
-		this->block.clear();
-		this->permutator.reset();
-	}
-
-	std::cerr << " done import bit" << std::endl;
-	std::ofstream out("/media/klarqv01/NVMe/1kgp3/1kgp3_dictionary.yon.dict", std::ios::out|std::ios::binary);
-	dmanager.gt_rle.buildDictionary();
-	out.write(dmanager.gt_rle.buffer_dictionary.data, dmanager.gt_rle.buffer_dictionary.pointer);
-	out.close();
-	dmanager.gt_simple.buildDictionary();
-	dmanager.meta_cold.buildDictionary();
-	dmanager.meta_hot.buildDictionary();
-
-	for(U32 i = 0; i < this->header_->map.size(); ++i){
-		std::cerr << "Field; " << this->header_->map[i].ID << std::endl;
-		dmanager.map_fields[i].buildDictionary();
-	}
-
-	return(true);
-}
-
 bool Importer::BuildBCF(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
@@ -188,21 +96,23 @@ bool Importer::BuildBCF(void){
 	Compression::ZSTDCodec zstd;
 
 	// Digest controller
-	//std::cerr << "setting up digests for: " << this->header_->map.size() << std::endl;
 	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
 	for(U32 i = 0; i < this->header_->map.size(); ++i){
-		//std::cerr << this->header_->map[i].ID << std::endl;
 		if(!digests[i].initialize()){
 			std::cerr << "failed to init sha512" << std::endl;
 			return false;
 		}
 	}
 
-
 	// Start import
-	U32 previousFirst = 0; U32 previousLast = 0; S32 previousContigID = -1;
+	U32 previousFirst = 0;
+	U32 previousLast = 0;
+	S32 previousContigID = -1;
 	U64 n_variants_read = 0;
+
+	// Begin import
 	while(true){
+		// Get BCF entries
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases))
 			break;
 
@@ -217,13 +127,12 @@ bool Importer::BuildBCF(void){
 		}
 #endif
 		std::cerr << Helpers::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.first().body->POS+1 << "->" << reader.last().body->POS+1 << std::endl;
-		this->block.index_entry.contigID = reader.first().body->CHROM;
+		this->block.index_entry.contigID    = reader.first().body->CHROM;
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
-
 		if(this->block.index_entry.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << "fail permutator" << std::endl;
@@ -231,113 +140,64 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
+		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
 				std::cerr << "failed to parse" << std::endl;
 				return false;
 			}
 		}
+
+		// Stats
 		n_variants_read += reader.size();
 
-		this->block.index_entry.controller.hasGT = true;
-		this->block.index_entry.controller.isDiploid = true;
-
-		//std::string hexKey = "D26E140AE8D10352F2D7CBE25DC83396135F7588B583BBD28D280EEED4ED6EAD";
-		//std::string hexIV = "EB9AF575716202471F658C1BC7695767";
-		//BYTE key[32]; BYTE iv[16];
-		//Helpers::HexToBytes(hexKey, &key[0]);
-		//Helpers::HexToBytes(hexIV, &iv[0]);
-
-		/*
-		if(Encryption::aes_init(key, 32, &key[0], &iv[0]) == -1){
-			std::cerr << "failed init" << std::endl;
-			exit(1);
-		}
-		*/
-
-		//char tempBuff[1000];
-		/*
-		std::cerr << "key: ";
-		for(U32 i = 0; i < 32; ++i)
-			printf("%02X", key[i]);
-		std::cerr << std::endl;
-		std::cerr << "iv: ";
-		for(U32 i = 0; i < 16; ++i)
-			printf("%02X", iv[i]);
-		std::cerr << std::endl;
-		 */
-
-		/*
-		BYTE outstream[this->block.gt_rle_container.buffer_data.pointer+16536];
-		int ret_length = Encryption::aes_encrypt((BYTE*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer, key, iv, &outstream[0]);
-		std::cerr << "encrypted: " << this->block.gt_rle_container.buffer_data.pointer << " -> " << ret_length << std::endl;
-		BYTE retstream[this->block.gt_rle_container.buffer_data.pointer+16536];
-		//key[0] = 21; // introduce error
-		int ret_dec_length = Encryption::aes_decrypt(outstream, ret_length, key, iv, retstream);
-		std::cerr << "decrypted: " << ret_length << " -> " << ret_dec_length << std::endl;
-
-		U32 crcStart = crc32(0, NULL, 0);
-		crcStart = crc32(crcStart, (Bytef*)this->block.gt_rle_container.buffer_data.data, this->block.gt_rle_container.buffer_data.pointer);
-		U32 crcEnd = crc32(0, NULL, 0);
-		crcEnd = crc32(crcEnd, (Bytef*)retstream, ret_dec_length);
-		std::cerr << crcStart << '\t' << crcEnd << '\t' << (crcStart == crcEnd) << std::endl;
-		*/
-
 		// Update head meta
-		this->block.index_entry.n_info_streams = this->info_fields.size();
-		this->block.index_entry.n_format_streams = this->format_fields.size();
-		this->block.index_entry.n_filter_streams = this->filter_fields.size();
-		this->block.index_entry.n_variants = reader.size();
+		this->block.index_entry.controller.hasGT     = true;
+		this->block.index_entry.controller.isDiploid = true;
+		this->block.index_entry.n_info_streams       = this->info_fields.size();
+		this->block.index_entry.n_format_streams     = this->format_fields.size();
+		this->block.index_entry.n_filter_streams     = this->filter_fields.size();
+		this->block.index_entry.n_variants           = reader.size();
 		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-
-		this->block.updateBaseContainers(this->recode_buffer);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO,   this->recode_buffer);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT, this->recode_buffer);
+		this->block.updateBaseContainers();
+		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
+		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
 
 		zstd.setCompressionLevel(6);
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
 
 		zstd.setCompressionLevel(20);
 		if(this->block.meta_hot_container.n_entries)  zstd.encode(this->block.meta_hot_container);
-
-		zstd.setCompressionLevel(20);
 		if(this->block.gt_rle_container.n_entries)    zstd.encode(this->block.gt_rle_container);
 		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
 		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
 
-		zstd.setCompressionLevel(20);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
-			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].update(this->block.info_containers[i])){
-				//std::cerr << "failed to digest" << std::endl;
+			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
+				std::cerr << "failed to digest" << std::endl;
 				return false;
 			}
 
 			zstd.encode(this->block.info_containers[i]);
 		}
 
-		//std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
-
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].update(this->block.format_containers[i])){
+			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
 				return false;
 			}
 
 			zstd.encode(this->block.format_containers[i]);
 		}
+
+		// Perform writing
 		this->block.updateOffsets();
 		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
 
-		this->import_compressed_stats.total_gt_cost  += this->block.gt_rle_container.buffer_data.pointer;
-		this->import_compressed_stats.total_gt_cost  += this->block.gt_simple_container.buffer_data.pointer;
-		if(this->block.index_entry.controller.hasGTPermuted)
-			this->import_compressed_stats.total_ppa_cost += this->block.ppa_manager.PPA.pointer;
-
+		// Reset and update
 		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
@@ -346,6 +206,7 @@ bool Importer::BuildBCF(void){
 		previousFirst    = reader.first().body->POS;
 		previousLast     = reader.last().body->POS;
 	}
+	// Done importing
 	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
 	this->writer_.streamTomahawk.flush();
 	const U64 data_ends = this->writer_.streamTomahawk.tellp();
@@ -363,14 +224,17 @@ bool Importer::BuildBCF(void){
 	}
 	delete [] digests;
 
+	// Place markers
 	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
 	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
 
+	// Write EOF
 	BYTE eof_data[32];
 	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
 	this->writer_.streamTomahawk.write((char*)&eof_data[0], 32);
 	this->writer_.streamTomahawk.flush();
 
+	// All done
 	return(true);
 }
 
@@ -385,9 +249,11 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	U64 n_runs = 0;
 
 	meta_type meta;
-	meta.position = entry.body->POS - this->block.index_entry.minPosition;
-	meta.ref_alt = entry.ref_alt;
+	meta.position          = entry.body->POS - this->block.index_entry.minPosition;
+	meta.ref_alt           = entry.ref_alt;
 	meta.controller.simple = entry.isSimple();
+
+	// GT encoding
 	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get())){
 		std::cerr << "faild gt encode" << std::endl;
 		return false;
@@ -405,7 +271,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 
 	// Complex meta data
 	Core::MetaCold test;
-	meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data.pointer;
+	meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data_uncompressed.pointer;
 	if(!test.write(entry, this->block.meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
@@ -420,7 +286,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	++this->index_entry.n_variants;
 
 	meta.n_objects = n_runs;
-	this->block.meta_hot_container.buffer_data += meta;
+	this->block.meta_hot_container.buffer_data_uncompressed += meta;
 
 	return true;
 }

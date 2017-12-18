@@ -36,26 +36,20 @@ public:
 	}
 
 
-	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target, buffer_type& buffer){
+	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams, buffer));
+			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
 			break;
 		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams, buffer));
+			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
 	}
 
-	inline void updateFilterOffsets(hash_container_type& v){
-		//for(U32 i = 0; i < this->index_entry.n_filter_streams; ++i){
-		//	this->index_entry.filter_offsets[i].key = v[i];
-		//}
-	}
-
-	void updateBaseContainers(buffer_type& buffer);
+	void updateBaseContainers(void);
 	void updateOffsets(void);
 
 	bool read(std::ifstream& stream, settings_type& settings);
@@ -105,8 +99,8 @@ public:
 	}
 
 private:
-	void updateContainer(stream_container* container, const U32& length, buffer_type& buffer);
-	void updateContainer(stream_container& container, buffer_type& buffer);
+	void updateContainer(stream_container* container, const U32& length);
+	void updateContainer(stream_container& container);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;

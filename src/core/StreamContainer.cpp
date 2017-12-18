@@ -12,25 +12,24 @@ namespace Tachyon{
 namespace Core{
 
 const bool StreamContainer::generateCRC(void){
-	if(this->buffer_data.size() == 0){
+	if(this->buffer_data_uncompressed.size() == 0){
 		this->header.crc = 0;
 	} else {
-
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.data, this->buffer_data_uncompressed.pointer);
 		this->header.crc = crc;
 	}
 
 	if(this->header.controller.mixedStride == true){
-		if(this->buffer_data.size() == 0){
+		if(this->buffer_data_uncompressed.size() == 0){
 			this->header_stride.crc = 0;
 		} else {
 			// Checksum for strides
 			U32 crc = crc32(0, NULL, 0);
-			if(this->buffer_strides.size() > 0){
+			if(this->buffer_strides_uncompressed.size() > 0){
 				crc = crc32(0, NULL, 0);
-				crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+				crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
 				this->header_stride.crc = crc;
 			}
 		}
@@ -54,7 +53,9 @@ bool StreamContainer::checkCRC(int target){
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
 		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
-		std::cerr << this->buffer_strides_uncompressed.pointer << ',' << this->buffer_strides.pointer << '\t' << this->header_stride.uLength << '/' << this->header_stride.cLength << std::endl;
+		std::cerr << this->buffer_strides.pointer << '/' << this->header_stride.cLength << std::endl;
+		std::cerr << this->buffer_strides_uncompressed.pointer << '/' << this->header_stride.uLength << std::endl;
+
 		std::cerr << crc << '/' << this->header_stride.crc << std::endl;
 		return(crc == this->header_stride.crc);
 	} else if(target == 3){
@@ -98,10 +99,10 @@ bool StreamContainer::checkUniformity(void){
 	default: return false; break;
 	}
 
-	const U64 first_hash = XXH64(&this->buffer_data.data[0], stride_update, 2147483647);
+	const U64 first_hash = XXH64(&this->buffer_data_uncompressed.data[0], stride_update, 2147483647);
 
 	for(U32 i = 1; i < this->n_entries; ++i){
-		if(XXH64(&this->buffer_data.data[i*stride_update], stride_update, 2147483647) != first_hash){
+		if(XXH64(&this->buffer_data_uncompressed.data[i*stride_update], stride_update, 2147483647) != first_hash){
 			//std::cerr << "not uniform" << std::endl;
 			return(false);
 		}
@@ -111,7 +112,7 @@ bool StreamContainer::checkUniformity(void){
 	this->n_additions = 1;
 	// Data pointers are updated in case there is no reformatting
 	// see StreamContainer::reformat()
-	this->buffer_data.pointer = stride_size * word_width;
+	this->buffer_data_uncompressed.pointer = stride_size * word_width;
 	this->header.uLength = stride_size * word_width;
 	this->header.cLength = stride_size * word_width;
 	this->header.controller.uniform = true;
@@ -126,7 +127,7 @@ bool StreamContainer::checkUniformity(void){
  At this stage all integer values in the stream is of
  type S32. No other values can be shrunk
  */
-void StreamContainer::reformat(buffer_type& buffer){
+void StreamContainer::reformat(){
 	// Recode integer types only
 	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1))
 		return;
@@ -135,7 +136,7 @@ void StreamContainer::reformat(buffer_type& buffer){
 		return;
 
 	// At this point all integers are S32
-	const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data.data);
+	const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data);
 	S32 min = dat[0];
 	S32 max = dat[0];
 
@@ -162,9 +163,8 @@ void StreamContainer::reformat(buffer_type& buffer){
 	// Phase 2
 	// Here we re-encode values using the smallest possible
 	// word-size
-
-	buffer.reset();
-	buffer.resize(this->buffer_data.pointer);
+	this->buffer_data.reset();
+	this->buffer_data.resize(this->buffer_data_uncompressed);
 
 	// Is non-negative
 	if(min >= 0){
@@ -174,25 +174,25 @@ void StreamContainer::reformat(buffer_type& buffer){
 			this->header.controller.type = TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (BYTE)dat[j];
+				this->buffer_data += (BYTE)dat[j];
 
 		} else if(byte_width == 2){
 			this->header.controller.type = TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (U16)dat[j];
+				this->buffer_data += (U16)dat[j];
 
 		} else if(byte_width == 4){
 			this->header.controller.type = TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (U32)dat[j];
+				this->buffer_data += (U32)dat[j];
 
 		} else if(byte_width == 8){
 			this->header.controller.type = TYPE_64B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (U64)dat[j];
+				this->buffer_data += (U64)dat[j];
 
 		} else {
 			std::cerr << "illegal" << std::endl;
@@ -207,19 +207,19 @@ void StreamContainer::reformat(buffer_type& buffer){
 			this->header.controller.type = TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (SBYTE)dat[j];
+				this->buffer_data += (SBYTE)dat[j];
 
 		} else if(byte_width == 2){
 			this->header.controller.type = TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (S16)dat[j];
+				this->buffer_data += (S16)dat[j];
 
 		} else if(byte_width == 4){
 			this->header.controller.type = TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
-				buffer += (S32)dat[j];
+				this->buffer_data += (S32)dat[j];
 
 		} else {
 			std::cerr << "illegal" << std::endl;
@@ -229,12 +229,13 @@ void StreamContainer::reformat(buffer_type& buffer){
 
 
 	//std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
-	memcpy(this->buffer_data.data, buffer.data, buffer.pointer);
-	this->buffer_data.pointer = buffer.pointer;
-	this->header.uLength = this->buffer_data.pointer;
+	memcpy(this->buffer_data_uncompressed.data, this->buffer_data.data, this->buffer_data.pointer);
+	this->buffer_data_uncompressed.pointer = this->buffer_data.pointer;
+	this->header.uLength = this->buffer_data_uncompressed.pointer;
+	this->buffer_data.reset();
 }
 
-void StreamContainer::reformatStride(buffer_type& buffer){
+void StreamContainer::reformatStride(){
 	if(this->header.controller.mixedStride == false)
 		return;
 
@@ -245,7 +246,7 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 	}
 
 	// At this point all integers are S32
-	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides.data);
+	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.data);
 	U32 max = dat[0];
 
 	for(U32 j = 1; j < this->n_entries; ++j)
@@ -258,45 +259,46 @@ void StreamContainer::reformatStride(buffer_type& buffer){
 	if(byte_width == 0) byte_width = 1;
 
 	// This cannot ever be uniform
-	buffer.reset();
-	buffer.resize(this->buffer_strides.pointer);
+	this->buffer_strides.reset();
+	this->buffer_strides.resize(this->buffer_strides_uncompressed.pointer);
 
 	if(byte_width == 1){
 		this->header_stride.controller.type = TYPE_8B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
-			buffer += (BYTE)dat[j];
+			this->buffer_strides += (BYTE)dat[j];
 
 	} else if(byte_width == 2){
 		this->header_stride.controller.type = TYPE_16B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
-			buffer += (U16)dat[j];
+			this->buffer_strides += (U16)dat[j];
 
 	} else if(byte_width == 4){
 		this->header_stride.controller.type = TYPE_32B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
-			buffer += (U32)dat[j];
+			this->buffer_strides += (U32)dat[j];
 
 	} else if(byte_width == 8){
 		this->header_stride.controller.type = TYPE_64B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
-			buffer += (U64)dat[j];
+			this->buffer_strides += (U64)dat[j];
 
 	} else {
 		std::cerr << "illegal" << std::endl;
 		exit(1);
 	}
 	//std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
-	memcpy(this->buffer_strides.data, buffer.data, buffer.pointer);
-	this->buffer_strides.pointer = buffer.pointer;
+	memcpy(this->buffer_strides_uncompressed.data, this->buffer_strides.data, this->buffer_strides.pointer);
+	this->buffer_strides_uncompressed.pointer = this->buffer_strides.pointer;
+	this->header.uLength = this->buffer_strides_uncompressed.pointer;
+	this->buffer_strides.reset();
 }
 
-/////////////////////
+
 // Loading a container
-/////////////////////
 // Sketch of algorithm
 // 1) Load header
 // 2) Read compressed data into temp buffer

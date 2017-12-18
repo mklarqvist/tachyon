@@ -41,7 +41,9 @@ public:
 		n_entries(0),
 		n_additions(0),
 		buffer_data(start_size),
-		buffer_strides(start_size)
+		buffer_data_uncompressed(start_size),
+		buffer_strides(start_size),
+		buffer_strides_uncompressed(start_size)
 	{}
 
 	~StreamContainer(){
@@ -58,59 +60,59 @@ public:
 
 	inline void operator++(void){ ++this->n_entries; }
 
-	inline void addStride(const U32& value){ this->buffer_strides += (U32)value; }
+	inline void addStride(const U32& value){ this->buffer_strides_uncompressed += (U32)value; }
 
 	inline void operator+=(const SBYTE& value){
 		//assert(this->header.controller.type == 0);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const BYTE& value){
 		//assert(this->header.controller.type == 1);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const S16& value){
 		//assert(this->header.controller.type == 2);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const U16& value){
 		//assert(this->header.controller.type == 3);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const S32& value){
 		//assert(this->header.controller.type == 4);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const U32& value){
 		//assert(this->header.controller.type == 5);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const U64& value){
 		//assert(this->header.controller.type == 6);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const float& value){
 		//assert(this->header.controller.type == 7);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
 	inline void operator+=(const double& value){
 		//assert(this->header.controller.type == 8);
-		this->buffer_data += value;
+		this->buffer_data_uncompressed += value;
 		++this->n_additions;
 	}
 
@@ -118,7 +120,9 @@ public:
 		this->n_entries = 0;
 		this->n_additions = 0;
 		this->buffer_data.reset();
+		this->buffer_data_uncompressed.reset();
 		this->buffer_strides.reset();
+		this->buffer_strides_uncompressed.reset();
 		this->header.reset();
 		this->header_stride.reset();
 		this->buffer_data_uncompressed.reset();
@@ -127,14 +131,16 @@ public:
 
 	inline void resize(const U32 size){
 		this->buffer_data.resize(size);
+		this->buffer_data_uncompressed.resize(size);
 		this->buffer_strides.resize(size);
+		this->buffer_strides_uncompressed.resize(size);
 	}
 
 	const bool generateCRC(void);
 	bool checkCRC(int target = 0);
 	bool checkUniformity(void);
-	void reformat(buffer_type& buffer);
-	void reformatStride(buffer_type& buffer);
+	void reformat(void);
+	void reformatStride(void);
 	bool read(std::ifstream& stream, buffer_type& temp_buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -143,6 +149,7 @@ public:
 			stream << entry.header_stride;
 
 		stream << entry.buffer_data;
+		std::cerr << "writing: " << entry.buffer_data.pointer << '/' << entry.buffer_data_uncompressed.pointer << std::endl;
 		if(entry.header.controller.mixedStride)
 			stream << entry.buffer_strides;
 
@@ -153,6 +160,8 @@ public:
 		stream >> entry.header;
 		if(entry.header.controller.mixedStride)
 			stream >> entry.header_stride;
+
+		std::cerr << "entry: " << entry.header.uLength << '/' << entry.header.cLength << '\t' << entry.header.controller.mixedStride << std::endl;
 
 		entry.buffer_data.resize(entry.header.uLength);
 		stream.read(entry.buffer_data.data, entry.header.cLength);

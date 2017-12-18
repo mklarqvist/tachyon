@@ -36,7 +36,6 @@ public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
 	~Importer();
 	bool Build();
-	bool BuildCompressionDictionaries();
 
 	inline void setPermute(const bool yes){ this->permute = yes; }
 
@@ -49,10 +48,11 @@ private:
 	void resetHashes(void);
 
 private:
-	bool permute;
+	bool permute;               // permute GT flag
 	U32 checkpoint_n_snps;      // number of variants until checkpointing
-	double checkpoint_bases;
+	double checkpoint_bases;    // number of bases until checkpointing
 
+	// Stats
 	import_stats_type import_uncompressed_stats;
 	import_stats_type import_compressed_stats;
 
@@ -67,6 +67,7 @@ private:
 	header_type* header_;     // header
 	encoder_type encoder;     // RLE packer
 
+	// Data container
 	block_type block;
 
 	// Use during import

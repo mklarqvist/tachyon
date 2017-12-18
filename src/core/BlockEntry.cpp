@@ -72,13 +72,12 @@ void BlockEntry::resize(const U32 s){
  * 2) Generates CRC checksums for both data and strides
  * 3) Reformat (change used word-size) for strides and data; if possible
  *
- * @param buffer Supportive buffer for re-packing data if necessary
  */
-void BlockEntry::updateBaseContainers(buffer_type& buffer){
-	this->updateContainer(this->gt_rle_container,    buffer);
-	this->updateContainer(this->gt_simple_container, buffer);
-	this->updateContainer(this->meta_hot_container,  buffer);
-	this->updateContainer(this->meta_cold_container, buffer);
+void BlockEntry::updateBaseContainers(){
+	this->updateContainer(this->gt_rle_container);
+	this->updateContainer(this->gt_simple_container);
+	this->updateContainer(this->meta_hot_container);
+	this->updateContainer(this->meta_cold_container);
 }
 
 /**< @brief Updates the local (relative to block start) virtual file offsets
@@ -133,15 +132,14 @@ void BlockEntry::updateOffsets(void){
  *
  * @param container Data container
  * @param length    Iterator length
- * @param buffer    Supportive buffer
  */
-void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length, buffer_type& buffer){
+void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
 		//offset[i].key = v[i];
 
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
-		if(container[i].n_entries > 0 && container[i].buffer_data.pointer == 0){
+		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.pointer == 0){
 			container[i].header.controller.type = CORE_TYPE::TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
 			container[i].header.stride = 0;
@@ -156,7 +154,7 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 		}
 
 		// If the data type is not a BOOLEAN
-		this->updateContainer(container[i], buffer);
+		this->updateContainer(container[i]);
 		assert(container[i].header.stride != 0);
 	}
 }
@@ -164,29 +162,26 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 /**<
  *
  * @param container Data container
- * @param offset    Offset record
- * @param buffer    Supportive buffer
- * @param key       Identifier key
  */
-void BlockEntry::updateContainer(stream_container& container, buffer_type& buffer){
-	if(container.buffer_data.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
+void BlockEntry::updateContainer(stream_container& container){
+	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content
-	if(container.header.controller.type != CORE_TYPE::TYPE_STRUCT)
+	if(container.header.controller.type != CORE_TYPE::TYPE_STRUCT){
 		container.checkUniformity();
-
-	// Reformat stream to use as small word size as possible
-	container.reformat(buffer);
+		// Reformat stream to use as small word size as possible
+		container.reformat();
+	}
 
 	// Set uncompressed length
-	container.header.uLength = container.buffer_data.pointer;
+	container.header.uLength = container.buffer_data_uncompressed.pointer;
 
 	// If we have mixed striding
 	if(container.header.controller.mixedStride == true){
 		// Reformat stream to use as small word size as possible
-		container.reformatStride(buffer);
-		container.header_stride.uLength = container.buffer_strides.pointer;
+		container.reformatStride();
+		container.header_stride.uLength = container.buffer_strides_uncompressed.pointer;
 	}
 }
 
@@ -211,26 +206,32 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 			stream >> this->ppa_manager;
 		}
 	}
+	std::cerr << "after ppa" << std::endl;
 
 	if(settings.loadMetaHot){
 		stream.seekg(start_offset + this->index_entry.offset_hot_meta.offset);
 		stream >> this->meta_hot_container;
 	}
+	std::cerr << "after meta hot" << std::endl;
 
 	if(settings.loadMetaCold){
 		stream.seekg(start_offset + this->index_entry.offset_cold_meta.offset);
 		stream >> this->meta_cold_container;
 	}
+	std::cerr << "after meta cold" << std::endl;
 
 	if(settings.loadGT){
 		stream.seekg(start_offset + this->index_entry.offset_gt_rle.offset);
+		std::cerr << "pos now: " << stream.tellg() << std::endl;
 		stream >> this->gt_rle_container;
 	}
+	std::cerr << "after GT" << std::endl;
 
 	if(settings.loadGTSimple){
 		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
 	}
+	std::cerr << "after GT simple" << std::endl;
 
 	// Load all info
 	if(settings.loadInfoAll){

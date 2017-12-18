@@ -15,11 +15,11 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 	rle_helper_type cost;
 	if(line.body->n_allele == 2){
 		cost = this->assessRLEBiallelic(line, ppa);
-		meta_base.virtual_offset_gt = runs.buffer_data.pointer; // absolute position at start of stream
-		meta_base.controller.rle = true;
+		meta_base.virtual_offset_gt        = runs.buffer_data_uncompressed.pointer; // absolute position at start of stream
+		meta_base.controller.rle           = true;
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.anyMissing = cost.hasMissing;
-		meta_base.controller.biallelic = true;
+		meta_base.controller.anyMissing    = cost.hasMissing;
+		meta_base.controller.biallelic     = true;
 		++runs.n_entries;
 
 		switch(cost.word_width){
@@ -58,12 +58,12 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		else if(line.body->n_allele + 1 < 128)   costBCFStyle *= 2;
 		else if(line.body->n_allele + 1 < 32768) costBCFStyle *= 4;
 
-		meta_base.virtual_offset_gt = simple.buffer_data.pointer; // absolute position at start of stream
-		meta_base.controller.biallelic = false;
-		meta_base.AF = 0; // AF needs to be looked up in cold store
+		meta_base.virtual_offset_gt        = simple.buffer_data_uncompressed.pointer; // absolute position at start of stream
+		meta_base.controller.biallelic     = false;
+		meta_base.AF                       = 0; // AF needs to be looked up in cold store
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.anyMissing = cost.hasMissing;
-		meta_base.controller.simple = 1;
+		meta_base.controller.anyMissing    = cost.hasMissing;
+		meta_base.controller.simple        = 1;
 
 		//std::cerr << (int)cost.word_width << '\t' << cost.n_runs << '\t' << cost.word_width*cost.n_runs << '\t' << costBCFStyle << '\t' << costBCFStyle/double(cost.word_width*cost.n_runs) << std::endl;
 
@@ -104,7 +104,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		else {
 			//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
 
-			meta_base.controller.rle = false;
+			meta_base.controller.rle      = false;
 			meta_base.controller.rle_type = 0;
 			++simple.n_entries;
 

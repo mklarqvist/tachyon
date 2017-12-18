@@ -119,167 +119,40 @@ public:
 		ZSTD_freeCDict(this->cdict);
 	}
 
-	bool loadDictionary(const std::string file){
-		std::ifstream stream(file, std::ios::binary | std::ios::ate);
-		if(!stream.good()){
-			std::cerr << "cannot open file: " << file << std::endl;
-		}
-		const size_t filesize = stream.tellg();
-		stream.seekg(0);
-		char* buffer = new char[filesize];
-		stream.read(buffer, filesize);
-		if(!stream.good()){
-			std::cerr << "could not load data from: " << file << std::endl;
-		}
-		stream.close();
-
-		this->cdict = ZSTD_createCDict(buffer, filesize, this->compression_level);
-		return true;
-	}
-
-	void buildDictionary(buffer_type& buffer, buffer_type& dict_buffer, const U32& n_entries, const size_t* lengths){
-		const size_t ret = ZDICT_trainFromBuffer(dict_buffer.data, dict_buffer.capacity(), buffer.data, lengths, n_entries);
-		if(ZSTD_isError(ret)){
-			std::cerr << "error zstd: " << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
-			exit(1);
-		}
-		dict_buffer.pointer = ret;
-	}
-
 	void setCompressionLevel(const int& c){ this->compression_level = c; }
-
-	// not used
-	const bool assess(stream_type& stream){
-		this->buffer.reset();
-		this->buffer.resize(stream.buffer_strides.pointer + 65536);
-		//for(S32 i = 1; i <= 22; ++i){
-			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
-			if(ZSTD_isError(ret)){
-				std::cerr << "error zstd: " << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
-				//exit(1);
-			}
-			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << this->compression_level << ": " << stream.buffer_strides.pointer << '\t' << ret << '\t' << (double)stream.buffer_strides.pointer/ret << "-fold" << std::endl;
-		//}
-
-		//U32 out_size = this->buffer.capacity();
-		//rans_compress_to_4x16((BYTE*)stream.buffer_strides.data, stream.buffer_strides.pointer, (BYTE*)this->buffer.data, &out_size, 0);
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0\t" << stream.buffer_strides.pointer << "\t" << out_size << '\t' << (double)stream.buffer_strides.pointer/out_size << std::endl;
-
-		/*
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)stream.buffer_data.data, stream.buffer_data.pointer);
-
-
-
-		buffer_type test(this->buffer);
-		U32 out2 = stream.buffer_data.pointer;
-		rans_uncompress_to_4x16((BYTE*)this->buffer.data, out_size, (BYTE*)&test.data[0], &out2, 0);
-		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS0-RE\t" << out_size << "\t" << out2 << std::endl;
-
-		U32 crc2 = crc32(0, NULL, 0);
-		crc2 = crc32(crc2, (Bytef*)test.data, out2);
-
-		std::cerr << crc << '\t' << crc2 << '\t' << (crc == crc2) << std::endl;
-
-		test.deleteAll();
-	*/
-
-		/*
-		out_size = this->buffer.capacity();
-		rans_compress_to_4x16((BYTE*)&stream.buffer_data.data[stream.buffer_data.pointer-1], stream.buffer_data.pointer, (BYTE*)this->buffer.data, &out_size, 1);
-		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "RANS1\t" << stream.buffer_data.pointer << "\t" << out_size << '\t' << (double)stream.buffer_data.pointer/out_size << std::endl;
-		*/
-		return true;
-	}
 
 	const bool encode(stream_type& stream){
 		stream.generateCRC();
 
-		if(stream.header.controller.uniform || stream.buffer_data.pointer < 50){
+		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.pointer < 50){
+			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
 			stream.header.controller.encoder = Core::ENCODE_NONE;
-			//stream.header.uLength = stream.buffer_data.pointer;
-			stream.header.cLength = stream.buffer_data.pointer;
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small: no compression... " << stream.buffer_data.pointer << std::endl;
+			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
+			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
+
 			if(stream.header.controller.mixedStride == true)
 				return(this->encodeStrides(stream));
 			else return true;
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_data.pointer + 65536);
-		//for(S32 i = 1; i <= 22; ++i){
-			size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_data.data, stream.buffer_data.pointer, this->compression_level);
-			if(ZSTD_isError(ret)){
-				std::cerr << "error zstd encode__: " << ZSTD_getErrorCode(ret) << std::endl;
-				exit(1);
-			}
-
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "ZSTD@" << 8 << ": " << ret << '\t' << (ret == ZSTD_CONTENTSIZE_UNKNOWN) << '\t' << (ret == ZSTD_CONTENTSIZE_ERROR) << std::endl;
-		//}
-
-		const float fold = (float)stream.buffer_data.pointer/ret;
-		if(fold < MIN_COMPRESSION_FOLD){
-			stream.header.controller.encoder = Core::ENCODE_NONE;
-			//stream.header.uLength = stream.buffer_data.pointer;
-			stream.header.cLength = stream.buffer_data.pointer;
-			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Bad compression. Ignoring... " << stream.buffer_data.pointer << std::endl;
-
-			if(stream.header.controller.mixedStride == true)
-				return(this->encodeStrides(stream));
-			else return true;
-		}
-
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
-		//std::cerr << "uniform: " << (int)stream.header.controller.uniform << '\t' << (int)stream.header.controller.type << std::endl;
-		//stream.header.uLength = stream.buffer_data.pointer;
-		stream.header.cLength = ret;
-		stream.header.controller.encoder = Core::ENCODE_ZSTD;
-		memcpy(stream.buffer_data.data, this->buffer.data, ret);
-		stream.buffer_data.pointer = ret;
-		stream.header.n_extra = 1;
-		stream.header.extra = new char[sizeof(BYTE)];
-		stream.header.extra[0] = (BYTE)this->compression_level;
-
-		if(stream.header.controller.mixedStride == true)
-			return(this->encodeStrides(stream));
-		else return true;
-	}
-
-	const bool encodeUsingDictionary(stream_type& stream){
-		stream.generateCRC();
-
-		if(stream.header.controller.uniform || stream.buffer_data.pointer < 50){
-			stream.header.controller.encoder = Core::ENCODE_NONE;
-			//stream.header.uLength = stream.buffer_data.pointer;
-			stream.header.cLength = stream.buffer_data.pointer;
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small: no compression... " << stream.buffer_data.pointer << std::endl;
-			if(stream.header.controller.mixedStride == true)
-				return(this->encodeStrides(stream));
-			else return true;
-		}
-
-		this->buffer.reset();
-		this->buffer.resize(stream.buffer_data.pointer + 65536);
-		//for(S32 i = 1; i <= 22; ++i){
-		ZSTD_CCtx* cctx = ZSTD_createCCtx();
-		size_t ret = ZSTD_compress_usingCDict(cctx,
-											  this->buffer.data, this->buffer.capacity(),
-											  stream.buffer_data.data, stream.buffer_data.pointer,
-											  this->cdict);
-
+		this->buffer.resize(stream.buffer_data_uncompressed.pointer + 65536);
+			size_t ret = ZSTD_compress(this->buffer.data,
+					                   this->buffer.capacity(),
+									   stream.buffer_data_uncompressed.data,
+									   stream.buffer_data_uncompressed.pointer,
+									   this->compression_level);
 		if(ZSTD_isError(ret)){
-			std::cerr << "error zstd encode__: " << ZSTD_getErrorCode(ret) << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
-		ZSTD_freeCCtx(cctx);
-
-		const float fold = (float)stream.buffer_data.pointer/ret;
+		const float fold = (float)stream.buffer_data_uncompressed.pointer / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
+			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
 			stream.header.controller.encoder = Core::ENCODE_NONE;
-			//stream.header.uLength = stream.buffer_data.pointer;
-			stream.header.cLength = stream.buffer_data.pointer;
-			std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Bad compression. Ignoring... " << stream.buffer_data.pointer << std::endl;
+			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
+			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
 
 			if(stream.header.controller.mixedStride == true)
 				return(this->encodeStrides(stream));
@@ -302,40 +175,46 @@ public:
 		else return true;
 	}
 
-
 	const bool encodeStrides(stream_type& stream){
-		if(stream.header_stride.controller.uniform || stream.buffer_strides.pointer < 50){
+		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.pointer < 50){
 			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
 			//stream.header_stride.uLength = stream.buffer_strides.pointer;
-			stream.header_stride.cLength = stream.buffer_strides.pointer;
+			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
+			stream.buffer_strides.pointer = stream.buffer_strides_uncompressed.pointer;
+			stream.header_stride.cLength = stream.buffer_strides_uncompressed.pointer;
 			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small stride: no compression... " << stream.buffer_data.pointer << std::endl;
 			return true;
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_strides.pointer + 65536);
-		size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), stream.buffer_strides.data, stream.buffer_strides.pointer, this->compression_level);
+		this->buffer.resize(stream.buffer_strides_uncompressed.pointer + 65536);
+		size_t ret = ZSTD_compress(this->buffer.data,
+				                   this->buffer.capacity(),
+								   stream.buffer_strides_uncompressed.data,
+								   stream.buffer_strides_uncompressed.pointer,
+								   this->compression_level);
 		if(ZSTD_isError(ret)){
-			std::cerr << "error zstd strides__: " << ZSTD_getErrorCode(ret) << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
-		const float fold = (float)stream.buffer_strides.pointer/ret;
+		const float fold = (float)stream.buffer_strides_uncompressed.pointer/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
 			//stream.header_stride.uLength = stream.buffer_data.pointer;
+			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
 			stream.header_stride.cLength = stream.buffer_data.pointer;
 			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "STRIDE: Bad compression. Ignoring... " << stream.buffer_data.pointer << std::endl;
 			return true;
 		}
 
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides.pointer/ret << "-fold"  << std::endl;
+		//std::cerr << Helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.pointer/ret << "-fold"  << std::endl;
 
-		//stream.header_stride.uLength = stream.buffer_strides.pointer;
+		//stream.header_stride.uLength = stream.buffer_strides_uncompressed.pointer;
 		stream.header_stride.cLength = ret;
 		stream.header_stride.controller.encoder = Core::ENCODE_ZSTD;
 		memcpy(stream.buffer_strides.data, this->buffer.data, ret);
-		stream.buffer_strides.pointer = ret;
+		stream.buffer_strides_uncompressed.pointer = ret;
 		stream.header_stride.n_extra = 1;
 		stream.header_stride.extra = new char[sizeof(BYTE)];
 		stream.header_stride.extra[0] = (BYTE)this->compression_level;
@@ -394,6 +273,11 @@ public:
 								  stream.buffer_data_uncompressed.capacity(),
 								  stream.buffer_data.data,
 								  stream.buffer_data.pointer);
+
+		if(ZSTD_isError(ret)){
+			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			exit(1);
+		}
 
 		assert(ret >= 0);
 		stream.buffer_data_uncompressed.pointer = ret;

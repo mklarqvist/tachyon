@@ -80,7 +80,10 @@ public:
 			return false;
 		}
 
+		std::cerr << "before read" << std::endl;
 		this->block.read(stream, this->settings);
+
+		std::cerr << "after read" << std::endl;
 
 		// Phase 1: Decode data
 		// Todo:API: decode available data
@@ -149,15 +152,23 @@ public:
 					std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 				}
 
-				std::cout << '\t' << m.cold.QUAL << '\t';
+
+				if(isnan(m.cold.QUAL)) std::cout << "\t.\t";
+				else std::cout << '\t' << m.cold.QUAL << '\t';
+			} else {
+				std::cout << "\t.\t.\t.\t";
 			}
 
 			// Filter streams
-			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-				// Check if field is set
-				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
-				// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+			if(this->block.index_entry.n_filter_streams == 0){
+				std::cout << ".\t";
+			} else {
+				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+					// Check if field is set
+					if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+					// Lookup what that field is
+						std::cout.write(&this->header.getEntry(this->header.mapTable[this->block.index_entry.filter_offsets[k].key]).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+					}
 				}
 			}
 
@@ -176,7 +187,7 @@ public:
 
 					info_iterators[this->settings.load_info_ID_loaded[k].iterator_index].toString(
 							std::cout,
-							this->header.getEntry(this->settings.load_info_ID_loaded[k].offset->key).ID);
+							this->header.getEntry(this->header.mapTable[this->settings.load_info_ID_loaded[k].offset->key]).ID);
 
 					//if(set + 1 != this->settings.load_info_ID_loaded.size())
 
