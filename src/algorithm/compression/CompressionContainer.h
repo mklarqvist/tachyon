@@ -160,15 +160,14 @@ public:
 		}
 
 		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
-		//std::cerr << "uniform: " << (int)stream.header.controller.uniform << '\t' << (int)stream.header.controller.type << std::endl;
-		//stream.header.uLength = stream.buffer_data.pointer;
-		stream.header.cLength = ret;
-		stream.header.controller.encoder = Core::ENCODE_ZSTD;
+
 		memcpy(stream.buffer_data.data, this->buffer.data, ret);
-		stream.buffer_data.pointer = ret;
-		stream.header.n_extra = 1;
-		stream.header.extra = new char[sizeof(BYTE)];
-		stream.header.extra[0] = (BYTE)this->compression_level;
+		stream.header.cLength            = ret;
+		stream.header.controller.encoder = Core::ENCODE_ZSTD;
+		stream.buffer_data.pointer       = ret;
+		stream.header.n_extra            = 1;
+		stream.header.extra              = new char[sizeof(BYTE)];
+		stream.header.extra[0]           = (BYTE)this->compression_level;
 
 		if(stream.header.controller.mixedStride == true)
 			return(this->encodeStrides(stream));
@@ -177,12 +176,11 @@ public:
 
 	const bool encodeStrides(stream_type& stream){
 		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.pointer < 50){
-			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
-			//stream.header_stride.uLength = stream.buffer_strides.pointer;
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.buffer_strides.pointer = stream.buffer_strides_uncompressed.pointer;
-			stream.header_stride.cLength = stream.buffer_strides_uncompressed.pointer;
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Small stride: no compression... " << stream.buffer_data.pointer << std::endl;
+			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
+			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
+			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
+
 			return true;
 		}
 
@@ -200,24 +198,22 @@ public:
 
 		const float fold = (float)stream.buffer_strides_uncompressed.pointer/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
-			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
-			//stream.header_stride.uLength = stream.buffer_data.pointer;
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.header_stride.cLength = stream.buffer_data.pointer;
-			//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "STRIDE: Bad compression. Ignoring... " << stream.buffer_data.pointer << std::endl;
+			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
+			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
+			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
 			return true;
 		}
 
 		//std::cerr << Helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.pointer/ret << "-fold"  << std::endl;
 
-		//stream.header_stride.uLength = stream.buffer_strides_uncompressed.pointer;
-		stream.header_stride.cLength = ret;
-		stream.header_stride.controller.encoder = Core::ENCODE_ZSTD;
 		memcpy(stream.buffer_strides.data, this->buffer.data, ret);
-		stream.buffer_strides_uncompressed.pointer = ret;
-		stream.header_stride.n_extra = 1;
-		stream.header_stride.extra = new char[sizeof(BYTE)];
-		stream.header_stride.extra[0] = (BYTE)this->compression_level;
+		stream.header_stride.cLength            = ret;
+		stream.header_stride.controller.encoder = Core::ENCODE_ZSTD;
+		stream.buffer_strides.pointer           = ret;
+		stream.header_stride.n_extra            = 1;
+		stream.header_stride.extra              = new char[sizeof(BYTE)];
+		stream.header_stride.extra[0]           = (BYTE)this->compression_level;
 
 		return true;
 	}
@@ -279,17 +275,12 @@ public:
 			exit(1);
 		}
 
+		std::cerr << ret << '/' << stream.header.uLength << std::endl;
+
 		assert(ret >= 0);
 		stream.buffer_data_uncompressed.pointer = ret;
 		assert((U32)ret == stream.header.uLength);
 		assert(stream.checkCRC(0));
-		//std::cerr << "ENCODE_ZSTD | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
-
-		/*
-		if(stream.header.controller.mixedStride){
-			this->decodeStrides(stream);
-		}
-		*/
 
 		return true;
 	}

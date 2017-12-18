@@ -135,8 +135,6 @@ void BlockEntry::updateOffsets(void){
  */
 void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
-		//offset[i].key = v[i];
-
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
 		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.pointer == 0){

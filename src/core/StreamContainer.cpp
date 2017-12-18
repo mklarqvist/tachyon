@@ -227,8 +227,6 @@ void StreamContainer::reformat(){
 		}
 	}
 
-
-	//std::cerr << "recode shrink: " << this->buffer_data.pointer << '\t' << buffer.pointer << std::endl;
 	memcpy(this->buffer_data_uncompressed.data, this->buffer_data.data, this->buffer_data.pointer);
 	this->buffer_data_uncompressed.pointer = this->buffer_data.pointer;
 	this->header.uLength = this->buffer_data_uncompressed.pointer;
@@ -293,7 +291,7 @@ void StreamContainer::reformatStride(){
 	//std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
 	memcpy(this->buffer_strides_uncompressed.data, this->buffer_strides.data, this->buffer_strides.pointer);
 	this->buffer_strides_uncompressed.pointer = this->buffer_strides.pointer;
-	this->header.uLength = this->buffer_strides_uncompressed.pointer;
+	this->header_stride.uLength = this->buffer_strides_uncompressed.pointer;
 	this->buffer_strides.reset();
 }
 
