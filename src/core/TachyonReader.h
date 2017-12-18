@@ -63,7 +63,6 @@ public:
 		}
 		this->stream.seekg(this->filesize - 32 - sizeof(U64));
 		this->stream.read((char*)reinterpret_cast<char*>(&this->l_data), sizeof(U64));
-		std::cerr << this->l_data << std::endl;
 		this->stream.seekg(return_pos);
 
 		return true;
@@ -80,10 +79,7 @@ public:
 			return false;
 		}
 
-		std::cerr << "before read" << std::endl;
 		this->block.read(stream, this->settings);
-
-		std::cerr << "after read" << std::endl;
 
 		// Phase 1: Decode data
 		// Todo:API: decode available data

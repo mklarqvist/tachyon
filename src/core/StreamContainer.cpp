@@ -53,10 +53,6 @@ bool StreamContainer::checkCRC(int target){
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
 		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
-		std::cerr << this->buffer_strides.pointer << '/' << this->header_stride.cLength << std::endl;
-		std::cerr << this->buffer_strides_uncompressed.pointer << '/' << this->header_stride.uLength << std::endl;
-
-		std::cerr << crc << '/' << this->header_stride.crc << std::endl;
 		return(crc == this->header_stride.crc);
 	} else if(target == 3){
 		if(this->buffer_data.size() == 0)

@@ -204,32 +204,26 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 			stream >> this->ppa_manager;
 		}
 	}
-	std::cerr << "after ppa" << std::endl;
 
 	if(settings.loadMetaHot){
 		stream.seekg(start_offset + this->index_entry.offset_hot_meta.offset);
 		stream >> this->meta_hot_container;
 	}
-	std::cerr << "after meta hot" << std::endl;
 
 	if(settings.loadMetaCold){
 		stream.seekg(start_offset + this->index_entry.offset_cold_meta.offset);
 		stream >> this->meta_cold_container;
 	}
-	std::cerr << "after meta cold" << std::endl;
 
 	if(settings.loadGT){
 		stream.seekg(start_offset + this->index_entry.offset_gt_rle.offset);
-		std::cerr << "pos now: " << stream.tellg() << std::endl;
 		stream >> this->gt_rle_container;
 	}
-	std::cerr << "after GT" << std::endl;
 
 	if(settings.loadGTSimple){
 		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
 	}
-	std::cerr << "after GT simple" << std::endl;
 
 	// Load all info
 	if(settings.loadInfoAll){

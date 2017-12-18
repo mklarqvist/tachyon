@@ -149,7 +149,6 @@ public:
 			stream << entry.header_stride;
 
 		stream << entry.buffer_data;
-		std::cerr << "writing: " << entry.buffer_data.pointer << '/' << entry.buffer_data_uncompressed.pointer << std::endl;
 		if(entry.header.controller.mixedStride)
 			stream << entry.buffer_strides;
 
@@ -160,8 +159,6 @@ public:
 		stream >> entry.header;
 		if(entry.header.controller.mixedStride)
 			stream >> entry.header_stride;
-
-		std::cerr << "entry: " << entry.header.uLength << '/' << entry.header.cLength << '\t' << entry.header.controller.mixedStride << std::endl;
 
 		entry.buffer_data.resize(entry.header.uLength);
 		stream.read(entry.buffer_data.data, entry.header.cLength);

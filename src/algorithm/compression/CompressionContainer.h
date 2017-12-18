@@ -275,8 +275,6 @@ public:
 			exit(1);
 		}
 
-		std::cerr << ret << '/' << stream.header.uLength << std::endl;
-
 		assert(ret >= 0);
 		stream.buffer_data_uncompressed.pointer = ret;
 		assert((U32)ret == stream.header.uLength);
