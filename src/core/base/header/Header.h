@@ -23,6 +23,7 @@ public:
 		contigs(nullptr),
 		samples(nullptr),
 		entries(nullptr),
+		mapTable(nullptr),
 		htable_contigs(nullptr),
 		htable_samples(nullptr),
 		htable_entries(nullptr)
@@ -32,6 +33,7 @@ public:
 		delete [] this->contigs;
 		delete [] this->samples;
 		delete [] this->entries;
+		delete [] this->mapTable;
 		delete this->htable_contigs;
 		delete this->htable_samples;
 		delete this->htable_entries;
@@ -40,6 +42,29 @@ public:
 	inline const contig_type& getContig(const U32& p) const{ return(this->contigs[p]); }
 	inline const sample_type& getSample(const U32& p) const{ return(this->samples[p]); }
 	inline const map_entry_type& getEntry(const U32& p) const{ return(this->entries[p]); }
+
+	bool buildMapTable(void){
+		if(this->n_entries == 0)
+			return false;
+
+		delete [] this->mapTable;
+
+		S32 largest_idx = -1;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			if(this->entries[i].IDX > largest_idx)
+				largest_idx = this->entries[i].IDX;
+		}
+
+		this->mapTable = new U32[largest_idx + 1];
+		memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
+		S32 localID = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			this->mapTable[this->entries[i].IDX] = localID++;
+			std::cerr << i << "->" << this->mapTable[i] << std::endl;
+		}
+
+		return true;
+	}
 
 private:
 	friend std::ifstream& operator<<(std::ifstream& stream, self_type& entry){
@@ -64,6 +89,8 @@ private:
 		for(U32 i = 0; i < entry.n_entries; ++i)
 			stream >> entry.entries[i];
 
+		entry.buildMapTable();
+
 		return(stream);
 	}
 
@@ -78,6 +105,7 @@ public:
 	contig_type* contigs;
 	sample_type* samples;
 	map_entry_type* entries;
+	U32* mapTable;
 
 	// Constructed during run-time
 	hash_table_type* htable_contigs; // hash table for contig names

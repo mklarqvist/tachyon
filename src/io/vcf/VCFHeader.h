@@ -122,6 +122,8 @@ public:
 	// U32 l_name; BYTE type; char[l_name]
 	std::vector<map_entry_type> map;
 	// Constructed during run-time
+	U32* mapTable; // map from IDX to local id for O(1) lookup
+
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names
 	hash_table_map_type* map_lookup;       // hash map from name to identifier

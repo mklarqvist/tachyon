@@ -7,6 +7,7 @@ VCFHeader::VCFHeader() :
 	error_bit(VCF_PASS),
 	samples(0),
 	version(0),
+	mapTable(nullptr),
 	contigsHashTable(nullptr),
 	sampleHashTable(nullptr),
 	map_lookup(nullptr)
@@ -17,6 +18,7 @@ VCFHeader::~VCFHeader(){
 	delete this->contigsHashTable;
 	delete this->sampleHashTable;
 	delete this->map_lookup;
+	delete [] this->mapTable;
 }
 
 bool VCFHeader::parse(reader& stream){
@@ -66,9 +68,33 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 			continue;
 
 		// Todo: fix
+		S32 idx = -1;
+		for(U32 j = 0; j < this->lines[i].pairs.size(); ++j){
+			//std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
+			if(this->lines[i].pairs[j].KEY == "IDX"){
+				idx = atoi(&this->lines[i].pairs[j].VALUE[0]);
+			}
+		}
+		//std::cerr << "IDX in: " << idx << std::endl;
+		assert(idx != -1);
+
 		const BYTE val = 0;
-		map_entry_type map_value(this->lines[i].pairs[0].VALUE, val);
+		map_entry_type map_value(this->lines[i].pairs[0].VALUE, val, idx);
 		this->map.push_back(map_value);
+	}
+
+	std::sort(this->map.begin(), this->map.end());
+	const S32 largest_idx = this->map.back().IDX;
+	//for(U32 i = 0; i < this->map.size(); ++i)
+	//	std::cerr << this->map[i].IDX << '\t' << this->map[i].ID << std::endl;
+
+	//std::cerr << "largest: " << largest_idx << std::endl;
+	this->mapTable = new U32[largest_idx + 1];
+	memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
+	S32 localID = 0;
+	for(U32 i = 0; i < this->map.size(); ++i){
+		mapTable[this->map[i].IDX] = localID++;
+		//std::cerr << i << "->" << mapTable[i] << std::endl;
 	}
 
 	if(this->map.size()*10 < 1024)

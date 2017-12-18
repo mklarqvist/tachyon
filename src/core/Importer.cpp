@@ -186,21 +186,18 @@ bool Importer::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	Compression::ZSTDCodec zstd;
-	//if(!zstd.loadDictionary("/media/klarqv01/NVMe/1kgp3/1kgp3_dictionary.yon.dict")){
-	//	std::cerr << "cannot load dict" << std::endl;
-	//	return false;
-	//}
 
 	// Digest controller
-	std::cerr << "setting up digests for: " << this->header_->map.size() << std::endl;
+	//std::cerr << "setting up digests for: " << this->header_->map.size() << std::endl;
 	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
 	for(U32 i = 0; i < this->header_->map.size(); ++i){
-		std::cerr << this->header_->map[i].ID << std::endl;
+		//std::cerr << this->header_->map[i].ID << std::endl;
 		if(!digests[i].initialize()){
 			std::cerr << "failed to init sha512" << std::endl;
 			return false;
 		}
 	}
+
 
 	// Start import
 	U32 previousFirst = 0; U32 previousLast = 0; S32 previousContigID = -1;
@@ -314,16 +311,19 @@ bool Importer::BuildBCF(void){
 
 		zstd.setCompressionLevel(20);
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			if(!digests[this->block.index_entry.info_offsets[i].key].update(this->block.info_containers[i])){
-				std::cerr << "failed to digest" << std::endl;
+			//std::cerr << "trying to digest: " << this->block.index_entry.info_offsets[i].key << std::endl;
+			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].update(this->block.info_containers[i])){
+				//std::cerr << "failed to digest" << std::endl;
 				return false;
 			}
 
 			zstd.encode(this->block.info_containers[i]);
 		}
 
+		//std::cerr << "format streams: " << this->block.index_entry.n_format_streams << std::endl;
+
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!digests[this->block.index_entry.format_offsets[i].key].update(this->block.format_containers[i])){
+			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].update(this->block.format_containers[i])){
 				std::cerr << "failed to digest" << std::endl;
 				return false;
 			}
@@ -365,6 +365,7 @@ bool Importer::BuildBCF(void){
 
 	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
 	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
+
 	BYTE eof_data[32];
 	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
 	this->writer_.streamTomahawk.write((char*)&eof_data[0], 32);
@@ -449,7 +450,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
 		const U32 mapID = this->info_fields.setGet(val);
-		std::cerr << Helpers::timestamp("DEBUG") << "Field: " << this->header_->map[val].ID << '\t' << val << "->" << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		//std::cerr << Helpers::timestamp("DEBUG") << "Field: " << val << "->" << this->header_->mapTable[val] << "->" << this->header_->map[this->header_->mapTable[val]].ID << '\t' << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
@@ -477,26 +478,26 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// These are BCF value types
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
-				const S32 val = entry.getInteger(info_value_type, internal_pos);
-				std::cerr << val << std::endl;
-				target_container += val;
+				target_container += entry.getInteger(info_value_type, internal_pos);
+				//std::cerr << val << std::endl;
+				//target_container += val;
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
 			for(U32 j = 0; j < info_length; ++j){
-				const float f = entry.getFloat(internal_pos);
-				std::cerr << f << std::endl;
-				target_container += f;
+				target_container += entry.getFloat(internal_pos);
+				//std::cerr << f << std::endl;
+				//target_container += f;
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
 			//std::cerr << info_length << std::endl;
 			for(U32 j = 0; j < info_length; ++j){
-				const char c = entry.getChar(internal_pos);
-				std::cerr << c << std::endl;
-				target_container +=  c;
+				target_container += entry.getChar(internal_pos);
+				//std::cerr << c << std::endl;
+				//target_container +=  c;
 			}
 		}
 		// Illegal: parsing error
@@ -504,9 +505,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible in info: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
-		std::cerr << "INFO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		//std::cerr << "IFNO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 	}
-	exit(1);
 	//std::cerr << std::endl;
 
 #if BCF_ASSERT == 1
@@ -523,7 +523,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextFormat(val, info_length, format_value_type, internal_pos)){
 		const U32 mapID = this->format_fields.setGet(val);
 
-		if(this->header_->map[val].ID == "GT"){
+		if(this->header_->map[this->header_->mapTable[val]].ID == "GT"){
 			//std::cerr << "isGT" << std::endl;
 			BYTE multiplier = sizeof(U32);
 			switch(format_value_type){
@@ -539,6 +539,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			//std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
 			continue;
 		}
+
+		//std::cerr << val << "->" << this->header_->mapTable[val] << std::endl;
 
 		//std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
 

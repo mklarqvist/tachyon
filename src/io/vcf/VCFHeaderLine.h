@@ -135,6 +135,7 @@ private:
 		matchPos = match - this->data;
 		entry.VALUE = std::string(&this->data[startPos], matchPos - startPos + adjust_value);
 		startPos = matchPos + 1;
+		if(this->data[startPos] == ',') ++startPos;
 		this->pairs.push_back(entry);
 		return true;
 	}

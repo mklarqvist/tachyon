@@ -49,7 +49,6 @@ int main(int argc, char** argv){
 
 	} else if(strncmp(&argv[1][0], "view", 4) == 0){
 		return(view(argc, argv));
-
 	} else {
 		programMessage();
 		programHelpDetailed();

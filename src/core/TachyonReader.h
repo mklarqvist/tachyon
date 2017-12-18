@@ -89,7 +89,7 @@ public:
 		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << "checking: " << i << std::endl;
+			//std::cerr << "checking: " << i << std::endl;
 			if(!this->codec_manager.decompress(this->block.info_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
 		}
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
@@ -204,7 +204,7 @@ public:
 
 		// Setup containers
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
+			//std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
 			info_iterators[i].setup(this->block.info_containers[i]);
 		}
 
@@ -232,12 +232,18 @@ public:
 				std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 			}
 
-			std::cout << '\t' << m.cold.QUAL << '\t';
-			for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-				// Check if field is set
-				if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
-				// Lookup what that field is
-					std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+			if(isnan(m.cold.QUAL)) std::cout << "\t.\t";
+			else std::cout << '\t' << m.cold.QUAL << '\t';
+
+			if(this->block.index_entry.n_filter_streams == 0){
+				std::cout << ".\t";
+			} else {
+				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+					// Check if field is set
+					if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+					// Lookup what that field is
+						std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+					}
 				}
 			}
 
@@ -247,21 +253,21 @@ public:
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
-			for(U32 i = 0; i < this->header.n_entries; ++i){
-				std::cerr << i << '\t' << this->header.entries[i].ID << std::endl;
-			}
+			//for(U32 i = 0; i < this->header.n_entries; ++i){
+			//	std::cerr << i << '\t' << this->header.entries[i].ID << std::endl;
+			//}
 
-			std::cerr << "\nSet membership: " << m.hot->INFO_map_ID << std::endl;
-			for(U32 k = 0; k < n_keys; ++k){
-				std::cerr << firstKey[k] << "->" << this->block.index_entry.info_offsets[firstKey[k]].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID << std::endl;
-			}
-			std::cerr << std::endl;
+			//std::cerr << "\nSet membership: " << m.hot->INFO_map_ID << std::endl;
+			//for(U32 k = 0; k < n_keys; ++k){
+			//	std::cerr << firstKey[k] << "->" << this->block.index_entry.info_offsets[firstKey[k]].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID << std::endl;
+			//}
+			//std::cerr << std::endl;
 
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
 				const U32& current_key = firstKey[k];
 				if(target_info_vector[current_key]){
-					info_iterators[current_key].toString(std::cout, this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID);
+					info_iterators[current_key].toString(std::cout, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
 
 					if(set + 1 != target_info_vector.n_keys)
 						std::cout.put(';');

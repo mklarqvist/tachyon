@@ -237,7 +237,7 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 			stream >> this->info_containers[i];
-			std::cerr << "loaded: " << this->index_entry.info_offsets[i].key << '\t' << this->info_containers[i].header.cLength << std::endl;
+			//std::cerr << "loaded: " << this->index_entry.info_offsets[i].key << '\t' << this->info_containers[i].header.cLength << std::endl;
 		}
 
 	}
@@ -288,7 +288,7 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	stream.seekg(end_of_block - sizeof(U64));
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-	std::cerr << end_of_block << '\t' << (U64)stream.tellg() << std::endl;
+	//std::cerr << end_of_block << '\t' << (U64)stream.tellg() << std::endl;
 	assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
 
 	return(true);
