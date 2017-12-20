@@ -268,15 +268,14 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->gt_support_data_container;
 	}
 
-	if(settings.loadInfoAll){
+	if(settings.loadInfoAll || settings.load_info_ID_loaded.size()){
 		stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
 		stream >> this->meta_info_map_ids;
 	}
 
-	if(settings.loadInfoAll){
-		stream.seekg(start_offset + this->index_entry.offset_meta_filter_id.offset);
-		stream >> this->meta_filter_map_ids;
-	}
+	// Todo: always load?
+	stream.seekg(start_offset + this->index_entry.offset_meta_filter_id.offset);
+	stream >> this->meta_filter_map_ids;
 
 	if(settings.loadInfoAll){
 		stream.seekg(start_offset + this->index_entry.offset_meta_format_id.offset);
@@ -305,8 +304,8 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 				if(this->index_entry.info_offsets[j].key == settings.load_info_ID[i]){
 					settings.load_info_ID_loaded.push_back(
 							BlockEntrySettingsMap(
-									iterator_index++,
-									j,                        // local index id
+									iterator_index++,                   // iterator value
+									j,                                  // local index id
 									&this->index_entry.info_offsets[j]) // offset
 									);
 					break;
@@ -339,7 +338,6 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	stream.seekg(end_of_block - sizeof(U64));
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-	//std::cerr << end_of_block << '\t' << (U64)stream.tellg() << std::endl;
 	assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
 
 	return(true);
