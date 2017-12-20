@@ -1,6 +1,8 @@
 #ifndef CORE_TACHYONREADER_H_
 #define CORE_TACHYONREADER_H_
 
+#include <cmath>
+
 #include "zstd.h"
 #include "common/zstd_errors.h"
 #include "BlockEntry.h"
@@ -149,12 +151,13 @@ public:
 				}
 
 
-				if(isnan(m.cold.QUAL)) std::cout << "\t.\t";
+				if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
 				else std::cout << '\t' << m.cold.QUAL << '\t';
 			} else {
 				std::cout << "\t.\t.\t.\t";
 			}
 
+			/*
 			// Filter streams
 			if(this->block.index_entry.n_filter_streams == 0){
 				std::cout << ".\t";
@@ -195,9 +198,11 @@ public:
 			}
 			//if(seen11) exit(1);
 			std::cout.put('\n');
-
+			 */
 			++it;
+
 		}
+
 		std::cout.flush();
 
 		delete [] info_iterators;
@@ -239,9 +244,10 @@ public:
 				std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 			}
 
-			if(isnan(m.cold.QUAL)) std::cout << "\t.\t";
+			if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
 			else std::cout << '\t' << m.cold.QUAL << '\t';
 
+			/*
 			if(this->block.index_entry.n_filter_streams == 0){
 				std::cout << ".\t";
 			} else {
@@ -270,6 +276,7 @@ public:
 			//}
 			//std::cerr << std::endl;
 
+
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
 				const U32& current_key = firstKey[k];
@@ -283,7 +290,9 @@ public:
 					++set;
 				}
 			}
+			*/
 			std::cout << '\n';
+
 			++it;
 		}
 		std::cout.flush();

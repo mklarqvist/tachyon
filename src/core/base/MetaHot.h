@@ -133,39 +133,39 @@ private:
 public:
 	// ctor
 	MetaHot() :
-		position(0),
-		AF(0),
-		FILTER_map_ID(0),
-		INFO_map_ID(0),
-		FORMAT_map_ID(0),
-		virtual_offset_cold_meta(0),
-		virtual_offset_gt(0),
-		n_objects(0)
+		position(0)
+		//AF(0),
+		//FILTER_map_ID(0),
+		//INFO_map_ID(0),
+		//FORMAT_map_ID(0),
+		//virtual_offset_cold_meta(0),
+		//virtual_offset_gt(0),
+		//n_objects(0)
 	{}
 
 	// dtor
 	~MetaHot(){}
 
 	// Supportive boolean functions
-	inline const bool isSingleton(void) const{ return(this->AF == 0); }
+	//inline const bool isSingleton(void) const{ return(this->AF == 0); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 
 	// Supportive functions
-	inline const U32& getObjects(void) const{ return(this->n_objects); }
+	//inline const U32& getObjects(void) const{ return(this->n_objects); }
 
 private:
 	// Used for debugging only
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		out << entry.position << '\t' <<
 			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
-			   entry.ref_alt.getRef() << '\t' << entry.ref_alt.getAlt() << '\t' <<
-			   entry.AF << '\t' <<
-			   entry.virtual_offset_cold_meta << '\t' <<
-			   entry.virtual_offset_gt << '\t' <<
-			   entry.n_objects;
+			   entry.ref_alt.getRef() << '\t' << entry.ref_alt.getAlt();
+			   //entry.AF << '\t' <<
+			   //entry.virtual_offset_cold_meta << '\t' <<
+			   //entry.virtual_offset_gt << '\t' <<
+			   //entry.n_objects;
 		return(out);
 	}
 
@@ -174,13 +174,13 @@ private:
 		buffer += (U16)*reinterpret_cast<const U16* const>(&entry.controller);
 		buffer += (BYTE)*reinterpret_cast<const BYTE* const>(&entry.ref_alt);
 		buffer += entry.position;
-		buffer += entry.AF;
-		buffer += entry.FILTER_map_ID;
-		buffer += entry.INFO_map_ID;
-		buffer += entry.FORMAT_map_ID;
-		buffer += entry.virtual_offset_cold_meta;
-		buffer += entry.virtual_offset_gt;
-		buffer += entry.n_objects;
+		//buffer += entry.AF;
+		//buffer += entry.FILTER_map_ID;
+		//buffer += entry.INFO_map_ID;
+		//buffer += entry.FORMAT_map_ID;
+		//buffer += entry.virtual_offset_cold_meta;
+		//buffer += entry.virtual_offset_gt;
+		//buffer += entry.n_objects;
 		return(buffer);
 	}
 
@@ -208,30 +208,30 @@ public:
 	/**< Allele frequency is precomputed as it is frequently
 	 * used in several population-genetics approaches
 	 */
-	float AF;
+	//float AF;
 
 	/**< Fields describing set-membership to various filter,
 	 * info, and format pattern vectors. These patterns are
 	 * implicitly encoded in the block header index (see
 	 * BlockEntry)
 	 */
-	U16 FILTER_map_ID;
-	U16 INFO_map_ID;
-	U16 FORMAT_map_ID;
+	//U16 FILTER_map_ID;
+	//U16 INFO_map_ID;
+	//U16 FORMAT_map_ID;
 
 	/**< This is the virtual pointer offset into the
 	 * cold sub-structure of the hot-cold split.
 	 */
-	U32 virtual_offset_cold_meta;
+	//U32 virtual_offset_cold_meta;
 
 	/**< Virtual file offset into the appropriate genotype
 	 * container stream. What container is targetted is
 	 * encoded in the controller.
 	 */
-	U32 virtual_offset_gt;
+	//U32 virtual_offset_gt;
 
 	/**< Number of genotype entries encoded */
-	U32 n_objects;
+	//U32 n_objects;
 };
 #pragma pack(pop)
 

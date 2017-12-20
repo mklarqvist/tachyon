@@ -52,9 +52,6 @@ public:
 	BYTE* GT_array;// packed genotype array
 	U32** bins;    // bin i
 	manager_type* manager; // permutation manager
-	U64 cumulative_AAC;
-	U64 cumulative_total;
-
 	U32 n_gt_matrix;
 	BYTE** GT_matrix;// packed genotype matrix
 };

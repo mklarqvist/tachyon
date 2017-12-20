@@ -9,8 +9,6 @@ RadixSortGT::RadixSortGT() :
 	GT_array(nullptr),
 	bins(new U32*[9]),
 	manager(nullptr),
-	cumulative_AAC(0),
-	cumulative_total(0),
 	n_gt_matrix(0),
 	GT_matrix(nullptr)
 {
@@ -49,9 +47,6 @@ void RadixSortGT::reset(void){
 	memset(&p_i, 0, sizeof(U32)*9);
 
 	this->manager->reset();
-
-	this->cumulative_AAC = 0;
-	this->cumulative_total = 0;
 }
 
 bool RadixSortGT::build(const bcf_reader_type& reader){

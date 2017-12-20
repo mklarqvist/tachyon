@@ -1,5 +1,5 @@
-#ifndef TOMAHAWK_UTILITY_H_
-#define TOMAHAWK_UTILITY_H_
+#ifndef TACHYON_UTILITY_H_
+#define TACHYON_UTILITY_H_
 
 #include <iostream>
 #include "support/helpers.h"
@@ -36,4 +36,4 @@ void programHelpDetailed(void){
 	"sfs          calculate the site frequency spectrum (SFS); a.k.a AFS" << std::endl;
 }
 
-#endif /* TOMAHAWK_UTILITY_H_ */
+#endif /* TACHYON_UTILITY_H_ */

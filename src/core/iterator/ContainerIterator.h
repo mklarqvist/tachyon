@@ -343,7 +343,7 @@ public:
 			}
 		} else {
 			switch(container.header.controller.type){
-			case(Core::TYPE_CHAR):     this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed);   break;
+			case(Core::TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed);   break;
 			case(Core::TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;

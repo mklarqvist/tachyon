@@ -105,10 +105,10 @@ bool Importer::BuildBCF(void){
 	}
 
 	// Start import
-	U32 previousFirst = 0;
-	U32 previousLast = 0;
+	U32 previousFirst    = 0;
+	U32 previousLast     = 0;
 	S32 previousContigID = -1;
-	U64 n_variants_read = 0;
+	U64 n_variants_read  = 0;
 
 	// Begin import
 	while(true){
@@ -135,7 +135,7 @@ bool Importer::BuildBCF(void){
 		// Permute or not?
 		if(this->block.index_entry.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
-				std::cerr << "fail permutator" << std::endl;
+				std::cerr << Helpers::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
 		}
@@ -143,7 +143,7 @@ bool Importer::BuildBCF(void){
 		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
-				std::cerr << "failed to parse" << std::endl;
+				std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Failed to parse BCF body..." << std::endl;
 				return false;
 			}
 		}
@@ -173,11 +173,20 @@ bool Importer::BuildBCF(void){
 		if(this->block.meta_hot_container.n_entries)  zstd.encode(this->block.meta_hot_container);
 		if(this->block.gt_rle_container.n_entries)    zstd.encode(this->block.gt_rle_container);
 		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
+		if(this->block.gt_support_data_container.n_entries) zstd.encode(this->block.gt_support_data_container);
 		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
+		if(this->block.meta_info_map_ids.n_entries)   zstd.encode(this->block.meta_info_map_ids);
+		if(this->block.meta_filter_map_ids.n_entries) zstd.encode(this->block.meta_filter_map_ids);
+		if(this->block.meta_format_map_ids.n_entries) zstd.encode(this->block.meta_format_map_ids);
+
+		assert(this->block.gt_support_data_container.n_entries == reader.size());
+		assert(this->block.meta_info_map_ids.n_entries         == reader.size());
+		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
+		assert(this->block.meta_filter_map_ids.n_entries       == reader.size());
 
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
-				std::cerr << "failed to digest" << std::endl;
+				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
 
@@ -186,7 +195,7 @@ bool Importer::BuildBCF(void){
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
-				std::cerr << "failed to digest" << std::endl;
+				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
 
@@ -254,13 +263,13 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	meta.controller.simple = entry.isSimple();
 
 	// GT encoding
-	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, n_runs, this->permutator.manager->get())){
-		std::cerr << "faild gt encode" << std::endl;
+	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, this->block.gt_support_data_container, n_runs, this->permutator.manager->get())){
+		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 		return false;
 	}
 
 	if(!this->parseBCFBody(meta, entry)){
-		std::cerr << "bad" << std::endl;
+		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
 		return false;
 	}
 
@@ -271,7 +280,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 
 	// Complex meta data
 	Core::MetaCold test;
-	meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data_uncompressed.pointer;
+	//meta.virtual_offset_cold_meta = this->block.meta_cold_container.buffer_data_uncompressed.pointer;
 	if(!test.write(entry, this->block.meta_cold_container)){
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
@@ -285,7 +294,9 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Update number of entries in block
 	++this->index_entry.n_variants;
 
-	meta.n_objects = n_runs;
+	//meta.n_objects = n_runs;
+	this->block.gt_support_data_container += (U32)n_runs;
+	++this->block.gt_support_data_container;
 	this->block.meta_hot_container.buffer_data_uncompressed += meta;
 
 	return true;
@@ -345,25 +356,18 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		if(info_value_type <= 3){
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getInteger(info_value_type, internal_pos);
-				//std::cerr << val << std::endl;
-				//target_container += val;
 			}
 		}
 		// Floats
 		else if(info_value_type == 5){
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getFloat(internal_pos);
-				//std::cerr << f << std::endl;
-				//target_container += f;
 			}
 		}
 		// Chars
 		else if(info_value_type == 7){
-			//std::cerr << info_length << std::endl;
 			for(U32 j = 0; j < info_length; ++j){
 				target_container += entry.getChar(internal_pos);
-				//std::cerr << c << std::endl;
-				//target_container +=  c;
 			}
 		}
 		// Illegal: parsing error
@@ -371,9 +375,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << "impossible in info: " << (int)info_value_type << std::endl;
 			exit(1);
 		}
-		//std::cerr << "IFNO-END: " << val << "->" << mapID << '\t' << internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 	}
-	//std::cerr << std::endl;
 
 #if BCF_ASSERT == 1
 	// Assert all FILTER and INFO data have been successfully
@@ -383,14 +385,11 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	assert(internal_pos == (entry.body->l_shared + sizeof(U32)*2));
 #endif
 
-	//exit(1);
-
 	BYTE format_value_type = 0;
 	while(entry.nextFormat(val, info_length, format_value_type, internal_pos)){
 		const U32 mapID = this->format_fields.setGet(val);
 
 		if(this->header_->map[this->header_->mapTable[val]].ID == "GT"){
-			//std::cerr << "isGT" << std::endl;
 			BYTE multiplier = sizeof(U32);
 			switch(format_value_type){
 				case(7):
@@ -402,13 +401,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 				default: std::cerr << "illegal" << std::endl; exit(1); return false;
 			}
 			internal_pos += this->header_->samples * info_length * multiplier;
-			//std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
 			continue;
 		}
-
-		//std::cerr << val << "->" << this->header_->mapTable[val] << std::endl;
-
-		//std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
 
 		// Hash INFO values
 		stream_container& target_container = this->block.format_containers[mapID];
@@ -436,7 +430,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			target_container.setMixedStrides();
 
 		target_container.addStride(info_length);
-		//target_container.resize(1000 * this->header_->samples * info_length * sizeof(U64));
 
 		// Flags and integers
 		// These are BCF value types
@@ -470,8 +463,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 			exit(1);
 		}
-		//std::cerr << Helpers::timestamp("LOG","END") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.p_genotypes << std::endl;
-
 	}
 #if BCF_ASSERT == 1
 	assert(internal_pos == entry.pointer);
@@ -494,7 +485,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	}
 
 	// Store this map in the meta
-	meta.FILTER_map_ID = mapID;
+	this->block.meta_filter_map_ids += mapID;
+	//meta.FILTER_map_ID = mapID;
 
 	// Hash INFO pattern
 	const U64 hash_info_vector = entry.hashInfo();
@@ -513,7 +505,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	}
 
 	// Store this map in the meta
-	meta.INFO_map_ID = mapID;
+	//meta.INFO_map_ID = mapID;
+	this->block.meta_info_map_ids += mapID;
 
 
 	// Hash FORMAT pattern
@@ -532,7 +525,13 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	}
 
 	// Store this map in the meta
-	meta.FORMAT_map_ID = mapID;
+	//meta.FORMAT_map_ID = mapID;
+	this->block.meta_format_map_ids += mapID;
+
+	// Update
+	++this->block.meta_info_map_ids;
+	++this->block.meta_format_map_ids;
+	++this->block.meta_filter_map_ids;
 
 	// Return
 	return true;

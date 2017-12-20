@@ -3,6 +3,7 @@
 
 #include "../base/MetaEntry.h"
 #include "MetaHotIterator.h"
+#include "MetaColdIterator.h"
 
 namespace Tachyon{
 namespace Core{
@@ -14,11 +15,12 @@ private:
 	typedef MetaEntry entry_type;
 	typedef MetaHotIterator hot_iterator_type;
 	typedef MetaHot hot_type;
+	typedef MetaColdIterator cold_iterator_type;
 	typedef MetaCold cold_type;
 	typedef StreamContainer container_type;
 
 	// Function pointers
-	typedef const entry_type& (self_type::*operator_function_type)(const U32& p);
+	typedef entry_type& (self_type::*operator_function_type)(const U32& p);
 
 public:
 	MetaIterator() :
@@ -53,6 +55,7 @@ public:
 		n_entries(0),
 		last_modified(-1),
 		hot_iterator(container_hot),
+		cold_iterator(container_cold, hot_iterator.size()),
 		container_hot(&container_hot),
 		container_cold(&container_cold),
 		operator_function(&self_type::__operatorBoth)
@@ -77,6 +80,7 @@ public:
 		this->operator_function = &self_type::__operatorBoth;
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		this->cold_iterator.set(container_cold, this->n_entries);
 		return true;
 	}
 
@@ -95,7 +99,7 @@ public:
 	}
 
 	inline const entry_type& operator[](const U32& p){
-		return (this->*operator_function)(p);
+		return(this->*operator_function)(p);
 	}
 
 	inline const S32& size(void) const{ return(this->n_entries); }
@@ -108,16 +112,16 @@ public:
 
 
 private:
-	inline const entry_type& __operatorHotOnly(const U32 &p){
+	inline entry_type& __operatorHotOnly(const U32 &p){
 		if(this->last_modified == p) return(this->entry);
-		this->entry(&hot_iterator[p]);
+		this->entry = entry_type(&hot_iterator[p]);
 		this->last_modified = p;
 		return(this->entry);
 	}
 
-	inline const entry_type& __operatorBoth(const U32 &p){
+	inline entry_type& __operatorBoth(const U32 &p){
 		if(this->last_modified == p) return(this->entry);
-		this->entry(&hot_iterator[p], *this->container_cold);
+		this->entry = entry_type(&hot_iterator[p], this->cold_iterator[p]);
 		this->last_modified = p;
 		return(this->entry);
 	}
@@ -129,6 +133,7 @@ public:
 	S32 last_modified;
 	entry_type entry;
 	hot_iterator_type hot_iterator;
+	cold_iterator_type cold_iterator;
 	container_type* container_hot;
 	container_type* container_cold;
 	operator_function_type operator_function;

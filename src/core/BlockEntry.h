@@ -59,31 +59,33 @@ public:
 		stream << this->index_entry;
 		stats.total_header_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
-		//std::cerr << "write index" << std::endl;
 
 		if(this->index_entry.controller.hasGTPermuted){
 			stream << this->ppa_manager;
 			stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
 			last_pos = stream.tellp();
-			//std::cerr << "write ppa" << std::endl;
 		}
 
 		stream << this->meta_hot_container;
 		stream << this->meta_cold_container;
 		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
-		//std::cerr << "write meta" << std::endl;
 		last_pos = stream.tellp();
+
 		stream << this->gt_rle_container;
 		stream << this->gt_simple_container;
+		stream << this->gt_support_data_container;
 		stats.total_gt_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
-		//std::cerr << "write gt" << std::endl;
 
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
-			//assert(this->index_entry.info_offsets[i].key != 0);
-			//std::cerr << "write info " << i << std::endl;
+		stream << this->meta_info_map_ids;
+		stream << this->meta_filter_map_ids;
+		stream << this->meta_format_map_ids;
+		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
+		last_pos = stream.tellp();
+
+		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 			stream << this->info_containers[i];
-		}
+
 		stats.total_info_cost += (U64)stream.tellp() - last_pos;
 		last_pos = stream.tellp();
 
@@ -112,12 +114,14 @@ private:
 		stream << entry.meta_cold_container;
 		stream << entry.gt_rle_container;
 		stream << entry.gt_simple_container;
+		stream << entry.gt_support_data_container;
+		stream << entry.meta_info_map_ids;
+		stream << entry.meta_filter_map_ids;
+		stream << entry.meta_format_map_ids;
 
-		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i){
-			//std::cerr << i << "->" << entry.index_entry.info_offsets[i].key << '\t' << entry.info_containers[i].buffer_data.pointer << std::endl;
-			//assert(entry.index_entry.info_offsets[i].key != 0);
+		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
 			stream << entry.info_containers[i];
-		}
+
 
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];
@@ -155,7 +159,16 @@ public:
 	index_entry_type  index_entry;
 	permutation_type  ppa_manager;
 	stream_container  meta_hot_container;
+
+
+	stream_container  meta_info_map_ids;
+	stream_container  meta_format_map_ids;
+	stream_container  meta_filter_map_ids;
+
 	stream_container  meta_cold_container;
+
+	stream_container  gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
+
 	stream_container  gt_rle_container;
 	stream_container  gt_simple_container;
 	stream_container* info_containers;

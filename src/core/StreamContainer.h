@@ -41,8 +41,8 @@ public:
 		n_entries(0),
 		n_additions(0),
 		buffer_data(start_size),
-		buffer_data_uncompressed(start_size),
 		buffer_strides(start_size),
+		buffer_data_uncompressed(start_size),
 		buffer_strides_uncompressed(start_size)
 	{}
 

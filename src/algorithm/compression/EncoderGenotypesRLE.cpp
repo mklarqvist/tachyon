@@ -3,7 +3,7 @@
 namespace Tachyon{
 namespace Algorithm{
 
-bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
@@ -15,7 +15,8 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 	rle_helper_type cost;
 	if(line.body->n_allele == 2){
 		cost = this->assessRLEBiallelic(line, ppa);
-		meta_base.virtual_offset_gt        = runs.buffer_data_uncompressed.pointer; // absolute position at start of stream
+		//meta_base.virtual_offset_gt        = runs.buffer_data_uncompressed.pointer; // absolute position at start of stream
+		support += (U32)0;
 		meta_base.controller.rle           = true;
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.anyMissing    = cost.hasMissing;
@@ -44,7 +45,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 			return false;
 		}
 
-		meta_base.AF = float(this->helper.countsAlleles[1]) / (this->helper.countsAlleles[0] + this->helper.countsAlleles[1]);
+		//meta_base.AF = float(this->helper.countsAlleles[1]) / (this->helper.countsAlleles[0] + this->helper.countsAlleles[1]);
 
 		// Reset and recycle helper
 		this->helper.reset();
@@ -58,9 +59,10 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		else if(line.body->n_allele + 1 < 128)   costBCFStyle *= 2;
 		else if(line.body->n_allele + 1 < 32768) costBCFStyle *= 4;
 
-		meta_base.virtual_offset_gt        = simple.buffer_data_uncompressed.pointer; // absolute position at start of stream
+		support += (U32)1;
+		//meta_base.virtual_offset_gt        = simple.buffer_data_uncompressed.pointer; // absolute position at start of stream
 		meta_base.controller.biallelic     = false;
-		meta_base.AF                       = 0; // AF needs to be looked up in cold store
+		//meta_base.AF                       = 0; // AF needs to be looked up in cold store
 		meta_base.controller.mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.anyMissing    = cost.hasMissing;
 		meta_base.controller.simple        = 1;

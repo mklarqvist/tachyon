@@ -1,6 +1,8 @@
 #ifndef CORE_BASE_METAENTRY_H_
 #define CORE_BASE_METAENTRY_H_
 
+#include <limits>
+
 #include "MetaHot.h"
 #include "MetaCold.h"
 
@@ -20,26 +22,45 @@ private:
 	typedef StreamContainer container_type;
 
 public:
-	MetaEntry() : hot(nullptr){}
-
-	MetaEntry(const hot_entry* hot) :
-		hot(hot)
+	MetaEntry() :
+		info_pattern_id(std::numeric_limits<S32>::min()),
+		filter_pattern_id(std::numeric_limits<S32>::min()),
+		format_pattern_id(std::numeric_limits<S32>::min()),
+		hot(nullptr),
+		cold(nullptr)
 	{}
 
-	MetaEntry(const hot_entry* hot, container_type& container) :
+	MetaEntry(const hot_entry* hot) :
+		info_pattern_id(std::numeric_limits<S32>::min()),
+		filter_pattern_id(std::numeric_limits<S32>::min()),
+		format_pattern_id(std::numeric_limits<S32>::min()),
 		hot(hot),
-		cold(&container.buffer_data_uncompressed[hot->virtual_offset_cold_meta])
+		cold(nullptr)
+	{}
+
+	MetaEntry(const hot_entry* hot, cold_entry& cold) :
+		info_pattern_id(std::numeric_limits<S32>::min()),
+		filter_pattern_id(std::numeric_limits<S32>::min()),
+		format_pattern_id(std::numeric_limits<S32>::min()),
+		hot(hot),
+		cold(cold)
 	{}
 
 	~MetaEntry(){ /* do nothing */ };
 
 	inline void operator()(const hot_entry* hot){ this->hot = hot; }
-	inline void operator()(const hot_entry* hot, container_type& container){
+	inline void operator()(const hot_entry* hot, cold_entry cold){
 		this->hot = hot;
-		this->cold(&container.buffer_data_uncompressed[this->hot->virtual_offset_cold_meta]);
+		this->cold = cold;
 	}
 
 public:
+	// Todo: add membership values here
+	U32 info_pattern_id;
+	U32 filter_pattern_id;
+	U32 format_pattern_id;
+
+	// Meta objects
 	const hot_entry* hot;
 	cold_entry cold;
 };

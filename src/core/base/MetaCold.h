@@ -63,10 +63,11 @@ private:
 public:
 	explicit MetaCold(void);
 	MetaCold(char* in) :
-		QUAL(*reinterpret_cast<float*>(in)),
-		n_allele(*reinterpret_cast<U16*>(&in[sizeof(float)])),
-		n_ID(*reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)])),
-		ID(&in[sizeof(float) + 2*sizeof(U16)]),
+		l_body(*reinterpret_cast<U32*>(in)),
+		QUAL(*reinterpret_cast<float*>(&in[sizeof(U32)])),
+		n_allele(*reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float)])),
+		n_ID(*reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float) + sizeof(U16)])),
+		ID(&in[sizeof(U32) + sizeof(float) + 2*sizeof(U16)]),
 		alleles(new allele_type[this->n_allele])
 	{
 		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
@@ -77,14 +78,16 @@ public:
 	}
 	~MetaCold(void);
 
+	// Recycle or overload empty object
 	void operator()(char* in){
 		const U16 prev_n_allele = this->n_allele;
 
 		// Interpret body
-		this->QUAL = *reinterpret_cast<float*>(in);
-		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(float)]);
-		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(float) + sizeof(U16)]);
-		if(this->n_ID) this->ID = &in[sizeof(float) + 2*sizeof(U16)];
+		this->l_body = *reinterpret_cast<U32*>(in);
+		this->QUAL = *reinterpret_cast<float*>(&in[sizeof(U32)]);
+		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float)]);
+		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float) + sizeof(U16)]);
+		if(this->n_ID) this->ID = &in[sizeof(U32) + sizeof(float) + 2*sizeof(U16)];
 		else this->ID = nullptr;
 
 		// Only update if we need to
@@ -95,21 +98,12 @@ public:
 		}
 
 		// Overload allele data
-		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
+		U32 cumpos = sizeof(U32) + sizeof(float) + 2*sizeof(U16) + this->n_ID;
 		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i](&in[cumpos]);
 			cumpos += this->alleles[i].objectSize();
 		}
 	}
-
-	// Parse everything in this entry
-	bool parse(void);
-
-	// Parse the name only
-	bool parseID(void);
-
-	// Parse the alleles only
-	bool parseAlleles(void);
 
 	// Write out entry using BCF entry as template
 	// and injects into buffer
@@ -124,8 +118,12 @@ public:
 	}
 
 public:
+	/**< Byte length of this record. Is required in downstream iterators */
+	U32 l_body;
+
 	/**< Quality field */
 	float QUAL;
+
 	/**< Number of alleles */
 	U16 n_allele;
 	/**< Variant name (ID). Length is bytes
@@ -134,6 +132,7 @@ public:
 	 */
 	U16 n_ID;
 	char* ID;
+
 	// allele info
 	// ALTs are limited to 16 bits each
 	allele_type* alleles;

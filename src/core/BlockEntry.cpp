@@ -17,10 +17,13 @@ BlockEntry::BlockEntry() :
 	}
 
 	// Base container streams are always of type TYPE_STRUCT
-	this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
-	this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
-	this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
-	this->meta_cold_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->meta_info_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->gt_rle_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 }
 
 BlockEntry::~BlockEntry(){
@@ -40,17 +43,24 @@ void BlockEntry::clear(){
 		this->format_containers[i].reset();
 
 	this->index_entry.reset();
+	this->meta_info_map_ids.reset();
+	this->meta_filter_map_ids.reset();
+	this->meta_format_map_ids.reset();
 	this->meta_hot_container.reset();
 	this->meta_cold_container.reset();
+	this->gt_support_data_container.reset();
 	this->gt_rle_container.reset();
 	this->gt_simple_container.reset();
 	this->ppa_manager.reset();
 
 	// Base container data types are alwats TYPE_STRUCT
-	this->gt_rle_container.header.controller.type    = CORE_TYPE::TYPE_STRUCT;
-	this->gt_simple_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
-	this->meta_hot_container.header.controller.type  = CORE_TYPE::TYPE_STRUCT;
-	this->meta_cold_container.header.controller.type = CORE_TYPE::TYPE_STRUCT;
+	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->meta_info_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
+	this->gt_rle_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 }
 
 /**< @brief Resize base container buffer streams
@@ -63,6 +73,10 @@ void BlockEntry::resize(const U32 s){
 	this->meta_cold_container.resize(s);
 	this->gt_rle_container.resize(s);
 	this->gt_simple_container.resize(s);
+	this->meta_info_map_ids.resize(s);
+	this->meta_filter_map_ids.resize(s);
+	this->meta_format_map_ids.resize(s);
+	this->gt_support_data_container.resize(s);
 }
 
 /**< @brief Update base container header data and evaluate output byte streams
@@ -76,8 +90,12 @@ void BlockEntry::resize(const U32 s){
 void BlockEntry::updateBaseContainers(){
 	this->updateContainer(this->gt_rle_container);
 	this->updateContainer(this->gt_simple_container);
+	this->updateContainer(this->gt_support_data_container);
 	this->updateContainer(this->meta_hot_container);
 	this->updateContainer(this->meta_cold_container);
+	this->updateContainer(this->meta_filter_map_ids);
+	this->updateContainer(this->meta_format_map_ids);
+	this->updateContainer(this->meta_info_map_ids);
 }
 
 /**< @brief Updates the local (relative to block start) virtual file offsets
@@ -105,6 +123,20 @@ void BlockEntry::updateOffsets(void){
 
 	this->index_entry.offset_gt_simple.offset = cum_size;
 	cum_size += this->gt_simple_container.getDiskSize();
+
+
+	this->index_entry.offset_gt_helper.offset = cum_size;
+	cum_size += this->gt_support_data_container.getDiskSize();
+
+	this->index_entry.offset_meta_info_id.offset = cum_size;
+	cum_size += this->meta_info_map_ids.getDiskSize();
+
+	this->index_entry.offset_meta_filter_id.offset = cum_size;
+	cum_size += this->meta_filter_map_ids.getDiskSize();
+
+	this->index_entry.offset_meta_format_id.offset = cum_size;
+	cum_size += this->meta_format_map_ids.getDiskSize();
+
 
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 		this->index_entry.info_offsets[i].offset = cum_size;
@@ -223,6 +255,26 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	if(settings.loadGTSimple){
 		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
+	}
+
+	if(settings.loadGTSimple || settings.loadGT){
+		stream.seekg(start_offset + this->index_entry.offset_gt_helper.offset);
+		stream >> this->gt_support_data_container;
+	}
+
+	if(settings.loadInfoAll){
+		stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
+		stream >> this->meta_info_map_ids;
+	}
+
+	if(settings.loadInfoAll){
+		stream.seekg(start_offset + this->index_entry.offset_meta_filter_id.offset);
+		stream >> this->meta_filter_map_ids;
+	}
+
+	if(settings.loadInfoAll){
+		stream.seekg(start_offset + this->index_entry.offset_meta_format_id.offset);
+		stream >> this->meta_format_map_ids;
 	}
 
 	// Load all info
