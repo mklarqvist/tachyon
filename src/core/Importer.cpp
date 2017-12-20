@@ -151,6 +151,11 @@ bool Importer::BuildBCF(void){
 		// Stats
 		n_variants_read += reader.size();
 
+		assert(this->block.gt_support_data_container.n_entries == reader.size());
+		assert(this->block.meta_info_map_ids.n_entries         == reader.size());
+		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
+		assert(this->block.meta_filter_map_ids.n_entries       == reader.size());
+
 		// Update head meta
 		this->block.index_entry.controller.hasGT     = true;
 		this->block.index_entry.controller.isDiploid = true;
@@ -178,11 +183,6 @@ bool Importer::BuildBCF(void){
 		if(this->block.meta_info_map_ids.n_entries)   zstd.encode(this->block.meta_info_map_ids);
 		if(this->block.meta_filter_map_ids.n_entries) zstd.encode(this->block.meta_filter_map_ids);
 		if(this->block.meta_format_map_ids.n_entries) zstd.encode(this->block.meta_format_map_ids);
-
-		assert(this->block.gt_support_data_container.n_entries == reader.size());
-		assert(this->block.meta_info_map_ids.n_entries         == reader.size());
-		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
-		assert(this->block.meta_filter_map_ids.n_entries       == reader.size());
 
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
@@ -532,6 +532,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	++this->block.meta_info_map_ids;
 	++this->block.meta_format_map_ids;
 	++this->block.meta_filter_map_ids;
+	this->block.meta_info_map_ids.addStride((S32)1);
+	this->block.meta_format_map_ids.addStride((S32)1);
+	this->block.meta_filter_map_ids.addStride((S32)1);
 
 	// Return
 	return true;

@@ -125,6 +125,9 @@ public:
 			return false;
 		}
 
+		Iterator::ContainerIterator info_id_iterator(this->block.meta_info_map_ids);
+		Iterator::ContainerIterator filter_id_iterator(this->block.meta_filter_map_ids);
+
 		// Setup containers
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
 			info_iterators[i].setup(this->block.info_containers[i]);
@@ -153,8 +156,6 @@ public:
 					}
 					std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
 				}
-
-
 				if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
 				else std::cout << '\t' << m.cold.QUAL << '\t';
 			} else {
@@ -204,7 +205,8 @@ public:
 			std::cout.put('\n');
 			 */
 			++it;
-
+			++info_id_iterator;
+			++filter_id_iterator;
 		}
 
 		std::cout.flush();
@@ -217,20 +219,21 @@ public:
 
 		// Phase 1 construct iterators
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		//const U32 e = this->block.meta_hot_container.buffer_data_uncompressed.pointer / sizeof(MetaHot);
-		//std::cerr << "Entries: " << e << std::endl;
-		//Iterator::MetaColdIterator(this->block.meta_cold_container, e);
-		//Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		Iterator::ContainerIterator info_id_iterator(this->block.meta_info_map_ids);
+		Iterator::ContainerIterator filter_id_iterator(this->block.meta_filter_map_ids);
+		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
-		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
-			//info_iterators[i].setup(this->block.info_containers[i]);
-		//}
+			info_iterators[i].setup(this->block.info_containers[i]);
+		}
 
 		// Todo: format
 
 		// Phase 2 perform iterations
+		const void* info_id;
+		const void* filter_id;
 
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
 			const Core::MetaEntry& m = it.current();
@@ -258,35 +261,31 @@ public:
 			if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
 			else std::cout << '\t' << m.cold.QUAL << '\t';
 
-			/*
+
+			info_id_iterator.getDataIterator().currentPointer(info_id);
+			filter_id_iterator.getDataIterator().currentPointer(filter_id);
+
+
+
 			if(this->block.index_entry.n_filter_streams == 0){
 				std::cout << ".\t";
 			} else {
 				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
 					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[m.hot->FILTER_map_ID][k]){
+					if(this->block.index_entry.filter_bit_vectors[*(S32*)filter_id][k]){
 					// Lookup what that field is
 						std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
 					}
 				}
 			}
 
+
+
 			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
-			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.hot->INFO_map_ID];
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[*(S32*)info_id];
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
-
-			//for(U32 i = 0; i < this->header.n_entries; ++i){
-			//	std::cerr << i << '\t' << this->header.entries[i].ID << std::endl;
-			//}
-
-			//std::cerr << "\nSet membership: " << m.hot->INFO_map_ID << std::endl;
-			//for(U32 k = 0; k < n_keys; ++k){
-			//	std::cerr << firstKey[k] << "->" << this->block.index_entry.info_offsets[firstKey[k]].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[firstKey[k]].key].ID << std::endl;
-			//}
-			//std::cerr << std::endl;
-
 
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
@@ -301,14 +300,16 @@ public:
 					++set;
 				}
 			}
-			*/
+
 			std::cout << '\n';
 
 			++it;
+			++info_id_iterator;
+			++filter_id_iterator;
 		}
 		std::cout.flush();
 
-		//delete [] info_iterators;
+		delete [] info_iterators;
 		return true;
 	}
 

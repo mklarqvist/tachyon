@@ -102,7 +102,7 @@ public:
 
 private:
 	void updateContainer(stream_container* container, const U32& length);
-	void updateContainer(stream_container& container);
+	void updateContainer(stream_container& container, bool reformat = true);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;

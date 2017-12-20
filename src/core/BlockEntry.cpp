@@ -24,6 +24,9 @@ BlockEntry::BlockEntry() :
 	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_info_map_ids.setStrideSize(1);
+	this->meta_filter_map_ids.setStrideSize(1);
+	this->meta_format_map_ids.setStrideSize(1);
 }
 
 BlockEntry::~BlockEntry(){
@@ -61,6 +64,9 @@ void BlockEntry::clear(){
 	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
 	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_info_map_ids.setStrideSize(1);
+	this->meta_filter_map_ids.setStrideSize(1);
+	this->meta_format_map_ids.setStrideSize(1);
 }
 
 /**< @brief Resize base container buffer streams
@@ -93,9 +99,9 @@ void BlockEntry::updateBaseContainers(){
 	this->updateContainer(this->gt_support_data_container);
 	this->updateContainer(this->meta_hot_container);
 	this->updateContainer(this->meta_cold_container);
-	this->updateContainer(this->meta_filter_map_ids);
-	this->updateContainer(this->meta_format_map_ids);
-	this->updateContainer(this->meta_info_map_ids);
+	this->updateContainer(this->meta_filter_map_ids, false);
+	this->updateContainer(this->meta_format_map_ids, false);
+	this->updateContainer(this->meta_info_map_ids  , false);
 }
 
 /**< @brief Updates the local (relative to block start) virtual file offsets
@@ -193,7 +199,7 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
  *
  * @param container Data container
  */
-void BlockEntry::updateContainer(stream_container& container){
+void BlockEntry::updateContainer(stream_container& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
 		return;
 
@@ -201,7 +207,7 @@ void BlockEntry::updateContainer(stream_container& container){
 	if(container.header.controller.type != CORE_TYPE::TYPE_STRUCT){
 		container.checkUniformity();
 		// Reformat stream to use as small word size as possible
-		container.reformat();
+		if(reformat) container.reformat();
 	}
 
 	// Set uncompressed length
@@ -210,7 +216,7 @@ void BlockEntry::updateContainer(stream_container& container){
 	// If we have mixed striding
 	if(container.header.controller.mixedStride == true){
 		// Reformat stream to use as small word size as possible
-		container.reformatStride();
+		if(reformat) container.reformatStride();
 		container.header_stride.uLength = container.buffer_strides_uncompressed.pointer;
 	}
 }

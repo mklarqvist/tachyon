@@ -83,6 +83,8 @@ public:
 		this->position -= p;
 	}
 
+	virtual void currentPointer(const void*& p) const =0;
+
 	// Virtual functions
 	// Has to be overloaded in base class
 	virtual const U32 getCurrentStride(void) const =0;
@@ -122,6 +124,7 @@ public:
 	}
 	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(T)])); }
 	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(T)])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(T)]); }
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(T)])); }
@@ -129,7 +132,9 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
+		//std::cerr << "stride is: " << stride << std::endl;
 		if(stride == 1){
+			//std::cerr << "this current is: " << this->current() << std::endl;
 			stream << this->current();
 		} else {
 			const_pointer r = this->currentAt();
@@ -168,6 +173,8 @@ public:
 	}
 	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p])); }
 	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position]); }
+
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
@@ -221,6 +228,8 @@ public:
 	}
 	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p])); }
 	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position]); }
+
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
@@ -266,6 +275,8 @@ public:
 		if(this->n_entries - 1 < 0) return(this->first());
 		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
 	}
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position]); }
+
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return(0); }
@@ -438,6 +449,8 @@ public:
 			*this->data_iterator += this->container->header.stride;
 		}
 	}
+
+	inline data_iterator_type& getDataIterator(void){ return(*this->data_iterator); }
 
 public:
 	U32 position;                          // iterator position
