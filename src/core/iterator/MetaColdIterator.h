@@ -20,7 +20,12 @@ class MetaColdIterator{
 public:
 	MetaColdIterator() : n_entries(0), pos(0), offsets(nullptr), container(nullptr){}
 
-	MetaColdIterator(container_type& container, const U32 n_entries) : n_entries(n_entries), pos(0), offsets(nullptr), container(nullptr){
+	MetaColdIterator(container_type& container, const U32 n_entries) :
+		n_entries(n_entries),
+		pos(0),
+		offsets(nullptr),
+		container(nullptr)
+	{
 		this->set(container, n_entries);
 	}
 
@@ -36,11 +41,13 @@ public:
 	 * @param  n_entries Number of entries in 'container'. This is always provided from the 'MetaHotIterator'
 	 * @return Returns TRUE if there is data or FALSE if there is not
 	 */
-	bool set(container_type& container, const U32 n_entries){
+	bool set(container_type& container, const S32 n_entries){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
 		this->clear();
+
+		delete [] this->offsets;
 		this->offsets = new U32[n_entries];
 		this->n_entries = n_entries;
 		this->container = &container;
@@ -50,13 +57,16 @@ public:
 		// MetaCold
 		U32 pos = 0;
 		this->offsets[0] = 0;
-		for(U32 i = 0; i < n_entries; ++i){
+		pos = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.data[0]);
+		for(S32 i = 1; i < this->n_entries; ++i){
 			const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.data[pos]);
-			this->offsets[i + 1] = pos;
+			this->offsets[i] = pos;
+			//std::cerr << i << '/' << this->n_entries << std::endl;
 			pos += l_body;
 		}
 
-		return(pos == container.buffer_data_uncompressed.pointer);
+		assert(pos == container.buffer_data_uncompressed.pointer);
+		return(true);
 	}
 
 	inline bool operator()(container_type& container, const U32 n_entries){

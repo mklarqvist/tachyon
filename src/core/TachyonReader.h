@@ -89,6 +89,10 @@ public:
 		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.gt_support_data_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.meta_info_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.meta_filter_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(!this->codec_manager.decompress(this->block.meta_format_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << "checking: " << i << std::endl;
 			if(!this->codec_manager.decompress(this->block.info_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
@@ -210,19 +214,24 @@ public:
 	}
 
 	bool toVCF(void){
+
 		// Phase 1 construct iterators
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		//const U32 e = this->block.meta_hot_container.buffer_data_uncompressed.pointer / sizeof(MetaHot);
+		//std::cerr << "Entries: " << e << std::endl;
+		//Iterator::MetaColdIterator(this->block.meta_cold_container, e);
+		//Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 		// Setup containers
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
-			info_iterators[i].setup(this->block.info_containers[i]);
-		}
+			//info_iterators[i].setup(this->block.info_containers[i]);
+		//}
 
 		// Todo: format
 
 		// Phase 2 perform iterations
+
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
 			const Core::MetaEntry& m = it.current();
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
@@ -234,6 +243,8 @@ public:
 				std::cout << m.hot->ref_alt.getRef() << '\t' << m.hot->ref_alt.getAlt();
 			}
 			else {
+				//std::cerr << m.cold.n_allele << '\t' << m.cold.alleles[0].l_allele << std::endl;
+				//exit(1);
 				std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
 				std::cout << '\t';
 				U16 j = 1;
@@ -297,7 +308,7 @@ public:
 		}
 		std::cout.flush();
 
-		delete [] info_iterators;
+		//delete [] info_iterators;
 		return true;
 	}
 

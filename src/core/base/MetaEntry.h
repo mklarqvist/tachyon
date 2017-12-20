@@ -38,7 +38,7 @@ public:
 		cold(nullptr)
 	{}
 
-	MetaEntry(const hot_entry* hot, cold_entry& cold) :
+	MetaEntry(const hot_entry* hot, const cold_entry& cold) :
 		info_pattern_id(std::numeric_limits<S32>::min()),
 		filter_pattern_id(std::numeric_limits<S32>::min()),
 		format_pattern_id(std::numeric_limits<S32>::min()),
@@ -49,7 +49,7 @@ public:
 	~MetaEntry(){ /* do nothing */ };
 
 	inline void operator()(const hot_entry* hot){ this->hot = hot; }
-	inline void operator()(const hot_entry* hot, cold_entry cold){
+	inline void operator()(const hot_entry* hot, cold_entry& cold){
 		this->hot = hot;
 		this->cold = cold;
 	}

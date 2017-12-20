@@ -30,6 +30,7 @@ public:
 		last_modified(-1),
 		container_hot(nullptr),
 		container_cold(nullptr),
+		entry(nullptr),
 		operator_function(nullptr)
 	{
 
@@ -43,6 +44,7 @@ public:
 		hot_iterator(container),
 		container_hot(&container),
 		container_cold(nullptr),
+		entry(nullptr),
 		operator_function(&self_type::__operatorHotOnly)
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
@@ -58,10 +60,15 @@ public:
 		cold_iterator(container_cold, hot_iterator.size()),
 		container_hot(&container_hot),
 		container_cold(&container_cold),
+		entry(nullptr),
 		operator_function(&self_type::__operatorBoth)
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+	}
+
+	~MetaIterator(){
+		delete this->entry;
 	}
 
 	bool set(container_type& container){
@@ -85,20 +92,20 @@ public:
 	}
 
 
-	inline const entry_type& current(void){
+	inline entry_type& current(void){
 		return(this->*operator_function)(this->n_position);
 	}
 
-	inline const entry_type& first(void){
+	inline entry_type& first(void){
 		return(this->*operator_function)(0);
 	}
 
-	inline const entry_type& last(void){
+	inline entry_type& last(void){
 		if(this->n_entries == 0) return(this->*operator_function)(0);
 		return(this->*operator_function)(this->n_entries - 1);
 	}
 
-	inline const entry_type& operator[](const U32& p){
+	inline entry_type& operator[](const U32& p){
 		return(this->*operator_function)(p);
 	}
 
@@ -113,17 +120,19 @@ public:
 
 private:
 	inline entry_type& __operatorHotOnly(const U32 &p){
-		if(this->last_modified == p) return(this->entry);
-		this->entry = entry_type(&hot_iterator[p]);
+		if(this->last_modified == p) return(*this->entry);
+		delete this->entry;
+		this->entry = new entry_type(&hot_iterator[p]);
 		this->last_modified = p;
-		return(this->entry);
+		return(*this->entry);
 	}
 
 	inline entry_type& __operatorBoth(const U32 &p){
-		if(this->last_modified == p) return(this->entry);
-		this->entry = entry_type(&hot_iterator[p], this->cold_iterator[p]);
+		if(this->last_modified == p) return(*this->entry);
+		delete this->entry;
+		this->entry = new entry_type(&hot_iterator[p], this->cold_iterator[p]);
 		this->last_modified = p;
-		return(this->entry);
+		return(*this->entry);
 	}
 
 public:
@@ -131,7 +140,7 @@ public:
 	S32 n_position;
 	S32 n_entries;
 	S32 last_modified;
-	entry_type entry;
+	entry_type* entry;
 	hot_iterator_type hot_iterator;
 	cold_iterator_type cold_iterator;
 	container_type* container_hot;

@@ -21,16 +21,42 @@ private:
 	typedef IO::BasicBuffer buffer_type;
 
 public:
-	ColdMetaAllele() : l_allele(0), allele(nullptr){}
-	ColdMetaAllele(char* in) :
-		l_allele(*reinterpret_cast<U16*>(&in[0])),
-		allele(&in[sizeof(U16)])
+	ColdMetaAllele() :
+		l_allele(0),
+		allele(nullptr)
 	{}
-	~ColdMetaAllele(void){} // do nothing
+
+	~ColdMetaAllele(void){
+		delete [] this->allele;
+	}
+
+	ColdMetaAllele(const self_type& other) :
+		l_allele(other.l_allele),
+		allele(new char[other.l_allele])
+	{
+		memcpy(this->allele, other.allele, other.l_allele);
+	}
+
+	ColdMetaAllele(ColdMetaAllele&& other) :
+		l_allele(other.l_allele),
+		allele(other.allele)
+	{
+		other.allele = nullptr;
+	}
+
+	ColdMetaAllele& operator=(const self_type& other){
+		this->l_allele = other.l_allele;
+		delete [] this->allele;
+		this->allele = new char[other.l_allele];
+		memcpy(this->allele, other.allele, other.l_allele);
+		return *this;
+	}
 
 	void operator()(char* in){
 		this->l_allele = *reinterpret_cast<U16*>(in);
-		this->allele = reinterpret_cast<char*>(&in[sizeof(U16)]);
+		delete [] this->allele;
+		this->allele   =  new char[this->l_allele];
+		memcpy(this->allele, &in[sizeof(U16)], this->l_allele);
 	}
 
 	inline const U32 objectSize(void) const{ return(this->l_allele + sizeof(U16)); }
@@ -70,13 +96,49 @@ public:
 		ID(&in[sizeof(U32) + sizeof(float) + 2*sizeof(U16)]),
 		alleles(new allele_type[this->n_allele])
 	{
-		U32 cumpos = sizeof(float) + 2*sizeof(U16) + this->n_ID;
+		//std::cerr << "ctor: ";
+		U32 cumpos = sizeof(U32) + sizeof(float) + 2*sizeof(U16) + this->n_ID;
 		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i](&in[cumpos]);
+
+			//std::cerr.write(this->alleles[i].allele, this->alleles[i].l_allele);
+			//std::cerr.put('\n');
 			cumpos += this->alleles[i].objectSize();
 		}
 	}
+
 	~MetaCold(void);
+
+	MetaCold(const self_type& other) :
+		l_body(other.l_body),
+		QUAL(other.QUAL),
+		n_allele(other.n_allele),
+		n_ID(other.n_ID),
+		ID(new char[other.n_ID]),
+		alleles(new allele_type[other.n_allele])
+	{
+		//std::cerr << "copy ctor before: " << other.alleles[0].l_allele << '\t' << other.alleles[1].l_allele << std::endl;
+		memcpy(this->ID, other.ID, other.n_ID);
+		for(U32 i = 0; i < this->n_allele; ++i)
+			this->alleles[i] = other.alleles[i];
+		//std::cerr << "copy ctor after: " << this->alleles[0].l_allele << '\t' << this->alleles[1].l_allele << std::endl;
+	}
+
+	MetaCold& operator=(const self_type& other){
+		this->l_body = other.l_body;
+		this->QUAL = other.QUAL;
+		this->n_allele = other.n_allele;
+		this->n_ID = other.n_ID;
+		delete [] this->alleles;
+		this->alleles = new allele_type[other.n_allele];
+		//std::cerr << "meeta se: " << other.alleles[0].l_allele << '\t' << other.alleles[1].l_allele << std::endl;
+		for(U32 i = 0; i < other.n_allele; ++i)
+			this->alleles[i] = other.alleles[i];
+		//std::cerr << "meet after: " << this->alleles[0].l_allele << '\t' << this->alleles[1].l_allele << std::endl;
+
+		return *this;
+	}
+
 
 	// Recycle or overload empty object
 	void operator()(char* in){
