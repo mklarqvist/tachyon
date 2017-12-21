@@ -55,7 +55,6 @@ public:
 	}
 
 public:
-	// Todo: add membership values here
 	U32 info_pattern_id;
 	U32 filter_pattern_id;
 	U32 format_pattern_id;

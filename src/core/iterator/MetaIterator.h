@@ -18,20 +18,16 @@ private:
 	typedef MetaColdIterator cold_iterator_type;
 	typedef MetaCold cold_type;
 	typedef StreamContainer container_type;
-
-	// Function pointers
-	typedef entry_type& (self_type::*operator_function_type)(const U32& p);
+	typedef ContainerIterator container_iterator_type;
 
 public:
 	MetaIterator() :
 		loadCold(false),
 		n_position(0),
 		n_entries(0),
-		last_modified(-1),
 		container_hot(nullptr),
 		container_cold(nullptr),
-		entry(nullptr),
-		operator_function(nullptr)
+		entries(nullptr)
 	{
 
 	}
@@ -40,12 +36,10 @@ public:
 		loadCold(false),
 		n_position(0),
 		n_entries(0),
-		last_modified(-1),
 		hot_iterator(container),
 		container_hot(&container),
 		container_cold(nullptr),
-		entry(nullptr),
-		operator_function(&self_type::__operatorHotOnly)
+		entries(nullptr)
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
@@ -55,28 +49,30 @@ public:
 		loadCold(true),
 		n_position(0),
 		n_entries(0),
-		last_modified(-1),
 		hot_iterator(container_hot),
 		cold_iterator(container_cold, hot_iterator.size()),
 		container_hot(&container_hot),
 		container_cold(&container_cold),
-		entry(nullptr),
-		operator_function(&self_type::__operatorBoth)
+		entries(nullptr)
 	{
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
 	}
 
 	~MetaIterator(){
-		delete this->entry;
+		delete [] this->entries;
 	}
 
 	bool set(container_type& container){
 		this->container_hot = &container;
 		this->hot_iterator.set(container);
-		this->operator_function = &self_type::__operatorHotOnly;
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		delete [] this->entries;
+		this->entries = new entry_type[this->n_entries];
+		for(U32 i = 0; i < this->n_entries; ++i)
+			this->entries[i](this->hot_iterator[i], this->cold_iterator[i]);
+
 		return true;
 	}
 
@@ -84,30 +80,64 @@ public:
 		this->container_hot = &container_hot;
 		this->container_cold = &container_cold;
 		this->hot_iterator.set(container_hot);
-		this->operator_function = &self_type::__operatorBoth;
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
 		this->cold_iterator.set(container_cold, this->n_entries);
+		delete [] this->entries;
+		this->entries = new entry_type[this->n_entries];
+		for(U32 i = 0; i < this->n_entries; ++i)
+			this->entries[i](this->hot_iterator[i]);
+
 		return true;
 	}
 
-
-	inline entry_type& current(void){
-		return(this->*operator_function)(this->n_position);
+	inline bool setInfoIDContainer(container_type& container){
+		if(this->n_entries == 0) return false;
+		this->info_id_container = &container;
+		this->info_id_iterator.setup(container);
+		const void* p;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			this->info_id_iterator.getDataIterator().currentPointer(p);
+			this->entries[i].info_pattern_id = *(S32*)p;
+			this->info_id_iterator;
+		}
+		return true;
 	}
 
-	inline entry_type& first(void){
-		return(this->*operator_function)(0);
+	inline bool setFilterIDContainer(container_type& container){
+		if(this->n_entries == 0) return false;
+		this->filter_id_container = &container;
+		this->filter_id_iterator.setup(container);
+		const void* p;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			this->filter_id_iterator.getDataIterator().currentPointer(p);
+			this->entries[i].filter_pattern_id = *(S32*)p;
+			this->filter_id_iterator;
+		}
+		return true;
 	}
+
+	inline bool setFormatIDContainer(container_type& container){
+		if(this->n_entries == 0) return false;
+		this->format_id_container = &container;
+		this->format_id_iterator.setup(container);
+		const void* p;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			this->format_id_iterator.getDataIterator().currentPointer(p);
+			this->entries[i].format_pattern_id = *(S32*)p;
+			this->format_id_iterator;
+		}
+		return true;
+	}
+
+	inline entry_type& first(void){ return(this->entries[0]); }
 
 	inline entry_type& last(void){
-		if(this->n_entries == 0) return(this->*operator_function)(0);
-		return(this->*operator_function)(this->n_entries - 1);
+		if(this->n_entries == 0) return(this->entries[0]);
+		return(this->entries[this->n_entries - 1]);
 	}
 
-	inline entry_type& operator[](const U32& p){
-		return(this->*operator_function)(p);
-	}
+	inline entry_type& operator[](const U32& p){ return(this->entries[p]); }
 
 	inline const S32& size(void) const{ return(this->n_entries); }
 
@@ -117,41 +147,34 @@ public:
 	inline void operator+=(const U32& p){ this->n_position += p; }
 	inline void operator-=(const U32& p){ this->n_position -= p; }
 
+	std::vector<entry_type> getEntries(void);
 
-private:
-	inline entry_type& __operatorHotOnly(const U32 &p){
-		if(this->last_modified == p) return(*this->entry);
-		delete this->entry;
-		this->entry = new entry_type(&hot_iterator[p]);
-		this->last_modified = p;
-		return(*this->entry);
-	}
-
-	inline entry_type& __operatorBoth(const U32 &p){
-		if(this->last_modified == p) return(*this->entry);
-		delete this->entry;
-		this->entry = new entry_type(&hot_iterator[p], this->cold_iterator[p]);
-		this->last_modified = p;
-		return(*this->entry);
-	}
 
 public:
 	bool loadCold;
 	S32 n_position;
 	S32 n_entries;
-	S32 last_modified;
-	entry_type* entry;
+
+	// Iterators
 	hot_iterator_type hot_iterator;
 	cold_iterator_type cold_iterator;
+	container_iterator_type info_id_iterator;
+	container_iterator_type filter_id_iterator;
+	container_iterator_type format_id_iterator;
+
+	// Entries
+	entry_type* entries;
+
+	// Container references
 	container_type* container_hot;
 	container_type* container_cold;
-	operator_function_type operator_function;
+	container_type* info_id_container;
+	container_type* filter_id_container;
+	container_type* format_id_container;
 };
 
 }
 }
 }
-
-
 
 #endif /* CORE_ITERATOR_METAITERATOR_H_ */

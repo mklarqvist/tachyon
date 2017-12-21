@@ -109,9 +109,11 @@ public:
 	bool toVCFPartial(void){
 		// Phase 1 construct iterators
 		Iterator::MetaIterator it;
+		// Todo: ALL of this should be abstracted away
+		// Hidden from the user
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
-		Iterator::ContainerIterator info_id_iterator;
-		Iterator::ContainerIterator filter_id_iterator;
+		Iterator::ContainerIterator  info_id_iterator;
+		Iterator::ContainerIterator  filter_id_iterator;
 		const void* info_id;
 		const void* filter_id;
 
