@@ -153,20 +153,20 @@ bool Importer::BuildBCF(void){
 
 		assert(this->block.gt_support_data_container.n_entries == reader.size());
 		assert(this->block.meta_info_map_ids.n_entries         == reader.size());
-		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
 		assert(this->block.meta_filter_map_ids.n_entries       == reader.size());
+		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
 
 		// Update head meta
 		this->block.index_entry.controller.hasGT     = true;
 		this->block.index_entry.controller.isDiploid = true;
 		this->block.index_entry.n_info_streams       = this->info_fields.size();
-		this->block.index_entry.n_format_streams     = this->format_fields.size();
 		this->block.index_entry.n_filter_streams     = this->filter_fields.size();
+		this->block.index_entry.n_format_streams     = this->format_fields.size();
 		this->block.index_entry.n_variants           = reader.size();
 		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
@@ -175,14 +175,14 @@ bool Importer::BuildBCF(void){
 		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
 
 		zstd.setCompressionLevel(20);
-		if(this->block.meta_hot_container.n_entries)  zstd.encode(this->block.meta_hot_container);
-		if(this->block.gt_rle_container.n_entries)    zstd.encode(this->block.gt_rle_container);
-		if(this->block.gt_simple_container.n_entries) zstd.encode(this->block.gt_simple_container);
+		if(this->block.meta_hot_container.n_entries)        zstd.encode(this->block.meta_hot_container);
+		if(this->block.gt_rle_container.n_entries)          zstd.encode(this->block.gt_rle_container);
+		if(this->block.gt_simple_container.n_entries)       zstd.encode(this->block.gt_simple_container);
 		if(this->block.gt_support_data_container.n_entries) zstd.encode(this->block.gt_support_data_container);
-		if(this->block.meta_cold_container.n_entries) zstd.encode(this->block.meta_cold_container);
-		if(this->block.meta_info_map_ids.n_entries)   zstd.encode(this->block.meta_info_map_ids);
-		if(this->block.meta_filter_map_ids.n_entries) zstd.encode(this->block.meta_filter_map_ids);
-		if(this->block.meta_format_map_ids.n_entries) zstd.encode(this->block.meta_format_map_ids);
+		if(this->block.meta_cold_container.n_entries)       zstd.encode(this->block.meta_cold_container);
+		if(this->block.meta_info_map_ids.n_entries)         zstd.encode(this->block.meta_info_map_ids);
+		if(this->block.meta_filter_map_ids.n_entries)       zstd.encode(this->block.meta_filter_map_ids);
+		if(this->block.meta_format_map_ids.n_entries)       zstd.encode(this->block.meta_format_map_ids);
 
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
@@ -192,6 +192,8 @@ bool Importer::BuildBCF(void){
 
 			zstd.encode(this->block.info_containers[i]);
 		}
+
+		std::cerr << "number of format: " << this->block.index_entry.n_format_streams << " and " << this->block.index_entry.format_bit_vectors[0].n_keys << std::endl;
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){

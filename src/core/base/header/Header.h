@@ -55,7 +55,6 @@ public:
 				largest_idx = this->entries[i].IDX;
 		}
 
-		// Lookup map
 		this->mapTable = new U32[largest_idx + 1];
 		memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
 		S32 localID = 0;

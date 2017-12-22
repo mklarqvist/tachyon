@@ -136,6 +136,10 @@ public:
 		this->buffer_strides_uncompressed.resize(size);
 	}
 
+	inline const U64& sizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const U64& sizeCompressed(void) const{ return(this->buffer_data.size()); }
+
+
 	const bool generateCRC(void);
 	bool checkCRC(int target = 0);
 	bool checkUniformity(void);

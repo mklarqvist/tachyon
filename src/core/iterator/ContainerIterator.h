@@ -159,7 +159,6 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
-		//std::cerr << "stride is: " << stride << std::endl;
 		if(stride == 1){
 			//std::cerr << "this current is: " << this->current() << std::endl;
 			stream << this->current();

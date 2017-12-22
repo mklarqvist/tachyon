@@ -85,7 +85,9 @@ public:
 
 		// Phase 1: Decode data
 		// Todo:API: decode available data
-		if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
+		if(this->block.meta_hot_container.sizeCompressed())
+			if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
+
 		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
 		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
@@ -225,12 +227,19 @@ public:
 		// Phase 1 construct iterators
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
-
+		Iterator::ContainerIterator* format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 
 		// Setup containers
+		// INFO
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
 			info_iterators[i].setup(this->block.info_containers[i]);
+		}
+
+		// FORMAT
+		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			//std::cerr << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << "\t" << this->block.info_containers[i].header.cLength << std::endl;
+			format_iterators[i].setup(this->block.format_containers[i]);
 		}
 
 
@@ -257,13 +266,13 @@ public:
 					this->block.index_entry.minPosition);
 
 			if(this->block.index_entry.n_filter_streams == 0){
-				std::cout << ".\t";
+				stream << ".\t";
 			} else {
 				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
 					// Check if field is set
 					if(this->block.index_entry.filter_bit_vectors[m.filter_pattern_id][k]){
 					// Lookup what that field is
-						std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
+						stream.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
 					}
 				}
 			}
@@ -274,23 +283,66 @@ public:
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
+			std::cerr << "number of filter keys: " << n_keys << std::endl;
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
 				const U32& current_key = firstKey[k];
 				if(target_info_vector[current_key]){
-					info_iterators[current_key].toString(std::cout, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
+					info_iterators[current_key].toString(stream, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
 
 					if(set + 1 != target_info_vector.n_keys)
-						std::cout.put(';');
+						stream.put(';');
 
 					++info_iterators[current_key];
 					++set;
 				}
 			}
 
-			std::cout << '\n';
+			// Start FORMAT description field
+			stream.put('\t');
+			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i)
+				stream << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[i].key]].ID << ":";
+			stream.put('\t');
+
+			// Format here
+			// Has to admix iterators
+			// Cycle over streams that are set in the given bit-vector
+			set = 0;
+			const Index::IndexBlockEntryBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.format_pattern_id];
+			const U32 n_keys_format = target_format_vector.n_keys;
+			const U32* const firstKey_format = &target_format_vector.keys[0];
+
+			std::cerr << "number of format keys: " << n_keys_format << std::endl;
+			for(U32 s = 0; s < this->header.n_samples; ++s){
+				for(U32 k = 0; k < n_keys_format; ++k){
+					// Check if field is set
+					const U32& current_key = firstKey_format[k];
+					if(target_format_vector[current_key]){
+						std::cerr << '\t' << current_key << ";" << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID << '\t' << format_iterators[current_key].data_iterator->n_entries << '\t' << (U32)format_iterators[current_key].get<BYTE>() << std::endl;
+						if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
+							std::cerr << "isGT" << std::endl;
+							++format_iterators[current_key];
+							++set;
+							continue;
+						}
+
+						format_iterators[current_key].toString(stream);
+
+						//std::cout << '@';
+
+						//if(set + 1 != target_format_vector.n_keys)
+						stream.put(':');
+
+						++format_iterators[current_key];
+						++set;
+					}
+				}
+				stream.put('\t');
+			}
+
+			stream << '\n';
 		}
-		std::cout.flush();
+		stream.flush();
 
 		delete it;
 		delete [] info_iterators;
