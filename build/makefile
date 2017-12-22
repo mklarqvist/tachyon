@@ -47,7 +47,6 @@ endif
 
 -include ../makefile.defs
 
-# Add inputs and outputs from these tool invocations to the build variables 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 ifneq ($BRANCH, master)
 GIT_VERSION := $(shell git describe --abbrev=8 --dirty --always --tags)-$(BRANCH)
@@ -62,7 +61,7 @@ all: tachyon
 tachyon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -L/media/klarqv01/43f895f1-ba84-4abf-b6e7-1510057cc713/Repos2/zstd/lib -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
