@@ -1,6 +1,7 @@
 #ifndef CORE_ITERATOR_METAITERATOR_H_
 #define CORE_ITERATOR_METAITERATOR_H_
 
+#include "ContainerIterator.h""
 #include "../base/MetaEntry.h"
 #include "MetaHotIterator.h"
 #include "MetaColdIterator.h"
@@ -41,8 +42,7 @@ public:
 		container_cold(nullptr),
 		entries(nullptr)
 	{
-		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
-		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		this->set(container);
 	}
 
 	MetaIterator(container_type& container_hot, container_type& container_cold) :
@@ -55,38 +55,43 @@ public:
 		container_cold(&container_cold),
 		entries(nullptr)
 	{
-		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
-		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
+		this->set(container_hot, container_cold);
 	}
 
 	~MetaIterator(){
-		delete [] this->entries;
+		this->clearPrevious();
 	}
 
 	bool set(container_type& container){
 		this->container_hot = &container;
 		this->hot_iterator.set(container);
+
+		this->clearPrevious();
+
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
-		delete [] this->entries;
-		this->entries = new entry_type[this->n_entries];
+
+		this->entries = new entry_type*[this->n_entries];
 		for(U32 i = 0; i < this->n_entries; ++i)
-			this->entries[i](this->hot_iterator[i], this->cold_iterator[i]);
+			this->entries[i] = new entry_type(this->hot_iterator[i]);
 
 		return true;
 	}
 
 	bool set(container_type& container_hot, container_type& container_cold){
-		this->container_hot = &container_hot;
+		this->container_hot  = &container_hot;
 		this->container_cold = &container_cold;
 		this->hot_iterator.set(container_hot);
+
+		this->clearPrevious();
+
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
 		this->cold_iterator.set(container_cold, this->n_entries);
 		delete [] this->entries;
-		this->entries = new entry_type[this->n_entries];
+		this->entries = new entry_type*[this->n_entries];
 		for(U32 i = 0; i < this->n_entries; ++i)
-			this->entries[i](this->hot_iterator[i]);
+			this->entries[i] = new entry_type(this->hot_iterator[i], this->cold_iterator[i]);
 
 		return true;
 	}
@@ -98,8 +103,8 @@ public:
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			this->info_id_iterator.getDataIterator().currentPointer(p);
-			this->entries[i].info_pattern_id = *(S32*)p;
-			this->info_id_iterator;
+			this->entries[i]->info_pattern_id = *(S32*)p;
+			++this->info_id_iterator;
 		}
 		return true;
 	}
@@ -111,8 +116,8 @@ public:
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			this->filter_id_iterator.getDataIterator().currentPointer(p);
-			this->entries[i].filter_pattern_id = *(S32*)p;
-			this->filter_id_iterator;
+			this->entries[i]->filter_pattern_id = *(S32*)p;
+			++this->filter_id_iterator;
 		}
 		return true;
 	}
@@ -124,20 +129,20 @@ public:
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			this->format_id_iterator.getDataIterator().currentPointer(p);
-			this->entries[i].format_pattern_id = *(S32*)p;
-			this->format_id_iterator;
+			this->entries[i]->format_pattern_id = *(S32*)p;
+			++this->format_id_iterator;
 		}
 		return true;
 	}
 
-	inline entry_type& first(void){ return(this->entries[0]); }
+	inline entry_type& first(void){ return(*this->entries[0]); }
 
 	inline entry_type& last(void){
-		if(this->n_entries == 0) return(this->entries[0]);
-		return(this->entries[this->n_entries - 1]);
+		if(this->n_entries == 0) return(*this->entries[0]);
+		return(*this->entries[this->n_entries - 1]);
 	}
 
-	inline entry_type& operator[](const U32& p){ return(this->entries[p]); }
+	inline entry_type& operator[](const U32& p){ return(*this->entries[p]); }
 
 	inline const S32& size(void) const{ return(this->n_entries); }
 
@@ -149,8 +154,18 @@ public:
 
 	std::vector<entry_type> getEntries(void);
 
+private:
+	void clearPrevious(void){
+		if(this->n_entries){
+			for(U32 i = 0; i < this->n_entries; ++i)
+				delete this->entries[i];
 
-public:
+			delete [] this->entries;
+		}
+	}
+
+
+private:
 	bool loadCold;
 	S32 n_position;
 	S32 n_entries;
@@ -163,7 +178,7 @@ public:
 	container_iterator_type format_id_iterator;
 
 	// Entries
-	entry_type* entries;
+	entry_type** entries;
 
 	// Container references
 	container_type* container_hot;

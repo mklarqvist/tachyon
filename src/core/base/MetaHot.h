@@ -36,6 +36,8 @@ struct MetaHotController{
 	 * 8) If the variant site is diploid
 	 * 9) If there is mixed ploidy
 	 * 10-16) Reserved for future use
+	 *
+	 * If the genotypes are NOT diploid then
 	 */
 	U16 anyMissing:    1, // any missing
         allPhased:     1, // all phased
@@ -135,6 +137,37 @@ public:
 	MetaHot() :
 		position(0)
 	{}
+
+	MetaHot(const self_type& other) :
+		controller(other.controller),
+		ref_alt(other.ref_alt),
+		position(other.position)
+	{}
+
+	MetaHot(self_type&& other) noexcept :
+		controller(other.controller),
+		ref_alt(other.ref_alt),
+		position(other.position)
+	{
+
+	}
+
+	MetaHot& operator=(const self_type& other) noexcept{
+		this->controller = other.controller;
+		this->ref_alt    = other.ref_alt;
+		this->position   = other.position;
+		return(*this);
+	}
+
+	MetaHot& operator=(self_type&& other) noexcept{
+		if (this == &other)
+			return *this;
+
+		this->controller = other.controller;
+		this->ref_alt    = other.ref_alt;
+		this->position   = other.position;
+		return(*this);
+	}
 
 	// dtor
 	~MetaHot(){}

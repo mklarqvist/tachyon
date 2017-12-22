@@ -143,17 +143,17 @@ public:
 
 		// Phase 2 perform iterations
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
-			const Core::MetaEntry& m = it.current();
+			const Core::MetaEntry& m = it[i];
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+			std::cout << this->block.index_entry.minPosition + m.hot.position + 1 << '\t';
 
 			// If we have cold meta
 			if(this->settings.loadMetaCold){
 				if(m.cold.n_ID == 0) std::cout.put('.');
 				else std::cout.write(m.cold.ID, m.cold.n_ID);
 				std::cout << '\t';
-				if(m.hot->controller.biallelic && m.hot->controller.simple){
-					std::cout << m.hot->ref_alt.getRef() << '\t' << m.hot->ref_alt.getAlt();
+				if(m.hot.controller.biallelic && m.hot.controller.simple){
+					std::cout << m.hot.ref_alt.getRef() << '\t' << m.hot.ref_alt.getAlt();
 				}
 				else {
 					std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
@@ -219,10 +219,13 @@ public:
 
 	bool toVCF(void){
 		// Phase 1 construct iterators
+
 		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
+
 		Iterator::ContainerIterator info_id_iterator(this->block.meta_info_map_ids);
 		Iterator::ContainerIterator filter_id_iterator(this->block.meta_filter_map_ids);
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+
 
 		// Setup containers
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
@@ -237,14 +240,18 @@ public:
 		const void* filter_id;
 
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
-			const Core::MetaEntry& m = it.current();
+			const Core::MetaEntry& m = it[i];
+
+
+
+
 			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			std::cout << this->block.index_entry.minPosition + m.hot->position + 1 << '\t';
+			std::cout << this->block.index_entry.minPosition + m.hot.position + 1 << '\t';
 			if(m.cold.n_ID == 0) std::cout.put('.');
 			else std::cout.write(m.cold.ID, m.cold.n_ID);
 			std::cout << '\t';
-			if(m.hot->controller.biallelic && m.hot->controller.simple){
-				std::cout << m.hot->ref_alt.getRef() << '\t' << m.hot->ref_alt.getAlt();
+			if(m.hot.controller.biallelic && m.hot.controller.simple){
+				std::cout << m.hot.ref_alt.getRef() << '\t' << m.hot.ref_alt.getAlt();
 			}
 			else {
 				//std::cerr << m.cold.n_allele << '\t' << m.cold.alleles[0].l_allele << std::endl;
@@ -261,7 +268,6 @@ public:
 
 			if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
 			else std::cout << '\t' << m.cold.QUAL << '\t';
-
 
 			info_id_iterator.getDataIterator().currentPointer(info_id);
 			filter_id_iterator.getDataIterator().currentPointer(filter_id);
@@ -302,7 +308,7 @@ public:
 
 			std::cout << '\n';
 
-			++it;
+			//++it;
 			++info_id_iterator;
 			++filter_id_iterator;
 		}

@@ -96,7 +96,7 @@ public:
 		ID(&in[sizeof(U32) + sizeof(float) + 2*sizeof(U16)]),
 		alleles(new allele_type[this->n_allele])
 	{
-		//std::cerr << "ctor: ";
+		//std::cerr << "ctor: \n";
 		U32 cumpos = sizeof(U32) + sizeof(float) + 2*sizeof(U16) + this->n_ID;
 		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i](&in[cumpos]);
@@ -119,8 +119,9 @@ public:
 	{
 		//std::cerr << "copy ctor before: " << other.alleles[0].l_allele << '\t' << other.alleles[1].l_allele << std::endl;
 		memcpy(this->ID, other.ID, other.n_ID);
-		for(U32 i = 0; i < this->n_allele; ++i)
+		for(U32 i = 0; i < this->n_allele; ++i){
 			this->alleles[i] = other.alleles[i];
+		}
 		//std::cerr << "copy ctor after: " << this->alleles[0].l_allele << '\t' << this->alleles[1].l_allele << std::endl;
 	}
 
@@ -132,8 +133,9 @@ public:
 		delete [] this->alleles;
 		this->alleles = new allele_type[other.n_allele];
 		//std::cerr << "meeta se: " << other.alleles[0].l_allele << '\t' << other.alleles[1].l_allele << std::endl;
-		for(U32 i = 0; i < other.n_allele; ++i)
+		for(U32 i = 0; i < other.n_allele; ++i){
 			this->alleles[i] = other.alleles[i];
+		}
 		//std::cerr << "meet after: " << this->alleles[0].l_allele << '\t' << this->alleles[1].l_allele << std::endl;
 
 		return *this;
@@ -145,12 +147,13 @@ public:
 		const U16 prev_n_allele = this->n_allele;
 
 		// Interpret body
-		this->l_body = *reinterpret_cast<U32*>(in);
-		this->QUAL = *reinterpret_cast<float*>(&in[sizeof(U32)]);
+		this->l_body   = *reinterpret_cast<U32*>(in);
+		this->QUAL     = *reinterpret_cast<float*>(&in[sizeof(U32)]);
 		this->n_allele = *reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float)]);
-		this->n_ID = *reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float) + sizeof(U16)]);
+		this->n_ID     = *reinterpret_cast<U16*>(&in[sizeof(U32) + sizeof(float) + sizeof(U16)]);
+
 		if(this->n_ID) this->ID = &in[sizeof(U32) + sizeof(float) + 2*sizeof(U16)];
-		else this->ID = nullptr;
+		else this->ID  = nullptr;
 
 		// Only update if we need to
 		// Otherwise keep overwriting

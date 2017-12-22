@@ -25,20 +25,17 @@ public:
 	MetaEntry() :
 		info_pattern_id(std::numeric_limits<S32>::min()),
 		filter_pattern_id(std::numeric_limits<S32>::min()),
-		format_pattern_id(std::numeric_limits<S32>::min()),
-		hot(nullptr),
-		cold(nullptr)
+		format_pattern_id(std::numeric_limits<S32>::min())
 	{}
 
-	MetaEntry(const hot_entry* hot) :
+	MetaEntry(const hot_entry& hot) :
 		info_pattern_id(std::numeric_limits<S32>::min()),
 		filter_pattern_id(std::numeric_limits<S32>::min()),
 		format_pattern_id(std::numeric_limits<S32>::min()),
-		hot(hot),
-		cold(nullptr)
+		hot(hot)
 	{}
 
-	MetaEntry(const hot_entry* hot, const cold_entry& cold) :
+	MetaEntry(const hot_entry& hot, const cold_entry& cold) :
 		info_pattern_id(std::numeric_limits<S32>::min()),
 		filter_pattern_id(std::numeric_limits<S32>::min()),
 		format_pattern_id(std::numeric_limits<S32>::min()),
@@ -48,8 +45,8 @@ public:
 
 	~MetaEntry(){ /* do nothing */ };
 
-	inline void operator()(const hot_entry* hot){ this->hot = hot; }
-	inline void operator()(const hot_entry* hot, cold_entry& cold){
+	inline void operator()(const hot_entry& hot){ this->hot = hot; }
+	inline void operator()(const hot_entry& hot, const cold_entry& cold){
 		this->hot = hot;
 		this->cold = cold;
 	}
@@ -60,7 +57,7 @@ public:
 	U32 format_pattern_id;
 
 	// Meta objects
-	const hot_entry* hot;
+	hot_entry hot;
 	cold_entry cold;
 };
 
