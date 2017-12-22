@@ -50,7 +50,14 @@ public:
 
 	~MetaEntry(){ /* do nothing */ };
 
-	// Support
+	/**<
+	 * Translates MetaEntry record into a VCF record
+	 * for output to the target ostream
+	 * @param dest
+	 * @param header
+	 * @param blockContigID
+	 * @param blockPos
+	 */
 	void toVCFString(std::ostream& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const{
 		dest.write(&header.getContig(blockContigID).name[0], header.getContig(blockContigID).name.size()) << '\t';
 		dest << blockPos + this->hot.position + 1 << '\t';

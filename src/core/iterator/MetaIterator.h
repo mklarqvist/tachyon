@@ -192,11 +192,11 @@ private:
 	entry_type** entries;
 
 	// Container references
-	container_type* container_hot;
-	container_type* container_cold;
-	container_type* info_id_container;
-	container_type* filter_id_container;
-	container_type* format_id_container;
+	const container_type* container_hot;
+	const container_type* container_cold;
+	const container_type* info_id_container;
+	const container_type* filter_id_container;
+	const container_type* format_id_container;
 };
 
 }

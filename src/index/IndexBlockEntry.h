@@ -73,6 +73,8 @@ public:
 	IndexBlockEntryBase();
 	virtual ~IndexBlockEntryBase();
 
+	inline const U16& size(void) const{ return(this->n_variants); }
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream << entry.controller;

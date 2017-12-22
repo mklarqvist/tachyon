@@ -5,6 +5,10 @@ namespace Tachyon{
 namespace Core{
 namespace Iterator{
 
+/**
+ * Interface for iterators over arbitrary containers
+ *
+ */
 class ContainerIteratorDataInterface{
 private:
 	typedef ContainerIteratorDataInterface self_type;
@@ -17,6 +21,8 @@ public:
 		position(0),
 		n_entries(0),
 		type_size(1),
+		__source_sign(0),
+		__source_type(Core::CORE_TYPE(0)),
 		buffer(buffer)
 	{
 
@@ -24,7 +30,21 @@ public:
 
 	virtual ~ContainerIteratorDataInterface(){}
 
-	void setType(const U16& type){
+	/**<
+	 * Returns a value of type T at the current position
+	 * @return
+	 */
+	template <class T>
+	inline T get(void) const{
+		return(*reinterpret_cast<const T* const>(&this->buffer.data[this->position*this->type_size]));
+	}
+
+	/**<
+	 *
+	 * @param type
+	 * @param signedness
+	 */
+	void setType(const U16& type, const BYTE signedness){
 		switch(type){
 			case(Core::TYPE_BOOLEAN): this->type_size = 0; break;
 			case(Core::TYPE_CHAR):
@@ -46,12 +66,15 @@ public:
 			this->n_entries = buffer.pointer / this->type_size;
 			assert(buffer.pointer % this->type_size == 0);
 		}
+
+		this->__source_type = Core::CORE_TYPE(type);
+		this->__source_sign = signedness;
 	}
 
 	// Comparison operators
 	// Must be overloaded
-	virtual const bool operator>(const U32& cmp) const{ return false; }
-	virtual const bool operator<(const U32& cmp) const{ return false; }
+	virtual const bool operator>(const U32& cmp)  const{ return false; }
+	virtual const bool operator<(const U32& cmp)  const{ return false; }
 	virtual const bool operator==(const U32& cmp) const{ return false; }
 	virtual const bool operator>=(const U32& cmp) const{ return false; }
 	virtual const bool operator<=(const U32& cmp) const{ return false; }
@@ -95,6 +118,10 @@ public:
 	S32 position;        // iterator position
 	S32 n_entries;       // size
 	BYTE type_size;      // sizeof(TYPE)
+
+	BYTE __source_sign;
+	Core::CORE_TYPE __source_type;
+
 	const buffer_type& buffer; // buffer reference
 };
 
@@ -321,6 +348,13 @@ public:
 		delete this->stride_iterator;
 	}
 
+	/**<
+	 *
+	 * @return
+	 */
+	template <class T>
+	inline T get(void) const{ return(this->data_iterator->get<T>()); }
+
 	/**< @brief Overloaded operator for setup() synonym
 	 *
 	 * @param container
@@ -341,6 +375,7 @@ public:
 		this->hasStrideIteratorSet = false;
 		this->position = 0;
 
+		// Factory
 		if(container.header.controller.signedness == false){
 			switch(container.header.controller.type){
 			case(Core::TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
@@ -354,18 +389,19 @@ public:
 			}
 		} else {
 			switch(container.header.controller.type){
-			case(Core::TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed);   break;
+			case(Core::TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
 			case(Core::TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
 			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
 		}
-		this->data_iterator->setType(this->container->header.controller.type);
+		this->data_iterator->setType(this->container->header.controller.type, this->container->header.controller.signedness);
 
 
 		// Construct this iterator if there is a mixed stride
 		// otherwise we assume that the stride size is one (1)
+		// Factory
 		if(this->container->header.controller.mixedStride){
 			this->hasStrideIteratorSet = true;
 			switch(this->container->header_stride.controller.type){
@@ -377,7 +413,7 @@ public:
 			}
 
 			// Stride iterator
-			this->stride_iterator->setType(this->container->header_stride.controller.type);
+			this->stride_iterator->setType(this->container->header_stride.controller.type, this->container->header_stride.controller.signedness);
 		}
 	}
 

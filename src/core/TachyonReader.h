@@ -223,7 +223,7 @@ public:
 		// etc etc
 
 		// Phase 1 construct iterators
-		Iterator::MetaIterator* it = this->block.getMetaIterator();
+		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 
@@ -233,15 +233,24 @@ public:
 			info_iterators[i].setup(this->block.info_containers[i]);
 		}
 
+
+		std::cerr << "has type: " << info_iterators[5].getDataIterator().__source_type << '\t' << (int)info_iterators[5].getDataIterator().__source_sign << std::endl;
+		std::cerr << "getting a val: " << info_iterators[1].get<float>() << std::endl;
+
 		// Todo: format
 
 		// Phase 2 perform iterations
 		//const void* info_id;
 		//const void* filter_id;
 
-		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
 
+			// Discussion: it is more attractive to have the
+			// struct have knowledge of itself
+			// it is not pretty to have to pass along
+			// references to the header and index
+			// every time
 			m.toVCFString(stream,
 					this->header,
 					this->block.index_entry.contigID,
@@ -261,7 +270,7 @@ public:
 
 			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
-			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.filter_pattern_id];
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.info_pattern_id];
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
