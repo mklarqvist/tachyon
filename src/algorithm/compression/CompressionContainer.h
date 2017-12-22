@@ -3,8 +3,7 @@
 
 #include "../../io/compression/TGZFController.h"
 #include "zstd.h"
-#include "dictBuilder/zdict.h"
-#include "common/zstd_errors.h"
+#include "zstd_errors.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 

@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "zstd.h"
-#include "common/zstd_errors.h"
+#include "zstd_errors.h"
 #include "BlockEntry.h"
 #include "../algorithm/compression/CompressionManager.h"
 #include "iterator/MetaIterator.h"
