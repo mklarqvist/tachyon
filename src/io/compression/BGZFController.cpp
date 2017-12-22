@@ -49,6 +49,7 @@ bool BGZFController::Inflate(buffer_type& input, buffer_type& output, const head
 
 bool BGZFController::__Inflate(buffer_type& input, buffer_type& output, const header_type& header) const{
 	const U32& uncompressedLength = *reinterpret_cast<const U32*>(&input.data[input.size() - sizeof(U32)]);
+
 	if(output.size() + uncompressedLength >= output.capacity())
 		output.resize((output.size() + uncompressedLength) + 65536);
 
@@ -101,6 +102,11 @@ bool BGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	input.resize(sizeof(header_type));
 	stream.read(&input.data[0], IO::Constants::BGZF_BLOCK_HEADER_LENGTH);
+	if(!stream.good()){
+		std::cerr << Helpers::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
+		return false;
+	}
+
 	const header_type* h = reinterpret_cast<const header_type*>(&input.data[0]);
 	input.pointer = IO::Constants::BGZF_BLOCK_HEADER_LENGTH;
 	if(!h->Validate()){

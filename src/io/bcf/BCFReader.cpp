@@ -14,8 +14,12 @@ BCFReader::BCFReader() :
 {}
 
 BCFReader::~BCFReader(){
-	delete [] *this->entries;
-	//delete this->entries;
+	if(this->entries != nullptr){
+		for(U32 i = 0; i < this->n_capacity; ++i)
+			delete this->entries[i];
+
+		delete this->entries;
+	}
 }
 
 
@@ -69,7 +73,7 @@ bool BCFReader::nextVariant(BCFEntry& entry){
 	}
 
 	U64 remainder = entry.sizeBody();
-	while(remainder > 0){
+	while(remainder){
 		if(this->current_pointer + remainder > this->bgzf_controller.buffer.size()){
 			entry.add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 			remainder -= this->bgzf_controller.buffer.size() - this->current_pointer;
@@ -83,7 +87,11 @@ bool BCFReader::nextVariant(BCFEntry& entry){
 			break;
 		}
 	}
-	entry.parse();
+
+	if(!entry.parse()){
+		std::cerr << "parse error" << std::endl;
+		exit(1);
+	}
 
 	return true;
 }
@@ -145,6 +153,10 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		}
 
 		U64 remainder = this->entries[this->n_entries]->sizeBody();
+		if(remainder > this->entries[this->n_entries]->capacity())
+			this->entries[this->n_entries]->resize(remainder + 1024);
+
+
 		while(remainder > 0){
 			if(this->current_pointer + remainder > this->bgzf_controller.buffer.size()){
 				this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);

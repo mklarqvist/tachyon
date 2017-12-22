@@ -43,10 +43,11 @@ BCFEntry::~BCFEntry(void){
 }
 
 void BCFEntry::resize(const U32 size){
+	if(size == 0) return;
+
 	char* temp = this->data;
 	this->data = new char[size];
 	memcpy(this->data, temp, this->pointer);
-	std::swap(temp, this->data);
 	delete [] temp;
 	this->body = reinterpret_cast<body_type*>(this->data);
 

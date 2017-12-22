@@ -6,16 +6,9 @@ namespace Tachyon{
 namespace Core{
 
 BlockEntry::BlockEntry() :
-	info_containers(new stream_container[100]),
-	format_containers(new stream_container[100])
+	info_containers(new stream_container[200]),
+	format_containers(new stream_container[200])
 {
-	// Initiate 100 start containers for each
-	// input field type
-	for(U32 i = 0; i < 100; ++i){
-		this->info_containers[i].resize(65536*4);
-		this->format_containers[i].resize(65536*4);
-	}
-
 	// Base container streams are always of type TYPE_STRUCT
 	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
 	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
@@ -83,6 +76,10 @@ void BlockEntry::resize(const U32 s){
 	this->meta_filter_map_ids.resize(s);
 	this->meta_format_map_ids.resize(s);
 	this->gt_support_data_container.resize(s);
+	for(U32 i = 0; i < 200; ++i){
+		this->info_containers[i].resize(s);
+		this->format_containers[i].resize(s);
+	}
 }
 
 /**< @brief Update base container header data and evaluate output byte streams
@@ -178,13 +175,13 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.pointer == 0){
 			container[i].header.controller.type = CORE_TYPE::TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
-			container[i].header.stride = 0;
+			container[i].header.stride  = 0;
 			container[i].header.uLength = 0;
 			container[i].header.cLength = 0;
 			container[i].header.controller.mixedStride = false;
 			container[i].header.controller.encoder = Core::ENCODE_NONE;
-			container[i].n_entries = 0;
-			container[i].n_additions = 0;
+			container[i].n_entries      = 0;
+			container[i].n_additions    = 0;
 			container[i].header.controller.signedness = 0;
 			continue;
 		}

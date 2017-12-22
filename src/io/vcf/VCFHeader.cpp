@@ -112,7 +112,7 @@ void VCFHeader::buildSampleTable(U64 samples){
 	this->samples = samples;
 	delete this->sampleHashTable;
 
-	if(this->samples < 1024)
+	if(this->samples*2 < 1024)
 		this->sampleHashTable = new hash_table_type(1024);
 	else
 		this->sampleHashTable = new hash_table_type(this->samples * 2);

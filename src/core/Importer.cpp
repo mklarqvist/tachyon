@@ -111,10 +111,13 @@ bool Importer::BuildBCF(void){
 	U64 n_variants_read  = 0;
 
 	// Begin import
+	// Get BCF entries
+	bcf_entry_type t;
 	while(true){
-		// Get BCF entries
-		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases))
+		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
+			std::cerr << "breaking" << std::endl;
 			break;
+		}
 
 		// Debug assertion
 #if IMPORT_ASSERT == 1

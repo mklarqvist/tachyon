@@ -7,6 +7,7 @@
 namespace Tachyon {
 namespace BCF {
 
+#define BCF_ENTRY_BASE_ALLOCATION 262144
 // Enforce assertions of correctness
 #define BCF_ASSERT 1
 // Hash-specific seed
@@ -68,11 +69,6 @@ struct BCFEntry{
 
 	BCFEntry(void);  // ctor
 	~BCFEntry(void); // dtor
-	BCFEntry(BCFEntry&& other) noexcept; // move ctor
-	self_type& operator=(const self_type& other); // copy assign
-	self_type& operator=(self_type&& other) noexcept; // move assign ctor
-
-
 
 	void resize(const U32 size);
 	void add(const char* const data, const U32 length);
