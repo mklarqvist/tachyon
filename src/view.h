@@ -126,7 +126,7 @@ int view(int argc, char** argv){
 	}
 
 	while(reader.nextBlock()){
-		reader.toVCF();
+		reader.toVCFString();
 		//reader.toVCFPartial();
 		reader.block.clear();
 	}

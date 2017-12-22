@@ -26,9 +26,12 @@ public:
 		loadCold(false),
 		n_position(0),
 		n_entries(0),
+		entries(nullptr),
 		container_hot(nullptr),
 		container_cold(nullptr),
-		entries(nullptr)
+		info_id_container(nullptr),
+		filter_id_container(nullptr),
+		format_id_container(nullptr)
 	{
 
 	}
@@ -38,9 +41,13 @@ public:
 		n_position(0),
 		n_entries(0),
 		hot_iterator(container),
+		entries(nullptr),
 		container_hot(&container),
 		container_cold(nullptr),
-		entries(nullptr)
+		info_id_container(nullptr),
+		filter_id_container(nullptr),
+		format_id_container(nullptr)
+
 	{
 		this->set(container);
 	}
@@ -51,9 +58,12 @@ public:
 		n_entries(0),
 		hot_iterator(container_hot),
 		cold_iterator(container_cold, hot_iterator.size()),
+		entries(nullptr),
 		container_hot(&container_hot),
 		container_cold(&container_cold),
-		entries(nullptr)
+		info_id_container(nullptr),
+		filter_id_container(nullptr),
+		format_id_container(nullptr)
 	{
 		this->set(container_hot, container_cold);
 	}
@@ -155,6 +165,7 @@ public:
 	std::vector<entry_type> getEntries(void);
 
 private:
+	/**< Clears previous data set (if any) */
 	void clearPrevious(void){
 		if(this->n_entries){
 			for(U32 i = 0; i < this->n_entries; ++i)

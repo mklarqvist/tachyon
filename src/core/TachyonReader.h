@@ -106,7 +106,7 @@ public:
 
 	bool seekBlock(const U32& b);
 
-	bool toVCFPartial(void){
+	bool toVCFString_PartialData(std::ostream& stream = std::cout){
 		// Phase 1 construct iterators
 		Iterator::MetaIterator it;
 		// Todo: ALL of this should be abstracted away
@@ -217,13 +217,13 @@ public:
 		return true;
 	}
 
-	bool toVCF(void){
+	bool toVCFString(std::ostream& stream = std::cout){
+		// Idea: inside block add factory to MetaIterator
+		// iff block.meta_cold_container uncompressed > 0 then set and load
+		// etc etc
+
 		// Phase 1 construct iterators
-
-		Iterator::MetaIterator it(this->block.meta_hot_container, this->block.meta_cold_container);
-
-		Iterator::ContainerIterator info_id_iterator(this->block.meta_info_map_ids);
-		Iterator::ContainerIterator filter_id_iterator(this->block.meta_filter_map_ids);
+		Iterator::MetaIterator* it = this->block.getMetaIterator();
 		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 
@@ -236,29 +236,23 @@ public:
 		// Todo: format
 
 		// Phase 2 perform iterations
-		const void* info_id;
-		const void* filter_id;
+		//const void* info_id;
+		//const void* filter_id;
 
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
-			const Core::MetaEntry& m = it[i];
+			const Core::MetaEntry& m = (*it)[i];
 
-			m.toVCFString(std::cout,
+			m.toVCFString(stream,
 					this->header,
 					this->block.index_entry.contigID,
 					this->block.index_entry.minPosition);
-
-
-			info_id_iterator.getDataIterator().currentPointer(info_id);
-			filter_id_iterator.getDataIterator().currentPointer(filter_id);
-
-
 
 			if(this->block.index_entry.n_filter_streams == 0){
 				std::cout << ".\t";
 			} else {
 				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
 					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[*(S32*)filter_id][k]){
+					if(this->block.index_entry.filter_bit_vectors[m.filter_pattern_id][k]){
 					// Lookup what that field is
 						std::cout.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
 					}
@@ -267,7 +261,7 @@ public:
 
 			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
-			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[*(S32*)info_id];
+			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.filter_pattern_id];
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
@@ -286,13 +280,10 @@ public:
 			}
 
 			std::cout << '\n';
-
-			//++it;
-			++info_id_iterator;
-			++filter_id_iterator;
 		}
 		std::cout.flush();
 
+		delete it;
 		delete [] info_iterators;
 		return true;
 	}

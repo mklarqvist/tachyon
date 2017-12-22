@@ -55,12 +55,13 @@ public:
 				largest_idx = this->entries[i].IDX;
 		}
 
+		// Lookup map
 		this->mapTable = new U32[largest_idx + 1];
 		memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
 		S32 localID = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			this->mapTable[this->entries[i].IDX] = localID++;
-			std::cerr << i << "->" << this->mapTable[i] << std::endl;
+			//std::cerr << i << "->" << this->mapTable[i] << std::endl;
 		}
 
 		return true;

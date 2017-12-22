@@ -7,6 +7,7 @@
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
 #include "ImporterStats.h"
+#include "iterator/MetaIterator.h"
 
 namespace Tachyon{
 namespace Core{
@@ -23,6 +24,7 @@ class BlockEntry{
 	typedef IO::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
 	typedef Tachyon::Support::ImporterStats import_stats_type;
+	typedef Iterator::MetaIterator meta_iterator_type;
 
 public:
 	BlockEntry();
@@ -98,6 +100,25 @@ public:
 		stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
 		return(true);
+	}
+
+	meta_iterator_type* getMetaIterator(void){
+		meta_iterator_type* it;
+		if(this->meta_cold_container.buffer_data_uncompressed.size())
+			it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container);
+		else
+			it = new meta_iterator_type(this->meta_hot_container);
+
+		if(this->meta_info_map_ids.buffer_data_uncompressed.size())
+			it->setInfoIDContainer(this->meta_info_map_ids);
+
+		if(this->meta_filter_map_ids.buffer_data_uncompressed.size())
+			it->setFilterIDContainer(this->meta_filter_map_ids);
+
+		if(this->meta_format_map_ids.buffer_data_uncompressed.size())
+			it->setFormatIDContainer(this->meta_format_map_ids);
+
+		return(it);
 	}
 
 private:
