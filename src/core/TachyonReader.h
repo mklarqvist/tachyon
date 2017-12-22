@@ -242,32 +242,11 @@ public:
 		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
 			const Core::MetaEntry& m = it[i];
 
+			m.toVCFString(std::cout,
+					this->header,
+					this->block.index_entry.contigID,
+					this->block.index_entry.minPosition);
 
-
-
-			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			std::cout << this->block.index_entry.minPosition + m.hot.position + 1 << '\t';
-			if(m.cold.n_ID == 0) std::cout.put('.');
-			else std::cout.write(m.cold.ID, m.cold.n_ID);
-			std::cout << '\t';
-			if(m.hot.controller.biallelic && m.hot.controller.simple){
-				std::cout << m.hot.ref_alt.getRef() << '\t' << m.hot.ref_alt.getAlt();
-			}
-			else {
-				//std::cerr << m.cold.n_allele << '\t' << m.cold.alleles[0].l_allele << std::endl;
-				//exit(1);
-				std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
-				std::cout << '\t';
-				U16 j = 1;
-				for(; j < m.cold.n_allele - 1; ++j){
-					std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
-					std::cout.put(',');
-				}
-				std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
-			}
-
-			if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
-			else std::cout << '\t' << m.cold.QUAL << '\t';
 
 			info_id_iterator.getDataIterator().currentPointer(info_id);
 			filter_id_iterator.getDataIterator().currentPointer(filter_id);
