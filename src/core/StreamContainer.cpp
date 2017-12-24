@@ -132,17 +132,25 @@ void StreamContainer::reformat(){
 		return;
 
 	// At this point all integers are S32
-	const S32* const dat = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data);
-	S32 min = dat[0];
-	S32 max = dat[0];
+	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data);
+	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data);
+	S32 min = 0;
+	S32 max = 0;
+	bool hasMissing = false;
 
-	for(U32 j = 1; j < this->n_additions; ++j){
+	for(U32 j = 0; j < this->n_additions; ++j){
+		if(udat[j] == 0x80000000 || udat[j] == 0x80000001){
+			hasMissing = true;
+			continue;
+		}
 		if(dat[j] < min) min = dat[j];
 		if(dat[j] > max) max = dat[j];
 	}
 
 	BYTE byte_width = 0;
-	if(min < 0){
+	// If we have missing values then we have to
+	// use signedness
+	if(min < 0 || hasMissing == true){
 		byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
 		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1)) + 1) / 8);
 		if(byte_width_max > byte_width){
@@ -163,7 +171,8 @@ void StreamContainer::reformat(){
 	this->buffer_data.resize(this->buffer_data_uncompressed);
 
 	// Is non-negative
-	if(min >= 0){
+	// Also cannot have missing values
+	if(min >= 0 && hasMissing == false){
 		this->header.controller.signedness = 0;
 
 		if(byte_width == 1){
@@ -202,20 +211,31 @@ void StreamContainer::reformat(){
 		if(byte_width == 1){
 			this->header.controller.type = TYPE_8B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
-				this->buffer_data += (SBYTE)dat[j];
+			for(U32 j = 0; j < this->n_additions; ++j){
+				if(udat[j] == 0x80000000) this->buffer_data += 0x80;
+				else if(udat[j] == 0x80000001) this->buffer_data += (SBYTE)0x81;
+				else this->buffer_data += (SBYTE)dat[j];
+			}
 
 		} else if(byte_width == 2){
 			this->header.controller.type = TYPE_16B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
-				this->buffer_data += (S16)dat[j];
+			for(U32 j = 0; j < this->n_additions; ++j){
+				//this->buffer_data += (S16)dat[j];
+				if(udat[j] == 0x80000000) this->buffer_data += (S16)0x8000;
+				else if(udat[j] == 0x80000001) this->buffer_data += (S16)0x8001;
+				else this->buffer_data += (S16)dat[j];
+			}
 
 		} else if(byte_width == 4){
 			this->header.controller.type = TYPE_32B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
-				this->buffer_data += (S32)dat[j];
+			for(U32 j = 0; j < this->n_additions; ++j){
+				//this->buffer_data += (S32)dat[j];
+				if(udat[j] == 0x80000000) this->buffer_data += 0x80000000;
+				else if(udat[j] == 0x80000001) this->buffer_data += 0x80000001;
+				else this->buffer_data += (S32)dat[j];
+			}
 
 		} else {
 			std::cerr << "illegal" << std::endl;

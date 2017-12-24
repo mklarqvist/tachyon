@@ -196,8 +196,6 @@ bool Importer::BuildBCF(void){
 			zstd.encode(this->block.info_containers[i]);
 		}
 
-		std::cerr << "number of format: " << this->block.index_entry.n_format_streams << " and " << this->block.index_entry.format_bit_vectors[0].n_keys << std::endl;
-
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
 				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
@@ -382,7 +380,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 	}
 
-#if BCF_ASSERT == 1
+#if IMPORT_ASSERT == 1
 	// Assert all FILTER and INFO data have been successfully
 	// parsed. This is true when the byte pointer equals the
 	// start position of the FORMAT fields which are encoded
@@ -440,6 +438,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// These are BCF value types
 		if(format_value_type <= 3){
 			for(U32 s = 0; s < this->header_->samples; ++s){
+				//target_container.addStride(info_length);
 				for(U32 j = 0; j < info_length; ++j){
 					target_container += entry.getInteger(format_value_type, internal_pos);
 				}
@@ -448,6 +447,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Floats
 		else if(format_value_type == 5){
 			for(U32 s = 0; s < this->header_->samples; ++s){
+				//target_container.addStride(info_length);
 				for(U32 j = 0; j < info_length; ++j){
 					target_container += entry.getFloat(internal_pos);
 				}
@@ -456,6 +456,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Chars
 		else if(format_value_type == 7){
 			for(U32 s = 0; s < this->header_->samples; ++s){
+				//target_container.addStride(info_length);
 				for(U32 j = 0; j < info_length; ++j){
 					target_container += entry.getChar(internal_pos);
 				}
@@ -469,7 +470,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			exit(1);
 		}
 	}
-#if BCF_ASSERT == 1
+#if IMPORT_ASSERT == 1
 	assert(internal_pos == entry.pointer);
 #endif
 

@@ -120,14 +120,49 @@ struct BCFEntry{
 
 	inline const S32 getInteger(const BYTE& key, U32& pos){
 		S32 value = 0;
-		switch(key){
-		case(1): value = *reinterpret_cast<const SBYTE* const>(&this->data[pos++]); break;
-		case(2): value = *reinterpret_cast<const S16* const>(&this->data[pos]); pos+=sizeof(S16);  break;
-		case(3): value = *reinterpret_cast<const S32* const>(&this->data[pos]); pos+=sizeof(S32);  break;
-		case(0): break; // Is a FLAG value
-		default: std::cerr << "illegal" << std::endl; exit(1);
+		if(key == 1){
+			const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&this->data[pos++]);
+			const BYTE*  const uref = reinterpret_cast<const BYTE* const>(ref);
+			if(*uref == 0x80){
+				//std::cerr << "is missing" << std::endl;
+				return(value = 0x80000000);
+			} else if(*uref == 0x81){
+				return(value = 0x80000001);
+				//std::cerr << "is vector eof" << std::endl;
+			}
+			return(value = *ref);
+		} else if(key == 2){
+			const S16*  const ref  = reinterpret_cast<const S16* const>(&this->data[pos]);
+			const U16*  const uref = reinterpret_cast<const U16* const>(ref);
+			pos+=sizeof(S16);
+
+			if(*uref == 0x8000){
+				//std::cerr << "is missing s16" << std::endl;
+				return(value = 0x80000000);
+			} else if(*uref == 0x8001){
+				//std::cerr << "is vector eof" << std::endl;
+				return(value = 0x80000001);
+			}
+			return(value = *ref);
+		} else if(key == 3){
+			const S32* const ref  = reinterpret_cast<const S32* const>(&this->data[pos]);
+			const U32* const uref = reinterpret_cast<const U32* const>(ref);
+			pos+=sizeof(S32);
+
+			if(*uref == 0x80000000){
+				//std::cerr << "is missing" << std::endl;
+				return(value = 0x80000000);
+			} else if(*uref == 0x80000001){
+				//std::cerr << "is vector eof" << std::endl;
+				return(value = 0x80000001);
+			}
+			return(value = *ref);
+		} else if(key == 0){
+			return 0;
+		} else {
+			std::cerr << "illegal type" << std::endl;
+			exit(1);
 		}
-		return value;
 	}
 
 	inline const float getFloat(U32& pos){

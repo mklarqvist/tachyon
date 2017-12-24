@@ -108,117 +108,6 @@ public:
 
 	bool seekBlock(const U32& b);
 
-	bool toVCFString_PartialData(std::ostream& stream = std::cout){
-		// Phase 1 construct iterators
-		Iterator::MetaIterator it;
-		// Todo: ALL of this should be abstracted away
-		// Hidden from the user
-		Iterator::ContainerIterator* info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
-		Iterator::ContainerIterator  info_id_iterator;
-		Iterator::ContainerIterator  filter_id_iterator;
-		const void* info_id;
-		const void* filter_id;
-
-		if(this->settings.loadMetaHot && !this->settings.loadMetaCold){
-			it.set(this->block.meta_hot_container);
-		} else if(this->settings.loadMetaHot && this->settings.loadMetaCold){
-			it.set(this->block.meta_hot_container, this->block.meta_cold_container);
-		} else if(this->settings.loadMetaCold && !this->settings.loadMetaHot){
-			std::cerr << "illegal to load only cold meta" << std::endl;
-			return false;
-		}
-
-		if(this->settings.load_info_ID_loaded.size() > 0 && this->settings.loadMetaHot == false){
-			std::cerr << "not legal" << std::endl;
-			return false;
-		}
-
-		// Setup containers
-		if(this->block.index_entry.n_info_streams > 0)
-			info_id_iterator.setup(this->block.meta_info_map_ids);
-
-		if(this->block.index_entry.n_filter_streams > 0)
-			filter_id_iterator.setup(this->block.meta_filter_map_ids);
-
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
-			info_iterators[i].setup(this->block.info_containers[i]);
-
-		// Phase 2 perform iterations
-		for(U32 i = 0; i < this->block.index_entry.n_variants; ++i){
-			const Core::MetaEntry& m = it[i];
-			std::cout.write(&this->header.getContig(this->block.index_entry.contigID).name[0], this->header.getContig(this->block.index_entry.contigID).name.size()) << '\t';
-			std::cout << this->block.index_entry.minPosition + m.hot.position + 1 << '\t';
-
-			// If we have cold meta
-			if(this->settings.loadMetaCold){
-				if(m.cold.n_ID == 0) std::cout.put('.');
-				else std::cout.write(m.cold.ID, m.cold.n_ID);
-				std::cout << '\t';
-				if(m.hot.controller.biallelic && m.hot.controller.simple){
-					std::cout << m.hot.ref_alt.getRef() << '\t' << m.hot.ref_alt.getAlt();
-				}
-				else {
-					std::cout.write(m.cold.alleles[0].allele, m.cold.alleles[0].l_allele);
-					std::cout << '\t';
-					U16 j = 1;
-					for(; j < m.cold.n_allele - 1; ++j){
-						std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
-						std::cout.put(',');
-					}
-					std::cout.write(m.cold.alleles[j].allele, m.cold.alleles[j].l_allele);
-				}
-				if(std::isnan(m.cold.QUAL)) std::cout << "\t.\t";
-				else std::cout << '\t' << m.cold.QUAL << '\t';
-			} else {
-				std::cout << "\t.\t.\t.\t";
-			}
-
-			// Filter streams
-			if(this->block.index_entry.n_filter_streams == 0){
-				std::cout << ".\t";
-			} else {
-				filter_id_iterator.getDataIterator().currentPointer(filter_id);
-				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[*(S32*)filter_id][k]){
-					// Lookup what that field is
-						std::cout.write(&this->header.getEntry(this->header.mapTable[this->block.index_entry.filter_offsets[k].key]).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
-					}
-				}
-			}
-
-			if(this->settings.loadInfoAll || this->settings.load_info_ID_loaded.size() > 0){
-				info_id_iterator.getDataIterator().currentPointer(info_id);
-
-				// Cycle over streams that are set in the given bit-vector
-				U32 set = 0;
-				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[*(S32*)info_id];
-				for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
-					// If this key is set
-					if(target_info_vector[this->settings.load_info_ID_loaded[k].target_stream_local]){
-						if(set++ != 0)
-							std::cout.put(';');
-
-						info_iterators[this->settings.load_info_ID_loaded[k].iterator_index].toString(
-								std::cout,
-								this->header.getEntry(this->header.mapTable[this->settings.load_info_ID_loaded[k].offset->key]).ID);
-
-
-						++info_iterators[this->settings.load_info_ID_loaded[k].iterator_index];
-					}
-				}
-			}
-			std::cout.put('\n');
-			++it;
-			++info_id_iterator;
-			++filter_id_iterator;
-		}
-		std::cout.flush();
-
-		delete [] info_iterators;
-		return true;
-	}
-
 	bool toVCFString(std::ostream& stream = std::cout){
 		// Idea: inside block add factory to MetaIterator
 		// iff block.meta_cold_container uncompressed > 0 then set and load
@@ -324,10 +213,10 @@ public:
 					// Check if field is set
 					const U32& current_key = firstKey_format[k];
 					if(target_format_vector[current_key]){
-						//std::cerr << '\t' << current_key << ";" << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID << '\t' << format_iterators[current_key].data_iterator->n_entries << '\t' << (U32)format_iterators[current_key].get<BYTE>() << std::endl;
+						//std::cerr << '\t' << current_key << "->" << this->block.index_entry.format_offsets[current_key].key << ";" << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[current_key].key]].ID << '\t' << format_iterators[current_key].data_iterator->n_entries << '\t' << (U32)format_iterators[current_key].get<BYTE>() << std::endl;
 						if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
 							//std::cerr << "isGT" << std::endl;
-							++format_iterators[current_key];
+							//++format_iterators[current_key];
 							++set;
 							continue;
 						}
@@ -339,7 +228,7 @@ public:
 						if(set + 1 != target_format_vector.n_keys)
 							stream.put(':');
 
-						++format_iterators[current_key];
+						format_iterators[current_key].increment(false);
 						++set;
 					}
 				}
@@ -347,7 +236,20 @@ public:
 				stream.put('\t');
 			}
 
+			for(U32 k = 0; k < n_keys_format; ++k){
+				if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
+					//std::cerr << "isGT" << std::endl;
+					//++format_iterators[current_key];
+
+					continue;
+				}
+				// Check if field is set
+				const U32& current_key = firstKey_format[k];
+				format_iterators[current_key].incrementStride();
+			}
+
 			stream << '\n';
+			exit(1);
 		}
 		stream.flush();
 

@@ -1,6 +1,8 @@
 #ifndef CORE_STREAMCONTAINER_H_
 #define CORE_STREAMCONTAINER_H_
 
+#include <bitset>
+
 #include "../io/BasicBuffer.h"
 #include "base/StreamContainerHeaderController.h"
 #include "base/StreamContainerHeader.h"

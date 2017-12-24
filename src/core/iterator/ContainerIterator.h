@@ -159,19 +159,171 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
+		// if missing
+		if(this->current() == 0x80 || this->current() == 0x8000 || this->current() == 0x80000000){
+			//std::cerr << "is missing" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(this->current() == 0x81){
+			std::cerr << "eof" << std::endl;
+			stream.put('.');
+			return;
+		}
+
 		if(stride == 1){
-			//std::cerr << "this current is: " << this->current() << std::endl;
+			//std::cerr << "Single: " << (int)this->__source_type << ":" << (int)this->__source_sign << '\t' << this->current() << '\t' << std::bitset<sizeof(T)*8>(this->current()) << std::endl;
+			stream << this->current();
+		} else {
+			if(*this->currentAt() == 0x80 || *this->currentAt() == 0x8000 || *this->currentAt() == 0x80000000){
+				//std::cerr << "is missing" << std::endl;
+				stream.put('.');
+				return;
+			} else if(*this->currentAt() == 0x81 || *this->currentAt() == 0x8001 || *this->currentAt() == 0x80000001){
+				//std::cerr << "is missing" << std::endl;
+				stream.put('.');
+				return;
+			}
+
+			const_pointer r = this->currentAt();
+			for(U32 i = 0; i < stride - 1; ++i){
+				if(*r == 0x80 || *r == 0x8000 || *r == 0x8000000) stream << ".,";
+				else stream << *r << ',';
+				++r;
+			}
+			if(*r == -0) stream << ".";
+			else stream << *r;
+		}
+	}
+};
+
+// Temp
+template <>
+class ContainerIteratorType<S16> : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorType self_type;
+	typedef const S16* const_pointer;
+	typedef const S16* const const_pointer_final;
+	typedef const S16& const_reference;
+
+public:
+	ContainerIteratorType(const buffer_type& buffer) :
+		ContainerIteratorDataInterface(buffer)
+	{
+		//this->n_entries = buffer.pointer / sizeof(T);
+		//assert(buffer.pointer % sizeof(T) == 0);
+	}
+	~ContainerIteratorType(){}
+
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(S16)])); }
+	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position*sizeof(S16)])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)*sizeof(S16)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(S16)])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(S16)])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(S16)]); }
+
+	// Dangerous functions
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(S16)])); }
+
+	// Output functions
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
+	void toString(std::ostream& stream, const U32& stride){
+		// if missing
+		if(*(U16*)&this->current() == 0x8000){
+			//std::cerr << "is missing" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(*(U16*)&this->current() == 0x8001){
+			std::cerr << "eof" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(stride == 1){
+			//std::cerr << "Single: " << (int)this->__source_type << ":" << (int)this->__source_sign << '\t' << this->current() << '\t' << std::bitset<sizeof(T)*8>(this->current()) << std::endl;
+			stream << this->current();
+		} else {
+			if(*(U16*)this->currentAt() == 0x8000){
+				//std::cerr << "is missing" << std::endl;
+				stream.put('.');
+				return;
+			} else if(*(U16*)this->currentAt() == 0x8001){
+				//std::cerr << "is missing" << std::endl;
+				stream.put('.');
+				return;
+			}
+
+			const_pointer r = this->currentAt();
+			for(U32 i = 0; i < stride - 1; ++i){
+				if(*(S16*)r == 0x8000) stream << ".,";
+				else stream << *r << ',';
+				++r;
+			}
+			if(*r == -0) stream << ".";
+			else stream << *r;
+		}
+	}
+};
+
+template <>
+class ContainerIteratorType<U16> : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorType self_type;
+	typedef const U16* const_pointer;
+	typedef const U16* const const_pointer_final;
+	typedef const U16& const_reference;
+
+public:
+	ContainerIteratorType(const buffer_type& buffer) :
+		ContainerIteratorDataInterface(buffer)
+	{
+		//this->n_entries = buffer.pointer / sizeof(T);
+		//assert(buffer.pointer % sizeof(T) == 0);
+	}
+	~ContainerIteratorType(){}
+
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(U16)])); }
+	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position*sizeof(U16)])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)*sizeof(U16)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(U16)])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(U16)])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(U16)]); }
+
+	// Dangerous functions
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(S16)])); }
+
+	// Output functions
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
+	void toString(std::ostream& stream, const U32& stride){
+		if(stride == 1){
 			stream << this->current();
 		} else {
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				stream << *r << ',';
+				if(*r == 0x8000) stream << ".,";
+				else stream << *r << ',';
 				++r;
 			}
-			stream << *r;
+			if(*r == -0) stream << ".";
+			else stream << *r;
 		}
 	}
 };
+
+
+
+//
 
 template <>
 class ContainerIteratorType<char> : public ContainerIteratorDataInterface{
@@ -204,6 +356,75 @@ public:
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position])); }
+
+	// Output functions
+	void toString(std::ostream& stream, const U32& stride){
+		// if missing
+		if(*(BYTE*)&this->current() == 0x80){
+			//std::cerr << "is missing" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(*(BYTE*)&this->current() == 0x81){
+			std::cerr << "eof" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(stride == 1){
+			stream << (S32)this->current();
+		} else {
+			const_pointer_final c = this->currentAt();
+			for(U32 i = 0; i < stride - 1; ++i){
+				if(*(BYTE*)c == 0x80) stream << ".,";
+				else stream << (S32)c[i] << ',';
+			}
+			stream << (S32)c[stride-1];
+		}
+	}
+
+	void toStringNoSeparator(std::ostream& stream, const U32& stride){
+		if(stride == 1){
+			stream.put(this->current());
+		} else {
+			const_pointer_final c = this->currentAt();
+			stream.write(this->currentAt(), stride);
+		}
+	}
+};
+
+template <>
+class ContainerIteratorType<float> : public ContainerIteratorDataInterface{
+private:
+	typedef ContainerIteratorType<float> self_type;
+	typedef const char* const_pointer;
+	typedef const char* const const_pointer_final;
+	typedef const char& const_reference;
+
+public:
+	ContainerIteratorType(const buffer_type& buffer) :
+		ContainerIteratorDataInterface(buffer)
+	{
+		//this->n_entries = buffer.pointer / sizeof(char);
+		//assert(buffer.pointer % sizeof(char) == 0);
+	}
+	~ContainerIteratorType(){}
+
+	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(float)])); }
+	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position*sizeof(float)])); }
+	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const{
+		if(this->n_entries - 1 < 0) return(this->first());
+		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)]));
+	}
+	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(float)])); }
+	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(float)])); }
+	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(float)]); }
+
+
+	// Dangerous functions
+	inline const U32 getCurrentStride(void) const{ return((U32)*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(float)])); }
 
 	// Output functions
 	void toString(std::ostream& stream, const U32& stride){
@@ -263,12 +484,26 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
+		// if missing
+		if(this->current() == 0x80){
+			//std::cerr << "is missing" << std::endl;
+			stream.put('.');
+			return;
+		}
+
+		if(this->current() == 0x81){
+			std::cerr << "eof" << std::endl;
+			stream.put('.');
+			return;
+		}
+
 		if(stride == 1){
 			stream << (U32)this->current();
 		} else {
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				stream << (U32)*r << ',';
+				if(*r == 0x80) stream << '.';
+				else stream << (U32)*r << ',';
 				++r;
 			}
 			stream << (U32)*r;
@@ -382,7 +617,7 @@ public:
 			case(Core::TYPE_32B):    this->data_iterator = new ContainerIteratorType<U32>(this->container->buffer_data_uncompressed);    break;
 			case(Core::TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
 			case(Core::TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
-			case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
+			//case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
 			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);   break;
 			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
 			}
@@ -483,6 +718,24 @@ public:
 		else {
 			*this->data_iterator += this->container->header.stride;
 		}
+	}
+
+	void increment(const bool updateStride = true){
+		++this->position;
+		// If mixed stride: update data with that number, increment stride
+		if(this->hasStrideIteratorSet){
+			*this->data_iterator += this->stride_iterator->getCurrentStride();
+			if(updateStride)
+				++(*this->stride_iterator);
+		}
+		// Uniform stride size: update data with the fixed stride size
+		else {
+			*this->data_iterator += this->container->header.stride;
+		}
+	}
+
+	void incrementStride(void){
+		if(this->hasStrideIteratorSet) ++(*this->stride_iterator);
 	}
 
 	inline data_iterator_type& getDataIterator(void){ return(*this->data_iterator); }
