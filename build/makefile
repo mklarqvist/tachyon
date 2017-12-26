@@ -47,12 +47,7 @@ endif
 
 -include ../makefile.defs
 
-BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-ifneq ($BRANCH, master)
-GIT_VERSION := $(shell git describe --abbrev=8 --dirty --always --tags)-$(BRANCH)
-else
-GIT_VERSION := $(shell git describe --abbrev=8 --dirty --always --tags)
-endif
+# Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
 all: tachyon
