@@ -159,40 +159,15 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
-		// if missing
-		if(this->current() == 0x80 || this->current() == 0x8000 || this->current() == 0x80000000){
-			//std::cerr << "is missing" << std::endl;
-			stream.put('.');
-			return;
-		}
-
-		if(this->current() == 0x81){
-			stream.put('.');
-			return;
-		}
-
 		if(stride == 1){
-			//std::cerr << "Single: " << (int)this->__source_type << ":" << (int)this->__source_sign << '\t' << this->current() << '\t' << std::bitset<sizeof(T)*8>(this->current()) << std::endl;
 			stream << this->current();
 		} else {
-			if(*this->currentAt() == 0x80 || *this->currentAt() == 0x8000 || *this->currentAt() == 0x80000000){
-				//std::cerr << "is missing" << std::endl;
-				stream.put('.');
-				return;
-			} else if(*this->currentAt() == 0x81 || *this->currentAt() == 0x8001 || *this->currentAt() == 0x80000001){
-				//std::cerr << "is missing" << std::endl;
-				stream.put('.');
-				return;
-			}
-
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				if(*r == 0x80 || *r == 0x8000 || *r == 0x8000000) stream << ".,";
-				else stream << *r << ',';
+				stream << *r << ',';
 				++r;
 			}
-			if(*r == -0) stream << ".";
-			else stream << *r;
+			stream << *r;
 		}
 	}
 };
@@ -352,11 +327,9 @@ public:
 
 		if(stride == 1){
 			if(*(U32*)&this->current() == 0x80000000){
-				//std::cerr << "is missing" << std::endl;
 				stream.put('.');
 				return;
 			}
-			//std::cerr << "Single: " << (int)this->__source_type << ":" << (int)this->__source_sign << '\t' << this->current() << '\t' << std::bitset<sizeof(T)*8>(this->current()) << std::endl;
 			stream << this->current();
 		} else {
 			const_pointer r = this->currentAt();
@@ -406,26 +379,15 @@ public:
 	// Output functions
 	void toStringNoSeparator(std::ostream& stream, const U32& stride){}
 	void toString(std::ostream& stream, const U32& stride){
-		if(this->current() == 0x80000001){
-			stream << ".,";
-			return;
-		}
-
 		if(stride == 1){
-			if(this->current() == 0x80000000){
-				stream << ".,";
-				return;
-			}
 			stream << this->current();
 		} else {
 			const_pointer r = this->currentAt();
 			for(U32 i = 0; i < stride - 1; ++i){
-				if(*r == 0x80000000) stream << ".,";
-				else stream << *r << ',';
+				stream << *r << ',';
 				++r;
 			}
-			if(*r == 0x80000000) stream << ".";
-			else stream << *r;
+			stream << *r;
 		}
 	}
 };
@@ -494,7 +456,6 @@ public:
 		if(stride == 1){
 			stream.put(this->current());
 		} else {
-			const_pointer_final c = this->currentAt();
 			stream.write(this->currentAt(), stride);
 		}
 	}
@@ -517,16 +478,16 @@ public:
 	}
 	~ContainerIteratorType(){}
 
-	inline const_reference current(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(float)])); }
+	inline const_reference current(void) const  { return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[this->position*sizeof(float)])); }
 	inline const_pointer   currentAt(void) const{ return(reinterpret_cast<const_pointer>(&this->buffer.data[this->position*sizeof(float)])); }
-	inline const_reference first(void) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
-	inline const_reference last(void) const{
+	inline const_reference first(void) const    { return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[0])); }
+	inline const_reference last(void) const     {
 		if(this->n_entries - 1 < 0) return(this->first());
 		return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[(this->n_entries - 1)]));
 	}
 	inline const_reference operator[](const U32& p) const{ return(*reinterpret_cast<const_pointer_final>(&this->buffer.data[p*sizeof(float)])); }
-	inline const_pointer   at(const U32& p) const{ return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(float)])); }
-	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(float)]); }
+	inline const_pointer   at(const U32& p) const        { return( reinterpret_cast<const_pointer>(&this->buffer.data[p*sizeof(float)])); }
+	void currentPointer(const void*& p) const            { p = reinterpret_cast<const void*>(&this->buffer.data[this->position*sizeof(float)]); }
 
 
 	// Dangerous functions
