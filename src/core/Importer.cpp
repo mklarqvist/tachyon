@@ -392,6 +392,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextFormat(val, info_length, format_value_type, internal_pos)){
 		const U32 mapID = this->format_fields.setGet(val);
 
+		// If this is a GT field
+		// then continue
 		if(this->header_->map[this->header_->mapTable[val]].ID == "GT"){
 			BYTE multiplier = sizeof(U32);
 			switch(format_value_type){
@@ -438,32 +440,23 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// These are BCF value types
 		if(format_value_type <= 3){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-				//target_container.addStride(info_length);
-				for(U32 j = 0; j < info_length; ++j){
-					const S32 val = entry.getInteger(format_value_type, internal_pos);
-					//std::cerr << val << ',';
-					target_container += val;
-				}
-				//std::cerr << "|";
+				for(U32 j = 0; j < info_length; ++j)
+					target_container += entry.getInteger(format_value_type, internal_pos);
 			}
-			//std::cerr << std::endl;
 		}
 		// Floats
 		else if(format_value_type == 5){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-				//target_container.addStride(info_length);
-				for(U32 j = 0; j < info_length; ++j){
+				for(U32 j = 0; j < info_length; ++j)
 					target_container += entry.getFloat(internal_pos);
-				}
+
 			}
 		}
 		// Chars
 		else if(format_value_type == 7){
 			for(U32 s = 0; s < this->header_->samples; ++s){
-				//target_container.addStride(info_length);
-				for(U32 j = 0; j < info_length; ++j){
+				for(U32 j = 0; j < info_length; ++j)
 					target_container += entry.getChar(internal_pos);
-				}
 			}
 		}
 		// Illegal: parsing error
@@ -477,8 +470,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 #if IMPORT_ASSERT == 1
 	assert(internal_pos == entry.pointer);
 #endif
-
-	//exit(1);
 
 	// Hash FILTER pattern
 	const U64 hash_filter_vector = entry.hashFilter();

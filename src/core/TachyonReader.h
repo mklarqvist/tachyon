@@ -172,7 +172,6 @@ public:
 			const U32 n_keys = target_info_vector.n_keys;
 			const U32* const firstKey = &target_info_vector.keys[0];
 
-			std::cerr << "number of filter keys: " << n_keys << std::endl;
 			for(U32 k = 0; k < n_keys; ++k){
 				// Check if field is set
 				const U32& current_key = firstKey[k];
@@ -193,11 +192,14 @@ public:
 			const U32* const firstKey_format = &target_format_vector.keys[0];
 
 			stream.put('\t');
-			for(U32 i = 0; i < this->block.index_entry.n_format_patterns; ++i){
-				for(U32 j = 0; j < this->block.index_entry.format_bit_vectors[i].n_keys; ++j){
-					stream << this->header.getEntry(this->header.mapTable[this->block.index_entry.format_offsets[this->block.index_entry.format_bit_vectors[i].keys[j]].key]).ID;
+			if(n_keys_format){
+				stream << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[0]].key]].ID;
+				for(U32 j = 1; j < n_keys_format; ++j){
 					stream.put(':');
+					stream << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[j]].key]].ID;
 				}
+			} else {
+				goto end_format;
 			}
 			stream.put('\t');
 
@@ -206,8 +208,6 @@ public:
 			// Cycle over streams that are set in the given bit-vector
 			set = 0;
 
-
-			std::cerr << "number of format keys: " << n_keys_format << std::endl;
 			for(U32 s = 0; s < this->header.n_samples; ++s){
 				for(U32 k = 0; k < n_keys_format; ++k){
 					// Check if field is set
@@ -248,6 +248,7 @@ public:
 				format_iterators[current_key].incrementStride();
 			}
 
+			end_format:
 			stream << '\n';
 
 		}

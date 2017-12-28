@@ -13,11 +13,11 @@ class ContainerIteratorDataInterface{
 private:
 	typedef ContainerIteratorDataInterface self_type;
 
-protected:
-	typedef IO::BasicBuffer buffer_type;
 	// Function pointers
 	typedef void (self_type::*toStringFunctionDefinition)(std::ostream& stream, const U32& stride);
 
+protected:
+	typedef IO::BasicBuffer buffer_type;
 
 public:
 	ContainerIteratorDataInterface(const buffer_type& buffer) :
@@ -65,6 +65,9 @@ public:
 
 	// Dangerous functions
 	virtual const U32 getCurrentStride(void) const =0;
+
+	template <class T>
+	std::vector<T> getVector(void) const;
 
 
 	/**<
@@ -165,11 +168,22 @@ public:
 		this->position -= p;
 	}
 
-	// Virtual functions
-	// Has to be overloaded in base class
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	inline void toString(std::ostream& stream, const U32& stride){ (this->*toStringFunction)(stream, stride); }
 
 private:
+	/* ****************************************
+	*  Internal convertion functions to VCF strings
+	******************************************/
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T>
 	void __toStringNoSeparator(std::ostream& stream, const U32& stride){
 		if(stride == 1){
@@ -179,19 +193,31 @@ private:
 		}
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T>
 	void __toStringUnsigned(std::ostream& stream, const U32& stride){
 		if(stride == 1){
 			stream << this->current<T>();
 		} else {
 			const T* const r = this->currentAt<T>();
-			for(U32 i = 0; i < stride - 1; ++i){
-				stream << r[i] << ',';
+
+			stream << r[0];
+			for(U32 i = 1; i < stride; ++i){
+				stream.put(',');
+				stream << r[i];
 			}
-			stream << r[stride - 1];
 		}
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T, class Y>
 	void __toStringSigned(std::ostream& stream, const U32& stride){
 		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
@@ -209,29 +235,44 @@ private:
 		} else {
 			const T* const r = this->currentAt<T>();
 			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-			for(U32 i = 0; i < stride - 1; ++i){
-				if(u[i] == this->__missing_value) stream << ".,";
+
+			if(u[0] == this->__missing_value) stream.put('.');
+			else if(u[0] == this->__end_of_vector_value) return;
+			else stream << r[0];
+
+			for(U32 i = 1; i < stride; ++i){
+				if(u[i] == this->__missing_value) stream << ",.";
 				else if(u[i] == this->__end_of_vector_value) return;
-				else stream << r[i] << ',';
+				else stream << ',' << r[i];
 			}
-			if(u[stride - 1] == this->__missing_value) stream << ".";
-			else stream << r[stride - 1];
 		}
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T>
 	void __toStringUnsignedSmall(std::ostream& stream, const U32& stride){
 		if(stride == 1){
 			stream << (U32)this->current<T>();
 		} else {
 			const T* const r = this->currentAt<T>();
-			for(U32 i = 0; i < stride - 1; ++i){
-				stream << (U32)r[i] << ',';
+
+			stream << (U32)r[0];
+			for(U32 i = 1; i < stride; ++i){
+				stream.put(',');
+				stream << (U32)r[i];
 			}
-			stream << (U32)r[stride - 1];
 		}
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T, class Y>
 	void __toStringSignedSmall(std::ostream& stream, const U32& stride){
 		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
@@ -249,34 +290,43 @@ private:
 		} else {
 			const T* const r = this->currentAt<T>();
 			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-			for(U32 i = 0; i < stride - 1; ++i){
-				if(u[i] == this->__missing_value) stream << ".,";
+
+
+			if(u[0] == this->__missing_value) stream.put('.');
+			else if(u[0] == this->__end_of_vector_value) return;
+			else stream << (S32)r[0];
+
+			for(U32 i = 1; i < stride; ++i){
+				if(u[i] == this->__missing_value) stream << ",.";
 				else if(u[i] == this->__end_of_vector_value) return;
-				else stream << (S32)r[i] << ',';
+				else stream << ',' << (S32)r[i];
 			}
-			if(u[stride - 1] == this->__missing_value) stream << ".";
-			else stream << (S32)r[stride - 1];
 		}
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param stride
+	 */
 	template <class T>
 	void __toStringFloat(std::ostream& stream, const U32& stride){
 		this->__toStringUnsigned<T>(stream, stride);
 	}
 
-public:
+protected:
 	S32 position;        // iterator position
 	S32 n_entries;       // size
 	BYTE type_size;      // sizeof(TYPE)
 
-protected:
+	// Internal states
 	U32 __missing_value;
 	U32 __end_of_vector_value;
 	BYTE __source_sign;
 	Core::CORE_TYPE __source_type;
 	toStringFunctionDefinition toStringFunction;
 
-
+	// Buffer reference
 	const buffer_type& buffer; // buffer reference
 };
 
@@ -298,6 +348,9 @@ public:
 	}
 	~ContainerIteratorType(){}
 
+	/* ****************************************
+	*  Basic iterator functions
+	******************************************/
 	inline const_reference current(void) const      { return(parent_type::current<T>()); }
 	inline const_pointer   currentAt(void) const    { return(parent_type::currentAt<T>()); }
 	inline const_reference first(void) const        { return(parent_type::first<T>()); }
@@ -322,12 +375,6 @@ public:
 		//this->n_entries = 0;
 	}
 	~ContainerIteratorType(){}
-
-	template <class T>
-	inline const T& operator[](const U32& p) const{ return(*reinterpret_cast<const T* const>(&this->buffer.data[p*sizeof(T)])); }
-
-	template <class T>
-	inline const T* at(const U32& p) const{ return( reinterpret_cast<const T*>(&this->buffer.data[p*sizeof(T)])); }
 
 	inline void* current(void) const{ return(reinterpret_cast<void*>(&this->buffer.data[this->position*this->type_size])); }
 	inline void* first(void) const{ return(reinterpret_cast<void*>(&this->buffer.data[0])); }
