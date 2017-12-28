@@ -6,7 +6,7 @@ namespace Core{
 namespace Iterator{
 
 class GenotypeIteratorIterface{
-
+private:
 
 
 
