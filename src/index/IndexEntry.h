@@ -8,6 +8,9 @@
 namespace Tachyon{
 namespace Index{
 
+/**<
+ * Sorted index entry
+ */
 struct IndexEntry{
 	typedef IndexEntry self_type;
 
@@ -40,7 +43,6 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.minPosition),     sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),     sizeof(U64));
 
-
 		return(stream);
 	}
 
@@ -63,6 +65,71 @@ public:
 	U64 byte_offset_end;// tellg() position in stream for start of record in Tomahawk file
 	U64 minPosition;	// smallest bp position
 	U64 maxPosition;	// largest bp position
+};
+
+/**<
+ * Index of index entries
+ */
+struct IndexIndexEntry{
+private:
+	typedef IndexIndexEntry self_type;
+	typedef IndexEntry entry_type;
+
+public:
+	IndexIndexEntry() :
+		contigID(-1),
+		n_blocks(0),
+		n_variants(0),
+		byte_offset_begin(0),
+		byte_offest_end(0),
+		minPosition(0),
+		maxPosition(0)
+	{}
+	~IndexIndexEntry(){}
+
+	void reset(void){
+		this->contigID          = -1;
+		this->n_blocks          = 0;
+		this->n_variants        = 0;
+		this->byte_offset_begin = 0;
+		this->byte_offest_end   = 0;
+		this->minPosition       = 0;
+		this->maxPosition       = 0;
+	}
+
+private:
+	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream.write(reinterpret_cast<const char*>(&entry.contigID),        sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),        sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_begin),sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end), sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),     sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),     sizeof(U64));
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.contigID),        sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&entry.n_blocks),        sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),      sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offset_begin),sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),     sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),     sizeof(U64));
+
+		return(stream);
+	}
+
+public:
+	S32 contigID;           // contig ID
+	U32 n_blocks;           // number of index entries for this contigID
+	U64 n_variants;         // total number of variants
+	U64 byte_offset_begin;  // start virtual offset
+	U64 byte_offest_end;    // end virtual offset
+	U64 minPosition;        // smallest bp position observed
+	U64 maxPosition;        // largest bp position observed
 };
 
 }

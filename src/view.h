@@ -106,7 +106,7 @@ int view(int argc, char** argv){
 
 	Tachyon::Core::TachyonReader reader(input);
 	reader.settings.loadAll();
-	reader.settings.loadPPA = false;
+	//reader.settings.loadPPA = false;
 	if(dropInfo)   reader.settings.unsetInfo();
 	if(dropFormat) reader.settings.unsetFormat();
 
