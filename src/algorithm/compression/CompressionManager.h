@@ -12,11 +12,81 @@ private:
 	typedef CompressionManager self_type;
 	typedef UncompressedCodec no_codec_type;
 	typedef ZSTDCodec zstd_codec_type;
+
+	typedef Core::BlockEntry block_type;
 	typedef Core::StreamContainer container_type;
 
 public:
 	CompressionManager(){}
 	~CompressionManager(){}
+
+	bool decompress(block_type& block){
+		if(block.meta_hot_container.sizeCompressed()){
+			if(!this->decompress(block.meta_hot_container)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.meta_cold_container.sizeCompressed()){
+			if(!this->decompress(block.meta_cold_container)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.gt_rle_container.sizeCompressed()){
+			if(!this->decompress(block.gt_rle_container)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.gt_simple_container.sizeCompressed()){
+			if(!this->decompress(block.gt_simple_container)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.gt_support_data_container.sizeCompressed()){
+			if(!this->decompress(block.gt_support_data_container)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.meta_info_map_ids.sizeCompressed()){
+			if(!this->decompress(block.meta_info_map_ids)){
+				std::cerr << "failed to meta_info_map_ids!" << std::endl;
+			}
+		}
+
+		if(block.meta_filter_map_ids.sizeCompressed()){
+			if(!this->decompress(block.meta_filter_map_ids)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		if(block.meta_format_map_ids.sizeCompressed()){
+			if(!this->decompress(block.meta_format_map_ids)){
+				std::cerr << "failed to decompress!" << std::endl;
+			}
+		}
+
+		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+			if(block.info_containers[i].sizeCompressed()){
+				if(!this->decompress(block.info_containers[i])){
+					std::cerr << "failed to decompress!" << std::endl;
+				}
+			}
+		}
+
+		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
+			if(block.format_containers[i].sizeCompressed()){
+				if(!this->decompress(block.format_containers[i])){
+					std::cerr << "failed to decompress!" << std::endl;
+				}
+			}
+		}
+
+		return true;
+	}
 
 	bool decompress(container_type& container){
 		if(container.header.controller.encoder == Core::ENCODE_ZSTD){

@@ -81,27 +81,12 @@ public:
 			return false;
 		}
 
-		this->block.read(stream, this->settings);
+		if(!this->block.read(stream, this->settings))
+			return false;
 
 		// Phase 1: Decode data
-		// Todo:API: decode available data
-		if(this->block.meta_hot_container.sizeCompressed())
-			if(!this->codec_manager.decompress(this->block.meta_hot_container)){ std::cerr << "failed to decompress!" << std::endl; }
-
-		if(!this->codec_manager.decompress(this->block.meta_cold_container)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.gt_rle_container)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.gt_simple_container)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.gt_support_data_container)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.meta_info_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.meta_filter_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
-		if(!this->codec_manager.decompress(this->block.meta_format_map_ids)){ std::cerr << "failed to decompress!" << std::endl; }
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//std::cerr << "checking: " << i << std::endl;
-			if(!this->codec_manager.decompress(this->block.info_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
-		}
-		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!this->codec_manager.decompress(this->block.format_containers[i])){ std::cerr << "failed to decompress!" << std::endl; }
-		}
+		if(!this->codec_manager.decompress(this->block))
+			return false;
 
 		return true;
 	}
