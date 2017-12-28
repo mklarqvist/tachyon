@@ -9,7 +9,10 @@ namespace Tachyon {
 
 #define IMPORT_ASSERT 1
 
-Importer::Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_n_snps, const double checkpoint_bases) :
+Importer::Importer(std::string inputFile,
+		           std::string outputPrefix,
+                     const U32 checkpoint_n_snps,
+                  const double checkpoint_bases) :
 	permute(true),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
@@ -177,6 +180,21 @@ bool Importer::BuildBCF(void){
 		if(!compression_manager.compress(this->block)){
 			std::cerr << Helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
+		}
+
+		// Digests
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
+				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
+		}
+
+		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
+				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
 		}
 
 		// Perform writing

@@ -14,7 +14,7 @@ private:
 	typedef ContainerIteratorDataInterface self_type;
 
 	// Function pointers
-	typedef void (self_type::*toStringFunctionDefinition)(std::ostream& stream, const U32& stride);
+	typedef void (self_type::*toStringFunctionDefinition)(std::ostream& stream, const U32& stride) const;
 
 protected:
 	typedef IO::BasicBuffer buffer_type;
@@ -173,7 +173,7 @@ public:
 	 * @param stream
 	 * @param stride
 	 */
-	inline void toString(std::ostream& stream, const U32& stride){ (this->*toStringFunction)(stream, stride); }
+	inline void toString(std::ostream& stream, const U32& stride) const{ (this->*toStringFunction)(stream, stride); }
 
 private:
 	/* ****************************************
@@ -185,7 +185,7 @@ private:
 	 * @param stride
 	 */
 	template <class T>
-	void __toStringNoSeparator(std::ostream& stream, const U32& stride){
+	void __toStringNoSeparator(std::ostream& stream, const U32& stride) const{
 		if(stride == 1){
 			stream.put(this->current<T>());
 		} else {
@@ -199,7 +199,7 @@ private:
 	 * @param stride
 	 */
 	template <class T>
-	void __toStringUnsigned(std::ostream& stream, const U32& stride){
+	void __toStringUnsigned(std::ostream& stream, const U32& stride) const{
 		if(stride == 1){
 			stream << this->current<T>();
 		} else {
@@ -219,7 +219,7 @@ private:
 	 * @param stride
 	 */
 	template <class T, class Y>
-	void __toStringSigned(std::ostream& stream, const U32& stride){
+	void __toStringSigned(std::ostream& stream, const U32& stride) const{
 		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
 			stream.put('.');
 			return;
@@ -254,7 +254,7 @@ private:
 	 * @param stride
 	 */
 	template <class T>
-	void __toStringUnsignedSmall(std::ostream& stream, const U32& stride){
+	void __toStringUnsignedSmall(std::ostream& stream, const U32& stride) const{
 		if(stride == 1){
 			stream << (U32)this->current<T>();
 		} else {
@@ -274,7 +274,7 @@ private:
 	 * @param stride
 	 */
 	template <class T, class Y>
-	void __toStringSignedSmall(std::ostream& stream, const U32& stride){
+	void __toStringSignedSmall(std::ostream& stream, const U32& stride) const{
 		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
 			stream.put('.');
 			return;
@@ -310,7 +310,7 @@ private:
 	 * @param stride
 	 */
 	template <class T>
-	void __toStringFloat(std::ostream& stream, const U32& stride){
+	void __toStringFloat(std::ostream& stream, const U32& stride) const{
 		this->__toStringUnsigned<T>(stream, stride);
 	}
 
@@ -523,17 +523,9 @@ public:
 	 */
 	inline bool toString(std::ostream& stream){
 		if(this->stride_iterator != nullptr){
-			//std::cerr << "\ncurrent stride: " << this->stride_iterator->getCurrentStride() << std::endl;
-			//std::cerr << "params: " << (int)this->container->header.controller.type << '\t' << (int)this->container->header.controller.signedness << std::endl;
-			//std::cerr << "pos: " << this->data_iterator->position << std::endl;
-
 			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
 		}
 		else {
-			//std::cerr << "\ncurrent uniform stride: " << this->container->header.stride << std::endl;
-			//std::cerr << "params: " << (int)this->container->header.controller.type << '\t' << (int)this->container->header.controller.signedness << std::endl;
-			//std::cerr << "pos: " << this->data_iterator->position << std::endl;
-
 			this->data_iterator->toString(stream, this->container->header.stride);
 		}
 
