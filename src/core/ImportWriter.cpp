@@ -43,9 +43,9 @@ bool ImportWriter::WriteHeader(void){
 	}
 
 	this->stream.write(&Constants::FILE_HEADER[0], Constants::FILE_HEADER.size());
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_PATCH),sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),  sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),  sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_RELEASE),sizeof(U16));
 	return true;
 }
 

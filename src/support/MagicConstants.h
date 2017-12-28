@@ -13,10 +13,11 @@ extern std::string LITERAL_COMMAND_LINE;
 extern std::string INTERPRETED_COMMAND;
 
 /*------   Version   ------*/
-// See https://semver.org/
-const U16 TACHYON_VERSION_MAJOR = 0;
-const U16 TACHYON_VERSION_MINOR = 1;
-const U16 TACHYON_VERSION_PATCH = 0;
+const S32 TACHYON_VERSION_MAJOR    = 0;
+const S32 TACHYON_VERSION_MINOR    = 1;
+const S32 TACHYON_VERSION_RELEASE  = 0;
+const S32 TACHYON_VERSION_NUMBER   = (TACHYON_VERSION_MAJOR *100*100 + TACHYON_VERSION_MINOR *100 + TACHYON_VERSION_RELEASE);
+const std::string TACHYON_LIB_VERSION = std::to_string(TACHYON_VERSION_MAJOR) + '.' + std::to_string(TACHYON_VERSION_MINOR) + '.' + std::to_string(TACHYON_VERSION_RELEASE);
 
 /*------   Basics   ------*/
 const std::string PROGRAM_NAME = "tachyon";
