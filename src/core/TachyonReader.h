@@ -77,7 +77,7 @@ public:
 		}
 
 		if((U64)this->stream.tellg() == this->l_data){
-			std::cerr << "eof all done" << std::endl;
+			//std::cerr << "eof all done" << std::endl;
 			return false;
 		}
 

@@ -198,9 +198,17 @@ bool Importer::BuildBCF(void){
 			return false;
 		}
 
-		// Perform writing
+		// Perform writing and update index
 		this->block.updateOffsets();
+		this->writer.current_index_entry.byte_offset = this->writer.stream.tellp();
 		this->block.write(this->writer.stream, this->import_compressed_stats);
+		this->writer.current_index_entry.byte_offset_end = this->writer.stream.tellp();
+		this->writer.current_index_entry.contigID    = reader.first().body->CHROM;
+		this->writer.current_index_entry.minPosition = reader.first().body->POS;
+		this->writer.current_index_entry.maxPosition = reader.last().body->POS;
+		this->writer.current_index_entry.n_variants  = reader.size();
+		this->writer.index.push_back(this->writer.current_index_entry);
+		this->writer.current_index_entry.reset();
 
 		// Reset and update
 		this->resetHashes();
@@ -215,6 +223,10 @@ bool Importer::BuildBCF(void){
 	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer.stream.tellp() << std::endl;
 	this->writer.stream.flush();
 	const U64 data_ends = this->writer.stream.tellp();
+
+	// Write index blocks
+	for(U32 i = 0; i < this->writer.index.size(); ++i)
+		this->writer.stream << this->writer.index[i];
 
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();
