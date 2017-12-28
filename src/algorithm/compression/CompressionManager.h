@@ -20,6 +20,29 @@ public:
 	CompressionManager(){}
 	~CompressionManager(){}
 
+	bool compress(block_type& block){
+		zstd_codec.setCompressionLevel(6);
+		if(block.index_entry.controller.hasGTPermuted) zstd_codec.encode(block.ppa_manager);
+
+		zstd_codec.setCompressionLevel(20);
+		if(block.meta_hot_container.n_entries)        zstd_codec.encode(block.meta_hot_container);
+		if(block.gt_rle_container.n_entries)          zstd_codec.encode(block.gt_rle_container);
+		if(block.gt_simple_container.n_entries)       zstd_codec.encode(block.gt_simple_container);
+		if(block.gt_support_data_container.n_entries) zstd_codec.encode(block.gt_support_data_container);
+		if(block.meta_cold_container.n_entries)       zstd_codec.encode(block.meta_cold_container);
+		if(block.meta_info_map_ids.n_entries)         zstd_codec.encode(block.meta_info_map_ids);
+		if(block.meta_filter_map_ids.n_entries)       zstd_codec.encode(block.meta_filter_map_ids);
+		if(block.meta_format_map_ids.n_entries)       zstd_codec.encode(block.meta_format_map_ids);
+
+		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i)
+			zstd_codec.encode(block.info_containers[i]);
+
+		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i)
+			zstd_codec.encode(block.format_containers[i]);
+
+		return true;
+	}
+
 	bool decompress(block_type& block){
 		if(block.meta_hot_container.sizeCompressed()){
 			if(!this->decompress(block.meta_hot_container)){

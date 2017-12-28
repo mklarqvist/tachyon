@@ -1,7 +1,7 @@
 #include <fstream>
 
 #include "Importer.h"
-#include "../algorithm/compression/CompressionContainer.h"
+#include "../algorithm/compression/CompressionManager.h"
 #include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
 
@@ -93,7 +93,7 @@ bool Importer::BuildBCF(void){
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
 	this->block.resize(resize_to);
 
-	Compression::ZSTDCodec zstd;
+	Compression::CompressionManager compression_manager;
 
 	// Digest controller
 	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
@@ -174,35 +174,9 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
 
-		zstd.setCompressionLevel(6);
-		if(this->block.index_entry.controller.hasGTPermuted) zstd.encode(this->block.ppa_manager);
-
-		zstd.setCompressionLevel(20);
-		if(this->block.meta_hot_container.n_entries)        zstd.encode(this->block.meta_hot_container);
-		if(this->block.gt_rle_container.n_entries)          zstd.encode(this->block.gt_rle_container);
-		if(this->block.gt_simple_container.n_entries)       zstd.encode(this->block.gt_simple_container);
-		if(this->block.gt_support_data_container.n_entries) zstd.encode(this->block.gt_support_data_container);
-		if(this->block.meta_cold_container.n_entries)       zstd.encode(this->block.meta_cold_container);
-		if(this->block.meta_info_map_ids.n_entries)         zstd.encode(this->block.meta_info_map_ids);
-		if(this->block.meta_filter_map_ids.n_entries)       zstd.encode(this->block.meta_filter_map_ids);
-		if(this->block.meta_format_map_ids.n_entries)       zstd.encode(this->block.meta_format_map_ids);
-
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
-				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-
-			zstd.encode(this->block.info_containers[i]);
-		}
-
-		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
-				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-
-			zstd.encode(this->block.format_containers[i]);
+		if(!compression_manager.compress(this->block)){
+			std::cerr << Helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			return false;
 		}
 
 		// Perform writing
