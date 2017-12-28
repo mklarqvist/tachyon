@@ -117,7 +117,8 @@ public:
 
 /**
  * MetaHot:
- * @brief Contains the hot component of the hot-cold split of a variant site meta information
+ * @brief Contains the hot component of the hot-cold split of a
+ * variant site meta information
  * Hot sub-structure of a variant sites meta information. This
  * structure requires a CPU that allows non-aligned memory access.
  * Using a packed entry permits the reinterpret_cast of this
@@ -173,6 +174,7 @@ public:
 	~MetaHot(){}
 
 	// Supportive boolean functions
+	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }

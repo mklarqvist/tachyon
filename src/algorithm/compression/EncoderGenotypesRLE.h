@@ -402,8 +402,8 @@ bool EncoderGenotypesRLE::EncodeRLE(const bcf_type& line, container_type& runs, 
 	runs.n_additions += n_runs;
 
 	// Calculate basic stats
-	this->helper.calculateMGF();
-	this->helper.calculateHardyWeinberg();
+	//this->helper.calculateMGF();
+	//this->helper.calculateHardyWeinberg();
 	return(true);
 }
 

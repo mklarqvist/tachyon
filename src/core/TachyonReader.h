@@ -124,6 +124,9 @@ public:
 
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
+			if(!m.isSimpleSNV()){
+
+			}
 
 			// Discussion: it is more attractive to have the
 			// struct have knowledge of itself

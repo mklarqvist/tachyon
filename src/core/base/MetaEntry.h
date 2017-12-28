@@ -85,6 +85,9 @@ public:
 		}
 	}
 
+	inline const bool isBiallelic(void){ return(this->hot.isBiallelic()); }
+	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }
+
 private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
