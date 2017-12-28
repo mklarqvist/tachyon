@@ -55,6 +55,7 @@ int view(int argc, char** argv){
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
 		{"dropFormat",	no_argument, 0,  'G' },
+		{"dropInfo",	no_argument, 0,  'I' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
 	};
@@ -63,8 +64,9 @@ int view(int argc, char** argv){
 	std::string output;
 	SILENT = 0;
 	bool dropFormat = false;
+	bool dropInfo   = false;
 
-	while ((c = getopt_long(argc, argv, "i:o:Gs?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:GIs?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -77,6 +79,9 @@ int view(int argc, char** argv){
 			break;
 		case 'G':
 			dropFormat = true;
+			break;
+		case 'I':
+			dropInfo = true;
 			break;
 		case 's':
 			SILENT = 1;
@@ -102,7 +107,8 @@ int view(int argc, char** argv){
 	Tachyon::Core::TachyonReader reader(input);
 	reader.settings.loadAll();
 	reader.settings.loadPPA = false;
-	if(dropFormat) reader.settings.loadFormatAll = false;
+	if(dropInfo)   reader.settings.unsetInfo();
+	if(dropFormat) reader.settings.unsetFormat();
 
 	//reader.settings.loadMetaHot = true;
 	//reader.settings.loadMetaCold = true;

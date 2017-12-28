@@ -4,6 +4,9 @@
 namespace Tachyon{
 namespace Core{
 
+/**<
+ * Supportive structure for BlockEntry
+ */
 struct BlockEntrySettingsMap{
 	typedef BlockEntrySettingsMap self_type;
 	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
@@ -38,7 +41,12 @@ struct BlockEntrySettingsMap{
 	const offset_minimal_type* offset;
 };
 
+/**<
+ * Settings
+ */
 struct BlockEntrySettings{
+	typedef BlockEntrySettingsMap map_type;
+
 	BlockEntrySettings() :
 		loadPPA(false),
 		loadGT(false),
@@ -60,6 +68,18 @@ struct BlockEntrySettings{
 		this->loadFormatAll = true;
 	}
 
+	void unsetFormat(void){
+		this->loadPPA = false;
+		this->loadGT = false;
+		this->loadGTSimple = false;
+		this->loadFormatAll = false;
+		this->constructOccTable = false;
+	}
+
+	void unsetInfo(void){
+		this->loadInfoAll = false;
+	}
+
 	bool loadPPA;
 	bool loadGT;
 	bool loadGTSimple;
@@ -76,8 +96,8 @@ struct BlockEntrySettings{
 	std::vector<U32> load_format_ID;
 
 
-	std::vector<BlockEntrySettingsMap> load_info_ID_loaded;
-	std::vector<BlockEntrySettingsMap> load_format_ID_loaded;
+	std::vector<map_type> load_info_ID_loaded;
+	std::vector<map_type> load_format_ID_loaded;
 };
 
 }

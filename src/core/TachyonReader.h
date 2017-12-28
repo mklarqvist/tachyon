@@ -98,13 +98,17 @@ public:
 
 	bool toVCFString(std::ostream& stream = std::cout){
 		// Phase 1 construct iterators
-		Iterator::MetaIterator* it                    = this->block.getMetaIterator(); // factory
-		Iterator::ContainerIterator* info_iterators   = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
 		// Setup containers
 		// INFO
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			info_iterators[i].setup(this->block.info_containers[i]);
+		Iterator::ContainerIterator* info_iterators;
+		if(this->settings.loadInfoAll){
+			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+
+			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+				info_iterators[i].setup(this->block.info_containers[i]);
+			}
 		}
 
 		// FORMAT
@@ -143,23 +147,26 @@ public:
 				}
 			}
 
-			// Cycle over streams that are set in the given bit-vector
 			U32 set = 0;
-			const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.info_pattern_id];
-			const U32 n_keys = target_info_vector.n_keys;
-			const U32* const firstKey = &target_info_vector.keys[0];
+			if(this->settings.loadInfoAll){
+				// Cycle over streams that are set in the given bit-vector
 
-			for(U32 k = 0; k < n_keys; ++k){
-				// Check if field is set
-				const U32& current_key = firstKey[k];
-				if(target_info_vector[current_key]){
-					info_iterators[current_key].toString(stream, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
+				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.info_pattern_id];
+				const U32 n_keys = target_info_vector.n_keys;
+				const U32* const firstKey = &target_info_vector.keys[0];
 
-					if(set + 1 != target_info_vector.n_keys)
-						stream.put(';');
+				for(U32 k = 0; k < n_keys; ++k){
+					// Check if field is set
+					const U32& current_key = firstKey[k];
+					if(target_info_vector[current_key]){
+						info_iterators[current_key].toString(stream, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
 
-					++info_iterators[current_key];
-					++set;
+						if(set + 1 != target_info_vector.n_keys)
+							stream.put(';');
+
+						++info_iterators[current_key];
+						++set;
+					}
 				}
 			}
 
