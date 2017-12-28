@@ -7,8 +7,16 @@ namespace Iterator{
 
 class GenotypeIteratorIterface{
 private:
+	typedef GenotypeIteratorIterface self_type;
 
+public:
+	GenotypeIteratorIterface();
+	virtual ~GenotypeIteratorIterface();
 
+	// std::vector<some_abstract_genotype_object> toVector(void) const;
+
+private:
+	virtual void toVCFString(std::ostream& stream) const =0;
 
 };
 

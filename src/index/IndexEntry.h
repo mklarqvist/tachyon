@@ -6,7 +6,7 @@
 #include "../support/TypeDefinitions.h"
 
 namespace Tachyon{
-namespace Totempole{
+namespace Index{
 
 struct IndexEntry{
 	typedef IndexEntry self_type;
@@ -23,34 +23,34 @@ public:
 	~IndexEntry(){}
 
 	void reset(void){
-		this->contigID = 0;
-		this->n_variants = 0;
-		this->byte_offset = 0;
+		this->contigID        = 0;
+		this->n_variants      = 0;
+		this->byte_offset     = 0;
 		this->byte_offset_end = 0;
-		this->minPosition = 0;
-		this->maxPosition = 0;
+		this->minPosition     = 0;
+		this->maxPosition     = 0;
 	}
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.contigID), sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offset), sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.contigID),        sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offset),     sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_end), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition), sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),     sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),     sizeof(U64));
 
 
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.contigID), sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offset), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.contigID),        sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),      sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offset),     sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&entry.byte_offset_end), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),     sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),     sizeof(U64));
 
 		return(stream);
 	}

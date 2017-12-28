@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "../support/TypeDefinitions.h"
+#include "../index/IndexEntry.h"
 
 namespace Tachyon {
 
@@ -49,6 +50,9 @@ inline bool bytePreprocessorRevert(const char* const data, const size_t& size, c
 }
 
 class ImportWriter {
+private:
+	typedef Index::IndexEntry index_entry_type;
+
 public:
 	ImportWriter();
 	~ImportWriter();
@@ -66,6 +70,8 @@ public:
 	std::string baseName;
 
 	// Basic
+	index_entry_type current_index_entry;
+	std::vector<index_entry_type> index;
 	U64 n_blocksWritten;            // number of blocks written
 	U64 n_variants_written;         // number of variants written
 };

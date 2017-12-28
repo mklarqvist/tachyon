@@ -21,7 +21,7 @@ private:
 	typedef ImportWriter writer_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Algorithm::EncoderGenotypesRLE encoder_type;
-	typedef Totempole::IndexEntry index_entry_type;
+	typedef Index::IndexEntry index_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Algorithm::RadixSortGT radix_sorter_type;
