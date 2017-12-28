@@ -440,9 +440,13 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			for(U32 s = 0; s < this->header_->samples; ++s){
 				//target_container.addStride(info_length);
 				for(U32 j = 0; j < info_length; ++j){
-					target_container += entry.getInteger(format_value_type, internal_pos);
+					const S32 val = entry.getInteger(format_value_type, internal_pos);
+					//std::cerr << val << ',';
+					target_container += val;
 				}
+				//std::cerr << "|";
 			}
+			//std::cerr << std::endl;
 		}
 		// Floats
 		else if(format_value_type == 5){
@@ -473,6 +477,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 #if IMPORT_ASSERT == 1
 	assert(internal_pos == entry.pointer);
 #endif
+
+	//exit(1);
 
 	// Hash FILTER pattern
 	const U64 hash_filter_vector = entry.hashFilter();

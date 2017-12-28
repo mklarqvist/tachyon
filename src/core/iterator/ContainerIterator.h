@@ -76,40 +76,40 @@ public:
 		if(type == Core::TYPE_BOOLEAN){
 			this->type_size = 0;
 		} else if(type == Core::TYPE_CHAR){
-			this->type_size = 1;
+			this->type_size = sizeof(char);
 			this->__missing_value = 0x80;
 			this->__end_of_vector_value = 0x81;
 			this->toStringFunction = &self_type::__toStringNoSeparator<char>;
 		} else if(type == Core::TYPE_8B){
-			this->type_size = 1;
+			this->type_size = sizeof(BYTE);
 			this->__missing_value = 0x80;
 			this->__end_of_vector_value = 0x81;
 			if(signedness) this->toStringFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
 			else this->toStringFunction = &self_type::__toStringUnsignedSmall<BYTE>;
 		} else if(type == Core::TYPE_16B){
-			this->type_size = 2;
+			this->type_size = sizeof(U16);
 			this->__missing_value = 0x8000;
 			this->__end_of_vector_value = 0x8001;
 			if(signedness) this->toStringFunction = &self_type::__toStringSigned<S16, U16>;
 			else this->toStringFunction = &self_type::__toStringUnsigned<U16>;
 		} else if(type == Core::TYPE_32B){
-			this->type_size = 4;
+			this->type_size = sizeof(U32);
 			this->__missing_value = 0x80000000;
 			this->__end_of_vector_value = 0x80000001;
 			if(signedness) this->toStringFunction = &self_type::__toStringSigned<S32, U32>;
 			else this->toStringFunction = &self_type::__toStringUnsigned<U32>;
 		} else if(type == Core::TYPE_FLOAT){
-			this->type_size = 4;
+			this->type_size = sizeof(float);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringFloat<float>;
 		} else if(type == Core::TYPE_DOUBLE){
-			this->type_size = 8;
+			this->type_size = sizeof(double);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringFloat<double>;
 		} else if(type == Core::TYPE_64B){
-			this->type_size = 8;
+			this->type_size = sizeof(U64);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringUnsigned<U64>;
@@ -150,9 +150,10 @@ public:
 
 	inline void operator+=(const U32& p){
 		if(this->position + p >= this->n_entries){
-
+			//this->position = this->n_entries - 1;
 			return;
 		}
+
 		this->position += p;
 	}
 
@@ -308,6 +309,7 @@ public:
 	}
 };
 
+// Special case for booleans
 template <>
 class ContainerIteratorType<void> : public ContainerIteratorDataInterface{
 private:
@@ -419,7 +421,6 @@ public:
 		}
 		this->data_iterator->setType(this->container->header.controller.type, this->container->header.controller.signedness);
 
-
 		// Construct this iterator if there is a mixed stride
 		// otherwise we assume that the stride size is one (1)
 		// Factory
@@ -474,10 +475,20 @@ public:
 	 * @return
 	 */
 	inline bool toString(std::ostream& stream){
-		if(this->stride_iterator != nullptr)
+		if(this->stride_iterator != nullptr){
+			//std::cerr << "\ncurrent stride: " << this->stride_iterator->getCurrentStride() << std::endl;
+			//std::cerr << "params: " << (int)this->container->header.controller.type << '\t' << (int)this->container->header.controller.signedness << std::endl;
+			//std::cerr << "pos: " << this->data_iterator->position << std::endl;
+
 			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
-		else
+		}
+		else {
+			//std::cerr << "\ncurrent uniform stride: " << this->container->header.stride << std::endl;
+			//std::cerr << "params: " << (int)this->container->header.controller.type << '\t' << (int)this->container->header.controller.signedness << std::endl;
+			//std::cerr << "pos: " << this->data_iterator->position << std::endl;
+
 			this->data_iterator->toString(stream, this->container->header.stride);
+		}
 
 		return(true);
 	}
@@ -510,7 +521,7 @@ public:
 		}
 	}
 
-	void incrementStride(void){
+	inline void incrementStride(void){
 		if(this->hasStrideIteratorSet) ++(*this->stride_iterator);
 	}
 

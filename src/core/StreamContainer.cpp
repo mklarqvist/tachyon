@@ -134,8 +134,8 @@ void StreamContainer::reformat(){
 	// At this point all integers are S32
 	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data);
 	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data);
-	S32 min = 0;
-	S32 max = 0;
+	S32 min = dat[0];
+	S32 max = dat[0];
 	bool hasMissing = false;
 
 	for(U32 j = 0; j < this->n_additions; ++j){
@@ -151,18 +151,19 @@ void StreamContainer::reformat(){
 	// If we have missing values then we have to
 	// use signedness
 	if(min < 0 || hasMissing == true){
-		byte_width = ceil((ceil(log2(abs(min) + 1)) + 1) / 8);  // One bit is used for sign
-		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1)) + 1) / 8);
+		byte_width = ceil((ceil(log2(abs(min) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
+		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1 + 2)) + 1) / 8);
 		if(byte_width_max > byte_width){
 			byte_width = byte_width_max;
 		}
 	}
 	else byte_width = ceil(ceil(log2(max + 1)) / 8);
 
-	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
+	if(byte_width == 0) byte_width = 1;
+	else if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
 
-	if(byte_width == 0) byte_width = 1;
+	//std::cerr << "Reformat\t" << min << '\t' << max << '\t' << (int)byte_width << '\t' << (int)hasMissing << std::endl;
 
 	// Phase 2
 	// Here we re-encode values using the smallest possible
@@ -212,8 +213,8 @@ void StreamContainer::reformat(){
 			this->header.controller.type = TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
-				if(udat[j] == 0x80000000) this->buffer_data += 0x80;
-				else if(udat[j] == 0x80000001) this->buffer_data += (SBYTE)0x81;
+				if(udat[j] == 0x80000000) this->buffer_data += (BYTE)0x80;
+				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
 				else this->buffer_data += (SBYTE)dat[j];
 			}
 
@@ -222,8 +223,8 @@ void StreamContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S16)dat[j];
-				if(udat[j] == 0x80000000) this->buffer_data += (S16)0x8000;
-				else if(udat[j] == 0x80000001) this->buffer_data += (S16)0x8001;
+				if(udat[j] == 0x80000000) this->buffer_data += (U16)0x8000;
+				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
 				else this->buffer_data += (S16)dat[j];
 			}
 
@@ -232,8 +233,8 @@ void StreamContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S32)dat[j];
-				if(udat[j] == 0x80000000) this->buffer_data += 0x80000000;
-				else if(udat[j] == 0x80000001) this->buffer_data += 0x80000001;
+				if(udat[j] == 0x80000000) this->buffer_data += (U32)0x80000000;
+				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
 				else this->buffer_data += (S32)dat[j];
 			}
 

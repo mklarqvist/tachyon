@@ -141,8 +141,6 @@ public:
 		//const void* info_id;
 		//const void* filter_id;
 
-		std::cerr << std::bitset<16>((S16)-32767) << '\t' << std::bitset<16>(0x8001) << std::endl;
-
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
 
@@ -251,7 +249,7 @@ public:
 			}
 
 			stream << '\n';
-			exit(1);
+
 		}
 		stream.flush();
 
