@@ -226,4 +226,4 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 
 
 } /* namespace IO */
-} /* namespace Tomahawk */
+} /* namespace Tachyon */

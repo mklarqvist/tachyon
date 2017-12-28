@@ -1,6 +1,8 @@
 #ifndef CORE_HEADERCONTIG_H_
 #define CORE_HEADERCONTIG_H_
 
+#include <fstream>
+
 namespace Tachyon{
 namespace Core{
 

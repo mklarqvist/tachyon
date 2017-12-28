@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/io/reader.cpp 
+../src/io/BasicReader.cpp 
 
 OBJS += \
-./src/io/reader.o 
+./src/io/BasicReader.o 
 
 CPP_DEPS += \
-./src/io/reader.d 
+./src/io/BasicReader.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

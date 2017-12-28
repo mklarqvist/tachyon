@@ -1,6 +1,8 @@
 #ifndef CORE_BASE_HEADERMAPENTRY_H_
 #define CORE_BASE_HEADERMAPENTRY_H_
 
+#include <fstream>
+
 namespace Tachyon{
 namespace Core{
 

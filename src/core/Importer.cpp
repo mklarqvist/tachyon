@@ -18,8 +18,8 @@ Importer::Importer(std::string inputFile,
 	checkpoint_bases(checkpoint_bases),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
-	reader_(inputFile),
-	writer_(),
+	reader(inputFile),
+	writer(),
 	header_(nullptr)
 {
 }
@@ -81,16 +81,16 @@ bool Importer::BuildBCF(void){
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header_->samples);
 
-	if(!this->writer_.Open(this->outputPrefix)){
+	if(!this->writer.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
-	if(!this->writer_.WriteHeader()){
+	if(!this->writer.WriteHeader()){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
 		return false;
 	}
-	this->writer_.streamTomahawk << *this->header_;
+	this->writer.stream << *this->header_;
 
 	// Resize containers
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
@@ -177,11 +177,6 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
 
-		if(!compression_manager.compress(this->block)){
-			std::cerr << Helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
-			return false;
-		}
-
 		// Digests
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
@@ -197,29 +192,35 @@ bool Importer::BuildBCF(void){
 			}
 		}
 
+		// Perform compression using standard parameters
+		if(!compression_manager.compress(this->block)){
+			std::cerr << Helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			return false;
+		}
+
 		// Perform writing
 		this->block.updateOffsets();
-		this->block.write(this->writer_.streamTomahawk, this->import_compressed_stats);
+		this->block.write(this->writer.stream, this->import_compressed_stats);
 
 		// Reset and update
 		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
-		this->writer_.streamTomahawk.flush();
+		this->writer.stream.flush();
 		previousContigID = reader.first().body->CHROM;
 		previousFirst    = reader.first().body->POS;
 		previousLast     = reader.last().body->POS;
 	}
 	// Done importing
-	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer_.streamTomahawk.tellp() << std::endl;
-	this->writer_.streamTomahawk.flush();
-	const U64 data_ends = this->writer_.streamTomahawk.tellp();
+	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer.stream.tellp() << std::endl;
+	this->writer.stream.flush();
+	const U64 data_ends = this->writer.stream.tellp();
 
 	// Finalize SHA-512 digests
-	const U64 digests_start = this->writer_.streamTomahawk.tellp();
+	const U64 digests_start = this->writer.stream.tellp();
 	for(U32 i = 0; i < this->header_->map.size(); ++i){
 		digests[i].finalize();
-		this->writer_.streamTomahawk << digests[i];
+		this->writer.stream << digests[i];
 		std::cerr << std::hex;
 		for(U32 j = 0; j < 64; ++j)
 			std::cerr << std::hex << (int)digests[i].sha512_digest[j];
@@ -229,14 +230,14 @@ bool Importer::BuildBCF(void){
 	delete [] digests;
 
 	// Place markers
-	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
-	this->writer_.streamTomahawk.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
+	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
+	this->writer.stream.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
 
 	// Write EOF
 	BYTE eof_data[32];
 	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
-	this->writer_.streamTomahawk.write((char*)&eof_data[0], 32);
-	this->writer_.streamTomahawk.flush();
+	this->writer.stream.write((char*)&eof_data[0], 32);
+	this->writer.stream.flush();
 
 	// All done
 	return(true);
@@ -535,4 +536,4 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	return true;
 }
 
-} /* namespace Tomahawk */
+} /* namespace Tachyon */

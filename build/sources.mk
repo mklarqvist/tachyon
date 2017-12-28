@@ -28,9 +28,9 @@ src/algorithm/permutation \
 src/core \
 src/core/base \
 src/index \
+src/io \
 src/io/bcf \
 src/io/compression \
-src/io \
 src/io/vcf \
 src \
 src/support \

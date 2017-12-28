@@ -21,7 +21,7 @@ VCFHeader::~VCFHeader(){
 	delete [] this->mapTable;
 }
 
-bool VCFHeader::parse(reader& stream){
+bool VCFHeader::parse(reader_type& stream){
 	if(!this->parseFirstLine(stream))
 		return false;
 
@@ -186,7 +186,7 @@ bool VCFHeader::buildContigTable(void){
 	return true;
 }
 
-bool VCFHeader::parseFirstLine(reader& stream){
+bool VCFHeader::parseFirstLine(reader_type& stream){
 	if(!stream.good()){
 		this->error_bit = STREAM_BAD;
 		return false;
@@ -237,7 +237,7 @@ bool VCFHeader::parseFirstLine(const char* const data, U32& offset){
 	return true;
 }
 
-bool VCFHeader::parseHeaderLines(reader& stream){
+bool VCFHeader::parseHeaderLines(reader_type& stream){
 	while(stream.getLine()){
 		if(stream.buffer_[1] != '#')
 			break;
@@ -278,7 +278,7 @@ bool VCFHeader::parseHeaderLines(const char* const data, U32& offset){
 	return true;
 }
 
-bool VCFHeader::parseSampleLine(reader& stream){
+bool VCFHeader::parseSampleLine(reader_type& stream){
 	// At broken position is main header line
 	// Validate header
 	if(strncmp(&VCF::Constants::HEADER_COLUMN[0], &stream.buffer_[0], VCF::Constants::HEADER_COLUMN.size()) != 0){
@@ -399,4 +399,4 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 
 
 }
-} /* namespace Tomahawk */
+} /* namespace Tachyon */

@@ -145,4 +145,4 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 }
 
 } /* namespace IO */
-} /* namespace Tomahawk */
+} /* namespace Tachyon */

@@ -11,12 +11,13 @@
 #include "../support/MagicConstants.h" // for SILENT
 
 namespace Tachyon{
+namespace IO{
 
 /*
  * Basic block-wise reader
  * Reads block_size bytes per iteration
  */
-class reader {
+class BasicReader {
 	typedef char		  type;
 	typedef type          value_type;
 	typedef type         *pointer;
@@ -27,10 +28,10 @@ class reader {
 	typedef ptrdiff_t     difference_type;
 
 public:
-	reader();
-	reader(std::string input);
-	reader(std::string input, const size_t block_size);
-	virtual ~reader(){ delete[] this->buffer_; }
+	BasicReader();
+	BasicReader(std::string input);
+	BasicReader(std::string input, const size_t block_size);
+	virtual ~BasicReader(){ delete[] this->buffer_; }
 	virtual const_reference operator[](const size_t p) const{ return this->buffer_[p]; }
 	virtual reference operator[](const size_t p){ return this->buffer_[p]; }
 
@@ -120,6 +121,7 @@ public:
 	pointer buffer_;		// Buffer
 };
 
+}
 }
 
 #endif /* BASIC_READER_H_ */

@@ -4,7 +4,6 @@
 #include <algorithm>
 
 #include "../../support/helpers.h"
-#include "../reader.h"
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderLine.h"
 #include "../BasicBuffer.h"
@@ -12,6 +11,7 @@
 #include "../../core/base/header/HeaderContig.h"
 #include "../../core/base/header/HeaderMapEntry.h"
 #include "../../core/base/header/HeaderSample.h"
+#include "../BasicReader.h"
 
 namespace Tachyon {
 namespace VCF{
@@ -25,6 +25,7 @@ class VCFHeader {
 	typedef VCFHeaderLine header_line_type;
 	typedef Core::HeaderMapEntry map_entry_type;
 	typedef Core::HeaderSample header_sample_type;
+	typedef IO::BasicReader reader_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
@@ -55,7 +56,7 @@ public:
 		return(this->sampleHashTable->GetItem(&sample[0], &sample, retValue, sample.size()));
 	}
 
-	bool parse(reader& stream);
+	bool parse(reader_type& stream);
 	bool parse(const char* const data, const U32& length);
 
 	FORCE_INLINE const map_entry_type& operator[](const U32& p) const{ return(this->map[p]); }
@@ -77,9 +78,9 @@ private:
 	bool checkLine(const char* data, const U32 length);
 	bool buildContigTable(void);
 	void buildSampleTable(U64 samples);
-	bool parseFirstLine(reader& stream);
-	bool parseHeaderLines(reader& stream);
-	bool parseSampleLine(reader& stream);
+	bool parseFirstLine(reader_type& stream);
+	bool parseHeaderLines(reader_type& stream);
+	bool parseSampleLine(reader_type& stream);
 	bool parseFirstLine(const char* const data, U32& offset);
 	bool parseHeaderLines(const char* const data, U32& offset);
 	bool parseSampleLine(const char* const data, U32& offset, const U32& length);

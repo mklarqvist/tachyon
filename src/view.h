@@ -30,12 +30,10 @@ void view_usage(void){
 	programMessage();
 	std::cerr <<
 	"About:  Convert YON->VCF/BCF/\n"
-	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.vcf>/<in.bcf> -o <output.yon>\n\n"
+	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " view [options] -i <in.vcf>/<in.bcf> -o <output>\n\n"
 	"Options:\n"
-	"  -i FILE  input Tomahawk (required)\n"
+	"  -i FILE  input Tachyon file (required)\n"
 	"  -o FILE  output file prefix or - for stdout\n"
-	"  -c INT   checkpoint size in number of variants (default: 500)\n"
-	"  -C INT   checkpoint bp width (default: 30000)\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -56,6 +54,7 @@ int view(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
+		{"dropFormat",	no_argument, 0,  'G' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
 	};
@@ -63,8 +62,9 @@ int view(int argc, char** argv){
 	std::string input;
 	std::string output;
 	SILENT = 0;
+	bool dropFormat = false;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:s?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:Gs?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -74,6 +74,9 @@ int view(int argc, char** argv){
 			break;
 		case 'o':
 			output = std::string(optarg);
+			break;
+		case 'G':
+			dropFormat = true;
 			break;
 		case 's':
 			SILENT = 1;
@@ -99,7 +102,7 @@ int view(int argc, char** argv){
 	Tachyon::Core::TachyonReader reader(input);
 	reader.settings.loadAll();
 	reader.settings.loadPPA = false;
-	reader.settings.loadInfoAll = true;
+	if(dropFormat) reader.settings.loadFormatAll = false;
 
 	//reader.settings.loadMetaHot = true;
 	//reader.settings.loadMetaCold = true;
@@ -128,7 +131,6 @@ int view(int argc, char** argv){
 	while(reader.nextBlock()){
 		reader.toVCFString();
 		//reader.toVCFPartial();
-		reader.block.clear();
 	}
 
 	return 0;

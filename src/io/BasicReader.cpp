@@ -1,13 +1,14 @@
 #include "../support/helpers.h"
-#include "reader.h"
+#include "BasicReader.h"
 
 namespace Tachyon{
+namespace IO{
 
-reader::reader() : filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
-reader::reader(std::string input) : filename_(input), filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
-reader::reader(std::string input, const size_t block_size) : filename_(input), filesize_(0), block_size_(block_size), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
+BasicReader::BasicReader() : filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
+BasicReader::BasicReader(std::string input) : filename_(input), filesize_(0), block_size_(65536), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
+BasicReader::BasicReader(std::string input, const size_t block_size) : filename_(input), filesize_(0), block_size_(block_size), capacity_(this->block_size_*2), end_(0), buffer_(new type[this->capacity_]){}
 
-bool reader::open(std::string filename){
+bool BasicReader::open(std::string filename){
 	// If filename is empty
 	if(filename.size() == 0)
 		return false;
@@ -19,7 +20,7 @@ bool reader::open(std::string filename){
 	return(this->open());
 }
 
-bool reader::open(void){
+bool BasicReader::open(void){
 	// Check that filename is set
 	if(this->filename_.size() == 0){
 		std::cerr << Helpers::timestamp("ERROR", "IO") << "No input file given..." << std::endl;
@@ -52,9 +53,9 @@ bool reader::open(void){
 	return(true);
 }
 
-void reader::close(void){ this->stream_.close(); }
+void BasicReader::close(void){ this->stream_.close(); }
 
-bool reader::read(void){
+bool BasicReader::read(void){
 	if(!this->good())
 		return false;
 
@@ -68,7 +69,7 @@ bool reader::read(void){
 		return false;
 }
 
-bool reader::read(const uint32_t length){
+bool BasicReader::read(const uint32_t length){
 	if(!this->good())
 		return false;
 
@@ -82,7 +83,7 @@ bool reader::read(const uint32_t length){
 		return false;
 }
 
-bool reader::readAppend(const uint32_t length){
+bool BasicReader::readAppend(const uint32_t length){
 	if(!this->good())
 		return false;
 
@@ -95,7 +96,7 @@ bool reader::readAppend(const uint32_t length){
 		return false;
 }
 
-bool reader::getLine(void){ // Read until finding a new line into buffer
+bool BasicReader::getLine(void){ // Read until finding a new line into buffer
 	if(!this->good())
 		return false;
 
@@ -103,7 +104,7 @@ bool reader::getLine(void){ // Read until finding a new line into buffer
 	this->end_ += this->stream_.gcount();
 
 	if(this->stream_.eof()){
-		//std::cerr << Tomahawk::Helpers::timestamp("LOG", "IO") << "EOF found check bit: " << this->stream_.eof() << std::endl;
+		//std::cerr << Tachyon::Helpers::timestamp("LOG", "IO") << "EOF found check bit: " << this->stream_.eof() << std::endl;
 		return false;
 	}
 
@@ -125,7 +126,7 @@ bool reader::getLine(void){ // Read until finding a new line into buffer
 	return true;
 }
 
-bool reader::getLine(std::string& data){ // Read until finding a new line into string
+bool BasicReader::getLine(std::string& data){ // Read until finding a new line into string
 	if(!this->good())
 		return false;
 
@@ -136,5 +137,5 @@ bool reader::getLine(std::string& data){ // Read until finding a new line into s
 	else return true;
 }
 
-
+}
 }

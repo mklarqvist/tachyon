@@ -21,10 +21,10 @@ ImportWriter::~ImportWriter(){}
 bool ImportWriter::Open(const std::string output){
 	this->filename = output;
 	this->CheckOutputNames(output);
-	this->streamTomahawk.open(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
+	this->stream.open(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
-	if(!this->streamTomahawk.good()){
+	if(!this->stream.good()){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
@@ -37,15 +37,15 @@ bool ImportWriter::Open(const std::string output){
 }
 
 bool ImportWriter::WriteHeader(void){
-	if(!this->streamTomahawk.good()){
+	if(!this->stream.good()){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
 		return false;
 	}
 
-	this->streamTomahawk.write(&Constants::FILE_HEADER[0], Constants::FILE_HEADER.size());
-	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),sizeof(U16));
-	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),sizeof(U16));
-	this->streamTomahawk.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_PATCH),sizeof(U16));
+	this->stream.write(&Constants::FILE_HEADER[0], Constants::FILE_HEADER.size());
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_PATCH),sizeof(U16));
 	return true;
 }
 
@@ -65,4 +65,4 @@ void ImportWriter::CheckOutputNames(const std::string& input){
 }
 
 
-} /* namespace Tomahawk */
+} /* namespace Tachyon */

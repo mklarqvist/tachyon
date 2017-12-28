@@ -14,8 +14,9 @@
 namespace Tachyon {
 
 class Importer {
+private:
 	typedef Importer self_type;
-	typedef reader reader_type;
+	typedef IO::BasicReader reader_type;
 	typedef VCF::VCFHeader header_type;
 	typedef ImportWriter writer_type;
 	typedef IO::BasicBuffer buffer_type;
@@ -43,8 +44,6 @@ private:
 	bool BuildBCF();  // import a BCF file
 	bool parseBCFLine(bcf_entry_type& line); // Import a BCF line
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
-
-private:
 	void resetHashes(void);
 
 private:
@@ -59,8 +58,8 @@ private:
 	// Read/write fields
 	std::string inputFile;    // input file name
 	std::string outputPrefix; // output file prefix
-	reader_type reader_;      // reader
-	writer_type writer_;      // writer
+	reader_type reader;      // reader
+	writer_type writer;      // writer
 
 	index_entry_type index_entry;  // Header index
 	radix_sorter_type permutator;

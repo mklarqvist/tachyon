@@ -60,7 +60,7 @@ public:
 
 public:
 	// Stream information
-	std::ofstream streamTomahawk;   // stream for data
+	std::ofstream stream;   // stream for data
 	std::string filename;
 	std::string basePath;
 	std::string baseName;
