@@ -18,6 +18,7 @@ public:
 	}
 
 	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
+
 	inline void allocate(const U32& n_keys, const U32& w){
 		delete [] this->keys;
 		delete [] this->bit_bytes;
@@ -37,11 +38,14 @@ public:
 	inline const bool operator[](const T& p) const{ return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8)); }
 
 	inline const U32& head(void) const{ return(this->keys[0]); }
+
 	inline const U32& tail(void) const{
 		if(this->n_keys == 0) return(this->tail());
 		return(this->keys[this->n_keys - 1]);
 	}
+
 	inline const U32* const firstKey(void) const{ return(&this->keys[0]); }
+
 	inline const U32* const lastKey(void) const {
 		if(this->n_keys == 0) return(this->firstKey());
 		return(&this->keys[this->n_keys - 1]);
@@ -67,8 +71,8 @@ public:
 	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
 public:
-	U32 n_keys;
-	U32* keys;
+	U32   n_keys;
+	U32*  keys;
 	BYTE* bit_bytes;
 };
 

@@ -177,6 +177,7 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
 
+		// Todo: abstraction
 		// Digests
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
@@ -224,8 +225,38 @@ bool Importer::BuildBCF(void){
 	this->writer.stream.flush();
 	const U64 data_ends = this->writer.stream.tellp();
 
+	// Index the index
+	Index::IndexIndexEntry indexindex;
+	indexindex(this->writer.index[0]);
+	for(U32 i = 1; i < this->writer.index.size(); ++i){
+		if(indexindex == this->writer.index[i]) indexindex += this->writer.index[i];
+		else {
+			std::cerr << indexindex.contigID << ':' << indexindex.minPosition << "-" << indexindex.maxPosition << std::endl;
+			this->writer.indexindex.push_back(indexindex);
+			indexindex(this->writer.index[i]);
+		}
+	}
+
+	if(this->writer.indexindex.size() == 0){
+		this->writer.indexindex.push_back(indexindex);
+	}
+	else if(indexindex != this->writer.indexindex.back()){
+		this->writer.indexindex.push_back(indexindex);
+	}
+
+	// Write index-index
+	const U32 n_indexindex = this->writer.indexindex.size();
+	this->writer.stream.write(reinterpret_cast<const char* const>(&n_indexindex), sizeof(U32));
+	for(U32 i = 0; i < n_indexindex; ++i){
+		this->writer.stream << this->writer.indexindex[i];
+	}
+
+	std::cerr << indexindex.contigID << ':' << indexindex.minPosition << "-" << indexindex.maxPosition << std::endl;
+
 	// Write index blocks
-	for(U32 i = 0; i < this->writer.index.size(); ++i)
+	const U32 n_index = this->writer.index.size();
+	this->writer.stream.write(reinterpret_cast<const char* const>(&n_index), sizeof(U32));
+	for(U32 i = 0; i < n_index; ++i)
 		this->writer.stream << this->writer.index[i];
 
 	// Finalize SHA-512 digests

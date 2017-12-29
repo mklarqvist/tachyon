@@ -52,6 +52,7 @@ inline bool bytePreprocessorRevert(const char* const data, const size_t& size, c
 class ImportWriter {
 private:
 	typedef Index::IndexEntry index_entry_type;
+	typedef Index::IndexIndexEntry index_index_type;
 
 public:
 	ImportWriter();
@@ -72,6 +73,7 @@ public:
 	// Basic
 	index_entry_type current_index_entry;
 	std::vector<index_entry_type> index;
+	std::vector<index_index_type> indexindex;
 	U64 n_blocksWritten;            // number of blocks written
 	U64 n_variants_written;         // number of variants written
 };

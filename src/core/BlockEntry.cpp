@@ -49,7 +49,8 @@ void BlockEntry::clear(){
 	this->gt_simple_container.reset();
 	this->ppa_manager.reset();
 
-	// Base container data types are alwats TYPE_STRUCT
+	// Base container data types are always TYPE_STRUCT
+	// Map ID fields are always U32 fields
 	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
 	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
 	this->meta_info_map_ids.setType(Core::CORE_TYPE::TYPE_32B);

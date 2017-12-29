@@ -195,7 +195,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		if(!across_contigs){
 			if(this->entries[this->n_entries]->body->CHROM != firstContig){
 				std::cerr << Helpers::timestamp("LOG","CONTIG") << "Switch in CHROM: " << firstContig << "->" << this->entries[this->n_entries]->body->CHROM << std::endl;
-				std::cerr << "Last is now: " << this->last().body->CHROM << ':' << this->last().body->POS << std::endl;
+				//std::cerr << "Last is now: " << this->last().body->CHROM << ':' << this->last().body->POS << std::endl;
 				this->n_carry_over = 1;
 				return(this->size() > 0);
 			}
@@ -203,7 +203,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 		// Check break condition for window
 		if(this->entries[this->n_entries]->body->POS - firstPos > bp_window){
-			std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries]->body->POS) - firstPos << ")" << std::endl;
+			//std::cerr << Helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries]->body->POS) - firstPos << ")" << std::endl;
 			++this->n_entries;
 			break;
 		}

@@ -16,7 +16,7 @@ struct IndexEntry{
 
 public:
 	IndexEntry() :
-		contigID(0),
+		contigID(-1),
 		n_variants(0),
 		byte_offset(0),
 		byte_offset_end(0),
@@ -26,7 +26,7 @@ public:
 	~IndexEntry(){}
 
 	void reset(void){
-		this->contigID        = 0;
+		this->contigID        = -1;
 		this->n_variants      = 0;
 		this->byte_offset     = 0;
 		this->byte_offset_end = 0;
@@ -64,7 +64,7 @@ public:
 	U64 byte_offset;	// tellg() position in stream for start of record in Tomahawk file
 	U64 byte_offset_end;// tellg() position in stream for start of record in Tomahawk file
 	U64 minPosition;	// smallest bp position
-	U64 maxPosition;	// largest bp position
+	U64 maxPosition;	// largest  bp position
 };
 
 /**<
@@ -97,27 +97,60 @@ public:
 		this->maxPosition       = 0;
 	}
 
+	void operator()(const entry_type& entry){
+		this->contigID          = entry.contigID;
+		this->n_blocks          = 1;
+		this->n_variants        = entry.n_variants;
+		this->byte_offset_begin = entry.byte_offset;
+		this->byte_offest_end   = entry.byte_offset_end;
+		this->minPosition       = entry.minPosition;
+		this->maxPosition       = entry.maxPosition;
+	}
+
+	inline bool operator==(const entry_type& entry) const{ return(this->contigID == entry.contigID); }
+
+	bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+
+	bool operator==(const self_type& other) const{
+		if(this->contigID != other.contigID) return false;
+		if(this->n_blocks != other.n_blocks) return false;
+		if(this->n_variants != other.n_variants) return false;
+		if(this->byte_offset_begin != other.byte_offset_begin) return false;
+		if(this->byte_offest_end != other.byte_offest_end) return false;
+		if(this->minPosition != other.minPosition) return false;
+		if(this->maxPosition != other.maxPosition) return false;
+
+		return true;
+	}
+
+	void operator+=(const entry_type& entry){
+		++this->n_blocks;
+		this->n_variants     += entry.n_variants;
+		this->byte_offest_end = entry.byte_offset_end;
+		this->maxPosition     = entry.maxPosition;
+	}
+
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.contigID),        sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),        sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.contigID),         sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),         sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),       sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_begin),sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition),     sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),     sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end),  sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),      sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),      sizeof(U64));
 
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.contigID),        sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&entry.n_blocks),        sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),      sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.contigID),         sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&entry.n_blocks),         sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),       sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.byte_offset_begin),sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition),     sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition),     sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end),  sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),      sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),      sizeof(U64));
 
 		return(stream);
 	}
@@ -129,10 +162,10 @@ public:
 	U64 byte_offset_begin;  // start virtual offset
 	U64 byte_offest_end;    // end virtual offset
 	U64 minPosition;        // smallest bp position observed
-	U64 maxPosition;        // largest bp position observed
+	U64 maxPosition;        // largest  bp position observed
 };
 
 }
 }
 
-#endif /* TOTEMPOLEENTRY_H_ */
+#endif
