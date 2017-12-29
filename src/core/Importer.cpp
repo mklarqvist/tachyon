@@ -1,7 +1,6 @@
 #include <fstream>
 
 #include "Importer.h"
-#include "../algorithm/compression/CompressionManager.h"
 #include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
 
@@ -24,7 +23,7 @@ Importer::Importer(std::string inputFile,
 {
 }
 
-Importer::~Importer(){ this->recode_buffer.deleteAll(); }
+Importer::~Importer(){ }
 
 void Importer::resetHashes(void){
 	this->info_fields.clear();
@@ -96,8 +95,6 @@ bool Importer::BuildBCF(void){
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
 	this->block.resize(resize_to);
 
-	Compression::CompressionManager compression_manager;
-
 	// Digest controller
 	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
 	for(U32 i = 0; i < this->header_->map.size(); ++i){
@@ -121,7 +118,6 @@ bool Importer::BuildBCF(void){
 	bcf_entry_type t;
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
-			std::cerr << "breaking" << std::endl;
 			break;
 		}
 
@@ -230,7 +226,7 @@ bool Importer::BuildBCF(void){
 	const U64 data_ends = this->writer.stream.tellp();
 
 	// Write index
-	this->writer.WriteFinal();
+	this->writer.WriteIndex();
 
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();
@@ -247,13 +243,7 @@ bool Importer::BuildBCF(void){
 
 	// Place markers
 	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
-	this->writer.stream.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
-
-	// Write EOF
-	BYTE eof_data[32];
-	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
-	this->writer.stream.write((char*)&eof_data[0], 32);
-	this->writer.stream.flush();
+	this->writer.WriteFinal(data_ends);
 
 	// All done
 	return(true);

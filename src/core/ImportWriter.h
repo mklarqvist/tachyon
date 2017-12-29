@@ -59,7 +59,8 @@ public:
 
 	bool Open(const std::string output);
 	bool WriteHeader(void);
-	void WriteFinal(void);
+	void WriteIndex(void);
+	void WriteFinal(const U64& data_ends);
 	void CheckOutputNames(const std::string& input);
 
 public:

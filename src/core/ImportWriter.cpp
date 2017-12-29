@@ -46,9 +46,19 @@ bool ImportWriter::WriteHeader(void){
 	return true;
 }
 
-void ImportWriter::WriteFinal(void){
+void ImportWriter::WriteIndex(void){
 	this->index.buildSuperIndex();
 	this->stream << this->index;
+}
+
+void ImportWriter::WriteFinal(const U64& data_ends){
+	this->stream.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
+
+	// Write EOF
+	BYTE eof_data[32];
+	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
+	this->stream.write((char*)&eof_data[0], 32);
+	this->stream.flush();
 }
 
 void ImportWriter::CheckOutputNames(const std::string& input){
