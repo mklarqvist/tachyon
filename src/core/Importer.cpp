@@ -113,6 +113,9 @@ bool Importer::BuildBCF(void){
 	S32 previousContigID = -1;
 	U64 n_variants_read  = 0;
 
+	// Index
+	Index::IndexEntry current_index_entry;
+
 	// Begin import
 	// Get BCF entries
 	bcf_entry_type t;
@@ -199,17 +202,18 @@ bool Importer::BuildBCF(void){
 			return false;
 		}
 
+		// Todo: abstraction
 		// Perform writing and update index
 		this->block.updateOffsets();
-		this->writer.current_index_entry.byte_offset = this->writer.stream.tellp();
+		current_index_entry.byte_offset = this->writer.stream.tellp();
 		this->block.write(this->writer.stream, this->import_compressed_stats);
-		this->writer.current_index_entry.byte_offset_end = this->writer.stream.tellp();
-		this->writer.current_index_entry.contigID    = reader.first().body->CHROM;
-		this->writer.current_index_entry.minPosition = reader.first().body->POS;
-		this->writer.current_index_entry.maxPosition = reader.last().body->POS;
-		this->writer.current_index_entry.n_variants  = reader.size();
-		this->writer.index.push_back(this->writer.current_index_entry);
-		this->writer.current_index_entry.reset();
+		current_index_entry.byte_offset_end = this->writer.stream.tellp();
+		current_index_entry.contigID    = reader.first().body->CHROM;
+		current_index_entry.minPosition = reader.first().body->POS;
+		current_index_entry.maxPosition = reader.last().body->POS;
+		current_index_entry.n_variants  = reader.size();
+		this->writer.index += current_index_entry;
+		current_index_entry.reset();
 
 		// Reset and update
 		this->resetHashes();
@@ -225,39 +229,8 @@ bool Importer::BuildBCF(void){
 	this->writer.stream.flush();
 	const U64 data_ends = this->writer.stream.tellp();
 
-	// Index the index
-	Index::IndexIndexEntry indexindex;
-	indexindex(this->writer.index[0]);
-	for(U32 i = 1; i < this->writer.index.size(); ++i){
-		if(indexindex == this->writer.index[i]) indexindex += this->writer.index[i];
-		else {
-			std::cerr << indexindex.contigID << ':' << indexindex.minPosition << "-" << indexindex.maxPosition << std::endl;
-			this->writer.indexindex.push_back(indexindex);
-			indexindex(this->writer.index[i]);
-		}
-	}
-
-	if(this->writer.indexindex.size() == 0){
-		this->writer.indexindex.push_back(indexindex);
-	}
-	else if(indexindex != this->writer.indexindex.back()){
-		this->writer.indexindex.push_back(indexindex);
-	}
-
-	// Write index-index
-	const U32 n_indexindex = this->writer.indexindex.size();
-	this->writer.stream.write(reinterpret_cast<const char* const>(&n_indexindex), sizeof(U32));
-	for(U32 i = 0; i < n_indexindex; ++i){
-		this->writer.stream << this->writer.indexindex[i];
-	}
-
-	std::cerr << indexindex.contigID << ':' << indexindex.minPosition << "-" << indexindex.maxPosition << std::endl;
-
-	// Write index blocks
-	const U32 n_index = this->writer.index.size();
-	this->writer.stream.write(reinterpret_cast<const char* const>(&n_index), sizeof(U32));
-	for(U32 i = 0; i < n_index; ++i)
-		this->writer.stream << this->writer.index[i];
+	// Write index
+	this->writer.WriteFinal();
 
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();

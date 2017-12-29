@@ -10,11 +10,8 @@
 
 namespace Tachyon {
 
-ImportWriter::ImportWriter() :
-	n_blocksWritten(0),
-	n_variants_written(0)
-{
-}
+ImportWriter::ImportWriter()
+{}
 
 ImportWriter::~ImportWriter(){}
 
@@ -50,7 +47,8 @@ bool ImportWriter::WriteHeader(void){
 }
 
 void ImportWriter::WriteFinal(void){
-
+	this->index.buildSuperIndex();
+	this->stream << this->index;
 }
 
 void ImportWriter::CheckOutputNames(const std::string& input){

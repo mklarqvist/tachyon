@@ -8,6 +8,7 @@
 #include "../algorithm/permutation/RadixSortGT.h"
 #include "../algorithm/compression/EncoderGenotypesRLE.h"
 #include "../index/IndexEntry.h"
+#include "../index/IndexIndexEntry.h"
 #include "ImportWriter.h"
 #include "ImporterStats.h"
 
