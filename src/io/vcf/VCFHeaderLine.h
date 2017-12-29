@@ -64,8 +64,6 @@ public:
 		}
 
 		if(this->data[match - this->data + 1] != '<'){
-			std::cerr << "is text only: " << std::endl;
-			std::cerr << std::string(this->data, this->size_+1) << std::endl;
 			this->isIndexable = false;
 			return true;
 		}

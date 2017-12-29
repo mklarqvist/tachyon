@@ -18,7 +18,7 @@ struct IndexBlockEntryHeaderOffsets{
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.key), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.key),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
 		return stream;
 	}

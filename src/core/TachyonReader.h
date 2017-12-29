@@ -10,6 +10,7 @@
 #include "iterator/MetaIterator.h"
 #include "base/header/Header.h"
 #include "iterator/ContainerIterator.h"
+#include "../index/SortedIndex.h"
 
 namespace Tachyon{
 namespace Core{
@@ -21,6 +22,7 @@ class TachyonReader{
 	typedef Header header_type;
 	typedef Compression::CompressionManager codec_manager_type;
 	typedef BlockEntrySettings settings_type;
+	typedef Index::SortedIndex index_type;
 
 public:
 	TachyonReader() : filesize(0){}
@@ -28,6 +30,7 @@ public:
 	~TachyonReader(){ }
 
 	bool open(void);
+
 	bool open(const std::string& filename){
 		if(filename.size() == 0){
 			std::cerr << "no filename" << std::endl;
@@ -41,7 +44,7 @@ public:
 		}
 		this->stream.seekg(0);
 		if(!this->stream.good()){
-			std::cerr << "failed to rewrind" << std::endl;
+			std::cerr << "failed to rewind" << std::endl;
 			return false;
 		}
 
@@ -65,21 +68,21 @@ public:
 		}
 		this->stream.seekg(this->filesize - 32 - sizeof(U64));
 		this->stream.read((char*)reinterpret_cast<char*>(&this->l_data), sizeof(U64));
+		this->stream.seekg(this->l_data);
+		this->stream >> this->index;
 		this->stream.seekg(return_pos);
 
 		return true;
 	}
 
-	bool nextBlock(){
+	bool getBlock(){
 		if(!this->stream.good()){
 			std::cerr << "faulty stream" << std::endl;
 			return false;
 		}
 
-		if((U64)this->stream.tellg() == this->l_data){
-			//std::cerr << "eof all done" << std::endl;
+		if((U64)this->stream.tellg() == this->l_data)
 			return false;
-		}
 
 		// Reset
 		this->block.clear();
@@ -202,17 +205,12 @@ public:
 						// Check if field is set
 						const U32& current_key = firstKey_format[k];
 						if(target_format_vector[current_key]){
-							//std::cerr << '\t' << current_key << "->" << this->block.index_entry.format_offsets[current_key].key << ";" << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[current_key].key]].ID << '\t' << format_iterators[current_key].data_iterator->n_entries << '\t' << (U32)format_iterators[current_key].get<BYTE>() << std::endl;
 							if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
-								//std::cerr << "isGT" << std::endl;
-								//++format_iterators[current_key];
 								++set;
 								continue;
 							}
 
 							format_iterators[current_key].toString(stream);
-
-							//std::cout << '@';
 
 							if(set + 1 != target_format_vector.n_keys)
 								stream.put(':');
@@ -227,9 +225,6 @@ public:
 
 				for(U32 k = 0; k < n_keys_format; ++k){
 					if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
-						//std::cerr << "isGT" << std::endl;
-						//++format_iterators[current_key];
-
 						continue;
 					}
 					// Check if field is set
@@ -256,9 +251,9 @@ public:
 	U64 l_data;
 
 	settings_type settings;
+	header_type   header;
+	index_type    index;
 	block_entry_type block;
-	header_type header;
-
 	codec_manager_type codec_manager;
 };
 

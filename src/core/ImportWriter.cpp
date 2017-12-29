@@ -49,6 +49,7 @@ bool ImportWriter::WriteHeader(void){
 void ImportWriter::WriteIndex(void){
 	this->index.buildSuperIndex();
 	this->stream << this->index;
+	this->stream.flush();
 }
 
 void ImportWriter::WriteFinal(const U64& data_ends){

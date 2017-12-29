@@ -100,17 +100,16 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, offset_minimal_t
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){
-
 		// Dump data
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < patterns[i].size(); ++j){
-			std::cerr << patterns[i][j] << '\t';
-		}
-		std::cerr << std::endl;
+		//std::cerr << i << '\t';
+		//for(U32 j = 0; j < patterns[i].size(); ++j){
+		//	std::cerr << patterns[i][j] << '\t';
+		//}
+		//std::cerr << std::endl;
 
 
 		//
-		std::cerr << i << '\t';
+		//std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
 			U32 retval = 0;
 			if(!values.getRaw(patterns[i][j], retval)){
@@ -118,29 +117,28 @@ bool IndexBlockEntry::__constructBitVector(bit_vector*& target, offset_minimal_t
 				exit(1);
 			}
 			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
-			std::cerr << retval << '\t';
+			//std::cerr << retval << '\t';
 			target[i].keys[j] = retval;
 			offset[retval].key = patterns[i][j];
 			//std::cerr << target[i].keys[j] << std::endl;
 		}
-		std::cerr << std::endl;
+		//std::cerr << std::endl;
 
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < bitvector_width; ++j)
-			std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
+		//std::cerr << i << '\t';
+		//for(U32 j = 0; j < bitvector_width; ++j)
+		//	std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
 
-		std::cerr << std::endl;
+		//std::cerr << std::endl;
 
-		std::cerr << i << '\t';
-		for(U32 j = 0; j < patterns[i].size(); ++j){
+		//std::cerr << i << '\t';
+		//for(U32 j = 0; j < patterns[i].size(); ++j){
+		//	std::cerr << offset[target[i].keys[j]].key << '\t';
+		//}
 
-			std::cerr << offset[target[i].keys[j]].key << '\t';
-		}
 
-
-		std::cerr << std::endl << std::endl;
+		//std::cerr << std::endl << std::endl;
 	}
-	std::cerr << std::endl;
+	//std::cerr << std::endl;
 	//assert(this->info_offsets[0].key == 15);
 
 	return true;

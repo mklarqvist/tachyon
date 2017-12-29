@@ -1,6 +1,6 @@
 #ifndef INDEX_SORTEDINDEX_H_
 #define INDEX_SORTEDINDEX_H_
-
+#include <bitset>
 #include "IndexEntry.h"
 #include "IndexIndexEntry.h"
 
@@ -23,7 +23,6 @@ public:
 		for(U32 i = 1; i < this->index.size(); ++i){
 			if(indexindex == this->index[i]) indexindex += this->index[i];
 			else {
-				//std::cerr << indexindex.contigID << ':' << indexindex.minPosition << "-" << indexindex.maxPosition << std::endl;
 				this->indexindex.push_back(indexindex);
 				indexindex(this->index[i]);
 			}
@@ -46,12 +45,15 @@ public:
 	const index_entry_type& operator[](const U32& p) const{ return( this->index[p]); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.n_superindex), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_index),      sizeof(U32));
-		for(U32 i = 0; i < entry.n_superindex; ++i)
+		const U32 n_superindex = entry.indexindex.size();
+		const U32 n_index      = entry.index.size();
+
+		stream.write(reinterpret_cast<const char*>(&n_superindex), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&n_index),      sizeof(U32));
+		for(U32 i = 0; i < n_superindex; ++i)
 			stream << entry.indexindex[i];
 
-		for(U32 i = 0; i < entry.n_index; ++i)
+		for(U32 i = 0; i < n_index; ++i)
 			stream << entry.index[i];
 
 		return(stream);

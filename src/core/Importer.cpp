@@ -19,7 +19,7 @@ Importer::Importer(std::string inputFile,
 	outputPrefix(outputPrefix),
 	reader(inputFile),
 	writer(),
-	header_(nullptr)
+	header(nullptr)
 {
 }
 
@@ -63,22 +63,22 @@ bool Importer::BuildBCF(void){
 		return false;
 	}
 
-	this->header_ = &reader.header;
-	if(this->header_->samples == 0){
+	this->header = &reader.header;
+	if(this->header->samples == 0){
 		std::cerr << Helpers::timestamp("ERROR", "BCF") << "No samples detected in header..." << std::endl;
 		return false;
 	}
 
-	if(this->header_->samples == 1){
+	if(this->header->samples == 1){
 		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tachyon::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
 		return false;
 	}
 
 	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header_->samples);
-	this->block.ppa_manager.setSamples(this->header_->samples);
+	this->encoder.setSamples(this->header->samples);
+	this->block.ppa_manager.setSamples(this->header->samples);
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header_->samples);
+	this->permutator.setSamples(this->header->samples);
 
 	if(!this->writer.Open(this->outputPrefix)){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
@@ -89,15 +89,15 @@ bool Importer::BuildBCF(void){
 		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
 		return false;
 	}
-	this->writer.stream << *this->header_;
+	this->writer.stream << *this->header;
 
 	// Resize containers
-	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header_->samples * 100;
+	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
 	this->block.resize(resize_to);
 
 	// Digest controller
-	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header_->map.size()];
-	for(U32 i = 0; i < this->header_->map.size(); ++i){
+	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header->map.size()];
+	for(U32 i = 0; i < this->header->map.size(); ++i){
 		if(!digests[i].initialize()){
 			std::cerr << "failed to init sha512" << std::endl;
 			return false;
@@ -179,14 +179,14 @@ bool Importer::BuildBCF(void){
 		// Todo: abstraction
 		// Digests
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			if(!digests[this->header_->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
+			if(!digests[this->header->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
 				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!digests[this->header_->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
+			if(!digests[this->header->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
 				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
@@ -230,7 +230,8 @@ bool Importer::BuildBCF(void){
 
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();
-	for(U32 i = 0; i < this->header_->map.size(); ++i){
+
+	for(U32 i = 0; i < this->header->map.size(); ++i){
 		digests[i].finalize();
 		this->writer.stream << digests[i];
 		std::cerr << std::hex;
@@ -240,6 +241,7 @@ bool Importer::BuildBCF(void){
 		std::cerr << std::dec << std::endl;
 	}
 	delete [] digests;
+	this->writer.stream.flush();
 
 	// Place markers
 	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
@@ -251,8 +253,8 @@ bool Importer::BuildBCF(void){
 
 bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Assert position is in range
-	if(entry.body->POS + 1 > this->header_->getContig(entry.body->CHROM).bp_length){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header_->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header_->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
+	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
+		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
 		return false;
 	}
 
@@ -276,7 +278,7 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	}
 
 	// RLE using this word size
-	U32 w = ceil(ceil(log2(this->header_->samples + 1))/8);
+	U32 w = ceil(ceil(log2(this->header->samples + 1))/8);
 	if((w > 2) & (w < 4)) w = 4;
 	else if(w > 4) w = 8;
 
@@ -393,7 +395,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// If this is a GT field
 		// then continue
-		if(this->header_->map[this->header_->mapTable[val]].ID == "GT"){
+		if(this->header->map[this->header->mapTable[val]].ID == "GT"){
 			BYTE multiplier = sizeof(U32);
 			switch(format_value_type){
 				case(7):
@@ -404,7 +406,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 				case(0): break; // FLAG
 				default: std::cerr << "illegal" << std::endl; exit(1); return false;
 			}
-			internal_pos += this->header_->samples * info_length * multiplier;
+			internal_pos += this->header->samples * info_length * multiplier;
 			continue;
 		}
 
@@ -438,14 +440,14 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Flags and integers
 		// These are BCF value types
 		if(format_value_type <= 3){
-			for(U32 s = 0; s < this->header_->samples; ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < info_length; ++j)
 					target_container += entry.getInteger(format_value_type, internal_pos);
 			}
 		}
 		// Floats
 		else if(format_value_type == 5){
-			for(U32 s = 0; s < this->header_->samples; ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < info_length; ++j)
 					target_container += entry.getFloat(internal_pos);
 
@@ -453,7 +455,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 		// Chars
 		else if(format_value_type == 7){
-			for(U32 s = 0; s < this->header_->samples; ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < info_length; ++j)
 					target_container += entry.getChar(internal_pos);
 			}
