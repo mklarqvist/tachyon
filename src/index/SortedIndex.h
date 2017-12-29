@@ -44,12 +44,17 @@ public:
 	const index_entry_type* const at(const U32& p)   const{ return(&this->index[p]); }
 	const index_entry_type& operator[](const U32& p) const{ return( this->index[p]); }
 
+	int findOverlap(const S32& contigID, const U64& position);
+	std::vector<int> findOverlap(const S32& contigID, const U64& position_from, const U64& position_to);
+
+private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const U32 n_superindex = entry.indexindex.size();
 		const U32 n_index      = entry.index.size();
 
 		stream.write(reinterpret_cast<const char*>(&n_superindex), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&n_index),      sizeof(U32));
+
 		for(U32 i = 0; i < n_superindex; ++i)
 			stream << entry.indexindex[i];
 
