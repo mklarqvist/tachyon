@@ -255,10 +255,10 @@ const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessDiploidRLE
 	// Run limits
 	// Values set to signed integers as values can underflow if
 	// the do not fit in the word size
-	S32 BYTE_limit  = pow(2, 8*sizeof(BYTE) - (2*(shift_size)+1)) - 1;
-	S32  U16_limit  = pow(2, 8*sizeof(U16)  - (2*(shift_size)+1)) - 1;
-	S32  U32_limit  = pow(2, 8*sizeof(U32)  - (2*(shift_size)+1)) - 1;
-	U64  U64_limit  = pow(2, 8*sizeof(U64)  - (2*(shift_size)+1)) - 1;
+	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (2*(shift_size)+1)) - 1;
+	S32  U16_limit = pow(2, 8*sizeof(U16)  - (2*(shift_size)+1)) - 1;
+	S32  U32_limit = pow(2, 8*sizeof(U32)  - (2*(shift_size)+1)) - 1;
+	U64  U64_limit = pow(2, 8*sizeof(U64)  - (2*(shift_size)+1)) - 1;
 	if(BYTE_limit < 0) BYTE_limit = std::numeric_limits<S32>::max();
 	if(U16_limit < 0)  U16_limit  = std::numeric_limits<S32>::max();
 	if(U32_limit < 0)  U32_limit  = std::numeric_limits<S32>::max();

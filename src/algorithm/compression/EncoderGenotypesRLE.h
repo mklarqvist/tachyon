@@ -91,9 +91,14 @@ public:
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa);
 	const rle_helper_type assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa);
+	const rle_helper_type assessMploidRLEBiallelic(const bcf_type& line, const U32* const ppa);
+	const rle_helper_type assessMploidRLEnAllelic(const bcf_type& line, const U32* const ppa);
+
 	template <class T> bool EncodeDiploidSimple(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 	template <class T> bool EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing = true, const bool hasMixedPhase = true);
 	template <class T> bool EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
+	template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
+	template <class T> bool EncodeMploidRLENallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 
 private:
 	U64 n_samples;      // number of samples
@@ -115,8 +120,8 @@ bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_ty
 	if(sizeof(T) <= 2){
 		U32 j = 0;
 		for(U32 i = 0; i < this->n_samples * 2; i += 2, ++j){
-			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]]);
-			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]+1]);
+			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
 
 			//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 			//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
@@ -130,8 +135,8 @@ bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_ty
 		for(U32 i = 0; i < this->n_samples * 4; i += 4, ++j){
 			//const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
 			//const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
-			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[j]]);
-			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[j]+2]);
+			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]]);
+			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]+sizeof(S16)]);
 			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
 							 ((fmt_type_value1 >> 1) << 1) |
 							 (fmt_type_value2 & 1);
@@ -158,8 +163,8 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	// shift = 2 if hasMissing == TRUE
 	// shift = 1 if HasMissing == FALSE
 	// add = 1 if hasMixedPhase == TRUE
-	const BYTE shift = hasMissing ? 2 : 1;
-	const BYTE add = hasMixedPhase ? 1 : 0;
+	const BYTE shift = hasMissing    ? 2 : 1;
+	const BYTE add   = hasMixedPhase ? 1 : 0;
 
 	// Run limits
 	const T limit = pow(2, 8*sizeof(T) - (2*(1+hasMissing)+hasMixedPhase)) - 1;
@@ -170,8 +175,8 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	if(shift == 2) map = Constants::ALLELE_SELF_MAP;
 
 	//std::cerr << ppa[0] << std::endl;
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
 	T packed = PACK_RLE_BIALLELIC(fmt_type_value2, fmt_type_value1, shift, add);
 	//std::cout << (U32)packed << '\t';
 
@@ -182,8 +187,8 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	BYTE last_phase = (fmt_type_value2 & 1);
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
 		//std::cerr << ppa[j] << std::endl;
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]+1]);
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
 		const T packed_internal = PACK_RLE_BIALLELIC(fmt_type_value2, fmt_type_value1, shift, add);
 		last_phase = (fmt_type_value2 & 1);
 
@@ -254,8 +259,8 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 
 	const BYTE shift = ceil(log2(line.body->n_allele + 1));
 
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
 
 	//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 	//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
@@ -269,8 +274,8 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 
 	U32 j = 1;
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]+1]);
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
 
 		//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 		//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
