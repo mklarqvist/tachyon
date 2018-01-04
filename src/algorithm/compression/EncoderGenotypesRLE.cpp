@@ -3,6 +3,19 @@
 namespace Tachyon{
 namespace Encoding{
 
+EncoderGenotypesRLE::EncoderGenotypesRLE() :
+	n_samples(0)
+{
+}
+
+EncoderGenotypesRLE::EncoderGenotypesRLE(const U64 samples) :
+	n_samples(samples)
+	//helper(samples)
+{
+}
+
+EncoderGenotypesRLE::~EncoderGenotypesRLE(){}
+
 bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
@@ -48,7 +61,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		//meta_base.AF = float(this->helper.countsAlleles[1]) / (this->helper.countsAlleles[0] + this->helper.countsAlleles[1]);
 
 		// Reset and recycle helper
-		this->helper.reset();
+		//this->helper.reset();
 
 		return true;
 	}
@@ -99,7 +112,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 			}
 
 			// Reset and recycle helper
-			this->helper.reset();
+			//this->helper.reset();
 			return true;
 		}
 		// BCF style is cheaper
@@ -121,7 +134,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 			}
 
 			// Reset and recycle helper
-			this->helper.reset();
+			//this->helper.reset();
 			return true;
 		}
 	}

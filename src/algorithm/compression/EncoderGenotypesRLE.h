@@ -82,20 +82,11 @@ class EncoderGenotypesRLE {
 	} rle_helper_type;
 
 public:
-	EncoderGenotypesRLE() :
-		n_samples(0)
-	{
-	}
-
-	EncoderGenotypesRLE(const U64 samples) :
-		n_samples(samples),
-		helper(samples)
-	{
-	}
-
-	~EncoderGenotypesRLE(){}
+	EncoderGenotypesRLE();
+	EncoderGenotypesRLE(const U64 samples);
+	~EncoderGenotypesRLE();
 	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa);
-	inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
+	//inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
 
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa);
@@ -106,7 +97,7 @@ private:
 
 private:
 	U64 n_samples;      // number of samples
-	helper_type helper; // support stucture
+	//helper_type helper; // support stucture
 };
 
 template <class T>
@@ -183,7 +174,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	//std::cout << (U32)packed << '\t';
 
 	// MSB contains phasing information
-	this->helper.phased = (fmt_type_value2 & 1);
+	//this->helper.phased = (fmt_type_value2 & 1);
 
 	U32 j = 1;
 	BYTE last_phase = (fmt_type_value2 & 1);
@@ -204,15 +195,15 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 			assert((RLE >> (2*shift + add)) == length);
 
 			// Set meta phased flag bit
-			if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
+			//if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
 
 			// Push RLE to buffer
 			runs += RLE;
 
 			// Update genotype and allele counts
-			this->helper[map[packed >> add]] += length;
-			this->helper.countsAlleles[packed >> (shift + add)] += length;
-			this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
+			//this->helper[map[packed >> add]] += length;
+			//this->helper.countsAlleles[packed >> (shift + add)] += length;
+			//this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
 
 			// Reset and update
 			sumLength += length;
@@ -230,16 +221,16 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	assert((RLE >> (2*shift + add)) == length);
 
 	// Set meta phased flag bit
-	if((packed & 1) != 1) this->helper.phased = false;
+	//if((packed & 1) != 1) this->helper.phased = false;
 
 	// Push RLE to buffer
 	runs += RLE;
 	++n_runs;
 
 	// Update genotype and allele counts
-	this->helper[map[packed >> add]] += length;
-	this->helper.countsAlleles[packed >> (shift + add)] += length;
-	this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
+	//this->helper[map[packed >> add]] += length;
+	//this->helper.countsAlleles[packed >> (shift + add)] += length;
+	//this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
 
 	// Reset and update
 	sumLength += length;
@@ -269,7 +260,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 	T packed = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift);
 
 	// MSB contains phasing information
-	this->helper.phased = (fmt_type_value2 & 1);
+	//this->helper.phased = (fmt_type_value2 & 1);
 
 	// Run limits
 	const T limit = pow(2, 8*sizeof(T) - (2*shift+1)) - 1;
@@ -291,7 +282,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 			//if(sizeof(T) == 1) std::cerr << line.body->POS+1 << ": " << std::bitset<sizeof(T)*8>(RLE) << '\t' << std::bitset<sizeof(T)*8>(packed) << std::endl;
 
 			// Set meta phased flag bit
-			if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
+			//if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
 			assert((RLE >> (2*shift + 1)) == length);
 
 			// Push RLE to buffer
@@ -314,7 +305,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 	//if(sizeof(T) == 1){ std::cerr << line.body->POS+1 << ": " << std::bitset<sizeof(T)*8>(RLE) << std::endl; exit(1);}
 
 	// Set meta phased flag bit
-	if((packed & 1) != 1) this->helper.phased = false;
+	//if((packed & 1) != 1) this->helper.phased = false;
 
 	// Push RLE to buffer
 	runs += RLE;

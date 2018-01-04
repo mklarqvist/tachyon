@@ -75,7 +75,7 @@ bool Importer::BuildBCF(void){
 	}
 
 	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header->samples);
+	//this->encoder.setSamples(this->header->samples);
 	this->block.ppa_manager.setSamples(this->header->samples);
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->samples);
