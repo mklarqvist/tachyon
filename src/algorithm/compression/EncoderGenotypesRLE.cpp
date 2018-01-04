@@ -1,7 +1,7 @@
 #include "EncoderGenotypesRLE.h"
 
 namespace Tachyon{
-namespace Algorithm{
+namespace Encoding{
 
 bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
@@ -14,7 +14,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 	// Assess cost and encode
 	rle_helper_type cost;
 	if(line.body->n_allele == 2){
-		cost = this->assessRLEBiallelic(line, ppa);
+		cost = this->assessDiploidRLEBiallelic(line, ppa);
 		//meta_base.virtual_offset_gt        = runs.buffer_data_uncompressed.pointer; // absolute position at start of stream
 		support += (U32)0;
 		meta_base.controller.rle           = true;
@@ -25,19 +25,19 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 
 		switch(cost.word_width){
 		case 1:
-			this->EncodeRLE<BYTE>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
 			meta_base.controller.rle_type = 0;
 			break;
 		case 2:
-			this->EncodeRLE<U16>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U16>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
 			meta_base.controller.rle_type = 1;
 			break;
 		case 4:
-			this->EncodeRLE<U32>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U32>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
 			meta_base.controller.rle_type = 2;
 			break;
 		case 8:
-			this->EncodeRLE<U64>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U64>(line, runs, n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
 			meta_base.controller.rle_type = 3;
 			break;
 		default:
@@ -53,7 +53,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 		return true;
 	}
 	else {
-		cost = this->assessRLEnAllelic(line, ppa);
+		cost = this->assessDiploidRLEnAllelic(line, ppa);
 		U32 costBCFStyle = this->n_samples;
 		if(line.body->n_allele + 1 < 8)          costBCFStyle *= 1;
 		else if(line.body->n_allele + 1 < 128)   costBCFStyle *= 2;
@@ -78,19 +78,19 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 
 			switch(cost.word_width){
 			case 1:
-				this->EncodeRLESimple<BYTE>(line, simple, n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 0;
 				break;
 			case 2:
-				this->EncodeRLESimple<U16>(line, simple, n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U16>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 1;
 				break;
 			case 4:
-				this->EncodeRLESimple<U32>(line, simple, n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U32>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 2;
 				break;
 			case 8:
-				this->EncodeRLESimple<U64>(line, simple, n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U64>(line, simple, n_runs, ppa);
 				meta_base.controller.rle_type = 3;
 				break;
 			default:
@@ -110,9 +110,9 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 			meta_base.controller.rle_type = 0;
 			++simple.n_entries;
 
-			if(line.body->n_allele + 1 < 8)          this->EncodeSimple<BYTE>(line, simple, n_runs, ppa);
-			else if(line.body->n_allele + 1 < 128)   this->EncodeSimple<U16> (line, simple, n_runs, ppa);
-			else if(line.body->n_allele + 1 < 32768) this->EncodeSimple<U32> (line, simple, n_runs, ppa);
+			if(line.body->n_allele + 1 < 8)          this->EncodeDiploidSimple<BYTE>(line, simple, n_runs, ppa);
+			else if(line.body->n_allele + 1 < 128)   this->EncodeDiploidSimple<U16> (line, simple, n_runs, ppa);
+			else if(line.body->n_allele + 1 < 32768) this->EncodeDiploidSimple<U32> (line, simple, n_runs, ppa);
 			else {
 				std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
 							 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
@@ -128,7 +128,7 @@ bool EncoderGenotypesRLE::Encode(const bcf_type& line, meta_type& meta_base, con
 	return false;
 }
 
-const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessRLEBiallelic(const bcf_type& line, const U32* const ppa){
+const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	U32 internal_pos_rle = line.p_genotypes;
 	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);
@@ -231,7 +231,7 @@ const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessRLEBiallel
 	return(rle_helper_type(word_width, chosen_runs, mixedPhase, anyMissing));
 }
 
-const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessRLEnAllelic(const bcf_type& line, const U32* const ppa){
+const EncoderGenotypesRLE::rle_helper_type EncoderGenotypesRLE::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	const BYTE shift_size = ceil(log2(line.body->n_allele + 1));
 	U32 internal_pos_rle = line.p_genotypes;
