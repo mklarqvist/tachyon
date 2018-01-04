@@ -113,9 +113,10 @@ bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_ty
 	// Pack genotypes as
 	// allele A | alleleB | isPhased
 	if(sizeof(T) <= 2){
-		for(U32 i = 0; i < this->n_samples * 2; i += 2){
-			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
-			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+		U32 j = 0;
+		for(U32 i = 0; i < this->n_samples * 2; i += 2, ++j){
+			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]]);
+			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]+1]);
 
 			//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 			//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
@@ -125,11 +126,12 @@ bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_ty
 			simple += packed;
 		}
 	} else if(sizeof(T) == 4){
-		for(U32 i = 0; i < this->n_samples * 4; i += 4){
+		U32 j = 0;
+		for(U32 i = 0; i < this->n_samples * 4; i += 4, ++j){
 			//const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
 			//const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
-			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[0]]);
-			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[0]+2]);
+			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[j]]);
+			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos+4*ppa[j]+2]);
 			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
 							 ((fmt_type_value1 >> 1) << 1) |
 							 (fmt_type_value2 & 1);
@@ -265,9 +267,10 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, contain
 	// Run limits
 	const T limit = pow(2, 8*sizeof(T) - (2*shift+1)) - 1;
 
-	for(U32 i = 2; i < this->n_samples * 2; i += 2){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[0]+1]);
+	U32 j = 1;
+	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]]);
+		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos+2*ppa[j]+1]);
 
 		//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
 		//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
