@@ -10,14 +10,15 @@ namespace Iterator{
  *
  */
 class ContainerIteratorDataInterface{
+protected:
+	typedef IO::BasicBuffer buffer_type;
+
 private:
 	typedef ContainerIteratorDataInterface self_type;
 
 	// Function pointers
 	typedef void (self_type::*toStringFunctionDefinition)(std::ostream& stream, const U32& stride) const;
-
-protected:
-	typedef IO::BasicBuffer buffer_type;
+	typedef void (self_type::*toStringBufferFunctionDefinition)(buffer_type& buffer, const U32& stride) const;
 
 public:
 	ContainerIteratorDataInterface(const buffer_type& buffer) :
@@ -29,6 +30,7 @@ public:
 		__source_sign(0),
 		__source_type(Core::CORE_TYPE(0)),
 		toStringFunction(nullptr),
+		toStringBufferFunction(nullptr),
 		buffer(buffer)
 	{
 
@@ -83,39 +85,61 @@ public:
 			this->__missing_value = 0x80;
 			this->__end_of_vector_value = 0x81;
 			this->toStringFunction = &self_type::__toStringNoSeparator<char>;
+			this->toStringBufferFunction = &self_type::__toStringNoSeparator<char>;
 		} else if(type == Core::TYPE_8B){
 			this->type_size = sizeof(BYTE);
 			this->__missing_value = 0x80;
 			this->__end_of_vector_value = 0x81;
-			if(signedness) this->toStringFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
-			else this->toStringFunction = &self_type::__toStringUnsignedSmall<BYTE>;
+			if(signedness){
+				this->toStringFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
+				this->toStringBufferFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
+			}
+			else {
+				this->toStringFunction = &self_type::__toStringUnsignedSmall<BYTE>;
+				this->toStringBufferFunction = &self_type::__toStringUnsignedSmall<BYTE>;
+			}
 		} else if(type == Core::TYPE_16B){
 			this->type_size = sizeof(U16);
 			this->__missing_value = 0x8000;
 			this->__end_of_vector_value = 0x8001;
-			if(signedness) this->toStringFunction = &self_type::__toStringSigned<S16, U16>;
-			else this->toStringFunction = &self_type::__toStringUnsigned<U16>;
+			if(signedness){
+				this->toStringFunction = &self_type::__toStringSigned<S16, U16>;
+				this->toStringBufferFunction = &self_type::__toStringSigned<S16, U16>;
+			}
+			else {
+				this->toStringFunction = &self_type::__toStringUnsigned<U16>;
+				this->toStringBufferFunction = &self_type::__toStringUnsigned<U16>;
+			}
 		} else if(type == Core::TYPE_32B){
 			this->type_size = sizeof(U32);
 			this->__missing_value = 0x80000000;
 			this->__end_of_vector_value = 0x80000001;
-			if(signedness) this->toStringFunction = &self_type::__toStringSigned<S32, U32>;
-			else this->toStringFunction = &self_type::__toStringUnsigned<U32>;
+			if(signedness){
+				this->toStringFunction = &self_type::__toStringSigned<S32, U32>;
+				this->toStringBufferFunction = &self_type::__toStringSigned<S32, U32>;
+			}
+			else {
+				this->toStringFunction = &self_type::__toStringUnsigned<U32>;
+				this->toStringBufferFunction = &self_type::__toStringUnsigned<U32>;
+			}
 		} else if(type == Core::TYPE_FLOAT){
 			this->type_size = sizeof(float);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringFloat<float>;
+			this->toStringBufferFunction = &self_type::__toStringFloat<float>;
 		} else if(type == Core::TYPE_DOUBLE){
 			this->type_size = sizeof(double);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringFloat<double>;
+			this->toStringBufferFunction = &self_type::__toStringFloat<double>;
 		} else if(type == Core::TYPE_64B){
 			this->type_size = sizeof(U64);
 			this->__missing_value = 0;
 			this->__end_of_vector_value = 0;
 			this->toStringFunction = &self_type::__toStringUnsigned<U64>;
+			this->toStringBufferFunction = &self_type::__toStringUnsigned<U64>;
 		} else {
 				std::cerr << Helpers::timestamp("ERROR") << std::endl;
 				exit(1);
@@ -174,6 +198,7 @@ public:
 	 * @param stride
 	 */
 	inline void toString(std::ostream& stream, const U32& stride) const{ (this->*toStringFunction)(stream, stride); }
+	inline void toString(buffer_type& buffer, const U32& stride) const{ (this->*toStringBufferFunction)(buffer, stride); }
 
 private:
 	/* ****************************************
@@ -193,6 +218,15 @@ private:
 		}
 	}
 
+	template <class T>
+	void __toStringNoSeparator(buffer_type& buffer, const U32& stride) const{
+		if(stride == 1){
+			buffer += this->current<T>();
+		} else {
+			buffer.Add(this->currentAt<T>(), stride);
+		}
+	}
+
 	/**<
 	 *
 	 * @param stream
@@ -209,6 +243,21 @@ private:
 			for(U32 i = 1; i < stride; ++i){
 				stream.put(',');
 				stream << r[i];
+			}
+		}
+	}
+
+	template <class T>
+	void __toStringUnsigned(buffer_type& buffer, const U32& stride) const{
+		if(stride == 1){
+			buffer.AddReadble(this->current<T>());
+		} else {
+			const T* const r = this->currentAt<T>();
+
+			buffer.AddReadble(r[0]);
+			for(U32 i = 1; i < stride; ++i){
+				buffer += ',';
+				buffer.AddReadble(r[i]);
 			}
 		}
 	}
@@ -248,6 +297,39 @@ private:
 		}
 	}
 
+template <class T, class Y>
+	void __toStringSigned(buffer_type& buffer, const U32& stride) const{
+		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
+			buffer += '.';
+			return;
+		}
+
+		if(stride == 1){
+			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
+				buffer += '.';
+				return;
+			}
+
+			buffer.AddReadble(this->current<T>());
+		} else {
+			const T* const r = this->currentAt<T>();
+			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
+
+			if(u[0] == this->__missing_value) buffer += '.';
+			else if(u[0] == this->__end_of_vector_value) return;
+			else buffer.AddReadble(r[0]);
+
+			for(U32 i = 1; i < stride; ++i){
+				if(u[i] == this->__missing_value) buffer += ",.";
+				else if(u[i] == this->__end_of_vector_value) return;
+				else {
+					buffer += ',';
+					buffer.AddReadble(r[i]);
+				}
+			}
+		}
+	}
+
 	/**<
 	 *
 	 * @param stream
@@ -264,6 +346,21 @@ private:
 			for(U32 i = 1; i < stride; ++i){
 				stream.put(',');
 				stream << (U32)r[i];
+			}
+		}
+	}
+
+	template <class T>
+	void __toStringUnsignedSmall(buffer_type& buffer, const U32& stride) const{
+		if(stride == 1){
+			buffer.AddReadble(this->current<T>());
+		} else {
+			const T* const r = this->currentAt<T>();
+
+			buffer.AddReadble(r[0]);
+			for(U32 i = 1; i < stride; ++i){
+				buffer += ',';
+				buffer.AddReadble(r[i]);
 			}
 		}
 	}
@@ -304,6 +401,40 @@ private:
 		}
 	}
 
+	template <class T, class Y>
+	void __toStringSignedSmall(buffer_type& buffer, const U32& stride) const{
+		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
+			buffer += '.';
+			return;
+		}
+
+		if(stride == 1){
+			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
+				buffer += '.';
+				return;
+			}
+
+			buffer.AddReadble(this->current<T>());
+		} else {
+			const T* const r = this->currentAt<T>();
+			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
+
+
+			if(u[0] == this->__missing_value) buffer += '.';
+			else if(u[0] == this->__end_of_vector_value) return;
+			else buffer.AddReadble(r[0]);
+
+			for(U32 i = 1; i < stride; ++i){
+				if(u[i] == this->__missing_value) buffer += ",.";
+				else if(u[i] == this->__end_of_vector_value) return;
+				else {
+					buffer += ',';
+					buffer.AddReadble(r[i]);
+				}
+			}
+		}
+	}
+
 	/**<
 	 *
 	 * @param stream
@@ -312,6 +443,11 @@ private:
 	template <class T>
 	void __toStringFloat(std::ostream& stream, const U32& stride) const{
 		this->__toStringUnsigned<T>(stream, stride);
+	}
+
+	template <class T>
+	void __toStringFloat(buffer_type& buffer, const U32& stride) const{
+		this->__toStringUnsigned<T>(buffer, stride);
 	}
 
 protected:
@@ -325,6 +461,7 @@ protected:
 	BYTE __source_sign;
 	Core::CORE_TYPE __source_type;
 	toStringFunctionDefinition toStringFunction;
+	toStringBufferFunctionDefinition toStringBufferFunction;
 
 	// Buffer reference
 	const buffer_type& buffer; // buffer reference
@@ -394,6 +531,7 @@ private:
 	typedef ContainerIterator              self_type;
 	typedef ContainerIteratorDataInterface data_iterator_type;
 	typedef ContainerIteratorDataInterface stride_iterator_type;
+	typedef IO::BasicBuffer buffer_type;
 
 protected:
 	typedef StreamContainer container_type;
@@ -515,6 +653,25 @@ public:
 		return(this->toString(stream));
 	}
 
+	inline bool toString(buffer_type& buffer, const std::string& field_name){
+			if(field_name.size() == 0){
+				std::cerr << "impossible length" << std::endl;
+				return false;
+			}
+
+			// Inject key string
+			buffer.Add(&field_name[0], field_name.size());
+			// Inject an equal sign if the encoded type is not
+			// a BOOLEAN
+			if(this->container->header.controller.type == Core::TYPE_BOOLEAN)
+				return true;
+
+			buffer += '=';
+
+			// Call toString function on iterators
+			return(this->toString(buffer));
+		}
+
 	/**< @brief Returns records from the data stream as a parsed string
 	 * Records in the iterator return
 	 *
@@ -531,6 +688,17 @@ public:
 
 		return(true);
 	}
+
+	inline bool toString(buffer_type& buffer){
+			if(this->stride_iterator != nullptr){
+				this->data_iterator->toString(buffer, this->stride_iterator->getCurrentStride());
+			}
+			else {
+				this->data_iterator->toString(buffer, this->container->header.stride);
+			}
+
+			return(true);
+		}
 
 	// Increment operator
 	void operator++(void){

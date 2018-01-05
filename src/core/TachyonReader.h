@@ -99,13 +99,12 @@ public:
 
 	bool seekBlock(const U32& b);
 
-	bool toVCFString(std::ostream& stream = std::cout){
-		// Phase 1 construct iterators
+	bool toVCFStringFast(std::ostream& stream = std::cout){
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
 		// Setup containers
 		// INFO
-		Iterator::ContainerIterator* info_iterators;
+		Iterator::ContainerIterator* info_iterators = nullptr;
 		if(this->settings.loadInfoAll){
 			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
@@ -115,7 +114,7 @@ public:
 		}
 
 		// FORMAT
-		Iterator::ContainerIterator* format_iterators;
+		Iterator::ContainerIterator* format_iterators = nullptr;
 		if(this->settings.loadFormatAll){
 			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
@@ -123,14 +122,108 @@ public:
 			}
 		}
 
-		// Phase 2 perform iterations
+		// One buffer per variant
+		// Faster output?
+		buffer_type* buffers = new buffer_type[this->block.index_entry.size()];
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i)
+			buffers[i].resize(5012);
+
+		// Base
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+			const Core::MetaEntry& m = (*it)[i];
+
+			m.toVCFString(buffers[i],
+					this->header,
+					this->block.index_entry.contigID,
+					this->block.index_entry.minPosition);
+
+		}
 
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
-			if(!m.isSimpleSNV()){
 
+			if(this->block.index_entry.n_filter_streams == 0){
+				buffers[i] += ".\t";
+			} else {
+				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
+					// Check if field is set
+					if(this->block.index_entry.filter_bit_vectors[m.filter_pattern_id][k]){
+					// Lookup what that field is
+						buffers[i].Add(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size());
+						buffers[i] += '\t';
+					}
+				}
 			}
+		}
 
+		// Memory layout:
+		// Cycle over patterns
+		// Cycle over entries
+		// Cycle over each key in pattern
+		// If key available: add to buffer
+		if(this->settings.loadInfoAll){
+			const U32 n_patterns = this->block.index_entry.n_info_patterns;
+			for(U32 p = 0; p < n_patterns; ++p){
+				// Cycle over streams that are set in the given bit-vector
+				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
+				const U32 n_keys = target_info_vector.n_keys;
+				const U32* const keys = &target_info_vector.keys[0];
+
+				for(U32 k = 0; k < n_keys; ++k){
+					const U32& current_key = keys[k];
+
+					for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+						const Core::MetaEntry& m = (*it)[i];
+						if(m.info_pattern_id != p)
+							continue;
+
+						info_iterators[current_key].toString(buffers[i], this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[current_key].key]].ID);
+						if(k + 1 != n_keys)
+							buffers[i] += ';';
+
+						++info_iterators[current_key];
+					}
+				}
+			}
+		}
+
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+			stream.write(buffers[i].data, buffers[i].pointer);
+			stream.put('\n');
+		}
+
+		delete it;
+		delete [] info_iterators;
+		delete [] format_iterators;
+		delete [] buffers;
+		return true;
+	}
+
+	bool toVCFString(std::ostream& stream = std::cout){
+		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+
+		// Setup containers
+		// INFO
+		Iterator::ContainerIterator* info_iterators = nullptr;
+		if(this->settings.loadInfoAll){
+			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+
+			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+				info_iterators[i].setup(this->block.info_containers[i]);
+			}
+		}
+
+		// FORMAT
+		Iterator::ContainerIterator* format_iterators = nullptr;
+		if(this->settings.loadFormatAll){
+			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
+			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+				format_iterators[i].setup(this->block.format_containers[i]);
+			}
+		}
+
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+			const Core::MetaEntry& m = (*it)[i];
 			// Discussion: it is more attractive to have the
 			// struct have knowledge of itself
 			// it is not pretty to have to pass along
@@ -241,6 +334,7 @@ public:
 
 		delete it;
 		delete [] info_iterators;
+		delete [] format_iterators;
 		return true;
 	}
 

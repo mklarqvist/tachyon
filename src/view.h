@@ -135,8 +135,8 @@ int view(int argc, char** argv){
 	}
 
 	while(reader.getBlock()){
+		//reader.toVCFStringFast();
 		reader.toVCFString();
-		//reader.toVCFPartial();
 	}
 
 	return 0;

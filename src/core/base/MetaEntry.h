@@ -22,6 +22,7 @@ private:
 	typedef MetaCold cold_entry;
 	typedef StreamContainer container_type;
 	typedef Header header_type;
+	typedef IO::BasicBuffer buffer_type;
 
 public:
 	MetaEntry() :
@@ -82,6 +83,44 @@ public:
 			}
 			if(std::isnan(this->cold.QUAL)) dest << "\t.\t";
 			else dest << '\t' << this->cold.QUAL << '\t';
+		}
+	}
+
+	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const{
+		dest.Add(&header.getContig(blockContigID).name[0], header.getContig(blockContigID).name.size());
+		dest += '\t';
+		//dest += std::to_string(blockPos + this->hot.position + 1);
+		int ret = sprintf(&dest.data[dest.pointer], "%llu", blockPos + this->hot.position + 1);
+		dest.pointer += ret;
+		dest += '\t';
+
+		// If we have cold meta
+		if(this->hasLoadedColdMeta()){
+			if(this->cold.n_ID == 0) dest += '.';
+			else dest.Add(this->cold.ID, this->cold.n_ID);
+			dest += '\t';
+			if(this->hot.controller.biallelic && this->hot.controller.simple){
+				dest += this->hot.ref_alt.getRef();
+				dest += '\t';
+				dest += this->hot.ref_alt.getAlt();
+			}
+			else {
+				dest.Add(this->cold.alleles[0].allele, this->cold.alleles[0].l_allele);
+				dest += '\t';
+				U16 j = 1;
+				for(; j < this->cold.n_allele - 1; ++j){
+					dest.Add(this->cold.alleles[j].allele, this->cold.alleles[j].l_allele);
+					dest += ',';
+				}
+				dest.Add(this->cold.alleles[j].allele, this->cold.alleles[j].l_allele);
+			}
+			if(std::isnan(this->cold.QUAL)) dest += "\t.\t";
+			else {
+				dest += '\t';
+				ret = sprintf(&dest.data[dest.pointer], "%g", this->cold.QUAL);
+				dest.pointer += ret;
+				dest += '\t';
+			}
 		}
 	}
 

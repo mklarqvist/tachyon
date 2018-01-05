@@ -62,7 +62,12 @@ class EncoderGenotypesRLE {
 	typedef Core::StreamContainer container_type;
 
 	typedef struct __RLEAssessHelper{
-		explicit __RLEAssessHelper(void) : mixedPhasing(1), hasMissing(1), word_width(1), n_runs(0){}
+		explicit __RLEAssessHelper(void) :
+				mixedPhasing(1),
+				hasMissing(1),
+				word_width(1),
+				n_runs(0)
+		{}
 		__RLEAssessHelper(const BYTE& word_width,
 				          const U64& n_runs,
 						  const bool& mixedPhasing,
@@ -167,7 +172,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 	const BYTE add   = hasMixedPhase ? 1 : 0;
 
 	// Run limits
-	const T limit = pow(2, 8*sizeof(T) - (2*(1+hasMissing)+hasMixedPhase)) - 1;
+	const T limit = pow(2, 8*sizeof(T) - (2*(1+hasMissing) + hasMixedPhase)) - 1;
 
 	// Genotype maps
 	// Map to 0,1,4,5
@@ -241,7 +246,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 
 	// Reset and update
 	sumLength += length;
-	assert(sumLength == this->n_samples);
+	//assert(sumLength == this->n_samples);
 	runs.n_additions += n_runs;
 
 	// Calculate basic stats

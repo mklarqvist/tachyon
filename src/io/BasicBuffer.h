@@ -83,6 +83,51 @@ struct BasicBuffer{
 		this->pointer += length;
 	}
 
+	void AddReadble(const SBYTE& value){
+		const int ret = sprintf(&this->data[this->pointer], "%d", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const S16& value){
+		const int ret = sprintf(&this->data[this->pointer], "%d", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const S32& value){
+		const int ret = sprintf(&this->data[this->pointer], "%d", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const BYTE& value){
+		const int ret = sprintf(&this->data[this->pointer], "%u", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const U16& value){
+		const int ret = sprintf(&this->data[this->pointer], "%u", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const U32& value){
+		const int ret = sprintf(&this->data[this->pointer], "%u", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const U64& value){
+		const int ret = sprintf(&this->data[this->pointer], "%llu", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const float& value){
+		const int ret = sprintf(&this->data[this->pointer], "%g", value);
+		this->pointer += ret;
+	}
+
+	void AddReadble(const double& value){
+		const int ret = sprintf(&this->data[this->pointer], "%g", value);
+		this->pointer += ret;
+	}
+
 	inline self_type& operator+=(const self_type& other){
 		if(this->size() + other.size() >= this->capacity())
 			this->resize((this->size() + other.size()) * 2);
