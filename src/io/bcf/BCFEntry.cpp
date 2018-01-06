@@ -18,6 +18,7 @@ BCFEntry::BCFEntry(void):
 	alleles(new string_type[100]),
 	ID(nullptr),
 	genotypes(nullptr),
+	ploidy(0),
 	filter_start(0),
 	n_filter(0),
 	// Vectors of identifiers
@@ -182,35 +183,31 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 }
 
 bool BCFEntry::parse(void){
-	//std::cerr << this->body->CHROM << ':' << this->body->POS+1 << '\t';
 	U32 internal_pos = sizeof(body_type);
 	this->__parseID(internal_pos);
 	this->__parseRefAlt(internal_pos);
 	this->SetRefAlt();
 
-	// start of FORMAT
+	// start of FILTER
 	this->filter_start = internal_pos;
 
 	// Move up to start of FORMAT
 	internal_pos = this->body->l_shared + sizeof(U32)*2;
 
 	// Format key and value
+	// Todo: ascertain that first KEY is GT field
 	const base_type& fmt_key = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
 #if BCF_ASSERT == 1
 	assert(fmt_key.high == 1);
 #endif
 	this->getInteger(fmt_key.low, internal_pos);
-	//this->formatID[this->formatPointer++] = value;
-
-	//std::cerr << (int)fmt_key.high << '\t' << (int)fmt_key.low << '\t' << "id: " << value << std::endl;
-
 	const base_type& fmt_type = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
-	//std::cerr << (int)fmt_type.high << '\t' << (int)fmt_type.low << std::endl;
 
+	this->ploidy = fmt_type.high;
 	if(fmt_type.high != 2){
-		std::cerr << Helpers::timestamp("LOG","BCF") << "Dropping non-diploid variant: " << this->body->CHROM << ':' << this->body->POS+1 << std::endl;
-		this->isGood = false;
-		return false;
+		std::cerr << Helpers::timestamp("LOG","BCF") << "Non-diploid variant: " << this->body->CHROM << ':' << this->body->POS+1 << " ploidy: " << this->ploidy << std::endl;
+		//this->isGood = false;
+		//return false;
 	}
 
 	// Store virtual offsets into the stream

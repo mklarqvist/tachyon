@@ -72,7 +72,7 @@ public:
 	const bool encodeStrides(stream_type& stream){ return false; }
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != Core::ENCODE_NONE){
+		if(stream.header.controller.encoder != Core::YON_ENCODE_NONE){
 			std::cerr << "wrong codec" << std::endl;
 			return false;
 		}
@@ -89,7 +89,7 @@ public:
 			return false;
 		}
 
-		if(stream.header_stride.controller.encoder != Core::ENCODE_NONE){
+		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_NONE){
 			std::cerr << "wrong codec" << std::endl;
 			return false;
 		}
@@ -125,7 +125,7 @@ public:
 
 		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.pointer < 50){
 			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
-			stream.header.controller.encoder = Core::ENCODE_NONE;
+			stream.header.controller.encoder = Core::YON_ENCODE_NONE;
 			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
 			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
 
@@ -149,7 +149,7 @@ public:
 		const float fold = (float)stream.buffer_data_uncompressed.pointer / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
-			stream.header.controller.encoder = Core::ENCODE_NONE;
+			stream.header.controller.encoder = Core::YON_ENCODE_NONE;
 			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
 			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
 
@@ -162,7 +162,7 @@ public:
 
 		memcpy(stream.buffer_data.data, this->buffer.data, ret);
 		stream.header.cLength            = ret;
-		stream.header.controller.encoder = Core::ENCODE_ZSTD;
+		stream.header.controller.encoder = Core::YON_ENCODE_ZSTD;
 		stream.buffer_data.pointer       = ret;
 		stream.header.n_extra            = 1;
 		stream.header.extra              = new char[sizeof(BYTE)];
@@ -176,7 +176,7 @@ public:
 	const bool encodeStrides(stream_type& stream){
 		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.pointer < 50){
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
+			stream.header_stride.controller.encoder = Core::YON_ENCODE_NONE;
 			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
 
@@ -198,7 +198,7 @@ public:
 		const float fold = (float)stream.buffer_strides_uncompressed.pointer/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.header_stride.controller.encoder = Core::ENCODE_NONE;
+			stream.header_stride.controller.encoder = Core::YON_ENCODE_NONE;
 			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
 			return true;
@@ -208,7 +208,7 @@ public:
 
 		memcpy(stream.buffer_strides.data, this->buffer.data, ret);
 		stream.header_stride.cLength            = ret;
-		stream.header_stride.controller.encoder = Core::ENCODE_ZSTD;
+		stream.header_stride.controller.encoder = Core::YON_ENCODE_ZSTD;
 		stream.buffer_strides.pointer           = ret;
 		stream.header_stride.n_extra            = 1;
 		stream.header_stride.extra              = new char[sizeof(BYTE)];
@@ -258,7 +258,7 @@ public:
 	}
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != Core::ENCODE_ZSTD){
+		if(stream.header.controller.encoder != Core::YON_ENCODE_ZSTD){
 			std::cerr << "wrong codec" << std::endl;
 			return false;
 		}
@@ -286,13 +286,13 @@ public:
 		if(!stream.header.controller.mixedStride)
 			return false;
 
-		if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD){
+		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_ZSTD){
 			std::cerr << "wrong codec" << std::endl;
 			return false;
 		}
 
 
-		if(stream.header_stride.controller.encoder != Core::ENCODE_ZSTD)
+		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_ZSTD)
 			return true;
 
 		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);

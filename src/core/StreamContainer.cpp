@@ -88,10 +88,10 @@ bool StreamContainer::checkUniformity(void){
 
 	BYTE word_width = sizeof(char);
 	switch(this->header.controller.type){
-	case CORE_TYPE::TYPE_32B:   stride_update *= sizeof(S32);   word_width = sizeof(S32);   break;
-	case CORE_TYPE::TYPE_FLOAT: stride_update *= sizeof(float); word_width = sizeof(float); break;
-	case CORE_TYPE::TYPE_8B:    stride_update *= sizeof(char);  word_width = sizeof(char);  break;
-	case CORE_TYPE::TYPE_CHAR:  stride_update *= sizeof(char);  word_width = sizeof(char);  break;
+	case YON_TYPE_32B:   stride_update *= sizeof(S32);   word_width = sizeof(S32);   break;
+	case YON_TYPE_FLOAT: stride_update *= sizeof(float); word_width = sizeof(float); break;
+	case YON_TYPE_8B:    stride_update *= sizeof(char);  word_width = sizeof(char);  break;
+	case YON_TYPE_CHAR:  stride_update *= sizeof(char);  word_width = sizeof(char);  break;
 	default: return false; break;
 	}
 
@@ -113,7 +113,7 @@ bool StreamContainer::checkUniformity(void){
 	this->header.cLength = stride_size * word_width;
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
-	this->header.controller.encoder = Core::ENCODE_NONE;
+	this->header.controller.encoder = Core::YON_ENCODE_NONE;
 	return(true);
 }
 
@@ -125,7 +125,7 @@ bool StreamContainer::checkUniformity(void){
  */
 void StreamContainer::reformat(){
 	// Recode integer types only
-	if(!(this->header.controller.type == TYPE_32B && this->header.controller.signedness == 1))
+	if(!(this->header.controller.type == YON_TYPE_32B && this->header.controller.signedness == 1))
 		return;
 
 	if(this->header.controller.uniform == true)
@@ -177,25 +177,25 @@ void StreamContainer::reformat(){
 		this->header.controller.signedness = 0;
 
 		if(byte_width == 1){
-			this->header.controller.type = TYPE_8B;
+			this->header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (BYTE)dat[j];
 
 		} else if(byte_width == 2){
-			this->header.controller.type = TYPE_16B;
+			this->header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U16)dat[j];
 
 		} else if(byte_width == 4){
-			this->header.controller.type = TYPE_32B;
+			this->header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U32)dat[j];
 
 		} else if(byte_width == 8){
-			this->header.controller.type = TYPE_64B;
+			this->header.controller.type = YON_TYPE_64B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U64)dat[j];
@@ -210,7 +210,7 @@ void StreamContainer::reformat(){
 		this->header.controller.signedness = 1;
 
 		if(byte_width == 1){
-			this->header.controller.type = TYPE_8B;
+			this->header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				if(udat[j] == 0x80000000) this->buffer_data += (BYTE)0x80;
@@ -219,7 +219,7 @@ void StreamContainer::reformat(){
 			}
 
 		} else if(byte_width == 2){
-			this->header.controller.type = TYPE_16B;
+			this->header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S16)dat[j];
@@ -229,7 +229,7 @@ void StreamContainer::reformat(){
 			}
 
 		} else if(byte_width == 4){
-			this->header.controller.type = TYPE_32B;
+			this->header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S32)dat[j];
@@ -255,7 +255,7 @@ void StreamContainer::reformatStride(){
 		return;
 
 	// Recode integer types
-	if(!(this->header_stride.controller.type == TYPE_32B && this->header_stride.controller.signedness == 0)){
+	if(!(this->header_stride.controller.type == YON_TYPE_32B && this->header_stride.controller.signedness == 0)){
 		std::cerr << "illegal at this point" << std::endl;
 		exit(1);
 	}
@@ -278,25 +278,25 @@ void StreamContainer::reformatStride(){
 	this->buffer_strides.resize(this->buffer_strides_uncompressed.pointer);
 
 	if(byte_width == 1){
-		this->header_stride.controller.type = TYPE_8B;
+		this->header_stride.controller.type = YON_TYPE_8B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			this->buffer_strides += (BYTE)dat[j];
 
 	} else if(byte_width == 2){
-		this->header_stride.controller.type = TYPE_16B;
+		this->header_stride.controller.type = YON_TYPE_16B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			this->buffer_strides += (U16)dat[j];
 
 	} else if(byte_width == 4){
-		this->header_stride.controller.type = TYPE_32B;
+		this->header_stride.controller.type = YON_TYPE_32B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			this->buffer_strides += (U32)dat[j];
 
 	} else if(byte_width == 8){
-		this->header_stride.controller.type = TYPE_64B;
+		this->header_stride.controller.type = YON_TYPE_64B;
 
 		for(U32 j = 0; j < this->n_entries; ++j)
 			this->buffer_strides += (U64)dat[j];

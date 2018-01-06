@@ -112,9 +112,9 @@ public:
 	}
 
 	bool decompress(container_type& container){
-		if(container.header.controller.encoder == Core::ENCODE_ZSTD){
+		if(container.header.controller.encoder == Core::YON_ENCODE_ZSTD){
 			if(!this->zstd_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
-		} else if(container.header.controller.encoder == Core::ENCODE_NONE){
+		} else if(container.header.controller.encoder == Core::YON_ENCODE_NONE){
 			if(!this->no_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
 		} else {
 			std::cerr << "ILLEGAL CODEC" << std::endl;
@@ -122,9 +122,9 @@ public:
 		}
 
 		if(container.header.controller.mixedStride){
-			if(container.header_stride.controller.encoder == Core::ENCODE_ZSTD){
+			if(container.header_stride.controller.encoder == Core::YON_ENCODE_ZSTD){
 				this->zstd_codec.decodeStrides(container);
-			} else if (container.header_stride.controller.encoder == Core::ENCODE_NONE){
+			} else if (container.header_stride.controller.encoder == Core::YON_ENCODE_NONE){
 				this->no_codec.decodeStrides(container);
 			}
 		}

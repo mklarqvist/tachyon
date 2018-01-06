@@ -9,7 +9,7 @@
 #include "../../core/base/GTRecords.h"
 #include "../../core/base/MetaHot.h"
 #include "../../core/StreamContainer.h"
-#include "EncoderGenotypesRLEHelper.h"
+#include "EncoderGenotypesHelper.h"
 
 namespace Tachyon{
 namespace Encoding{
@@ -53,12 +53,12 @@ namespace Encoding{
 #define PACK_RLE_BIALLELIC(A, B, SHIFT, ADD) BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD) | BCF::BCF_UNPACK_GENOTYPE(B) << (ADD) | (A & ADD)
 #define PACK_RLE_SIMPLE(A, B, SHIFT) ((A >> 1) << (SHIFT + 1)) | ((B >> 1) << 1) | (A & 1)
 
-class EncoderGenotypesRLE {
-	typedef EncoderGenotypesRLE self_type;
+class EncoderGenotypes {
+	typedef EncoderGenotypes self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BCF::BCFEntry bcf_type;
 	typedef Core::MetaHot meta_type;
-	typedef EncoderGenotypesRLEHelper helper_type;
+	typedef EncoderGenotypesHelper helper_type;
 	typedef Core::StreamContainer container_type;
 
 	typedef struct __RLEAssessHelper{
@@ -87,9 +87,9 @@ class EncoderGenotypesRLE {
 	} rle_helper_type;
 
 public:
-	EncoderGenotypesRLE();
-	EncoderGenotypesRLE(const U64 samples);
-	~EncoderGenotypesRLE();
+	EncoderGenotypes();
+	EncoderGenotypes(const U64 samples);
+	~EncoderGenotypes();
 	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa);
 	//inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
 
@@ -111,7 +111,7 @@ private:
 };
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_type& simple, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypes::EncodeDiploidSimple(const bcf_type& line, container_type& simple, U64& n_runs, const U32* const ppa){
 	BYTE shift_size = 3;
 	if(sizeof(T) == 2) shift_size = 7;
 	if(sizeof(T) == 4) shift_size = 15;
@@ -158,7 +158,7 @@ bool EncoderGenotypesRLE::EncodeDiploidSimple(const bcf_type& line, container_ty
 }
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing, const bool hasMixedPhase){
+bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing, const bool hasMixedPhase){
 	U32 internal_pos = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength = 0;
 	T length = 1;
@@ -256,7 +256,7 @@ bool EncoderGenotypesRLE::EncodeDiploidRLEBiallelic(const bcf_type& line, contai
 }
 
 template <class T>
-bool EncoderGenotypesRLE::EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa){
+bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa){
 	U32 internal_pos = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength = 0;
 	T length = 1;

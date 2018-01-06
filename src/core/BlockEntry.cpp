@@ -10,13 +10,13 @@ BlockEntry::BlockEntry() :
 	format_containers(new stream_container[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->meta_info_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->gt_rle_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_format_map_ids.setType(YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(YON_TYPE_32B);
+	this->meta_info_map_ids.setType(YON_TYPE_32B);
+	this->gt_rle_container.setType(YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(YON_TYPE_STRUCT);
+	this->meta_hot_container.setType(YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -51,13 +51,13 @@ void BlockEntry::clear(){
 
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always U32 fields
-	this->meta_format_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->meta_filter_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->meta_info_map_ids.setType(Core::CORE_TYPE::TYPE_32B);
-	this->gt_rle_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->gt_simple_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->meta_hot_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
-	this->meta_cold_container.setType(Core::CORE_TYPE::TYPE_STRUCT);
+	this->meta_format_map_ids.setType(YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(YON_TYPE_32B);
+	this->meta_info_map_ids.setType(YON_TYPE_32B);
+	this->gt_rle_container.setType(YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(YON_TYPE_STRUCT);
+	this->meta_hot_container.setType(YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -174,13 +174,13 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
 		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.pointer == 0){
-			container[i].header.controller.type = CORE_TYPE::TYPE_BOOLEAN;
+			container[i].header.controller.type = YON_TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
 			container[i].header.stride  = 0;
 			container[i].header.uLength = 0;
 			container[i].header.cLength = 0;
 			container[i].header.controller.mixedStride = false;
-			container[i].header.controller.encoder = Core::ENCODE_NONE;
+			container[i].header.controller.encoder = Core::YON_ENCODE_NONE;
 			container[i].n_entries      = 0;
 			container[i].n_additions    = 0;
 			container[i].header.controller.signedness = 0;
@@ -198,11 +198,11 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
  * @param container Data container
  */
 void BlockEntry::updateContainer(stream_container& container, bool reformat){
-	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::TYPE_BOOLEAN)
+	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::YON_TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content
-	if(container.header.controller.type != CORE_TYPE::TYPE_STRUCT){
+	if(container.header.controller.type != YON_TYPE_STRUCT){
 		container.checkUniformity();
 		// Reformat stream to use as small word size as possible
 		if(reformat) container.reformat();

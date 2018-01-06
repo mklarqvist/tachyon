@@ -6,7 +6,7 @@
 #include "../io/bcf/BCFReader.h"
 #include "BlockEntry.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../algorithm/compression/EncoderGenotypesRLE.h"
+#include "../algorithm/compression/EncoderGenotypes.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexIndexEntry.h"
 #include "ImportWriter.h"
@@ -22,7 +22,7 @@ private:
 	typedef VCF::VCFHeader header_type;
 	typedef ImportWriter writer_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef Encoding::EncoderGenotypesRLE gt_encoder_type;
+	typedef Encoding::EncoderGenotypes gt_encoder_type;
 	typedef Index::IndexEntry index_entry_type;
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;

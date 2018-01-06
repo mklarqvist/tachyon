@@ -193,7 +193,8 @@ public:
 	body_type* body; // BCF2 body
 	string_type* alleles; // pointer to pointer of ref alleles and their lengths
 	char* ID;
-	SBYTE* genotypes;
+	char* genotypes;
+	BYTE ploidy;
 
 	//
 	U32 filter_start;

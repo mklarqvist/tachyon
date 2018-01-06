@@ -4,10 +4,10 @@
 namespace Tachyon{
 namespace Encoding{
 
-struct EncoderGenotypesRLEHelper{
-	typedef EncoderGenotypesRLEHelper self_type;
+struct EncoderGenotypesHelper{
+	typedef EncoderGenotypesHelper self_type;
 
-	EncoderGenotypesRLEHelper(void) :
+	EncoderGenotypesHelper(void) :
 		MAF(0),
 		MGF(0),
 		HWE_P(0),
@@ -19,7 +19,7 @@ struct EncoderGenotypesRLEHelper{
 		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
 	}
 
-	EncoderGenotypesRLEHelper(const U64 expectedSamples) :
+	EncoderGenotypesHelper(const U64 expectedSamples) :
 		MAF(0),
 		MGF(0),
 		HWE_P(0),
@@ -30,7 +30,7 @@ struct EncoderGenotypesRLEHelper{
 		memset(&this->countsGenotypes[0], 0, sizeof(U64)*16);
 		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
 	}
-	~EncoderGenotypesRLEHelper(){}
+	~EncoderGenotypesHelper(){}
 
 	void setExpected(const U32 expected){ this->expectedSamples = expected; }
 	U64& operator[](const U32& p){ return(this->countsGenotypes[p]); }

@@ -1,537 +1,19 @@
 #ifndef CORE_ITERATOR_CONTAINERITERATOR_H_
 #define CORE_ITERATOR_CONTAINERITERATOR_H_
 
+#include "IteratorStatus.h"
+#include "ContainerIteratorInterface.h"
+
 namespace Tachyon{
 namespace Core{
 namespace Iterator{
-
-/**
- * Interface for iterators over arbitrary containers
- *
- */
-class ContainerIteratorDataInterface{
-protected:
-	typedef IO::BasicBuffer buffer_type;
-
-private:
-	typedef ContainerIteratorDataInterface self_type;
-
-	// Function pointers
-	typedef void (self_type::*toStringFunctionDefinition)(std::ostream& stream, const U32& stride) const;
-	typedef void (self_type::*toStringBufferFunctionDefinition)(buffer_type& buffer, const U32& stride) const;
-
-public:
-	ContainerIteratorDataInterface(const buffer_type& buffer) :
-		position(0),
-		n_entries(0),
-		type_size(1),
-		__missing_value(0x80),
-		__end_of_vector_value(0x81),
-		__source_sign(0),
-		__source_type(Core::CORE_TYPE(0)),
-		toStringFunction(nullptr),
-		toStringBufferFunction(nullptr),
-		buffer(buffer)
-	{
-
-	}
-
-	virtual ~ContainerIteratorDataInterface(){}
-
-	/**<
-	 * Returns a value of type T at the current position
-	 * @return
-	 */
-	template <class T>
-	inline const T& current(void) const{ return(*reinterpret_cast<const T* const>(&this->buffer.data[this->position*this->type_size])); }
-
-	template <class T>
-	inline const T* const currentAt(void) const{ return(reinterpret_cast<const T* const>(&this->buffer.data[this->position*this->type_size])); }
-
-	template <class T>
-	inline const T& first(void) const{ return(*reinterpret_cast<const T* const>(&this->buffer.data[0])); }
-
-	template <class T>
-	inline const T& last(void) const{
-		if(this->n_entries - 1 < 0) return(this->first<T>());
-		return(*reinterpret_cast<const T* const>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
-	}
-
-	template <class T>
-	inline const T& operator[](const U32& p) const{ return(*reinterpret_cast<const T* const>(&this->buffer.data[p*this->type_size])); }
-
-	template <class T>
-	inline const T* at(const U32& p) const{ return( reinterpret_cast<const T*>(&this->buffer.data[p*this->type_size])); }
-
-	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position*this->type_size]); }
-
-	// Dangerous functions
-	virtual const U32 getCurrentStride(void) const =0;
-
-	template <class T>
-	std::vector<T> getVector(void) const;
-
-
-	/**<
-	 *
-	 * @param type
-	 * @param signedness
-	 */
-	void setType(const U16& type, const BYTE signedness){
-		if(type == Core::TYPE_BOOLEAN){
-			this->type_size = 0;
-		} else if(type == Core::TYPE_CHAR){
-			this->type_size = sizeof(char);
-			this->__missing_value = 0x80;
-			this->__end_of_vector_value = 0x81;
-			this->toStringFunction = &self_type::__toStringNoSeparator<char>;
-			this->toStringBufferFunction = &self_type::__toStringNoSeparator<char>;
-		} else if(type == Core::TYPE_8B){
-			this->type_size = sizeof(BYTE);
-			this->__missing_value = 0x80;
-			this->__end_of_vector_value = 0x81;
-			if(signedness){
-				this->toStringFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
-				this->toStringBufferFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
-			}
-			else {
-				this->toStringFunction = &self_type::__toStringUnsignedSmall<BYTE>;
-				this->toStringBufferFunction = &self_type::__toStringUnsignedSmall<BYTE>;
-			}
-		} else if(type == Core::TYPE_16B){
-			this->type_size = sizeof(U16);
-			this->__missing_value = 0x8000;
-			this->__end_of_vector_value = 0x8001;
-			if(signedness){
-				this->toStringFunction = &self_type::__toStringSigned<S16, U16>;
-				this->toStringBufferFunction = &self_type::__toStringSigned<S16, U16>;
-			}
-			else {
-				this->toStringFunction = &self_type::__toStringUnsigned<U16>;
-				this->toStringBufferFunction = &self_type::__toStringUnsigned<U16>;
-			}
-		} else if(type == Core::TYPE_32B){
-			this->type_size = sizeof(U32);
-			this->__missing_value = 0x80000000;
-			this->__end_of_vector_value = 0x80000001;
-			if(signedness){
-				this->toStringFunction = &self_type::__toStringSigned<S32, U32>;
-				this->toStringBufferFunction = &self_type::__toStringSigned<S32, U32>;
-			}
-			else {
-				this->toStringFunction = &self_type::__toStringUnsigned<U32>;
-				this->toStringBufferFunction = &self_type::__toStringUnsigned<U32>;
-			}
-		} else if(type == Core::TYPE_FLOAT){
-			this->type_size = sizeof(float);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringFloat<float>;
-			this->toStringBufferFunction = &self_type::__toStringFloat<float>;
-		} else if(type == Core::TYPE_DOUBLE){
-			this->type_size = sizeof(double);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringFloat<double>;
-			this->toStringBufferFunction = &self_type::__toStringFloat<double>;
-		} else if(type == Core::TYPE_64B){
-			this->type_size = sizeof(U64);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringUnsigned<U64>;
-			this->toStringBufferFunction = &self_type::__toStringUnsigned<U64>;
-		} else {
-				std::cerr << Helpers::timestamp("ERROR") << std::endl;
-				exit(1);
-		}
-
-		if(type == Core::TYPE_BOOLEAN){
-			this->n_entries = 0;
-		} else {
-			this->n_entries = buffer.pointer / this->type_size;
-			assert(buffer.pointer % this->type_size == 0);
-		}
-
-		this->__source_type = Core::CORE_TYPE(type);
-		this->__source_sign = signedness;
-	}
-
-	// Comparison operators
-	// Must be overloaded
-	virtual const bool operator>(const U32& cmp)  const{ return false; }
-	virtual const bool operator<(const U32& cmp)  const{ return false; }
-	virtual const bool operator==(const U32& cmp) const{ return false; }
-	virtual const bool operator>=(const U32& cmp) const{ return false; }
-	virtual const bool operator<=(const U32& cmp) const{ return false; }
-
-	// Increment/decrement operators
-	inline void operator++(){
-		if(this->position + 1 == this->n_entries) return;
-		++this->position;
-	}
-
-	inline void operator--(){
-		if(this->position == 0) return;
-		--this->position;
-	}
-
-	inline void operator+=(const U32& p){
-		if(this->position + p >= this->n_entries){
-			//this->position = this->n_entries - 1;
-			return;
-		}
-
-		this->position += p;
-	}
-
-	inline void operator-=(const U32& p){
-		if(this->position - p < 0){
-			this->position = 0;
-			return;
-		}
-		this->position -= p;
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	inline void toString(std::ostream& stream, const U32& stride) const{ (this->*toStringFunction)(stream, stride); }
-	inline void toString(buffer_type& buffer, const U32& stride) const{ (this->*toStringBufferFunction)(buffer, stride); }
-
-private:
-	/* ****************************************
-	*  Internal convertion functions to VCF strings
-	******************************************/
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T>
-	void __toStringNoSeparator(std::ostream& stream, const U32& stride) const{
-		if(stride == 1){
-			stream.put(this->current<T>());
-		} else {
-			stream.write(this->currentAt<T>(), stride);
-		}
-	}
-
-	template <class T>
-	void __toStringNoSeparator(buffer_type& buffer, const U32& stride) const{
-		if(stride == 1){
-			buffer += this->current<T>();
-		} else {
-			buffer.Add(this->currentAt<T>(), stride);
-		}
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T>
-	void __toStringUnsigned(std::ostream& stream, const U32& stride) const{
-		if(stride == 1){
-			stream << this->current<T>();
-		} else {
-			const T* const r = this->currentAt<T>();
-
-			stream << r[0];
-			for(U32 i = 1; i < stride; ++i){
-				stream.put(',');
-				stream << r[i];
-			}
-		}
-	}
-
-	template <class T>
-	void __toStringUnsigned(buffer_type& buffer, const U32& stride) const{
-		if(stride == 1){
-			buffer.AddReadble(this->current<T>());
-		} else {
-			const T* const r = this->currentAt<T>();
-
-			buffer.AddReadble(r[0]);
-			for(U32 i = 1; i < stride; ++i){
-				buffer += ',';
-				buffer.AddReadble(r[i]);
-			}
-		}
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T, class Y>
-	void __toStringSigned(std::ostream& stream, const U32& stride) const{
-		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
-			stream.put('.');
-			return;
-		}
-
-		if(stride == 1){
-			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
-				stream.put('.');
-				return;
-			}
-
-			stream << this->current<T>();
-		} else {
-			const T* const r = this->currentAt<T>();
-			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-
-			if(u[0] == this->__missing_value) stream.put('.');
-			else if(u[0] == this->__end_of_vector_value) return;
-			else stream << r[0];
-
-			for(U32 i = 1; i < stride; ++i){
-				if(u[i] == this->__missing_value) stream << ",.";
-				else if(u[i] == this->__end_of_vector_value) return;
-				else stream << ',' << r[i];
-			}
-		}
-	}
-
-template <class T, class Y>
-	void __toStringSigned(buffer_type& buffer, const U32& stride) const{
-		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
-			buffer += '.';
-			return;
-		}
-
-		if(stride == 1){
-			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
-				buffer += '.';
-				return;
-			}
-
-			buffer.AddReadble(this->current<T>());
-		} else {
-			const T* const r = this->currentAt<T>();
-			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-
-			if(u[0] == this->__missing_value) buffer += '.';
-			else if(u[0] == this->__end_of_vector_value) return;
-			else buffer.AddReadble(r[0]);
-
-			for(U32 i = 1; i < stride; ++i){
-				if(u[i] == this->__missing_value) buffer += ",.";
-				else if(u[i] == this->__end_of_vector_value) return;
-				else {
-					buffer += ',';
-					buffer.AddReadble(r[i]);
-				}
-			}
-		}
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T>
-	void __toStringUnsignedSmall(std::ostream& stream, const U32& stride) const{
-		if(stride == 1){
-			stream << (U32)this->current<T>();
-		} else {
-			const T* const r = this->currentAt<T>();
-
-			stream << (U32)r[0];
-			for(U32 i = 1; i < stride; ++i){
-				stream.put(',');
-				stream << (U32)r[i];
-			}
-		}
-	}
-
-	template <class T>
-	void __toStringUnsignedSmall(buffer_type& buffer, const U32& stride) const{
-		if(stride == 1){
-			buffer.AddReadble(this->current<T>());
-		} else {
-			const T* const r = this->currentAt<T>();
-
-			buffer.AddReadble(r[0]);
-			for(U32 i = 1; i < stride; ++i){
-				buffer += ',';
-				buffer.AddReadble(r[i]);
-			}
-		}
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T, class Y>
-	void __toStringSignedSmall(std::ostream& stream, const U32& stride) const{
-		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
-			stream.put('.');
-			return;
-		}
-
-		if(stride == 1){
-			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
-				stream.put('.');
-				return;
-			}
-
-			stream << (S32)this->current<T>();
-		} else {
-			const T* const r = this->currentAt<T>();
-			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-
-
-			if(u[0] == this->__missing_value) stream.put('.');
-			else if(u[0] == this->__end_of_vector_value) return;
-			else stream << (S32)r[0];
-
-			for(U32 i = 1; i < stride; ++i){
-				if(u[i] == this->__missing_value) stream << ",.";
-				else if(u[i] == this->__end_of_vector_value) return;
-				else stream << ',' << (S32)r[i];
-			}
-		}
-	}
-
-	template <class T, class Y>
-	void __toStringSignedSmall(buffer_type& buffer, const U32& stride) const{
-		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
-			buffer += '.';
-			return;
-		}
-
-		if(stride == 1){
-			if(*(const Y* const)this->currentAt<T>() == this->__missing_value){
-				buffer += '.';
-				return;
-			}
-
-			buffer.AddReadble(this->current<T>());
-		} else {
-			const T* const r = this->currentAt<T>();
-			const Y* const u = reinterpret_cast<const Y* const>(this->currentAt<T>());
-
-
-			if(u[0] == this->__missing_value) buffer += '.';
-			else if(u[0] == this->__end_of_vector_value) return;
-			else buffer.AddReadble(r[0]);
-
-			for(U32 i = 1; i < stride; ++i){
-				if(u[i] == this->__missing_value) buffer += ",.";
-				else if(u[i] == this->__end_of_vector_value) return;
-				else {
-					buffer += ',';
-					buffer.AddReadble(r[i]);
-				}
-			}
-		}
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 * @param stride
-	 */
-	template <class T>
-	void __toStringFloat(std::ostream& stream, const U32& stride) const{
-		this->__toStringUnsigned<T>(stream, stride);
-	}
-
-	template <class T>
-	void __toStringFloat(buffer_type& buffer, const U32& stride) const{
-		this->__toStringUnsigned<T>(buffer, stride);
-	}
-
-protected:
-	S32 position;        // iterator position
-	S32 n_entries;       // size
-	BYTE type_size;      // sizeof(TYPE)
-
-	// Internal states
-	U32 __missing_value;
-	U32 __end_of_vector_value;
-	BYTE __source_sign;
-	Core::CORE_TYPE __source_type;
-	toStringFunctionDefinition toStringFunction;
-	toStringBufferFunctionDefinition toStringBufferFunction;
-
-	// Buffer reference
-	const buffer_type& buffer; // buffer reference
-};
-
-template <class T>
-class ContainerIteratorType : public ContainerIteratorDataInterface{
-private:
-	typedef ContainerIteratorDataInterface parent_type;
-	typedef ContainerIteratorType self_type;
-	typedef const T* const_pointer;
-	typedef const T* const const_pointer_final;
-	typedef const T& const_reference;
-
-public:
-	ContainerIteratorType(const buffer_type& buffer) :
-		ContainerIteratorDataInterface(buffer)
-	{
-		//this->n_entries = buffer.pointer / sizeof(T);
-		//assert(buffer.pointer % sizeof(T) == 0);
-	}
-	~ContainerIteratorType(){}
-
-	/* ****************************************
-	*  Basic iterator functions
-	******************************************/
-	inline const_reference current(void) const      { return(parent_type::current<T>()); }
-	inline const_pointer   currentAt(void) const    { return(parent_type::currentAt<T>()); }
-	inline const_reference first(void) const        { return(parent_type::first<T>()); }
-	inline const_reference last(void) const         { return(parent_type::last<T>()); }
-	inline const_reference operator[](const U32& p) const{ return(parent_type::operator[]<T>(p)); }
-	inline const_pointer   at(const U32& p) const   { return(parent_type::at<T>(p)); }
-	inline const U32       getCurrentStride(void) const  {
-		return((U32)*reinterpret_cast<const T* const>(&this->buffer.data[this->position*sizeof(T)]));
-	}
-};
-
-// Special case for booleans
-template <>
-class ContainerIteratorType<void> : public ContainerIteratorDataInterface{
-private:
-	typedef ContainerIteratorType<void> self_type;
-
-public:
-	ContainerIteratorType(const buffer_type& buffer) :
-		ContainerIteratorDataInterface(buffer)
-	{
-		//this->n_entries = 0;
-	}
-	~ContainerIteratorType(){}
-
-	inline void* current(void) const{ return(reinterpret_cast<void*>(&this->buffer.data[this->position*this->type_size])); }
-	inline void* first(void) const{ return(reinterpret_cast<void*>(&this->buffer.data[0])); }
-	inline void* last(void) const{
-		if(this->n_entries - 1 < 0) return(this->first());
-		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
-	}
-	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position]); }
-
-
-	// Dangerous functions
-	inline const U32 getCurrentStride(void) const{ return(0); }
-};
 
 class ContainerIterator{
 private:
 	typedef ContainerIterator              self_type;
 	typedef ContainerIteratorDataInterface data_iterator_type;
 	typedef ContainerIteratorDataInterface stride_iterator_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef IO::BasicBuffer                buffer_type;
 
 protected:
 	typedef StreamContainer container_type;
@@ -540,6 +22,7 @@ public:
 	explicit ContainerIterator(void) :
 		position(0),
 		hasStrideIteratorSet(false),
+		status(YON_IT_START),
 		container(nullptr),
 		data_iterator(nullptr),
 		stride_iterator(nullptr)
@@ -550,6 +33,7 @@ public:
 	ContainerIterator(const container_type& container) :
 		position(0),
 		hasStrideIteratorSet(false),
+		status(YON_IT_START),
 		container(&container),
 		data_iterator(nullptr),
 		stride_iterator(nullptr)
@@ -573,9 +57,10 @@ public:
 	 *
 	 * @param container
 	 */
-	void setup(const container_type& container){
+	const int setup(const container_type& container){
 		// Store container reference
 		this->container = &container;
+		this->status = YON_IT_START;
 
 		// Recycling is possible
 		delete this->data_iterator;   this->data_iterator   = nullptr;
@@ -586,22 +71,26 @@ public:
 		// Factory
 		if(container.header.controller.signedness == false){
 			switch(container.header.controller.type){
-			case(Core::TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
-			case(Core::TYPE_16B):    this->data_iterator = new ContainerIteratorType<U16>(this->container->buffer_data_uncompressed);    break;
-			case(Core::TYPE_32B):    this->data_iterator = new ContainerIteratorType<U32>(this->container->buffer_data_uncompressed);    break;
-			case(Core::TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
-			case(Core::TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
+			case(Core::YON_TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
+			case(Core::YON_TYPE_16B):    this->data_iterator = new ContainerIteratorType<U16>(this->container->buffer_data_uncompressed);    break;
+			case(Core::YON_TYPE_32B):    this->data_iterator = new ContainerIteratorType<U32>(this->container->buffer_data_uncompressed);    break;
+			case(Core::YON_TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
+			case(Core::YON_TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
 			//case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
-			case(Core::TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);   break;
-			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
+			case(Core::YON_TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);   break;
+			default:
+				this->status = YON_IT_ERROR_UNKNOWN_TYPE;
+				return this->status;
 			}
 		} else {
 			switch(container.header.controller.type){
-			case(Core::TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
-			case(Core::TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
-			case(Core::TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
-			case(Core::TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
-			default: std::cerr << Helpers::timestamp("ERROR") << "Illegal type" << std::endl; exit(1); break;
+			case(Core::YON_TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
+			case(Core::YON_TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
+			case(Core::YON_TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
+			case(Core::YON_TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
+			default:
+				this->status = YON_IT_ERROR_UNKNOWN_TYPE;
+				return this->status;
 			}
 		}
 		this->data_iterator->setType(this->container->header.controller.type, this->container->header.controller.signedness);
@@ -612,21 +101,45 @@ public:
 		if(this->container->header.controller.mixedStride){
 			this->hasStrideIteratorSet = true;
 			switch(this->container->header_stride.controller.type){
-				case(Core::TYPE_8B):  this->stride_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_strides_uncompressed); break;
-				case(Core::TYPE_16B): this->stride_iterator = new ContainerIteratorType<U16>(this->container->buffer_strides_uncompressed);  break;
-				case(Core::TYPE_32B): this->stride_iterator = new ContainerIteratorType<U32>(this->container->buffer_strides_uncompressed);  break;
-				case(Core::TYPE_64B): this->stride_iterator = new ContainerIteratorType<U64>(this->container->buffer_strides_uncompressed);  break;
-				default: std::cerr << Helpers::timestamp("ERROR") << "Illegal stride type" << std::endl; exit(1); break;
+				case(Core::YON_TYPE_8B):  this->stride_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_strides_uncompressed); break;
+				case(Core::YON_TYPE_16B): this->stride_iterator = new ContainerIteratorType<U16>(this->container->buffer_strides_uncompressed);  break;
+				case(Core::YON_TYPE_32B): this->stride_iterator = new ContainerIteratorType<U32>(this->container->buffer_strides_uncompressed);  break;
+				case(Core::YON_TYPE_64B): this->stride_iterator = new ContainerIteratorType<U64>(this->container->buffer_strides_uncompressed);  break;
+				default:
+					this->status = YON_IT_ERROR_UNKNOWN_TYPE;
+					return this->status;
 			}
 
 			// Stride iterator
 			this->stride_iterator->setType(this->container->header_stride.controller.type, this->container->header_stride.controller.signedness);
 		}
+
+		return(this->status);
 	}
 
-	inline const bool isUniform(void) const{ return(this->container->header.controller.uniform); }
-	inline const bool isUniformStrides(void) const{ return(this->container->header_stride.controller.uniform); }
-	inline const bool hasStrides(void) const{ return(this->container->header.controller.mixedStride); }
+	inline const bool isUniform(void){
+		if(this->container == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return false;
+		}
+		return(this->container->header.controller.uniform);
+	}
+
+	inline const bool isUniformStrides(void){
+		if(this->container == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return false;
+		}
+		return(this->container->header_stride.controller.uniform);
+	}
+
+	inline const bool hasStrides(void){
+		if(this->container == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return false;
+		}
+		return(this->container->header.controller.mixedStride);
+	}
 
 	/**<
 	 *
@@ -634,18 +147,26 @@ public:
 	 * @param field_name
 	 * @return
 	 */
-	inline bool toString(std::ostream& stream, const std::string& field_name){
+	inline const int toString(std::ostream& stream, const std::string& field_name){
+		if(this->container == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return this->status;
+		}
+
 		if(field_name.size() == 0){
 			std::cerr << "impossible length" << std::endl;
-			return false;
+			this->status = YON_IT_ERROR_GENERAL;
+			return this->status;
 		}
 
 		// Inject key string
 		stream.write(&field_name[0], field_name.size());
 		// Inject an equal sign if the encoded type is not
 		// a BOOLEAN
-		if(this->container->header.controller.type == Core::TYPE_BOOLEAN)
-			return true;
+		if(this->container->header.controller.type == Core::YON_TYPE_BOOLEAN){
+			this->status = YON_IT_GOOD;
+			return this->status;
+		}
 
 		stream.put('=');
 
@@ -653,24 +174,32 @@ public:
 		return(this->toString(stream));
 	}
 
-	inline bool toString(buffer_type& buffer, const std::string& field_name){
-			if(field_name.size() == 0){
-				std::cerr << "impossible length" << std::endl;
-				return false;
-			}
-
-			// Inject key string
-			buffer.Add(&field_name[0], field_name.size());
-			// Inject an equal sign if the encoded type is not
-			// a BOOLEAN
-			if(this->container->header.controller.type == Core::TYPE_BOOLEAN)
-				return true;
-
-			buffer += '=';
-
-			// Call toString function on iterators
-			return(this->toString(buffer));
+	inline const int toString(buffer_type& buffer, const std::string& field_name){
+		if(this->container == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return this->status;
 		}
+
+		if(field_name.size() == 0){
+			std::cerr << "impossible length" << std::endl;
+			this->status = YON_IT_ERROR_GENERAL;
+			return this->status;
+		}
+
+		// Inject key string
+		buffer.Add(&field_name[0], field_name.size());
+		// Inject an equal sign if the encoded type is not
+		// a BOOLEAN
+		if(this->container->header.controller.type == Core::YON_TYPE_BOOLEAN){
+			this->status = YON_IT_GOOD;
+			return this->status;
+		}
+
+		buffer += '=';
+
+		// Call toString function on iterators
+		return(this->toString(buffer));
+	}
 
 	/**< @brief Returns records from the data stream as a parsed string
 	 * Records in the iterator return
@@ -678,27 +207,45 @@ public:
 	 * @param stream
 	 * @return
 	 */
-	inline bool toString(std::ostream& stream){
+	inline const int toString(std::ostream& stream){
+		if(this->data_iterator == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return this->status;
+		}
+
 		if(this->stride_iterator != nullptr){
+			if(this->stride_iterator == nullptr){
+				this->status = YON_IT_ERROR_UNINITIALIZED;
+				return this->status;
+			}
 			this->data_iterator->toString(stream, this->stride_iterator->getCurrentStride());
 		}
 		else {
 			this->data_iterator->toString(stream, this->container->header.stride);
 		}
 
-		return(true);
+		return(YON_IT_GOOD);
 	}
 
-	inline bool toString(buffer_type& buffer){
-			if(this->stride_iterator != nullptr){
-				this->data_iterator->toString(buffer, this->stride_iterator->getCurrentStride());
-			}
-			else {
-				this->data_iterator->toString(buffer, this->container->header.stride);
-			}
-
-			return(true);
+	inline const int toString(buffer_type& buffer){
+		if(this->data_iterator == nullptr){
+			this->status = YON_IT_ERROR_UNINITIALIZED;
+			return this->status;
 		}
+
+		if(this->stride_iterator != nullptr){
+			if(this->stride_iterator == nullptr){
+				this->status = YON_IT_ERROR_UNINITIALIZED;
+				return this->status;
+			}
+			this->data_iterator->toString(buffer, this->stride_iterator->getCurrentStride());
+		}
+		else {
+			this->data_iterator->toString(buffer, this->container->header.stride);
+		}
+
+		return(YON_IT_GOOD);
+	}
 
 	// Increment operator
 	void operator++(void){
@@ -734,12 +281,13 @@ public:
 
 	inline data_iterator_type& getDataIterator(void){ return(*this->data_iterator); }
 
-public:
-	U32 position;                          // iterator position
-	bool hasStrideIteratorSet;             // flag triggered if mixed stride
-	const container_type* container;       // reference container
-	data_iterator_type* data_iterator;     // data iterator type
-	stride_iterator_type* stride_iterator; // stride iterator type
+private:
+	U32 position;                           // iterator position
+	bool hasStrideIteratorSet;              // flag triggered if mixed stride
+	TACHYON_ITERATOR_STATUS status;         //
+	const container_type*   container;      // reference container
+	data_iterator_type*     data_iterator;  // data iterator type
+	stride_iterator_type*   stride_iterator;// stride iterator type
 };
 
 }

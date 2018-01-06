@@ -10,20 +10,24 @@
 namespace Tachyon{
 namespace Core{
 
-enum CORE_TYPE{TYPE_8B,
-	           TYPE_16B,
-			   TYPE_32B,
-			   TYPE_64B,
-			   TYPE_FLOAT,
-			   TYPE_DOUBLE,
-			   TYPE_BOOLEAN,
-			   TYPE_CHAR,
-			   TYPE_STRUCT};
+enum TACHYON_CORE_TYPE{
+	YON_TYPE_8B,
+	YON_TYPE_16B,
+	YON_TYPE_32B,
+	YON_TYPE_64B,
+	YON_TYPE_FLOAT,
+	YON_TYPE_DOUBLE,
+	YON_TYPE_BOOLEAN,
+	YON_TYPE_CHAR,
+	YON_TYPE_STRUCT
+};
 
-enum CORE_COMPRESSION{ENCODE_NONE,
-	                  ENCODE_ZSTD,
-					  ENCODE_FSE,
-					  ENCODE_RANS};
+enum TACHYON_CORE_COMPRESSION{
+	YON_ENCODE_NONE,
+	YON_ENCODE_ZSTD,
+	YON_ENCODE_FSE,
+	YON_ENCODE_RANS
+};
 
 
 // Stream container for importing
@@ -55,7 +59,7 @@ public:
 		this->buffer_strides_uncompressed.deleteAll();
 	}
 
-	inline void setType(const CORE_TYPE value){ this->header.controller.type = value; }
+	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
 	inline const bool checkStrideSize(const S32& value) const{ return this->header.stride == value; }
 	inline void setMixedStrides(void){ this->header.stride = -1; this->header.controller.mixedStride = true; }

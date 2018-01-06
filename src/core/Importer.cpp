@@ -330,16 +330,16 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
-			target_container.header_stride.controller.type = Core::CORE_TYPE::TYPE_32B;
+			target_container.header_stride.controller.type = Core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(info_value_type == 0)      target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(info_value_type == 1) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(info_value_type == 2) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(info_value_type == 3) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(info_value_type == 5) target_container.setType(Core::CORE_TYPE::TYPE_FLOAT);
-			else if(info_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_CHAR);
+			if(info_value_type == 0)      target_container.setType(Core::YON_TYPE_32B);
+			else if(info_value_type == 1) target_container.setType(Core::YON_TYPE_32B);
+			else if(info_value_type == 2) target_container.setType(Core::YON_TYPE_32B);
+			else if(info_value_type == 3) target_container.setType(Core::YON_TYPE_32B);
+			else if(info_value_type == 5) target_container.setType(Core::YON_TYPE_FLOAT);
+			else if(info_value_type == 7) target_container.setType(Core::YON_TYPE_CHAR);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
 
@@ -408,16 +408,16 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
-			target_container.header_stride.controller.type = Core::CORE_TYPE::TYPE_32B;
+			target_container.header_stride.controller.type = Core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(format_value_type == 0)      target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(format_value_type == 1) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(format_value_type == 2) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(format_value_type == 3) target_container.setType(Core::CORE_TYPE::TYPE_32B);
-			else if(format_value_type == 5) target_container.setType(Core::CORE_TYPE::TYPE_FLOAT);
-			else if(format_value_type == 7) target_container.setType(Core::CORE_TYPE::TYPE_CHAR);
+			if(format_value_type == 0)      target_container.setType(Core::YON_TYPE_32B);
+			else if(format_value_type == 1) target_container.setType(Core::YON_TYPE_32B);
+			else if(format_value_type == 2) target_container.setType(Core::YON_TYPE_32B);
+			else if(format_value_type == 3) target_container.setType(Core::YON_TYPE_32B);
+			else if(format_value_type == 5) target_container.setType(Core::YON_TYPE_FLOAT);
+			else if(format_value_type == 7) target_container.setType(Core::YON_TYPE_CHAR);
 			else {
 				std::cerr << "not possible" << std::endl;
 				exit(1);
