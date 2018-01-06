@@ -165,6 +165,7 @@ public:
 		this->__source_sign = signedness;
 	}
 
+	// Todo:
 	// Comparison operators
 	// Must be overloaded
 	virtual const bool operator>(const U32& cmp)  const{ return false; }
@@ -306,7 +307,7 @@ private:
 		}
 	}
 
-template <class T, class Y>
+	template <class T, class Y>
 	void __toStringSigned(buffer_type& buffer, const U32& stride) const{
 		if(*(const Y* const)this->currentAt<T>() == this->__end_of_vector_value){
 			buffer += '.';
@@ -460,11 +461,11 @@ template <class T, class Y>
 	}
 
 protected:
-	S32 position;        // iterator position
-	S32 n_entries;       // size
-	BYTE type_size;      // sizeof(TYPE)
+	S32 position;    // iterator position
+	S32 n_entries;   // size
+	BYTE type_size;  // sizeof(TYPE)
 
-	// Internal states
+private:
 	U32 __missing_value;
 	U32 __end_of_vector_value;
 	BYTE __source_sign;
@@ -472,6 +473,7 @@ protected:
 	toStringFunctionDefinition toStringFunction;
 	toStringBufferFunctionDefinition toStringBufferFunction;
 
+protected:
 	// Buffer reference
 	const buffer_type& buffer; // buffer reference
 };
@@ -497,12 +499,12 @@ public:
 	/* ****************************************
 	*  Basic iterator functions
 	******************************************/
-	inline const_reference current(void) const      { return(parent_type::current<T>()); }
-	inline const_pointer   currentAt(void) const    { return(parent_type::currentAt<T>()); }
-	inline const_reference first(void) const        { return(parent_type::first<T>()); }
-	inline const_reference last(void) const         { return(parent_type::last<T>()); }
-	inline const_reference operator[](const U32& p) const{ return(parent_type::operator[]<T>(p)); }
-	inline const_pointer   at(const U32& p) const   { return(parent_type::at<T>(p)); }
+	inline const_reference current(void) const           { return(parent_type::current<T>());    }
+	inline const_pointer   currentAt(void) const         { return(parent_type::currentAt<T>());  }
+	inline const_reference first(void) const             { return(parent_type::first<T>());      }
+	inline const_reference last(void) const              { return(parent_type::last<T>());       }
+	inline const_reference operator[](const U32& p) const{ return(parent_type::operator[]<T>(p));}
+	inline const_pointer   at(const U32& p) const        { return(parent_type::at<T>(p));        }
 	inline const U32       getCurrentStride(void) const  {
 		return((U32)*reinterpret_cast<const T* const>(&this->buffer.data[this->position*sizeof(T)]));
 	}
@@ -529,7 +531,6 @@ public:
 		return(reinterpret_cast<void*>(&this->buffer.data[(this->n_entries - 1)*this->type_size]));
 	}
 	void currentPointer(const void*& p) const{ p = reinterpret_cast<const void*>(&this->buffer.data[this->position]); }
-
 
 	// Dangerous functions
 	inline const U32 getCurrentStride(void) const{ return(0); }
