@@ -12,9 +12,9 @@ namespace Core{
 
 /**< Envelope record for meta hot-cold split
  * Is used primarily in the simple API. Has a
- * high cost as cold data is copied. Cold
- * meta allele data is always read even though
- * in most cases it is not required
+ * high(ish) cost as cold data has to be copied.
+ * Cold meta allele data is always read even
+ * though in most cases it is not required
  */
 struct MetaEntry{
 private:
@@ -31,7 +31,7 @@ public:
 	~MetaEntry();
 
 	/**<
-	 * Translates MetaEntry record into a VCF record
+	 * Translates MetaEntry record into a VCF string
 	 * for output to the target ostream
 	 * @param dest
 	 * @param header
@@ -39,11 +39,22 @@ public:
 	 * @param blockPos
 	 */
 	void toVCFString(std::ostream& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
+
+	/**<
+	 * Translated MetaEntry record into a VCF string
+	 * for output to the target buffer
+	 * @param dest
+	 * @param header
+	 * @param blockContigID
+	 * @param blockPos
+	 */
 	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
 
+	// Boolean checks
 	inline const bool isBiallelic(void){ return(this->hot.isBiallelic()); }
 	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }
 
+	// Set and get for patterns
 	inline U32& getInfoPatternID(void){ return(this->info_pattern_id); }
 	inline U32& getFormatPatternID(void){ return(this->format_pattern_id); }
 	inline U32& getFilterPatternID(void){ return(this->filter_pattern_id); }
@@ -55,16 +66,12 @@ private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
 private:
-	U32 info_pattern_id;
-	U32 filter_pattern_id;
-	U32 format_pattern_id;
-
-	// Meta objects
-	hot_entry hot;
-	cold_entry cold;
-
-private:
-	bool loaded_cold;
+	bool loaded_cold;      // Boolean triggered if cold meta object was overloaded
+	U32 info_pattern_id;   // Info pattern ID
+	U32 filter_pattern_id; // Filter pattern ID
+	U32 format_pattern_id; // Format pattern ID
+	hot_entry hot;         // Hot meta object
+	cold_entry cold;       // Cold meta object - can be empty
 };
 
 }

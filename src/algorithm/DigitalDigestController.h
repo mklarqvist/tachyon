@@ -15,6 +15,11 @@ public:
 	DigitalDigestController(void){}
 	~DigitalDigestController(void){}
 
+	/**<
+	 * Initializes the SHA512 context. Calling this function
+	 * is mandatory!
+	 * @return
+	 */
 	inline bool initialize(){
 		if(!SHA512_Init(&this->context))
 			return false;
@@ -22,11 +27,17 @@ public:
 		return true;
 	}
 
-	inline bool update(const container_type& container){
+	/**<
+	 *
+	 * @param container
+	 * @return
+	 */
+	inline bool updateCompressed(const container_type& container){
 		if(!this->update(container.buffer_data.data, container.buffer_data.pointer)){
 			std::cerr << "failed update" << std::endl;
 			return false;
 		}
+
 		if(container.header.controller.mixedStride){
 			if(!this->update(container.buffer_strides.data, container.buffer_strides.pointer)){
 				std::cerr << "failed update" << std::endl;
@@ -36,11 +47,17 @@ public:
 		return true;
 	}
 
+	/**<
+	 *
+	 * @param container
+	 * @return
+	 */
 	inline bool updateUncompressed(const container_type& container){
 		if(!this->update(container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer)){
 			std::cerr << "failed update" << std::endl;
 			return false;
 		}
+
 		if(container.header.controller.mixedStride){
 			if(!this->update(container.buffer_strides_uncompressed.data, container.buffer_strides_uncompressed.pointer)){
 				std::cerr << "failed update" << std::endl;
@@ -50,13 +67,10 @@ public:
 		return true;
 	}
 
-	inline bool update(void* input, const U32 length){
-		if(!SHA512_Update(&this->context, (BYTE*)input, length))
-			return false;
-
-		return true;
-	}
-
+	/**<
+	 *
+	 * @return
+	 */
 	inline bool finalize(){
 		if(!SHA512_Final(&this->sha512_digest[0], &context))
 			return false;
@@ -64,7 +78,29 @@ public:
 		return true;
 	}
 
-	inline void clear(void){ memset(&this->sha512_digest[0], 0, 64); }
+	/**<
+	 *
+	 */
+	inline void clear(void){
+		this->finalize();
+		memset(&this->sha512_digest[0], 0, 64);
+		this->initialize();
+	}
+
+
+private:
+	/**<
+	 *
+	 * @param input
+	 * @param length
+	 * @return
+	 */
+	inline bool update(void* input, const U32 length){
+		if(!SHA512_Update(&this->context, (BYTE*)input, length))
+			return false;
+
+		return true;
+	}
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

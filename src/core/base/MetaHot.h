@@ -3,6 +3,7 @@
 
 /*======  Dependencies  ======*/
 #include "../../io/BasicBuffer.h"
+#include "../../support/MagicConstants.h"
 
 namespace Tachyon{
 namespace Core{
@@ -12,6 +13,7 @@ struct MetaHotController{
 	explicit MetaHotController(void) :
 		anyMissing(0),
 		allPhased(0),
+		anyNA(0),
 		mixed_phasing(0),
 		biallelic(0),
 		simple(0),
@@ -28,19 +30,21 @@ struct MetaHotController{
 	/**< Controller field. Describes
 	 * 1) If any of the genotypes have missing values
 	 * 2) If all the genotypes are phased or not
-	 * 3) If there is mixed phases in the genotypes
-	 * 4) If variant site is biallelic
-	 * 5) If the genotypes requires "simple" encoding
-	 * 6) If the genotypes are run-length encoded or not
-	 * 7) What machine word-size the run-length encoded objects are
-	 * 8) If the variant site is diploid
-	 * 9) If there is mixed ploidy
-	 * 10-16) Reserved for future use
+	 * 3) If any genotype has NA/EOV values
+	 * 4) If there is mixed phases in the genotypes
+	 * 5) If variant site is biallelic
+	 * 6) If the genotypes requires "simple" encoding
+	 * 7) If the genotypes are run-length encoded or not
+	 * 8) What machine word-size the run-length encoded objects are
+	 * 9) If the variant site is diploid
+	 * 10) If there is mixed ploidy
+	 * 11-16) Reserved for future use
 	 *
 	 * If the genotypes are NOT diploid then
 	 */
 	U16 anyMissing:    1, // any missing
         allPhased:     1, // all phased
+		anyNA:         1, // any NA
         mixed_phasing: 1, // has mixed phasing
         biallelic:     1, // is biallelic
         simple:        1, // is simple SNV->SNV
@@ -48,7 +52,7 @@ struct MetaHotController{
 		rle_type:      2, // type of RLE (BYTE, U16, U32, U64)
 		diploid:       1, // is diploid
 		mixed_ploidy:  1, // has mixed ploidy (e.g. X chromosome or CNV)
-		unused:        6; // reserved
+		unused:        5; // reserved
 };
 
 /**
@@ -67,48 +71,24 @@ private:
 	typedef MetaHotRefAlt self_type;
 
 public:
-	MetaHotRefAlt() : ref(0), alt(0){}
-	~MetaHotRefAlt(){}
+	MetaHotRefAlt();
+	~MetaHotRefAlt();
 
-	void operator=(const BYTE& other){
-		this->alt = (other & 15);
-		this->ref = ((other >> 4) & 15);
+	inline void operator=(const BYTE& other){
+		this->alt = other & 15;
+		this->ref = (other >> 4) & 15;
 	}
 
-	void setMissing(void){
+	inline void setMissing(void){
 		this->ref = Tachyon::Constants::REF_ALT_N;
 		this->alt = Tachyon::Constants::REF_ALT_N;
 	}
 
-	bool setRef(const char& c){
-		switch(c){
-		case 'A': this->ref = Tachyon::Constants::REF_ALT_A; break;
-		case 'T': this->ref = Tachyon::Constants::REF_ALT_T; break;
-		case 'G': this->ref = Tachyon::Constants::REF_ALT_G; break;
-		case 'C': this->ref = Tachyon::Constants::REF_ALT_C; break;
-		default:
-			std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
-			return false;
-		}
-		return true;
-	}
-
-	bool setAlt(const char& c){
-		switch(c){
-		case 'A': this->alt = Tachyon::Constants::REF_ALT_A; break;
-		case 'T': this->alt = Tachyon::Constants::REF_ALT_T; break;
-		case 'G': this->alt = Tachyon::Constants::REF_ALT_G; break;
-		case 'C': this->alt = Tachyon::Constants::REF_ALT_C; break;
-		case 'N': this->alt = Tachyon::Constants::REF_ALT_N; break;
-		default:
-			std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
-			return false;
-		}
-		return true;
-	}
-
 	inline const char getRef(void) const{ return(Constants::REF_ALT_LOOKUP[this->ref]); }
 	inline const char getAlt(void) const{ return(Constants::REF_ALT_LOOKUP[this->alt]); }
+
+	bool setRef(const char& c);
+	bool setAlt(const char& c);
 
 public:
 	BYTE ref: 4,
@@ -135,43 +115,12 @@ private:
 
 public:
 	// ctor
-	MetaHot() :
-		position(0)
-	{}
-
-	MetaHot(const self_type& other) :
-		controller(other.controller),
-		ref_alt(other.ref_alt),
-		position(other.position)
-	{}
-
-	MetaHot(self_type&& other) noexcept :
-		controller(other.controller),
-		ref_alt(other.ref_alt),
-		position(other.position)
-	{
-
-	}
-
-	MetaHot& operator=(const self_type& other) noexcept{
-		this->controller = other.controller;
-		this->ref_alt    = other.ref_alt;
-		this->position   = other.position;
-		return(*this);
-	}
-
-	MetaHot& operator=(self_type&& other) noexcept{
-		if (this == &other)
-			return *this;
-
-		this->controller = other.controller;
-		this->ref_alt    = other.ref_alt;
-		this->position   = other.position;
-		return(*this);
-	}
-
-	// dtor
-	~MetaHot(){}
+	MetaHot();
+	MetaHot(const self_type& other);
+	MetaHot(self_type&& other) noexcept;
+	MetaHot& operator=(const self_type& other) noexcept;
+	MetaHot& operator=(self_type&& other) noexcept;
+	~MetaHot();
 
 	// Supportive boolean functions
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }

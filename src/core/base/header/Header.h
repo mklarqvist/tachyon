@@ -50,6 +50,37 @@ public:
 	inline const sample_type& getSample(const U32& p) const{ return(this->samples[p]); }
 	inline const map_entry_type& getEntry(const U32& p) const{ return(this->entries[p]); }
 
+	inline const bool getContig(const std::string& p, contig_type*& target) const{
+		if(this->htable_contigs == nullptr) return false;
+		S32* ret = nullptr;
+		if(this->htable_contigs->GetItem(&p[0], &p, ret, p.size())){
+			target = &this->contigs[*ret];
+			return true;
+		}
+		return false;
+	}
+
+	inline const bool getSample(const std::string& p, sample_type*& target) const{
+		if(this->htable_samples == nullptr) return false;
+		S32* ret = nullptr;
+		if(this->htable_samples->GetItem(&p[0], &p, ret, p.size())){
+			target = &this->samples[*ret];
+			return true;
+		}
+		return false;
+	}
+
+	inline const bool getEntry(const std::string& p, map_entry_type*& target) const{
+		if(this->htable_entries == nullptr) return false;
+		S32* ret = nullptr;
+		if(this->htable_entries->GetItem(&p[0], &p, ret, p.size())){
+			target = &this->entries[*ret];
+			return true;
+		}
+		return false;
+	}
+
+private:
 	bool buildMapTable(void){
 		if(this->n_entries == 0)
 			return false;
@@ -73,7 +104,43 @@ public:
 		return true;
 	}
 
-private:
+	bool buildHashTables(void){
+		if(this->n_contigs){
+			if(this->n_contigs*2 < 5012){
+				this->htable_contigs = new hash_table_type(5012);
+			} else
+				this->htable_contigs = new hash_table_type(this->n_contigs*2);
+
+			for(S32 i = 0; i < this->n_contigs; ++i){
+				this->htable_contigs->SetItem(&this->contigs[i].name[0], &this->contigs[i].name, i, this->contigs[i].name.size());
+			}
+		}
+
+		if(this->n_samples){
+			if(this->n_samples*2 < 5012){
+				this->htable_samples = new hash_table_type(5012);
+			} else
+				this->htable_samples = new hash_table_type(this->n_samples*2);
+
+			for(S32 i = 0; i < this->n_samples; ++i){
+				this->htable_samples->SetItem(&this->samples[i].name[0], &this->samples[i].name, i, this->samples[i].name.size());
+			}
+		}
+
+		if(this->n_entries){
+			if(this->n_entries*2 < 5012){
+				this->htable_entries = new hash_table_type(5012);
+			} else
+				this->htable_entries = new hash_table_type(this->n_entries*2);
+
+			for(S32 i = 0; i < this->n_entries; ++i){
+				this->htable_entries->SetItem(&this->entries[i].ID[0], &this->entries[i].ID, i, this->entries[i].ID.size());
+			}
+		}
+
+		return true;
+	}
+
 	friend std::ifstream& operator<<(std::ifstream& stream, self_type& entry){
 		entry.file_header_string.resize(Constants::FILE_HEADER.size());
 		stream.read(&entry.file_header_string[0], Constants::FILE_HEADER.size());
@@ -97,6 +164,7 @@ private:
 			stream >> entry.entries[i];
 
 		entry.buildMapTable();
+		entry.buildHashTables();
 
 		return(stream);
 	}

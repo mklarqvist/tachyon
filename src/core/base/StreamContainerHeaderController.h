@@ -10,10 +10,10 @@
 namespace Tachyon{
 namespace Core{
 
-enum CORE_ENCRYPTION{ENCRYPTION_NONE,
-	                 ENCRYPTION_AES_128,
-					 ENCRYPTION_AES_256,
-					 ENCRYPTION_RSA_4096};
+enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
+	                    YON_ENCRYPTION_AES_128,
+					    YON_ENCRYPTION_AES_256,
+					    YON_ENCRYPTION_RSA_4096};
 
 // Controller type for stream container
 struct StreamContainerHeaderController{
@@ -46,17 +46,15 @@ public:
 
 public:
 	// 6 base values (4 integers + 2 floats)
-	U16 signedness: 1,
-		mixedStride: 1,
-		type: 6,    // base typing (extra bits saved for future use)
-		encoder: 5, // encoder bits (0 = uncompressed)
-		uniform: 1, // triggered if all values are the same
-		encryption: 2;
+	U16 signedness: 1, // Signed type
+		mixedStride: 1,// Different stride sizes
+		type: 6,       // Base typing (extra bits saved for future use)
+		encoder: 5,    // Encoder bits (see encoder for values)
+		uniform: 1,    // Triggered if all values in the buffer are the same
+		encryption: 2; // Encryption type
 };
 
 }
 }
-
-
 
 #endif /* CORE_BASE_STREAMCONTAINERHEADERCONTROLLER_H_ */

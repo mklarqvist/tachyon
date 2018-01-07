@@ -1,0 +1,77 @@
+#include "MetaHot.h"
+
+namespace Tachyon{
+namespace Core{
+
+// ctor
+MetaHot::MetaHot() :
+	position(0)
+{}
+
+MetaHot::MetaHot(const self_type& other) :
+	controller(other.controller),
+	ref_alt(other.ref_alt),
+	position(other.position)
+{}
+
+MetaHot::MetaHot(self_type&& other) noexcept :
+	controller(other.controller),
+	ref_alt(other.ref_alt),
+	position(other.position)
+{
+
+}
+
+MetaHot& MetaHot::operator=(const self_type& other) noexcept{
+	this->controller = other.controller;
+	this->ref_alt    = other.ref_alt;
+	this->position   = other.position;
+	return(*this);
+}
+
+MetaHot& MetaHot::operator=(self_type&& other) noexcept{
+	if (this == &other)
+		return *this;
+
+	this->controller = other.controller;
+	this->ref_alt    = other.ref_alt;
+	this->position   = other.position;
+	return(*this);
+}
+
+// dtor
+MetaHot::~MetaHot(){}
+
+// MetaHotRefAlt
+MetaHotRefAlt::MetaHotRefAlt() : ref(0), alt(0){}
+MetaHotRefAlt::~MetaHotRefAlt(){}
+
+bool MetaHotRefAlt::setRef(const char& c){
+	switch(c){
+	case 'A': this->ref = Tachyon::Constants::REF_ALT_A; break;
+	case 'T': this->ref = Tachyon::Constants::REF_ALT_T; break;
+	case 'G': this->ref = Tachyon::Constants::REF_ALT_G; break;
+	case 'C': this->ref = Tachyon::Constants::REF_ALT_C; break;
+	default:
+		std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool MetaHotRefAlt::setAlt(const char& c){
+	switch(c){
+	case 'A': this->alt = Tachyon::Constants::REF_ALT_A; break;
+	case 'T': this->alt = Tachyon::Constants::REF_ALT_T; break;
+	case 'G': this->alt = Tachyon::Constants::REF_ALT_G; break;
+	case 'C': this->alt = Tachyon::Constants::REF_ALT_C; break;
+	case 'N': this->alt = Tachyon::Constants::REF_ALT_N; break;
+	default:
+		std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
+		return false;
+	}
+	return true;
+}
+
+}
+}

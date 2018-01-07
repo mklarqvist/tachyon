@@ -4,27 +4,27 @@ namespace Tachyon{
 namespace Core{
 
 MetaEntry::MetaEntry() :
+	loaded_cold(false),
 	info_pattern_id(std::numeric_limits<S32>::min()),
 	filter_pattern_id(std::numeric_limits<S32>::min()),
-	format_pattern_id(std::numeric_limits<S32>::min()),
-	loaded_cold(false)
+	format_pattern_id(std::numeric_limits<S32>::min())
 {}
 
 MetaEntry::MetaEntry(const hot_entry& hot) :
+	loaded_cold(false),
 	info_pattern_id(std::numeric_limits<S32>::min()),
 	filter_pattern_id(std::numeric_limits<S32>::min()),
 	format_pattern_id(std::numeric_limits<S32>::min()),
-	hot(hot),
-	loaded_cold(false)
+	hot(hot)
 {}
 
 MetaEntry::MetaEntry(const hot_entry& hot, const cold_entry& cold) :
+	loaded_cold(true),
 	info_pattern_id(std::numeric_limits<S32>::min()),
 	filter_pattern_id(std::numeric_limits<S32>::min()),
 	format_pattern_id(std::numeric_limits<S32>::min()),
 	hot(hot),
-	cold(cold),
-	loaded_cold(true)
+	cold(cold)
 {}
 
 MetaEntry::~MetaEntry(){ /* do nothing */ };

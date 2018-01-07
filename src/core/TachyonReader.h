@@ -200,6 +200,12 @@ public:
 	}
 
 	bool toVCFString(std::ostream& stream = std::cout){
+
+		Core::HeaderMapEntry* entry = nullptr;
+		if(this->header.getEntry("AC", entry)){
+			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << std::endl;
+		}
+
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
 		// Setup containers
