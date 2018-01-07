@@ -4,7 +4,6 @@
 #include <cassert>
 
 namespace Tachyon{
-namespace Core{
 namespace Iterator{
 
 #define BCF_BYTE_MISSING  0x80
@@ -17,6 +16,20 @@ namespace Iterator{
 /**
  * Interface for iterators over arbitrary containers
  *
+ * The interface has to provide the callable functions
+ * used in the derived classes. Since we have no way of
+ * knowing what the return type will be a priori we
+ * provide templated set/get functions that are called
+ * from the derived class.
+ *
+ * In order to provide this abstract functionality we
+ * need to know the byte-width of the return type and
+ * what (if any) missing and end-of-vector (EOV) values
+ * we should interpret. This functionality is provided by
+ * calling the mandatory setup() function. This is
+ * functionality is reminiscent of a factory pattern
+ * but implicitly overloads itself rather than returning
+ * a new class instance.
  */
 class ContainerIteratorDataInterface{
 protected:
@@ -90,10 +103,10 @@ public:
 		if(type == Core::YON_TYPE_BOOLEAN){
 			this->type_size = 0;
 		} else if(type == Core::YON_TYPE_CHAR){
-			this->type_size = sizeof(char);
-			this->__missing_value = BCF_BYTE_MISSING;
-			this->__end_of_vector_value = BCF_BYTE_EOV;
-			this->toStringFunction = &self_type::__toStringNoSeparator<char>;
+			this->type_size              = sizeof(char);
+			this->__missing_value        = BCF_BYTE_MISSING;
+			this->__end_of_vector_value  = BCF_BYTE_EOV;
+			this->toStringFunction       = &self_type::__toStringNoSeparator<char>;
 			this->toStringBufferFunction = &self_type::__toStringNoSeparator<char>;
 		} else if(type == Core::YON_TYPE_8B){
 			this->type_size = sizeof(BYTE);
@@ -451,12 +464,12 @@ private:
 	 * @param stride
 	 */
 	template <class T>
-	void __toStringFloat(std::ostream& stream, const U32& stride) const{
+	inline void __toStringFloat(std::ostream& stream, const U32& stride) const{
 		this->__toStringUnsigned<T>(stream, stride);
 	}
 
 	template <class T>
-	void __toStringFloat(buffer_type& buffer, const U32& stride) const{
+	inline void __toStringFloat(buffer_type& buffer, const U32& stride) const{
 		this->__toStringUnsigned<T>(buffer, stride);
 	}
 
@@ -536,7 +549,6 @@ public:
 	inline const U32 getCurrentStride(void) const{ return(0); }
 };
 
-}
 }
 }
 

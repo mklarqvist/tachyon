@@ -27,6 +27,7 @@ src/algorithm/compression \
 src/algorithm/permutation \
 src/core \
 src/core/base \
+src/core/iterator \
 src/index \
 src/io \
 src/io/bcf \

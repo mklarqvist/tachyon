@@ -178,40 +178,6 @@ std::string NumberThousandsSeparator(std::string number){
 	return number;
 }
 
-bool matchPositionalStringTWO(const std::string& param){
-	return(std::regex_match(param, std::regex(
-			"^"
-			"([a-zA-Z0-9_\\.\\-\\|]+[\\$]{0,1})+"
-			"([:]{1}"
-			"([0-9]{1,}([\\.]{1}[0-9]{1,}){0,1}([eE]{1}[0-9]{1,}){0,1}){1}"
-			"([-]{1}"
-			"([0-9]{1,}([\\.]{1}[0-9]{1,}){0,1}([eE]{1}[0-9]{1,}){0,1}){1})?"
-			"){0,1}"
-			"$"
-	)));
-}
-
-bool parsePositionalStringTWO(const std::string& param){
-	std::size_t found = param.find(',');
-	if(found != std::string::npos){
-		std::vector<std::string> ret = Helpers::split(param, ',');
-		if(ret.size() != 2){
-			std::cerr << Helpers::timestamp("LOG") << "Illegal TWO region format!" << std::endl;
-			return 1;
-		}
-		if(!matchPositionalStringTWO(ret[0])){
-			std::cerr << Helpers::timestamp("LOG") << "Illegal TWO region format: part 1!" << std::endl;
-			return false;
-		}
-		if(!matchPositionalStringTWO(ret[1])){
-			std::cerr << Helpers::timestamp("LOG") << "Illegal TWO region format: part 2!" << std::endl;
-			return false;
-		}
-		return true;
-	}
-	return(matchPositionalStringTWO(param));
-}
-
 S32 char2int(const char& input){
 	if(input >= '0' && input <= '9') return input - '0';
 	else if(input >= 'A' && input <= 'F') return input - 'A' + 10;

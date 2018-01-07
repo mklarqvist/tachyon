@@ -2,7 +2,6 @@
 #define CORE_ITERATOR_METAHOTITERATOR_H_
 
 namespace Tachyon{
-namespace Core{
 namespace Iterator{
 
 class MetaHotIterator{
@@ -74,7 +73,6 @@ private:
 	const entry_type* entries;
 };
 
-}
 }
 }
 

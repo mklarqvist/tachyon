@@ -75,7 +75,7 @@ bool Importer::BuildBCF(void){
 	}
 
 	// Spawn RLE controller and update PPA controller
-	//this->encoder.setSamples(this->header->samples);
+	this->encoder.setSamples(this->header->samples);
 	this->block.ppa_manager.setSamples(this->header->samples);
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->samples);
@@ -221,12 +221,12 @@ bool Importer::BuildBCF(void){
 		previousLast     = reader.last().body->POS;
 	}
 	// Done importing
-	std::cout << Helpers::timestamp("LOG","FINAL") << this->import_compressed_stats << '\t' << (U64)this->writer.stream.tellp() << std::endl;
 	this->writer.stream.flush();
 	const U64 data_ends = this->writer.stream.tellp();
 
 	// Write index
 	this->writer.WriteIndex();
+	const U64 index_ends = this->writer.stream.tellp();
 
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();
@@ -234,18 +234,32 @@ bool Importer::BuildBCF(void){
 	for(U32 i = 0; i < this->header->map.size(); ++i){
 		digests[i].finalize();
 		this->writer.stream << digests[i];
-		std::cerr << std::hex;
-		for(U32 j = 0; j < 64; ++j)
-			std::cerr << std::hex << (int)digests[i].sha512_digest[j];
+		//std::cerr << std::hex;
+		//for(U32 j = 0; j < 64; ++j)
+		//	std::cerr << std::hex << (int)digests[i].sha512_digest[j];
 
-		std::cerr << std::dec << std::endl;
+		//std::cerr << std::dec << std::endl;
 	}
 	delete [] digests;
 	this->writer.stream.flush();
+	const U64 digests_ends = this->writer.stream.tellp();
+
 
 	// Place markers
 	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
 	this->writer.WriteFinal(data_ends);
+
+	std::cerr
+	    << "Header:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
+		<< "GT:        " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\n'
+		<< "PPA:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\n'
+		<< "Meta:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\n'
+		<< "INFO:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\n'
+		<< "FORMAT:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\n'
+		<< "Residual:  " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_rest_cost) << '\n'
+		<< "Index:     " << Helpers::toPrettyDiskString(index_ends - data_ends) << '\n'
+		<< "Checksums: " << Helpers::toPrettyDiskString(digests_ends - index_ends) << '\n'
+		<< "Total:     " << Helpers::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 
 	// All done
 	return(true);

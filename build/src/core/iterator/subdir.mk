@@ -4,20 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/algorithm/compression/EncoderGenotypes.cpp 
+../src/core/iterator/ContainerIterator.cpp 
 
 OBJS += \
-./src/algorithm/compression/EncoderGenotypes.o 
+./src/core/iterator/ContainerIterator.o 
 
 CPP_DEPS += \
-./src/algorithm/compression/EncoderGenotypes.d 
+./src/core/iterator/ContainerIterator.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-src/algorithm/compression/%.o: ../src/algorithm/compression/%.cpp
+src/core/iterator/%.o: ../src/core/iterator/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -std=c++0x -O3 -msse4.2 -g -Wall -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++0x -I/usr/include/openssl/ -I/usr/local/include/ -O3 -msse4.2 -g -Wall -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

@@ -45,11 +45,6 @@ T roundUp(T numToRound, int multiple){
 }
 
 template <class T>
-std::string ToString(const T& data){
-	return std::to_string(data);
-}
-
-template <class T>
 std::string ToPrettyString(const T& data){
 	return Helpers::NumberThousandsSeparator(std::to_string(data));
 }
@@ -85,6 +80,18 @@ inline std::string secondsToTimestring(const double& value){
 
 S32 char2int(const char& input);
 bool HexToBytes(const std::string& hex, uint8_t* target);
+
+template <class T>
+std::string toPrettyDiskString(const T value){
+	if(value > 1E9){
+		return(std::to_string((double)value/1e9) + " GB");
+	} else if(value > 1E6){
+		return(std::to_string((double)value/1e6) + " MB");
+	} else if(value > 1E3){
+		return(std::to_string((double)value/1e3) + " KB");
+	} else
+		return(std::to_string(value) + " B");
+}
 
 }
 }

@@ -91,7 +91,7 @@ public:
 	EncoderGenotypes(const U64 samples);
 	~EncoderGenotypes();
 	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa);
-	//inline void setSamples(const U64 samples){ this->n_samples = samples; this->helper.setExpected(samples); }
+	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa);

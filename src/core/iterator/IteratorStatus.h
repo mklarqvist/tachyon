@@ -2,7 +2,6 @@
 #define ITERATORSTATUS_H_
 
 namespace Tachyon{
-namespace Core{
 namespace Iterator{
 
 enum TACHYON_ITERATOR_STATUS {
@@ -15,7 +14,6 @@ enum TACHYON_ITERATOR_STATUS {
 	YON_IT_ERROR_UNKNOWN_TYPE = -4
 };
 
-}
 }
 }
 

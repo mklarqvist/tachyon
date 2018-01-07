@@ -30,13 +30,14 @@ struct ImporterStats{
 
 	// Used for debugging only
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.total_header_cost << '\t' <<
-			   entry.total_gt_cost << '\t' <<
-			   entry.total_ppa_cost << '\t' <<
-			   entry.total_meta_cost << '\t' <<
-			   entry.total_info_cost << '\t' <<
-			   entry.total_format_cost << '\t' <<
-			   entry.total_rest_cost;
+		out << "Header: " << entry.total_header_cost << '\n'
+			<< "GT: " << entry.total_gt_cost << '\n'
+			<< "PPA: " << entry.total_ppa_cost << '\n'
+			<< "Meta: " << entry.total_meta_cost << '\n'
+			<< "INFO: " << entry.total_info_cost << '\n'
+			<< "FORMAT: " << entry.total_format_cost << '\n'
+			<< "Residual: " << entry.total_rest_cost;
+
 		return(out);
 	}
 

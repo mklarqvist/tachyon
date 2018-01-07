@@ -7,18 +7,17 @@
 #include "MetaColdIterator.h"
 
 namespace Tachyon{
-namespace Core{
 namespace Iterator{
 
 class MetaIterator{
 private:
 	typedef MetaIterator self_type;
-	typedef MetaEntry entry_type;
+	typedef Core::MetaEntry entry_type;
 	typedef MetaHotIterator hot_iterator_type;
-	typedef MetaHot hot_type;
+	typedef Core::MetaHot hot_type;
 	typedef MetaColdIterator cold_iterator_type;
-	typedef MetaCold cold_type;
-	typedef StreamContainer container_type;
+	typedef Core::MetaCold cold_type;
+	typedef Core::StreamContainer container_type;
 	typedef ContainerIterator container_iterator_type;
 
 public:
@@ -199,7 +198,6 @@ private:
 	const container_type* format_id_container;
 };
 
-}
 }
 }
 

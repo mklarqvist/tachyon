@@ -16,6 +16,7 @@ RM := rm
 -include src/io/bcf/subdir.mk
 -include src/io/subdir.mk
 -include src/index/subdir.mk
+-include src/core/iterator/subdir.mk
 -include src/core/base/subdir.mk
 -include src/core/subdir.mk
 -include src/algorithm/permutation/subdir.mk

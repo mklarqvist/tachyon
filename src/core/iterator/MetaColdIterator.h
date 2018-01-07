@@ -4,7 +4,6 @@
 #include <cassert>
 
 namespace Tachyon{
-namespace Core{
 namespace Iterator{
 
 /** Iterator class for MetaCold
@@ -125,7 +124,6 @@ private:
 	container_type* container;
 };
 
-}
 }
 }
 
