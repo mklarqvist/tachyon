@@ -147,7 +147,7 @@ public:
 			} else {
 				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
 					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[m.filter_pattern_id][k]){
+					if(this->block.index_entry.filter_bit_vectors[m.getFilterPatternID()][k]){
 					// Lookup what that field is
 						buffers[i].Add(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size());
 						buffers[i] += '\t';
@@ -174,7 +174,7 @@ public:
 
 					for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 						const Core::MetaEntry& m = (*it)[i];
-						if(m.info_pattern_id != p)
+						if(m.getInfoPatternID() != p)
 							continue;
 
 						info_iterators[current_key].toString(buffers[i], this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[current_key].key]].ID);
@@ -239,7 +239,7 @@ public:
 			} else {
 				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
 					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[m.filter_pattern_id][k]){
+					if(this->block.index_entry.filter_bit_vectors[m.getFilterPatternID()][k]){
 					// Lookup what that field is
 						stream.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
 					}
@@ -250,7 +250,7 @@ public:
 			if(this->settings.loadInfoAll){
 				// Cycle over streams that are set in the given bit-vector
 
-				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.info_pattern_id];
+				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
 				const U32 n_keys = target_info_vector.n_keys;
 				const U32* const firstKey = &target_info_vector.keys[0];
 
@@ -272,7 +272,7 @@ public:
 			if(this->settings.loadFormatAll){
 
 				// Start FORMAT description field
-				const Index::IndexBlockEntryBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.format_pattern_id];
+				const Index::IndexBlockEntryBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
 				const U32 n_keys_format = target_format_vector.n_keys;
 				const U32* const firstKey_format = &target_format_vector.keys[0];
 
@@ -335,6 +335,18 @@ public:
 		delete it;
 		delete [] info_iterators;
 		delete [] format_iterators;
+		return true;
+	}
+
+	bool iterateMeta(std::ostream& stream = std::cout){
+		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+
+		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+			const Core::MetaEntry& m = (*it)[i];
+
+		}
+
+		delete it;
 		return true;
 	}
 

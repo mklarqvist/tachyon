@@ -10,7 +10,6 @@ EncoderGenotypes::EncoderGenotypes() :
 
 EncoderGenotypes::EncoderGenotypes(const U64 samples) :
 	n_samples(samples)
-	//helper(samples)
 {
 }
 
@@ -145,25 +144,25 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	// Assess RLE cost
 	const BYTE ploidy = 2;
 	U32 internal_buffer_offset = line.p_genotypes;
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
+	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
+	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
 
-	/////////////////////
+	//\///////////////////
 	// Step 1: Assessment
 	//
 	// Check if there are missing values
 	// and/or mixed phasing
-	/////////////////////
+	//\///////////////////
 	// Flags
 	bool mixedPhase = false;
 	bool anyMissing = false;
 	bool anyNA      = false;
 
 	// Set first phase for comparison
-	const BYTE firstPhase = (fmt_type_value2 & 1);
+	const BYTE firstPhase = (allele2 & 1);
 
 	// Any data is missing?
-	if((fmt_type_value1 >> 1) == 0 || (fmt_type_value2 >> 1) == 0) anyMissing = true;
+	if((allele1 >> 1) == 0 || (allele2 >> 1) == 0) anyMissing = true;
 
 	// Cycle over GT values
 	for(U32 i = 2; i < this->n_samples * 2; i += 2){
@@ -193,20 +192,20 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	// Reset
 	internal_buffer_offset = line.p_genotypes;
 
-	/////////////////////
+	//\///////////////////
 	// Step 2
 	//
 	// Calculate cost / given a data type
-	/////////////////////
+	//\///////////////////
 	U32 n_runs_byte = 0; U32 run_length_byte = 1;
 	U32 n_runs_u16  = 0; U32 run_length_u16  = 1;
 	U32 n_runs_u32  = 0; U32 run_length_u32  = 1;
 	U32 n_runs_u64  = 0; U32 run_length_u64  = 1;
 
 	// First ref
-	const SBYTE& fmt_type_value1_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& fmt_type_value2_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]+1]);
-	U32 ref = PACK_RLE_BIALLELIC(fmt_type_value2_2, fmt_type_value1_2, 2, 1);
+	const SBYTE& allele1_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& allele2_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]+1]);
+	U32 ref = PACK_RLE_BIALLELIC(allele2_2, allele1_2, 2, 1);
 
 	// Run limits
 	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (2*(1+anyMissing)+mixedPhase)) - 1;
@@ -217,9 +216,9 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	// Cycle over GT values
 	U32 j = 1;
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]+1]);
-		U32 internal = PACK_RLE_BIALLELIC(fmt_type_value2, fmt_type_value1, 2, 1);
+		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]+1]);
+		U32 internal = PACK_RLE_BIALLELIC(allele2, allele1, 2, 1);
 
 		// Extend or break run
 		if(ref != internal){
@@ -265,9 +264,9 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	const BYTE ploidy = 2;
 	const BYTE shift_size = ceil(log2(line.body->n_allele + 1));
 	U32 internal_pos_rle = line.p_genotypes;
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]+1]);
-	U32 ref = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift_size);
+	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]+1]);
+	U32 ref = PACK_RLE_SIMPLE(allele2, allele1, shift_size);
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
@@ -287,9 +286,9 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 
 	U32 j = 1;
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]+1]);
-		U32 internal = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift_size);
+		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]+1]);
+		U32 internal = PACK_RLE_SIMPLE(allele2, allele1, shift_size);
 
 		if(ref != internal){
 			ref = internal;

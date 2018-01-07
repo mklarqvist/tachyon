@@ -106,8 +106,7 @@ private:
 	template <class T> bool EncodeMploidRLENallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 
 private:
-	U64 n_samples;      // number of samples
-	//helper_type helper; // support stucture
+	U64 n_samples; // number of samples
 };
 
 template <class T>
@@ -125,26 +124,22 @@ bool EncoderGenotypes::EncodeDiploidSimple(const bcf_type& line, container_type&
 	if(sizeof(T) <= 2){
 		U32 j = 0;
 		for(U32 i = 0; i < this->n_samples * 2; i += 2, ++j){
-			const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
-			const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
+			const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+			const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
 
-			//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-			//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
-							 ((fmt_type_value1 >> 1) << 1) |
-							 (fmt_type_value2 & 1);
+			const T packed = ((allele2 >> 1) << (shift_size + 1)) |
+							 ((allele1 >> 1) << 1) |
+							 (allele2 & 1);
 			simple += packed;
 		}
 	} else if(sizeof(T) == 4){
 		U32 j = 0;
 		for(U32 i = 0; i < this->n_samples * 4; i += 4, ++j){
-			//const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
-			//const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos++]);
-			const S16& fmt_type_value1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]]);
-			const S16& fmt_type_value2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]+sizeof(S16)]);
-			const T packed = ((fmt_type_value2 >> 1) << (shift_size + 1)) |
-							 ((fmt_type_value1 >> 1) << 1) |
-							 (fmt_type_value2 & 1);
+			const S16& allele1 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]]);
+			const S16& allele2 = *reinterpret_cast<const S16* const>(&line.data[internal_pos + 2*sizeof(S16)*ppa[j]+sizeof(S16)]);
+			const T packed = ((allele2 >> 1) << (shift_size + 1)) |
+							 ((allele1 >> 1) << 1) |
+							 (allele2 & 1);
 			simple += packed;
 		}
 	} else {
@@ -172,7 +167,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line, container
 	const BYTE add   = hasMixedPhase ? 1 : 0;
 
 	// Run limits
-	const T limit = pow(2, 8*sizeof(T) - (2*(1+hasMissing) + hasMixedPhase)) - 1;
+	const T limit = pow(2, 8*sizeof(T) - (2*(1 + hasMissing) + hasMixedPhase)) - 1;
 
 	// Genotype maps
 	// Map to 0,1,4,5
@@ -180,22 +175,22 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line, container
 	if(shift == 2) map = Constants::ALLELE_SELF_MAP;
 
 	//std::cerr << ppa[0] << std::endl;
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
-	T packed = PACK_RLE_BIALLELIC(fmt_type_value2, fmt_type_value1, shift, add);
+	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
+	T packed = PACK_RLE_BIALLELIC(allele2, allele1, shift, add);
 	//std::cout << (U32)packed << '\t';
 
 	// MSB contains phasing information
 	//this->helper.phased = (fmt_type_value2 & 1);
 
 	U32 j = 1;
-	BYTE last_phase = (fmt_type_value2 & 1);
+	BYTE last_phase = (allele2 & 1);
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
 		//std::cerr << ppa[j] << std::endl;
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
-		const T packed_internal = PACK_RLE_BIALLELIC(fmt_type_value2, fmt_type_value1, shift, add);
-		last_phase = (fmt_type_value2 & 1);
+		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
+		const T packed_internal = PACK_RLE_BIALLELIC(allele2, allele1, shift, add);
+		last_phase = (allele2 & 1);
 
 		//std::cout << (U32)packed_internal << '\t';
 
@@ -203,19 +198,11 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line, container
 			// Prepare RLE
 			RLE = length;
 			RLE <<= (2*shift + add);
-			if(add) RLE |= (fmt_type_value2 & 1);
+			if(add) RLE |= (allele2 & 1);
 			assert((RLE >> (2*shift + add)) == length);
-
-			// Set meta phased flag bit
-			//if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
 
 			// Push RLE to buffer
 			runs += RLE;
-
-			// Update genotype and allele counts
-			//this->helper[map[packed >> add]] += length;
-			//this->helper.countsAlleles[packed >> (shift + add)] += length;
-			//this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
 
 			// Reset and update
 			sumLength += length;
@@ -232,26 +219,15 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line, container
 	if(add) RLE |= (last_phase & 1);
 	assert((RLE >> (2*shift + add)) == length);
 
-	// Set meta phased flag bit
-	//if((packed & 1) != 1) this->helper.phased = false;
-
 	// Push RLE to buffer
 	runs += RLE;
 	++n_runs;
 
-	// Update genotype and allele counts
-	//this->helper[map[packed >> add]] += length;
-	//this->helper.countsAlleles[packed >> (shift + add)] += length;
-	//this->helper.countsAlleles[(packed >> add) & ((1 << shift) - 1)]  += length;
-
 	// Reset and update
 	sumLength += length;
-	//assert(sumLength == this->n_samples);
+	assert(sumLength == this->n_samples);
 	runs.n_additions += n_runs;
 
-	// Calculate basic stats
-	//this->helper.calculateMGF();
-	//this->helper.calculateHardyWeinberg();
 	return(true);
 }
 
@@ -264,27 +240,18 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line, container_
 
 	const BYTE shift = ceil(log2(line.body->n_allele + 1));
 
-	const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
-
-	//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-	//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-	T packed = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift);
-
-	// MSB contains phasing information
-	//this->helper.phased = (fmt_type_value2 & 1);
+	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]]);
+	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
+	T packed = PACK_RLE_SIMPLE(allele2, allele1, shift);
 
 	// Run limits
 	const T limit = pow(2, 8*sizeof(T) - (2*shift+1)) - 1;
 
 	U32 j = 1;
 	for(U32 i = 2; i < this->n_samples * 2; i += 2, ++j){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
-
-		//const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-		//const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos++]);
-		const T packed_internal = PACK_RLE_SIMPLE(fmt_type_value2, fmt_type_value1, shift);
+		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]]);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos + 2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
+		const T packed_internal = PACK_RLE_SIMPLE(allele2, allele1, shift);
 
 		if(packed != packed_internal || length == limit){
 			// Prepare RLE
@@ -292,10 +259,6 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line, container_
 			RLE <<= 2*shift + 1;
 			RLE |= packed;
 
-			//if(sizeof(T) == 1) std::cerr << line.body->POS+1 << ": " << std::bitset<sizeof(T)*8>(RLE) << '\t' << std::bitset<sizeof(T)*8>(packed) << std::endl;
-
-			// Set meta phased flag bit
-			//if((fmt_type_value2 & 1) != 1) this->helper.phased = false;
 			assert((RLE >> (2*shift + 1)) == length);
 
 			// Push RLE to buffer
@@ -315,10 +278,6 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line, container_
 	RLE <<= 2*shift + 1;
 	RLE |= packed;
 	assert((RLE >> (2*shift + 1)) == length);
-	//if(sizeof(T) == 1){ std::cerr << line.body->POS+1 << ": " << std::bitset<sizeof(T)*8>(RLE) << std::endl; exit(1);}
-
-	// Set meta phased flag bit
-	//if((packed & 1) != 1) this->helper.phased = false;
 
 	// Push RLE to buffer
 	runs += RLE;

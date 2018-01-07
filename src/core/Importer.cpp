@@ -202,7 +202,7 @@ bool Importer::BuildBCF(void){
 		// Perform writing and update index
 		this->block.updateOffsets();
 		current_index_entry.byte_offset = this->writer.stream.tellp();
-		this->block.write(this->writer.stream, this->import_compressed_stats);
+		this->block.write(this->writer.stream, this->import_compressed_stats, this->import_uncompressed_stats);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
 		current_index_entry.contigID    = reader.first().body->CHROM;
 		current_index_entry.minPosition = reader.first().body->POS;
@@ -251,11 +251,11 @@ bool Importer::BuildBCF(void){
 
 	std::cerr
 	    << "Header:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
-		<< "GT:        " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\n'
-		<< "PPA:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\n'
-		<< "Meta:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\n'
-		<< "INFO:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\n'
-		<< "FORMAT:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\n'
+		<< "GT:        " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
+		<< "PPA:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'
+		<< "Meta:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_meta_cost) << '\n'
+		<< "INFO:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
+		<< "FORMAT:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
 		<< "Residual:  " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_rest_cost) << '\n'
 		<< "Index:     " << Helpers::toPrettyDiskString(index_ends - data_ends) << '\n'
 		<< "Checksums: " << Helpers::toPrettyDiskString(digests_ends - index_ends) << '\n'

@@ -16,7 +16,7 @@ private:
 	typedef TachyonRun self_type;
 
 public:
-	TachyonRun();	// Disallowed ctor
+	TachyonRun();  // Disallowed ctor
 	~TachyonRun(); // Disallowed dtor
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){

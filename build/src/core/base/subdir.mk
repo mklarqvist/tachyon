@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/core/base/MetaCold.cpp 
+../src/core/base/MetaCold.cpp \
+../src/core/base/MetaEntry.cpp 
 
 OBJS += \
-./src/core/base/MetaCold.o 
+./src/core/base/MetaCold.o \
+./src/core/base/MetaEntry.o 
 
 CPP_DEPS += \
-./src/core/base/MetaCold.d 
+./src/core/base/MetaCold.d \
+./src/core/base/MetaEntry.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

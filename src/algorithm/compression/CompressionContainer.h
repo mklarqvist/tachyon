@@ -14,7 +14,9 @@ namespace Compression{
 // to be kept
 #define MIN_COMPRESSION_FOLD 1.05
 
-inline bool bytePreprocessBits(const char* const data, const U32& size, char* destination){
+inline bool bytePreprocessBits(const char* const data,
+		                              const U32& size,
+									       char* destination){
 	if(size == 0) return false;
 
 	BYTE* dest = reinterpret_cast<BYTE*>(destination);

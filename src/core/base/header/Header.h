@@ -1,6 +1,13 @@
 #ifndef CORE_BASE_HEADER_HEADER_H_
 #define CORE_BASE_HEADER_HEADER_H_
 
+#include "../../../support/TypeDefinitions.h"
+#include "../../../support/MagicConstants.h"
+#include "HeaderContig.h"
+#include "HeaderMapEntry.h"
+#include "HeaderSample.h"
+#include "../../../algorithm/OpenHashTable.h"
+
 namespace Tachyon{
 namespace Core{
 
