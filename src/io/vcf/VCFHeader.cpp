@@ -78,8 +78,7 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		//std::cerr << "IDX in: " << idx << std::endl;
 		assert(idx != -1);
 
-		const BYTE val = 0;
-		map_entry_type map_value(this->lines[i].pairs[0].VALUE, val, idx);
+		map_entry_type map_value(this->lines[i].pairs[0].VALUE, this->lines[i].type, idx);
 		this->map.push_back(map_value);
 	}
 
@@ -97,9 +96,9 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		//std::cerr << i << "->" << mapTable[i] << std::endl;
 	}
 
-	if(this->map.size()*10 < 1024)
+	if(this->map.size()*2 < 1024)
 		this->map_lookup = new hash_table_map_type(1024);
-	else this->map_lookup = new hash_table_map_type(this->map.size()*10);
+	else this->map_lookup = new hash_table_map_type(this->map.size()*2);
 
 	for(U32 i = 0 ; i < this->lines.size(); ++i){
 		//this->map_lookup->SetItem(&i, this->map[i]);

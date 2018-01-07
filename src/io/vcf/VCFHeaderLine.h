@@ -1,11 +1,25 @@
 #ifndef VCF_VCFHEADERLINE_H_
 #define VCF_VCFHEADERLINE_H_
 
+#include <iostream>
 #include <cassert>
 #include <algorithm> // for std::find
+#include <vector>
+#include <cstring>
+
+#include "VCFHeaderConstants.h"
+#include "../../support/helpers.h"
 
 namespace Tachyon{
 namespace VCF{
+
+enum TACHYON_VCF_HEADER_LINE_TYPE{
+	YON_VCF_HEADER_UNKNOWN,
+	YON_VCF_HEADER_FORMAT,
+	YON_VCF_HEADER_FILTER,
+	YON_VCF_HEADER_INFO,
+	YON_VCF_HEADER_CONTIG
+};
 
 struct VCFHeaderLine{
 private:
@@ -30,7 +44,7 @@ private:
 	typedef VCFHeaderLineKeyValue key_value;
 
 public:
-	VCFHeaderLine(const char* data, const U32 size) : isIndexable(false), size_(size), data(data){}
+	VCFHeaderLine(const char* data, const U32 size) : type(YON_VCF_HEADER_UNKNOWN), isIndexable(false), size_(size), data(data){}
 	~VCFHeaderLine(){}
 
 	inline const U32 size(void) const{ return this->pairs.size(); }
@@ -70,10 +84,13 @@ public:
 
 		//std::string(this->data + 2, match - this->data - 2);
 		if(strncasecmp(this->data + 2, "FORMAT", match - this->data - 2) == 0){
+			this->type = YON_VCF_HEADER_FORMAT;
 			this->isIndexable = true;
 		} else if(strncasecmp(this->data + 2, "FILTER", match - this->data - 2) == 0){
+			this->type = YON_VCF_HEADER_FILTER;
 			this->isIndexable = true;
 		} else if(strncasecmp(this->data + 2, "INFO", match - this->data - 2) == 0){
+			this->type = YON_VCF_HEADER_INFO;
 			this->isIndexable = true;
 		}
 
@@ -139,6 +156,7 @@ private:
 	}
 
 public:
+	TACHYON_VCF_HEADER_LINE_TYPE type;
 	bool isIndexable; // if this record should form part of the primary map
 	U32 size_; // size in bytes
 	const char* data; // pointer to data

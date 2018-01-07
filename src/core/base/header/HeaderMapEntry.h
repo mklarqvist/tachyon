@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#include "../../../io/vcf/VCFHeaderLine.h"
+
 namespace Tachyon{
 namespace Core{
 
@@ -29,7 +31,7 @@ private:
 		const U32 l_ID = entry.ID.size();
 		stream.write(reinterpret_cast<const char*>(&l_ID),       sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.TYPE), sizeof(BYTE));
-		stream.write(reinterpret_cast<const char*>(&entry.IDX), sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&entry.IDX),  sizeof(S32));
 		stream.write(&entry.ID[0], entry.ID.size());
 		return(stream);
 	}
@@ -38,12 +40,14 @@ private:
 		U32 l_ID = 0;
 		stream.read(reinterpret_cast<char*>(&l_ID),       sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.TYPE), sizeof(BYTE));
-		stream.read(reinterpret_cast<char*>(&entry.IDX), sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&entry.IDX),  sizeof(S32));
 		entry.ID.resize(l_ID);
 		stream.read(&entry.ID[0], l_ID);
 
 		return(stream);
 	}
+
+	inline const VCF::TACHYON_VCF_HEADER_LINE_TYPE getType(void) const{ return(VCF::TACHYON_VCF_HEADER_LINE_TYPE(this->TYPE)); }
 
 public:
 	BYTE TYPE;

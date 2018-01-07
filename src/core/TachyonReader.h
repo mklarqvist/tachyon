@@ -202,8 +202,14 @@ public:
 	bool toVCFString(std::ostream& stream = std::cout){
 
 		Core::HeaderMapEntry* entry = nullptr;
+		if(this->header.getEntry("GT", entry)){
+			std::cerr << "GT@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
+		}
+		if(this->header.getEntry("PASS", entry)){
+			std::cerr << "PASS@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
+		}
 		if(this->header.getEntry("AC", entry)){
-			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << std::endl;
+			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
 		}
 
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
