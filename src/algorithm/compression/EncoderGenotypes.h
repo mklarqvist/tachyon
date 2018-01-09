@@ -54,6 +54,7 @@ namespace Encoding{
 #define PACK_RLE_SIMPLE(A, B, SHIFT) ((A >> 1) << (SHIFT + 1)) | ((B >> 1) << 1) | (A & 1)
 
 class EncoderGenotypes {
+private:
 	typedef EncoderGenotypes self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BCF::BCFEntry bcf_type;

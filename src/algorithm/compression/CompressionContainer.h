@@ -10,31 +10,101 @@
 namespace Tachyon{
 namespace Compression{
 
-// Lower bounds threshold in fold-change for compression
-// to be kept
+/**< Lower bounds threshold in fold-change for compression to be kept */
 #define MIN_COMPRESSION_FOLD 1.05
 
-inline bool bytePreprocessBits(const char* const data,
-		                              const U32& size,
-									       char* destination){
-	if(size == 0) return false;
+/**
+ * Permute bits from a byte-stream of U32 into target
+ * destinations such that bit X from a
+ * byte [1,2,3,4,5,6,7,8] stream is permuted
+ * to 1,1,1,1,1....8,8,8,8,8
+ * @param data Input char* buffer
+ * @param size Length of input data
+ * @param destination Destination char* buffer of permuted data
+ * @return TRUE if passing or FALSE otherwise
+ */
+inline const U32 permuteIntBits(const char* const data,
+                                       const U32& size,
+								            char* destination){
+	if(size == 0) return 0;
+	U32 internal_size = size + (32-size%32); // Balance bytes
+	assert(internal_size % 32 == 0);
 
 	BYTE* dest = reinterpret_cast<BYTE*>(destination);
-	const BYTE* const d = reinterpret_cast<const BYTE* const>(data);
-	BYTE* target[8];
-	const U32 s = size/8;
-	for(U32 i = 0; i < 8; ++i)
-		target[7-i] = &dest[s*i];
+	memset(dest, 0, internal_size); // Set all bytes to 0
+	const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	BYTE* target[32]; // Bucket pointers
+	const U32 partition_size = internal_size / 32; // Partition size
+
+	// Assign a pointer to each bucket
+	for(U32 i = 0; i < 32; ++i)
+		target[31-i] = &dest[partition_size*i];
 
 	U32 k = 0; U32 p = 0;
-	for(U32 i = 0; i < size; ++i, ++k){
+	// Foreach U32
+	// Update position K for each element
+	// When K reaches position 7 then reset to 0
+	for(U32 i = 0; i + 4 < internal_size; i+=4, ++k){
+		if(k == 8){ k = 0; ++p; }
+
+		// Foreach bit in U32
+		// Update target T at byte position P with bit J at position K
 		for(U32 j = 0; j < 8; ++j)
 			target[j][p] |= ((d[i] & (1 << j)) >> j) << k;
 
-		if(i % 7 == 0){ k = 0; ++p; }
+		for(U32 j = 0; j < 8; ++j)
+			target[j+8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
+
+		for(U32 j = 0; j < 8; ++j)
+			target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
+
+		for(U32 j = 0; j < 8; ++j)
+			target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
-	return true;
+	return internal_size;
+}
+
+inline const U32 unpermuteIntBits(char* data,
+                                         const U32& size,
+								              char* destination){
+
+	if(size == 0) return 0;
+	U32 internal_size = size + (32-size%32); // Balance bytes
+	assert(internal_size % 32 == 0);
+
+	BYTE* temp = reinterpret_cast<BYTE*>(data); // Recast destination as U32
+	U32* dest = reinterpret_cast<U32*>(destination); // Recast destination as U32
+	const U32 n_entries = size / sizeof(U32);
+	memset(destination, 0, size); // Set all bytes to 0
+	const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	BYTE* target[32]; // Bucket pointers
+	const U32 partition_size = internal_size / 32; // Partition size
+
+	// Assign a pointer to each bucket
+	for(U32 i = 0; i < 32; ++i)
+		target[31-i] = &temp[partition_size*i];
+
+	/*
+	for(U32 i = 0; i < size; ++i){
+		std::cerr << (int)data[i] << ' ';
+	}
+	std::cerr << std::endl;
+	*/
+
+	U32 k = 0; U32 p = 0;
+	// Foreach U32
+	// Update position K for each element
+	// When K reaches position 7 then reset to 0
+	for(U32 i = 0; i < n_entries; ++i, ++k){
+		if(k == 8){ k = 0; ++p; }
+
+		for(U32 j = 0; j < 32; ++j){
+			dest[i] |= ((target[j][p] & (1 << k)) >> k) << j;
+		}
+	}
+
+	return internal_size;
 }
 
 class CompressionContainer{
@@ -69,13 +139,13 @@ protected:
 public:
 	UncompressedCodec(){}
 	~UncompressedCodec(){}
-	const bool encode(permutation_type& manager){ return false; }
-	const bool encode(stream_type& stream){ return false; }
-	const bool encodeStrides(stream_type& stream){ return false; }
+	inline const bool encode(permutation_type& manager){ return true; }
+	inline const bool encode(stream_type& stream){ return true; }
+	inline const bool encodeStrides(stream_type& stream){ return true; }
 
 	const bool decode(stream_type& stream){
 		if(stream.header.controller.encoder != Core::YON_ENCODE_NONE){
-			std::cerr << "wrong codec" << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 		stream.buffer_data_uncompressed.resize(stream.buffer_data.pointer + 16536);
@@ -87,12 +157,12 @@ public:
 
 	const bool decodeStrides(stream_type& stream){
 		if(!stream.header.controller.mixedStride){
-			std::cerr << "has no mixed stride" << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
 			return false;
 		}
 
 		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_NONE){
-			std::cerr << "wrong codec" << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -107,7 +177,7 @@ protected:
 	buffer_type buffer;
 };
 
-// GZIP of delfate codec
+// ZSTD codec
 class ZSTDCodec : public CompressionContainer{
 private:
 	typedef ZSTDCodec self_type;
@@ -120,8 +190,13 @@ public:
 		ZSTD_freeCDict(this->cdict);
 	}
 
-	void setCompressionLevel(const int& c){ this->compression_level = c; }
+	inline void setCompressionLevel(const int& c){ this->compression_level = c; }
 
+	/**
+	 *
+	 * @param stream
+	 * @return
+	 */
 	const bool encode(stream_type& stream){
 		stream.generateCRC();
 
@@ -139,11 +214,12 @@ public:
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_data_uncompressed.pointer + 65536);
 			size_t ret = ZSTD_compress(this->buffer.data,
-					                   this->buffer.capacity(),
+                                       this->buffer.capacity(),
 									   stream.buffer_data_uncompressed.data,
 									   stream.buffer_data_uncompressed.pointer,
 									   this->compression_level);
-		if(ZSTD_isError(ret)){
+
+			if(ZSTD_isError(ret)){
 			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
@@ -175,6 +251,11 @@ public:
 		else return true;
 	}
 
+	/**
+	 *
+	 * @param stream
+	 * @return
+	 */
 	const bool encodeStrides(stream_type& stream){
 		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.pointer < 50){
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
@@ -188,10 +269,11 @@ public:
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_strides_uncompressed.pointer + 65536);
 		size_t ret = ZSTD_compress(this->buffer.data,
-				                   this->buffer.capacity(),
+                                   this->buffer.capacity(),
 								   stream.buffer_strides_uncompressed.data,
 								   stream.buffer_strides_uncompressed.pointer,
 								   this->compression_level);
+
 		if(ZSTD_isError(ret)){
 			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
@@ -219,49 +301,61 @@ public:
 		return true;
 	}
 
+	/**
+	 *
+	 * @param manager
+	 * @return
+	 */
 	const bool encode(permutation_type& manager){
 		this->buffer.reset();
 		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 
-		// First
-		const BYTE w = ceil(log2(manager.n_samples+1) / 8);
-		if(w == 1){
-			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (BYTE)manager[i];
-		} else if(w == 2){
-			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U16)manager[i];
-		} else if(w == 3 || w == 4){
-			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U32)manager[i];
-		} else {
-			for(U32 i = 0; i < manager.n_samples; ++i) this->buffer += (U64)manager[i];
-		}
-
-		memset(manager.PPA.data, 0, this->buffer.pointer);
-		manager.PPA.pointer = this->buffer.pointer;
-
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer.data, this->buffer.pointer);
-		manager.crc = crc;
-		manager.u_length = this->buffer.pointer;
-		bytePreprocessBits(&this->buffer.data[0], manager.PPA.pointer, &manager.PPA.data[0]);
+		manager.crc      = crc32(crc, (Bytef*)manager.PPA.data, manager.PPA.pointer);
+		manager.u_length = manager.PPA.pointer;
+		buffer_type buffer_debug(this->buffer);
 
-		size_t ret = ZSTD_compress(this->buffer.data, this->buffer.capacity(), manager.PPA.data, manager.PPA.pointer, this->compression_level);
+		const U32 in = manager.PPA.pointer;
+		const int p_ret = permuteIntBits(&manager.PPA.data[0],
+				                          manager.PPA.pointer,
+										 &this->buffer.data[0]);
+
+		this->buffer.pointer = p_ret;
+		/*
+		const int up_ret = unpermuteIntBits(&this->buffer.data[0],
+											in,
+										    &manager.PPA.data[0]);
+
+		U32 crc2 = crc32(0, NULL, 0);
+		crc2 = crc32(crc2, (Bytef*)manager.PPA.data, manager.PPA.pointer);
+
+		//std::cerr << p_ret << '\t' << up_ret << std::endl;
+		assert(manager.crc==crc2);
+		*/
+
+		size_t ret = ZSTD_compress(manager.PPA.data,
+								   manager.PPA.capacity(),
+								   this->buffer.data,
+								   this->buffer.pointer,
+								   this->compression_level);
+
+
 		if(ZSTD_isError(ret)){
 			std::cerr << "error zstd permute_ : " << ZSTD_getErrorCode(ret) << std::endl;
 			std::cerr << ZSTD_getErrorName(ret) << std::endl;
 			std::cerr << this->buffer.pointer << '\t' << manager.PPA.pointer << std::endl;
 			exit(1);
 		}
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << manager.PPA.pointer << " and out: " << ret << std::endl;
-		memcpy(manager.PPA.data, this->buffer.data, ret);
+		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.pointer << " and out: " << ret << std::endl;
 		manager.PPA.pointer = ret;
-		manager.c_length = ret;
+		manager.c_length    = ret;
 
 		return true;
 	}
 
 	const bool decode(stream_type& stream){
 		if(stream.header.controller.encoder != Core::YON_ENCODE_ZSTD){
-			std::cerr << "wrong codec" << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -289,7 +383,7 @@ public:
 			return false;
 
 		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_ZSTD){
-			std::cerr << "wrong codec" << std::endl;
+			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 

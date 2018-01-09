@@ -65,7 +65,7 @@ public:
 		if(this->index_entry.controller.hasGTPermuted){
 			stream << this->ppa_manager;
 			stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
-			stats_uncompressed.total_ppa_cost += this->ppa_manager.PPA.pointer;
+			stats_uncompressed.total_ppa_cost += this->ppa_manager.u_length;
 			last_pos = stream.tellp();
 		}
 

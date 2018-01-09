@@ -17,8 +17,8 @@ class PermutationManager{
 	typedef IO::BasicBuffer buffer_type;
 
 public:
-	PermutationManager() : stride_size(sizeof(U32)), n_samples(0), u_length(0), c_length(0), crc(0){}
-	PermutationManager(const U32 n_samples) : stride_size(sizeof(U32)), n_samples(n_samples), u_length(0), c_length(0), crc(0), PPA(sizeof(U32)*n_samples){}
+	PermutationManager() : n_samples(0), u_length(0), c_length(0), crc(0){}
+	PermutationManager(const U32 n_samples) : n_samples(n_samples), u_length(0), c_length(0), crc(0), PPA(sizeof(U32)*n_samples){}
 	~PermutationManager(){ this->PPA.deleteAll(); }
 
 	void setSamples(const U32 n_samples){
@@ -34,6 +34,7 @@ public:
 		for(U32 i = 0; i < this->n_samples; ++i)
 			(*this)[i] = i;
 
+		this->PPA.pointer = this->n_samples*sizeof(U32);
 		this->u_length = 0;
 		this->c_length = 0;
 		this->crc = 0;
@@ -42,7 +43,7 @@ public:
 	// Lookup
 	// Convenience function used during import
 	U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA.data)); }
-	U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.data[p * this->stride_size])); }
+	U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.data[p * sizeof(U32)])); }
 
 	bool generateCRC(void){
 		// Checksum for main buffer
@@ -53,6 +54,7 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& manager){
+		stream.write(reinterpret_cast<const char*>(&manager.n_samples),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.u_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.c_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.crc), sizeof(U32));
@@ -61,6 +63,7 @@ public:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& manager){
+		stream.read(reinterpret_cast<char*>(&manager.n_samples),sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.u_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.c_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.crc), sizeof(U32));
@@ -73,9 +76,7 @@ public:
 	inline const U32 getDiskSize(void) const{ return(sizeof(U32)*3 + this->PPA.pointer); }
 
 public:
-	// Not written to disk
-	BYTE stride_size; // this equals to sizeof(T)
-	U32 n_samples;   // redundancy but convenient
+	U32 n_samples; // redundancy but convenient
 
 	// Data
 	U32 u_length;
