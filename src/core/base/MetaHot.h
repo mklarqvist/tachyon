@@ -8,11 +8,18 @@
 namespace Tachyon{
 namespace Core{
 
+enum TACHYON_RLE_TYPE{
+	YON_BYTE = 0,
+	YON_U16 = 1,
+	YON_U32 = 2,
+	YON_U64 = 3
+};
+
 struct MetaHotController{
 	// Ctor
 	explicit MetaHotController(void) :
 		anyMissing(0),
-		allPhased(0),
+		phase(0),
 		anyNA(0),
 		mixed_phasing(0),
 		biallelic(0),
@@ -43,7 +50,7 @@ struct MetaHotController{
 	 * If the genotypes are NOT diploid then
 	 */
 	U16 anyMissing:    1, // any missing
-        allPhased:     1, // all phased
+        phase:         1, // all phased
 		anyNA:         1, // any NA
         mixed_phasing: 1, // has mixed phasing
         biallelic:     1, // is biallelic

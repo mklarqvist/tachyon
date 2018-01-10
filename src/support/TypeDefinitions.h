@@ -32,6 +32,7 @@ typedef uint32_t	U32;
 typedef int32_t		S32;
 typedef uint64_t	U64;
 typedef uint64_t	ULL;
+typedef int64_t		S64;
 #else
 typedef char				SBYTE;
 typedef unsigned char		BYTE;
@@ -41,6 +42,7 @@ typedef unsigned int		U32;
 typedef signed int			S32;
 typedef unsigned long long	U64;
 typedef unsigned long long	ULL;
+typedef signed long long	S64;
 #endif
 
 #endif /* SUPPORT_TYPEDEFINITIONS_H_ */

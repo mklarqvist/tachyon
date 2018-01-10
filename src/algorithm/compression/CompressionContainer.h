@@ -315,7 +315,7 @@ public:
 		manager.u_length = manager.PPA.pointer;
 		buffer_type buffer_debug(this->buffer);
 
-		const U32 in = manager.PPA.pointer;
+		//const U32 in = manager.PPA.pointer;
 		const int p_ret = permuteIntBits(&manager.PPA.data[0],
 				                          manager.PPA.pointer,
 										 &this->buffer.data[0]);
@@ -346,7 +346,7 @@ public:
 			std::cerr << this->buffer.pointer << '\t' << manager.PPA.pointer << std::endl;
 			exit(1);
 		}
-		std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.pointer << " and out: " << ret << std::endl;
+		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.pointer << " and out: " << ret << std::endl;
 		manager.PPA.pointer = ret;
 		manager.c_length    = ret;
 
@@ -403,6 +403,10 @@ public:
 		//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 		assert(stream.checkCRC(1));
 
+		return true;
+	}
+
+	const bool decode(permutation_type& manager){
 		return true;
 	}
 

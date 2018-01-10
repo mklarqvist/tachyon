@@ -256,7 +256,7 @@ bool Importer::BuildBCF(void){
 		<< "Meta:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_meta_cost) << '\n'
 		<< "INFO:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
 		<< "FORMAT:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
-		<< "Residual:  " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_rest_cost) << '\n'
+		<< "IDs:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_special_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_special_cost) << '\n'
 		<< "Index:     " << Helpers::toPrettyDiskString(index_ends - data_ends) << '\n'
 		<< "Checksums: " << Helpers::toPrettyDiskString(digests_ends - index_ends) << '\n'
 		<< "Total:     " << Helpers::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
@@ -278,7 +278,6 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	meta_type meta;
 	meta.position          = entry.body->POS - this->block.index_entry.minPosition;
 	meta.ref_alt           = entry.ref_alt;
-	meta.controller.simple = entry.isSimple();
 
 	// GT encoding
 	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, this->block.gt_support_data_container, n_runs, this->permutator.manager->get())){

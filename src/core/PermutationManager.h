@@ -73,7 +73,7 @@ public:
 		return(stream);
 	}
 
-	inline const U32 getDiskSize(void) const{ return(sizeof(U32)*3 + this->PPA.pointer); }
+	inline const U32 getDiskSize(void) const{ return(sizeof(U32)*4 + this->PPA.pointer); }
 
 public:
 	U32 n_samples; // redundancy but convenient

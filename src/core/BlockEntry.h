@@ -88,10 +88,10 @@ public:
 		stream << this->meta_info_map_ids;
 		stream << this->meta_filter_map_ids;
 		stream << this->meta_format_map_ids;
-		stats.total_meta_cost += (U64)stream.tellp() - last_pos;
-		stats_uncompressed.total_meta_cost += this->meta_info_map_ids.buffer_data_uncompressed.pointer;
-		stats_uncompressed.total_meta_cost += this->meta_filter_map_ids.buffer_data_uncompressed.pointer;
-		stats_uncompressed.total_meta_cost += this->meta_format_map_ids.buffer_data_uncompressed.pointer;
+		stats.total_special_cost += (U64)stream.tellp() - last_pos;
+		stats_uncompressed.total_special_cost += this->meta_info_map_ids.buffer_data_uncompressed.pointer;
+		stats_uncompressed.total_special_cost += this->meta_filter_map_ids.buffer_data_uncompressed.pointer;
+		stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.pointer;
 		last_pos = stream.tellp();
 
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
