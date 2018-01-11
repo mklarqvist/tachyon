@@ -249,7 +249,7 @@ bool Importer::BuildBCF(void){
 	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
 	this->writer.WriteFinal(data_ends);
 
-	std::cerr
+	std::cout
 	    << "Header:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
 		<< "GT:        " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
 		<< "PPA:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'

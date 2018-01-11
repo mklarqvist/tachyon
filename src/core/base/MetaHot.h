@@ -15,6 +15,13 @@ enum TACHYON_RLE_TYPE{
 	YON_U64 = 3
 };
 
+enum TACHYON_GT_TYPE{
+	YON_GT_UNKNOWN = -1,
+	YON_GT_RLE_DIPLOID_BIALLELIC,
+	YON_GT_RLE_DIPLOID_NALLELIC,
+	YON_GT_DIPLOID_BCF
+};
+
 struct MetaHotController{
 	// Ctor
 	explicit MetaHotController(void) :
@@ -135,6 +142,13 @@ public:
 	inline const bool isRLE(void) const{ return(this->controller.rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+
+	const TACHYON_GT_TYPE getGenotypeType(void) const{
+		if(this->controller.rle && this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_BIALLELIC;
+		else if(this->controller.rle && !this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
+		else if(!this->controller.rle && this->controller.diploid) return YON_GT_DIPLOID_BCF;
+		else return YON_GT_UNKNOWN;
+	}
 
 private:
 	// Used for debugging only
