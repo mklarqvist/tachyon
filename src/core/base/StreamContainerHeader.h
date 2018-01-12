@@ -67,17 +67,17 @@ struct StreamContainerHeader{
 	 // copy assignment
 	StreamContainerHeader& operator=(const StreamContainerHeader& other){
 		this->controller = other.controller;
-		this->stride = other.stride;
-		this->offset = other.offset;
-		this->cLength = other.cLength;
-		this->uLength = other.uLength;
-		this->crc = other.crc;
+		this->stride     = other.stride;
+		this->offset     = other.offset;
+		this->cLength    = other.cLength;
+		this->uLength    = other.uLength;
+		this->crc        = other.crc;
 
 		if(other.n_extra > 0){
 			char* tmp = new char[other.n_extra];
 			memcpy(tmp, other.extra, other.n_extra);
 			delete[] this->extra;
-			this->extra = tmp;
+			this->extra   = tmp;
 			this->n_extra = other.n_extra;
 		} else this->extra = nullptr;
 		return *this;
@@ -87,30 +87,30 @@ struct StreamContainerHeader{
 	/** Move assignment operator */
 	StreamContainerHeader& operator=(StreamContainerHeader&& other) noexcept{
 		this->controller = other.controller;
-		this->stride = other.stride;
-		this->offset = other.offset;
-		this->cLength = other.cLength;
-		this->uLength = other.uLength;
-		this->crc = other.crc;
-		this->n_extra = other.n_extra;
+		this->stride     = other.stride;
+		this->offset     = other.offset;
+		this->cLength    = other.cLength;
+		this->uLength    = other.uLength;
+		this->crc        = other.crc;
+		this->n_extra    = other.n_extra;
 		delete [] this->extra;
-		this->extra = other.extra;
-		other.extra = nullptr;
+		this->extra      = other.extra;
+		other.extra      = nullptr;
 		return *this;
 	}
 
-	~StreamContainerHeader(){delete [] this->extra;}
+	~StreamContainerHeader(){ delete [] this->extra; }
 
 	inline void reset(void){
 		this->controller.clear();
-		this->stride = -1;
-		this->offset = 0;
-		this->cLength = 0;
-		this->uLength = 0;
-		this->crc = 0;
-		this->n_extra = 0;
+		this->stride   = -1;
+		this->offset   = 0;
+		this->cLength  = 0;
+		this->uLength  = 0;
+		this->crc      = 0;
+		this->n_extra  = 0;
 		delete [] this->extra;
-		this->extra = nullptr;
+		this->extra    = nullptr;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -153,13 +153,13 @@ struct StreamContainerHeader{
 	}
 
 public:
-	controller_type controller;
-	S16 stride;
-	U32 offset;
-	U32 cLength;
-	U32 uLength;
-	U32 crc;
-	U16 n_extra;
+	controller_type controller; // controller bits
+	S16 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
+	U32 offset;                 // relative file offset
+	U32 cLength;                // compressed length
+	U32 uLength;                // uncompressed length
+	U32 crc;                    // crc32 checksum
+	U16 n_extra;                // number of extra bytes used by encoder
 	char* extra; // extra length is encoder specific
 };
 
@@ -223,15 +223,15 @@ struct StreamContainerHeaderStride{
 		// prevent self-move
 		if(this!=&other){
 			this->controller = other.controller;
-			this->cLength = other.cLength;
-			this->uLength = other.uLength;
-			this->crc = other.crc;
-			this->n_extra = other.n_extra;
+			this->cLength    = other.cLength;
+			this->uLength    = other.uLength;
+			this->crc        = other.crc;
+			this->n_extra    = other.n_extra;
 
 			if(other.extra != nullptr){
 				delete [] this->extra;
-				this->extra = other.extra;
-				other.extra = nullptr;
+				this->extra  = other.extra;
+				other.extra  = nullptr;
 			}
 
 		}
@@ -246,10 +246,10 @@ struct StreamContainerHeaderStride{
 		this->controller.clear();
 		this->cLength = 0;
 		this->uLength = 0;
-		this->crc = 0;
+		this->crc     = 0;
 		this->n_extra = 0;
 		delete [] this->extra;
-		this->extra = nullptr;
+		this->extra   = nullptr;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -287,12 +287,12 @@ struct StreamContainerHeaderStride{
 	}
 
 public:
-	controller_type controller;
-	U32 cLength;
-	U32 uLength;
-	U32 crc;
-	U16 n_extra;
-	char* extra; // extra length is encoder specific
+	controller_type controller; // controller bits
+	U32 cLength;                // compressed length
+	U32 uLength;                // uncompressed length
+	U32 crc;                    // crc32 checksum
+	U16 n_extra;                // number of extra bytes used by encoder
+	char* extra;                // extra length is encoder specific
 };
 
 }

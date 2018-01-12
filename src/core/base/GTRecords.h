@@ -19,13 +19,6 @@ public:
 	TachyonRun();  // Disallowed ctor
 	~TachyonRun(); // Disallowed dtor
 
-	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << (U32)entry.alleleA
-			<< (entry.phasing ? '|' : '/')
-			<< (U32)entry.alleleB;
-		return(out);
-	}
-
 	T phasing: 1,
 	  alleleA: (1 + missing),
 	  alleleB: (1 + missing),

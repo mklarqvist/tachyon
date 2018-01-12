@@ -11,6 +11,47 @@
 namespace Tachyon{
 namespace Core{
 
+StreamContainer::StreamContainer() :
+	n_entries(0),
+	n_additions(0)
+{}
+
+StreamContainer::StreamContainer(const U32 start_size) :
+	n_entries(0),
+	n_additions(0),
+	buffer_data(start_size),
+	buffer_strides(start_size),
+	buffer_data_uncompressed(start_size),
+	buffer_strides_uncompressed(start_size)
+{}
+
+StreamContainer::~StreamContainer(){
+	this->buffer_data.deleteAll();
+	this->buffer_strides.deleteAll();
+	this->buffer_data_uncompressed.deleteAll();
+	this->buffer_strides_uncompressed.deleteAll();
+}
+
+void StreamContainer::reset(void){
+	this->n_entries   = 0;
+	this->n_additions = 0;
+	this->buffer_data.reset();
+	this->buffer_data_uncompressed.reset();
+	this->buffer_strides.reset();
+	this->buffer_strides_uncompressed.reset();
+	this->header.reset();
+	this->header_stride.reset();
+	this->buffer_data_uncompressed.reset();
+	this->buffer_strides_uncompressed.reset();
+}
+
+void StreamContainer::resize(const U32 size){
+	this->buffer_data.resize(size);
+	this->buffer_data_uncompressed.resize(size);
+	this->buffer_strides.resize(size);
+	this->buffer_strides_uncompressed.resize(size);
+}
+
 const bool StreamContainer::generateCRC(void){
 	if(this->buffer_data_uncompressed.size() == 0){
 		this->header.crc = 0;
@@ -310,41 +351,6 @@ void StreamContainer::reformatStride(){
 	this->buffer_strides_uncompressed.pointer = this->buffer_strides.pointer;
 	this->header_stride.uLength = this->buffer_strides_uncompressed.pointer;
 	this->buffer_strides.reset();
-}
-
-
-// Loading a container
-// Sketch of algorithm
-// 1) Load header
-// 2) Read compressed data into temp buffer
-// 3) Decompress into local buffer
-// 4) Finished if stride is not equal to -1
-// 5) Load stride header
-// 6) Read stride data into temp buffer
-// 7) Decompress into local buffer
-bool StreamContainer::read(std::ifstream& stream, buffer_type& temp_buffer){
-	stream >> this->header;
-	// Todo: currently no encoding-specific fields
-	stream.read(temp_buffer.data, this->header.cLength);
-	if(!stream.good()){
-		std::cerr << Helpers::timestamp("ERROR","CONTAINER") << "Stream is not good!" << std::endl;
-		return false;
-	}
-	// Uncompress into local buffer
-
-	if(this->header.controller.mixedStride){
-		stream >> this->header_stride;
-		stream.read(temp_buffer.data, this->header_stride.cLength);
-		if(!stream.good()){
-			std::cerr << Helpers::timestamp("ERROR","CONTAINER") << "Stream is not good!" << std::endl;
-			return false;
-		}
-		// Uncompress into local buffer
-	} // end stride extra
-
-	// check crc checksum
-
-	return true;
 }
 
 }

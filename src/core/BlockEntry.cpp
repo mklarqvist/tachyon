@@ -26,12 +26,7 @@ BlockEntry::~BlockEntry(){
 	delete [] this->info_containers;
 }
 
-/**< @brief Recycle structure without releasing memory
- * Internal use only: Clears data by resetting
- * pointers and values without releasing and
- * reallocating the memory
- */
-void BlockEntry::clear(){
+void BlockEntry::clear(void){
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -63,10 +58,6 @@ void BlockEntry::clear(){
 	this->meta_format_map_ids.setStrideSize(1);
 }
 
-/**< @brief Resize base container buffer streams
- * Internal use only
- * @param s Size in bytes
- */
 void BlockEntry::resize(const U32 s){
 	if(s == 0) return;
 	this->meta_hot_container.resize(s);
@@ -83,15 +74,7 @@ void BlockEntry::resize(const U32 s){
 	}
 }
 
-/**< @brief Update base container header data and evaluate output byte streams
- * Internal use only (import): Collectively updates base
- * container offsets and checks/builds
- * 1) If the byte stream is uniform
- * 2) Generates CRC checksums for both data and strides
- * 3) Reformat (change used word-size) for strides and data; if possible
- *
- */
-void BlockEntry::updateBaseContainers(){
+void BlockEntry::updateBaseContainers(void){
 	this->updateContainer(this->gt_rle_container);
 	this->updateContainer(this->gt_simple_container);
 	this->updateContainer(this->gt_support_data_container);
@@ -102,15 +85,6 @@ void BlockEntry::updateBaseContainers(){
 	this->updateContainer(this->meta_info_map_ids  , false);
 }
 
-/**< @brief Updates the local (relative to block start) virtual file offsets
- *  Internal use only (import): This functions updates
- *  relative (virtual) file offsets into the byte stream
- *  where a target container/object begins. This update
- *  allows random access by having the block-header only
- *
- *  Each digital object must have an associated getDiskSize()
- *  function that returns its byte length.
- */
 void BlockEntry::updateOffsets(void){
 	U32 cum_size = this->index_entry.getDiskSize();
 	this->index_entry.offset_ppa.offset = cum_size;
@@ -159,16 +133,6 @@ void BlockEntry::updateOffsets(void){
 	this->index_entry.offset_end_of_block = cum_size;
 }
 
-/**< @brief Update base container header data and evaluate output byte streams
- * Internal use only (import): Collectively updates base
- * container offsets and checks/builds
- * 1) If the byte stream is uniform
- * 2) Generates CRC checksums for both data and strides
- * 3) Reformat (change used word-size) for strides and data; if possible
- *
- * @param container Data container
- * @param length    Iterator length
- */
 void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
 		// If the data container has entries in it but has
@@ -193,10 +157,6 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 	}
 }
 
-/**<
- *
- * @param container Data container
- */
 void BlockEntry::updateContainer(stream_container& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::YON_TYPE_BOOLEAN)
 		return;
@@ -219,13 +179,6 @@ void BlockEntry::updateContainer(stream_container& container, bool reformat){
 	}
 }
 
-/**< @brief Reads one or more separate digital objects from disk
- * Primary function for reading data from disk. Data
- * read in this way is not checked for integrity here.
- * @param stream   Input stream
- * @param settings Settings record describing reading parameters
- * @return         Returns FALSE if there was a problem
- */
 bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
 
@@ -339,6 +292,86 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
 
 	return(true);
+}
+
+bool BlockEntry::write(std::ofstream& stream,
+                   import_stats_type& stats,
+                   import_stats_type& stats_uncompressed){
+	U64 last_pos = stream.tellp();
+	stream << this->index_entry;
+	stats.total_header_cost += (U64)stream.tellp() - last_pos;
+	last_pos = stream.tellp();
+
+	if(this->index_entry.controller.hasGTPermuted){
+		stream << this->ppa_manager;
+		stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
+		stats_uncompressed.total_ppa_cost += this->ppa_manager.u_length;
+		last_pos = stream.tellp();
+	}
+
+	stream << this->meta_hot_container;
+	stream << this->meta_cold_container;
+	stats.total_meta_cost += (U64)stream.tellp() - last_pos;
+	stats_uncompressed.total_meta_cost += this->meta_hot_container.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_meta_cost += this->meta_cold_container.buffer_data_uncompressed.pointer;
+	last_pos = stream.tellp();
+
+	stream << this->gt_rle_container;
+	stream << this->gt_simple_container;
+	stream << this->gt_support_data_container;
+	stats.total_gt_cost += (U64)stream.tellp() - last_pos;
+	stats_uncompressed.total_gt_cost += this->gt_rle_container.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_gt_cost += this->gt_simple_container.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_gt_cost += this->gt_support_data_container.buffer_data_uncompressed.pointer;
+	last_pos = stream.tellp();
+
+	stream << this->meta_info_map_ids;
+	stream << this->meta_filter_map_ids;
+	stream << this->meta_format_map_ids;
+	stats.total_special_cost += (U64)stream.tellp() - last_pos;
+	stats_uncompressed.total_special_cost += this->meta_info_map_ids.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_special_cost += this->meta_filter_map_ids.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.pointer;
+	last_pos = stream.tellp();
+
+	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+		stream << this->info_containers[i];
+		stats_uncompressed.total_info_cost += this->info_containers[i].buffer_data_uncompressed.pointer;
+	}
+
+	stats.total_info_cost += (U64)stream.tellp() - last_pos;
+	last_pos = stream.tellp();
+
+	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+		stream << this->format_containers[i];
+		stats_uncompressed.total_format_cost += this->format_containers[i].buffer_data_uncompressed.pointer;
+	}
+
+	stats.total_format_cost += (U64)stream.tellp() - last_pos;
+	last_pos = stream.tellp();
+
+	stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
+
+	return(true);
+}
+
+BlockEntry::meta_iterator_type* BlockEntry::getMetaIterator(void){
+	meta_iterator_type* it;
+	if(this->meta_cold_container.buffer_data_uncompressed.size())
+		it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container);
+	else
+		it = new meta_iterator_type(this->meta_hot_container);
+
+	if(this->meta_info_map_ids.buffer_data_uncompressed.size())
+		it->setInfoIDContainer(this->meta_info_map_ids);
+
+	if(this->meta_filter_map_ids.buffer_data_uncompressed.size())
+		it->setFilterIDContainer(this->meta_filter_map_ids);
+
+	if(this->meta_format_map_ids.buffer_data_uncompressed.size())
+		it->setFormatIDContainer(this->meta_format_map_ids);
+
+	return(it);
 }
 
 }

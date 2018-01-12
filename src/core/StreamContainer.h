@@ -24,9 +24,7 @@ enum TACHYON_CORE_TYPE{
 
 enum TACHYON_CORE_COMPRESSION{
 	YON_ENCODE_NONE,
-	YON_ENCODE_ZSTD,
-	YON_ENCODE_FSE,
-	YON_ENCODE_RANS
+	YON_ENCODE_ZSTD
 };
 
 
@@ -38,26 +36,9 @@ class StreamContainer{
 	typedef StreamContainerHeaderStride header_stride_type;
 
 public:
-	StreamContainer() :
-		n_entries(0),
-		n_additions(0)
-	{}
-
-	StreamContainer(const U32 start_size) :
-		n_entries(0),
-		n_additions(0),
-		buffer_data(start_size),
-		buffer_strides(start_size),
-		buffer_data_uncompressed(start_size),
-		buffer_strides_uncompressed(start_size)
-	{}
-
-	~StreamContainer(){
-		this->buffer_data.deleteAll();
-		this->buffer_strides.deleteAll();
-		this->buffer_data_uncompressed.deleteAll();
-		this->buffer_strides_uncompressed.deleteAll();
-	}
+	StreamContainer();
+	StreamContainer(const U32 start_size);
+	~StreamContainer();
 
 	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
@@ -122,25 +103,8 @@ public:
 		++this->n_additions;
 	}
 
-	void reset(void){
-		this->n_entries = 0;
-		this->n_additions = 0;
-		this->buffer_data.reset();
-		this->buffer_data_uncompressed.reset();
-		this->buffer_strides.reset();
-		this->buffer_strides_uncompressed.reset();
-		this->header.reset();
-		this->header_stride.reset();
-		this->buffer_data_uncompressed.reset();
-		this->buffer_strides_uncompressed.reset();
-	}
-
-	inline void resize(const U32 size){
-		this->buffer_data.resize(size);
-		this->buffer_data_uncompressed.resize(size);
-		this->buffer_strides.resize(size);
-		this->buffer_strides_uncompressed.resize(size);
-	}
+	void reset(void);
+	void resize(const U32 size);
 
 	inline const U64& sizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
 	inline const U64& sizeCompressed(void) const{ return(this->buffer_data.size()); }
@@ -151,7 +115,6 @@ public:
 	bool checkUniformity(void);
 	void reformat(void);
 	void reformatStride(void);
-	bool read(std::ifstream& stream, buffer_type& temp_buffer);
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.header;
@@ -180,6 +143,7 @@ public:
 		}
 		return(stream);
 	}
+
 
 	inline const U32 getDiskSize(void) const{
 		U32 total_size = 0;

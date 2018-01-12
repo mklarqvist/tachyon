@@ -229,6 +229,7 @@ private:
 	typedef IndexBlockEntryHeaderOffsets offset_minimal_type;
 
 public:
+	// Internal use only
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
