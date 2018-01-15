@@ -11,6 +11,7 @@
 #include "base/header/Header.h"
 #include "iterator/ContainerIterator.h"
 #include "../index/SortedIndex.h"
+#include "iterator/GenotypeIterator.h"
 
 namespace Tachyon{
 namespace Core{
@@ -25,9 +26,15 @@ class TachyonReader{
 	typedef Index::SortedIndex index_type;
 
 public:
-	TachyonReader() : filesize(0){}
-	TachyonReader(const std::string& filename) : input_file(filename), filesize(0){}
-	~TachyonReader(){ }
+	TachyonReader() : filesize(0), n_internal_buffers(0), internal_buffers(nullptr){}
+	TachyonReader(const std::string& filename) : input_file(filename), filesize(0), n_internal_buffers(0), internal_buffers(nullptr){}
+	~TachyonReader(){
+		for(U32 i = 0; i < this->n_internal_buffers; ++i)
+			this->internal_buffers[i].deleteAll();
+
+		delete [] this->internal_buffers;
+
+	}
 
 	bool open(void);
 
@@ -124,36 +131,29 @@ public:
 
 		// One buffer per variant
 		// Faster output?
-		buffer_type* buffers = new buffer_type[this->block.index_entry.size()];
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i)
-			buffers[i].resize(5012);
+		//std::cerr << this->block.index_entry.size() << '/' << this->n_internal_buffers << std::endl;
+		if(this->block.index_entry.size() > this->n_internal_buffers){
+			//std::cerr << "here: " << this->n_internal_buffers << std::endl;
+			for(U32 i = 0; i < this->n_internal_buffers; ++i)
+				this->internal_buffers[i].deleteAll();
+			delete [] this->internal_buffers;
+
+			this->n_internal_buffers = this->block.index_entry.size() * 5;
+			this->internal_buffers = new buffer_type[5*this->block.index_entry.size()];
+			for(U32 i = 0; i < 5*this->block.index_entry.size(); ++i){
+				this->internal_buffers[i].resize(5012);
+				//std::cerr << i << '\t' << this->internal_buffers[i].capacity() << std::endl;
+			}
+		}
 
 		// Base
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
 
-			m.toVCFString(buffers[i],
-					this->header,
-					this->block.index_entry.contigID,
-					this->block.index_entry.minPosition);
-
-		}
-
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
-			const Core::MetaEntry& m = (*it)[i];
-
-			if(this->block.index_entry.n_filter_streams == 0){
-				buffers[i] += ".\t";
-			} else {
-				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[m.getFilterPatternID()][k]){
-					// Lookup what that field is
-						buffers[i].Add(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size());
-						buffers[i] += '\t';
-					}
-				}
-			}
+			m.toVCFString(this->internal_buffers[i],
+                          this->header,
+                          this->block.index_entry.contigID,
+                          this->block.index_entry.minPosition);
 		}
 
 		// Memory layout:
@@ -177,9 +177,9 @@ public:
 						if(m.getInfoPatternID() != p)
 							continue;
 
-						info_iterators[current_key].toString(buffers[i], this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[current_key].key]].ID);
+						info_iterators[current_key].toString(this->internal_buffers[i], this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[current_key].key]].ID);
 						if(k + 1 != n_keys)
-							buffers[i] += ';';
+							this->internal_buffers[i] += ';';
 
 						++info_iterators[current_key];
 					}
@@ -188,20 +188,20 @@ public:
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
-			stream.write(buffers[i].data, buffers[i].pointer);
+			stream.write(this->internal_buffers[i].data, this->internal_buffers[i].pointer);
 			stream.put('\n');
+			this->internal_buffers[i].reset();
 		}
 
 		delete it;
 		delete [] info_iterators;
 		delete [] format_iterators;
-		delete [] buffers;
 		return true;
 	}
 
 	bool toVCFString(std::ostream& stream = std::cout){
-
-		Core::HeaderMapEntry* entry = nullptr;
+		//Core::HeaderMapEntry* entry = nullptr;
+		/*
 		if(this->header.getEntry("GT", entry)){
 			std::cerr << "GT@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
 		}
@@ -210,6 +210,38 @@ public:
 		}
 		if(this->header.getEntry("AC", entry)){
 			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
+		}
+		*/
+
+		Iterator::GenotypeIterator it_gt(this->block);
+		Iterator::ContainerIteratorDataInterface& temp = it_gt.iterator_gt_meta.getDataIterator();
+		std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
+		std::cerr << "Size: " << temp.size() << std::endl;
+		std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
+
+		if(this->block.gt_support_data_container.header.controller.type == 2){
+			Iterator::ContainerIteratorType<U32>& a = *reinterpret_cast< Iterator::ContainerIteratorType<U32>* >(&temp);
+			for(U32 i = 0; i < temp.size(); ++i){
+				std::cerr << a.current() << ',';
+				++a;
+			}
+			std::cerr << std::endl;
+		} else if(this->block.gt_support_data_container.header.controller.type == 0){
+			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&temp);
+			for(U32 i = 0; i < temp.size(); ++i){
+				std::cerr << (int)a.current() << ',';
+				++a;
+			}
+			std::cerr << std::endl;
+		}
+		if(this->block.gt_support_data_container.header.controller.mixedStride){
+			Iterator::ContainerIteratorDataInterface& s = it_gt.iterator_gt_meta.getStrideIterator();
+			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&s);
+			for(U32 i = 0; i < temp.size(); ++i){
+				std::cerr << (int)a.current() << ',';
+				++a;
+			}
+			std::cerr << std::endl;
 		}
 
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
@@ -236,15 +268,19 @@ public:
 
 		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
+
+			//stream << m.hot.controller.mixed_phasing << ":" << m.hot.controller.phase << ';' << m.hot.controller.anyMissing << ',' << m.hot.controller.anyNA << ':' <<
+			//	   m.hot.controller.rle << "->" << m.hot.controller.rle_type << '\t' << (int)m.hot.getGenotypeType() << '\t';
+
 			// Discussion: it is more attractive to have the
 			// struct have knowledge of itself
 			// it is not pretty to have to pass along
 			// references to the header and index
 			// every time
 			m.toVCFString(stream,
-					this->header,
-					this->block.index_entry.contigID,
-					this->block.index_entry.minPosition);
+                          this->header,
+                          this->block.index_entry.contigID,
+                          this->block.index_entry.minPosition);
 
 			if(this->block.index_entry.n_filter_streams == 0){
 				stream << ".\t";
@@ -306,24 +342,7 @@ public:
 				set = 0;
 
 				for(U32 s = 0; s < this->header.n_samples; ++s){
-					for(U32 k = 0; k < n_keys_format; ++k){
-						// Check if field is set
-						const U32& current_key = firstKey_format[k];
-						if(target_format_vector[current_key]){
-							if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
-								++set;
-								continue;
-							}
 
-							format_iterators[current_key].toString(stream);
-
-							if(set + 1 != target_format_vector.n_keys)
-								stream.put(':');
-
-							format_iterators[current_key].increment(false);
-							++set;
-						}
-					}
 					set = 0;
 					stream.put('\t');
 				}
@@ -373,6 +392,10 @@ public:
 	index_type    index;
 	block_entry_type block;
 	codec_manager_type codec_manager;
+
+private:
+	U32 n_internal_buffers;
+	buffer_type* internal_buffers;
 };
 
 }

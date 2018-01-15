@@ -21,7 +21,8 @@ public:
 	~CompressionManager(){}
 
 	bool compress(block_type& block){
-		zstd_codec.setCompressionLevel(6);
+		zstd_codec.setCompressionLevel(20);
+		zstd_codec.setCompressionLevelData(3);
 		if(block.index_entry.controller.hasGTPermuted) zstd_codec.encode(block.ppa_manager);
 
 		zstd_codec.setCompressionLevel(20);
@@ -34,66 +35,80 @@ public:
 		if(block.meta_filter_map_ids.n_entries)       zstd_codec.encode(block.meta_filter_map_ids);
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.encode(block.meta_format_map_ids);
 
-		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+			if(block.info_containers[i].header.controller.type == Core::YON_TYPE_FLOAT ||
+			   block.info_containers[i].header.controller.type == Core::YON_TYPE_DOUBLE){
+				zstd_codec.setCompressionLevelData(3);
+				zstd_codec.setCompressionLevelStrides(20);
+			}
+			else zstd_codec.setCompressionLevel(20);
 			zstd_codec.encode(block.info_containers[i]);
+		}
 
-		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i)
+		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
+			if(block.format_containers[i].header.controller.type == Core::YON_TYPE_FLOAT ||
+			   block.format_containers[i].header.controller.type == Core::YON_TYPE_DOUBLE){
+				zstd_codec.setCompressionLevelData(3);
+				zstd_codec.setCompressionLevelStrides(20);
+			}
+			else zstd_codec.setCompressionLevel(20);
 			zstd_codec.encode(block.format_containers[i]);
+		}
 
 		return true;
 	}
 
 	bool decompress(block_type& block){
-		if(block.meta_hot_container.sizeCompressed()){
+		if(block.meta_hot_container.getSizeCompressed()){
 			if(!this->decompress(block.meta_hot_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.meta_cold_container.sizeCompressed()){
+		if(block.meta_cold_container.getSizeCompressed()){
 			if(!this->decompress(block.meta_cold_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.gt_rle_container.sizeCompressed()){
+		if(block.gt_rle_container.getSizeCompressed()){
 			if(!this->decompress(block.gt_rle_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.gt_simple_container.sizeCompressed()){
+		if(block.gt_simple_container.getSizeCompressed()){
 			if(!this->decompress(block.gt_simple_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.gt_support_data_container.sizeCompressed()){
+		if(block.gt_support_data_container.getSizeCompressed()){
 			if(!this->decompress(block.gt_support_data_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.meta_info_map_ids.sizeCompressed()){
+		if(block.meta_info_map_ids.getSizeCompressed()){
 			if(!this->decompress(block.meta_info_map_ids)){
 				std::cerr << "failed to meta_info_map_ids!" << std::endl;
 			}
 		}
 
-		if(block.meta_filter_map_ids.sizeCompressed()){
+		if(block.meta_filter_map_ids.getSizeCompressed()){
 			if(!this->decompress(block.meta_filter_map_ids)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
-		if(block.meta_format_map_ids.sizeCompressed()){
+		if(block.meta_format_map_ids.getSizeCompressed()){
 			if(!this->decompress(block.meta_format_map_ids)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
-			if(block.info_containers[i].sizeCompressed()){
+			if(block.info_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.info_containers[i])){
 					std::cerr << "failed to decompress!" << std::endl;
 				}
@@ -101,7 +116,7 @@ public:
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
-			if(block.format_containers[i].sizeCompressed()){
+			if(block.format_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.format_containers[i])){
 					std::cerr << "failed to decompress!" << std::endl;
 				}

@@ -40,13 +40,32 @@ public:
 	StreamContainer(const U32 start_size);
 	~StreamContainer();
 
+	/**<
+	 *
+	 * @param value
+	 */
 	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
+
+	/**<
+	 *
+	 * @param value
+	 */
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
+
+	/**<
+	 *
+	 * @param value
+	 * @return
+	 */
 	inline const bool checkStrideSize(const S32& value) const{ return this->header.stride == value; }
+
+	/**<
+	 *
+	 */
 	inline void setMixedStrides(void){ this->header.stride = -1; this->header.controller.mixedStride = true; }
 
+	// Operators
 	inline void operator++(void){ ++this->n_entries; }
-
 	inline void addStride(const U32& value){ this->buffer_strides_uncompressed += (U32)value; }
 
 	inline void operator+=(const SBYTE& value){
@@ -106,16 +125,48 @@ public:
 	void reset(void);
 	void resize(const U32 size);
 
-	inline const U64& sizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& sizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
 
 
+	/**<
+	 *
+	 * @return
+	 */
 	const bool generateCRC(void);
+
 	bool checkCRC(int target = 0);
+
+	/**<
+	 *
+	 * @return
+	 */
 	bool checkUniformity(void);
+
+	/**<
+	 *
+	 */
 	void reformat(void);
+
+	/**<
+	 *
+	 */
 	void reformatStride(void);
 
+	inline const U32 getDiskSize(void) const{
+		U32 total_size = 0;
+		total_size += header.getDiskSize();
+		if(this->header.controller.mixedStride)
+			total_size += header_stride.getDiskSize();
+
+		total_size += this->buffer_data.pointer;
+		if(this->header.controller.mixedStride)
+			total_size += this->buffer_strides.pointer;
+
+		return(total_size);
+	}
+
+private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.header;
 		if(entry.header.controller.mixedStride)
@@ -142,20 +193,6 @@ public:
 			entry.buffer_strides.pointer = entry.header_stride.cLength;
 		}
 		return(stream);
-	}
-
-
-	inline const U32 getDiskSize(void) const{
-		U32 total_size = 0;
-		total_size += header.getDiskSize();
-		if(this->header.controller.mixedStride)
-			total_size += header_stride.getDiskSize();
-
-		total_size += this->buffer_data.pointer;
-		if(this->header.controller.mixedStride)
-			total_size += this->buffer_strides.pointer;
-
-		return(total_size);
 	}
 
 public:

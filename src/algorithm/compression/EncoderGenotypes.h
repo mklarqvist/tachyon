@@ -14,6 +14,8 @@
 namespace Tachyon{
 namespace Encoding{
 
+#define ENCODER_GT_DEBUG 0
+
 /*
  RLE biallelic diploid
  +---+---+---+---+
@@ -99,7 +101,7 @@ public:
 	EncoderGenotypes();
 	EncoderGenotypes(const U64 samples);
 	~EncoderGenotypes();
-	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, U64& n_runs, const U32* const ppa);
+	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 
 private:
@@ -171,6 +173,9 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	const BYTE shift    = hasMissing    ? 2 : 1;
 	const BYTE add      = hasMixedPhase ? 1 : 0;
 
+	// temp
+	//const U64 runs_start_pos = runs.buffer_data_uncompressed.pointer;
+
 	// Run limits
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*(1 + hasMissing) + hasMixedPhase)) - 1;
 
@@ -195,7 +200,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 			// Prepare RLE
 			RLE = length;
 			RLE <<= (ploidy*shift + add);
-			if(add) RLE |= (allele2 & 1);
+			RLE |= packed;
 			assert((RLE >> (ploidy*shift + add)) == length);
 
 			// Push RLE to buffer
@@ -225,6 +230,21 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	assert(sumLength == this->n_samples);
 	runs.n_additions += n_runs;
 
+	/*
+	if(add == 0){
+		Core::TachyonRunNoPhase<YON_RLE_TYPE, false>* c = reinterpret_cast< Core::TachyonRunNoPhase<YON_RLE_TYPE, false>* >(&runs.buffer_data_uncompressed[runs_start_pos]);
+		for(U32 i = 0; i < n_runs; ++i){
+			std::cout << (int)c->alleleA << '|' << (int)c->alleleB << ':' << (int)c->runs << '\t';
+			++c;
+		}
+		std::cout << std::endl;
+	}
+	*/
+
+
+#if ENCODER_GT_DEBUG == 1
+	std::cout << 0 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';
+#endif
 	return(true);
 }
 
@@ -288,6 +308,9 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	assert(sumLength == this->n_samples);
 
 	runs.n_additions += n_runs;
+#if ENCODER_GT_DEBUG == 1
+	std::cout << 1 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';
+#endif
 
 	return(true);
 }

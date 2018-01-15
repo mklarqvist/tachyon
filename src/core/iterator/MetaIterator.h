@@ -35,7 +35,7 @@ public:
 
 	}
 
-	MetaIterator(container_type& container) :
+	MetaIterator(const container_type& container) :
 		loadCold(false),
 		n_position(0),
 		n_entries(0),
@@ -51,7 +51,7 @@ public:
 		this->set(container);
 	}
 
-	MetaIterator(container_type& container_hot, container_type& container_cold) :
+	MetaIterator(const container_type& container_hot, const container_type& container_cold) :
 		loadCold(true),
 		n_position(0),
 		n_entries(0),
@@ -71,7 +71,7 @@ public:
 		this->clearPrevious();
 	}
 
-	bool set(container_type& container){
+	bool set(const container_type& container){
 		this->container_hot = &container;
 		this->hot_iterator.set(container);
 
@@ -87,7 +87,7 @@ public:
 		return true;
 	}
 
-	bool set(container_type& container_hot, container_type& container_cold){
+	bool set(const container_type& container_hot, const container_type& container_cold){
 		this->container_hot  = &container_hot;
 		this->container_cold = &container_cold;
 		this->hot_iterator.set(container_hot);
@@ -105,7 +105,7 @@ public:
 		return true;
 	}
 
-	inline bool setInfoIDContainer(container_type& container){
+	inline bool setInfoIDContainer(const container_type& container){
 		if(this->n_entries == 0) return false;
 		this->info_id_container = &container;
 		this->info_id_iterator.setup(container);
@@ -118,7 +118,7 @@ public:
 		return true;
 	}
 
-	inline bool setFilterIDContainer(container_type& container){
+	inline bool setFilterIDContainer(const container_type& container){
 		if(this->n_entries == 0) return false;
 		this->filter_id_container = &container;
 		this->filter_id_iterator.setup(container);
@@ -131,7 +131,7 @@ public:
 		return true;
 	}
 
-	inline bool setFormatIDContainer(container_type& container){
+	inline bool setFormatIDContainer(const container_type& container){
 		if(this->n_entries == 0) return false;
 		this->format_id_container = &container;
 		this->format_id_iterator.setup(container);

@@ -60,6 +60,12 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header, const 
 	dest.Add(&header.getContig(blockContigID).name[0], header.getContig(blockContigID).name.size());
 	dest += '\t';
 	//dest += std::to_string(blockPos + this->hot.position + 1);
+
+	if(dest.pointer + 100 >= dest.capacity()){
+		//std::cerr << "resizing: " << dest.capacity() << "->" << dest.capacity()*2 << std::endl;
+		dest.resize(dest.capacity()*2);
+	}
+	assert(dest.pointer + 100 < dest.capacity());
 	int ret = sprintf(&dest.data[dest.pointer], "%llu", blockPos + this->hot.position + 1);
 	dest.pointer += ret;
 	dest += '\t';

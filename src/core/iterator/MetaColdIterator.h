@@ -19,7 +19,7 @@ class MetaColdIterator{
 public:
 	MetaColdIterator() : n_entries(0), pos(0), offsets(nullptr), container(nullptr){}
 
-	MetaColdIterator(container_type& container, const U32 n_entries) :
+	MetaColdIterator(const container_type& container, const U32 n_entries) :
 		n_entries(n_entries),
 		pos(0),
 		offsets(nullptr),
@@ -40,7 +40,7 @@ public:
 	 * @param  n_entries Number of entries in 'container'. This is always provided from the 'MetaHotIterator'
 	 * @return Returns TRUE if there is data or FALSE if there is not
 	 */
-	bool set(container_type& container, const S32 n_entries){
+	bool set(const container_type& container, const S32 n_entries){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
@@ -68,7 +68,7 @@ public:
 		return(true);
 	}
 
-	inline bool operator()(container_type& container, const U32 n_entries){
+	inline bool operator()(const container_type& container, const U32 n_entries){
 		return(this->set(container, n_entries));
 	}
 
@@ -121,7 +121,7 @@ private:
 	S32 pos;
 	entry_type internal_entry;
 	U32* offsets;
-	container_type* container;
+	const container_type* container;
 };
 
 }

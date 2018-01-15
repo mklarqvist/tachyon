@@ -64,10 +64,10 @@ private:
 	reader_type reader;      // reader
 	writer_type writer;      // writer
 
-	 index_entry_type  index_entry;  // Header index
-	radix_sorter_type  permutator;
-	      header_type* header;     // header
-	  gt_encoder_type  encoder;     // RLE packer
+	index_entry_type  index_entry;  // Header index
+	radix_sorter_type permutator;
+	header_type*      header;     // header
+	gt_encoder_type   encoder;     // RLE packer
 
 	compression_manager_type compression_manager;
 

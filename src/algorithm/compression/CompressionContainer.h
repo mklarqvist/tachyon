@@ -184,13 +184,12 @@ private:
 	typedef IO::TGZFController controller_type;
 
 public:
-	ZSTDCodec() : compression_level(0), cdict(nullptr){}
-	~ZSTDCodec(){
-		if(this->cdict != nullptr)
-		ZSTD_freeCDict(this->cdict);
-	}
+	ZSTDCodec() : compression_level_data(0), compression_level_strides(0){}
+	~ZSTDCodec(){}
 
-	inline void setCompressionLevel(const int& c){ this->compression_level = c; }
+	inline void setCompressionLevel(const int& c){ this->compression_level_data = c; this->compression_level_strides = c; }
+	inline void setCompressionLevelData(const int& c){ this->compression_level_data = c; }
+	inline void setCompressionLevelStrides(const int& c){ this->compression_level_strides = c; }
 
 	/**
 	 *
@@ -217,7 +216,7 @@ public:
                                        this->buffer.capacity(),
 									   stream.buffer_data_uncompressed.data,
 									   stream.buffer_data_uncompressed.pointer,
-									   this->compression_level);
+									   this->compression_level_data);
 
 			if(ZSTD_isError(ret)){
 			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
@@ -244,7 +243,7 @@ public:
 		stream.buffer_data.pointer       = ret;
 		stream.header.n_extra            = 1;
 		stream.header.extra              = new char[sizeof(BYTE)];
-		stream.header.extra[0]           = (BYTE)this->compression_level;
+		stream.header.extra[0]           = (BYTE)this->compression_level_data;
 
 		if(stream.header.controller.mixedStride == true)
 			return(this->encodeStrides(stream));
@@ -272,7 +271,7 @@ public:
                                    this->buffer.capacity(),
 								   stream.buffer_strides_uncompressed.data,
 								   stream.buffer_strides_uncompressed.pointer,
-								   this->compression_level);
+								   this->compression_level_data);
 
 		if(ZSTD_isError(ret)){
 			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
@@ -296,7 +295,7 @@ public:
 		stream.buffer_strides.pointer           = ret;
 		stream.header_stride.n_extra            = 1;
 		stream.header_stride.extra              = new char[sizeof(BYTE)];
-		stream.header_stride.extra[0]           = (BYTE)this->compression_level;
+		stream.header_stride.extra[0]           = (BYTE)this->compression_level_data;
 
 		return true;
 	}
@@ -337,7 +336,7 @@ public:
 								   manager.PPA.capacity(),
 								   this->buffer.data,
 								   this->buffer.pointer,
-								   this->compression_level);
+								   this->compression_level_data);
 
 
 		if(ZSTD_isError(ret)){
@@ -411,8 +410,8 @@ public:
 	}
 
 private:
-	int compression_level;
-	ZSTD_CDict* cdict;
+	int compression_level_data;
+	int compression_level_strides;
 };
 
 }

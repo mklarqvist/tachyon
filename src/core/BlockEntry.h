@@ -48,11 +48,24 @@ public:
 	 */
 	void clear(void);
 
-	inline void allocateOffsets(const U32& info, const U32& format, const U32& filter){
-		this->index_entry.allocateOffsets(info, format, filter);
+	/**<
+	 * Wrapper function for INFO, FORMAT, and FILTER disk
+	 * offsets. Internally generates virtual disk offsets
+	 * into the buffer stream where a given byte stream
+	 * begins. This allows for random access searches to the
+	 * data in question.
+	 * @param n_info_fields   Number of INFO fields in this block
+	 * @param n_format_fields Number of FORMAT fields in this block
+	 * @param n_filter_fields Number of FILTER fields in this block
+	 */
+	inline void allocateDiskOffsets(const U32& n_info_fields, const U32& n_format_fields, const U32& n_filter_fields){
+		this->index_entry.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
 	}
 
-
+	/**<
+	 *
+	 * @param target
+	 */
 	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
@@ -92,13 +105,13 @@ public:
 	 * read in this way is not checked for integrity here.
 	 * @param stream   Input stream
 	 * @param settings Settings record describing reading parameters
-	 * @return         Returns FALSE if there was a problem
+	 * @return         Returns FALSE if there was a problem, TRUE otherwise
 	 */
 	bool read(std::ifstream& stream, settings_type& settings);
 
 
 	bool write(std::ofstream& stream, import_stats_type& stats, import_stats_type& stats_uncompressed);
-	meta_iterator_type* getMetaIterator(void);
+	meta_iterator_type* getMetaIterator(void) const;
 
 private:
 	/**< @brief Update base container header data and evaluate output byte streams
@@ -125,6 +138,7 @@ private:
 	 */
 	void updateContainer(stream_container& container, bool reformat = true);
 
+	// Write everything
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;
 

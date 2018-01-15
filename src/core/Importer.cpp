@@ -168,7 +168,7 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_filter_streams     = this->filter_fields.size();
 		this->block.index_entry.n_format_streams     = this->format_fields.size();
 		this->block.index_entry.n_variants           = reader.size();
-		this->block.allocateOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
+		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
@@ -272,15 +272,18 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 		return false;
 	}
 
-	// Perform run-length encoding
-	U64 n_runs = 0;
-
 	meta_type meta;
-	meta.position          = entry.body->POS - this->block.index_entry.minPosition;
-	meta.ref_alt           = entry.ref_alt;
+	meta.position = entry.body->POS - this->block.index_entry.minPosition;
+	meta.ref_alt  = entry.ref_alt;
 
 	// GT encoding
-	if(!this->encoder.Encode(entry, meta, this->block.gt_rle_container, this->block.gt_simple_container, this->block.gt_support_data_container, n_runs, this->permutator.manager->get())){
+	if(!this->encoder.Encode(entry,
+			                 meta,
+							 this->block.gt_rle_container,
+							 this->block.gt_simple_container,
+							 this->block.gt_support_data_container,
+							 this->permutator.manager->get()))
+	{
 		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 		return false;
 	}
@@ -306,8 +309,6 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	++this->index_entry.n_variants;
 
 	//meta.n_objects = n_runs;
-	this->block.gt_support_data_container += (U32)n_runs;
-	++this->block.gt_support_data_container;
 	this->block.meta_hot_container.buffer_data_uncompressed += meta;
 
 	return true;

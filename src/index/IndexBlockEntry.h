@@ -238,28 +238,28 @@ public:
 	void reset(void);
 
 	// Allocate offset vectors
-	void allocateInfoOffsets(const U32& size){
+	void allocateInfoDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->info_offsets;
 		this->info_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateFormatOffsets(const U32& size){
+	void allocateFormatDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
 		this->format_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateFilterOffsets(const U32& size){
+	void allocateFilterDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->filter_offsets;
 		this->filter_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateOffsets(const U32& info, const U32& format, const U32& filter){
-		this->allocateInfoOffsets(info);
-		this->allocateFormatOffsets(format);
-		this->allocateFilterOffsets(filter);
+	void allocateDiskOffsets(const U32& info, const U32& format, const U32& filter){
+		this->allocateInfoDiskOffsets(info);
+		this->allocateFormatDiskOffsets(format);
+		this->allocateFilterDiskOffsets(filter);
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

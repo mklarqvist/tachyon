@@ -297,7 +297,7 @@ void StreamContainer::reformatStride(){
 
 	// Recode integer types
 	if(!(this->header_stride.controller.type == YON_TYPE_32B && this->header_stride.controller.signedness == 0)){
-		std::cerr << "illegal at this point" << std::endl;
+		std::cerr << "illegal at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
 		exit(1);
 	}
 

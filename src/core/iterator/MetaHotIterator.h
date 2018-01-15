@@ -11,11 +11,11 @@ class MetaHotIterator{
 
 public:
 	MetaHotIterator() : n_entries(0), pos(0), entries(nullptr){}
-	MetaHotIterator(container_type& container) : n_entries(0), pos(0), entries(nullptr){
+	MetaHotIterator(const container_type& container) : n_entries(0), pos(0), entries(nullptr){
 		this->set(container);
 	}
 	~MetaHotIterator(){}
-	bool set(container_type& container){
+	bool set(const container_type& container){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
@@ -26,7 +26,7 @@ public:
 		return true;
 	}
 
-	inline bool operator()(container_type& container){
+	inline bool operator()(const container_type& container){
 		return(this->set(container));
 	}
 

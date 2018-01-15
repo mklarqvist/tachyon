@@ -90,8 +90,9 @@ public:
 	}
 
 	inline data_iterator_type& getDataIterator(void){ return(*this->data_iterator); }
+	inline stride_iterator_type& getStrideIterator(void){ return(*this->stride_iterator); }
 
-private:
+public:
 	U32 position;                           // iterator position
 	bool hasStrideIteratorSet;              // flag triggered if mixed stride
 	TACHYON_ITERATOR_STATUS status;         //

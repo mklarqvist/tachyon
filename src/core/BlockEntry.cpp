@@ -15,11 +15,13 @@ BlockEntry::BlockEntry() :
 	this->meta_info_map_ids.setType(YON_TYPE_32B);
 	this->gt_rle_container.setType(YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(YON_TYPE_32B);
 	this->meta_hot_container.setType(YON_TYPE_STRUCT);
 	this->meta_cold_container.setType(YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
+	this->gt_support_data_container.setStrideSize(1);
 }
 
 BlockEntry::~BlockEntry(){
@@ -51,11 +53,13 @@ void BlockEntry::clear(void){
 	this->meta_info_map_ids.setType(YON_TYPE_32B);
 	this->gt_rle_container.setType(YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(YON_TYPE_32B);
 	this->meta_hot_container.setType(YON_TYPE_STRUCT);
 	this->meta_cold_container.setType(YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
+	this->gt_support_data_container.setStrideSize(1);
 }
 
 void BlockEntry::resize(const U32 s){
@@ -355,7 +359,7 @@ bool BlockEntry::write(std::ofstream& stream,
 	return(true);
 }
 
-BlockEntry::meta_iterator_type* BlockEntry::getMetaIterator(void){
+Iterator::MetaIterator* BlockEntry::getMetaIterator(void) const{
 	meta_iterator_type* it;
 	if(this->meta_cold_container.buffer_data_uncompressed.size())
 		it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container);
