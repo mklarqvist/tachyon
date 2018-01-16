@@ -111,8 +111,8 @@ private:
 	const rle_helper_type assessMploidRLEnAllelic(const bcf_type& line, const U32* const ppa);
 
 	template <class YON_RLE_TYPE, class BCF_GT_TYPE = SBYTE> bool EncodeDiploidBCF(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa, const bool hasMissing = true, const bool hasMixedPhase = true);
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
+	template <class YON_RLE_TYPE> bool EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, const U32* const ppa, const rle_helper_type& helper);
+	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, const U32* const ppa, const rle_helper_type& helper);
 	template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 	template <class T> bool EncodeMploidRLENallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa);
 
@@ -156,10 +156,8 @@ bool EncoderGenotypes::EncodeDiploidBCF(const bcf_type& line,
 template <class YON_RLE_TYPE>
 bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 		                                         container_type& runs,
-												            U64& n_runs,
 												const U32* const ppa,
-												      const bool hasMissing,
-													  const bool hasMixedPhase){
+								          const rle_helper_type& helper){
 	const BYTE ploidy   = 2;
 	U32 bcf_gt_pos      = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength       = 0;
@@ -170,14 +168,14 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	// shift = 2 if hasMissing == TRUE
 	// shift = 1 if HasMissing == FALSE
 	// add = 1 if hasMixedPhase == TRUE
-	const BYTE shift    = hasMissing    ? 2 : 1;
-	const BYTE add      = hasMixedPhase ? 1 : 0;
+	const BYTE shift    = helper.hasMissing    ? 2 : 1;
+	const BYTE add      = helper.mixedPhasing  ? 1 : 0;
 
 	// temp
 	//const U64 runs_start_pos = runs.buffer_data_uncompressed.pointer;
 
 	// Run limits
-	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*(1 + hasMissing) + hasMixedPhase)) - 1;
+	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*(1 + helper.hasMissing) + helper.mixedPhasing)) - 1;
 
 	// Genotype maps
 	// Map to 0,1,4,5
@@ -190,6 +188,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 
 	U32 ppa_pos = 1;
 	BYTE last_phase = (allele2 & 1);
+	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++ppa_pos){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[ppa_pos]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[ppa_pos]+sizeof(SBYTE)]);
@@ -228,6 +227,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
+	assert(helper.n_runs == n_runs);
 	runs.n_additions += n_runs;
 
 	/*
@@ -251,8 +251,8 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 template <class YON_RLE_TYPE>
 bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 		                                        container_type& runs,
-												           U64& n_runs,
-													 const U32* const ppa){
+													 const U32* const ppa,
+										 const rle_helper_type& helper){
 	const BYTE ploidy   = 2;
 	U32 bcf_gt_pos      = line.p_genotypes; // virtual byte offset of genotype start
 	U32 sumLength       = 0;
@@ -268,6 +268,7 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	YON_RLE_TYPE packed = PACK_DIPLOID_NALLELIC(allele2, allele1, shift);
 
 	U32 j = 1;
+	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
@@ -306,6 +307,7 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
+	assert(helper.n_runs == n_runs);
 
 	runs.n_additions += n_runs;
 #if ENCODER_GT_DEBUG == 1

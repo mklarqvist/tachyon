@@ -31,7 +31,7 @@ public:
 		container_meta(&block.gt_support_data_container),
 		iterator_gt_meta(block.gt_support_data_container),
 		iterator_meta(block.getMetaIterator())
-{}
+	{}
 
 	virtual ~GenotypeIterator(){}
 
@@ -62,7 +62,7 @@ public:
 	const container_type*     container_simple;
 	const container_type*     container_meta;
 	container_iterator_type   iterator_gt_meta;  // iterator over n_runs and target stream
-	meta_iterator_type* iterator_meta;
+	meta_iterator_type*       iterator_meta;
 };
 
 

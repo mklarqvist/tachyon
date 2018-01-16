@@ -30,9 +30,9 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 
 	// This is requirement for stride data
 	if(support.n_entries == 0){
-		support.header.controller.type = Core::YON_TYPE_32B;
-		support.header.controller.signedness = 0;
-		support.header_stride.controller.type = Core::YON_TYPE_32B;
+		support.header.controller.type              = Core::YON_TYPE_32B;
+		support.header.controller.signedness        = 0;
+		support.header_stride.controller.type       = Core::YON_TYPE_32B;
 		support.header_stride.controller.signedness = 0;
 	}
 
@@ -55,25 +55,25 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		meta_base.controller.diploid          = true;
 		meta_base.controller.mixed_ploidy     = false;
 
-		++runs.n_entries;
+		++runs;
 		support += (U32)cost.n_runs;
 		++support;
 
 		switch(cost.word_width){
 		case 1:
-			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, ppa, cost);
 			meta_base.controller.gt_primtive_type = Core::YON_BYTE;
 			break;
 		case 2:
-			this->EncodeDiploidRLEBiallelic<U16>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U16>(line, runs, ppa, cost);
 			meta_base.controller.gt_primtive_type = Core::YON_U16;
 			break;
 		case 4:
-			this->EncodeDiploidRLEBiallelic<U32>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U32>(line, runs, ppa, cost);
 			meta_base.controller.gt_primtive_type = Core::YON_U32;
 			break;
 		case 8:
-			this->EncodeDiploidRLEBiallelic<U64>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
+			this->EncodeDiploidRLEBiallelic<U64>(line, runs, ppa, cost);
 			meta_base.controller.gt_primtive_type = Core::YON_U64;
 			break;
 		default:
@@ -121,19 +121,19 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 
 			switch(cost.word_width){
 			case 1:
-				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, cost.n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, ppa, cost);
 				meta_base.controller.gt_primtive_type = Core::YON_BYTE;
 				break;
 			case 2:
-				this->EncodeDiploidRLEnAllelic<U16>(line, simple, cost.n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U16>(line, simple, ppa, cost);
 				meta_base.controller.gt_primtive_type = Core::YON_U16;
 				break;
 			case 4:
-				this->EncodeDiploidRLEnAllelic<U32>(line, simple, cost.n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U32>(line, simple, ppa, cost);
 				meta_base.controller.gt_primtive_type = Core::YON_U32;
 				break;
 			case 8:
-				this->EncodeDiploidRLEnAllelic<U64>(line, simple, cost.n_runs, ppa);
+				this->EncodeDiploidRLEnAllelic<U64>(line, simple, ppa, cost);
 				meta_base.controller.gt_primtive_type = Core::YON_U64;
 				break;
 			default:
@@ -149,6 +149,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		else {
 			if(!support.checkStrideSize(3))
 				support.setMixedStrides();
+
 			support.addStride(3);
 			support += (U32)this->n_samples*2;
 			++support;

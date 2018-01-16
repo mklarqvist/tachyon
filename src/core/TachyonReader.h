@@ -232,7 +232,7 @@ public:
 				++a;
 			}
 			std::cerr << std::endl;
-			std::cerr << "Total cost: " << total_cost << "/" << a.size_data() << std::endl;
+			std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
 		} else if(this->block.gt_support_data_container.header.controller.type == 0){
 			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&temp);
 			for(U32 i = 0; i < temp.size(); ++i){
@@ -326,7 +326,6 @@ public:
 			}
 
 			if(this->settings.loadFormatAll){
-
 				// Start FORMAT description field
 				const Index::IndexBlockEntryBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
 				const U32 n_keys_format = target_format_vector.n_keys;
