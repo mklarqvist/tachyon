@@ -111,7 +111,7 @@ public:
 		this->info_id_iterator.setup(container);
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			this->info_id_iterator.getDataIterator().currentPointer(p);
+			this->info_id_iterator.getDataIterator()->currentPointer(p);
 			this->entries[i]->getInfoPatternID() = *(S32*)p;
 			++this->info_id_iterator;
 		}
@@ -124,7 +124,7 @@ public:
 		this->filter_id_iterator.setup(container);
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			this->filter_id_iterator.getDataIterator().currentPointer(p);
+			this->filter_id_iterator.getDataIterator()->currentPointer(p);
 			this->entries[i]->getFilterPatternID() = *(S32*)p;
 			++this->filter_id_iterator;
 		}
@@ -137,7 +137,7 @@ public:
 		this->format_id_iterator.setup(container);
 		const void* p;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			this->format_id_iterator.getDataIterator().currentPointer(p);
+			this->format_id_iterator.getDataIterator()->currentPointer(p);
 			this->entries[i]->getFormatPatternID() = *(S32*)p;
 			++this->format_id_iterator;
 		}

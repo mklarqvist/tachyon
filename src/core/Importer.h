@@ -74,8 +74,7 @@ private:
 	// Data container
 	block_type block;
 
-	// Use during import
-	// Never stored
+	// Use during import only
 	hash_container_type info_fields;
 	hash_container_type format_fields;
 	hash_container_type filter_fields;

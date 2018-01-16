@@ -130,11 +130,24 @@ public:
 
 
 	/**<
-	 *
+	 * Generates a CRC32 checksum of the uncompressed
+	 * data and, if set, the uncompressed strides data.
+	 * CRC32 checksums are stored in the header
 	 * @return
 	 */
 	const bool generateCRC(void);
 
+	/**<
+	 *
+	 * Targets:
+	 * 0: Uncompressed data
+	 * 1: Uncompressed strides data
+	 * 2: Compressed data
+	 * 3: Compressed strides data
+	 *
+	 * @param target Target buffer stream
+	 * @return       Returns TRUE if passing checks or FALSE otherwise
+	 */
 	bool checkCRC(int target = 0);
 
 	/**<
@@ -153,11 +166,11 @@ public:
 	 */
 	void reformatStride(void);
 
-	inline const U32 getDiskSize(void) const{
+	inline const U32 getObjectSize(void) const{
 		U32 total_size = 0;
-		total_size += header.getDiskSize();
+		total_size += header.getObjectSize();
 		if(this->header.controller.mixedStride)
-			total_size += header_stride.getDiskSize();
+			total_size += header_stride.getObjectSize();
 
 		total_size += this->buffer_data.pointer;
 		if(this->header.controller.mixedStride)

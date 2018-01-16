@@ -89,8 +89,8 @@ public:
 		if(this->hasStrideIteratorSet) ++(*this->stride_iterator);
 	}
 
-	inline data_iterator_type& getDataIterator(void){ return(*this->data_iterator); }
-	inline stride_iterator_type& getStrideIterator(void){ return(*this->stride_iterator); }
+	inline data_iterator_type* getDataIterator(void) const{ return(this->data_iterator); }
+	inline stride_iterator_type* getStrideIterator(void) const{ return(this->stride_iterator); }
 
 public:
 	U32 position;                           // iterator position

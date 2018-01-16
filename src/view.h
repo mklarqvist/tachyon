@@ -104,7 +104,7 @@ int view(int argc, char** argv){
 		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 
-	Tachyon::Core::TachyonReader reader;
+	Tachyon::TachyonReader reader;
 	reader.settings.loadAll();
 	//reader.settings.loadPPA = false;
 	if(dropInfo)   reader.settings.unsetInfo();
@@ -134,7 +134,7 @@ int view(int argc, char** argv){
 		return 1;
 	}
 
-	while(reader.getBlock()){
+	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
 		reader.toVCFString();
 		//reader.iterateMeta();

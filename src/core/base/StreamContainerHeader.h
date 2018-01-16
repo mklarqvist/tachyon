@@ -144,7 +144,7 @@ struct StreamContainerHeader{
 		return(stream);
 	}
 
-	const U32 getDiskSize(void) const{
+	const U32 getObjectSize(void) const{
 		U32 total_size = 2*sizeof(U16) + sizeof(S16) + sizeof(U32)*4;
 		if(this->n_extra > 0)
 			total_size += this->n_extra;
@@ -278,7 +278,7 @@ struct StreamContainerHeaderStride{
 		return(stream);
 	}
 
-	const U32 getDiskSize(void) const{
+	const U32 getObjectSize(void) const{
 		U32 total_size = 2*sizeof(U16) + 3*sizeof(U32);
 		if(this->n_extra > 0)
 			total_size += this->n_extra;

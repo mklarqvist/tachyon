@@ -358,7 +358,7 @@ public:
 	// data we want to store
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
-	const U32 getDiskSize(void) const{
+	const U32 getObjectSize(void) const{
 		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
 		total_size += 2*sizeof(U32)*this->n_info_streams;
 		total_size += 2*sizeof(U32)*this->n_format_streams;

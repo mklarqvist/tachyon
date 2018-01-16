@@ -14,15 +14,14 @@
 #include "iterator/GenotypeIterator.h"
 
 namespace Tachyon{
-namespace Core{
 
 class TachyonReader{
 	typedef TachyonReader self_type;
 	typedef Core::BlockEntry block_entry_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef Header header_type;
+	typedef Core::Header header_type;
 	typedef Compression::CompressionManager codec_manager_type;
-	typedef BlockEntrySettings settings_type;
+	typedef Core::BlockEntrySettings settings_type;
 	typedef Index::SortedIndex index_type;
 
 public:
@@ -36,14 +35,17 @@ public:
 
 	}
 
-	bool open(void);
-
-	bool open(const std::string& filename){
-		if(filename.size() == 0){
+	/**<
+	 * Opens a YON file. Performs all prerequisite
+	 * checks and loads all auxiliary data structures
+	 * @return Returns TRUE upon success or FALSE otherwise
+	 */
+	bool open(void){
+		if(this->input_file.size() == 0){
 			std::cerr << "no filename" << std::endl;
 			return false;
 		}
-		this->stream.open(filename, std::ios::binary | std::ios::in | std::ios::ate);
+		this->stream.open(this->input_file, std::ios::binary | std::ios::in | std::ios::ate);
 		this->filesize = (U64)this->stream.tellg();
 		if(!this->stream.good()){
 			std::cerr << "failed to read file" << std::endl;
@@ -55,13 +57,16 @@ public:
 			return false;
 		}
 
+		// Load header
 		this->stream << this->header;
 		if(!this->stream.good()){
 			std::cerr << "failed to get header" << std::endl;
 			return false;
 		}
+		// Keep track of start position
 		const U64 return_pos = this->stream.tellg();
 
+		// Seek to EOF and make check
 		this->stream.seekg(this->filesize - 32);
 		BYTE eof_data[32];
 		Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
@@ -73,38 +78,88 @@ public:
 				return false;
 			}
 		}
+		// Seek back to find start of index
+		// Seek to that start of index
+		// Load index
+		// Seek back to start of the file
 		this->stream.seekg(this->filesize - 32 - sizeof(U64));
 		this->stream.read((char*)reinterpret_cast<char*>(&this->l_data), sizeof(U64));
 		this->stream.seekg(this->l_data);
 		this->stream >> this->index;
 		this->stream.seekg(return_pos);
 
-		return true;
+		return(this->stream.good());
 	}
 
-	bool getBlock(){
+	/**<
+	 * Opens a YON file. Performs all prerequisite
+	 * checks and loads all auxiliary data structures
+	 * @param filename Target input filename
+	 * @return Returns TRUE upon success or FALSE otherwise
+	 */
+	bool open(const std::string& filename){
+		this->input_file = filename;
+		return(this->open());
+	}
+
+	/**<
+	 * Overloaded operator for blocks. Useful when
+	 * looping over a range of blocks. This happens
+	 * frequently in parallel programs.
+	 * @param index Block index value in range [0..n_blocks)
+	 * @return      Returns TRUE if operation was successful or FALSE otherwise
+	 */
+	bool operator[](const U32 index);
+
+	/**<
+	 * Get the next YON block in-order
+	 * @return Returns TRUE if successful or FALSE otherwise
+	 */
+	bool getNextBlock(){
+		// If the stream is faulty then return
 		if(!this->stream.good()){
 			std::cerr << "faulty stream" << std::endl;
 			return false;
 		}
 
+		// If the current position is the EOF then
+		// exit the function
 		if((U64)this->stream.tellg() == this->l_data)
 			return false;
 
-		// Reset
+		// Reset and re-use
 		this->block.clear();
 
+		// Attempts to read a YON block with the provided
+		// settings
 		if(!this->block.read(stream, this->settings))
 			return false;
 
-		// Phase 1: Decode data
+		// Internally decompress available data
 		if(!this->codec_manager.decompress(this->block))
 			return false;
 
+		// All passed
 		return true;
 	}
 
+	/**<
+	 * Seeks to a specific YON block without loading anything.
+	 * This allows the user to seek to a specific block and
+	 * change the settings (i.e. what fields to load) and
+	 * then invoke nextBlock() for example.
+	 * @param b
+	 * @return
+	 */
 	bool seekBlock(const U32& b);
+
+	/**<
+	 * Move all internal pointers up to the next available
+	 * variant. If the next variant is in another block then
+	 * load that block by invoking nextBlock().
+	 * @return Returns TRUE if successful or FALSE otherwise
+	 */
+	bool nextVariant(void);
 
 	bool toVCFStringFast(std::ostream& stream = std::cout){
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
@@ -215,7 +270,7 @@ public:
 
 
 		Iterator::GenotypeIterator it_gt(this->block);
-		Iterator::ContainerIteratorDataInterface& temp = it_gt.iterator_gt_meta.getDataIterator();
+		Iterator::ContainerIteratorDataInterface& temp = *it_gt.iterator_gt_meta.getDataIterator();
 		std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
 		std::cerr << "Size: " << temp.size() << std::endl;
 		std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
@@ -233,14 +288,19 @@ public:
 			}
 			std::cerr << std::endl;
 			std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
+			assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
 		} else if(this->block.gt_support_data_container.header.controller.type == 0){
 			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&temp);
 			for(U32 i = 0; i < temp.size(); ++i){
-				std::cerr << (int)a.current() << ',';
+				const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
+				std::cerr << (int)a.current() << ':' << m.hot.controller.gt_rle << ',' << m.hot.controller.gt_primtive_type << ' ';
+				total_cost += cost[m.hot.controller.gt_primtive_type] * a.current();
 				++a;
 			}
-			std::cerr << std::endl;
+			std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
+			assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
 		}
+		/*
 		if(this->block.gt_support_data_container.header.controller.mixedStride){
 			Iterator::ContainerIteratorDataInterface& s = it_gt.iterator_gt_meta.getStrideIterator();
 			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&s);
@@ -250,6 +310,7 @@ public:
 			}
 			std::cerr << std::endl;
 		}
+		*/
 
 
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
@@ -408,7 +469,6 @@ private:
 	buffer_type* internal_buffers;
 };
 
-}
 }
 
 #endif /* CORE_TACHYONREADER_H_ */

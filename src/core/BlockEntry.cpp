@@ -90,44 +90,44 @@ void BlockEntry::updateBaseContainers(void){
 }
 
 void BlockEntry::updateOffsets(void){
-	U32 cum_size = this->index_entry.getDiskSize();
+	U32 cum_size = this->index_entry.getObjectSize();
 	this->index_entry.offset_ppa.offset = cum_size;
-	cum_size += this->ppa_manager.getDiskSize();
+	cum_size += this->ppa_manager.getObjectSize();
 
 	this->index_entry.offset_hot_meta.offset = cum_size;
-	cum_size += this->meta_hot_container.getDiskSize();
+	cum_size += this->meta_hot_container.getObjectSize();
 
 	this->index_entry.offset_cold_meta.offset = cum_size;
-	cum_size += this->meta_cold_container.getDiskSize();
+	cum_size += this->meta_cold_container.getObjectSize();
 
 	this->index_entry.offset_gt_rle.offset = cum_size;
-	cum_size += this->gt_rle_container.getDiskSize();
+	cum_size += this->gt_rle_container.getObjectSize();
 
 	this->index_entry.offset_gt_simple.offset = cum_size;
-	cum_size += this->gt_simple_container.getDiskSize();
+	cum_size += this->gt_simple_container.getObjectSize();
 
 
 	this->index_entry.offset_gt_helper.offset = cum_size;
-	cum_size += this->gt_support_data_container.getDiskSize();
+	cum_size += this->gt_support_data_container.getObjectSize();
 
 	this->index_entry.offset_meta_info_id.offset = cum_size;
-	cum_size += this->meta_info_map_ids.getDiskSize();
+	cum_size += this->meta_info_map_ids.getObjectSize();
 
 	this->index_entry.offset_meta_filter_id.offset = cum_size;
-	cum_size += this->meta_filter_map_ids.getDiskSize();
+	cum_size += this->meta_filter_map_ids.getObjectSize();
 
 	this->index_entry.offset_meta_format_id.offset = cum_size;
-	cum_size += this->meta_format_map_ids.getDiskSize();
+	cum_size += this->meta_format_map_ids.getObjectSize();
 
 
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 		this->index_entry.info_offsets[i].offset = cum_size;
-		cum_size += this->info_containers[i].getDiskSize();
+		cum_size += this->info_containers[i].getObjectSize();
 	}
 
 	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
 		this->index_entry.format_offsets[i].offset = cum_size;
-		cum_size += this->format_containers[i].getDiskSize();
+		cum_size += this->format_containers[i].getObjectSize();
 	}
 
 	// Size of EOF marker
