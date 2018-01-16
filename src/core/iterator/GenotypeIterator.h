@@ -35,9 +35,15 @@ public:
 		container_meta(&block.gt_support_data_container),
 		iterator_gt_meta(block.gt_support_data_container),
 		iterator_meta(block.getMetaIterator()),
-		getTargetFunction(nullptr),
 		getNumberObjectsFunction(nullptr)
-	{}
+	{
+		switch(this->container_meta->header.controller.type){
+		case(Core::YON_BYTE): this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<BYTE>; break;
+		case(Core::YON_U16):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U16>;  break;
+		case(Core::YON_U32):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U32>;  break;
+		case(Core::YON_U64):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U64>;  break;
+		}
+	}
 
 	virtual ~GenotypeIterator(){
 		delete this->iterator_meta;
@@ -46,19 +52,14 @@ public:
 	// std::vector<some_abstract_genotype_object> toVector(void) const;
 	inline const meta_iterator_type* getIteratorMeta(void){ return(this->iterator_meta); }
 
-	void reset(void);
-
-private:
-	//virtual void toVCFString(std::ostream& stream) const =0;
-
 	/**<
-	 * Returns the target stream for holding the current
-	 * @return
+	 * Reset and reuse
 	 */
-	const U32 getCurrentTargetStream(void) const;
-
-	template <class T>
-	const U32 __getCurrentTargetStream(void) const;
+	inline void reset(void){
+		this->current_position = 0;
+		this->iterator_meta->reset();
+		this->iterator_gt_meta.reset();
+	}
 
 	/**<
 	 * Returns the GT object length: this is either
@@ -66,19 +67,32 @@ private:
 	 * value 1 for non-run-length encoded objects
 	 * @return
 	 */
-	const U32 getCurrentObjectLength(void) const{
-		switch(this->container_meta->header.controller.type){
-		case(Core::YON_BYTE): return(this->__getCurrentObjectLength<BYTE>());
-		case(Core::YON_U16):  return(this->__getCurrentObjectLength<U16>());
-		case(Core::YON_U32):  return(this->__getCurrentObjectLength<U32>());
-		case(Core::YON_U64):  return(this->__getCurrentObjectLength<U64>());
-		}
+	inline const U32 getCurrentObjectLength(void) const{ return((this->*getNumberObjectsFunction)()); }
+
+	/**<
+	 * Returns the target stream for housing the genotype data
+	 * for the current variant
+	 * @return
+	 */
+	inline const U32 getCurrentTargetStream(void) const{ return(this->iterator_gt_meta.getStrideIterator()->getCurrentStride()); }
+
+	void operator++(void){
+		++this->current_position;
+		this->iterator_gt_meta.incrementSecondaryUsage(); // internals take care of this
+
 	}
+	void operator--(void);
+	void operator[](const U32 p);
+	void operator+=(const U32 p);
+	void operator-=(const U32 p);
+
+private:
+	//virtual void toVCFString(std::ostream& stream) const =0;
 
 	template <class T>
 	inline const U32 __getCurrentObjectLength(void) const{
-		Iterator::ContainerIteratorType<T>& a = *reinterpret_cast< Iterator::ContainerIteratorType<T>* >(iterator_gt_meta.getDataIterator());
-		return(a.current());
+		const Iterator::ContainerIteratorType<T>& it = *reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_meta.getDataIterator());
+		return(it.current());
 	}
 
 public:
@@ -92,10 +106,8 @@ public:
 	const container_type*     container_meta;
 	container_iterator_type   iterator_gt_meta;  // iterator over n_runs and target stream
 	meta_iterator_type*       iterator_meta;
-	// function pointer to getTarget
-	getFunctionType*          getTargetFunction;
 	// function pointer to getNumberObjects
-	getFunctionType*          getNumberObjectsFunction;
+	getFunctionType           getNumberObjectsFunction;
 };
 
 

@@ -218,6 +218,8 @@ public:
 		this->position -= p;
 	}
 
+	void reset(void){ this->position = 0; }
+
 	/**<
 	 *
 	 * @param stream

@@ -82,8 +82,14 @@ public:
 
 	// Increment operator
 	void operator++(void);
+	void reset(void){
+		this->getDataIterator()->reset();
+		if(this->hasStrideIteratorSet)
+			this->getStrideIterator()->reset();
+	}
 
 	void increment(const bool updateStride = true);
+	void incrementSecondaryUsage(void);
 
 	inline void incrementStride(void){
 		if(this->hasStrideIteratorSet) ++(*this->stride_iterator);

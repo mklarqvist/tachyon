@@ -271,46 +271,23 @@ public:
 
 		Iterator::GenotypeIterator it_gt(this->block);
 		Iterator::ContainerIteratorDataInterface& temp = *it_gt.iterator_gt_meta.getDataIterator();
-		std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
-		std::cerr << "Size: " << temp.size() << std::endl;
-		std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
+		//std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
+		//std::cerr << "Size: " << temp.size() << std::endl;
+		//std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
 
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
 		U64 total_cost = 0;
-		if(this->block.gt_support_data_container.header.controller.type == 2){
-			Iterator::ContainerIteratorType<U32>& a = *reinterpret_cast< Iterator::ContainerIteratorType<U32>* >(&temp);
-			for(U32 i = 0; i < temp.size(); ++i){
-				const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
-				std::cerr << a.current() << ':' << m.hot.controller.gt_rle << ',' << m.hot.controller.gt_primtive_type << ' ';
-				total_cost += cost[m.hot.controller.gt_primtive_type] * a.current();
-				++a;
-			}
-			std::cerr << std::endl;
-			std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
-			assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
-		} else if(this->block.gt_support_data_container.header.controller.type == 0){
-			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&temp);
-			for(U32 i = 0; i < temp.size(); ++i){
-				const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
-				std::cerr << (int)a.current() << ':' << m.hot.controller.gt_rle << ',' << m.hot.controller.gt_primtive_type << ' ';
-				total_cost += cost[m.hot.controller.gt_primtive_type] * a.current();
-				++a;
-			}
-			std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
-			assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
+		for(U32 i = 0; i < temp.size(); ++i){
+			const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
+			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
+			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
+			++it_gt;
 		}
-		/*
-		if(this->block.gt_support_data_container.header.controller.mixedStride){
-			Iterator::ContainerIteratorDataInterface& s = it_gt.iterator_gt_meta.getStrideIterator();
-			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&s);
-			for(U32 i = 0; i < temp.size(); ++i){
-				std::cerr << (int)a.current() << ',';
-				++a;
-			}
-			std::cerr << std::endl;
-		}
-		*/
+		//std::cerr << std::endl;
+		std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
+		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
+		it_gt.reset();
 
 
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory

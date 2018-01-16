@@ -161,6 +161,8 @@ public:
 	inline void operator+=(const U32& p){ this->n_position += p; }
 	inline void operator-=(const U32& p){ this->n_position -= p; }
 
+	void reset(void){ this->n_position = 0;}
+
 	std::vector<entry_type> getEntries(void);
 
 private:
