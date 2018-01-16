@@ -61,6 +61,7 @@ public:
 	virtual ~ContainerIteratorDataInterface(){}
 
 	inline const S32& size(void) const{ return(this->n_entries); }
+	inline const U64& size_data(void) const{ return(this->buffer.size()); }
 
 	/**<
 	 * Returns a value of type T at the current position

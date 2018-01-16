@@ -62,7 +62,7 @@ public:
 	const container_type*     container_simple;
 	const container_type*     container_meta;
 	container_iterator_type   iterator_gt_meta;  // iterator over n_runs and target stream
-	const meta_iterator_type* iterator_meta;
+	meta_iterator_type* iterator_meta;
 };
 
 

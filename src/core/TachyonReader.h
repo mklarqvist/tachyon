@@ -131,23 +131,23 @@ public:
 
 		// One buffer per variant
 		// Faster output?
-		//std::cerr << this->block.index_entry.size() << '/' << this->n_internal_buffers << std::endl;
-		if(this->block.index_entry.size() > this->n_internal_buffers){
+		//std::cerr << this->block.size() << '/' << this->n_internal_buffers << std::endl;
+		if(this->block.size() > this->n_internal_buffers){
 			//std::cerr << "here: " << this->n_internal_buffers << std::endl;
 			for(U32 i = 0; i < this->n_internal_buffers; ++i)
 				this->internal_buffers[i].deleteAll();
 			delete [] this->internal_buffers;
 
-			this->n_internal_buffers = this->block.index_entry.size() * 5;
-			this->internal_buffers = new buffer_type[5*this->block.index_entry.size()];
-			for(U32 i = 0; i < 5*this->block.index_entry.size(); ++i){
+			this->n_internal_buffers = this->block.size() * 5;
+			this->internal_buffers = new buffer_type[5*this->block.size()];
+			for(U32 i = 0; i < 5*this->block.size(); ++i){
 				this->internal_buffers[i].resize(5012);
 				//std::cerr << i << '\t' << this->internal_buffers[i].capacity() << std::endl;
 			}
 		}
 
 		// Base
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+		for(U32 i = 0; i < this->block.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
 
 			m.toVCFString(this->internal_buffers[i],
@@ -172,7 +172,7 @@ public:
 				for(U32 k = 0; k < n_keys; ++k){
 					const U32& current_key = keys[k];
 
-					for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+					for(U32 i = 0; i < this->block.size(); ++i){
 						const Core::MetaEntry& m = (*it)[i];
 						if(m.getInfoPatternID() != p)
 							continue;
@@ -187,7 +187,7 @@ public:
 			}
 		}
 
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+		for(U32 i = 0; i < this->block.size(); ++i){
 			stream.write(this->internal_buffers[i].data, this->internal_buffers[i].pointer);
 			stream.put('\n');
 			this->internal_buffers[i].reset();
@@ -213,19 +213,26 @@ public:
 		}
 		*/
 
+
 		Iterator::GenotypeIterator it_gt(this->block);
 		Iterator::ContainerIteratorDataInterface& temp = it_gt.iterator_gt_meta.getDataIterator();
 		std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
 		std::cerr << "Size: " << temp.size() << std::endl;
 		std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
 
+		U32 cost[4];
+		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
+		U64 total_cost = 0;
 		if(this->block.gt_support_data_container.header.controller.type == 2){
 			Iterator::ContainerIteratorType<U32>& a = *reinterpret_cast< Iterator::ContainerIteratorType<U32>* >(&temp);
 			for(U32 i = 0; i < temp.size(); ++i){
-				std::cerr << a.current() << ',';
+				const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
+				std::cerr << a.current() << ':' << m.hot.controller.gt_rle << ',' << m.hot.controller.gt_primtive_type << ' ';
+				total_cost += cost[m.hot.controller.gt_primtive_type] * a.current();
 				++a;
 			}
 			std::cerr << std::endl;
+			std::cerr << "Total cost: " << total_cost << "/" << a.size_data() << std::endl;
 		} else if(this->block.gt_support_data_container.header.controller.type == 0){
 			Iterator::ContainerIteratorType<BYTE>& a = *reinterpret_cast< Iterator::ContainerIteratorType<BYTE>* >(&temp);
 			for(U32 i = 0; i < temp.size(); ++i){
@@ -243,6 +250,7 @@ public:
 			}
 			std::cerr << std::endl;
 		}
+
 
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
@@ -266,7 +274,7 @@ public:
 			}
 		}
 
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+		for(U32 i = 0; i < this->block.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
 
 			//stream << m.hot.controller.mixed_phasing << ":" << m.hot.controller.phase << ';' << m.hot.controller.anyMissing << ',' << m.hot.controller.anyNA << ':' <<
@@ -372,10 +380,13 @@ public:
 	bool iterateMeta(std::ostream& stream = std::cout){
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
-		for(U32 i = 0; i < this->block.index_entry.size(); ++i){
+		//U32 biallelic = 0;
+		for(U32 i = 0; i < this->block.size(); ++i){
 			const Core::MetaEntry& m = (*it)[i];
+			//biallelic += m.isBiallelic();
 
 		}
+		//std::cerr << biallelic << '/' << this->block.size() << std::endl;
 
 		delete it;
 		return true;

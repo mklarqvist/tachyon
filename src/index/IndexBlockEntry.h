@@ -14,7 +14,7 @@
 namespace Tachyon{
 namespace Index{
 
-#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U16) + 2*sizeof(U32)*9 + 6*sizeof(U16)
+#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 2*sizeof(U32)*9 + 6*sizeof(U16)
 
 /** @brief Controller flags for an IndexBlockEntry
  * This structure is for internal use only and describes
@@ -81,7 +81,7 @@ public:
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.minPosition), sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.maxPosition), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U32));
 		stream << entry.offset_ppa;
 		stream << entry.offset_hot_meta;
 		stream << entry.offset_cold_meta;
@@ -107,7 +107,7 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.contigID),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.minPosition), sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&entry.maxPosition), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),  sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),  sizeof(U32));
 		stream >> entry.offset_ppa;
 		stream >> entry.offset_hot_meta;
 		stream >> entry.offset_cold_meta;
@@ -176,7 +176,7 @@ public:
 	S32 contigID;       // contig identifier
 	U64 minPosition;    // minimum coordinate in this block
 	U64 maxPosition;    // maximum coordinate in this block
-	U16 n_variants;     // number of variants in this block
+	U32 n_variants;     // number of variants in this block
 
 	// Virtual offsets to the start of various
 	// basic fields:

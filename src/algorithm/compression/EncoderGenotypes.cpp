@@ -46,14 +46,14 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			support.setMixedStrides();
 
 		support.addStride(1);
-		meta_base.controller.rle           = true;
-		meta_base.controller.mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.anyMissing    = cost.hasMissing;
-		meta_base.controller.biallelic     = true;
-		meta_base.controller.anyNA         = cost.anyNA;
-		meta_base.controller.phase         = cost.phased;
-		meta_base.controller.diploid       = true;
-		meta_base.controller.mixed_ploidy  = false;
+		meta_base.controller.gt_rle           = true;
+		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
+		meta_base.controller.gt_anyMissing    = cost.hasMissing;
+		meta_base.controller.biallelic        = true;
+		meta_base.controller.gt_anyNA         = cost.anyNA;
+		meta_base.controller.gt_phase         = cost.phased;
+		meta_base.controller.diploid          = true;
+		meta_base.controller.mixed_ploidy     = false;
 
 		++runs.n_entries;
 		support += (U32)cost.n_runs;
@@ -62,19 +62,19 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		switch(cost.word_width){
 		case 1:
 			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
-			meta_base.controller.rle_type = Core::YON_BYTE;
+			meta_base.controller.gt_primtive_type = Core::YON_BYTE;
 			break;
 		case 2:
 			this->EncodeDiploidRLEBiallelic<U16>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
-			meta_base.controller.rle_type = Core::YON_U16;
+			meta_base.controller.gt_primtive_type = Core::YON_U16;
 			break;
 		case 4:
 			this->EncodeDiploidRLEBiallelic<U32>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
-			meta_base.controller.rle_type = Core::YON_U32;
+			meta_base.controller.gt_primtive_type = Core::YON_U32;
 			break;
 		case 8:
 			this->EncodeDiploidRLEBiallelic<U64>(line, runs, cost.n_runs, ppa, cost.hasMissing, cost.mixedPhasing);
-			meta_base.controller.rle_type = Core::YON_U64;
+			meta_base.controller.gt_primtive_type = Core::YON_U64;
 			break;
 		default:
 			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
@@ -86,14 +86,14 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 	else { // Case diploid n-allelic
 		cost = this->assessDiploidRLEnAllelic(line, ppa);
 
-		meta_base.controller.biallelic     = false;
-		meta_base.controller.mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.anyMissing    = cost.hasMissing;
-		meta_base.controller.biallelic     = false;
-		meta_base.controller.anyNA         = cost.anyNA;
-		meta_base.controller.phase         = cost.phased;
-		meta_base.controller.diploid       = true;
-		meta_base.controller.mixed_ploidy  = false;
+		meta_base.controller.biallelic        = false;
+		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
+		meta_base.controller.gt_anyMissing    = cost.hasMissing;
+		meta_base.controller.biallelic        = false;
+		meta_base.controller.gt_anyNA         = cost.anyNA;
+		meta_base.controller.gt_phase         = cost.phased;
+		meta_base.controller.diploid          = true;
+		meta_base.controller.mixed_ploidy     = false;
 
 		//std::cerr << (int)cost.word_width << '\t' << cost.n_runs << '\t' << cost.word_width*cost.n_runs << '\t' << costBCFStyle << '\t' << costBCFStyle/double(cost.word_width*cost.n_runs) << std::endl;
 
@@ -112,7 +112,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			support.addStride(2);
 			//std::cerr << line.body->POS+1 << "\t1\t0" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << cost.n_runs*cost.word_width << std::endl;
 
-			meta_base.controller.rle = true;
+			meta_base.controller.gt_rle = true;
 			++simple;
 			support += (U32)cost.n_runs;
 			++support;
@@ -122,19 +122,19 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			switch(cost.word_width){
 			case 1:
 				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, cost.n_runs, ppa);
-				meta_base.controller.rle_type = Core::YON_BYTE;
+				meta_base.controller.gt_primtive_type = Core::YON_BYTE;
 				break;
 			case 2:
 				this->EncodeDiploidRLEnAllelic<U16>(line, simple, cost.n_runs, ppa);
-				meta_base.controller.rle_type = Core::YON_U16;
+				meta_base.controller.gt_primtive_type = Core::YON_U16;
 				break;
 			case 4:
 				this->EncodeDiploidRLEnAllelic<U32>(line, simple, cost.n_runs, ppa);
-				meta_base.controller.rle_type = Core::YON_U32;
+				meta_base.controller.gt_primtive_type = Core::YON_U32;
 				break;
 			case 8:
 				this->EncodeDiploidRLEnAllelic<U64>(line, simple, cost.n_runs, ppa);
-				meta_base.controller.rle_type = Core::YON_U64;
+				meta_base.controller.gt_primtive_type = Core::YON_U64;
 				break;
 			default:
 				std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
@@ -154,8 +154,8 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			++support;
 			//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
 
-			meta_base.controller.rle      = false;
-			meta_base.controller.rle_type = 0;
+			meta_base.controller.gt_rle = false;
+			meta_base.controller.gt_primtive_type = 0;
 			++simple;
 
 			U64 n_runs = this->n_samples*2;

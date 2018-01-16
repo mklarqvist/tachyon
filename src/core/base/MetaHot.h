@@ -25,14 +25,14 @@ enum TACHYON_GT_TYPE{
 struct MetaHotController{
 	// Ctor
 	explicit MetaHotController(void) :
-		anyMissing(0),
-		phase(0),
-		anyNA(0),
-		mixed_phasing(0),
+		gt_anyMissing(0),
+		gt_phase(0),
+		gt_anyNA(0),
+		gt_mixed_phasing(0),
 		biallelic(0),
 		simple(0),
-		rle(0),
-		rle_type(0),
+		gt_rle(0),
+		gt_primtive_type(0),
 		diploid(0),
 		mixed_ploidy(0),
 		unused(6)
@@ -56,14 +56,14 @@ struct MetaHotController{
 	 *
 	 * If the genotypes are NOT diploid then
 	 */
-	U16 anyMissing:    1, // any missing
-        phase:         1, // all phased
-		anyNA:         1, // any NA
-        mixed_phasing: 1, // has mixed phasing
+	U16 gt_anyMissing:    1, // any missing
+        gt_phase:         1, // all phased
+		gt_anyNA:         1, // any NA
+        gt_mixed_phasing: 1, // has mixed phasing
         biallelic:     1, // is biallelic
         simple:        1, // is simple SNV->SNV
-        rle:           1, // uses RLE compression
-		rle_type:      2, // type of RLE (BYTE, U16, U32, U64)
+        gt_rle:           1, // uses RLE compression
+		gt_primtive_type:      2, // type of RLE (BYTE, U16, U32, U64)
 		diploid:       1, // is diploid
 		mixed_ploidy:  1, // has mixed ploidy (e.g. X chromosome or CNV)
 		unused:        5; // reserved
@@ -139,14 +139,14 @@ public:
 	// Supportive boolean functions
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
-	inline const bool isRLE(void) const{ return(this->controller.rle); }
+	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 
 	const TACHYON_GT_TYPE getGenotypeType(void) const{
-		if(this->controller.rle && this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_BIALLELIC;
-		else if(this->controller.rle && !this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
-		else if(!this->controller.rle && this->controller.diploid) return YON_GT_DIPLOID_BCF;
+		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_BIALLELIC;
+		else if(this->controller.gt_rle && !this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
+		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_DIPLOID_BCF;
 		else return YON_GT_UNKNOWN;
 	}
 

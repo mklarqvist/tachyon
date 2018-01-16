@@ -51,7 +51,7 @@ public:
 	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
 
 	// Boolean checks
-	inline const bool isBiallelic(void){ return(this->hot.isBiallelic()); }
+	inline const bool isBiallelic(void) const{ return(this->hot.isBiallelic()); }
 	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }
 
 	// Set and get for patterns

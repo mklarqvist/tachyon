@@ -48,6 +48,8 @@ public:
 	 */
 	void clear(void);
 
+	inline const U32 size(void) const{ return(this->index_entry.n_variants); }
+
 	/**<
 	 * Wrapper function for INFO, FORMAT, and FILTER disk
 	 * offsets. Internally generates virtual disk offsets
