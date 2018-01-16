@@ -23,6 +23,7 @@ private:
 	typedef Core::BlockEntry block_type;
 	typedef MetaIterator meta_iterator_type;
 	typedef ContainerIterator container_iterator_type;
+	typedef Core::MetaEntry meta_entry_type;
 
 	typedef const U32 (self_type::*getFunctionType)(void) const;
 
@@ -30,6 +31,7 @@ public:
 	GenotypeIterator(block_type& block) :
 		current_position(0),
 		width(0),
+		status(YON_IT_START),
 		container_rle(&block.gt_rle_container),
 		container_simple(&block.gt_simple_container),
 		container_meta(&block.gt_support_data_container),
@@ -59,6 +61,7 @@ public:
 		this->current_position = 0;
 		this->iterator_meta->reset();
 		this->iterator_gt_meta.reset();
+		this->status = YON_IT_START;
 	}
 
 	/**<
@@ -76,11 +79,19 @@ public:
 	 */
 	inline const U32 getCurrentTargetStream(void) const{ return(this->iterator_gt_meta.getStrideIterator()->getCurrentStride()); }
 
+	/**<
+	 * Support functionality: returns the current MetaEntry from
+	 * the meta entry iterator.
+	 * @return Meta entry reference of current record
+	 */
+	inline meta_entry_type& getCurrentMeta(void) const{ return(this->iterator_meta->current()); }
+
 	void operator++(void){
 		++this->current_position;
+		++(*this->iterator_meta);
 		this->iterator_gt_meta.incrementSecondaryUsage(); // internals take care of this
-
 	}
+
 	void operator--(void);
 	void operator[](const U32 p);
 	void operator+=(const U32 p);
@@ -98,6 +109,7 @@ private:
 public:
 	U32 current_position;
 	U32 width;
+	TACHYON_ITERATOR_STATUS status;
 
 	// RLE iterator
 	// simple iterator

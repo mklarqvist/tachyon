@@ -152,6 +152,8 @@ public:
 	}
 
 	inline entry_type& operator[](const U32& p){ return(*this->entries[p]); }
+	inline entry_type& at(const U32& p){ return((*this)[p]); }
+	inline entry_type& current(void){ return(*this->entries[this->n_position]); }
 
 	inline const S32& size(void) const{ return(this->n_entries); }
 

@@ -275,6 +275,7 @@ public:
 		//std::cerr << "Size: " << temp.size() << std::endl;
 		//std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
 
+		// Todo: iterate over GT data
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
 		U64 total_cost = 0;
@@ -414,12 +415,32 @@ public:
 		return true;
 	}
 
+	bool iterateGT(std::ostream& stream = std::cout){
+		Iterator::GenotypeIterator it_gt(this->block);
+		Iterator::ContainerIteratorDataInterface& temp = *it_gt.iterator_gt_meta.getDataIterator();
+
+		U32 cost[4];
+		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
+		U64 total_cost = 0;
+		for(U32 i = 0; i < temp.size(); ++i){
+			const Core::MetaEntry& m = it_gt.getCurrentMeta();
+			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
+			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
+			++it_gt;
+		}
+		//std::cerr << std::endl;
+		std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
+		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
+		//it_gt.reset();
+		return true;
+	}
+
 	bool iterateMeta(std::ostream& stream = std::cout){
 		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 
 		//U32 biallelic = 0;
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = (*it)[i];
+			//const Core::MetaEntry& m = (*it)[i];
 			//biallelic += m.isBiallelic();
 
 		}
