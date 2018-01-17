@@ -8,6 +8,60 @@
 namespace Tachyon{
 namespace Iterator{
 
+/**<
+ * Primary higher-level abstraction object for interpreted
+ * diploid GT primitives
+ */
+struct GTDiploidObject{
+private:
+	typedef GTDiploidObject self_type;
+	typedef Core::MetaEntry meta_entry_type;
+
+public:
+	GTDiploidObject(const BYTE n_alleles) :
+		n_alleles(n_alleles),
+		n_objects(0),
+		phase(0),
+		alleles(new BYTE[n_alleles])
+	{}
+	~GTDiploidObject(){ delete [] this->alleles; }
+
+	BYTE& operator[](const U32& p){ return(this->alleles[p]); }
+
+	void operator()(const U64& gt_primitive, const meta_entry_type& meta_entry){
+		const Core::TACHYON_GT_TYPE type = meta_entry.hot.getGenotypeType();
+		if(type == Core::YON_GT_RLE_DIPLOID_BIALLELIC){
+			const BYTE shift    = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
+			const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+
+			if(add) this->phase = gt_primitive & 1;
+			else    this->phase = meta_entry.hot.controller.gt_phase;
+
+			this->alleles[0] = (gt_primitive & (1 << (shift + add - 1))) >> (shift + add - 1);
+			this->alleles[1] = (gt_primitive & (1 << (2*shift + add - 1))) >> (2*shift + add - 1);
+			this->n_objects  = gt_primitive >> (2*shift + add);
+		} else if(type == Core::YON_GT_RLE_DIPLOID_NALLELIC){
+			const BYTE shift    = ceil(log2(meta_entry.cold.n_allele + 1)); // Bits occupied per allele
+			// Run limits
+			//const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (2*shift + 1)) - 1;
+			//std::cerr << "shift: " << (int)shift << '\t' << std::bitset<32>(((1 << shift) - 1) << 1) << '\t' << std::bitset<32>(((1 << shift) - 1) << (1+shift)) << std::endl;
+			this->phase = gt_primitive & 1;
+			this->alleles[0] = (gt_primitive & ((1 << shift) - 1) << 1) >> 1;
+			this->alleles[1] = (gt_primitive & ((1 << shift) - 1) << (1+shift)) >> (1+shift);
+			this->n_objects  = gt_primitive >> (2*shift + 1);
+		} else {
+			std::cerr << "not implemented" << std::endl;
+			exit(1);
+		}
+	}
+
+public:
+	const BYTE  n_alleles;
+	U64   n_objects;
+	BYTE  phase;
+	BYTE* alleles;
+};
+
 /**
  * We have several different GT representations
  *
@@ -26,6 +80,7 @@ private:
 	typedef ContainerIterator container_iterator_type;
 	typedef Core::MetaEntry meta_entry_type;
 	typedef IntegerIterator integer_iterator_type;
+	typedef GTDiploidObject gt_diploid_object_type;
 
 	typedef const U32 (self_type::*getFunctionType)(void) const;
 	typedef const U64 (self_type::*getGTFunctionType)(void) const;
@@ -35,6 +90,7 @@ public:
 		current_position(0),
 		width(0),
 		status(YON_IT_START),
+		__diploid_object_type(2),
 		container_rle(&block.gt_rle_container),
 		container_simple(&block.gt_simple_container),
 		container_meta(&block.gt_support_data_container),
@@ -102,15 +158,18 @@ public:
 	 * the pointer to the start of those objects
 	 * @return
 	 */
-	inline U64 getCurrentGTObject(void){
-		if(this->getCurrentTargetStream() == 1) return(this->iterator_gt_rle.current());
-		else return(this->iterator_gt_simple.current());
+	inline const gt_diploid_object_type& getCurrentGTObject(void){
+		if(this->getCurrentTargetStream() == 1) this->__diploid_object_type(this->iterator_gt_rle.current(), this->iterator_meta->current());
+		else this->__diploid_object_type(this->iterator_gt_simple.current(), this->iterator_meta->current());
+		return(this->__diploid_object_type);
+	}
+
+	void incrementGT(void){
+		if(this->getCurrentTargetStream() == 1) ++this->iterator_gt_rle;
+		else ++this->iterator_gt_simple;
 	}
 
 	void operator++(void){
-		if(this->getCurrentTargetStream() == 1) ++this->iterator_gt_rle;
-		else ++this->iterator_gt_simple;
-
 		++this->current_position;
 		++(*this->iterator_meta);
 		this->iterator_gt_meta.incrementSecondaryUsage(1); // internals take care of this
@@ -155,6 +214,8 @@ public:
 	U32 current_position;
 	U32 width;
 	TACHYON_ITERATOR_STATUS status;
+
+	gt_diploid_object_type __diploid_object_type;
 
 	// RLE iterator
 	// simple iterator

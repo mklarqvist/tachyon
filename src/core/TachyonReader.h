@@ -426,12 +426,21 @@ public:
 		for(U32 i = 0; i < temp.size(); ++i){
 			const Core::MetaEntry& m = it_gt.getCurrentMeta();
 			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
-			std::cerr << it_gt.getCurrentGTObject() << ' ';
+			U32 n_sum = 0;
+			for(U32 j = 0; j < it_gt.getCurrentObjectLength(); ++j){
+				const Iterator::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
+				//std::cerr << std::bitset<32>(current_gt) << ' ';
+				//std::cerr << (int)current_gt.alleles[0] << (current_gt.phase ? '|' : '/') << (int)current_gt.alleles[1] << ':' << current_gt.n_objects << '/' << it_gt.getCurrentObjectLength() << ' ';
+				it_gt.incrementGT();
+				n_sum += current_gt.n_objects;
+			}
+			//std::cerr << '\t' << n_sum << std::endl;
+			assert(n_sum == 2504);
 			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
 			++it_gt;
 		}
-		std::cerr << std::endl;
-		std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
+		//std::cerr << std::endl;
+		//std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
 		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
 		//it_gt.reset();
 		return true;
