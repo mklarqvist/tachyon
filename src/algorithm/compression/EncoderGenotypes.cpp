@@ -246,10 +246,10 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	U32 ref = PACK_DIPLOID_BIALLELIC(allele2_2, allele1_2, 2, 1);
 
 	// Run limits
-	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (2*(1+anyMissing)+mixedPhase)) - 1;
-	const U16  U16_limit  = pow(2, 8*sizeof(U16)  - (2*(1+anyMissing)+mixedPhase)) - 1;
-	const U32  U32_limit  = pow(2, 8*sizeof(U32)  - (2*(1+anyMissing)+mixedPhase)) - 1;
-	const U64  U64_limit  = pow(2, 8*sizeof(U64)  - (2*(1+anyMissing)+mixedPhase)) - 1;
+	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*(1+anyMissing)+mixedPhase)) - 1;
+	const U16  U16_limit  = pow(2, 8*sizeof(U16)  - (ploidy*(1+anyMissing)+mixedPhase)) - 1;
+	const U32  U32_limit  = pow(2, 8*sizeof(U32)  - (ploidy*(1+anyMissing)+mixedPhase)) - 1;
+	const U64  U64_limit  = pow(2, 8*sizeof(U64)  - (ploidy*(1+anyMissing)+mixedPhase)) - 1;
 
 	// Cycle over GT values
 	U32 j = 1;

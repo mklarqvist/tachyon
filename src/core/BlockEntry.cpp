@@ -163,7 +163,8 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 }
 
 void BlockEntry::updateContainer(stream_container& container, bool reformat){
-	if(container.buffer_data_uncompressed.size() == 0 && container.header.controller.type != Core::YON_TYPE_BOOLEAN)
+	if(container.buffer_data_uncompressed.size() == 0 &&
+	   container.header.controller.type != Core::YON_TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content

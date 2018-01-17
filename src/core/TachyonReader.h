@@ -422,14 +422,17 @@ public:
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
 		U64 total_cost = 0;
-		std::cerr << "Uniformity:        " << this->block.gt_support_data_container.header.controller.uniform << std::endl;
-		std::cerr << "Uniformity strides:" << this->block.gt_support_data_container.header_stride.controller.uniform << std::endl;
-		std::cerr << "Size:              " << this->block.gt_support_data_container.buffer_data_uncompressed.size() << std::endl;
-		std::cerr << "Size:              " << this->block.gt_support_data_container.buffer_strides_uncompressed.size() << std::endl;
-		std::cerr << this->block.gt_support_data_container.header.uLength << '\t' << this->block.gt_support_data_container.header_stride.uLength << '\t' << this->block.gt_support_data_container.header_stride.cLength << std::endl;
+		std::cerr << this->block.gt_rle_container.getSizeCompressed() << '\t' << this->block.gt_rle_container.getSizeUncompressed() << std::endl;
+		std::cerr << this->block.gt_simple_container.buffer_data_uncompressed.size() << std::endl;
+		//std::cerr << "Uniformity:        " << this->block.gt_support_data_container.header.controller.uniform << std::endl;
+		//std::cerr << "Uniformity strides:" << this->block.gt_support_data_container.header_stride.controller.uniform << std::endl;
+		//std::cerr << "Size:              " << this->block.gt_support_data_container.buffer_data_uncompressed.size() << std::endl;
+		//std::cerr << "Size:              " << this->block.gt_support_data_container.buffer_strides_uncompressed.size() << std::endl;
+		//std::cerr << this->block.gt_support_data_container.header.uLength << '\t' << this->block.gt_support_data_container.header_stride.uLength << '\t' << this->block.gt_support_data_container.header_stride.cLength << std::endl;
 		for(U32 i = 0; i < temp.size(); ++i){
 			const Core::MetaEntry& m = it_gt.getCurrentMeta();
-			std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
+			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
+			std::cerr << it_gt.getCurrentGTObject() << ' ';
 			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
 			++it_gt;
 		}

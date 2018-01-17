@@ -82,7 +82,7 @@ public:
 	 * @return
 	 */
 	inline const U32 getCurrentTargetStream(void) const{
-		if(this->container_meta->header_stride.controller.uniform) return(this->container_meta->header.stride);
+		if(this->container_meta->header.controller.mixedStride == false) return(this->container_meta->header.stride);
 		return(this->iterator_gt_meta.getStrideIterator()->getCurrentStride());
 	}
 
@@ -93,6 +93,13 @@ public:
 	 */
 	inline meta_entry_type& getCurrentMeta(void) const{ return(this->iterator_meta->current()); }
 
+	/**<
+	 * Returns the current GT object. If there is more than one
+	 * object at the current variant site the function
+	 * getCurrentGTObjects() has to be invoked to return
+	 * the pointer to the start of those objects
+	 * @return
+	 */
 	inline U64 getCurrentGTObject(void) const{
 		const meta_entry_type& meta = this->iterator_meta->current();
 		const BYTE primitive = meta.hot.controller.gt_primtive_type;
@@ -112,7 +119,7 @@ public:
 			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U64>();
 			else gt = this->__getCurrentGTObjectSimple<U64>();
 		} else {
-			std::cerr << "impossible primtiive: " << (int)primitive << std::endl;
+			std::cerr << "impossible primitive: " << (int)primitive << std::endl;
 			exit(1);
 		}
 
@@ -142,17 +149,20 @@ private:
 
 	template <class T>
 	inline const U32 __getCurrentObjectLength(void) const{
-		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_meta.getDataIterator())->current());
+		return(iterator_gt_meta.getDataIterator()->current<T>());
 	}
 
 	template <class T>
 	inline const T& __getCurrentGTObjectRLE(void) const{
-		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_rle.getDataIterator())->current());
+		std::cerr << iterator_gt_rle.getDataIterator() << std::endl;
+		return(iterator_gt_rle.getDataIterator()->current<T>());
+		//return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_rle.getDataIterator())->current());
 	}
 
 	template <class T>
 	inline const T& __getCurrentGTObjectSimple(void) const{
-		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_simple.getDataIterator())->current());
+		return(iterator_gt_simple.getDataIterator()->current<T>());
+		//return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_simple.getDataIterator())->current());
 	}
 
 public:

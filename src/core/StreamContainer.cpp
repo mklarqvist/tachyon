@@ -165,6 +165,9 @@ bool StreamContainer::checkUniformity(void){
  type S32. No other values can be shrunk
  */
 void StreamContainer::reformat(){
+	if(this->buffer_data_uncompressed.pointer)
+		return;
+
 	// Recode integer types only
 	if(!(this->header.controller.type == YON_TYPE_32B && this->header.controller.signedness == 1))
 		return;
@@ -299,7 +302,8 @@ void StreamContainer::reformatStride(){
 		return;
 
 	// Recode integer types
-	if(!(this->header_stride.controller.type == YON_TYPE_32B && this->header_stride.controller.signedness == 0)){
+	if(!(this->header_stride.controller.type == YON_TYPE_32B &&
+	   this->header_stride.controller.signedness == 0)){
 		std::cerr << "illegal at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
 		exit(1);
 	}

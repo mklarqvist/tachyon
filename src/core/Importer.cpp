@@ -172,10 +172,7 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		std::cerr << this->block.gt_support_data_container.buffer_data_uncompressed.pointer << '\t' << this->block.gt_support_data_container.buffer_strides_uncompressed.pointer << std::endl;
-		std::cerr << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header.controller.signedness << std::endl;
 		this->block.updateBaseContainers();
-		std::cerr << this->block.gt_support_data_container.buffer_data_uncompressed.pointer << '\t' << this->block.gt_support_data_container.buffer_strides_uncompressed.pointer << std::endl << std::endl;
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
 		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
 

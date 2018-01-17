@@ -30,6 +30,9 @@ namespace Iterator{
  * functionality is reminiscent of a factory pattern
  * but implicitly overloads itself rather than returning
  * a new class instance.
+ *
+ * This class requires that all the data in the buffer
+ * is of the same primitive type
  */
 class ContainerIteratorDataInterface{
 protected:
