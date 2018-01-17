@@ -48,11 +48,11 @@ public:
 	}
 
 public:
-	U16 hasGT: 1,
-	    isDiploid: 1,
-		hasGTPermuted: 1,
-		anyEncrypted: 1,
-		unused: 12;
+	U16 hasGT:         1,  // This block has GT FORMAT data
+	    isDiploid:     1,  // are all data diploid
+		hasGTPermuted: 1,  // have the GT fields been permuted
+		anyEncrypted:  1,  // any data encrypted
+		unused:        12; // reserved for future use
 };
 
 /** @brief Fixed-sized components of an IndexBlockEntry

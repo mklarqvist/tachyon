@@ -292,6 +292,9 @@ void StreamContainer::reformat(){
 }
 
 void StreamContainer::reformatStride(){
+	if(this->buffer_strides_uncompressed.pointer == 0)
+		return;
+
 	if(this->header.controller.mixedStride == false)
 		return;
 

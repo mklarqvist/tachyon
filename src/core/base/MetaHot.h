@@ -8,18 +8,18 @@
 namespace Tachyon{
 namespace Core{
 
-enum TACHYON_RLE_TYPE{
-	YON_BYTE = 0,
-	YON_U16 = 1,
-	YON_U32 = 2,
-	YON_U64 = 3
+enum TACHYON_GT_PRIMITIVE_TYPE{
+	YON_GT_BYTE = 0,
+	YON_GT_U16 = 1,
+	YON_GT_U32 = 2,
+	YON_GT_U64 = 3
 };
 
 enum TACHYON_GT_TYPE{
 	YON_GT_UNKNOWN = -1,
 	YON_GT_RLE_DIPLOID_BIALLELIC,
 	YON_GT_RLE_DIPLOID_NALLELIC,
-	YON_GT_DIPLOID_BCF
+	YON_GT_BCF_DIPLOID
 };
 
 struct MetaHotController{
@@ -144,9 +144,9 @@ public:
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 
 	const TACHYON_GT_TYPE getGenotypeType(void) const{
-		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_BIALLELIC;
-		else if(this->controller.gt_rle && !this->controller.biallelic && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
-		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_DIPLOID_BCF;
+		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && !this->controller.gt_anyNA) return YON_GT_RLE_DIPLOID_BIALLELIC;
+		else if(this->controller.gt_rle && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
+		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_BCF_DIPLOID;
 		else return YON_GT_UNKNOWN;
 	}
 

@@ -89,7 +89,7 @@ public:
 	}
 
 	void increment(const bool updateStride = true);
-	void incrementSecondaryUsage(void);
+	void incrementSecondaryUsage(const U32 step_size = 1);
 
 	inline void incrementStride(void){
 		if(this->hasStrideIteratorSet) ++(*this->stride_iterator);

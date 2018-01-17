@@ -112,27 +112,27 @@ public:
 			this->toStringFunction       = &self_type::__toStringNoSeparator<char>;
 			this->toStringBufferFunction = &self_type::__toStringNoSeparator<char>;
 		} else if(type == Core::YON_TYPE_8B){
-			this->type_size = sizeof(BYTE);
-			this->__missing_value = BCF_BYTE_MISSING;
-			this->__end_of_vector_value = BCF_BYTE_EOV;
+			this->type_size              = sizeof(BYTE);
+			this->__missing_value        = BCF_BYTE_MISSING;
+			this->__end_of_vector_value  = BCF_BYTE_EOV;
 			if(signedness){
-				this->toStringFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
+				this->toStringFunction       = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
 				this->toStringBufferFunction = &self_type::__toStringSignedSmall<SBYTE, BYTE>;
 			}
 			else {
-				this->toStringFunction = &self_type::__toStringUnsignedSmall<BYTE>;
+				this->toStringFunction       = &self_type::__toStringUnsignedSmall<BYTE>;
 				this->toStringBufferFunction = &self_type::__toStringUnsignedSmall<BYTE>;
 			}
 		} else if(type == Core::YON_TYPE_16B){
 			this->type_size = sizeof(U16);
-			this->__missing_value = BCF_SHORT_MISSING;
+			this->__missing_value       = BCF_SHORT_MISSING;
 			this->__end_of_vector_value = BCF_SHORT_EOV;
 			if(signedness){
-				this->toStringFunction = &self_type::__toStringSigned<S16, U16>;
+				this->toStringFunction       = &self_type::__toStringSigned<S16, U16>;
 				this->toStringBufferFunction = &self_type::__toStringSigned<S16, U16>;
 			}
 			else {
-				this->toStringFunction = &self_type::__toStringUnsigned<U16>;
+				this->toStringFunction       = &self_type::__toStringUnsigned<U16>;
 				this->toStringBufferFunction = &self_type::__toStringUnsigned<U16>;
 			}
 		} else if(type == Core::YON_TYPE_32B){
@@ -140,30 +140,30 @@ public:
 			this->__missing_value = BCF_INT_MISSING;
 			this->__end_of_vector_value = BCF_INT_EOV;
 			if(signedness){
-				this->toStringFunction = &self_type::__toStringSigned<S32, U32>;
+				this->toStringFunction       = &self_type::__toStringSigned<S32, U32>;
 				this->toStringBufferFunction = &self_type::__toStringSigned<S32, U32>;
 			}
 			else {
-				this->toStringFunction = &self_type::__toStringUnsigned<U32>;
+				this->toStringFunction       = &self_type::__toStringUnsigned<U32>;
 				this->toStringBufferFunction = &self_type::__toStringUnsigned<U32>;
 			}
 		} else if(type == Core::YON_TYPE_FLOAT){
 			this->type_size = sizeof(float);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringFloat<float>;
+			this->__missing_value        = 0;
+			this->__end_of_vector_value  = 0;
+			this->toStringFunction       = &self_type::__toStringFloat<float>;
 			this->toStringBufferFunction = &self_type::__toStringFloat<float>;
 		} else if(type == Core::YON_TYPE_DOUBLE){
 			this->type_size = sizeof(double);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringFloat<double>;
+			this->__missing_value        = 0;
+			this->__end_of_vector_value  = 0;
+			this->toStringFunction       = &self_type::__toStringFloat<double>;
 			this->toStringBufferFunction = &self_type::__toStringFloat<double>;
 		} else if(type == Core::YON_TYPE_64B){
 			this->type_size = sizeof(U64);
-			this->__missing_value = 0;
-			this->__end_of_vector_value = 0;
-			this->toStringFunction = &self_type::__toStringUnsigned<U64>;
+			this->__missing_value        = 0;
+			this->__end_of_vector_value  = 0;
+			this->toStringFunction       = &self_type::__toStringUnsigned<U64>;
 			this->toStringBufferFunction = &self_type::__toStringUnsigned<U64>;
 		} else {
 				std::cerr << Helpers::timestamp("ERROR") << std::endl;

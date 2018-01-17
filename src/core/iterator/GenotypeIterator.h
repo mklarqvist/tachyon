@@ -26,6 +26,7 @@ private:
 	typedef Core::MetaEntry meta_entry_type;
 
 	typedef const U32 (self_type::*getFunctionType)(void) const;
+	typedef const U64 (self_type::*getGTFunctionType)(void) const;
 
 public:
 	GenotypeIterator(block_type& block) :
@@ -36,14 +37,17 @@ public:
 		container_simple(&block.gt_simple_container),
 		container_meta(&block.gt_support_data_container),
 		iterator_gt_meta(block.gt_support_data_container),
+		iterator_gt_rle(block.gt_rle_container),
+		iterator_gt_simple(block.gt_simple_container),
 		iterator_meta(block.getMetaIterator()),
-		getNumberObjectsFunction(nullptr)
+		getNumberObjectsFunction(nullptr),
+		getGTFunction(nullptr)
 	{
 		switch(this->container_meta->header.controller.type){
-		case(Core::YON_BYTE): this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<BYTE>; break;
-		case(Core::YON_U16):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U16>;  break;
-		case(Core::YON_U32):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U32>;  break;
-		case(Core::YON_U64):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U64>;  break;
+		case(Core::YON_GT_BYTE): this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<BYTE>; break;
+		case(Core::YON_GT_U16):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U16>;  break;
+		case(Core::YON_GT_U32):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U32>;  break;
+		case(Core::YON_GT_U64):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U64>;  break;
 		}
 	}
 
@@ -77,7 +81,10 @@ public:
 	 * for the current variant
 	 * @return
 	 */
-	inline const U32 getCurrentTargetStream(void) const{ return(this->iterator_gt_meta.getStrideIterator()->getCurrentStride()); }
+	inline const U32 getCurrentTargetStream(void) const{
+		if(this->container_meta->header_stride.controller.uniform) return(this->container_meta->header.stride);
+		return(this->iterator_gt_meta.getStrideIterator()->getCurrentStride());
+	}
 
 	/**<
 	 * Support functionality: returns the current MetaEntry from
@@ -86,10 +93,43 @@ public:
 	 */
 	inline meta_entry_type& getCurrentMeta(void) const{ return(this->iterator_meta->current()); }
 
+	inline U64 getCurrentGTObject(void) const{
+		const meta_entry_type& meta = this->iterator_meta->current();
+		const BYTE primitive = meta.hot.controller.gt_primtive_type;
+		const U32 target_stream = this->getCurrentTargetStream();
+
+		U64 gt = 0;
+		if(primitive == Core::YON_GT_BYTE){
+			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<BYTE>();
+			else gt = this->__getCurrentGTObjectSimple<BYTE>();
+		} else if(primitive == Core::YON_GT_U16){
+			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U16>();
+			else gt = this->__getCurrentGTObjectSimple<U16>();
+		} else if(primitive == Core::YON_GT_U32){
+			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U32>();
+			else gt = this->__getCurrentGTObjectSimple<U32>();
+		} else if(primitive == Core::YON_GT_U64){
+			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U64>();
+			else gt = this->__getCurrentGTObjectSimple<U64>();
+		} else {
+			std::cerr << "impossible primtiive: " << (int)primitive << std::endl;
+			exit(1);
+		}
+
+		return(gt);
+	}
+
 	void operator++(void){
+		/*
+		if(this->getCurrentTargetStream() == 1){
+			//this->iterator_gt_rle.incrementSecondaryUsage(this->getCurrentObjectLength());
+		} else {
+			//this->iterator_gt_simple.incrementSecondaryUsage(this->getCurrentObjectLength());
+		}
+		*/
 		++this->current_position;
 		++(*this->iterator_meta);
-		this->iterator_gt_meta.incrementSecondaryUsage(); // internals take care of this
+		this->iterator_gt_meta.incrementSecondaryUsage(1); // internals take care of this
 	}
 
 	void operator--(void);
@@ -102,8 +142,17 @@ private:
 
 	template <class T>
 	inline const U32 __getCurrentObjectLength(void) const{
-		const Iterator::ContainerIteratorType<T>& it = *reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_meta.getDataIterator());
-		return(it.current());
+		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_meta.getDataIterator())->current());
+	}
+
+	template <class T>
+	inline const T& __getCurrentGTObjectRLE(void) const{
+		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_rle.getDataIterator())->current());
+	}
+
+	template <class T>
+	inline const T& __getCurrentGTObjectSimple(void) const{
+		return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_simple.getDataIterator())->current());
 	}
 
 public:
@@ -117,9 +166,12 @@ public:
 	const container_type*     container_simple;
 	const container_type*     container_meta;
 	container_iterator_type   iterator_gt_meta;  // iterator over n_runs and target stream
+	container_iterator_type   iterator_gt_rle;
+	container_iterator_type   iterator_gt_simple;
 	meta_iterator_type*       iterator_meta;
 	// function pointer to getNumberObjects
 	getFunctionType           getNumberObjectsFunction;
+	getGTFunctionType         getGTFunction;
 };
 
 

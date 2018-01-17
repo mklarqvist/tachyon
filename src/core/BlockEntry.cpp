@@ -16,6 +16,7 @@ BlockEntry::BlockEntry() :
 	this->gt_rle_container.setType(YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(YON_TYPE_STRUCT);
 	this->gt_support_data_container.setType(YON_TYPE_32B);
+	this->gt_support_data_container.header.controller.signedness = true;
 	this->meta_hot_container.setType(YON_TYPE_STRUCT);
 	this->meta_cold_container.setType(YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);

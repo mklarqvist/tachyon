@@ -219,16 +219,16 @@ void ContainerIterator::increment(const bool updateStride){
 	}
 }
 
-void ContainerIterator::incrementSecondaryUsage(void){
+void ContainerIterator::incrementSecondaryUsage(const U32 step_size){
 	++this->position;
 	// If mixed stride: update data with that number, increment stride
 	if(this->hasStrideIteratorSet){
-		*this->data_iterator += 1;
+		*this->data_iterator += step_size;
 		++(*this->stride_iterator);
 	}
 	// Uniform stride size: update data with the fixed stride size
 	else {
-		*this->data_iterator += this->container->header.stride;
+		*this->data_iterator += step_size;
 	}
 }
 

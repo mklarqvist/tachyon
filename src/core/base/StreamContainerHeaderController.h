@@ -45,7 +45,6 @@ public:
 	}
 
 public:
-	// 6 base values (4 integers + 2 floats)
 	U16 signedness: 1, // Signed type
 		mixedStride: 1,// Different stride sizes
 		type: 6,       // Base typing (extra bits saved for future use)

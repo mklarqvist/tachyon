@@ -62,19 +62,19 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		switch(cost.word_width){
 		case 1:
 			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_BYTE;
+			meta_base.controller.gt_primtive_type = Core::YON_GT_BYTE;
 			break;
 		case 2:
 			this->EncodeDiploidRLEBiallelic<U16>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_U16;
+			meta_base.controller.gt_primtive_type = Core::YON_GT_U16;
 			break;
 		case 4:
 			this->EncodeDiploidRLEBiallelic<U32>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_U32;
+			meta_base.controller.gt_primtive_type = Core::YON_GT_U32;
 			break;
 		case 8:
 			this->EncodeDiploidRLEBiallelic<U64>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_U64;
+			meta_base.controller.gt_primtive_type = Core::YON_GT_U64;
 			break;
 		default:
 			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
@@ -122,19 +122,19 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			switch(cost.word_width){
 			case 1:
 				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_BYTE;
+				meta_base.controller.gt_primtive_type = Core::YON_GT_BYTE;
 				break;
 			case 2:
 				this->EncodeDiploidRLEnAllelic<U16>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_U16;
+				meta_base.controller.gt_primtive_type = Core::YON_GT_U16;
 				break;
 			case 4:
 				this->EncodeDiploidRLEnAllelic<U32>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_U32;
+				meta_base.controller.gt_primtive_type = Core::YON_GT_U32;
 				break;
 			case 8:
 				this->EncodeDiploidRLEnAllelic<U64>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_U64;
+				meta_base.controller.gt_primtive_type = Core::YON_GT_U64;
 				break;
 			default:
 				std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;

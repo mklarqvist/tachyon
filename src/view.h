@@ -105,16 +105,16 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::TachyonReader reader;
-	/*
+
 	reader.settings.loadAll();
 	//reader.settings.loadPPA = false;
 	if(dropInfo)   reader.settings.unsetInfo();
 	if(dropFormat) reader.settings.unsetFormat();
-	*/
-	//reader.settings.loadMetaCold = true;
-	reader.settings.loadMetaHot = true;
-	reader.settings.loadGT = true;
-	reader.settings.loadGTSimple = true;
+
+
+	//reader.settings.loadMetaHot = true;
+	//reader.settings.loadGT = true;
+	//reader.settings.loadGTSimple = true;
 
 
 	//reader.settings.loadMetaHot = true;
