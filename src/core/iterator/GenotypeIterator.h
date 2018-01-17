@@ -3,6 +3,7 @@
 
 #include "../BlockEntry.h"
 #include "MetaIterator.h"
+#include "IntegerIterator.h"
 
 namespace Tachyon{
 namespace Iterator{
@@ -24,6 +25,7 @@ private:
 	typedef MetaIterator meta_iterator_type;
 	typedef ContainerIterator container_iterator_type;
 	typedef Core::MetaEntry meta_entry_type;
+	typedef IntegerIterator integer_iterator_type;
 
 	typedef const U32 (self_type::*getFunctionType)(void) const;
 	typedef const U64 (self_type::*getGTFunctionType)(void) const;
@@ -40,8 +42,7 @@ public:
 		iterator_gt_rle(block.gt_rle_container),
 		iterator_gt_simple(block.gt_simple_container),
 		iterator_meta(block.getMetaIterator()),
-		getNumberObjectsFunction(nullptr),
-		getGTFunction(nullptr)
+		getNumberObjectsFunction(nullptr)
 	{
 		switch(this->container_meta->header.controller.type){
 		case(Core::YON_GT_BYTE): this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<BYTE>; break;
@@ -49,6 +50,7 @@ public:
 		case(Core::YON_GT_U32):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U32>;  break;
 		case(Core::YON_GT_U64):  this->getNumberObjectsFunction = &self_type::__getCurrentObjectLength<U64>;  break;
 		}
+		this->__updateGTPrimitive();
 	}
 
 	virtual ~GenotypeIterator(){
@@ -100,69 +102,53 @@ public:
 	 * the pointer to the start of those objects
 	 * @return
 	 */
-	inline U64 getCurrentGTObject(void) const{
-		const meta_entry_type& meta = this->iterator_meta->current();
-		const BYTE primitive = meta.hot.controller.gt_primtive_type;
-		const U32 target_stream = this->getCurrentTargetStream();
-
-		U64 gt = 0;
-		if(primitive == Core::YON_GT_BYTE){
-			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<BYTE>();
-			else gt = this->__getCurrentGTObjectSimple<BYTE>();
-		} else if(primitive == Core::YON_GT_U16){
-			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U16>();
-			else gt = this->__getCurrentGTObjectSimple<U16>();
-		} else if(primitive == Core::YON_GT_U32){
-			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U32>();
-			else gt = this->__getCurrentGTObjectSimple<U32>();
-		} else if(primitive == Core::YON_GT_U64){
-			if(target_stream == 1) gt = this->__getCurrentGTObjectRLE<U64>();
-			else gt = this->__getCurrentGTObjectSimple<U64>();
-		} else {
-			std::cerr << "impossible primitive: " << (int)primitive << std::endl;
-			exit(1);
-		}
-
-		return(gt);
+	inline U64 getCurrentGTObject(void){
+		if(this->getCurrentTargetStream() == 1) return(this->iterator_gt_rle.current());
+		else return(this->iterator_gt_simple.current());
 	}
 
 	void operator++(void){
-		/*
-		if(this->getCurrentTargetStream() == 1){
-			//this->iterator_gt_rle.incrementSecondaryUsage(this->getCurrentObjectLength());
-		} else {
-			//this->iterator_gt_simple.incrementSecondaryUsage(this->getCurrentObjectLength());
-		}
-		*/
+		if(this->getCurrentTargetStream() == 1) ++this->iterator_gt_rle;
+		else ++this->iterator_gt_simple;
+
 		++this->current_position;
 		++(*this->iterator_meta);
 		this->iterator_gt_meta.incrementSecondaryUsage(1); // internals take care of this
-	}
 
-	void operator--(void);
-	void operator[](const U32 p);
-	void operator+=(const U32 p);
-	void operator-=(const U32 p);
+		this->__updateGTPrimitive();
+	}
 
 private:
 	//virtual void toVCFString(std::ostream& stream) const =0;
 
+	bool __updateGTPrimitive(void){
+		// Next meta
+		const meta_entry_type& meta = this->iterator_meta->current();
+		const BYTE primitive = meta.hot.controller.gt_primtive_type;
+		const U32 target_stream = this->getCurrentTargetStream();
+
+		if(primitive == Core::YON_GT_BYTE){
+			if(target_stream == 1) this->iterator_gt_rle.setType(Core::YON_TYPE_8B);
+			else this->iterator_gt_simple.setType(Core::YON_TYPE_8B);
+		} else if(primitive == Core::YON_GT_U16){
+			if(target_stream == 1) this->iterator_gt_rle.setType(Core::YON_TYPE_16B);
+			else this->iterator_gt_simple.setType(Core::YON_TYPE_16B);
+		} else if(primitive == Core::YON_GT_U32){
+			if(target_stream == 1) this->iterator_gt_rle.setType(Core::YON_TYPE_32B);
+			else this->iterator_gt_simple.setType(Core::YON_TYPE_32B);
+		} else if(primitive == Core::YON_GT_U64){
+			if(target_stream == 1) this->iterator_gt_rle.setType(Core::YON_TYPE_64B);
+			else this->iterator_gt_simple.setType(Core::YON_TYPE_64B);
+		} else {
+			std::cerr << "impossible primitive: " << (int)primitive << std::endl;
+			exit(1);
+		}
+		return(true);
+	}
+
 	template <class T>
 	inline const U32 __getCurrentObjectLength(void) const{
 		return(iterator_gt_meta.getDataIterator()->current<T>());
-	}
-
-	template <class T>
-	inline const T& __getCurrentGTObjectRLE(void) const{
-		std::cerr << iterator_gt_rle.getDataIterator() << std::endl;
-		return(iterator_gt_rle.getDataIterator()->current<T>());
-		//return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_rle.getDataIterator())->current());
-	}
-
-	template <class T>
-	inline const T& __getCurrentGTObjectSimple(void) const{
-		return(iterator_gt_simple.getDataIterator()->current<T>());
-		//return(reinterpret_cast< const Iterator::ContainerIteratorType<T>* const >(iterator_gt_simple.getDataIterator())->current());
 	}
 
 public:
@@ -176,12 +162,11 @@ public:
 	const container_type*     container_simple;
 	const container_type*     container_meta;
 	container_iterator_type   iterator_gt_meta;  // iterator over n_runs and target stream
-	container_iterator_type   iterator_gt_rle;
-	container_iterator_type   iterator_gt_simple;
+	integer_iterator_type     iterator_gt_rle;
+	integer_iterator_type     iterator_gt_simple;
 	meta_iterator_type*       iterator_meta;
 	// function pointer to getNumberObjects
 	getFunctionType           getNumberObjectsFunction;
-	getGTFunctionType         getGTFunction;
 };
 
 

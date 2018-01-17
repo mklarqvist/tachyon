@@ -43,7 +43,6 @@ const int ContainerIterator::setup(const container_type& container){
 	this->position = 0;
 
 	// Factory
-	std::cerr << "calling setup: " << container.header.controller.type << std::endl;
 	if(container.header.controller.signedness == false){
 		switch(container.header.controller.type){
 		case(Core::YON_TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;

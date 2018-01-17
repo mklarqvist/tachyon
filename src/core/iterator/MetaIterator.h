@@ -157,9 +157,14 @@ public:
 
 	inline const S32& size(void) const{ return(this->n_entries); }
 
-	// No checks are being made
-	inline void operator++(void){ ++this->n_position; }
-	inline void operator--(void){ --this->n_position; }
+	inline void operator++(void){
+		if(this->n_position + 1 == this->n_entries) return;
+		++this->n_position;
+	}
+	inline void operator--(void){
+		if(this->n_position == 0) return;
+		--this->n_position;
+	}
 	inline void operator+=(const U32& p){ this->n_position += p; }
 	inline void operator-=(const U32& p){ this->n_position -= p; }
 

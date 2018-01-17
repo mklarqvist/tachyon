@@ -179,6 +179,9 @@ public:
 		return(total_size);
 	}
 
+	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.controller.type)); }
+	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
+
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.header;
