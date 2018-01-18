@@ -417,13 +417,12 @@ public:
 
 	bool iterateGT(std::ostream& stream = std::cout){
 		Iterator::GenotypeIterator it_gt(this->block);
-		Iterator::ContainerIteratorDataInterface& temp = *it_gt.iterator_gt_meta.getDataIterator();
 
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
 		U64 total_cost = 0;
 		std::cerr << this->block.size() << std::endl;
-		for(U32 i = 0; i < temp.size(); ++i){
+		for(U32 i = 0; i < this->block.size(); ++i){
 			const Core::MetaEntry& m = it_gt.getCurrentMeta();
 			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
 			U32 n_sum = 0;
