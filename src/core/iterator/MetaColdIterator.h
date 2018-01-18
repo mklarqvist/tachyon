@@ -47,7 +47,6 @@ public:
 
 		this->clear();
 
-		delete [] this->offsets;
 		this->offsets = new U32[n_entries];
 		this->n_entries = n_entries;
 		this->container = &container;
@@ -75,7 +74,7 @@ public:
 	 * @param gt_retain_type Type of GT object to keep
 	 * @return               Returns TRUE upon success or FALSE otherwise
 	 */
-	bool setupFilterGenotypePrimitive(const container_type& container_cold,
+	bool setup(const container_type& container_cold,
 			                        const container_type& container_hot,
 			                  const Core::TACHYON_GT_TYPE gt_retain_type){
 		// Cold data is empty
@@ -148,7 +147,7 @@ public:
                            const container_type& container_hot,
                      const Core::TACHYON_GT_TYPE gt_retain_type)
 	{
-		return(this->setupFilterGenotypePrimitive(container_cold, container_hot, gt_retain_type));
+		return(this->setup(container_cold, container_hot, gt_retain_type));
 	}
 
 	/**<

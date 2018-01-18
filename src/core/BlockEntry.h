@@ -114,6 +114,7 @@ public:
 
 	bool write(std::ofstream& stream, import_stats_type& stats, import_stats_type& stats_uncompressed);
 	meta_iterator_type* getMetaIterator(void) const;
+	meta_iterator_type* getMetaIterator(const Core::TACHYON_GT_TYPE gt_filter) const;
 
 private:
 	/**< @brief Update base container header data and evaluate output byte streams

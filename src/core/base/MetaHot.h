@@ -10,16 +10,17 @@ namespace Core{
 
 enum TACHYON_GT_PRIMITIVE_TYPE{
 	YON_GT_BYTE = 0,
-	YON_GT_U16 = 1,
-	YON_GT_U32 = 2,
-	YON_GT_U64 = 3
+	YON_GT_U16  = 1,
+	YON_GT_U32  = 2,
+	YON_GT_U64  = 3
 };
 
 enum TACHYON_GT_TYPE{
 	YON_GT_UNKNOWN = -1,
 	YON_GT_RLE_DIPLOID_BIALLELIC,
 	YON_GT_RLE_DIPLOID_NALLELIC,
-	YON_GT_BCF_DIPLOID
+	YON_GT_BCF_DIPLOID,
+	YON_GT_KEEP_ALL = 10000 // special case
 };
 
 struct MetaHotController{
@@ -30,7 +31,7 @@ struct MetaHotController{
 		gt_anyNA(0),
 		gt_mixed_phasing(0),
 		biallelic(0),
-		simple(0),
+		simple_snv(0),
 		gt_rle(0),
 		gt_primtive_type(0),
 		diploid(0),
@@ -60,13 +61,13 @@ struct MetaHotController{
         gt_phase:         1, // all phased
 		gt_anyNA:         1, // any NA
         gt_mixed_phasing: 1, // has mixed phasing
-        biallelic:     1, // is biallelic
-        simple:        1, // is simple SNV->SNV
+        biallelic:        1, // is biallelic
+        simple_snv:       1, // is simple SNV->SNV
         gt_rle:           1, // uses RLE compression
-		gt_primtive_type:      2, // type of RLE (BYTE, U16, U32, U64)
-		diploid:       1, // is diploid
-		mixed_ploidy:  1, // has mixed ploidy (e.g. X chromosome or CNV)
-		unused:        5; // reserved
+		gt_primtive_type: 2, // type of RLE (BYTE, U16, U32, U64)
+		diploid:          1, // is diploid
+		mixed_ploidy:     1, // has mixed ploidy (e.g. X chromosome or CNV)
+		unused:           5; // reserved
 };
 
 /**
@@ -138,7 +139,7 @@ public:
 
 	// Supportive boolean functions
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
-	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple == true); }
+	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
 	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }

@@ -380,5 +380,24 @@ Iterator::MetaIterator* BlockEntry::getMetaIterator(void) const{
 	return(it);
 }
 
+Iterator::MetaIterator* BlockEntry::getMetaIterator(const Core::TACHYON_GT_TYPE gt_filter) const{
+	meta_iterator_type* it;
+	if(this->meta_cold_container.buffer_data_uncompressed.size())
+		it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container, gt_filter);
+	else
+		it = new meta_iterator_type(this->meta_hot_container, gt_filter);
+
+	if(this->meta_info_map_ids.buffer_data_uncompressed.size())
+		it->setInfoIDContainer(this->meta_info_map_ids);
+
+	if(this->meta_filter_map_ids.buffer_data_uncompressed.size())
+		it->setFilterIDContainer(this->meta_filter_map_ids);
+
+	if(this->meta_format_map_ids.buffer_data_uncompressed.size())
+		it->setFormatIDContainer(this->meta_format_map_ids);
+
+	return(it);
+}
+
 }
 }

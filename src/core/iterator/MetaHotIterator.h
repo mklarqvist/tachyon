@@ -26,21 +26,12 @@ public:
 		this->setup(container);
 	}
 
-	MetaHotIterator(const container_type& container, const Core::TACHYON_GT_TYPE gt_retain_type) :
-		__flag_data_literal(false),
-		n_entries(0),
-		current_position(0),
-		entries(nullptr)
-	{
-
-	}
-
 	~MetaHotIterator(){
 		if(this->__flag_data_literal)
 			delete [] this->entries;
 	}
 
-	bool setupFilterGenotypePrimitive(const container_type& container, const Core::TACHYON_GT_TYPE gt_retain_type){
+	bool setup(const container_type& container, const Core::TACHYON_GT_TYPE gt_retain_type){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
@@ -58,14 +49,16 @@ public:
 		this->entries = new entry_type[this->n_entries];
 
 		if(gt_retain_type == Core::YON_GT_RLE_DIPLOID_BIALLELIC){
+			U32 j = 0;
 			for(U32 i = 0; i < n_entries_all; ++i){
 				if(entries_all[i].getGenotypeType() == Core::YON_GT_RLE_DIPLOID_BIALLELIC)
-					this->entries[i] = entries_all[i];
+					this->entries[j++] = entries_all[i];
 			}
 		} else if(gt_retain_type == Core::YON_GT_RLE_DIPLOID_NALLELIC){
+			U32 j = 0;
 			for(U32 i = 0; i < n_entries_all; ++i){
 				if(entries_all[i].getGenotypeType() == Core::YON_GT_RLE_DIPLOID_NALLELIC)
-					this->entries[i] = entries_all[i];
+					this->entries[j++] = entries_all[i];
 			}
 		} else {
 			std::cerr << "not implemented" << std::endl;
@@ -130,6 +123,8 @@ public:
 		if(this->n_entries == 0) return(this->entries[0]);
 		return(this->entries[this->n_entries - 1]);
 	}
+
+	inline void reset(void){ this->current_position = 0; }
 
 private:
 	bool        __flag_data_literal;

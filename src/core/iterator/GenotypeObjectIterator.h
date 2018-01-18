@@ -14,9 +14,12 @@ private:
 	typedef GenotypeObjectIteratorInterface self_type;
 	typedef Core::StreamContainer           container_type;
 	typedef Core::BlockEntry                block_type;
-	typedef MetaIterator                    meta_iterator_type;
-	typedef ContainerIterator               container_iterator_type;
 	typedef Core::MetaEntry                 meta_entry_type;
+
+	typedef ContainerIterator               container_iterator_type;
+	typedef MetaIterator                    meta_iterator_type;
+	typedef MetaHotIterator                 meta_hot_iterator_type;
+	typedef MetaColdIterator                meta_cold_iterator_type;
 	typedef IntegerIterator                 integer_iterator_type;
 
 public:
@@ -54,6 +57,10 @@ private:
 	// if RLE we have to iterate over each object
 	U32 current_position_object;
 	U32 n_current_object_length;
+
+	// Iterators over meta data
+	meta_hot_iterator_type   meta_hot_iterator;
+	meta_cold_iterator_type* meta_cold_iterator;
 };
 
 class GenotypeDiploidIterator : public GenotypeObjectIteratorInterface{

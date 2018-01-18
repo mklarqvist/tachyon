@@ -36,7 +36,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		support.header_stride.controller.signedness = 0;
 	}
 
-	meta_base.controller.simple = line.isSimple();
+	meta_base.controller.simple_snv = line.isSimple();
 
 	// Assess cost and encode
 	rle_helper_type cost;

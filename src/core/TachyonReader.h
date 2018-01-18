@@ -421,6 +421,14 @@ public:
 		timer.Start();
 		Iterator::GenotypeIterator it_gt(this->block);
 
+		//Iterator::MetaIterator* it1 = this->block.getMetaIterator();
+		//Iterator::MetaIterator* it2 = this->block.getMetaIterator(Core::YON_GT_RLE_DIPLOID_BIALLELIC);
+		//Iterator::MetaIterator* it3 = this->block.getMetaIterator(Core::YON_GT_RLE_DIPLOID_NALLELIC);
+
+
+		//std::cerr << it1->size() << '\t' << it2->size() << '\t' << it3->size() << std::endl;
+		//delete it1; delete it2; delete it3;
+		//delete it2;
 
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
