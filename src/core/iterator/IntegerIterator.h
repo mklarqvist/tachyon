@@ -105,8 +105,6 @@ public:
 		this->current_byte_position += this->current_type_width;
 	}
 
-	//void operator--(void);
-
 	inline const U64 size(void) const{ return(this->l_buffer); }
 
 private:

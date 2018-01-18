@@ -53,7 +53,7 @@ namespace Encoding{
 */
 
 #define PACK_DIPLOID_BIALLELIC(A, B, SHIFT, ADD) BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD) | BCF::BCF_UNPACK_GENOTYPE(B) << (ADD) | (A & ADD)
-#define PACK_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A >> ADD) << (SHIFT + ADD)) | ((B >> ADD) << ADD) | (A & ADD)
+//#define PACK_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A >> ADD) << (SHIFT + ADD)) | ((B >> ADD) << ADD) | (A & ADD)
 
 class EncoderGenotypes {
 private:
@@ -262,19 +262,19 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	const BYTE add      = helper.mixedPhasing  ? 1 : 0;
 	// Run limits
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*shift + add)) - 1;
-	std::cerr << (U32)run_limit << std::endl;
+	//std::cerr << (U32)run_limit << '\t' << sizeof(YON_RLE_TYPE) << std::endl;
 
 	// First
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
-	YON_RLE_TYPE packed = PACK_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+	YON_RLE_TYPE packed = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
 
 	U32 j = 1;
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
-		const YON_RLE_TYPE packed_internal = PACK_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+		const YON_RLE_TYPE packed_internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
 
 		if(packed != packed_internal || length == run_limit){
 			// Prepare RLE
@@ -309,7 +309,7 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
-	std::cerr << helper.n_runs << '\t' << n_runs << std::endl;
+	//std::cerr << helper.n_runs << '\t' << n_runs << std::endl;
 	assert(helper.n_runs == n_runs);
 
 	runs.n_additions += n_runs;

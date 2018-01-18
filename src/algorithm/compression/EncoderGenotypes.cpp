@@ -351,17 +351,17 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	// Assess RLE cost
 	const BYTE shift     = ceil(log2(line.body->n_allele + anyMissing));
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]+1]);
-	U32 ref = PACK_DIPLOID_NALLELIC(allele2, allele1, shift, mixedPhase);
+	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
+	U32 ref = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, mixedPhase);
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
 	// the do not fit in the word size
 	// Ploidy*shift_size bits for alleles and 1 bit for phase information
-	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift+mixedPhase)) - 1;
-	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift+mixedPhase)) - 1;
-	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift+mixedPhase)) - 1;
-	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift+mixedPhase)) - 1;
+	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift + mixedPhase)) - 1;
+	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift + mixedPhase)) - 1;
+	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift + mixedPhase)) - 1;
+	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift + mixedPhase)) - 1;
 	if(BYTE_limit <= 0) BYTE_limit = std::numeric_limits<S32>::max();
 	if(U16_limit <= 0)  U16_limit  = std::numeric_limits<S32>::max();
 	if(U32_limit <= 0)  U32_limit  = std::numeric_limits<S64>::max();
@@ -374,7 +374,7 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	U32 j = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]+1]);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j] + 1]);
 		const U32 internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, mixedPhase);
 
 		if(ref != internal){

@@ -41,14 +41,15 @@ public:
 			this->alleles[1] = (gt_primitive & (1 << (2*shift + add - 1))) >> (2*shift + add - 1);
 			this->n_objects  = gt_primitive >> (2*shift + add);
 		} else if(type == Core::YON_GT_RLE_DIPLOID_NALLELIC){
-			const BYTE shift    = ceil(log2(meta_entry.cold.n_allele + 1)); // Bits occupied per allele, 1 value for missing
-			// Run limits
-			//const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (2*shift + 1)) - 1;
-			//std::cerr << "shift: " << (int)shift << '\t' << std::bitset<32>(((1 << shift) - 1) << 1) << '\t' << std::bitset<32>(((1 << shift) - 1) << (1+shift)) << std::endl;
-			this->phase      = gt_primitive & 1;
-			this->alleles[0] = (gt_primitive & ((1 << shift) - 1) << 1) >> 1;
-			this->alleles[1] = (gt_primitive & ((1 << shift) - 1) << (1+shift)) >> (1+shift);
-			this->n_objects  = gt_primitive >> (2*shift + 1);
+			const BYTE shift    = ceil(log2(meta_entry.cold.n_allele + meta_entry.hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
+			const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+
+			if(add) this->phase = gt_primitive & 1;
+			else    this->phase = meta_entry.hot.controller.gt_phase;
+
+			this->alleles[0] = (gt_primitive & ((1 << shift) - 1) << add) >> add;
+			this->alleles[1] = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+			this->n_objects  = gt_primitive >> (2*shift + add);
 		} else {
 			std::cerr << "not implemented" << std::endl;
 			exit(1);
