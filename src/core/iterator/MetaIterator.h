@@ -48,7 +48,7 @@ public:
 		format_id_container(nullptr)
 
 	{
-		this->set(container);
+		this->setup(container);
 	}
 
 	MetaIterator(const container_type& container_hot, const container_type& container_cold) :
@@ -64,16 +64,16 @@ public:
 		filter_id_container(nullptr),
 		format_id_container(nullptr)
 	{
-		this->set(container_hot, container_cold);
+		this->setup(container_hot, container_cold);
 	}
 
 	~MetaIterator(){
 		this->clearPrevious();
 	}
 
-	bool set(const container_type& container){
+	bool setup(const container_type& container){
 		this->container_hot = &container;
-		this->hot_iterator.set(container);
+		this->hot_iterator.setup(container);
 
 		this->clearPrevious();
 
@@ -87,16 +87,16 @@ public:
 		return true;
 	}
 
-	bool set(const container_type& container_hot, const container_type& container_cold){
+	bool setup(const container_type& container_hot, const container_type& container_cold){
 		this->container_hot  = &container_hot;
 		this->container_cold = &container_cold;
-		this->hot_iterator.set(container_hot);
+		this->hot_iterator.setup(container_hot);
 
 		this->clearPrevious();
 
 		assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 		this->n_entries = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
-		this->cold_iterator.set(container_cold, this->n_entries);
+		this->cold_iterator.setup(container_cold, this->n_entries);
 		delete [] this->entries;
 		this->entries = new entry_type*[this->n_entries];
 		for(U32 i = 0; i < this->n_entries; ++i)
@@ -190,8 +190,8 @@ private:
 	S32 n_entries;
 
 	// Iterators
-	hot_iterator_type hot_iterator;
-	cold_iterator_type cold_iterator;
+	hot_iterator_type       hot_iterator;
+	cold_iterator_type      cold_iterator;
 	container_iterator_type info_id_iterator;
 	container_iterator_type filter_id_iterator;
 	container_iterator_type format_id_iterator;

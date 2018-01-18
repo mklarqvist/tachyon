@@ -52,8 +52,7 @@ namespace Encoding{
 
 */
 
-#define PACK_DIPLOID_BIALLELIC(A, B, SHIFT, ADD) BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD) | BCF::BCF_UNPACK_GENOTYPE(B) << (ADD) | (A & ADD)
-//#define PACK_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A >> ADD) << (SHIFT + ADD)) | ((B >> ADD) << ADD) | (A & ADD)
+#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD) | BCF::BCF_UNPACK_GENOTYPE(B) << (ADD) | (A & ADD)
 
 class EncoderGenotypes {
 private:
@@ -163,11 +162,6 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	// pack
-	// UNPACK(value) << shift +1 | UNPACK(value2) << 1 | phase
-	// shift = 2 if hasMissing == TRUE
-	// shift = 1 if HasMissing == FALSE
-	// add = 1 if hasMixedPhase == TRUE
 	const BYTE shift    = helper.hasMissing    ? 2 : 1;
 	const BYTE add      = helper.mixedPhasing  ? 1 : 0;
 
@@ -184,7 +178,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
-	YON_RLE_TYPE packed = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
+	YON_RLE_TYPE packed = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 	U32 ppa_pos = 1;
 	BYTE last_phase = (allele2 & 1);
@@ -192,7 +186,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++ppa_pos){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[ppa_pos]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[ppa_pos]+sizeof(SBYTE)]);
-		const YON_RLE_TYPE packed_internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
+		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 		last_phase = (allele2 & 1);
 
 		if(packed != packed_internal || length == run_limit){
@@ -230,18 +224,6 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	assert(helper.n_runs == n_runs);
 	runs.n_additions += n_runs;
 
-	/*
-	if(add == 0){
-		Core::TachyonRunNoPhase<YON_RLE_TYPE, false>* c = reinterpret_cast< Core::TachyonRunNoPhase<YON_RLE_TYPE, false>* >(&runs.buffer_data_uncompressed[runs_start_pos]);
-		for(U32 i = 0; i < n_runs; ++i){
-			std::cout << (int)c->alleleA << '|' << (int)c->alleleB << ':' << (int)c->runs << '\t';
-			++c;
-		}
-		std::cout << std::endl;
-	}
-	*/
-
-
 #if ENCODER_GT_DEBUG == 1
 	std::cout << 0 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';
 #endif
@@ -267,14 +249,14 @@ bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	// First
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
-	YON_RLE_TYPE packed = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
+	YON_RLE_TYPE packed = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 	U32 j = 1;
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
-		const YON_RLE_TYPE packed_internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, add);
+		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 		if(packed != packed_internal || length == run_limit){
 			// Prepare RLE

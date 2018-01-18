@@ -4,64 +4,10 @@
 #include "../BlockEntry.h"
 #include "MetaIterator.h"
 #include "IntegerIterator.h"
+#include "../base/GTDiploidObject.h"
 
 namespace Tachyon{
 namespace Iterator{
-
-/**<
- * Primary higher-level abstraction object for interpreted
- * diploid GT primitives
- */
-struct GTDiploidObject{
-private:
-	typedef GTDiploidObject self_type;
-	typedef Core::MetaEntry meta_entry_type;
-
-public:
-	GTDiploidObject(const BYTE n_alleles) :
-		n_alleles(n_alleles),
-		n_objects(0),
-		phase(0),
-		alleles(new BYTE[n_alleles])
-	{}
-	~GTDiploidObject(){ delete [] this->alleles; }
-
-	inline BYTE& operator[](const U32& p){ return(this->alleles[p]); }
-
-	void operator()(const U64& gt_primitive, const meta_entry_type& meta_entry){
-		const Core::TACHYON_GT_TYPE type = meta_entry.hot.getGenotypeType();
-		if(type == Core::YON_GT_RLE_DIPLOID_BIALLELIC){
-			const BYTE shift    = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
-			const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
-
-			if(add) this->phase = gt_primitive & 1;
-			else    this->phase = meta_entry.hot.controller.gt_phase;
-
-			this->alleles[0] = (gt_primitive & (1 << (shift + add - 1))) >> (shift + add - 1);
-			this->alleles[1] = (gt_primitive & (1 << (2*shift + add - 1))) >> (2*shift + add - 1);
-			this->n_objects  = gt_primitive >> (2*shift + add);
-		} else if(type == Core::YON_GT_RLE_DIPLOID_NALLELIC){
-			const BYTE shift    = ceil(log2(meta_entry.cold.n_allele + meta_entry.hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
-			const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
-
-			if(add) this->phase = gt_primitive & 1;
-			else    this->phase = meta_entry.hot.controller.gt_phase;
-
-			this->alleles[0] = (gt_primitive & ((1 << shift) - 1) << add) >> add;
-			this->alleles[1] = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-			this->n_objects  = gt_primitive >> (2*shift + add);
-		} else {
-			std::cerr << "not implemented" << std::endl;
-			exit(1);
-		}
-	}
-
-public:
-	const BYTE  n_alleles;
-	U64   n_objects;
-	BYTE  phase;
-	BYTE* alleles;
-};
 
 /**
  * We have several different GT representations
@@ -81,7 +27,7 @@ private:
 	typedef ContainerIterator container_iterator_type;
 	typedef Core::MetaEntry meta_entry_type;
 	typedef IntegerIterator integer_iterator_type;
-	typedef GTDiploidObject gt_diploid_object_type;
+	typedef Core::GTDiploidObject gt_diploid_object_type;
 
 	typedef const U32 (self_type::*getFunctionType)(void) const;
 	typedef const U64 (self_type::*getGTFunctionType)(void) const;
@@ -114,7 +60,6 @@ public:
 		delete this->iterator_meta;
 	}
 
-	// std::vector<some_abstract_genotype_object> toVector(void) const;
 	inline const meta_iterator_type* getIteratorMeta(void){ return(this->iterator_meta); }
 
 	/**<
@@ -165,11 +110,17 @@ public:
 		return(this->__diploid_object_type);
 	}
 
+	/**<
+	 * Increment the GT iterator only! Not the other structures
+	 */
 	void incrementGT(void){
 		if(this->getCurrentTargetStream() == 1) ++this->iterator_gt_rle;
 		else ++this->iterator_gt_simple;
 	}
 
+	/**<
+	 * General incrementor over internal objects
+	 */
 	void operator++(void){
 		++this->current_position;
 		++(*this->iterator_meta);
@@ -184,8 +135,8 @@ private:
 	bool __updateGTPrimitive(void){
 		// Next meta
 		const meta_entry_type& meta = this->iterator_meta->current();
-		const BYTE primitive = meta.hot.controller.gt_primtive_type;
-		const U32 target_stream = this->getCurrentTargetStream();
+		const BYTE primitive        = meta.hot.controller.gt_primtive_type;
+		const U32 target_stream     = this->getCurrentTargetStream();
 
 		if(primitive == Core::YON_GT_BYTE){
 			if(target_stream == 1) this->iterator_gt_rle.setType(Core::YON_TYPE_8B);
@@ -207,9 +158,7 @@ private:
 	}
 
 	template <class T>
-	inline const U32 __getCurrentObjectLength(void) const{
-		return(iterator_gt_meta.getDataIterator()->current<T>());
-	}
+	inline const U32 __getCurrentObjectLength(void) const{ return(iterator_gt_meta.getDataIterator()->current<T>()); }
 
 public:
 	U32 current_position;

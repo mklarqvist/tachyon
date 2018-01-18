@@ -12,6 +12,7 @@
 #include "iterator/ContainerIterator.h"
 #include "../index/SortedIndex.h"
 #include "iterator/GenotypeIterator.h"
+#include "../algorithm/Timer.h"
 
 namespace Tachyon{
 
@@ -415,19 +416,20 @@ public:
 		return true;
 	}
 
-	bool iterateGT(std::ostream& stream = std::cout){
+	U64 iterateGT(std::ostream& stream = std::cout){
+		Algorithm::Timer timer;
+		timer.Start();
 		Iterator::GenotypeIterator it_gt(this->block);
+
 
 		U32 cost[4];
 		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
 		U64 total_cost = 0;
-		std::cerr << this->block.size() << std::endl;
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = it_gt.getCurrentMeta();
 			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
 			U32 n_sum = 0;
 			for(U32 j = 0; j < it_gt.getCurrentObjectLength(); ++j){
-				const Iterator::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
+				const Core::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
 				//std::cerr << std::bitset<32>(current_gt) << ' ';
 				//std::cerr << (int)current_gt.alleles[0] << (current_gt.phase ? '|' : '/') << (int)current_gt.alleles[1] << ':' << current_gt.n_objects << '/' << it_gt.getCurrentObjectLength() << ' ';
 				it_gt.incrementGT();
@@ -435,14 +437,15 @@ public:
 			}
 			//std::cerr << '\t' << n_sum << std::endl;
 			assert(n_sum == 2504);
-			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
+			total_cost += cost[it_gt.getCurrentMeta().hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
 			++it_gt;
 		}
 		//std::cerr << std::endl;
 		//std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
 		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
+		std::cerr << this->block.size() << '\t' << Helpers::ToPrettyString((U64)((double)this->block.size()*this->header.n_samples/timer.Elapsed().count())) << '\t' << timer.ElapsedString() << std::endl;
 		//it_gt.reset();
-		return true;
+		return this->block.size();
 	}
 
 	bool iterateMeta(std::ostream& stream = std::cout){

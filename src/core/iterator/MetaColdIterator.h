@@ -12,9 +12,10 @@ namespace Iterator{
  *  from the passed byte stream.
  */
 class MetaColdIterator{
-	typedef MetaColdIterator self_type;
+	typedef MetaColdIterator      self_type;
 	typedef Core::StreamContainer container_type;
-	typedef Core::MetaCold entry_type;
+	typedef Core::MetaCold        entry_type;
+	typedef Core::MetaHot         hot_entry_type;
 
 public:
 	MetaColdIterator() : n_entries(0), pos(0), offsets(nullptr), container(nullptr){}
@@ -25,7 +26,7 @@ public:
 		offsets(nullptr),
 		container(nullptr)
 	{
-		this->set(container, n_entries);
+		this->setup(container, n_entries);
 	}
 
 	~MetaColdIterator(){
@@ -38,9 +39,9 @@ public:
 	 * structure into an internal array of structures
 	 * @param  container Data container
 	 * @param  n_entries Number of entries in 'container'. This is always provided from the 'MetaHotIterator'
-	 * @return Returns TRUE if there is data or FALSE if there is not
+	 * @return           Returns TRUE if there is data or FALSE if there is not
 	 */
-	bool set(const container_type& container, const S32 n_entries){
+	bool setup(const container_type& container, const S32 n_entries){
 		if(container.buffer_data_uncompressed.pointer == 0)
 			return false;
 
@@ -60,7 +61,6 @@ public:
 		for(S32 i = 1; i < this->n_entries; ++i){
 			const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.data[pos]);
 			this->offsets[i] = pos;
-			//std::cerr << i << '/' << this->n_entries << std::endl;
 			pos += l_body;
 		}
 
@@ -68,13 +68,103 @@ public:
 		return(true);
 	}
 
-	inline bool operator()(const container_type& container, const U32 n_entries){
-		return(this->set(container, n_entries));
+	/**<
+	 * Setup this iterator to keep only the provided GT object type
+	 * @param container_cold Container with cold meta data
+	 * @param container_hot  Container with hot meta data
+	 * @param gt_retain_type Type of GT object to keep
+	 * @return               Returns TRUE upon success or FALSE otherwise
+	 */
+	bool setupFilterGenotypePrimitive(const container_type& container_cold,
+			                        const container_type& container_hot,
+			                  const Core::TACHYON_GT_TYPE gt_retain_type){
+		// Cold data is empty
+		if(container_cold.buffer_data_uncompressed.pointer == 0)
+			return false;
+
+		// Hot data is empty
+		if(container_hot.buffer_data_uncompressed.pointer == 0)
+			return false;
+
+		// Reset
+		this->clear();
+
+		// Hot entries
+		const hot_entry_type* const hot_entries = reinterpret_cast<const hot_entry_type* const>(container_hot.buffer_data_uncompressed.data);
+		assert((container_hot.buffer_data_uncompressed.pointer % sizeof(hot_entry_type)) == 0);
+		const U64 n_entries_hot = container_hot.buffer_data_uncompressed.pointer / sizeof(entry_type);
+
+		for(U32 i = 0; i < n_entries_hot; ++i){
+			if(hot_entries[i].getGenotypeType() == gt_retain_type)
+				++this->n_entries;
+		}
+		this->offsets = new U32[this->n_entries];
+
+		if(gt_retain_type == Core::YON_GT_RLE_DIPLOID_BIALLELIC){
+			for(U32 i = 0; i < n_entries_hot; ++i){
+				const U32& l_body = *reinterpret_cast<const U32* const>(&container_cold.buffer_data_uncompressed.data[pos]);
+
+				if(hot_entries[i].getGenotypeType() == Core::YON_GT_RLE_DIPLOID_BIALLELIC)
+					this->offsets[i] = pos;
+
+				pos += l_body;
+			}
+		} else if(gt_retain_type == Core::YON_GT_RLE_DIPLOID_NALLELIC){
+			for(U32 i = 0; i < n_entries_hot; ++i){
+				const U32& l_body = *reinterpret_cast<const U32* const>(&container_cold.buffer_data_uncompressed.data[pos]);
+
+				if(hot_entries[i].getGenotypeType() == Core::YON_GT_RLE_DIPLOID_NALLELIC)
+					this->offsets[i] = pos;
+
+				pos += l_body;
+			}
+		} else {
+			std::cerr << "not implemented" << std::endl;
+			exit(1);
+		}
+		std::cerr << "Total entries: " << n_entries_hot << '\t' << this->n_entries << std::endl;
+
+		return(true);
 	}
 
-	void clear(void){
+	/**<
+	 * Overloaded function operator. Shorthand for setup
+	 * @param container Container with cold meta data
+	 * @param n_entries Number of variants
+	 * @return          Returns TRUE upon success or FALSE otherwise
+	 */
+	inline bool operator()(const container_type& container, const U32 n_entries){
+		return(this->setup(container, n_entries));
+	}
+
+	/**<
+	 * Overloaded function operator. Shorthand for setup
+	 * @param container_cold Container with cold meta data
+	 * @param container_hot  Container with hot meta data
+	 * @param gt_retain_type Type of GT object to keep
+	 * @return               Returns TRUE upon success or FALSE otherwise
+	 */
+	inline bool operator()(const container_type& container_cold,
+                           const container_type& container_hot,
+                     const Core::TACHYON_GT_TYPE gt_retain_type)
+	{
+		return(this->setupFilterGenotypePrimitive(container_cold, container_hot, gt_retain_type));
+	}
+
+	/**<
+	 * Reset the iterator to its starting state
+	 */
+	void reset(void){
 		this->n_entries = 0;
 		this->pos = 0;
+	}
+
+	/**<
+	 * Reset the iterator to its nascent state by
+	 * deleting all data and calling reset()
+	 */
+	void clear(void){
+		this->reset();
 		delete [] this->offsets;
 		this->offsets = nullptr;
 		this->container = nullptr;

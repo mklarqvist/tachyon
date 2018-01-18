@@ -156,7 +156,6 @@ std::vector<std::string> filePathBaseExtension(const std::string& input){
 	return(ret);
 }
 
-
 std::string NumberThousandsSeparator(std::string number){
 	int insertPosition = number.length() - 3;
 	char EndPos = 0;

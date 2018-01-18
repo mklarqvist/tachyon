@@ -140,12 +140,16 @@ int view(int argc, char** argv){
 		return 1;
 	}
 
+	U64 n_variants = 0;
+	Tachyon::Algorithm::Timer timer;
+	timer.Start();
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//reader.iterateMeta();
-		reader.iterateGT();
+		n_variants += reader.iterateGT();
 	}
+	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;
 }

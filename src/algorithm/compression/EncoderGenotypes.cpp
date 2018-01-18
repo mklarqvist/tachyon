@@ -242,8 +242,8 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 
 	// First ref
 	const SBYTE& allele1_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& allele2_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]+1]);
-	U32 ref = PACK_DIPLOID_BIALLELIC(allele2_2, allele1_2, 2, mixedPhase);
+	const SBYTE& allele2_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
+	U32 ref = YON_PACK_GT_DIPLOID(allele2_2, allele1_2, 2, mixedPhase);
 
 	// Run limits
 	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*(1+anyMissing)+mixedPhase)) - 1;
@@ -255,8 +255,8 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	U32 j = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j]+1]);
-		U32 internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, 2, mixedPhase);
+		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[j] + 1]);
+		U32 internal = YON_PACK_GT_DIPLOID(allele2, allele1, 2, mixedPhase);
 
 		// Extend or break run
 		if(ref != internal){
@@ -289,10 +289,10 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	// Determine best action
 	U32 smallest_cost = n_runs_byte*sizeof(BYTE);
 	U64 chosen_runs = n_runs_byte;
-	BYTE word_width = 1;
-	if(n_runs_u16*sizeof(U16) < smallest_cost){ smallest_cost = n_runs_u16*sizeof(U16); word_width = 2; chosen_runs = n_runs_u16; }
-	if(n_runs_u32*sizeof(U32) < smallest_cost){ smallest_cost = n_runs_u32*sizeof(U32); word_width = 4; chosen_runs = n_runs_u32; }
-	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = 8; chosen_runs = n_runs_u64; }
+	BYTE word_width = sizeof(BYTE);
+	if(n_runs_u16*sizeof(U16) < smallest_cost){ smallest_cost = n_runs_u16*sizeof(U16); word_width = sizeof(U16); chosen_runs = n_runs_u16; }
+	if(n_runs_u32*sizeof(U32) < smallest_cost){ smallest_cost = n_runs_u32*sizeof(U32); word_width = sizeof(U32); chosen_runs = n_runs_u32; }
+	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = sizeof(U64); chosen_runs = n_runs_u64; }
 
 	return(rle_helper_type(word_width, chosen_runs, firstPhase, mixedPhase, anyMissing, anyNA));
 }
@@ -352,7 +352,7 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	const BYTE shift     = ceil(log2(line.body->n_allele + anyMissing));
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
-	U32 ref = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, mixedPhase);
+	U32 ref = YON_PACK_GT_DIPLOID(allele2, allele1, shift, mixedPhase);
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
@@ -375,7 +375,7 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j] + 1]);
-		const U32 internal = PACK_DIPLOID_BIALLELIC(allele2, allele1, shift, mixedPhase);
+		const U32 internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, mixedPhase);
 
 		if(ref != internal){
 			ref = internal;
@@ -408,12 +408,9 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	U64 chosen_runs = n_runs_byte;
 	BYTE word_width = 1;
 	if(BYTE_limit == std::numeric_limits<S32>::max()) smallest_cost = std::numeric_limits<U32>::max();
-	if(n_runs_u16*sizeof(U16) < smallest_cost && U16_limit != std::numeric_limits<S32>::max()){ smallest_cost = n_runs_u16*sizeof(U16); word_width = 2; chosen_runs = n_runs_u16; }
-	if(n_runs_u32*sizeof(U32) < smallest_cost && U32_limit != std::numeric_limits<S64>::max()){ smallest_cost = n_runs_u32*sizeof(U32); word_width = 4; chosen_runs = n_runs_u32; }
-	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = 8; chosen_runs = n_runs_u64; }
-
-	//std::cerr << (int)word_width << '\t' << chosen_runs << '\t' << word_width*chosen_runs << "\t\t" << n_runs_byte*sizeof(BYTE) << '\t' << n_runs_u16*sizeof(U16) << '\t' << n_runs_u32*sizeof(U32) << '\t' << n_runs_u64*sizeof(U64) << std::endl;
-	//std::cerr << BYTE_limit << '\t' << U16_limit << '\t'  << U32_limit << '\t' << U64_limit << std::endl;
+	if(n_runs_u16*sizeof(U16) < smallest_cost){ smallest_cost = n_runs_u16*sizeof(U16); word_width = sizeof(U16); chosen_runs = n_runs_u16; }
+	if(n_runs_u32*sizeof(U32) < smallest_cost){ smallest_cost = n_runs_u32*sizeof(U32); word_width = sizeof(U32); chosen_runs = n_runs_u32; }
+	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = sizeof(U64); chosen_runs = n_runs_u64; }
 
 	return(rle_helper_type(word_width, chosen_runs, firstPhase, mixedPhase, anyMissing, anyNA));
 }
