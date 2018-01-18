@@ -15,7 +15,6 @@ private:
 	typedef Core::StreamContainer           container_type;
 	typedef Core::BlockEntry                block_type;
 	typedef Core::MetaEntry                 meta_entry_type;
-
 	typedef ContainerIterator               container_iterator_type;
 	typedef MetaIterator                    meta_iterator_type;
 	typedef MetaHotIterator                 meta_hot_iterator_type;
@@ -46,13 +45,16 @@ private:
 	template <class T>
 	bool __updatePrimitive(const T& gt_primitive);
 
+	virtual void interpretCurrentGT() =0;
+
 private:
 	U64 n_samples;
 	U32 current_position;
 	U32 n_capacity;
 	U32 n_width;
-	// groupings
-	U32 n_groups;
+	// sample groupings
+	U32 n_sample_groups;
+	TACHYON_ITERATOR_STATUS status;
 
 	// if RLE we have to iterate over each object
 	U32 current_position_object;
@@ -61,6 +63,7 @@ private:
 	// Iterators over meta data
 	meta_hot_iterator_type   meta_hot_iterator;
 	meta_cold_iterator_type* meta_cold_iterator;
+
 };
 
 class GenotypeDiploidIterator : public GenotypeObjectIteratorInterface{
