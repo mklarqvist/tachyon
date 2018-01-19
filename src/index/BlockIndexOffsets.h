@@ -1,8 +1,8 @@
 #ifndef INDEX_INDEXBLOCKENTRYOFFSETS_H_
 #define INDEX_INDEXBLOCKENTRYOFFSETS_H_
 
-#include "../core/base/StreamContainerHeaderController.h"
-#include "../core/base/StreamContainerHeader.h"
+#include "../containers/ContainerHeaderController.h"
+#include "../containers/ContainerHeader.h"
 
 namespace Tachyon{
 namespace Index{
@@ -35,8 +35,8 @@ struct BlockIndexHeaderOffsets{
 
 struct BlockIndexOffsets{
 	typedef BlockIndexOffsets self_type;
-	typedef Core::StreamContainerHeader header_type;
-	typedef Core::StreamContainerHeaderStride header_stride_type;
+	typedef Core::ContainerHeader header_type;
+	typedef Core::ContainerHeaderStride header_stride_type;
 
 public:
 	BlockIndexOffsets(void) : key(0){}

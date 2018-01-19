@@ -1,10 +1,10 @@
 #ifndef CORE_ITERATOR_GENOTYPEITERATOR_H_
 #define CORE_ITERATOR_GENOTYPEITERATOR_H_
 
-#include "../Block.h"
+#include "../containers/Block.h"
 #include "MetaIterator.h"
 #include "IntegerIterator.h"
-#include "../base/GTDiploidObject.h"
+#include "../core/base/GTDiploidObject.h"
 
 namespace Tachyon{
 namespace Iterator{

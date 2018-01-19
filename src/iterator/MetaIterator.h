@@ -2,7 +2,7 @@
 #define CORE_ITERATOR_METAITERATOR_H_
 
 #include "ContainerIterator.h"
-#include "../base/MetaEntry.h"
+#include "../core/base/MetaEntry.h"
 #include "MetaHotIterator.h"
 #include "MetaColdIterator.h"
 

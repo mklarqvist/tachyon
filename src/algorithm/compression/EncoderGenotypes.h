@@ -8,7 +8,7 @@
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/base/GTRecords.h"
 #include "../../core/base/MetaHot.h"
-#include "../../core/Container.h"
+#include "../../containers/Container.h"
 #include "EncoderGenotypesHelper.h"
 
 namespace Tachyon{

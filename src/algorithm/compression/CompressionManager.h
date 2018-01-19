@@ -2,7 +2,7 @@
 #define ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
 
 #include "CompressionContainer.h"
-#include "../../core/Container.h"
+#include "../../containers/Block.h"
 
 namespace Tachyon{
 namespace Compression{

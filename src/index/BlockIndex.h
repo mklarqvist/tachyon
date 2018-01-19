@@ -5,8 +5,8 @@
 #include <bitset>
 
 #include "../io/BasicBuffer.h"
-#include "../core/base/StreamContainerHeaderController.h"
-#include "../core/base/StreamContainerHeader.h"
+#include "../containers/ContainerHeaderController.h"
+#include "../containers/ContainerHeader.h"
 #include "BlockIndexOffsets.h"
 #include "BlockIndexBitvector.h"
 #include "../core/HashContainer.h"

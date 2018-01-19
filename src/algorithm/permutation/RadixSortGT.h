@@ -2,7 +2,7 @@
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
 #include "../../io/bcf/BCFReader.h"
-#include "../../core/PermutationManager.h"
+#include "../../algorithm/permutation/PermutationManager.h"
 
 // Todo: test
 // if #common variants over some threshold then sort on those only

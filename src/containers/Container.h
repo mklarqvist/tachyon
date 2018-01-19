@@ -4,8 +4,8 @@
 #include <bitset>
 
 #include "../io/BasicBuffer.h"
-#include "base/StreamContainerHeaderController.h"
-#include "base/StreamContainerHeader.h"
+#include "ContainerHeaderController.h"
+#include "ContainerHeader.h"
 
 namespace Tachyon{
 namespace Core{
@@ -32,8 +32,8 @@ enum TACHYON_CORE_COMPRESSION{
 class Container{
 	typedef Container self_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef StreamContainerHeader header_type;
-	typedef StreamContainerHeaderStride header_stride_type;
+	typedef ContainerHeader header_type;
+	typedef ContainerHeaderStride header_stride_type;
 
 public:
 	Container();

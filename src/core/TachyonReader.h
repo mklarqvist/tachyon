@@ -5,13 +5,13 @@
 
 #include "zstd.h"
 #include "zstd_errors.h"
-#include "Block.h"
+#include "../containers/Block.h"
 #include "../algorithm/compression/CompressionManager.h"
-#include "iterator/MetaIterator.h"
+#include "../iterator/MetaIterator.h"
 #include "base/header/Header.h"
-#include "iterator/ContainerIterator.h"
+#include "../iterator/ContainerIterator.h"
 #include "../index/SortedIndex.h"
-#include "iterator/GenotypeIterator.h"
+#include "../iterator/GenotypeIterator.h"
 #include "../algorithm/Timer.h"
 
 namespace Tachyon{

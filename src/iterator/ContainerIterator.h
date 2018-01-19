@@ -1,8 +1,8 @@
 #ifndef CORE_ITERATOR_CONTAINERITERATOR_H_
 #define CORE_ITERATOR_CONTAINERITERATOR_H_
 
-#include "../../io/BasicBuffer.h"
-#include "../Container.h"
+#include "../io/BasicBuffer.h"
+#include "../containers/Container.h"
 #include "IteratorStatus.h"
 #include "ContainerIteratorInterface.h"
 

@@ -3,9 +3,9 @@
 
 #include <fstream>
 
-#include "../io/BasicBuffer.h"
-#include "../third_party/zlib/zconf.h"
-#include "../third_party/zlib/zlib.h"
+#include "../../io/BasicBuffer.h"
+#include "../../third_party/zlib/zconf.h"
+#include "../../third_party/zlib/zlib.h"
 
 namespace Tachyon{
 namespace Core{

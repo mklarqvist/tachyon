@@ -1,13 +1,13 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
-#include "PermutationManager.h"
+#include "../algorithm/permutation/PermutationManager.h"
 #include "../index/BlockIndex.h"
 #include "Container.h"
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
-#include "ImporterStats.h"
-#include "iterator/MetaIterator.h"
+#include "../core/ImporterStats.h"
+#include "../iterator/MetaIterator.h"
 
 namespace Tachyon{
 namespace Core{
