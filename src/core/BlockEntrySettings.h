@@ -9,7 +9,7 @@ namespace Core{
  */
 struct BlockEntrySettingsMap{
 	typedef BlockEntrySettingsMap self_type;
-	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
+	typedef Index::BlockIndexHeaderOffsets offset_minimal_type;
 
 	BlockEntrySettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
 	BlockEntrySettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}

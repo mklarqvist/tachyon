@@ -221,7 +221,7 @@ public:
 			const U32 n_patterns = this->block.index_entry.n_info_patterns;
 			for(U32 p = 0; p < n_patterns; ++p){
 				// Cycle over streams that are set in the given bit-vector
-				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
+				const Index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
 				const U32 n_keys = target_info_vector.n_keys;
 				const U32* const keys = &target_info_vector.keys[0];
 
@@ -346,7 +346,7 @@ public:
 			if(this->settings.loadInfoAll){
 				// Cycle over streams that are set in the given bit-vector
 
-				const Index::IndexBlockEntryBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
+				const Index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
 				const U32 n_keys = target_info_vector.n_keys;
 				const U32* const firstKey = &target_info_vector.keys[0];
 
@@ -367,7 +367,7 @@ public:
 
 			if(this->settings.loadFormatAll){
 				// Start FORMAT description field
-				const Index::IndexBlockEntryBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
+				const Index::BlockIndexBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
 				const U32 n_keys_format = target_format_vector.n_keys;
 				const U32* const firstKey_format = &target_format_vector.keys[0];
 

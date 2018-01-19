@@ -2,7 +2,7 @@
 #define CORE_BLOCKENTRY_H_
 
 #include "PermutationManager.h"
-#include "../index/IndexBlockEntry.h"
+#include "../index/BlockIndex.h"
 #include "Container.h"
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
@@ -21,11 +21,11 @@ class Block{
 	typedef Block self_type;
 	typedef Core::Container container_type;
 	typedef Core::PermutationManager permutation_type;
-	typedef Index::IndexBlockEntry index_entry_type;
+	typedef Index::BlockIndex index_entry_type;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
-	typedef Index::IndexBlockEntryOffsets offset_type;
-	typedef Index::IndexBlockEntryHeaderOffsets offset_minimal_type;
+	typedef Index::BlockIndexOffsets offset_type;
+	typedef Index::BlockIndexHeaderOffsets offset_minimal_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
 	typedef Tachyon::Support::ImporterStats import_stats_type;
@@ -68,13 +68,13 @@ public:
 	 *
 	 * @param target
 	 */
-	inline void updateContainerSet(Index::IndexBlockEntry::INDEX_BLOCK_TARGET target){
+	inline void updateContainerSet(Index::BlockIndex::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
-		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		case(Index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_INFO)   :
 			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
 			break;
-		case(Index::IndexBlockEntry::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		case(Index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
@@ -196,16 +196,16 @@ private:
 public:
 	index_entry_type  index_entry;
 	permutation_type  ppa_manager;
-	container_type  meta_hot_container;
-	container_type  meta_info_map_ids;
-	container_type  meta_format_map_ids;
-	container_type  meta_filter_map_ids;
-	container_type  meta_cold_container;
-	container_type  gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
-	container_type  gt_rle_container;
-	container_type  gt_simple_container;
-	container_type* info_containers;
-	container_type* format_containers;
+	container_type    meta_hot_container;
+	container_type    meta_info_map_ids;
+	container_type    meta_format_map_ids;
+	container_type    meta_filter_map_ids;
+	container_type    meta_cold_container;
+	container_type    gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
+	container_type    gt_rle_container;
+	container_type    gt_simple_container;
+	container_type*   info_containers;
+	container_type*   format_containers;
 };
 
 }

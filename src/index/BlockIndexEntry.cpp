@@ -1,12 +1,12 @@
 #include <cmath>
 #include <cassert>
 
-#include "IndexBlockEntry.h"
+#include "BlockIndex.h"
 
 namespace Tachyon{
 namespace Index{
 
-IndexBlockEntryBase::IndexBlockEntryBase() :
+BlockIndexBase::BlockIndexBase() :
 	offset_end_of_block(0),
 	contigID(-1),
 	minPosition(0),
@@ -23,9 +23,9 @@ IndexBlockEntryBase::IndexBlockEntryBase() :
 	l_filter_bitvector(0)
 {}
 
-IndexBlockEntryBase::~IndexBlockEntryBase(){}
+BlockIndexBase::~BlockIndexBase(){}
 
-IndexBlockEntry::IndexBlockEntry():
+BlockIndex::BlockIndex():
 	info_offsets(nullptr),
 	format_offsets(nullptr),
 	filter_offsets(nullptr),
@@ -34,7 +34,7 @@ IndexBlockEntry::IndexBlockEntry():
 	filter_bit_vectors(nullptr)
 {}
 
-IndexBlockEntry::~IndexBlockEntry(){
+BlockIndex::~BlockIndex(){
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
 	delete [] this->filter_offsets;
@@ -43,8 +43,8 @@ IndexBlockEntry::~IndexBlockEntry(){
 	delete [] this->filter_bit_vectors;
 }
 
-void IndexBlockEntry::reset(void){
-	this->IndexBlockEntryBase::reset();
+void BlockIndex::reset(void){
+	this->BlockIndexBase::reset();
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
@@ -61,7 +61,7 @@ void IndexBlockEntry::reset(void){
 	this->filter_bit_vectors = nullptr;
 }
 
-bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
+bool BlockIndex::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
 	if(values.size() == 0)
 		return false;
 
@@ -85,7 +85,7 @@ bool IndexBlockEntry::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	return false;
 }
 
-bool IndexBlockEntry::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
+bool BlockIndex::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
 

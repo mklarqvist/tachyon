@@ -169,12 +169,12 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_format_streams     = this->format_fields.size();
 		this->block.index_entry.n_variants           = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.index_entry.constructBitVector(Index::IndexBlockEntry::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_INFO);
-		this->block.updateContainerSet(Index::IndexBlockEntry::INDEX_FORMAT);
+		this->block.updateContainerSet(Index::BlockIndex::INDEX_INFO);
+		this->block.updateContainerSet(Index::BlockIndex::INDEX_FORMAT);
 
 		// Todo: abstraction
 		// Digests

@@ -7,10 +7,10 @@
 namespace Tachyon{
 namespace Index{
 
-struct IndexBlockEntryHeaderOffsets{
-	typedef IndexBlockEntryHeaderOffsets self_type;
+struct BlockIndexHeaderOffsets{
+	typedef BlockIndexHeaderOffsets self_type;
 
-	IndexBlockEntryHeaderOffsets() : key(0), offset(0){}
+	BlockIndexHeaderOffsets() : key(0), offset(0){}
 
 	void clear(void){
 		this->key = 0;
@@ -33,16 +33,16 @@ struct IndexBlockEntryHeaderOffsets{
 	U32 offset;
 };
 
-struct IndexBlockEntryOffsets{
-	typedef IndexBlockEntryOffsets self_type;
+struct BlockIndexOffsets{
+	typedef BlockIndexOffsets self_type;
 	typedef Core::StreamContainerHeader header_type;
 	typedef Core::StreamContainerHeaderStride header_stride_type;
 
 public:
-	IndexBlockEntryOffsets(void) : key(0){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h) : key(key), header(h){}
-	IndexBlockEntryOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
-	~IndexBlockEntryOffsets(void){}
+	BlockIndexOffsets(void) : key(0){}
+	BlockIndexOffsets(const U32& key, const header_type& h) : key(key), header(h){}
+	BlockIndexOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
+	~BlockIndexOffsets(void){}
 
 	inline bool update(const U32& key){
 		this->key = key;
