@@ -2,7 +2,7 @@
 #define CORE_ITERATOR_CONTAINERITERATOR_H_
 
 #include "../../io/BasicBuffer.h"
-#include "../StreamContainer.h"
+#include "../Container.h"
 #include "IteratorStatus.h"
 #include "ContainerIteratorInterface.h"
 
@@ -17,7 +17,7 @@ private:
 	typedef IO::BasicBuffer                buffer_type;
 
 protected:
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 
 public:
 	explicit ContainerIterator(void);

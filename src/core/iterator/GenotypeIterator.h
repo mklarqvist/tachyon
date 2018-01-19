@@ -1,7 +1,7 @@
 #ifndef CORE_ITERATOR_GENOTYPEITERATOR_H_
 #define CORE_ITERATOR_GENOTYPEITERATOR_H_
 
-#include "../BlockEntry.h"
+#include "../Block.h"
 #include "MetaIterator.h"
 #include "IntegerIterator.h"
 #include "../base/GTDiploidObject.h"
@@ -21,8 +21,8 @@ namespace Iterator{
 class GenotypeIterator{
 private:
 	typedef GenotypeIterator self_type;
-	typedef Core::StreamContainer container_type;
-	typedef Core::BlockEntry block_type;
+	typedef Core::Container container_type;
+	typedef Core::Block block_type;
 	typedef MetaIterator meta_iterator_type;
 	typedef ContainerIterator container_iterator_type;
 	typedef Core::MetaEntry meta_entry_type;

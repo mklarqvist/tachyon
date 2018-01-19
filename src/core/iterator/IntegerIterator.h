@@ -8,7 +8,7 @@ class IntegerIterator{
 private:
 	typedef IntegerIterator self_type;
 	typedef IO::BasicBuffer buffer_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 
 	typedef const U64 (self_type::*currentFunctionType)(void) const;
 

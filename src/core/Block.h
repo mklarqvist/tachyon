@@ -3,7 +3,7 @@
 
 #include "PermutationManager.h"
 #include "../index/IndexBlockEntry.h"
-#include "StreamContainer.h"
+#include "Container.h"
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
 #include "ImporterStats.h"
@@ -17,9 +17,9 @@ namespace Core{
  * provides encapsulated and abstracted access to its
  * contents.
  */
-class BlockEntry{
-	typedef BlockEntry self_type;
-	typedef Core::StreamContainer stream_container;
+class Block{
+	typedef Block self_type;
+	typedef Core::Container container_type;
 	typedef Core::PermutationManager permutation_type;
 	typedef Index::IndexBlockEntry index_entry_type;
 	typedef Core::Support::HashContainer hash_container_type;
@@ -32,8 +32,8 @@ class BlockEntry{
 	typedef Iterator::MetaIterator meta_iterator_type;
 
 public:
-	BlockEntry();
-	~BlockEntry();
+	Block();
+	~Block();
 
 	/**< @brief Resize base container buffer streams
 	 * Internal use only
@@ -127,7 +127,7 @@ private:
 	 * @param container Data container
 	 * @param length    Iterator length
 	 */
-	void updateContainer(stream_container* container, const U32& length);
+	void updateContainer(container_type* container, const U32& length);
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
@@ -139,7 +139,7 @@ private:
 	 * @param container Data container
 	 * @param reormat   Reformat boolean
 	 */
-	void updateContainer(stream_container& container, bool reformat = true);
+	void updateContainer(container_type& container, bool reformat = true);
 
 	// Write everything
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -196,16 +196,16 @@ private:
 public:
 	index_entry_type  index_entry;
 	permutation_type  ppa_manager;
-	stream_container  meta_hot_container;
-	stream_container  meta_info_map_ids;
-	stream_container  meta_format_map_ids;
-	stream_container  meta_filter_map_ids;
-	stream_container  meta_cold_container;
-	stream_container  gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
-	stream_container  gt_rle_container;
-	stream_container  gt_simple_container;
-	stream_container* info_containers;
-	stream_container* format_containers;
+	container_type  meta_hot_container;
+	container_type  meta_info_map_ids;
+	container_type  meta_format_map_ids;
+	container_type  meta_filter_map_ids;
+	container_type  meta_cold_container;
+	container_type  gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
+	container_type  gt_rle_container;
+	container_type  gt_simple_container;
+	container_type* info_containers;
+	container_type* format_containers;
 };
 
 }

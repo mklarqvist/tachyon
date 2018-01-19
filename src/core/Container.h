@@ -29,16 +29,16 @@ enum TACHYON_CORE_COMPRESSION{
 
 
 // Stream container for importing
-class StreamContainer{
-	typedef StreamContainer self_type;
+class Container{
+	typedef Container self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef StreamContainerHeader header_type;
 	typedef StreamContainerHeaderStride header_stride_type;
 
 public:
-	StreamContainer();
-	StreamContainer(const U32 start_size);
-	~StreamContainer();
+	Container();
+	Container(const U32 start_size);
+	~Container();
 
 	/**<
 	 *

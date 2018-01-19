@@ -12,8 +12,8 @@ namespace Iterator{
 class GenotypeObjectIteratorInterface{
 private:
 	typedef GenotypeObjectIteratorInterface self_type;
-	typedef Core::StreamContainer           container_type;
-	typedef Core::BlockEntry                block_type;
+	typedef Core::Container           container_type;
+	typedef Core::Block                block_type;
 	typedef Core::MetaEntry                 meta_entry_type;
 	typedef ContainerIterator               container_iterator_type;
 	typedef MetaIterator                    meta_iterator_type;

@@ -4,7 +4,7 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "BlockEntry.h"
+#include "Block.h"
 #include "../algorithm/permutation/RadixSortGT.h"
 #include "../algorithm/compression/EncoderGenotypes.h"
 #include "../index/IndexEntry.h"
@@ -27,12 +27,12 @@ private:
 	typedef BCF::BCFReader bcf_reader_type;
 	typedef BCF::BCFEntry bcf_entry_type;
 	typedef Algorithm::RadixSortGT radix_sorter_type;
-	typedef Core::StreamContainer stream_container;
+	typedef Core::Container stream_container;
 	typedef Core::PermutationManager permutation_type;
 	typedef Core::MetaHot meta_type;
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
-	typedef Core::BlockEntry block_type;
+	typedef Core::Block block_type;
 	typedef Support::ImporterStats import_stats_type;
 	typedef Compression::CompressionManager compression_manager_type;
 

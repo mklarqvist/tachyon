@@ -9,7 +9,7 @@ namespace Algorithm{
 class DigitalDigestController{
 private:
 	typedef DigitalDigestController self_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 
 public:
 	DigitalDigestController(void){}

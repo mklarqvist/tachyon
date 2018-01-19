@@ -2,7 +2,7 @@
 #define ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
 
 #include "CompressionContainer.h"
-#include "../../core/StreamContainer.h"
+#include "../../core/Container.h"
 
 namespace Tachyon{
 namespace Compression{
@@ -13,8 +13,8 @@ private:
 	typedef UncompressedCodec no_codec_type;
 	typedef ZSTDCodec zstd_codec_type;
 
-	typedef Core::BlockEntry block_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Block block_type;
+	typedef Core::Container container_type;
 
 public:
 	CompressionManager(){}

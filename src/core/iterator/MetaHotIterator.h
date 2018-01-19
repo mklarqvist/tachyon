@@ -6,7 +6,7 @@ namespace Iterator{
 
 class MetaHotIterator{
 	typedef MetaHotIterator self_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 	typedef Core::MetaHot entry_type;
 
 public:

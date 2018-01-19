@@ -4,7 +4,7 @@
 #include <cassert>
 
 #include "../../io/bcf/BCFEntry.h"
-#include "../StreamContainer.h"
+#include "../Container.h"
 
 namespace Tachyon{
 namespace Core{
@@ -83,7 +83,7 @@ struct MetaCold{
 private:
 	typedef MetaCold self_type;
 	typedef BCF::BCFEntry bcf_type;
-	typedef Core::StreamContainer stream_container;
+	typedef Core::Container stream_container;
 	typedef ColdMetaAllele allele_type;
 
 public:

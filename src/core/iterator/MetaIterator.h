@@ -22,7 +22,7 @@ private:
 	typedef Core::MetaHot hot_type;
 	typedef MetaColdIterator cold_iterator_type;
 	typedef Core::MetaCold cold_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 	typedef ContainerIterator container_iterator_type;
 
 public:

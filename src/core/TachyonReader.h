@@ -5,7 +5,7 @@
 
 #include "zstd.h"
 #include "zstd_errors.h"
-#include "BlockEntry.h"
+#include "Block.h"
 #include "../algorithm/compression/CompressionManager.h"
 #include "iterator/MetaIterator.h"
 #include "base/header/Header.h"
@@ -18,7 +18,7 @@ namespace Tachyon{
 
 class TachyonReader{
 	typedef TachyonReader self_type;
-	typedef Core::BlockEntry block_entry_type;
+	typedef Core::Block block_entry_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Core::Header header_type;
 	typedef Compression::CompressionManager codec_manager_type;

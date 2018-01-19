@@ -8,7 +8,7 @@
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/base/GTRecords.h"
 #include "../../core/base/MetaHot.h"
-#include "../../core/StreamContainer.h"
+#include "../../core/Container.h"
 #include "EncoderGenotypesHelper.h"
 
 namespace Tachyon{
@@ -61,7 +61,7 @@ private:
 	typedef BCF::BCFEntry bcf_type;
 	typedef Core::MetaHot meta_type;
 	typedef EncoderGenotypesHelper helper_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :

@@ -13,7 +13,7 @@ namespace Iterator{
  */
 class MetaColdIterator{
 	typedef MetaColdIterator      self_type;
-	typedef Core::StreamContainer container_type;
+	typedef Core::Container container_type;
 	typedef Core::MetaCold        entry_type;
 	typedef Core::MetaHot         hot_entry_type;
 

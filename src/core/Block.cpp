@@ -1,13 +1,13 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
-#include "BlockEntry.h"
+#include "Block.h"
 
 namespace Tachyon{
 namespace Core{
 
-BlockEntry::BlockEntry() :
-	info_containers(new stream_container[200]),
-	format_containers(new stream_container[200])
+Block::Block() :
+	info_containers(new container_type[200]),
+	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
 	this->meta_format_map_ids.setType(YON_TYPE_32B);
@@ -25,11 +25,11 @@ BlockEntry::BlockEntry() :
 	this->gt_support_data_container.setStrideSize(1);
 }
 
-BlockEntry::~BlockEntry(){
+Block::~Block(){
 	delete [] this->info_containers;
 }
 
-void BlockEntry::clear(void){
+void Block::clear(void){
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -63,7 +63,7 @@ void BlockEntry::clear(void){
 	this->gt_support_data_container.setStrideSize(1);
 }
 
-void BlockEntry::resize(const U32 s){
+void Block::resize(const U32 s){
 	if(s == 0) return;
 	this->meta_hot_container.resize(s);
 	this->meta_cold_container.resize(s);
@@ -79,7 +79,7 @@ void BlockEntry::resize(const U32 s){
 	}
 }
 
-void BlockEntry::updateBaseContainers(void){
+void Block::updateBaseContainers(void){
 	this->updateContainer(this->gt_rle_container);
 	this->updateContainer(this->gt_simple_container);
 	this->updateContainer(this->gt_support_data_container);
@@ -90,7 +90,7 @@ void BlockEntry::updateBaseContainers(void){
 	this->updateContainer(this->meta_info_map_ids  , false);
 }
 
-void BlockEntry::updateOffsets(void){
+void Block::updateOffsets(void){
 	U32 cum_size = this->index_entry.getObjectSize();
 	this->index_entry.offset_ppa.offset = cum_size;
 	cum_size += this->ppa_manager.getObjectSize();
@@ -138,7 +138,7 @@ void BlockEntry::updateOffsets(void){
 	this->index_entry.offset_end_of_block = cum_size;
 }
 
-void BlockEntry::BlockEntry::updateContainer(stream_container* container, const U32& length){
+void Block::Block::updateContainer(container_type* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
@@ -162,7 +162,7 @@ void BlockEntry::BlockEntry::updateContainer(stream_container* container, const 
 	}
 }
 
-void BlockEntry::updateContainer(stream_container& container, bool reformat){
+void Block::updateContainer(container_type& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 &&
 	   container.header.controller.type != Core::YON_TYPE_BOOLEAN)
 		return;
@@ -185,7 +185,7 @@ void BlockEntry::updateContainer(stream_container& container, bool reformat){
 	}
 }
 
-bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
+bool Block::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
 
 	const U64 start_offset = (U64)stream.tellg();
@@ -300,7 +300,7 @@ bool BlockEntry::read(std::ifstream& stream, settings_type& settings){
 	return(true);
 }
 
-bool BlockEntry::write(std::ofstream& stream,
+bool Block::write(std::ofstream& stream,
                    import_stats_type& stats,
                    import_stats_type& stats_uncompressed){
 	U64 last_pos = stream.tellp();
@@ -361,7 +361,7 @@ bool BlockEntry::write(std::ofstream& stream,
 	return(true);
 }
 
-Iterator::MetaIterator* BlockEntry::getMetaIterator(void) const{
+Iterator::MetaIterator* Block::getMetaIterator(void) const{
 	meta_iterator_type* it;
 	if(this->meta_cold_container.buffer_data_uncompressed.size())
 		it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container);
@@ -380,7 +380,7 @@ Iterator::MetaIterator* BlockEntry::getMetaIterator(void) const{
 	return(it);
 }
 
-Iterator::MetaIterator* BlockEntry::getMetaIterator(const Core::TACHYON_GT_TYPE gt_filter) const{
+Iterator::MetaIterator* Block::getMetaIterator(const Core::TACHYON_GT_TYPE gt_filter) const{
 	meta_iterator_type* it;
 	if(this->meta_cold_container.buffer_data_uncompressed.size())
 		it = new meta_iterator_type(this->meta_hot_container, this->meta_cold_container, gt_filter);
