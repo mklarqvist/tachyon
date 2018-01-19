@@ -14,6 +14,8 @@
 #include "../iterator/GenotypeIterator.h"
 #include "../algorithm/Timer.h"
 
+#include "../iterator/IteratorIntegerReference.h"
+
 namespace Tachyon{
 
 class TachyonReader{
@@ -35,6 +37,8 @@ public:
 		delete [] this->internal_buffers;
 
 	}
+
+	inline settings_type& getSettings(void){ return(this->settings); }
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -168,7 +172,7 @@ public:
 		// Setup containers
 		// INFO
 		Iterator::ContainerIterator* info_iterators = nullptr;
-		if(this->settings.loadInfoAll){
+		if(this->settings.importInfoAll){
 			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
@@ -178,7 +182,7 @@ public:
 
 		// FORMAT
 		Iterator::ContainerIterator* format_iterators = nullptr;
-		if(this->settings.loadFormatAll){
+		if(this->settings.importFormatAll){
 			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 				format_iterators[i].setup(this->block.format_containers[i]);
@@ -217,7 +221,7 @@ public:
 		// Cycle over entries
 		// Cycle over each key in pattern
 		// If key available: add to buffer
-		if(this->settings.loadInfoAll){
+		if(this->settings.importInfoAll){
 			const U32 n_patterns = this->block.index_entry.n_info_patterns;
 			for(U32 p = 0; p < n_patterns; ++p){
 				// Cycle over streams that are set in the given bit-vector
@@ -297,7 +301,7 @@ public:
 		// Setup containers
 		// INFO
 		Iterator::ContainerIterator* info_iterators = nullptr;
-		if(this->settings.loadInfoAll){
+		if(this->settings.importInfoAll){
 			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
@@ -307,7 +311,7 @@ public:
 
 		// FORMAT
 		Iterator::ContainerIterator* format_iterators = nullptr;
-		if(this->settings.loadFormatAll){
+		if(this->settings.importFormatAll){
 			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 				format_iterators[i].setup(this->block.format_containers[i]);
@@ -343,7 +347,7 @@ public:
 			}
 
 			U32 set = 0;
-			if(this->settings.loadInfoAll){
+			if(this->settings.importInfoAll){
 				// Cycle over streams that are set in the given bit-vector
 
 				const Index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
@@ -365,7 +369,7 @@ public:
 				}
 			}
 
-			if(this->settings.loadFormatAll){
+			if(this->settings.importFormatAll){
 				// Start FORMAT description field
 				const Index::BlockIndexBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
 				const U32 n_keys_format = target_format_vector.n_keys;

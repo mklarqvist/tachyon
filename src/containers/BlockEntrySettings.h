@@ -5,25 +5,25 @@ namespace Tachyon{
 namespace Core{
 
 /**<
- * Supportive structure for BlockEntry
+ * Supportive structure for Block
  */
-struct BlockEntrySettingsMap{
-	typedef BlockEntrySettingsMap self_type;
+struct SettingsMap{
+	typedef SettingsMap self_type;
 	typedef Index::BlockIndexHeaderOffsets offset_minimal_type;
 
-	BlockEntrySettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
-	BlockEntrySettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
-	~BlockEntrySettingsMap(){}
+	SettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
+	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
+	~SettingsMap(){}
 
-	BlockEntrySettingsMap(const BlockEntrySettingsMap& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
-	BlockEntrySettingsMap(BlockEntrySettingsMap&& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
-	BlockEntrySettingsMap& operator=(const BlockEntrySettingsMap& other){
+	SettingsMap(const SettingsMap& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
+	SettingsMap(SettingsMap&& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
+	SettingsMap& operator=(const SettingsMap& other){
 		this->iterator_index = other.iterator_index;
 		this->target_stream_local = other.target_stream_local;
 		this->offset = other.offset;
 		return *this;
 	}
-	BlockEntrySettingsMap& operator=(BlockEntrySettingsMap&& other){
+	SettingsMap& operator=(SettingsMap&& other){
 		if(this!=&other) // prevent self-move
 		{
 			this->iterator_index = other.iterator_index;
@@ -45,57 +45,101 @@ struct BlockEntrySettingsMap{
  * Settings
  */
 struct BlockEntrySettings{
-	typedef BlockEntrySettingsMap map_type;
+	typedef BlockEntrySettings    self_type;
+	typedef SettingsMap map_type;
 
 	BlockEntrySettings() :
-		loadPPA(false),
-		loadGT(false),
-		loadGTSimple(false),
-		loadMetaHot(false),
-		loadMetaCold(false),
-		loadInfoAll(false),
-		loadFormatAll(false),
+		importPPA(false),
+		importGT(false),
+		importGTSimple(false),
+		importMetaHot(false),
+		importMetaCold(false),
+		importInfoAll(false),
+		importFormatAll(false),
 		constructOccTable(false)
 	{}
 
-	void loadAll(void){
-		this->loadPPA = true;
-		this->loadGT = true;
-		this->loadGTSimple = true;
-		this->loadMetaCold = true;
-		this->loadMetaHot = true;
-		this->loadInfoAll = true;
-		this->loadFormatAll = true;
+	self_type& loadAll(const bool set = true){
+		this->importPPA = set;
+		this->importGT = set;
+		this->importGTSimple = set;
+		this->importMetaCold = set;
+		this->importMetaHot = set;
+		this->importInfoAll = set;
+		this->importFormatAll = set;
+		return(*this);
 	}
 
-	void unsetFormat(void){
-		this->loadPPA = false;
-		this->loadGT = false;
-		this->loadGTSimple = false;
-		this->loadFormatAll = false;
-		this->constructOccTable = false;
+	self_type& loadMeta(const bool set = true){
+		this->importMetaHot = set;
+		this->importMetaCold = set;
+		return(*this);
 	}
 
-	void unsetInfo(void){
-		this->loadInfoAll = false;
+	self_type& loadMetaHot(const bool set = true){
+		this->importMetaHot = true;
+		return(*this);
 	}
 
-	bool loadPPA;
-	bool loadGT;
-	bool loadGTSimple;
-	bool loadMetaHot;
-	bool loadMetaCold;
-	bool loadInfoAll;
-	bool loadFormatAll;
+	self_type& loadINFO(const bool set = true){
+		this->importInfoAll = set;
+		return(*this);
+	}
+
+	self_type& loadINFO(const std::string& field_name){
+		if(field_name.size() == 0) return(*this);
+		this->info_list.push_back(field_name);
+		return(*this);
+	}
+
+	self_type& loadINFO(const U32 field_id){
+		this->info_ID_list.push_back(field_id);
+		return(*this);
+	}
+
+	self_type& loadGenotypes(const bool set = true){
+		this->importGT = true;
+		this->importGTSimple = true;
+		return(*this);
+	}
+
+	self_type& loadFORMAT(const bool set = true){
+		this->importPPA = set;
+		this->importGT = set;
+		this->importGTSimple = set;
+		this->importFormatAll = set;
+		return(*this);
+	}
+
+	self_type& loadFORMAT(const std::string& field_name){
+		if(field_name.size() == 0) return(*this);
+		this->format_list.push_back(field_name);
+		return(*this);
+	}
+
+	self_type& loadFORMAT(const U32 field_id){
+		this->format_ID_list.push_back(field_id);
+		return(*this);
+	}
+
+
+public:
+	bool importPPA;
+	bool importGT;
+	bool importGTSimple;
+	bool importMetaHot;
+	bool importMetaCold;
+	bool importInfoAll;
+	bool importFormatAll;
 	bool constructOccTable;
 
-	std::vector<std::string> load_samples;
-	std::vector<std::string> load_info_names;   // has to be in order
-	std::vector<std::string> load_format_names; // has to be in order
-	std::vector<U32> load_info_ID;
-	std::vector<U32> load_format_ID;
+	std::vector<std::string> samples_list;
+	std::vector<std::string> info_list;   // has to be in order
+	std::vector<std::string> format_list; // has to be in order
+	std::vector<U32> info_ID_list;
+	std::vector<U32> format_ID_list;
 
-
+	//
 	std::vector<map_type> load_info_ID_loaded;
 	std::vector<map_type> load_format_ID_loaded;
 };

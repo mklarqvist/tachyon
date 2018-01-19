@@ -193,39 +193,39 @@ bool Block::read(std::ifstream& stream, settings_type& settings){
 	const U64 end_of_block = start_offset + this->index_entry.offset_end_of_block;
 
 
-	if(settings.loadPPA){
+	if(settings.importPPA){
 		if(this->index_entry.controller.hasGTPermuted){
 			stream.seekg(start_offset + this->index_entry.offset_ppa.offset);
 			stream >> this->ppa_manager;
 		}
 	}
 
-	if(settings.loadMetaHot){
+	if(settings.importMetaHot){
 		stream.seekg(start_offset + this->index_entry.offset_hot_meta.offset);
 		stream >> this->meta_hot_container;
 	}
 
-	if(settings.loadMetaCold){
+	if(settings.importMetaCold){
 		stream.seekg(start_offset + this->index_entry.offset_cold_meta.offset);
 		stream >> this->meta_cold_container;
 	}
 
-	if(settings.loadGT){
+	if(settings.importGT){
 		stream.seekg(start_offset + this->index_entry.offset_gt_rle.offset);
 		stream >> this->gt_rle_container;
 	}
 
-	if(settings.loadGTSimple){
+	if(settings.importGTSimple){
 		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
 	}
 
-	if(settings.loadGTSimple || settings.loadGT){
+	if(settings.importGTSimple || settings.importGT){
 		stream.seekg(start_offset + this->index_entry.offset_gt_helper.offset);
 		stream >> this->gt_support_data_container;
 	}
 
-	if(settings.loadInfoAll || settings.load_info_ID_loaded.size()){
+	if(settings.importInfoAll || settings.info_ID_list.size()){
 		stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
 		stream >> this->meta_info_map_ids;
 	}
@@ -234,13 +234,13 @@ bool Block::read(std::ifstream& stream, settings_type& settings){
 	stream.seekg(start_offset + this->index_entry.offset_meta_filter_id.offset);
 	stream >> this->meta_filter_map_ids;
 
-	if(settings.loadInfoAll){
+	if(settings.importInfoAll){
 		stream.seekg(start_offset + this->index_entry.offset_meta_format_id.offset);
 		stream >> this->meta_format_map_ids;
 	}
 
 	// Load all info
-	if(settings.loadInfoAll){
+	if(settings.importInfoAll){
 		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 			stream >> this->info_containers[i];
@@ -249,18 +249,18 @@ bool Block::read(std::ifstream& stream, settings_type& settings){
 
 	}
 	// If we have supplied a list of identifiers
-	else if(settings.load_info_ID.size() > 0) {
-		BlockEntrySettingsMap map_entry;
+	else if(settings.info_ID_list.size() > 0) {
+		SettingsMap map_entry;
 		// Cycle over all the keys we are interested in
 		U32 iterator_index = 0;
-		for(U32 i = 0; i < settings.load_info_ID.size(); ++i){
+		for(U32 i = 0; i < settings.info_ID_list.size(); ++i){
 			// Cycle over all available streams in this block
 			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
 				// If there is a match
 				// Push back field into map
-				if(this->index_entry.info_offsets[j].key == settings.load_info_ID[i]){
+				if(this->index_entry.info_offsets[j].key == settings.info_ID_list[i]){
 					settings.load_info_ID_loaded.push_back(
-							BlockEntrySettingsMap(
+							SettingsMap(
 									iterator_index++,                   // iterator value
 									j,                                  // local index id
 									&this->index_entry.info_offsets[j]) // offset
@@ -286,7 +286,7 @@ bool Block::read(std::ifstream& stream, settings_type& settings){
 		}
 	} // end case load_info_ID
 
-	if(settings.loadFormatAll){
+	if(settings.importFormatAll){
 		stream.seekg(start_offset + this->index_entry.format_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
 			stream >> this->format_containers[i];
