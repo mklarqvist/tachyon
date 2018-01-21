@@ -105,36 +105,8 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::TachyonReader reader;
-
-	//reader.settings.loadAll();
-	//reader.settings.loadPPA = false;
-	//if(dropInfo)   reader.settings.unsetInfo();
-	//if(dropFormat) reader.settings.unsetFormat();
-
-	reader.settings.loadMetaHot  = true;
-	reader.settings.loadMetaCold = true;
-	reader.settings.loadGT       = true;
-	reader.settings.loadGTSimple = true;
-
-
-	//reader.settings.loadMetaHot = true;
-	//reader.settings.loadMetaCold = true;
-	// Todo: deduplicate and move to function in settings class
-	//for(U32 i = 14; i < 18; ++i)
-	//	reader.settings.load_info_ID.push_back(i);
-	//
-	/*
-
-	reader.settings.load_info_ID.push_back(5);
-	reader.settings.load_info_ID.push_back(15);
-	reader.settings.load_info_ID.push_back(16);
-	reader.settings.load_info_ID.push_back(17);
-	reader.settings.load_info_ID.push_back(18);
-	reader.settings.load_info_ID.push_back(11);
-	reader.settings.load_info_ID.push_back(24);
-	reader.settings.load_info_ID.push_back(11);
-	reader.settings.load_info_ID.push_back(25);
-	*/
+	//reader.getSettings().loadMeta(true).loadGenotypes(true);
+	reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -146,9 +118,9 @@ int view(int argc, char** argv){
 	timer.Start();
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
-		//reader.toVCFString();
+		reader.toVCFString();
 		//reader.iterateMeta();
-		n_variants += reader.iterateGT();
+		//n_variants += reader.iterateGT();
 	}
 	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 

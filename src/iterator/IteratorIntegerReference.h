@@ -71,8 +71,8 @@ public:
     virtual U64 mathMin(void) const =0;
 
     // Convertions to string
-    virtual void toString(std::ostream& stream = std::cout) =0;
-    virtual void toString(buffer_type& buffer) =0;
+    //virtual void toString(std::ostream& stream = std::cout) =0;
+    //virtual void toString(buffer_type& buffer) =0;
 
 private:
     friend std::ostream& operator<<(std::ostream& os, const self_type& iterator);
@@ -80,19 +80,18 @@ private:
 protected:
     size_t current_position;
     size_t n_entries;
-    char* const data;
 };
 
-template <class return_primitive_type, class parent_primitive_type = U32>
-class IteratorIntegerReferenceImpl : public IteratorIntegerReference<parent_primitive_type>{
+template <class actual_primitive_type, class return_primitive_type = U32>
+class IteratorIntegerReferenceImpl : public IteratorIntegerReference<return_primitive_type>{
 private:
     typedef IteratorIntegerReferenceImpl self_type;
-    typedef IteratorIntegerReference<parent_primitive_type> parent_type;
+    typedef IteratorIntegerReference<return_primitive_type> parent_type;
     typedef IO::BasicBuffer          buffer_type;
-    typedef return_primitive_type        T;
+    typedef return_primitive_type    T;
 
 public:
-    IteratorIntegerReferenceImpl(const char* const data);
+    IteratorIntegerReferenceImpl(char* const data);
     ~IteratorIntegerReferenceImpl();
 
     // Element access
@@ -140,18 +139,17 @@ public:
     }
 
     // Convertions to string
-    void toString(std::ostream& stream = std::cout);
-    void toString(buffer_type& buffer);
+    //void toString(std::ostream& stream = std::cout);
+    //void toString(buffer_type& buffer);
 
 private:
-    T* const __data_interpreted;
+    const actual_primitive_type* __data_interpreted;
 };
 
 template <class return_primitive_type>
-IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* const data) :
+IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* data) :
 	current_position(0),
-	n_entries(0),
-	data(data)
+	n_entries(0)
 {
 
 }
@@ -159,15 +157,15 @@ IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* 
 template <class return_primitive_type>
 IteratorIntegerReference<return_primitive_type>::~IteratorIntegerReference(){}
 
-template <class return_primitive_type, class parent_primitive_type>
-IteratorIntegerReferenceImpl<return_primitive_type, parent_primitive_type>::IteratorIntegerReferenceImpl(const char* const data) :
+template <class actual_primitive_type, class return_primitive_type>
+IteratorIntegerReferenceImpl<actual_primitive_type, return_primitive_type>::IteratorIntegerReferenceImpl(char* data) :
 	parent_type(data),
-	__data_interpreted(data)
+	__data_interpreted(reinterpret_cast<actual_primitive_type*>(&data))
 {
 }
 
-template <class return_primitive_type, class parent_primitive_type>
-IteratorIntegerReferenceImpl<return_primitive_type, parent_primitive_type>::~IteratorIntegerReferenceImpl(){}
+template <class actual_primitive_type, class return_primitive_type>
+IteratorIntegerReferenceImpl<actual_primitive_type, return_primitive_type>::~IteratorIntegerReferenceImpl(){}
 
 
 }
