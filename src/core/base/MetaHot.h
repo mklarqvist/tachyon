@@ -123,10 +123,10 @@ public:
 #pragma pack(push, 1)
 struct __attribute__((packed, aligned(1))) MetaHot{
 private:
-	typedef MetaHot self_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef MetaHot           self_type;
+	typedef IO::BasicBuffer   buffer_type;
 	typedef MetaHotController controller_type;
-	typedef MetaHotRefAlt allele_type;
+	typedef MetaHotRefAlt     allele_type;
 
 public:
 	// ctor
@@ -136,6 +136,9 @@ public:
 	MetaHot& operator=(const self_type& other) noexcept;
 	MetaHot& operator=(self_type&& other) noexcept;
 	~MetaHot();
+
+	// Access
+	inline const controller_type& getController(void) const{ return(this->controller); }
 
 	// Supportive boolean functions
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }

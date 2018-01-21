@@ -25,14 +25,15 @@ CPP_DEPS :=
 SUBDIRS := \
 src/algorithm/compression \
 src/algorithm/permutation \
+src/containers \
 src/core \
 src/core/base \
-src/core/iterator \
 src/index \
 src/io \
 src/io/bcf \
 src/io/compression \
 src/io/vcf \
+src/iterator \
 src \
 src/support \
 src/third_party/xxhash \

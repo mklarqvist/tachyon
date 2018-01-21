@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/index/IndexBlockEntry.cpp 
+../src/index/BlockIndexEntry.cpp 
 
 OBJS += \
-./src/index/IndexBlockEntry.o 
+./src/index/BlockIndexEntry.o 
 
 CPP_DEPS += \
-./src/index/IndexBlockEntry.d 
+./src/index/BlockIndexEntry.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

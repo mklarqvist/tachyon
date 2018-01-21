@@ -4,17 +4,26 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/core/iterator/ContainerIterator.cpp 
+../src/containers/Block.cpp \
+../src/containers/Container.cpp \
+../src/containers/MetaColdContainer.cpp \
+../src/containers/MetaHotContainer.cpp 
 
 OBJS += \
-./src/core/iterator/ContainerIterator.o 
+./src/containers/Block.o \
+./src/containers/Container.o \
+./src/containers/MetaColdContainer.o \
+./src/containers/MetaHotContainer.o 
 
 CPP_DEPS += \
-./src/core/iterator/ContainerIterator.d 
+./src/containers/Block.d \
+./src/containers/Container.d \
+./src/containers/MetaColdContainer.d \
+./src/containers/MetaHotContainer.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-src/core/iterator/%.o: ../src/core/iterator/%.cpp
+src/containers/%.o: ../src/containers/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
 	g++ -std=c++0x -I/usr/include/openssl/ -I/usr/local/include/ -O3 -msse4.2 -g -Wall -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"

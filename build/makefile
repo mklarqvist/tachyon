@@ -11,14 +11,15 @@ RM := rm
 -include src/third_party/zlib/subdir.mk
 -include src/third_party/xxhash/subdir.mk
 -include src/support/subdir.mk
+-include src/iterator/subdir.mk
 -include src/io/vcf/subdir.mk
 -include src/io/compression/subdir.mk
 -include src/io/bcf/subdir.mk
 -include src/io/subdir.mk
 -include src/index/subdir.mk
--include src/core/iterator/subdir.mk
 -include src/core/base/subdir.mk
 -include src/core/subdir.mk
+-include src/containers/subdir.mk
 -include src/algorithm/permutation/subdir.mk
 -include src/algorithm/compression/subdir.mk
 -include src/subdir.mk

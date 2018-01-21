@@ -7,6 +7,7 @@ MetaIterator::MetaIterator() :
 	current_position(0),
 	n_entries(0),
 	n_entries_unfiltered(0),
+	status(YON_IT_START),
 	gt_filter_option(Core::YON_GT_KEEP_ALL),
 	container_hot(nullptr),
 	container_cold(nullptr),
@@ -21,6 +22,7 @@ MetaIterator::MetaIterator(const container_type& container) :
 	current_position(0),
 	n_entries(0),
 	n_entries_unfiltered(0),
+	status(YON_IT_START),
 	gt_filter_option(Core::YON_GT_KEEP_ALL),
 	hot_iterator(container),
 	container_hot(&container),
@@ -37,6 +39,7 @@ MetaIterator::MetaIterator(const container_type& container, const Core::TACHYON_
 	current_position(0),
 	n_entries(0),
 	n_entries_unfiltered(0),
+	status(YON_IT_START),
 	gt_filter_option(gt_filter_type),
 	hot_iterator(container),
 	container_hot(&container),
@@ -53,6 +56,7 @@ MetaIterator::MetaIterator(const container_type& container_hot, const container_
 	current_position(0),
 	n_entries(0),
 	n_entries_unfiltered(0),
+	status(YON_IT_START),
 	gt_filter_option(Core::YON_GT_KEEP_ALL),
 	hot_iterator(container_hot),
 	cold_iterator(container_cold, hot_iterator.size()),
@@ -69,6 +73,7 @@ MetaIterator::MetaIterator(const container_type& container_hot, const container_
 	current_position(0),
 	n_entries(0),
 	n_entries_unfiltered(0),
+	status(YON_IT_START),
 	gt_filter_option(gt_filter_type),
 	hot_iterator(container_hot),
 	cold_iterator(container_cold, hot_iterator.size()),
@@ -82,10 +87,13 @@ MetaIterator::MetaIterator(const container_type& container_hot, const container_
 }
 
 MetaIterator::~MetaIterator(){
-	this->clearPrevious();
+	this->clear();
 }
 
 bool MetaIterator::setup(const container_type& hot_meta_container){
+	if((int)this->status < 0)
+		return false;
+
 	if(this->gt_filter_option == Core::YON_GT_UNKNOWN)
 		return false;
 
@@ -95,7 +103,7 @@ bool MetaIterator::setup(const container_type& hot_meta_container){
 	else
 		this->hot_iterator.setup(hot_meta_container, this->gt_filter_option);
 
-	this->clearPrevious();
+	this->clear();
 
 	assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 	this->n_entries = this->hot_iterator.size();
@@ -105,10 +113,15 @@ bool MetaIterator::setup(const container_type& hot_meta_container){
 	for(U32 i = 0; i < this->n_entries; ++i)
 		this->entries[i] = entry_type(this->hot_iterator[i]);
 
+	this->status = YON_IT_GOOD;
+
 	return true;
 }
 
 bool MetaIterator::setup(const container_type& hot_meta_container, const container_type& cold_meta_container){
+	if((int)this->status < 0)
+		return false;
+
 	if(this->gt_filter_option == Core::YON_GT_UNKNOWN)
 		return false;
 
@@ -119,7 +132,7 @@ bool MetaIterator::setup(const container_type& hot_meta_container, const contain
 	else
 		this->hot_iterator.setup(hot_meta_container, this->gt_filter_option);
 
-	this->clearPrevious();
+	this->clear();
 
 	assert((this->container_hot->buffer_data_uncompressed.pointer % sizeof(hot_type)) == 0);
 	this->n_entries_unfiltered = this->container_hot->buffer_data_uncompressed.pointer / sizeof(hot_type);
@@ -133,15 +146,23 @@ bool MetaIterator::setup(const container_type& hot_meta_container, const contain
 	for(U32 i = 0; i < this->n_entries; ++i)
 		this->entries[i] = entry_type(this->hot_iterator[i], this->cold_iterator[i]);
 
+	this->status = YON_IT_GOOD;
+
 	return true;
 }
 
 bool MetaIterator::setInfoIDContainer(const container_type& info_id_container){
+	if((int)this->status < 0)
+		return false;
+
 	if(this->gt_filter_option == Core::YON_GT_UNKNOWN)
 		return false;
 
 	if(this->n_entries <= 0) return false;
-	if(this->n_entries_unfiltered <=0) return false;
+	if(this->n_entries_unfiltered <=0){
+		this->status = YON_IT_ERROR_UNINITIALIZED;
+		return false;
+	}
 
 	this->info_id_container = &info_id_container;
 	this->info_id_iterator.setup(info_id_container);
@@ -162,15 +183,24 @@ bool MetaIterator::setInfoIDContainer(const container_type& info_id_container){
 			++this->info_id_iterator;
 		}
 	}
+
+	this->status = YON_IT_GOOD;
+
 	return true;
 }
 
 bool MetaIterator::setFilterIDContainer(const container_type& filter_id_container){
+	if((int)this->status < 0)
+		return false;
+
 	if(this->gt_filter_option == Core::YON_GT_UNKNOWN)
 		return false;
 
 	if(this->n_entries == 0) return false;
-	if(this->n_entries_unfiltered <=0) return false;
+	if(this->n_entries_unfiltered <= 0){
+		this->status = YON_IT_ERROR_UNINITIALIZED;
+		return false;
+	}
 
 	this->filter_id_container = &filter_id_container;
 	this->filter_id_iterator.setup(filter_id_container);
@@ -191,15 +221,24 @@ bool MetaIterator::setFilterIDContainer(const container_type& filter_id_containe
 			++this->filter_id_iterator;
 		}
 	}
+
+	this->status = YON_IT_GOOD;
+
 	return true;
 }
 
 bool MetaIterator::setFormatIDContainer(const container_type& format_id_container){
+	if((int)this->status < 0)
+		return false;
+
 	if(this->gt_filter_option == Core::YON_GT_UNKNOWN)
 		return false;
 
 	if(this->n_entries == 0) return false;
-	if(this->n_entries_unfiltered <=0) return false;
+	if(this->n_entries_unfiltered <=0){
+		this->status = YON_IT_ERROR_UNINITIALIZED;
+		return false;
+	}
 
 	this->format_id_container = &format_id_container;
 	this->format_id_iterator.setup(format_id_container);
@@ -220,6 +259,9 @@ bool MetaIterator::setFormatIDContainer(const container_type& format_id_containe
 			++this->format_id_iterator;
 		}
 	}
+
+	this->status = YON_IT_GOOD;
+
 	return true;
 }
 

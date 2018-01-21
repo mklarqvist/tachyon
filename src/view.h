@@ -118,8 +118,8 @@ int view(int argc, char** argv){
 	timer.Start();
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
-		reader.toVCFString();
-		//reader.iterateMeta();
+		//reader.toVCFString();
+		reader.iterateMeta();
 		//n_variants += reader.iterateGT();
 	}
 	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;

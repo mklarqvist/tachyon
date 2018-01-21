@@ -16,6 +16,9 @@
 
 #include "../iterator/IteratorIntegerReference.h"
 
+#include "../containers/MetaHotContainer.h"
+#include "../containers/MetaColdContainer.h"
+
 namespace Tachyon{
 
 class TachyonReader{
@@ -461,17 +464,29 @@ public:
 	}
 
 	bool iterateMeta(std::ostream& stream = std::cout){
-		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+		//Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+		Core::MetaHotContainer it(this->block);
+		Core::MetaColdContainer it_c(this->block);
+		std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 
+		for(auto it2 = it_c.cbegin(); it2 != it_c.cend(); ++it2){
+			std::cerr << (*it2).n_ID << std::endl;
+		}
+
+		/*
 		//U32 biallelic = 0;
 		for(U32 i = 0; i < this->block.size(); ++i){
+			//std::cerr << it[i] << std::endl;
+			if(it_c[i].n_ID){
+				std::cerr << std::string(it_c[i].ID, it_c[i].n_ID) << std::endl;
+			} else std::cerr << '.' << std::endl;
 			//const Core::MetaEntry& m = (*it)[i];
 			//biallelic += m.isBiallelic();
 
 		}
 		//std::cerr << biallelic << '/' << this->block.size() << std::endl;
+		 */
 
-		delete it;
 		return true;
 	}
 

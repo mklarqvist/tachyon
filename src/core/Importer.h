@@ -4,7 +4,7 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "Block.h"
+#include "../containers/Block.h"
 #include "../algorithm/permutation/RadixSortGT.h"
 #include "../algorithm/compression/EncoderGenotypes.h"
 #include "../index/IndexEntry.h"
