@@ -18,6 +18,7 @@
 #include "../containers/MetaHotContainer.h"
 #include "../containers/MetaColdContainer.h"
 #include "../containers/MetaContainer.h"
+#include "../containers/AbstractIntegerContainer.h"
 
 namespace Tachyon{
 
@@ -457,6 +458,12 @@ public:
 				std::cerr << i << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[i].key]].ID << std::endl;
 
 			}
+
+			Core::AbstractIntegerContainer<U32> it_i(this->block.info_containers[0]);
+			for(U32 i = 0; i < it_i.size(); ++i){
+				std::cerr << it_i[i][0] << ' ';
+			}
+			std::cerr << std::endl;
 			/*
 			Iterator::IteratorIntegerReference<U32>* it_i;
 			switch(this->block.info_containers[0].header.controller.type){

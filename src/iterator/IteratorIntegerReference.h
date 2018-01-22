@@ -80,7 +80,7 @@ private:
 protected:
     size_t current_position;
     size_t n_entries;
-    char*  data;
+    char*  __data;
 };
 
 template <class actual_primitive_type, class return_primitive_type = U32>
@@ -96,14 +96,14 @@ public:
     ~IteratorIntegerReferenceImpl();
 
     // Element access
-    inline T operator[](const U32& position) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
-    inline T operator*() const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[this->current_position*sizeof(actual_primitive_type)])); }
-    inline T at(const U32& position) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
-    inline T front(void) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[0])); }
+    inline T operator[](const U32& position) const{ return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
+    inline T operator*() const{ return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[this->current_position*sizeof(actual_primitive_type)])); }
+    inline T at(const U32& position) const{ return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
+    inline T front(void) const{ return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[0])); }
     inline T back(void) const{
         if(this->n_entries == 0)
             return(this->front());
-        return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[(this->n_entries - 1)*sizeof(actual_primitive_type)]));
+        return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[(this->n_entries - 1)*sizeof(actual_primitive_type)]));
     }
 
     // Basic mathematical functions
@@ -148,7 +148,7 @@ template <class return_primitive_type>
 IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* const data, const U32 length) :
 	current_position(0),
 	n_entries(length),
-	data(data)
+	__data(data)
 {
 
 }
