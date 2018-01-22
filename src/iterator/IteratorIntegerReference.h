@@ -27,10 +27,10 @@ public:
     // Element access
     virtual T operator[](const U32& position) const =0;
     virtual T operator*(void) const =0;
-
     virtual T at(const U32& position) const =0;
     virtual T front(void) const =0;
     virtual T back(void) const =0;
+    virtual std::vector<return_primitive_type> data(void) const =0;
 
     // Capacity
     inline const size_t& size(void) const{ return(this->n_entries); }
@@ -76,6 +76,16 @@ public:
         if(this->n_entries == 0)
             return(this->front());
         return(*reinterpret_cast<const actual_primitive_type* const>(&this->__data[(this->n_entries - 1)*sizeof(actual_primitive_type)]));
+    }
+
+    std::vector<return_primitive_type> data(void) const{
+    	std::vector<return_primitive_type> ret;
+    	ret.resize(this->n_entries);
+
+    	for(U32 i = 0; i < this->n_entries; ++i)
+    		ret[i] = this->at(i);
+
+    	return(ret);
     }
 
     // Basic mathematical functions
