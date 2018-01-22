@@ -19,6 +19,7 @@
 #include "../containers/MetaColdContainer.h"
 #include "../containers/MetaContainer.h"
 #include "../containers/AbstractIntegerContainer.h"
+#include "../containers/InfoIntegerContainer.h"
 
 namespace Tachyon{
 
@@ -448,20 +449,21 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 
 		Core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getEntry("DP", entry)){
-			Core::AbstractIntegerContainer<S32> it_i(this->block.info_containers[4]);
+		if(this->header.getEntry("AC", entry)){
+			Core::InfoIntegerContainer<S32> it_i(this->block.info_containers[0]);
 			//Math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
 				//if(it_i[i].size() < 3) continue;
-				it[i].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+				//it[i].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
 
-				stream << (int)it_i[i][0] << '\t';
-				for(U32 j = 1; j < it_i[i].size(); ++j)
-					stream << '\t' << (int)it_i[i][j];
+				//stream << (int)it_i[i][0];
+				for(U32 j = 0; j < it_i[i].size(); ++j)
+					stream << (int)it_i[i][j] << ' ';
 
-				stream << '\n';
+
 			}
+			stream << '\n';
 		}
 		return true;
 	}
