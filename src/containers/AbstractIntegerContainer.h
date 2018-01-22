@@ -23,7 +23,7 @@ private:
 
 public:
     AbstractIntegerContainer(const Container& container);
-    ~AbstractIntegerContainer(){ ::operator delete[](static_cast<void*>(this->__iterators)); }
+    ~AbstractIntegerContainer(){ ::operator delete[](static_cast<void*>(this->__iterators)); delete [] this->__buffer; }
 
     class iterator{
 	private:
@@ -125,6 +125,8 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const Conta
 {
 	if(container.buffer_data_uncompressed.size() == 0)
 		return;
+
+	memcpy(this->__buffer, container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer);
 
 	nextStrideFunction func = nullptr;
 
