@@ -7,18 +7,21 @@ CPP_SRCS += \
 ../src/containers/Block.cpp \
 ../src/containers/Container.cpp \
 ../src/containers/MetaColdContainer.cpp \
+../src/containers/MetaContainer.cpp \
 ../src/containers/MetaHotContainer.cpp 
 
 OBJS += \
 ./src/containers/Block.o \
 ./src/containers/Container.o \
 ./src/containers/MetaColdContainer.o \
+./src/containers/MetaContainer.o \
 ./src/containers/MetaHotContainer.o 
 
 CPP_DEPS += \
 ./src/containers/Block.d \
 ./src/containers/Container.d \
 ./src/containers/MetaColdContainer.d \
+./src/containers/MetaContainer.d \
 ./src/containers/MetaHotContainer.d 
 
 

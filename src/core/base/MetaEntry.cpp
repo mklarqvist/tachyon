@@ -27,6 +27,15 @@ MetaEntry::MetaEntry(const hot_entry& hot, const cold_entry& cold) :
 	cold(cold)
 {}
 
+MetaEntry::MetaEntry(const hot_entry& hot, char* cold) :
+	loaded_cold(true),
+	info_pattern_id(std::numeric_limits<S32>::min()),
+	filter_pattern_id(std::numeric_limits<S32>::min()),
+	format_pattern_id(std::numeric_limits<S32>::min()),
+	hot(hot),
+	cold(cold)
+{}
+
 MetaEntry::~MetaEntry(){ /* do nothing */ };
 
 void MetaEntry::toVCFString(std::ostream& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const{

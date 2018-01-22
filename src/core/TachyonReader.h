@@ -18,6 +18,7 @@
 
 #include "../containers/MetaHotContainer.h"
 #include "../containers/MetaColdContainer.h"
+#include "../containers/MetaContainer.h"
 
 namespace Tachyon{
 
@@ -465,12 +466,16 @@ public:
 
 	bool iterateMeta(std::ostream& stream = std::cout){
 		//Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
-		Core::MetaHotContainer it(this->block);
-		Core::MetaColdContainer it_c(this->block);
-		std::cerr << it.size() << '\t' << it_c.size() << std::endl;
+		//Core::MetaHotContainer it(this->block);
+		//Core::MetaColdContainer it_c(this->block);
+		Core::MetaContainer it(this->block);
+		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
+		std::cerr << it.size() << std::endl;
 
-		for(auto it2 = it_c.cbegin(); it2 != it_c.cend(); ++it2){
-			std::cerr << (*it2).n_ID << std::endl;
+		for(auto it2 = it.cbegin(); it2 != it.cend(); ++it2){
+			//std::cerr << (*it2).n_ID << std::endl;
+			(*it2).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			std::cout << "\t\n";
 		}
 
 		/*

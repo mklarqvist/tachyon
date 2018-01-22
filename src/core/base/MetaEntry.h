@@ -28,6 +28,7 @@ public:
 	MetaEntry();
 	MetaEntry(const hot_entry& hot);
 	MetaEntry(const hot_entry& hot, const cold_entry& cold);
+	MetaEntry(const hot_entry& hot, char* cold);
 	~MetaEntry();
 
 	/**<

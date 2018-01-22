@@ -1,33 +1,33 @@
-#ifndef CONTAINERS_METAHOTCONTAINER_H_
-#define CONTAINERS_METAHOTCONTAINER_H_
+#ifndef CONTAINERS_METACONTAINER_H_
+#define CONTAINERS_METACONTAINER_H_
 
 #include "Block.h"
 
 namespace Tachyon{
 namespace Core{
 
-class MetaHotContainer{
+class MetaContainer {
 private:
+	typedef MetaContainer     self_type;
     typedef std::size_t       size_type;
-    typedef MetaHot           value_type;
+    typedef MetaEntry         value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;
-    typedef std::ptrdiff_t    difference_type;
+    typedef MetaHot           hot_type;
+    typedef MetaCold          cold_type;
 
 public:
-    MetaHotContainer();
-    MetaHotContainer(const Block& block);
-    MetaHotContainer(const Container& container);
-    ~MetaHotContainer(void);
+	MetaContainer(const Block& block);
+	~MetaContainer(void);
 
-    class iterator{
-    private:
+	class iterator{
+	private:
 		typedef iterator self_type;
 		typedef std::forward_iterator_tag iterator_category;
 
-    public:
+	public:
 		iterator(pointer ptr) : ptr_(ptr) { }
 		void operator++() { ptr_++; }
 		void operator++(int junk) { ptr_++; }
@@ -39,7 +39,7 @@ public:
 		pointer ptr_;
 	};
 
-    class const_iterator{
+	class const_iterator{
 	private:
 		typedef const_iterator self_type;
 		typedef std::forward_iterator_tag iterator_category;
@@ -80,6 +80,8 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
 
+private:
+    void __ctor_setup(const Block& block);
 
 private:
     size_t  n_entries;
@@ -89,6 +91,4 @@ private:
 }
 }
 
-
-
-#endif /* CONTAINERS_METAHOTCONTAINER_H_ */
+#endif /* CONTAINERS_METACONTAINER_H_ */
