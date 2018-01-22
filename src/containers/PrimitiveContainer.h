@@ -1,5 +1,5 @@
-#ifndef INTEGERCONTAINER_H_
-#define INTEGERCONTAINER_H_
+#ifndef CONTAINER_PRIMITIVECONTAINER_H_
+#define CONTAINER_PRIMITIVECONTAINER_H_
 
 #include "Block.h"
 
@@ -7,7 +7,7 @@ namespace Tachyon{
 namespace Core{
 
 template <class return_type>
-class IntegerContainer{
+class PrimitiveContainer{
 private:
     typedef std::size_t       size_type;
     typedef return_type       value_type;
@@ -18,9 +18,9 @@ private:
     typedef std::ptrdiff_t    difference_type;
 
 public:
-    IntegerContainer();
-    IntegerContainer(const Container& container, const U32& offset, const U32 n_entries);
-    ~IntegerContainer(void);
+    PrimitiveContainer();
+    PrimitiveContainer(const Container& container, const U32& offset, const U32 n_entries);
+    ~PrimitiveContainer(void);
 
     class iterator{
     private:
@@ -95,16 +95,19 @@ private:
 
 
 template <class return_type>
-IntegerContainer<return_type>::IntegerContainer(const Container& container, const U32& offset, const U32 n_entries) :
+PrimitiveContainer<return_type>::PrimitiveContainer(const Container& container, const U32& offset, const U32 n_entries) :
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
 	if(container.header.controller.signedness){
 		switch(container.header.controller.type){
 		case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, offset)); break;
+		case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, offset)); break;
 		case(Core::YON_TYPE_16B): (this->__setup<S16>(container, offset));   break;
 		case(Core::YON_TYPE_32B): (this->__setup<S32>(container, offset));   break;
 		case(Core::YON_TYPE_64B): (this->__setup<S64>(container, offset));   break;
+		case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, offset));   break;
+		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));   break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
@@ -113,6 +116,8 @@ IntegerContainer<return_type>::IntegerContainer(const Container& container, cons
 		case(Core::YON_TYPE_16B): (this->__setup<U16>(container, offset));  break;
 		case(Core::YON_TYPE_32B): (this->__setup<U32>(container, offset));  break;
 		case(Core::YON_TYPE_64B): (this->__setup<U64>(container, offset));  break;
+		case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, offset));   break;
+		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));   break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}
@@ -120,11 +125,11 @@ IntegerContainer<return_type>::IntegerContainer(const Container& container, cons
 }
 
 template <class return_type>
-IntegerContainer<return_type>::~IntegerContainer(void){ delete [] this->__entries; }
+PrimitiveContainer<return_type>::~PrimitiveContainer(void){ delete [] this->__entries; }
 
 }
 }
 
 
 
-#endif /* INTEGERCONTAINER_H_ */
+#endif /* PrimitiveContainer_H_ */

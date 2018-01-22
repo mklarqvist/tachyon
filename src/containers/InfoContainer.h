@@ -1,17 +1,17 @@
-#ifndef INFOINTEGERCONTAINER_H_
-#define INFOINTEGERCONTAINER_H_
+#ifndef CONTAINER_INFOCONTAINER_H_
+#define CONTAINER_INFOCONTAINER_H_
 
-#include "IntegerContainer.h"
 #include "Container.h"
+#include "PrimitiveContainer.h"
 
 namespace Tachyon{
 namespace Core{
 
 template <class return_type>
-class InfoIntegerContainer{
+class InfoContainer{
 private:
-    typedef InfoIntegerContainer          self_type;
-    typedef IntegerContainer<return_type> value_type;
+    typedef InfoContainer          self_type;
+    typedef PrimitiveContainer<return_type> value_type;
     typedef value_type&                   reference;
     typedef const value_type&             const_reference;
     typedef value_type*                   pointer;
@@ -24,9 +24,9 @@ private:
 	typedef const U32 (self_type::*getStrideFunction)(const buffer_type& buffer, const U32 position) const;
 
 public:
-    InfoIntegerContainer();
-    InfoIntegerContainer(const Container& container);
-    ~InfoIntegerContainer(void);
+    InfoContainer();
+    InfoContainer(const Container& container);
+    ~InfoContainer(void);
 
     class iterator{
     private:
@@ -134,7 +134,7 @@ private:
 };
 
 template <class return_type>
-InfoIntegerContainer<return_type>::InfoIntegerContainer(const Container& container) :
+InfoContainer<return_type>::InfoContainer(const Container& container) :
 	n_entries(0),
 	__containers(nullptr)
 {
@@ -149,17 +149,19 @@ InfoIntegerContainer<return_type>::InfoIntegerContainer(const Container& contain
 		case(Core::YON_TYPE_16B): func = &self_type::__getStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
 		case(Core::YON_TYPE_32B): func = &self_type::__getStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
 		case(Core::YON_TYPE_64B): func = &self_type::__getStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
-		default: std::cerr << "Disallowed" << std::endl; return;
+		default: std::cerr << "Disallowed stride" << std::endl; return;
 		}
 
-		// Assuming there is stride data
 		if(container.header.controller.signedness){
 			switch(container.header.controller.type){
 			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, func));  break;
-			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, func));  break;
-			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, func));  break;
-			default: std::cerr << "Disallowed" << std::endl; return;
+			case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, func)); break;
+			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, func));   break;
+			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, func));   break;
+			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, func));   break;
+			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.controller.type){
@@ -167,17 +169,22 @@ InfoIntegerContainer<return_type>::InfoIntegerContainer(const Container& contain
 			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
 			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
 			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
-			default: std::cerr << "Disallowed" << std::endl; return;
+			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
 	} else {
 		if(container.header.controller.signedness){
 			switch(container.header.controller.type){
 			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
+			case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, container.header.stride)); break;
 			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
 			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
 			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
-			default: std::cerr << "Disallowed" << std::endl; return;
+			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.controller.type){
@@ -185,14 +192,16 @@ InfoIntegerContainer<return_type>::InfoIntegerContainer(const Container& contain
 			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
 			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
 			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
-			default: std::cerr << "Disallowed" << std::endl; return;
+			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
 	}
 }
 
 template <class return_type>
-InfoIntegerContainer<return_type>::~InfoIntegerContainer(){
+InfoContainer<return_type>::~InfoContainer(){
 	::operator delete[](static_cast<void*>(this->__containers));
 }
 
@@ -200,4 +209,4 @@ InfoIntegerContainer<return_type>::~InfoIntegerContainer(){
 }
 
 
-#endif /* INFOINTEGERCONTAINER_H_ */
+#endif /* InfoContainer_H_ */

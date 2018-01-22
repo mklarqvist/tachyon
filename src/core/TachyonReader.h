@@ -19,7 +19,7 @@
 #include "../containers/MetaColdContainer.h"
 #include "../containers/MetaContainer.h"
 #include "../containers/AbstractIntegerContainer.h"
-#include "../containers/InfoIntegerContainer.h"
+#include "../containers/InfoContainer.h"
 
 namespace Tachyon{
 
@@ -449,8 +449,8 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 
 		Core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getEntry("AC", entry)){
-			Core::InfoIntegerContainer<S32> it_i(this->block.info_containers[0]);
+		if(this->header.getEntry("AF", entry)){
+			Core::InfoContainer<double> it_i(this->block.info_containers[1]);
 			//Math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
@@ -459,7 +459,7 @@ public:
 
 				//stream << (int)it_i[i][0];
 				for(U32 j = 0; j < it_i[i].size(); ++j)
-					stream << (int)it_i[i][j] << ' ';
+					stream << it_i[i][j] << ' ';
 
 
 			}
