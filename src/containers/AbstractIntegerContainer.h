@@ -105,11 +105,30 @@ private:
 
 	}
 
+	template <class actual_primitive> void __setup(const Container& container, const U32 stride_size){
+		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+
+		if(this->n_entries == 0)
+			return;
+
+		this->__iterators = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+
+		U32 current_offset = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			//std::cerr << i << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
+			new( &this->__iterators[i] ) Iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.data[current_offset], stride_size );
+			current_offset += stride_size * sizeof(actual_primitive);
+		}
+		//std::cerr << current_offset << '\t' << container.buffer_data_uncompressed.size() << '\t' << this->n_entries << std::endl;
+		assert(current_offset == container.buffer_data_uncompressed.size());
+
+	}
+
 	// Access function
 	template <class stride_primitive> inline const U32 __getNextStride(const buffer_type& buffer, const U32 position) const{
 		return(*reinterpret_cast<const stride_primitive* const>(&buffer.data[position*sizeof(stride_primitive)]));
 	}
-
 
 private:
     size_t      n_entries;   // number of iterators = number of stride primitives
@@ -128,23 +147,53 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const Conta
 
 	memcpy(this->__buffer, container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer);
 
-	nextStrideFunction func = nullptr;
+	if(container.header_stride.controller.mixedStride){
+		nextStrideFunction func = nullptr;
 
-	switch(container.header_stride.controller.type){
-	case(Core::YON_TYPE_8B):  func = &self_type::__getNextStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
-	case(Core::YON_TYPE_16B): func = &self_type::__getNextStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
-	case(Core::YON_TYPE_32B): func = &self_type::__getNextStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
-	case(Core::YON_TYPE_64B): func = &self_type::__getNextStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
-	default: std::cerr << "Disallowed" << std::endl; return;
-	}
+		switch(container.header_stride.controller.type){
+		case(Core::YON_TYPE_8B):  func = &self_type::__getNextStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
+		case(Core::YON_TYPE_16B): func = &self_type::__getNextStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
+		case(Core::YON_TYPE_32B): func = &self_type::__getNextStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
+		case(Core::YON_TYPE_64B): func = &self_type::__getNextStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
+		default: std::cerr << "Disallowed" << std::endl; return;
+		}
 
-	// Assuming there is stride data
-	switch(container.header.controller.type){
-	case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
-	case(Core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
-	case(Core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
-	case(Core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
-	default: std::cerr << "Disallowed" << std::endl; return;
+		// Assuming there is stride data
+		if(container.header.controller.signedness){
+			switch(container.header.controller.type){
+			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
+			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, func));  break;
+			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, func));  break;
+			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, func));  break;
+			default: std::cerr << "Disallowed" << std::endl; return;
+			}
+		} else {
+			switch(container.header.controller.type){
+			case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
+			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
+			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
+			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
+			default: std::cerr << "Disallowed" << std::endl; return;
+			}
+		}
+	} else {
+		if(container.header.controller.signedness){
+			switch(container.header.controller.type){
+			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
+			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));  break;
+			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));  break;
+			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));  break;
+			default: std::cerr << "Disallowed" << std::endl; return;
+			}
+		} else {
+			switch(container.header.controller.type){
+			case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
+			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
+			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
+			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
+			default: std::cerr << "Disallowed" << std::endl; return;
+			}
+		}
 	}
 }
 

@@ -449,22 +449,23 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 
 		Core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getEntry("AC", entry)){
+		if(this->header.getEntry("DP", entry)){
 			//std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
 
 			//std::cerr << this->header.entries[this->header.mapTable[entry->IDX]].IDX << std::endl;
 			//U32 targetID = 0;
 			//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-				//std::cerr << i << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[i].key]].ID << std::endl;
+			//	std::cerr << i << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[i].key]].ID << std::endl;
 
 			//}
 
-			Core::AbstractIntegerContainer<U32> it_i(this->block.info_containers[0]);
-			assert(it.size() == it_i.size());
-			//for(U32 i = 0; i < it_i.size(); ++i){
-			//	std::cerr << it_i[i][0] << ' ';
-			//}
-			//std::cerr << std::endl;
+			Core::AbstractIntegerContainer<S32> it_i(this->block.info_containers[4]);
+			//assert(it.size() == it_i.size());
+			std::cerr << this->block.info_containers[4].buffer_data_uncompressed.size() << '\t' << it_i.size() << std::endl;
+			for(U32 i = 0; i < it_i.size(); ++i){
+				std::cerr << (int)it_i[i][0] << ' ';
+			}
+			std::cerr << std::endl;
 			/*
 			Iterator::IteratorIntegerReference<U32>* it_i;
 			switch(this->block.info_containers[0].header.controller.type){
