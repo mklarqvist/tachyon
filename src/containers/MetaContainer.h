@@ -1,6 +1,7 @@
 #ifndef CONTAINERS_METACONTAINER_H_
 #define CONTAINERS_METACONTAINER_H_
 
+#include "../core/base/MetaEntry.h"
 #include "Block.h"
 
 namespace Tachyon{

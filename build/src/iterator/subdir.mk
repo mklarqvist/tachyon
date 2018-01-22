@@ -4,16 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/iterator/ContainerIterator.cpp \
-../src/iterator/MetaIterator.cpp 
+../src/iterator/ContainerIterator.cpp 
 
 OBJS += \
-./src/iterator/ContainerIterator.o \
-./src/iterator/MetaIterator.o 
+./src/iterator/ContainerIterator.o 
 
 CPP_DEPS += \
-./src/iterator/ContainerIterator.d \
-./src/iterator/MetaIterator.d 
+./src/iterator/ContainerIterator.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

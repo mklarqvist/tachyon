@@ -13,7 +13,7 @@ class IteratorIntegerReference{
     typedef return_primitive_type    T;
 
 public:
-    IteratorIntegerReference(char* const data);
+    IteratorIntegerReference(char* const data, const U32 length);
     IteratorIntegerReference(const self_type& other);
     IteratorIntegerReference(self_type&& other) noexcept;
     IteratorIntegerReference& operator=(const self_type& other);
@@ -75,11 +75,12 @@ public:
     //virtual void toString(buffer_type& buffer) =0;
 
 private:
-    friend std::ostream& operator<<(std::ostream& os, const self_type& iterator);
+    //friend std::ostream& operator<<(std::ostream& os, const self_type& iterator);
 
 protected:
     size_t current_position;
     size_t n_entries;
+    char*  data;
 };
 
 template <class actual_primitive_type, class return_primitive_type = U32>
@@ -91,18 +92,18 @@ private:
     typedef return_primitive_type    T;
 
 public:
-    IteratorIntegerReferenceImpl(char* const data);
+    IteratorIntegerReferenceImpl(char* const data, const U32 length);
     ~IteratorIntegerReferenceImpl();
 
     // Element access
-    inline T operator[](const U32& position) const{ return(this->__data_interpreted[position]); }
-    inline T operator*() const{ return(this->__data_interpreted[this->current_position]); }
-    inline T at(const U32& position) const{ return(this->__data_interpreted[position]); }
-    inline T front(void) const{ return(this->__data_interpreted[0]); }
+    inline T operator[](const U32& position) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
+    inline T operator*() const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[this->current_position*sizeof(actual_primitive_type)])); }
+    inline T at(const U32& position) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[position*sizeof(actual_primitive_type)])); }
+    inline T front(void) const{ return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[0])); }
     inline T back(void) const{
         if(this->n_entries == 0)
             return(this->front());
-        return(this->__data_interpreted[this->n_entries - 1]);
+        return(reinterpret_cast<const actual_primitive_type* const>(&this->__data[(this->n_entries - 1)*sizeof(actual_primitive_type)]));
     }
 
     // Basic mathematical functions
@@ -141,15 +142,13 @@ public:
     // Convertions to string
     //void toString(std::ostream& stream = std::cout);
     //void toString(buffer_type& buffer);
-
-private:
-    const actual_primitive_type* __data_interpreted;
 };
 
 template <class return_primitive_type>
-IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* data) :
+IteratorIntegerReference<return_primitive_type>::IteratorIntegerReference(char* const data, const U32 length) :
 	current_position(0),
-	n_entries(0)
+	n_entries(length),
+	data(data)
 {
 
 }
@@ -158,9 +157,8 @@ template <class return_primitive_type>
 IteratorIntegerReference<return_primitive_type>::~IteratorIntegerReference(){}
 
 template <class actual_primitive_type, class return_primitive_type>
-IteratorIntegerReferenceImpl<actual_primitive_type, return_primitive_type>::IteratorIntegerReferenceImpl(char* data) :
-	parent_type(data),
-	__data_interpreted(reinterpret_cast<actual_primitive_type*>(&data))
+IteratorIntegerReferenceImpl<actual_primitive_type, return_primitive_type>::IteratorIntegerReferenceImpl(char* const data, const U32 length) :
+	parent_type(data, length)
 {
 }
 

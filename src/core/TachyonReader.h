@@ -7,11 +7,10 @@
 #include "zstd_errors.h"
 #include "../containers/Block.h"
 #include "../algorithm/compression/CompressionManager.h"
-#include "../iterator/MetaIterator.h"
 #include "base/header/Header.h"
 #include "../iterator/ContainerIterator.h"
 #include "../index/SortedIndex.h"
-#include "../iterator/GenotypeIterator.h"
+
 #include "../algorithm/Timer.h"
 
 #include "../iterator/IteratorIntegerReference.h"
@@ -171,7 +170,7 @@ public:
 	bool nextVariant(void);
 
 	bool toVCFStringFast(std::ostream& stream = std::cout){
-		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+		Core::MetaContainer it(this->block); // factory
 
 		// Setup containers
 		// INFO
@@ -212,7 +211,7 @@ public:
 
 		// Base
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = (*it)[i];
+			const Core::MetaEntry& m = it[i];
 
 			m.toVCFString(this->internal_buffers[i],
                           this->header,
@@ -237,7 +236,7 @@ public:
 					const U32& current_key = keys[k];
 
 					for(U32 i = 0; i < this->block.size(); ++i){
-						const Core::MetaEntry& m = (*it)[i];
+						const Core::MetaEntry& m = it[i];
 						if(m.getInfoPatternID() != p)
 							continue;
 
@@ -257,7 +256,6 @@ public:
 			this->internal_buffers[i].reset();
 		}
 
-		delete it;
 		delete [] info_iterators;
 		delete [] format_iterators;
 		return true;
@@ -277,30 +275,7 @@ public:
 		}
 		*/
 
-
-		Iterator::GenotypeIterator it_gt(this->block);
-		Iterator::ContainerIteratorDataInterface& temp = *it_gt.iterator_gt_meta.getDataIterator();
-		//std::cerr << "Type:" << this->block.gt_support_data_container.header.controller.type << '\t' << this->block.gt_support_data_container.header_stride.controller.type << std::endl;
-		//std::cerr << "Size: " << temp.size() << std::endl;
-		//std::cerr << this->block.gt_support_data_container.header.stride << '\t' << this->block.gt_support_data_container.header.controller.mixedStride << std::endl;
-
-		// Todo: iterate over GT data
-		U32 cost[4];
-		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
-		U64 total_cost = 0;
-		for(U32 i = 0; i < temp.size(); ++i){
-			const Core::MetaEntry& m = (*it_gt.iterator_meta)[i];
-			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
-			total_cost += cost[m.hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
-			++it_gt;
-		}
-		//std::cerr << std::endl;
-		std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
-		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
-		it_gt.reset();
-
-
-		Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
+		Core::MetaContainer it(this->block); // factory
 
 		// Setup containers
 		// INFO
@@ -323,7 +298,7 @@ public:
 		}
 
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = (*it)[i];
+			const Core::MetaEntry& m = it[i];
 
 			//stream << m.hot.controller.mixed_phasing << ":" << m.hot.controller.phase << ';' << m.hot.controller.anyMissing << ',' << m.hot.controller.anyNA << ':' <<
 			//	   m.hot.controller.rle << "->" << m.hot.controller.rle_type << '\t' << (int)m.hot.getGenotypeType() << '\t';
@@ -418,7 +393,6 @@ public:
 		}
 		stream.flush();
 
-		delete it;
 		delete [] info_iterators;
 		delete [] format_iterators;
 		return true;
@@ -427,6 +401,7 @@ public:
 	U64 iterateGT(std::ostream& stream = std::cout){
 		Algorithm::Timer timer;
 		timer.Start();
+		/*
 		Iterator::GenotypeIterator it_gt(this->block);
 
 		//Iterator::MetaIterator* it1 = this->block.getMetaIterator();
@@ -461,6 +436,7 @@ public:
 		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
 		std::cerr << this->block.size() << '\t' << Helpers::ToPrettyString((U64)((double)this->block.size()*this->header.n_samples/timer.Elapsed().count())) << '\t' << timer.ElapsedString() << std::endl;
 		//it_gt.reset();
+		*/
 		return this->block.size();
 	}
 
@@ -470,12 +446,38 @@ public:
 		//Core::MetaColdContainer it_c(this->block);
 		Core::MetaContainer it(this->block);
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
+
+		Core::HeaderMapEntry* entry = nullptr;
+		if(this->header.getEntry("AC", entry)){
+			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
+
+			std::cerr << this->header.entries[this->header.mapTable[entry->IDX]].IDX << std::endl;
+			U32 targetID = 0;
+			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+				std::cerr << i << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[i].key]].ID << std::endl;
+
+			}
+			/*
+			Iterator::IteratorIntegerReference<U32>* it_i;
+			switch(this->block.info_containers[0].header.controller.type){
+			case(Core::YON_TYPE_8B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, BYTE>(this->block.info_containers[0]); break;
+			case(Core::YON_TYPE_16B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, U16>(this->block.info_containers[0]); break;
+			case(Core::YON_TYPE_32B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, U32>(this->block.info_containers[0]); break;
+			default: "Unknown type: " << (int)this->block.info_containers[0].header.controller.type << std::endl;
+			}
+
+			delete it_i;
+			*/
+
+		}
+
+
 		std::cerr << it.size() << std::endl;
 
 		for(auto it2 = it.cbegin(); it2 != it.cend(); ++it2){
 			//std::cerr << (*it2).n_ID << std::endl;
-			(*it2).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-			std::cout << "\t\n";
+			//(*it2).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			//std::cout << "\t\n";
 		}
 
 		/*
