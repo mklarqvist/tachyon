@@ -459,13 +459,16 @@ public:
 
 			//}
 
+
 			Core::AbstractIntegerContainer<S32> it_i(this->block.info_containers[4]);
+			Core::MathSummaryStatistics stats = it_i.getSummaryStatistics();
+			std::cerr << stats.total << '\t' << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			//assert(it.size() == it_i.size());
-			std::cerr << this->block.info_containers[4].buffer_data_uncompressed.size() << '\t' << it_i.size() << std::endl;
-			for(U32 i = 0; i < it_i.size(); ++i){
-				std::cerr << (int)it_i[i][0] << ' ';
-			}
-			std::cerr << std::endl;
+			//std::cerr << this->block.info_containers[4].buffer_data_uncompressed.size() << '\t' << it_i.size() << std::endl;
+			//for(U32 i = 0; i < it_i.size(); ++i){
+			//	std::cerr << (int)it_i[i].mathAverage() << ' ';
+			//}
+			//std::cerr << std::endl;
 			/*
 			Iterator::IteratorIntegerReference<U32>* it_i;
 			switch(this->block.info_containers[0].header.controller.type){

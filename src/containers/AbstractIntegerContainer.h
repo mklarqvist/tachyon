@@ -6,6 +6,37 @@
 namespace Tachyon{
 namespace Core{
 
+struct MathSummaryStatistics{
+	MathSummaryStatistics() : total(0), total_squared(0), n_total(0), mean(0), standard_deviation(0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::min()){}
+	bool calculate(void){
+		if(this->n_total == 0) return false;
+
+		this->mean = this->total / this->n_total;
+
+		if(this->n_total > 1){
+			this->standard_deviation = sqrt(this->total_squared/this->n_total - (this->total / this->n_total)*(this->total / this->n_total));
+		} else this->standard_deviation = 0;
+
+		return true;
+	}
+
+	template <class T> void operator+=(const T& value){
+		this->total += value;
+		this->total_squared += value*value;
+		++this->n_total;
+		if(value < this->min) this->min = value;
+		if(value > this->max) this->max = value;
+	}
+
+	double total;
+	double total_squared;
+	U64    n_total;
+	double mean;
+	double standard_deviation;
+	double min;
+	double max;
+};
+
 template <class return_primitive>
 class AbstractIntegerContainer{
 private:
@@ -83,6 +114,16 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->__iterators[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->__iterators[this->n_entries - 1]); }
 
+	// Math
+	MathSummaryStatistics getSummaryStatistics(void){
+		MathSummaryStatistics stats;
+		for(U32 i = 0; i < this->size(); ++i){
+			stats += this->at(i).mathMean();
+		}
+		stats.calculate();
+		return stats;
+	}
+
 private:
 	template <class actual_primitive> void __setup(const Container& container, nextStrideFunction func){
 		if(container.buffer_strides_uncompressed.size() == 0)
@@ -93,14 +134,11 @@ private:
 
 		this->__iterators = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			//std::cerr << i << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
 			new( &this->__iterators[i] ) Iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.data[current_offset], (this->*func)(container.buffer_strides_uncompressed, i) );
 			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
 		}
-		//std::cerr << current_offset << '\t' << container.buffer_data_uncompressed.size() << '\t' << this->n_entries << std::endl;
 		assert(current_offset == container.buffer_data_uncompressed.size());
 
 	}
@@ -113,16 +151,12 @@ private:
 
 		this->__iterators = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			//std::cerr << i << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
 			new( &this->__iterators[i] ) Iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.data[current_offset], stride_size );
 			current_offset += stride_size * sizeof(actual_primitive);
 		}
-		//std::cerr << current_offset << '\t' << container.buffer_data_uncompressed.size() << '\t' << this->n_entries << std::endl;
 		assert(current_offset == container.buffer_data_uncompressed.size());
-
 	}
 
 	// Access function
@@ -147,7 +181,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const Conta
 
 	memcpy(this->__buffer, container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer);
 
-	if(container.header_stride.controller.mixedStride){
+	if(container.header.controller.mixedStride){
 		nextStrideFunction func = nullptr;
 
 		switch(container.header_stride.controller.type){
@@ -180,9 +214,9 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const Conta
 		if(container.header.controller.signedness){
 			switch(container.header.controller.type){
 			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));  break;
-			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));  break;
-			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));  break;
+			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
+			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
+			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		} else {
