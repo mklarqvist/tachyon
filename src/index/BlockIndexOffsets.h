@@ -7,10 +7,10 @@
 namespace Tachyon{
 namespace Index{
 
-struct BlockIndexHeaderOffsets{
-	typedef BlockIndexHeaderOffsets self_type;
+struct BlockIndexOffsetsHeader{
+	typedef BlockIndexOffsetsHeader self_type;
 
-	BlockIndexHeaderOffsets() : key(0), offset(0){}
+	BlockIndexOffsetsHeader() : key(0), offset(0){}
 
 	void clear(void){
 		this->key = 0;

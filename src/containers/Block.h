@@ -24,7 +24,7 @@ class Block{
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef Index::BlockIndexOffsets offset_type;
-	typedef Index::BlockIndexHeaderOffsets offset_minimal_type;
+	typedef Index::BlockIndexOffsetsHeader offset_minimal_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
 	typedef Tachyon::Support::ImporterStats import_stats_type;

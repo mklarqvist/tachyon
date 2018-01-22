@@ -2,40 +2,10 @@
 #define CONTAINERS_ABSTRACTINTEGERCONTAINER_H_
 
 #include "../iterator/IteratorIntegerReference.h"
+#include "../core/MathSummaryStatistics.h"
 
 namespace Tachyon{
 namespace Core{
-
-struct MathSummaryStatistics{
-	MathSummaryStatistics() : total(0), total_squared(0), n_total(0), mean(0), standard_deviation(0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::min()){}
-	bool calculate(void){
-		if(this->n_total == 0) return false;
-
-		this->mean = this->total / this->n_total;
-
-		if(this->n_total > 1){
-			this->standard_deviation = sqrt(this->total_squared/this->n_total - (this->total / this->n_total)*(this->total / this->n_total));
-		} else this->standard_deviation = 0;
-
-		return true;
-	}
-
-	template <class T> void operator+=(const T& value){
-		this->total += value;
-		this->total_squared += value*value;
-		++this->n_total;
-		if(value < this->min) this->min = value;
-		if(value > this->max) this->max = value;
-	}
-
-	double total;
-	double total_squared;
-	U64    n_total;
-	double mean;
-	double standard_deviation;
-	double min;
-	double max;
-};
 
 template <class return_primitive>
 class AbstractIntegerContainer{
@@ -115,8 +85,8 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->__iterators[this->n_entries - 1]); }
 
 	// Math
-	MathSummaryStatistics getSummaryStatistics(void){
-		MathSummaryStatistics stats;
+	Math::MathSummaryStatistics getSummaryStatistics(void){
+		Math::MathSummaryStatistics stats;
 		for(U32 i = 0; i < this->size(); ++i){
 			stats += this->at(i).mathMean();
 		}

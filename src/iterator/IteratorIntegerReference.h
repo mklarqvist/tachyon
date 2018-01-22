@@ -23,38 +23,10 @@ public:
     // Iterators
     inline void advance(const U32& steps){ (*this) += steps; }
     inline void retreat(const U32& steps){ (*this) -= steps; }
-    //virtual void begin() =0;
-    //virtual void end()   =0;
-    //virtual void prev()  =0;
-    //virtual void next()  =0;
-    //virtual void first() =0;
-
-    // Iterator control
-    inline void reset(void){ this->current_position = 0; }
 
     // Element access
     virtual T operator[](const U32& position) const =0;
     virtual T operator*(void) const =0;
-
-    inline void operator++(void){
-        if(this->current_position + 1 == this->n_entries) return;
-        ++this->current_position;
-    }
-
-    inline void operator+=(const size_t& steps){
-        if(this->current_position + steps >= this->n_entries) return;
-        this->current_position += steps;
-    }
-
-    inline void operator--(void){
-        if(this->current_position == 0) return;
-        --this->current_position;
-    }
-
-    inline void operator-=(const size_t& steps){
-        if(this->current_position - steps < 0) return;
-        this->current_position -= steps;
-    }
 
     virtual T at(const U32& position) const =0;
     virtual T front(void) const =0;

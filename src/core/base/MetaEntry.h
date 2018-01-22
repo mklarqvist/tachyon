@@ -51,6 +51,16 @@ public:
 	 */
 	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
 
+	// Check if a field is set
+	const bool fieldSet(const std::string& field, const Header& header) const{
+		Core::HeaderMapEntry* entry = nullptr;
+		if(header.getEntry("AC", entry)){
+			entry->IDX;
+		}
+
+		return false;
+	}
+
 	// Boolean checks
 	inline const bool isBiallelic(void) const{ return(this->hot.isBiallelic()); }
 	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }

@@ -67,7 +67,7 @@ struct BlockIndexBase{
 	typedef BlockIndexBase self_type;
 	typedef BlockIndexController controller_type;
 	typedef BlockIndexOffsets offset_type;
-	typedef BlockIndexHeaderOffsets offset_minimal_type;
+	typedef BlockIndexOffsetsHeader offset_minimal_type;
 
 public:
 	BlockIndexBase();
@@ -226,7 +226,7 @@ private:
 	typedef Core::Support::HashContainer hash_container_type;
 	typedef Core::Support::HashVectorContainer hash_vector_container_type;
 	typedef BlockIndexOffsets offset_type;
-	typedef BlockIndexHeaderOffsets offset_minimal_type;
+	typedef BlockIndexOffsetsHeader offset_minimal_type;
 
 public:
 	// Internal use only
@@ -404,6 +404,12 @@ public:
 	bit_vector* info_bit_vectors;
 	bit_vector* format_bit_vectors;
 	bit_vector* filter_bit_vectors;
+
+	//typedef Hash::HashTable<U32, U32> hash_table;
+	//typedef Hash::HashTable<std::string, U32> hash_table_string;
+	// HTable: check if field exists
+
+	// HTable: check if field exists in a given pattern
 };
 
 }

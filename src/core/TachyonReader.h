@@ -442,7 +442,6 @@ public:
 	}
 
 	bool iterateMeta(std::ostream& stream = std::cout){
-		//Iterator::MetaIterator* it = this->block.getMetaIterator(); // factory
 		//Core::MetaHotContainer it(this->block);
 		//Core::MetaColdContainer it_c(this->block);
 		Core::MetaContainer it(this->block);
@@ -450,62 +449,20 @@ public:
 
 		Core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("DP", entry)){
-			//std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
-
-			//std::cerr << this->header.entries[this->header.mapTable[entry->IDX]].IDX << std::endl;
-			//U32 targetID = 0;
-			//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//	std::cerr << i << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[i].key]].ID << std::endl;
-
-			//}
-
-
 			Core::AbstractIntegerContainer<S32> it_i(this->block.info_containers[4]);
-			Core::MathSummaryStatistics stats = it_i.getSummaryStatistics();
-			std::cerr << stats.total << '\t' << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
-			//assert(it.size() == it_i.size());
-			//std::cerr << this->block.info_containers[4].buffer_data_uncompressed.size() << '\t' << it_i.size() << std::endl;
-			//for(U32 i = 0; i < it_i.size(); ++i){
-			//	std::cerr << (int)it_i[i].mathAverage() << ' ';
-			//}
-			//std::cerr << std::endl;
-			/*
-			Iterator::IteratorIntegerReference<U32>* it_i;
-			switch(this->block.info_containers[0].header.controller.type){
-			case(Core::YON_TYPE_8B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, BYTE>(this->block.info_containers[0]); break;
-			case(Core::YON_TYPE_16B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, U16>(this->block.info_containers[0]); break;
-			case(Core::YON_TYPE_32B): it_i = new Iterator::IteratorIntegerReferenceImpl<U32, U32>(this->block.info_containers[0]); break;
-			default: "Unknown type: " << (int)this->block.info_containers[0].header.controller.type << std::endl;
+			//Math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
+			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
+			for(U32 i = 0; i < it_i.size(); ++i){
+				//if(it_i[i].size() < 3) continue;
+				it[i].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+
+				stream << (int)it_i[i][0] << '\t';
+				for(U32 j = 1; j < it_i[i].size(); ++j)
+					stream << '\t' << (int)it_i[i][j];
+
+				stream << '\n';
 			}
-
-			delete it_i;
-			*/
-
 		}
-
-
-		//std::cerr << it.size() << std::endl;
-
-		//for(auto it2 = it.cbegin(); it2 != it.cend(); ++it2){
-			//std::cerr << (*it2).n_ID << std::endl;
-			//(*it2).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-			//std::cout << "\t\n";
-		//}
-
-		/*
-		//U32 biallelic = 0;
-		for(U32 i = 0; i < this->block.size(); ++i){
-			//std::cerr << it[i] << std::endl;
-			if(it_c[i].n_ID){
-				std::cerr << std::string(it_c[i].ID, it_c[i].n_ID) << std::endl;
-			} else std::cerr << '.' << std::endl;
-			//const Core::MetaEntry& m = (*it)[i];
-			//biallelic += m.isBiallelic();
-
-		}
-		//std::cerr << biallelic << '/' << this->block.size() << std::endl;
-		 */
-
 		return true;
 	}
 
