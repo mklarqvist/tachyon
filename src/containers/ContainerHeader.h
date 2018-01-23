@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstring>
 
+#include "../support/enums.h"
 #include "../support/TypeDefinitions.h"
 
 namespace Tachyon{
@@ -150,6 +151,19 @@ struct ContainerHeader{
 			total_size += this->n_extra;
 
 		return total_size;
+	}
+
+	const BYTE getPrimitiveWidth(void) const{
+		// We do not care about signedness here
+		switch(this->controller.type){
+		case(Core::YON_TYPE_8B): return(sizeof(BYTE));
+		case(Core::YON_TYPE_16B): return(sizeof(U16));
+		case(Core::YON_TYPE_32B): return(sizeof(U16));
+		case(Core::YON_TYPE_64B): return(sizeof(U16));
+		case(Core::YON_TYPE_FLOAT): return(sizeof(U16));
+		case(Core::YON_TYPE_DOUBLE): return(sizeof(U16));
+		}
+		return 0;
 	}
 
 public:

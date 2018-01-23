@@ -3,29 +3,13 @@
 
 #include <bitset>
 
+#include "../support/enums.h"
 #include "../io/BasicBuffer.h"
 #include "ContainerHeaderController.h"
 #include "ContainerHeader.h"
 
 namespace Tachyon{
 namespace Core{
-
-enum TACHYON_CORE_TYPE{
-	YON_TYPE_8B,
-	YON_TYPE_16B,
-	YON_TYPE_32B,
-	YON_TYPE_64B,
-	YON_TYPE_FLOAT,
-	YON_TYPE_DOUBLE,
-	YON_TYPE_BOOLEAN,
-	YON_TYPE_CHAR,
-	YON_TYPE_STRUCT
-};
-
-enum TACHYON_CORE_COMPRESSION{
-	YON_ENCODE_NONE,
-	YON_ENCODE_ZSTD
-};
 
 
 // Stream container for importing

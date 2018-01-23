@@ -11,6 +11,9 @@ MetaContainer::MetaContainer(const Block& block) :
 }
 
 MetaContainer::~MetaContainer(void){
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		(this->__entries + i)->~MetaEntry();
+
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 

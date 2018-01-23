@@ -1,6 +1,7 @@
 #ifndef ALGORITHM_DIGITALDIGESTCONTROLLER_H_
 #define ALGORITHM_DIGITALDIGESTCONTROLLER_H_
 
+#include <cstring>
 #include <openssl/sha.h>
 
 namespace Tachyon{

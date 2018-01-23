@@ -20,6 +20,8 @@
 #include "../containers/MetaContainer.h"
 #include "../containers/AbstractIntegerContainer.h"
 #include "../containers/InfoContainer.h"
+#include "../core/GTObject.h"
+#include "../containers/GenotypeContainerInterface.h"
 
 namespace Tachyon{
 
@@ -442,11 +444,17 @@ public:
 		return this->block.size();
 	}
 
-	bool iterateMeta(std::ostream& stream = std::cout){
+	U64 iterateMeta(std::ostream& stream = std::cout){
 		//Core::MetaHotContainer it(this->block);
 		//Core::MetaColdContainer it_c(this->block);
-		Core::MetaContainer it(this->block);
+		//Core::MetaContainer it(this->block);
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
+		Core::GenotypeContainer gt(this->block);
+		std::cerr << gt.size() << std::endl;
+		return(gt.size());
+		//std::cerr << gt[0] << std::endl;;
+
+		return true;
 
 		Core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("AF", entry)){
@@ -465,7 +473,7 @@ public:
 			}
 			stream << '\n';
 		}
-		return true;
+		return(gt.size());
 	}
 
 public:

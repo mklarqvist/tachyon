@@ -3,6 +3,7 @@
 
 /*======  Dependencies  ======*/
 #include "../../io/BasicBuffer.h"
+#include "../../support/enums.h"
 #include "../../support/MagicConstants.h"
 
 namespace Tachyon{
@@ -152,6 +153,16 @@ public:
 		else if(this->controller.gt_rle && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
 		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_BCF_DIPLOID;
 		else return YON_GT_UNKNOWN;
+	}
+
+	const BYTE getPrimitiveWidth(void) const{
+		switch(this->controller.gt_primtive_type){
+		case(YON_TYPE_8B):  return(1);
+		case(YON_TYPE_16B): return(2);
+		case(YON_TYPE_32B): return(4);
+		case(YON_TYPE_64B): return(8);
+		}
+		return(0);
 	}
 
 private:

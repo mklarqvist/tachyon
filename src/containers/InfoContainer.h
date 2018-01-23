@@ -99,11 +99,11 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
+			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 			new( &this->__containers[i] ) value_type( container, current_offset, (this->*func)(container.buffer_strides_uncompressed, i) );
 			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
 		}
 		assert(current_offset == container.buffer_data_uncompressed.size());
-
 	}
 
 	template <class actual_primitive>
@@ -117,6 +117,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
+			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 			new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
 			current_offset += stride_size * sizeof(actual_primitive);
 		}
@@ -202,6 +203,9 @@ InfoContainer<return_type>::InfoContainer(const Container& container) :
 
 template <class return_type>
 InfoContainer<return_type>::~InfoContainer(){
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		((this->__containers + i)->~PrimitiveContainer)();
+
 	::operator delete[](static_cast<void*>(this->__containers));
 }
 

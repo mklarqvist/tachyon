@@ -20,6 +20,13 @@ private:
 public:
     PrimitiveContainer();
     PrimitiveContainer(const Container& container, const U32& offset, const U32 n_entries);
+    explicit PrimitiveContainer(const BYTE*   const data, const U32& n_entries);
+    explicit PrimitiveContainer(const U16*    const data, const U32& n_entries);
+    explicit PrimitiveContainer(const U32*    const data, const U32& n_entries);
+    explicit PrimitiveContainer(const U64*    const data, const U32& n_entries);
+    explicit PrimitiveContainer(const char*   const data, const U32& n_entries);
+    explicit PrimitiveContainer(const float*  const data, const U32& n_entries);
+    explicit PrimitiveContainer(const double* const data, const U32& n_entries);
     ~PrimitiveContainer(void);
 
     class iterator{
@@ -101,23 +108,23 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const Container& container, 
 {
 	if(container.header.controller.signedness){
 		switch(container.header.controller.type){
-		case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, offset)); break;
-		case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, offset)); break;
-		case(Core::YON_TYPE_16B): (this->__setup<S16>(container, offset));   break;
-		case(Core::YON_TYPE_32B): (this->__setup<S32>(container, offset));   break;
-		case(Core::YON_TYPE_64B): (this->__setup<S64>(container, offset));   break;
-		case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, offset));   break;
-		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));   break;
+		case(Core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset));  break;
+		case(Core::YON_TYPE_CHAR):   (this->__setup<char>(container, offset));   break;
+		case(Core::YON_TYPE_16B):    (this->__setup<S16>(container, offset));    break;
+		case(Core::YON_TYPE_32B):    (this->__setup<S32>(container, offset));    break;
+		case(Core::YON_TYPE_64B):    (this->__setup<S64>(container, offset));    break;
+		case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
 		switch(container.header.controller.type){
-		case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, offset)); break;
-		case(Core::YON_TYPE_16B): (this->__setup<U16>(container, offset));  break;
-		case(Core::YON_TYPE_32B): (this->__setup<U32>(container, offset));  break;
-		case(Core::YON_TYPE_64B): (this->__setup<U64>(container, offset));  break;
-		case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, offset));   break;
-		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));   break;
+		case(Core::YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
+		case(Core::YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
+		case(Core::YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
+		case(Core::YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
+		case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}
@@ -125,7 +132,72 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const Container& container, 
 }
 
 template <class return_type>
-PrimitiveContainer<return_type>::~PrimitiveContainer(void){ delete [] this->__entries; }
+PrimitiveContainer<return_type>::PrimitiveContainer(const BYTE* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const U16* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const U32* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const U64* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const char* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const float* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const double* const data, const U32& n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	for(U32 i = 0; i < n_entries; ++i)
+		this->__entries[i] = data[i];
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::~PrimitiveContainer(void){
+	delete [] this->__entries;
+}
 
 }
 }

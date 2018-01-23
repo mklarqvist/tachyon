@@ -20,6 +20,9 @@ MetaColdContainer::MetaColdContainer(const Container& container) :
 }
 
 MetaColdContainer::~MetaColdContainer(void){
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		(this->__entries + i)->~MetaCold();
+
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
