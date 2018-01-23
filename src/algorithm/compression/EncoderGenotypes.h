@@ -9,7 +9,7 @@
 #include "../../core/base/GTRecords.h"
 #include "../../core/base/MetaHot.h"
 #include "../../containers/Container.h"
-#include "GenotypesSummary.h"
+#include "../../core/GenotypesSummary.h"
 
 namespace Tachyon{
 namespace Encoding{
@@ -56,12 +56,12 @@ namespace Encoding{
 
 class EncoderGenotypes {
 private:
-	typedef EncoderGenotypes self_type;
-	typedef IO::BasicBuffer buffer_type;
-	typedef BCF::BCFEntry bcf_type;
-	typedef Core::MetaHot meta_type;
-	typedef GenotypesSummary helper_type;
-	typedef Core::Container container_type;
+	typedef EncoderGenotypes       self_type;
+	typedef IO::BasicBuffer        buffer_type;
+	typedef BCF::BCFEntry          bcf_type;
+	typedef Core::MetaHot          meta_type;
+	typedef Core::GenotypesSummary helper_type;
+	typedef Core::Container        container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
