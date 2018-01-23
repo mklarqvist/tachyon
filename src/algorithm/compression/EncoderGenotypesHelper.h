@@ -104,7 +104,7 @@ struct EncoderGenotypesHelper{
 	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
 	//
 	// Written by Jan Wigginton
-	// Modified to use Tomahawk data
+	// Modified to use Tachyon data
 	*/
 	void calculateHardyWeinberg(void){
 		U64 obs_hets = this->countsGenotypes[1] + this->countsGenotypes[4];
