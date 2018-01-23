@@ -43,10 +43,6 @@ public:
 
 		const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data;
 		const char* const data_simple = block.gt_simple_container.buffer_data_uncompressed.data;
-		//std::cerr << block.gt_support_data_container.getSizeUncompressed() << std::endl;
-		//std::cerr << block.gt_support_data_container.header.controller.uniform << std::endl;
-		//std::cerr << block.gt_support_data_container.header.controller.mixedStride << std::endl;
-		//std::cerr << block.gt_support_data_container.buffer_strides_uncompressed.size() << std::endl;
 
 		if(block.gt_support_data_container.buffer_data_uncompressed.size() == 0){
 			std::cerr << "is 0" << std::endl;
@@ -83,7 +79,7 @@ public:
 			// new( &this->__iterators[i] ) value_type( &container.buffer_data_uncompressed.data[current_offset], getStride(i), this->__meta_container[i] );
 			const U32 n_objects = (this->*getTarget)(block.gt_support_data_container.buffer_data_uncompressed, i);
 			const U32 target    = (this->*getObjects)(block.gt_support_data_container.buffer_strides_uncompressed, i);
-			//std::cerr << i << '/' << this->n_entries << '\t' << n_objects << '\t' << target << '\t' << (int)this->__meta_container[i].hot.getPrimitiveWidth() << std::endl;
+
 			if(target == 1){
 				if(this->__meta_container[i].hot.getPrimitiveWidth() == 1)
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
@@ -111,9 +107,6 @@ public:
 				exit(1);
 			}
 		}
-
-		//std::cerr << current_offset_rle << '/' << block.gt_rle_container.buffer_data_uncompressed.size() << std::endl;
-		//std::cerr << current_offset_simple << '/' << block.gt_simple_container.buffer_data_uncompressed.size() << std::endl;
 		assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 	}

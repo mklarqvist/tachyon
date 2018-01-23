@@ -2,12 +2,12 @@
 #define ENCODERGENOTYPESRLEHELPER_H_
 
 namespace Tachyon{
-namespace Encoding{
+namespace Core{
 
-struct EncoderGenotypesHelper{
-	typedef EncoderGenotypesHelper self_type;
+struct GenotypesSummary{
+	typedef GenotypesSummary self_type;
 
-	EncoderGenotypesHelper(void) :
+	GenotypesSummary(void) :
 		MAF(0),
 		MGF(0),
 		HWE_P(0),
@@ -19,7 +19,7 @@ struct EncoderGenotypesHelper{
 		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
 	}
 
-	EncoderGenotypesHelper(const U64 expectedSamples) :
+	GenotypesSummary(const U64 expectedSamples) :
 		MAF(0),
 		MGF(0),
 		HWE_P(0),
@@ -30,7 +30,7 @@ struct EncoderGenotypesHelper{
 		memset(&this->countsGenotypes[0], 0, sizeof(U64)*16);
 		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
 	}
-	~EncoderGenotypesHelper(){}
+	~GenotypesSummary(){}
 
 	void setExpected(const U32 expected){ this->expectedSamples = expected; }
 	U64& operator[](const U32& p){ return(this->countsGenotypes[p]); }

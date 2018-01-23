@@ -13,6 +13,9 @@ private:
     typedef std::size_t                 size_type;
     typedef MetaEntry                   meta_type;
 
+protected:
+    typedef GTObject                    gt_object;
+
 public:
     GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}
     GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
@@ -33,14 +36,15 @@ public:
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
     //virtual void std::vector<upp_triagonal> compareSamplesPairwise(void) =0;
     virtual U32 getSum(void) const =0;
+    virtual std::vector<gt_object> getObjects(void) const =0;
 
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
 protected:
-    size_type n_entries;
-    char* __data;    // GT primitive
+    size_type        n_entries;
+    char*            __data;
     const meta_type* __meta;
 };
 
@@ -90,13 +94,22 @@ public:
     // GT-specific
     U32 getSum(void) const{
     		U32 count = 0;
-    		const BYTE shift    = this->__meta->hot.controller.gt_anyMissing    ? 2 : 1;
-    		const BYTE add      = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
+    		const BYTE shift = this->__meta->hot.controller.gt_anyMissing    ? 2 : 1;
+    		const BYTE add   = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
 
-    		for(U32 i = 0; i < this->n_entries; ++i){
+    		for(U32 i = 0; i < this->n_entries; ++i)
 			count += this->at(i) >> (2*shift + add);
-    		}
+
     		return(count);
+    }
+
+    std::vector<gt_object> getObjects(void) const{
+    		std::vector<GTObject> ret(this->n_entries);
+    		GTObjectDiploidRLE* entries = reinterpret_cast<GTObjectDiploidRLE*>(&ret[0]);
+    		for(U32 i = 0; i < this->n_entries; ++i)
+    			entries[i](this->at(i), *this->__meta);
+
+    		return(ret);
     }
 };
 
@@ -147,13 +160,22 @@ public:
 	U32 getSum(void) const{
 		U32 count = 0;
 
-		const BYTE shift    = ceil(log2(this->__meta->cold.n_allele + this->__meta->hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
-		const BYTE add      = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
+		const BYTE shift = ceil(log2(this->__meta->cold.n_allele + this->__meta->hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
+		const BYTE add   = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
 
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->n_entries; ++i)
 			count += this->at(i) >> (2*shift + add);
-		}
+
 		return(count);
+	}
+
+	std::vector<gt_object> getObjects(void) const{
+		std::vector<GTObject> ret(this->n_entries);
+		GTObjectDiploidSimple* entries = reinterpret_cast<GTObjectDiploidSimple*>(&ret[0]);
+		for(U32 i = 0; i < this->n_entries; ++i){
+			entries[i](this->at(i), *this->__meta);
+		}
+		return(ret);
 	}
 };
 

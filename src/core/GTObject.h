@@ -8,16 +8,59 @@ namespace Core{
 
 struct GTObject{
 private:
-    typedef GTObject           self_type;
+    typedef GTObject             self_type;
     typedef std::pair<char,char> value_type;
-    typedef value_type&        reference;
-    typedef const value_type&  const_reference;
-    typedef value_type*        pointer;
-    typedef const value_type*  const_pointer;
-    typedef std::size_t        size_type;
+    typedef value_type&          reference;
+    typedef const value_type&    const_reference;
+    typedef value_type*          pointer;
+    typedef const value_type*    const_pointer;
+    typedef std::size_t          size_type;
 
 public:
-    GTObject(void) : n_objects(0), alleles(nullptr){}
+    GTObject(void) : n_alleles(0), n_objects(0), alleles(nullptr){}
+
+    GTObject(const self_type& other) : n_alleles(other.n_alleles), n_objects(other.n_objects), alleles(new value_type[other.n_objects])
+    {
+    		for(U32 i = 0; i < this->n_alleles; ++i)
+    			this->alleles[i] = other.alleles[i];
+    }
+
+    GTObject(self_type&& other) noexcept : n_alleles(other.n_alleles), n_objects(other.n_objects), alleles(other.alleles)
+    	{
+    		other.alleles = nullptr;
+    }
+
+    GTObject& operator=(const self_type& other){
+    		this->n_alleles = other.n_alleles;
+    		if(this->n_alleles == other.n_alleles){
+    			for(U32 i = 0; i < this->n_alleles; ++i)
+    				this->alleles[i] = other.alleles[i];
+    		} else {
+    			delete [] this->alleles;
+    			this->alleles = new value_type[this->n_alleles];
+
+    			for(U32 i = 0; i < this->n_alleles; ++i)
+				this->alleles[i] = other.alleles[i];
+    		}
+
+    		this-> n_objects = other.n_objects;
+    		return(*this);
+    }
+
+    GTObject& operator=(self_type&& other) noexcept{
+    		if (this == &other){
+			// take precautions against `foo = std::move(foo)`
+			return *this;
+		}
+
+    		this->n_alleles = other.n_alleles;
+    		this->n_objects = other.n_objects;
+		delete [] this->alleles;
+		this->alleles = other.alleles;
+		other.alleles = nullptr;
+		return *this;
+    }
+
     virtual ~GTObject(void){ delete [] this->alleles; }
 
     class iterator{
@@ -74,46 +117,71 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_objects - 1]); }
 
 public:
+    BYTE      n_alleles;
     size_type n_objects;
     pointer   alleles;
 };
 
 struct GTObjectDiploidRLE : public GTObject{
-    typedef Core::MetaEntry meta_type;
+private:
+	typedef Core::MetaEntry meta_type;
+
 public:
-    template <class T> GTObjectDiploidRLE(const T& gt_primitive, const meta_type& meta_entry)
+    GTObjectDiploidRLE(void){}
+
+    template <class T>
+    void operator()(const T& gt_primitive, const meta_type& meta_entry)
     {
-    		this->alleles       = new std::pair<char,char>[2];
-    		const BYTE shift    = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
-		const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+    		this->__interpret<T>(gt_primitive, meta_entry);
+    }
+
+private:
+    template <class T>
+    void __interpret(const T& gt_primitive, const meta_type& meta_entry)
+    {
+		this->n_alleles  = 2;
+		this->alleles    = new std::pair<char,char>[2];
+		const BYTE shift = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
+		const BYTE add   = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
 		else    this->alleles[0].second = meta_entry.hot.controller.gt_phase;
 
-		this->alleles[0].first    = (gt_primitive & ((1 << shift) - 1) << add) >> add;
-		this->alleles[1].first    = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-		this->n_objects           = gt_primitive >> (2*shift + add);
-    }
-    virtual ~GTObjectDiploidRLE(){}
+		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
+		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+		this->n_objects        = gt_primitive >> (2*shift + add);
+	}
 };
 
 struct GTObjectDiploidSimple : public GTObject{
+private:
 	typedef Core::MetaEntry meta_type;
+
 public:
-    template <class T> GTObjectDiploidSimple(const T& gt_primitive, const meta_type& meta_entry)
+	GTObjectDiploidSimple(void){}
+
+    template <class T>
+    void operator()(const T& gt_primitive, const meta_type& meta_entry)
     {
-		this->alleles       = new std::pair<char,char>[2];
-		const BYTE shift    = ceil(log2(meta_entry.cold.n_allele + meta_entry.hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
-		const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+    		this->__interpret<T>(gt_primitive, meta_entry);
+    }
+
+private:
+    template <class T>
+    void __interpret(const T& gt_primitive, const meta_type& meta_entry)
+    {
+		this->n_alleles  = 2;
+		this->alleles    = new std::pair<char,char>[2];
+		const BYTE shift = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
+		const BYTE add   = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
 		else    this->alleles[0].second = meta_entry.hot.controller.gt_phase;
 
-		this->alleles[0].first    = (gt_primitive & ((1 << shift) - 1) << add) >> add;
-		this->alleles[1].first    = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-		this->n_objects           = gt_primitive >> (2*shift + add);
+		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
+		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+		this->n_objects        = gt_primitive >> (2*shift + add);
 	}
-    ~GTObjectDiploidSimple(){}
 };
 
 }

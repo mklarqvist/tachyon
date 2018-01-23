@@ -451,8 +451,9 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i){
+			//std::vector<Core::GTObject> objects = gt[i].getObjects();
 			const U32 n_entries = gt[i].getSum();
-			assert(n_entries == 2504);
+			assert(n_entries == this->header.n_samples);
 		}
 		//std::cerr << std::endl;
 		std::cerr << gt.size() << std::endl;
@@ -473,8 +474,6 @@ public:
 				//stream << (int)it_i[i][0];
 				for(U32 j = 0; j < it_i[i].size(); ++j)
 					stream << it_i[i][j] << ' ';
-
-
 			}
 			stream << '\n';
 		}
