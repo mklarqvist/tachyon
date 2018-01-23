@@ -21,7 +21,7 @@
 #include "../containers/AbstractIntegerContainer.h"
 #include "../containers/InfoContainer.h"
 #include "../core/GTObject.h"
-#include "../containers/GenotypeContainerInterface.h"
+#include "../containers/GenotypeContainer.h"
 
 namespace Tachyon{
 
@@ -450,11 +450,15 @@ public:
 		//Core::MetaContainer it(this->block);
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
+		for(U32 i = 0; i < gt.size(); ++i){
+			std::cerr << gt[i].getSum() << ' ';
+		}
+		std::cerr << std::endl;
 		std::cerr << gt.size() << std::endl;
 		return(gt.size());
 		//std::cerr << gt[0] << std::endl;;
 
-		return true;
+		//return true;
 
 		Core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("AF", entry)){
@@ -473,7 +477,7 @@ public:
 			}
 			stream << '\n';
 		}
-		return(gt.size());
+		return(0);
 	}
 
 public:

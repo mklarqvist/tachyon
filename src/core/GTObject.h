@@ -83,8 +83,8 @@ struct GTObjectDiploidRLE : public GTObject{
 public:
     template <class T> GTObjectDiploidRLE(const T& gt_primitive, const meta_type& meta_entry)
     {
-    	this->alleles       = new std::pair<char,char>[2];
-    	const BYTE shift    = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
+    		this->alleles       = new std::pair<char,char>[2];
+    		const BYTE shift    = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
 		const BYTE add      = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;

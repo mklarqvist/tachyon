@@ -105,8 +105,9 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::TachyonReader reader;
-	//reader.getSettings().loadMeta(true).loadGenotypes(true);
-	reader.getSettings().loadAll(true);
+	reader.getSettings().loadMeta(true).loadGenotypes(true);
+	//reader.getSettings().loadINFO(true);
+	//reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -119,7 +120,7 @@ int view(int argc, char** argv){
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
-		reader.iterateMeta();
+		n_variants += reader.iterateMeta();
 		//n_variants += reader.iterateGT();
 	}
 	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
