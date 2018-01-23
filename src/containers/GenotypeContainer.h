@@ -85,10 +85,26 @@ public:
 			const U32 target    = (this->*getObjects)(block.gt_support_data_container.buffer_strides_uncompressed, i);
 			//std::cerr << i << '/' << this->n_entries << '\t' << n_objects << '\t' << target << '\t' << (int)this->__meta_container[i].hot.getPrimitiveWidth() << std::endl;
 			if(target == 1){
-				new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+				if(this->__meta_container[i].hot.getPrimitiveWidth() == 1)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 2)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 4)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 8)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+
 				current_offset_rle += n_objects * this->__meta_container[i].hot.getPrimitiveWidth();
 			} else if(target == 2){
-				new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+				if(this->__meta_container[i].hot.getPrimitiveWidth() == 1)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 2)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 4)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+				else if(this->__meta_container[i].hot.getPrimitiveWidth() == 8)
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+
 				current_offset_simple += n_objects * this->__meta_container[i].hot.getPrimitiveWidth();
 			} else {
 				std::cerr << "illegal" << std::endl;

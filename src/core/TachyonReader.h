@@ -451,9 +451,10 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i){
-			std::cerr << gt[i].getSum() << ' ';
+			const U32 n_entries = gt[i].getSum();
+			assert(n_entries == 2504);
 		}
-		std::cerr << std::endl;
+		//std::cerr << std::endl;
 		std::cerr << gt.size() << std::endl;
 		return(gt.size());
 		//std::cerr << gt[0] << std::endl;;
