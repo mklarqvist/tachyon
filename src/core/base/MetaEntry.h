@@ -64,6 +64,16 @@ public:
 	// Boolean checks
 	inline const bool isBiallelic(void) const{ return(this->hot.isBiallelic()); }
 	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }
+	inline const bool isRLE(void) const{ return(this->hot.isRLE()); }
+	inline const bool isDiploid(void) const{ return(this->hot.isDiploid()); }
+	inline const bool isMixedPloidy(void) const{ return(this->hot.isMixedPloidy()); }
+	inline const bool isAnyGTMissing(void) const{ return(this->hot.isAnyGTMissing()); }
+	inline const bool isAnyGTSpecial(void) const{ return(this->hot.isAnyGTSpecial()); }
+	inline const bool getControllerPhase(void) const{ return(this->hot.getControllerPhase()); }
+
+	inline const float getQuality(void) const{ return(this->cold.QUAL); }
+	inline const std::string getName(void) const{ return(this->cold.getName()); }
+	inline const U16& getNumberAlleles(void) const{ return(this->cold.getNumberAlleles()); }
 
 	// Set and get for patterns
 	inline U32& getInfoPatternID(void){ return(this->info_pattern_id); }

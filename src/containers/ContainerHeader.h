@@ -116,7 +116,7 @@ struct ContainerHeader{
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.stride), sizeof(S16));
+		stream.write(reinterpret_cast<const char*>(&entry.stride), sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),sizeof(U32));
@@ -131,7 +131,7 @@ struct ContainerHeader{
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.stride),  sizeof(S16));
+		stream.read(reinterpret_cast<char*>(&entry.stride),  sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&entry.offset),  sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
@@ -146,7 +146,7 @@ struct ContainerHeader{
 	}
 
 	const U32 getObjectSize(void) const{
-		U32 total_size = 2*sizeof(U16) + sizeof(S16) + sizeof(U32)*4;
+		U32 total_size = 2*sizeof(U16) + sizeof(S32) + sizeof(U32)*4;
 		if(this->n_extra > 0)
 			total_size += this->n_extra;
 
@@ -166,15 +166,27 @@ struct ContainerHeader{
 		return 0;
 	}
 
+	//
+	inline const S32& getStride(void) const{ return(this->stride); }
+	inline const bool isUniform(void) const{ return(this->controller.uniform); }
+	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
+	inline const bool isSigned(void) const{ return(this->controller.signedness); }
+	inline const Core::TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(Core::TACHYON_CORE_TYPE(this->controller.type)); }
+	inline const Core::TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(Core::TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+
+	// Checksum
+	inline const U32& getChecksum(void) const{ return(this->crc); }
+	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
+
 public:
 	controller_type controller; // controller bits
-	S16 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
+	S32 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
 	U32 offset;                 // relative file offset
 	U32 cLength;                // compressed length
 	U32 uLength;                // uncompressed length
 	U32 crc;                    // crc32 checksum
 	U16 n_extra;                // number of extra bytes used by encoder
-	char* extra; // extra length is encoder specific
+	char* extra;                // extra length is encoder specific
 };
 
 /*

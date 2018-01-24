@@ -147,6 +147,9 @@ public:
 	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
+	inline const bool isAnyGTSpecial(void) const{ return(this->controller.gt_anyNA); }
+	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
 
 	const TACHYON_GT_TYPE getGenotypeType(void) const{
 		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && !this->controller.gt_anyNA) return YON_GT_RLE_DIPLOID_BIALLELIC;

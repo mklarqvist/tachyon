@@ -105,7 +105,7 @@ int view(int argc, char** argv){
 	}
 
 	Tachyon::TachyonReader reader;
-	reader.getSettings().loadMeta(true).loadGenotypes(true);
+	reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
 	//reader.getSettings().loadAll(true);
 

@@ -98,6 +98,7 @@ struct BlockEntrySettings{
 	}
 
 	self_type& loadGenotypes(const bool set = true){
+		this->loadMeta(true);
 		this->importGT = true;
 		this->importGTSimple = true;
 		return(*this);
