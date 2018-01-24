@@ -23,6 +23,8 @@
 #include "../core/GTObject.h"
 #include "../containers/GenotypeContainer.h"
 
+#include "../math/fisher.h"
+
 namespace Tachyon{
 
 class TachyonReader{
@@ -452,21 +454,28 @@ public:
 		Core::GenotypeContainer gt(this->block);
 		//Core::GenotypeSum summary = gt.calculateSummary();
 
+		Math::Fisher fisher(1000);
 		Core::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<Core::GTObject> objects = gt[i].getObjects();
-			const U32 n_entries = gt[i].getSum();
+			//const U32 n_entries = gt[i].getSum();
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
 			gt[i].getSummary(gt_summary);
 
-			if(!gt[i].getMeta().isBiallelic()){
+			const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
+			const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total);
+			if(p < 1e-3){
 				gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-				std::cerr << '\t' << gt_summary << std::endl;
+				std::cerr << '\t' << gt_summary << '\t' << "P: " << p << std::endl;
 			}
-			assert(gt_summary.alleleCount() == 2*this->header.n_samples);
-			assert(gt_summary.genotypeCount() == this->header.n_samples);
 
-			assert(n_entries == this->header.n_samples);
+			//if(!gt[i].getMeta().isBiallelic()){
+			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			//	std::cerr << '\t' << gt_summary << std::endl;
+			//}
+			//assert(gt_summary.alleleCount() == 2*this->header.n_samples);
+			//assert(gt_summary.genotypeCount() == this->header.n_samples);
+			//assert(n_entries == this->header.n_samples);
 			gt_summary.clear();
 		}
 		//std::cerr << std::endl;

@@ -164,6 +164,15 @@ private:
 		for(U32 i = 1; i < entry.n_alleles; ++i){
 			out << ',' << entry.getAllele(i);
 		}
+		out << "] allelesA = [" << entry.getAllele(0);
+		for(U32 i = 1; i < entry.n_alleles; ++i){
+			out << ',' << entry.getAlleleA(i);
+		}
+		out << "] allelesB = [" << entry.getAllele(0);
+		for(U32 i = 1; i < entry.n_alleles; ++i){
+			out << ',' << entry.getAlleleB(i);
+		}
+
 		out << "] genotypes = [";
 		for(U32 i = 0; i < entry.n_alleles; ++i){
 			for(U32 j = 0; j < entry.n_alleles; ++j){

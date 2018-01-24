@@ -112,7 +112,7 @@ public:
 				}
 			}
 
-			std::cerr << "mixed stride" << std::endl;
+			//std::cerr << "mixed stride" << std::endl;
 			assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 			assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 		} else { // No mixed stride
@@ -123,7 +123,7 @@ public:
 			for(U32 i = 0; i < this->n_entries; ++i){
 				// new( &this->__iterators[i] ) value_type( &container.buffer_data_uncompressed.data[current_offset], getStride(i), this->__meta_container[i] );
 				const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
-				std::cerr << i << '/' << this->n_entries << '\t' << n_objects << std::endl;
+				//std::cerr << i << '/' << this->n_entries << '\t' << n_objects << std::endl;
 
 				if(target == 1){
 					if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
@@ -153,8 +153,8 @@ public:
 				}
 			}
 
-			std::cerr << "fixed stride" << std::endl;
-			std::cerr << current_offset_rle << '\t' << block.gt_rle_container.buffer_data_uncompressed.size() << std::endl;
+			//std::cerr << "fixed stride" << std::endl;
+			//std::cerr << current_offset_rle << '\t' << block.gt_rle_container.buffer_data_uncompressed.size() << std::endl;
 			assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 			assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 		}
