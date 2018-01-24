@@ -141,11 +141,11 @@ private:
     {
 		this->n_alleles  = 2;
 		this->alleles    = new std::pair<char,char>[2];
-		const BYTE shift = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
-		const BYTE add   = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+		const BYTE shift = meta_entry.isAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
-		else    this->alleles[0].second = meta_entry.hot.controller.gt_phase;
+		else    this->alleles[0].second = meta_entry.getControllerPhase();
 
 		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
 		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
@@ -172,11 +172,11 @@ private:
     {
 		this->n_alleles  = 2;
 		this->alleles    = new std::pair<char,char>[2];
-		const BYTE shift = meta_entry.hot.controller.gt_anyMissing    ? 2 : 1;
-		const BYTE add   = meta_entry.hot.controller.gt_mixed_phasing ? 1 : 0;
+		const BYTE shift = meta_entry.isAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = meta_entry.isGTMixedPhasing()  ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
-		else    this->alleles[0].second = meta_entry.hot.controller.gt_phase;
+		else    this->alleles[0].second = meta_entry.getControllerPhase();
 
 		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
 		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);

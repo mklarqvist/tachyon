@@ -94,8 +94,8 @@ public:
     // GT-specific
     U32 getSum(void) const{
     		U32 count = 0;
-    		const BYTE shift = this->__meta->hot.controller.gt_anyMissing    ? 2 : 1;
-    		const BYTE add   = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
+    		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
+    		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
     		for(U32 i = 0; i < this->n_entries; ++i)
 			count += this->at(i) >> (2*shift + add);
@@ -160,8 +160,8 @@ public:
 	U32 getSum(void) const{
 		U32 count = 0;
 
-		const BYTE shift = ceil(log2(this->__meta->cold.n_allele + this->__meta->hot.controller.gt_anyMissing)); // Bits occupied per allele, 1 value for missing
-		const BYTE add   = this->__meta->hot.controller.gt_mixed_phasing ? 1 : 0;
+		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
 		for(U32 i = 0; i < this->n_entries; ++i)
 			count += this->at(i) >> (2*shift + add);

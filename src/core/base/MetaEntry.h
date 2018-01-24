@@ -70,6 +70,10 @@ public:
 	inline const bool isAnyGTMissing(void) const{ return(this->hot.isAnyGTMissing()); }
 	inline const bool isAnyGTSpecial(void) const{ return(this->hot.isAnyGTSpecial()); }
 	inline const bool getControllerPhase(void) const{ return(this->hot.getControllerPhase()); }
+	inline const bool isGTMixedPhasing(void) const{ return(this->hot.isGTMixedPhasing()); }
+
+	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(this->hot.getGenotypeType()); }
+	inline const BYTE getGTPrimitiveWidth(void) const{ return(this->hot.getPrimitiveWidth()); }
 
 	inline const float getQuality(void) const{ return(this->cold.QUAL); }
 	inline const std::string getName(void) const{ return(this->cold.getName()); }
@@ -86,7 +90,7 @@ public:
 private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
-public:
+private:
 	bool loaded_cold;      // Boolean triggered if cold meta object was overloaded
 	U32 info_pattern_id;   // Info pattern ID
 	U32 filter_pattern_id; // Filter pattern ID
