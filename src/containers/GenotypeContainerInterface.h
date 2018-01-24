@@ -4,6 +4,7 @@
 #include "Container.h"
 #include "../core/GenotypesSummary.h"
 #include "../core/GTObject.h"
+#include "../math/SquareMatrix.h"
 
 namespace Tachyon{
 namespace Core{
@@ -17,6 +18,7 @@ private:
 protected:
     typedef GTObject                    gt_object;
     typedef GenotypeSum                 gt_summary;
+    typedef Math::SquareMatrix<double>  square_matrix_type;
 
 public:
     GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}
@@ -36,7 +38,7 @@ public:
     //virtual void std::vector<bool> getSamplesMissingness(void) =0;
     //virtual void std::vector<U32> getSamplesPloidy(void) =0;
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
-    //virtual void std::vector<upp_triagonal> compareSamplesPairwise(void) =0;
+    virtual square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const =0;
     virtual U32 getSum(void) const =0;
     virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
     virtual gt_summary getSummary(void) const =0;
@@ -107,6 +109,65 @@ public:
 			count += this->at(i) >> (2*shift + add);
 
     		return(count);
+    }
+
+    square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const{
+    		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
+    		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+
+
+    		U32 start_position = 0;
+    	    for(U32 i = 0; i < this->n_entries; ++i){
+    	    		// self check
+
+
+    	    		const U32 ref_length = this->at(i) >> (2*shift + add);
+    	    		const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
+			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+
+    	    		// Cycle over implicit elements in object
+    	    		for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
+    	    			for(U32 end_sample = start_sample + 1; end_sample < start_position + ref_length; ++end_sample){
+    	    				square_matrix(start_sample, end_sample) += 2;
+    	    				//++cum_length;
+    	    			}
+    	    		}
+    	    		//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << start_position << "," << start_position + ref_length << ")\n";
+
+    	    		U32 internal_start = start_position + ref_length;
+
+    	    		// Compare to next object
+    	    		for(U32 j = i + 1; j < this->n_entries; ++j){
+				const U32 length = this->at(j) >> (2*shift + add);
+				const BYTE alleleA = (this->at(j) & ((1 << shift) - 1) << add) >> add;
+				const BYTE alleleB = (this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+
+				BYTE score = 2;
+				if(alleleA == ref_alleleA && alleleB == ref_alleleB){ // identical
+					score = 2;
+				} else if(!(alleleA == ref_alleleA || alleleB == ref_alleleB)){
+					score = 0;
+					internal_start += length;
+					continue;
+				} else {
+					score = 1;
+				}
+
+				// Cycle over implicit elements in object
+				//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << internal_start << "," << internal_start + length << ")\n";
+				for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
+					for(U32 end_sample = internal_start; end_sample < internal_start + length; ++end_sample){
+						square_matrix(start_sample, end_sample) += score;
+						//++cum_length;
+					}
+				}
+				internal_start += length;
+    	    		}
+
+    	    		start_position += ref_length;
+    	    }
+    	    //std::cerr << start_position << std::endl;
+    	    return(square_matrix);
     }
 
     std::vector<gt_object> getObjects(void) const{
@@ -189,6 +250,11 @@ public:
 			count += this->at(i) >> (2*shift + add);
 
 		return(count);
+	}
+
+	square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const{
+
+		return(square_matrix);
 	}
 
 	std::vector<gt_object> getObjects(void) const{

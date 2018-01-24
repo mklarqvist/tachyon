@@ -117,12 +117,16 @@ int view(int argc, char** argv){
 	U64 n_variants = 0;
 	Tachyon::Algorithm::Timer timer;
 	timer.Start();
+
+	Tachyon::Math::SquareMatrix<double> square(reader.header.n_samples);
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
-		n_variants += reader.iterateMeta();
+		//n_variants += reader.iterateMeta();
 		//n_variants += reader.iterateGT();
+		reader.calculateIBS(square);
 	}
+	std::cout << square << std::endl;
 	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;

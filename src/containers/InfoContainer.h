@@ -10,15 +10,15 @@ namespace Core{
 template <class return_type>
 class InfoContainer{
 private:
-    typedef InfoContainer          self_type;
+    typedef InfoContainer                   self_type;
     typedef PrimitiveContainer<return_type> value_type;
-    typedef value_type&                   reference;
-    typedef const value_type&             const_reference;
-    typedef value_type*                   pointer;
-    typedef const value_type*             const_pointer;
-    typedef std::ptrdiff_t                difference_type;
-    typedef std::size_t                   size_type;
-    typedef IO::BasicBuffer               buffer_type;
+    typedef value_type&                     reference;
+    typedef const value_type&               const_reference;
+    typedef value_type*                     pointer;
+    typedef const value_type*               const_pointer;
+    typedef std::ptrdiff_t                  difference_type;
+    typedef std::size_t                     size_type;
+    typedef IO::BasicBuffer                 buffer_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getStrideFunction)(const buffer_type& buffer, const U32 position) const;
@@ -80,11 +80,11 @@ public:
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__containers[0]); }
-    inline iterator end(){ return iterator(&this->__containers[this->n_entries - 1]); }
-    inline const_iterator begin() const{ return const_iterator(&this->__containers[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
+    inline iterator end()  { return iterator(&this->__containers[this->n_entries - 1]); }
+    inline const_iterator begin()  const{ return const_iterator(&this->__containers[0]); }
+    inline const_iterator end()    const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
+    inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
 
 private:
     template <class actual_primitive>
@@ -153,7 +153,7 @@ InfoContainer<return_type>::InfoContainer(const Container& container) :
 		default: std::cerr << "Disallowed stride" << std::endl; return;
 		}
 
-		if(container.header.controller.signedness){
+		if(container.header.isSigned()){
 			switch(container.header.controller.type){
 			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
 			case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, func)); break;
@@ -165,7 +165,7 @@ InfoContainer<return_type>::InfoContainer(const Container& container) :
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(container.header.controller.type){
+			switch(container.header.getPrimitiveType()){
 			case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
 			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
 			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;

@@ -24,6 +24,7 @@
 #include "../containers/GenotypeContainer.h"
 
 #include "../math/fisher.h"
+#include "../math/SquareMatrix.h"
 
 namespace Tachyon{
 
@@ -44,7 +45,6 @@ public:
 			this->internal_buffers[i].deleteAll();
 
 		delete [] this->internal_buffers;
-
 	}
 
 	inline settings_type& getSettings(void){ return(this->settings); }
@@ -446,6 +446,20 @@ public:
 		return this->block.size();
 	}
 
+	void calculateIBS(Math::SquareMatrix<double>& square){
+		Algorithm::Timer timer;
+		timer.Start();
+
+		Core::GenotypeContainer gt(this->block);
+		for(U32 i = 0; i < gt.size(); ++i)
+			gt[i].compareSamplesPairwise(square);
+
+		square /= (U64)2*this->header.n_samples*gt.size();
+		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
+		std::cerr << "Updates: " << Tachyon::Helpers::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
+
+	}
+
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		//Core::MetaHotContainer it(this->block);
 		//Core::MetaColdContainer it_c(this->block);
@@ -453,6 +467,15 @@ public:
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
 		//Core::GenotypeSum summary = gt.calculateSummary();
+
+		Math::SquareMatrix<double> square(this->header.n_samples);
+		for(U32 i = 0; i < gt.size(); ++i){
+			gt[i].compareSamplesPairwise(square);
+		}
+		square /= (U64)2*this->header.n_samples*gt.size();
+		stream << square << std::endl;
+		std::cerr << "block done" << std::endl;
+		return(gt.size());
 
 		Math::Fisher fisher(1000);
 		Core::GenotypeSum gt_summary;
@@ -464,10 +487,10 @@ public:
 
 			const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
 			const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total);
-			if(p < 1e-3){
-				gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-				std::cerr << '\t' << gt_summary << '\t' << "P: " << p << std::endl;
-			}
+			//if(p < 1e-3){
+			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			//	stream << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
+			//}
 
 			//if(!gt[i].getMeta().isBiallelic()){
 			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
@@ -479,7 +502,7 @@ public:
 			gt_summary.clear();
 		}
 		//std::cerr << std::endl;
-		std::cerr << gt.size() << std::endl;
+		//std::cerr << gt.size() << std::endl;
 		return(gt.size());
 		//std::cerr << gt[0] << std::endl;;
 
