@@ -2,6 +2,7 @@
 #define CONTAINERS_GENOTYPECONTAINERINTERFACE_H_
 
 #include "Container.h"
+#include "../core/GenotypesSummary.h"
 #include "../core/GTObject.h"
 
 namespace Tachyon{
@@ -15,6 +16,7 @@ private:
 
 protected:
     typedef GTObject                    gt_object;
+    typedef GenotypeSum                 gt_summary;
 
 public:
     GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}
@@ -36,11 +38,15 @@ public:
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
     //virtual void std::vector<upp_triagonal> compareSamplesPairwise(void) =0;
     virtual U32 getSum(void) const =0;
+    virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
+    virtual gt_summary getSummary(void) const =0;
+    virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
     virtual std::vector<gt_object> getObjects(void) const =0;
 
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
+    inline const meta_type& getMeta(void) const{ return(*this->__meta); }
 
 protected:
     size_type        n_entries;
@@ -111,6 +117,22 @@ public:
 
     		return(ret);
     }
+
+    gt_summary& updateSummary(gt_summary& gt_summary_object) const{
+    		gt_summary_object += *this;
+    		return(gt_summary_object);
+    }
+
+    gt_summary getSummary(void) const{
+    	    gt_summary summary;
+    	    	summary += *this;
+    	    	return(summary);
+    }
+
+    gt_summary& getSummary(gt_summary& gt_summary_object) const{
+    	    gt_summary_object += *this;
+    	    return(gt_summary_object);
+    }
 };
 
 template <class T>
@@ -177,6 +199,22 @@ public:
 		}
 		return(ret);
 	}
+
+    gt_summary& updateSummary(gt_summary& gt_summary_object) const{
+    		gt_summary_object += *this;
+    		return(gt_summary_object);
+    }
+
+    gt_summary getSummary(void) const{
+        	gt_summary summary;
+        	summary += *this;
+        	return(summary);
+    }
+
+    gt_summary& getSummary(gt_summary& gt_summary_object) const{
+    	    gt_summary_object += *this;
+    	    return(gt_summary_object);
+    }
 };
 
 

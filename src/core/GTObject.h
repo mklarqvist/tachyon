@@ -141,7 +141,7 @@ private:
     {
 		this->n_alleles  = 2;
 		this->alleles    = new std::pair<char,char>[2];
-		const BYTE shift = meta_entry.isAnyGTMissing()    ? 2 : 1;
+		const BYTE shift = meta_entry.isAnyGTMissing()   ? 2 : 1;
 		const BYTE add   = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
@@ -172,8 +172,8 @@ private:
     {
 		this->n_alleles  = 2;
 		this->alleles    = new std::pair<char,char>[2];
-		const BYTE shift = meta_entry.isAnyGTMissing()    ? 2 : 1;
-		const BYTE add   = meta_entry.isGTMixedPhasing()  ? 1 : 0;
+		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add      = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;
 		else    this->alleles[0].second = meta_entry.getControllerPhase();

@@ -21,6 +21,7 @@ private:
     typedef MetaContainer                 meta_container_type;
     typedef MetaEntry                     meta_type;
     typedef IO::BasicBuffer               buffer_type;
+    typedef GenotypeSum                   gt_summary_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
@@ -211,6 +212,16 @@ public:
 	inline const_reference operator[](const U32& position) const{ return(this->__iterators[position]); }
 	inline reference       at(const U32& position){ return(this->__iterators[position]); }
 	inline const_reference at(const U32& position) const{ return(this->__iterators[position]); }
+
+
+	// GT summary
+	gt_summary_type calculateSummary(void) const{
+		gt_summary_type summary;
+		for(U32 i = 0; i < this->size(); ++i){
+			this->at(i).updateSummary(summary);
+		}
+		return(summary);
+	}
 
 
 private:

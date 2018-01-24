@@ -450,10 +450,19 @@ public:
 		//Core::MetaContainer it(this->block);
 		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
+		//Core::GenotypeSum summary = gt.calculateSummary();
+
+		Core::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<Core::GTObject> objects = gt[i].getObjects();
 			const U32 n_entries = gt[i].getSum();
+			gt[i].getSummary(gt_summary);
+			if(!gt[i].getMeta().isBiallelic())
+				std::cerr << gt[i].getMeta().isBiallelic() << '\t' << gt_summary.getAllele(0) << '\t' << gt_summary.getAllele(1) << '\t' << gt_summary.getAllele(2) << '\t' << gt_summary.getAllele(3) << '\t' << gt_summary.getAllele(4) << std::endl;
+			assert(gt_summary.getAllele(0) + gt_summary.getAllele(1) == 2*this->header.n_samples);
+
 			assert(n_entries == this->header.n_samples);
+			gt_summary.clear();
 		}
 		//std::cerr << std::endl;
 		std::cerr << gt.size() << std::endl;
