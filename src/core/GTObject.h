@@ -170,9 +170,9 @@ private:
     template <class T>
     void __interpret(const T& gt_primitive, const meta_type& meta_entry)
     {
-		this->n_alleles  = 2;
-		this->alleles    = new std::pair<char,char>[2];
-		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		this->n_alleles     = 2;
+		this->alleles       = new std::pair<char,char>[2];
+		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + 1 + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
 		const BYTE add      = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].second = gt_primitive & 1;

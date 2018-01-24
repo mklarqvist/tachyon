@@ -182,7 +182,7 @@ public:
 	U32 getSum(void) const{
 		U32 count = 0;
 
-		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
 		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
 		for(U32 i = 0; i < this->n_entries; ++i)

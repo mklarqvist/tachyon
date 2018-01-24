@@ -456,10 +456,15 @@ public:
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<Core::GTObject> objects = gt[i].getObjects();
 			const U32 n_entries = gt[i].getSum();
+			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
 			gt[i].getSummary(gt_summary);
-			if(!gt[i].getMeta().isBiallelic())
-				std::cerr << gt[i].getMeta().isBiallelic() << '\t' << gt_summary.getAllele(0) << '\t' << gt_summary.getAllele(1) << '\t' << gt_summary.getAllele(2) << '\t' << gt_summary.getAllele(3) << '\t' << gt_summary.getAllele(4) << std::endl;
-			assert(gt_summary.getAllele(0) + gt_summary.getAllele(1) == 2*this->header.n_samples);
+
+			if(!gt[i].getMeta().isBiallelic()){
+				gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+				std::cerr << '\t' << gt_summary << std::endl;
+			}
+			assert(gt_summary.alleleCount() == 2*this->header.n_samples);
+			assert(gt_summary.genotypeCount() == this->header.n_samples);
 
 			assert(n_entries == this->header.n_samples);
 			gt_summary.clear();

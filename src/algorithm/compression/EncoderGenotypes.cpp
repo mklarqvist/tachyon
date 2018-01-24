@@ -349,10 +349,10 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	internal_pos_rle = line.p_genotypes;
 
 	// Assess RLE cost
-	const BYTE shift     = ceil(log2(line.body->n_allele + anyMissing));
+	const BYTE shift     = ceil(log2(line.body->n_allele + anyMissing + 1));
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
-	U32 ref = YON_PACK_GT_DIPLOID(allele2, allele1, shift, mixedPhase);
+	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, mixedPhase);
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
@@ -375,7 +375,7 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllel
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
 		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
 		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j] + 1]);
-		const U32 internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, mixedPhase);
+		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, mixedPhase);
 
 		if(ref != internal){
 			ref = internal;

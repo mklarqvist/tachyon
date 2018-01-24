@@ -76,6 +76,11 @@ struct GenotypeSum{
 		const BYTE shift = gt_rle_container.getMeta().isAnyGTMissing()    ? 2 : 1;
 		const BYTE add   = gt_rle_container.getMeta().isGTMixedPhasing()  ? 1 : 0;
 
+		// Have to remap to shared type
+		// 0 is missing for other types
+		// but higher value in RLE
+		// remap RLE -> Regular
+
 		for(U32 i = 0; i < gt_rle_container.size(); ++i){
 			const BYTE alleleA = (gt_rle_container[i] & ((1 << shift) - 1) << add) >> add;
 			const BYTE alleleB = (gt_rle_container[i] & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
@@ -88,7 +93,7 @@ struct GenotypeSum{
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidSimple<T>& gt_simple_container){
-		const BYTE shift = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + gt_simple_container.getMeta().isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE shift = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 1 + gt_simple_container.getMeta().isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
 		const BYTE add   = gt_simple_container.getMeta().isGTMixedPhasing() ? 1 : 0;
 
 		for(U32 i = 0; i < gt_simple_container.size(); ++i){
@@ -112,23 +117,23 @@ struct GenotypeSum{
 
 	// Genotype accessors
 	inline U64& operator()(const BYTE& allele1, const BYTE& allele2){
-		assert((DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)]);
+		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline const U64& operator()(const BYTE& allele1, const BYTE& allele2) const{
 		assert((DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)]);
+		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2){
-		assert((DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)]);
+		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline const U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2) const{
-		assert((DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)]);
+		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	// Allele accessors
@@ -137,6 +142,40 @@ struct GenotypeSum{
 	inline U64& getAlleleB(const BYTE& allele){ return(this->__alleleB_cells[allele]); }
 	inline const U64& getAlleleB(const BYTE& allele) const{ return(this->__alleleB_cells[allele]); }
 	inline U64 getAllele(const BYTE& allele) const{ return(this->__alleleA_cells[allele] + this->__alleleB_cells[allele]); }
+
+	//
+	U64 alleleCount(void) const{
+		U64 total = 0;
+		for(U32 i = 0; i < this->n_alleles; ++i)
+			total += this->getAllele(i);
+		return(total);
+	}
+
+	U64 genotypeCount(void) const{
+		U64 total = 0;
+		for(U32 i = 0; i < this->n_cells; ++i)
+			total += this->__genotype_cells[i];
+		return(total);
+	}
+
+private:
+	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
+		out << "alleles = [" << entry.getAllele(0);
+		for(U32 i = 1; i < entry.n_alleles; ++i){
+			out << ',' << entry.getAllele(i);
+		}
+		out << "] genotypes = [";
+		for(U32 i = 0; i < entry.n_alleles; ++i){
+			for(U32 j = 0; j < entry.n_alleles; ++j){
+				const U64& target_cell = entry.getGenotypeCell(i,j);
+				if(target_cell)
+					out << i << "," << j << ":" << target_cell << ',';
+			}
+		}
+		out << "]";
+
+		return(out);
+	}
 
 private:
 	BYTE   n_alleles;         // number of alleles (including NA and missing)
