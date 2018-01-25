@@ -1,7 +1,9 @@
 [![Release](https://img.shields.io/badge/Release-beta_0.1-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+
 # Tachyon
+![screenshot](yon_logo.png)
 Tachyon is an efficient API to store, query, and handle big data resequencing data. Tachyon efficiently stores data tables by column and compress genotypic data by exploiting intrinsic genetic properties. We describe algorithms to directly query, manipulate, and explore this jointly compressed genotypic representation in-place.
 
 Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
@@ -16,7 +18,12 @@ make
 ## <a name="notes"></a>Further Notes
 ### <a name="others"></a>Other formats
 
-* Tachyon vs [PBWT][pbwt]. Compression of genotype data in Tachyon is inspired by the
+- [Tachyon](#tachyon)
+    - [Installation instructions](#installation-instructions)
+  - [<a name="notes"></a>Further Notes](#a-namenotesafurther-notes)
+    - [<a name="others"></a>Other formats](#a-nameothersaother-formats)
+    - [<a name="comp"></a>Compression evaluation](#a-namecompacompression-evaluation)
+    - [License](#license)
   2-bin radix sort in PBWT. Tachyon, unlike PBWT, keeps all multi-allelic variants
   and all INFO/FORMAT/FILTER fields. PBWT supports advanced queries for 
   haplotype matching, phasing and imputation. Tachyon has no such functionality.
