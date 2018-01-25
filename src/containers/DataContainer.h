@@ -13,16 +13,16 @@ namespace Core{
 
 
 // Stream container for importing
-class Container{
-	typedef Container self_type;
+class DataContainer{
+	typedef DataContainer self_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef ContainerHeader header_type;
 	typedef ContainerHeaderStride header_stride_type;
 
 public:
-	Container();
-	Container(const U32 start_size);
-	~Container();
+	DataContainer();
+	DataContainer(const U32 start_size);
+	~DataContainer();
 
 	/**<
 	 *

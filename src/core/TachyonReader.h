@@ -5,10 +5,9 @@
 
 #include "zstd.h"
 #include "zstd_errors.h"
-#include "../containers/Block.h"
+#include "../containers/DataBlock.h"
 #include "../algorithm/compression/CompressionManager.h"
 #include "base/header/Header.h"
-#include "../iterator/ContainerIterator.h"
 #include "../index/SortedIndex.h"
 
 #include "../algorithm/Timer.h"
@@ -19,18 +18,22 @@
 #include "../containers/MetaColdContainer.h"
 #include "../containers/MetaContainer.h"
 #include "../containers/AbstractIntegerContainer.h"
-#include "../containers/InfoContainer.h"
 #include "../core/GTObject.h"
 #include "../containers/GenotypeContainer.h"
+#include "../containers/InfoContainer.h"
+#include "../iterator/DataContainerIterator.h"
 
 #include "../math/fisher.h"
 #include "../math/SquareMatrix.h"
+
+#include "../containers/PrimitiveGroupContainer.h"
+#include "../containers/FormatContainer.h"
 
 namespace Tachyon{
 
 class TachyonReader{
 	typedef TachyonReader self_type;
-	typedef Core::Block block_entry_type;
+	typedef Core::DataBlock block_entry_type;
 	typedef IO::BasicBuffer buffer_type;
 	typedef Core::Header header_type;
 	typedef Compression::CompressionManager codec_manager_type;
@@ -457,26 +460,10 @@ public:
 		square /= (U64)2*this->header.n_samples*gt.size();
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
 		std::cerr << "Updates: " << Tachyon::Helpers::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		//Core::MetaHotContainer it(this->block);
-		//Core::MetaColdContainer it_c(this->block);
-		//Core::MetaContainer it(this->block);
-		//std::cerr << it.size() << '\t' << it_c.size() << std::endl;
 		Core::GenotypeContainer gt(this->block);
-		//Core::GenotypeSum summary = gt.calculateSummary();
-
-		Math::SquareMatrix<double> square(this->header.n_samples);
-		for(U32 i = 0; i < gt.size(); ++i){
-			gt[i].compareSamplesPairwise(square);
-		}
-		square /= (U64)2*this->header.n_samples*gt.size();
-		stream << square << std::endl;
-		std::cerr << "block done" << std::endl;
-		return(gt.size());
-
 		Math::Fisher fisher(1000);
 		Core::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){

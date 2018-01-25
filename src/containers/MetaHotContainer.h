@@ -2,7 +2,7 @@
 #define CONTAINERS_METAHOTCONTAINER_H_
 
 #include "../core/base/MetaHot.h"
-#include "Block.h"
+#include "DataBlock.h"
 
 namespace Tachyon{
 namespace Core{
@@ -19,8 +19,8 @@ private:
 
 public:
     MetaHotContainer();
-    MetaHotContainer(const Block& block);
-    MetaHotContainer(const Container& container);
+    MetaHotContainer(const DataBlock& block);
+    MetaHotContainer(const DataContainer& container);
     ~MetaHotContainer(void);
 
     class iterator{

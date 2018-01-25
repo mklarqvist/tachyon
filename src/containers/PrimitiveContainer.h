@@ -1,7 +1,7 @@
 #ifndef CONTAINER_PRIMITIVECONTAINER_H_
 #define CONTAINER_PRIMITIVECONTAINER_H_
 
-#include "Block.h"
+#include "DataBlock.h"
 
 namespace Tachyon{
 namespace Core{
@@ -19,14 +19,7 @@ private:
 
 public:
     PrimitiveContainer();
-    PrimitiveContainer(const Container& container, const U32& offset, const U32 n_entries);
-    explicit PrimitiveContainer(const BYTE*   const data, const U32& n_entries);
-    explicit PrimitiveContainer(const U16*    const data, const U32& n_entries);
-    explicit PrimitiveContainer(const U32*    const data, const U32& n_entries);
-    explicit PrimitiveContainer(const U64*    const data, const U32& n_entries);
-    explicit PrimitiveContainer(const char*   const data, const U32& n_entries);
-    explicit PrimitiveContainer(const float*  const data, const U32& n_entries);
-    explicit PrimitiveContainer(const double* const data, const U32& n_entries);
+    PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries);
     ~PrimitiveContainer(void);
 
     class iterator{
@@ -89,7 +82,7 @@ public:
 
 private:
     template <class native_primitive>
-    void __setup(const Container& container, const U32& offset){
+    void __setup(const DataContainer& container, const U32& offset){
     	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data[offset]);
     	for(U32 i = 0; i < this->n_entries; ++i)
     		this->__entries[i] = data[i];
@@ -102,7 +95,7 @@ private:
 
 
 template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const Container& container, const U32& offset, const U32 n_entries) :
+PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries) :
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
@@ -129,69 +122,6 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const Container& container, 
 		}
 	}
 
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const BYTE* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const U16* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const U32* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const U64* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const char* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const float* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
-}
-
-template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const double* const data, const U32& n_entries) :
-	n_entries(n_entries),
-	__entries(new value_type[n_entries])
-{
-	for(U32 i = 0; i < n_entries; ++i)
-		this->__entries[i] = data[i];
 }
 
 template <class return_type>

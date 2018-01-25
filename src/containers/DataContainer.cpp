@@ -1,3 +1,5 @@
+#include "DataContainer.h"
+
 #include <cassert>
 
 #include "../support/TypeDefinitions.h"
@@ -6,17 +8,16 @@
 #include "../third_party/zlib/zlib.h"
 #include "../io/BasicBuffer.h"
 #include "../algorithm/OpenHashTable.h"
-#include "Container.h"
 
 namespace Tachyon{
 namespace Core{
 
-Container::Container() :
+DataContainer::DataContainer() :
 	n_entries(0),
 	n_additions(0)
 {}
 
-Container::Container(const U32 start_size) :
+DataContainer::DataContainer(const U32 start_size) :
 	n_entries(0),
 	n_additions(0),
 	buffer_data(start_size),
@@ -25,14 +26,14 @@ Container::Container(const U32 start_size) :
 	buffer_strides_uncompressed(start_size)
 {}
 
-Container::~Container(){
+DataContainer::~DataContainer(){
 	this->buffer_data.deleteAll();
 	this->buffer_strides.deleteAll();
 	this->buffer_data_uncompressed.deleteAll();
 	this->buffer_strides_uncompressed.deleteAll();
 }
 
-void Container::reset(void){
+void DataContainer::reset(void){
 	this->n_entries   = 0;
 	this->n_additions = 0;
 	this->buffer_data.reset();
@@ -45,14 +46,14 @@ void Container::reset(void){
 	this->buffer_strides_uncompressed.reset();
 }
 
-void Container::resize(const U32 size){
+void DataContainer::resize(const U32 size){
 	this->buffer_data.resize(size);
 	this->buffer_data_uncompressed.resize(size);
 	this->buffer_strides.resize(size);
 	this->buffer_strides_uncompressed.resize(size);
 }
 
-const bool Container::generateCRC(void){
+const bool DataContainer::generateCRC(void){
 	if(this->buffer_data_uncompressed.size() == 0){
 		this->header.crc = 0;
 	} else {
@@ -78,7 +79,7 @@ const bool Container::generateCRC(void){
 	return true;
 }
 
-bool Container::checkCRC(int target){
+bool DataContainer::checkCRC(int target){
 	if(target == 0){
 		if(this->buffer_data_uncompressed.size() == 0)
 			return true;
@@ -115,7 +116,7 @@ bool Container::checkCRC(int target){
 	return true;
 }
 
-bool Container::checkUniformity(void){
+bool DataContainer::checkUniformity(void){
 	if(this->n_entries == 0)
 		return false;
 
@@ -164,7 +165,7 @@ bool Container::checkUniformity(void){
  At this stage all integer values in the stream is of
  type S32. No other values can be shrunk
  */
-void Container::reformat(){
+void DataContainer::reformat(){
 	if(this->buffer_data_uncompressed.pointer)
 		return;
 
@@ -294,7 +295,7 @@ void Container::reformat(){
 	this->buffer_data.reset();
 }
 
-void Container::reformatStride(){
+void DataContainer::reformatStride(){
 	if(this->buffer_strides_uncompressed.pointer == 0)
 		return;
 

@@ -2,7 +2,7 @@
 #define CONTAINERS_METACOLDCONTAINER_H_
 
 #include "../core/base/MetaCold.h"
-#include "Block.h"
+#include "DataBlock.h"
 
 namespace Tachyon{
 namespace Core{
@@ -18,8 +18,8 @@ private:
 
 public:
     MetaColdContainer();
-    MetaColdContainer(const Block& block);
-    MetaColdContainer(const Container& container);
+    MetaColdContainer(const DataBlock& block);
+    MetaColdContainer(const DataContainer& container);
     ~MetaColdContainer(void);
 
     class iterator{
@@ -81,7 +81,7 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
 
 private:
-    void __ctor_setup(const Container& container);
+    void __ctor_setup(const DataContainer& container);
 
 private:
     size_t  n_entries;

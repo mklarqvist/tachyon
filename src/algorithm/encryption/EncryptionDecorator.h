@@ -6,7 +6,7 @@ namespace Encryption{
 
 struct EncryptionDecorator{
 	typedef EncryptionDecorator self_type;
-	typedef Core::Container stream_container;
+	typedef Core::DataContainer stream_container;
 	typedef IO::BasicBuffer buffer_type;
 
 	bool encrypt(stream_container& container);

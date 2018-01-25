@@ -1,15 +1,15 @@
-#ifndef MATHSUMMARYSTATISTICS_H_
-#define MATHSUMMARYSTATISTICS_H_
+#ifndef SummaryStatistics_H_
+#define SummaryStatistics_H_
 
 namespace Tachyon{
 namespace Math{
 
-struct MathSummaryStatistics{
+struct SummaryStatistics{
 private:
-	typedef MathSummaryStatistics self_type;
+	typedef SummaryStatistics self_type;
 
 public:
-	MathSummaryStatistics() : total(0), total_squared(0), n_total(0), mean(0), standard_deviation(0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::min()){}
+	SummaryStatistics() : total(0), total_squared(0), n_total(0), mean(0), standard_deviation(0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::min()){}
 	bool calculate(void){
 		if(this->n_total == 0) return false;
 
@@ -48,4 +48,4 @@ public:
 
 
 
-#endif /* MATHSUMMARYSTATISTICS_H_ */
+#endif /* SummaryStatistics_H_ */

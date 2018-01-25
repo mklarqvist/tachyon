@@ -5,14 +5,14 @@ namespace Core{
 
 MetaColdContainer::MetaColdContainer() : n_entries(0), __entries(nullptr){}
 
-MetaColdContainer::MetaColdContainer(const Block& block) :
+MetaColdContainer::MetaColdContainer(const DataBlock& block) :
 	n_entries(0),
 	__entries(nullptr)
 {
 	this->__ctor_setup(block.meta_cold_container);
 }
 
-MetaColdContainer::MetaColdContainer(const Container& container) :
+MetaColdContainer::MetaColdContainer(const DataContainer& container) :
 	n_entries(0),
 	__entries(nullptr)
 {
@@ -26,7 +26,7 @@ MetaColdContainer::~MetaColdContainer(void){
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
-void MetaColdContainer::__ctor_setup(const Container& container){
+void MetaColdContainer::__ctor_setup(const DataContainer& container){
 	// Determine number of entries
 	U32 current_offset = 0;
 	U32 count_entries  = 0;

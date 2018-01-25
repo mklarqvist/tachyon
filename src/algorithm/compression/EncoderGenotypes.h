@@ -5,10 +5,9 @@
 #include <bitset>
 #include <cassert>
 
+#include "../../containers/DataContainer.h"
 #include "../../io/bcf/BCFEntry.h"
-#include "../../core/base/GTRecords.h"
 #include "../../core/base/MetaHot.h"
-#include "../../containers/Container.h"
 #include "../../core/GenotypesSummary.h"
 
 namespace Tachyon{
@@ -62,7 +61,7 @@ private:
 	typedef BCF::BCFEntry          bcf_type;
 	typedef Core::MetaHot          meta_type;
 	typedef Core::GenotypesSummary helper_type;
-	typedef Core::Container        container_type;
+	typedef Core::DataContainer        container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :

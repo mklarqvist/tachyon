@@ -3,10 +3,10 @@
 
 #include "../algorithm/permutation/PermutationManager.h"
 #include "../index/BlockIndex.h"
-#include "Container.h"
 #include "../io/vcf/VCFHeader.h"
 #include "BlockEntrySettings.h"
 #include "../core/ImporterStats.h"
+#include "DataContainer.h"
 
 namespace Tachyon{
 namespace Core{
@@ -16,9 +16,9 @@ namespace Core{
  * provides encapsulated and abstracted access to its
  * contents.
  */
-class Block{
-	typedef Block self_type;
-	typedef Core::Container container_type;
+class DataBlock{
+	typedef DataBlock self_type;
+	typedef Core::DataContainer container_type;
 	typedef Core::PermutationManager permutation_type;
 	typedef Index::BlockIndex index_entry_type;
 	typedef Core::Support::HashContainer hash_container_type;
@@ -30,8 +30,8 @@ class Block{
 	typedef Tachyon::Support::ImporterStats import_stats_type;
 
 public:
-	Block();
-	~Block();
+	DataBlock();
+	~DataBlock();
 
 	/**< @brief Resize base container buffer streams
 	 * Internal use only

@@ -1,10 +1,10 @@
-#ifndef CONTAINERS_GENOTYPECONTAINERINTERFACE_H_
-#define CONTAINERS_GENOTYPECONTAINERINTERFACE_H_
+#ifndef CONTAINERS_GENOTYPEDATACONTAINERINTERFACE_H_
+#define CONTAINERS_GENOTYPEDATACONTAINERINTERFACE_H_
 
-#include "Container.h"
 #include "../core/GenotypesSummary.h"
 #include "../core/GTObject.h"
 #include "../math/SquareMatrix.h"
+#include "DataContainer.h"
 
 namespace Tachyon{
 namespace Core{
@@ -287,4 +287,4 @@ public:
 }
 }
 
-#endif /* CONTAINERS_GENOTYPECONTAINERINTERFACE_H_ */
+#endif /* CONTAINERS_GENOTYPEDATACONTAINERINTERFACE_H_ */

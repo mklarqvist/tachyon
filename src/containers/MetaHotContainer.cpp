@@ -5,7 +5,7 @@ namespace Core{
 
 MetaHotContainer::MetaHotContainer() : n_entries(0), __entries(nullptr){}
 
-MetaHotContainer::MetaHotContainer(const Block& block) :
+MetaHotContainer::MetaHotContainer(const DataBlock& block) :
 	n_entries(block.meta_hot_container.buffer_data_uncompressed.size() / sizeof(value_type)),
 	__entries(new value_type[this->n_entries])
 {
@@ -16,7 +16,7 @@ MetaHotContainer::MetaHotContainer(const Block& block) :
 		this->__entries[i] = d[i];
 }
 
-MetaHotContainer::MetaHotContainer(const Container& container) :
+MetaHotContainer::MetaHotContainer(const DataContainer& container) :
 	n_entries(container.buffer_data_uncompressed.size() / sizeof(value_type)),
 	__entries(new value_type[this->n_entries])
 {

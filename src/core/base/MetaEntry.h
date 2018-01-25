@@ -20,7 +20,7 @@ struct MetaEntry{
 private:
 	typedef MetaHot hot_entry;
 	typedef MetaCold cold_entry;
-	typedef Container container_type;
+	typedef DataContainer container_type;
 	typedef Header header_type;
 	typedef IO::BasicBuffer buffer_type;
 

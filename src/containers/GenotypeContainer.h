@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_GENOTYPECONTAINER_H_
 #define CONTAINERS_GENOTYPECONTAINER_H_
 
-#include "Block.h"
-#include "GenotypeContainerInterface.h"
+#include "DataBlock.h"
+#include "GenotypeDataContainerInterface.h"
 #include "MetaContainer.h"
 
 namespace Tachyon{
@@ -28,7 +28,7 @@ private:
 
 
 public:
-    GenotypeContainer(const Block& block) :
+    GenotypeContainer(const DataBlock& block) :
     	n_entries(0),
     	__meta_container(block),
     	__iterators(nullptr)

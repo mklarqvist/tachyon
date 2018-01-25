@@ -2,7 +2,7 @@
 #define CONTAINERS_ABSTRACTINTEGERCONTAINER_H_
 
 #include "../iterator/IteratorIntegerReference.h"
-#include "../core/MathSummaryStatistics.h"
+#include "../math/SummaryStatistics.h"
 
 namespace Tachyon{
 namespace Core{
@@ -23,7 +23,7 @@ private:
     typedef const U32 (self_type::*nextStrideFunction)(const buffer_type& buffer, const U32 position) const;
 
 public:
-    AbstractIntegerContainer(const Container& container);
+    AbstractIntegerContainer(const DataContainer& container);
     ~AbstractIntegerContainer(){ ::operator delete[](static_cast<void*>(this->__iterators)); delete [] this->__buffer; }
 
     class iterator{
@@ -85,8 +85,8 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->__iterators[this->n_entries - 1]); }
 
 	// Math
-	Math::MathSummaryStatistics getSummaryStatistics(void){
-		Math::MathSummaryStatistics stats;
+	Math::SummaryStatistics getSummaryStatistics(void){
+		Math::SummaryStatistics stats;
 		for(U32 i = 0; i < this->size(); ++i){
 			stats += this->at(i).mathMean();
 		}
@@ -95,7 +95,7 @@ public:
 	}
 
 private:
-	template <class actual_primitive> void __setup(const Container& container, nextStrideFunction func){
+	template <class actual_primitive> void __setup(const DataContainer& container, nextStrideFunction func){
 		if(container.buffer_strides_uncompressed.size() == 0)
 			return;
 
@@ -114,7 +114,7 @@ private:
 
 	}
 
-	template <class actual_primitive> void __setup(const Container& container, const U32 stride_size){
+	template <class actual_primitive> void __setup(const DataContainer& container, const U32 stride_size){
 		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
 
 		if(this->n_entries == 0)
@@ -143,7 +143,7 @@ private:
 };
 
 template <class return_primitive>
-AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const Container& container) :
+AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const DataContainer& container) :
 	n_entries(0),
 	__buffer(new char[container.buffer_data_uncompressed.size()]),
 	__iterators(nullptr)

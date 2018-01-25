@@ -1,17 +1,17 @@
-#ifndef CONTAINER_INFOCONTAINER_H_
-#define CONTAINER_INFOCONTAINER_H_
+#ifndef CONTAINERS_FORMATCONTAINER_H_
+#define CONTAINERS_FORMATCONTAINER_H_
 
 #include "DataContainer.h"
-#include "PrimitiveContainer.h"
+#include "PrimitiveGroupContainer.h"
 
 namespace Tachyon{
 namespace Core{
 
 template <class return_type>
-class InfoContainer{
+class FormatContainer{
 private:
-    typedef InfoContainer                   self_type;
-    typedef PrimitiveContainer<return_type> value_type;
+    typedef FormatContainer                 self_type;
+    typedef PrimitiveGroupContainer<return_type> value_type;
     typedef value_type&                     reference;
     typedef const value_type&               const_reference;
     typedef value_type*                     pointer;
@@ -19,14 +19,15 @@ private:
     typedef std::ptrdiff_t                  difference_type;
     typedef std::size_t                     size_type;
     typedef IO::BasicBuffer                 buffer_type;
+    typedef Core::DataContainer             data_container_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getStrideFunction)(const buffer_type& buffer, const U32 position) const;
 
 public:
-    InfoContainer();
-    InfoContainer(const DataContainer& container);
-    ~InfoContainer(void);
+    FormatContainer();
+    FormatContainer(const data_container_type& container, const U64 n_samples);
+    ~FormatContainer(void);
 
     class iterator{
     private:
@@ -88,7 +89,7 @@ public:
 
 private:
     template <class actual_primitive>
-    void __setup(const DataContainer& container, getStrideFunction func){
+    void __setup(const data_container_type& container, const U64& n_samples, getStrideFunction func){
 		if(container.buffer_strides_uncompressed.size() == 0)
 			return;
 
@@ -99,15 +100,14 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
-			new( &this->__containers[i] ) value_type( container, current_offset, (this->*func)(container.buffer_strides_uncompressed, i) );
-			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
+			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, (this->*func)(container.buffer_strides_uncompressed, i) );
+			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive) * n_samples;
 		}
 		assert(current_offset == container.buffer_data_uncompressed.size());
 	}
 
 	template <class actual_primitive>
-	void __setup(const DataContainer& container, const U32 stride_size){
+	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size){
 		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
 
 		if(this->n_entries == 0)
@@ -117,9 +117,8 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
-			new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
-			current_offset += stride_size * sizeof(actual_primitive);
+			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
+			current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 		}
 		assert(current_offset == container.buffer_data_uncompressed.size());
 	}
@@ -135,7 +134,7 @@ private:
 };
 
 template <class return_type>
-InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
+FormatContainer<return_type>::FormatContainer(const data_container_type& container, const U64 n_samples) :
 	n_entries(0),
 	__containers(nullptr)
 {
@@ -155,46 +154,46 @@ InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
 
 		if(container.header.isSigned()){
 			switch(container.header.controller.type){
-			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
-			case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, func)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, func));   break;
-			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, func));   break;
-			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, func));   break;
-			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			case(Core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, func));  break;
+			case(Core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, func));   break;
+			case(Core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.getPrimitiveType()){
-			case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
-			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
-			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
-			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			case(Core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, func));   break;
+			case(Core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, func));    break;
+			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
 	} else {
-		if(container.header.controller.signedness){
+		if(container.header.isSigned()){
 			switch(container.header.controller.type){
-			case(Core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
-			case(Core::YON_TYPE_CHAR): (this->__setup<char>(container, container.header.stride)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
-			case(Core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
-			case(Core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
-			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+			case(Core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, container.header.getStride()));  break;
+			case(Core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, container.header.getStride()));   break;
+			case(Core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(container.header.controller.type){
-			case(Core::YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
-			case(Core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
-			case(Core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
-			case(Core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
-			case(Core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+			switch(container.header.getPrimitiveType()){
+			case(Core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, container.header.getStride()));   break;
+			case(Core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, container.header.getStride()));    break;
+			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
+			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
@@ -202,9 +201,9 @@ InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
 }
 
 template <class return_type>
-InfoContainer<return_type>::~InfoContainer(){
+FormatContainer<return_type>::~FormatContainer(){
 	for(std::size_t i = 0; i < this->n_entries; ++i)
-		((this->__containers + i)->~PrimitiveContainer)();
+		((this->__containers + i)->~PrimitiveGroupContainer)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
 }
@@ -213,4 +212,4 @@ InfoContainer<return_type>::~InfoContainer(){
 }
 
 
-#endif /* InfoContainer_H_ */
+#endif /* CONTAINERS_FORMATCONTAINER_H_ */
