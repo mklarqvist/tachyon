@@ -13,6 +13,14 @@ public:
 	HeaderSample(const std::string& name) : name(name){}
 	~HeaderSample(){}
 
+	// Capacity
+	inline const bool empty(void) const{ return(this->name.size() == 0); }
+	inline const size_t size(void) const{ return(this->name.size()); }
+
+	// Element access
+	inline char* data(void){ return(&this->name[0]); }
+	inline const char* const data(void) const{ return(&this->name[0]); }
+
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const U32 l_name = entry.name.size();

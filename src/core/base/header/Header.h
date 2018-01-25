@@ -13,10 +13,10 @@ namespace Core{
 
 class Header{
 private:
-	typedef Header self_type;
-	typedef Core::HeaderContig contig_type;
-	typedef Core::HeaderMapEntry map_entry_type;
-	typedef Core::HeaderSample sample_type;
+	typedef Header                            self_type;
+	typedef Core::HeaderContig                contig_type;
+	typedef Core::HeaderMapEntry              map_entry_type;
+	typedef Core::HeaderSample                sample_type;
 	typedef Hash::HashTable<std::string, S32> hash_table_type;
 
 public:

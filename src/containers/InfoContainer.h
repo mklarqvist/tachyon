@@ -134,6 +134,10 @@ private:
     pointer __containers;
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class return_type>
 InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
 	n_entries(0),
@@ -200,10 +204,6 @@ InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
 		}
 	}
 }
-
-
-// IMPLEMENTATION -------------------------------------------------------------
-
 
 template <class return_type>
 InfoContainer<return_type>::~InfoContainer(){
