@@ -77,7 +77,7 @@ inline const U32 unpermuteIntBits(char* data,
 	U32* dest = reinterpret_cast<U32*>(destination); // Recast destination as U32
 	const U32 n_entries = size / sizeof(U32);
 	memset(destination, 0, size); // Set all bytes to 0
-	const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	//const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
 	BYTE* target[32]; // Bucket pointers
 	const U32 partition_size = internal_size / 32; // Partition size
 

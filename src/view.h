@@ -105,9 +105,9 @@ int view(int argc, char** argv){
 	}
 
 	tachyon::TachyonReader reader;
-	reader.getSettings().loadGenotypes(true);
+	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
-	//reader.getSettings().loadAll(true);
+	reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -118,19 +118,19 @@ int view(int argc, char** argv){
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
+	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	U32 n_blocks = 0;
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
-		//n_variants += reader.iterateGT();
-		reader.calculateIBS(square);
-		std::cerr << n_blocks << '\t' << 597 << std::endl;
+		n_variants += reader.iterateGT();
+		//reader.calculateIBS(square);
+		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;
 	}
 	std::cerr << n_blocks << std::endl;
-	std::cout << square << std::endl;
+	//std::cout << square << std::endl;
 	std::cerr << "Variants: " << tachyon::helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;

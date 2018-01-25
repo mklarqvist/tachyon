@@ -3,7 +3,9 @@
 
 
 # Tachyon
-![screenshot](yon_logo.png)
+<div align="center">
+<img src="https://github.com/mklarqvist/Tachyon/blob/master/yon_logo.png"><br><br>
+</div>
 
 Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium in large-scale cohorts.
 

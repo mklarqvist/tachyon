@@ -142,6 +142,10 @@ private:
     value_type* __iterators; // iterators
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class return_primitive>
 AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const DataContainer& container) :
 	n_entries(0),
