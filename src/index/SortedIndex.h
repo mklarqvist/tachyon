@@ -4,8 +4,8 @@
 #include "IndexEntry.h"
 #include "IndexIndexEntry.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 class SortedIndex{
 private:

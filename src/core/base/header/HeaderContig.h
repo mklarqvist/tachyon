@@ -3,8 +3,8 @@
 
 #include <fstream>
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 struct HeaderContig{
 	typedef HeaderContig self_type;

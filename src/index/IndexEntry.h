@@ -5,8 +5,8 @@
 
 #include "../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 /**<
  * Sorted index entry

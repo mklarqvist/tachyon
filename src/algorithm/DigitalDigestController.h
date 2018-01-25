@@ -4,13 +4,13 @@
 #include <cstring>
 #include <openssl/sha.h>
 
-namespace Tachyon{
-namespace Algorithm{
+namespace tachyon{
+namespace algorithm{
 
 class DigitalDigestController{
 private:
 	typedef DigitalDigestController self_type;
-	typedef Core::DataContainer container_type;
+	typedef core::DataContainer container_type;
 
 public:
 	DigitalDigestController(void){}

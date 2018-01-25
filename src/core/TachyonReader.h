@@ -29,16 +29,16 @@
 #include "../containers/PrimitiveGroupContainer.h"
 #include "../containers/FormatContainer.h"
 
-namespace Tachyon{
+namespace tachyon{
 
 class TachyonReader{
 	typedef TachyonReader self_type;
-	typedef Core::DataBlock block_entry_type;
-	typedef IO::BasicBuffer buffer_type;
-	typedef Core::Header header_type;
-	typedef Compression::CompressionManager codec_manager_type;
-	typedef Core::BlockEntrySettings settings_type;
-	typedef Index::SortedIndex index_type;
+	typedef core::DataBlock block_entry_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef core::Header header_type;
+	typedef compression::CompressionManager codec_manager_type;
+	typedef core::BlockEntrySettings settings_type;
+	typedef index::SortedIndex index_type;
 
 public:
 	TachyonReader() : filesize(0), n_internal_buffers(0), internal_buffers(nullptr){}
@@ -86,7 +86,7 @@ public:
 		// Seek to EOF and make check
 		this->stream.seekg(this->filesize - 32);
 		BYTE eof_data[32];
-		Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
+		helpers::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
 		BYTE eof_match[32];
 		this->stream.read((char*)&eof_match[0], 32);
 		for(U32 i = 0; i < 32; ++i){
@@ -179,13 +179,13 @@ public:
 	bool nextVariant(void);
 
 	bool toVCFStringFast(std::ostream& stream = std::cout){
-		Core::MetaContainer it(this->block); // factory
+		core::MetaContainer it(this->block); // factory
 
 		// Setup containers
 		// INFO
-		Iterator::ContainerIterator* info_iterators = nullptr;
+		iterator::ContainerIterator* info_iterators = nullptr;
 		if(this->settings.importInfoAll){
-			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+			info_iterators = new iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 				info_iterators[i].setup(this->block.info_containers[i]);
@@ -193,9 +193,9 @@ public:
 		}
 
 		// FORMAT
-		Iterator::ContainerIterator* format_iterators = nullptr;
+		iterator::ContainerIterator* format_iterators = nullptr;
 		if(this->settings.importFormatAll){
-			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
+			format_iterators = new iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 				format_iterators[i].setup(this->block.format_containers[i]);
 			}
@@ -220,7 +220,7 @@ public:
 
 		// Base
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = it[i];
+			const core::MetaEntry& m = it[i];
 
 			m.toVCFString(this->internal_buffers[i],
                           this->header,
@@ -237,7 +237,7 @@ public:
 			const U32 n_patterns = this->block.index_entry.n_info_patterns;
 			for(U32 p = 0; p < n_patterns; ++p){
 				// Cycle over streams that are set in the given bit-vector
-				const Index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
+				const index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
 				const U32 n_keys = target_info_vector.n_keys;
 				const U32* const keys = &target_info_vector.keys[0];
 
@@ -245,7 +245,7 @@ public:
 					const U32& current_key = keys[k];
 
 					for(U32 i = 0; i < this->block.size(); ++i){
-						const Core::MetaEntry& m = it[i];
+						const core::MetaEntry& m = it[i];
 						if(m.getInfoPatternID() != p)
 							continue;
 
@@ -271,7 +271,7 @@ public:
 	}
 
 	bool toVCFString(std::ostream& stream = std::cout){
-		//Core::HeaderMapEntry* entry = nullptr;
+		//core::HeaderMapEntry* entry = nullptr;
 		/*
 		if(this->header.getEntry("GT", entry)){
 			std::cerr << "GT@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
@@ -284,13 +284,13 @@ public:
 		}
 		*/
 
-		Core::MetaContainer it(this->block); // factory
+		core::MetaContainer it(this->block); // factory
 
 		// Setup containers
 		// INFO
-		Iterator::ContainerIterator* info_iterators = nullptr;
+		iterator::ContainerIterator* info_iterators = nullptr;
 		if(this->settings.importInfoAll){
-			info_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_info_streams];
+			info_iterators = new iterator::ContainerIterator[this->block.index_entry.n_info_streams];
 
 			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 				info_iterators[i].setup(this->block.info_containers[i]);
@@ -298,16 +298,16 @@ public:
 		}
 
 		// FORMAT
-		Iterator::ContainerIterator* format_iterators = nullptr;
+		iterator::ContainerIterator* format_iterators = nullptr;
 		if(this->settings.importFormatAll){
-			format_iterators = new Iterator::ContainerIterator[this->block.index_entry.n_format_streams];
+			format_iterators = new iterator::ContainerIterator[this->block.index_entry.n_format_streams];
 			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 				format_iterators[i].setup(this->block.format_containers[i]);
 			}
 		}
 
 		for(U32 i = 0; i < this->block.size(); ++i){
-			const Core::MetaEntry& m = it[i];
+			const core::MetaEntry& m = it[i];
 
 			//stream << m.hot.controller.mixed_phasing << ":" << m.hot.controller.phase << ';' << m.hot.controller.anyMissing << ',' << m.hot.controller.anyNA << ':' <<
 			//	   m.hot.controller.rle << "->" << m.hot.controller.rle_type << '\t' << (int)m.hot.getGenotypeType() << '\t';
@@ -338,7 +338,7 @@ public:
 			if(this->settings.importInfoAll){
 				// Cycle over streams that are set in the given bit-vector
 
-				const Index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
+				const index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
 				const U32 n_keys = target_info_vector.n_keys;
 				const U32* const firstKey = &target_info_vector.keys[0];
 
@@ -359,7 +359,7 @@ public:
 
 			if(this->settings.importFormatAll){
 				// Start FORMAT description field
-				const Index::BlockIndexBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
+				const index::BlockIndexBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
 				const U32 n_keys_format = target_format_vector.n_keys;
 				const U32* const firstKey_format = &target_format_vector.keys[0];
 
@@ -408,14 +408,14 @@ public:
 	}
 
 	U64 iterateGT(std::ostream& stream = std::cout){
-		Algorithm::Timer timer;
+		algorithm::Timer timer;
 		timer.Start();
 		/*
-		Iterator::GenotypeIterator it_gt(this->block);
+		iterator::GenotypeIterator it_gt(this->block);
 
-		//Iterator::MetaIterator* it1 = this->block.getMetaIterator();
-		//Iterator::MetaIterator* it2 = this->block.getMetaIterator(Core::YON_GT_RLE_DIPLOID_BIALLELIC);
-		//Iterator::MetaIterator* it3 = this->block.getMetaIterator(Core::YON_GT_RLE_DIPLOID_NALLELIC);
+		//iterator::MetaIterator* it1 = this->block.getMetaIterator();
+		//iterator::MetaIterator* it2 = this->block.getMetaIterator(core::YON_GT_RLE_DIPLOID_BIALLELIC);
+		//iterator::MetaIterator* it3 = this->block.getMetaIterator(core::YON_GT_RLE_DIPLOID_NALLELIC);
 
 
 		//std::cerr << it1->size() << '\t' << it2->size() << '\t' << it3->size() << std::endl;
@@ -429,7 +429,7 @@ public:
 			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
 			U32 n_sum = 0;
 			for(U32 j = 0; j < it_gt.getCurrentObjectLength(); ++j){
-				const Core::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
+				const core::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
 				//std::cerr << std::bitset<32>(current_gt) << ' ';
 				//std::cerr << (int)current_gt.alleles[0] << (current_gt.phase ? '|' : '/') << (int)current_gt.alleles[1] << ':' << current_gt.n_objects << '/' << it_gt.getCurrentObjectLength() << ' ';
 				it_gt.incrementGT();
@@ -449,25 +449,25 @@ public:
 		return this->block.size();
 	}
 
-	void calculateIBS(Math::SquareMatrix<double>& square){
-		Algorithm::Timer timer;
+	void calculateIBS(math::SquareMatrix<double>& square){
+		algorithm::Timer timer;
 		timer.Start();
 
-		Core::GenotypeContainer gt(this->block);
+		core::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].compareSamplesPairwise(square);
 
 		square /= (U64)2*this->header.n_samples*gt.size();
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
-		std::cerr << "Updates: " << Tachyon::Helpers::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
+		std::cerr << "Updates: " << helpers::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << helpers::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		Core::GenotypeContainer gt(this->block);
-		Math::Fisher fisher(1000);
-		Core::GenotypeSum gt_summary;
+		core::GenotypeContainer gt(this->block);
+		math::Fisher fisher(1000);
+		core::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
-			//std::vector<Core::GTObject> objects = gt[i].getObjects();
+			//std::vector<core::GTObject> objects = gt[i].getObjects();
 			//const U32 n_entries = gt[i].getSum();
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
 			gt[i].getSummary(gt_summary);
@@ -495,10 +495,10 @@ public:
 
 		//return true;
 
-		Core::HeaderMapEntry* entry = nullptr;
+		core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("AF", entry)){
-			Core::InfoContainer<double> it_i(this->block.info_containers[1]);
-			//Math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
+			core::InfoContainer<double> it_i(this->block.info_containers[1]);
+			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
 				//if(it_i[i].size() < 3) continue;

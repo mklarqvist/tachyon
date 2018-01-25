@@ -30,7 +30,7 @@ void view_usage(void){
 	programMessage();
 	std::cerr <<
 	"About:  Convert YON->VCF/BCF/\n"
-	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " view [options] -i <in.vcf>/<in.bcf> -o <output>\n\n"
+	"Usage:  " << tachyon::constants::PROGRAM_NAME << " view [options] -i <in.vcf>/<in.bcf> -o <output>\n\n"
 	"Options:\n"
 	"  -i FILE  input Tachyon file (required)\n"
 	"  -o FILE  output file prefix or - for stdout\n"
@@ -88,23 +88,23 @@ int view(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
+			std::cerr << tachyon::helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
-		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
+		std::cerr << tachyon::helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling view..." << std::endl;
+		std::cerr << tachyon::helpers::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 
-	Tachyon::TachyonReader reader;
+	tachyon::TachyonReader reader;
 	reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
 	//reader.getSettings().loadAll(true);
@@ -115,10 +115,10 @@ int view(int argc, char** argv){
 	}
 
 	U64 n_variants = 0;
-	Tachyon::Algorithm::Timer timer;
+	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	Tachyon::Math::SquareMatrix<double> square(reader.header.n_samples);
+	tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	U32 n_blocks = 0;
 	while(reader.getNextBlock()){
 		//reader.toVCFStringFast();
@@ -131,7 +131,7 @@ int view(int argc, char** argv){
 	}
 	std::cerr << n_blocks << std::endl;
 	std::cout << square << std::endl;
-	std::cerr << "Variants: " << Tachyon::Helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << Tachyon::Helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
+	std::cerr << "Variants: " << tachyon::helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;
 }

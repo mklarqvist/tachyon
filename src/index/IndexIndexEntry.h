@@ -3,8 +3,8 @@
 
 #include "IndexEntry.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 /**<
  * Index of index entries

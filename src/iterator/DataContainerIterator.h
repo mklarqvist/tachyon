@@ -6,18 +6,18 @@
 #include "IteratorStatus.h"
 #include "ContainerIteratorInterface.h"
 
-namespace Tachyon{
-namespace Iterator{
+namespace tachyon{
+namespace iterator{
 
 class ContainerIterator{
 private:
 	typedef ContainerIterator              self_type;
 	typedef ContainerIteratorDataInterface data_iterator_type;
 	typedef ContainerIteratorDataInterface stride_iterator_type;
-	typedef IO::BasicBuffer                buffer_type;
+	typedef io::BasicBuffer                buffer_type;
 
 protected:
-	typedef Core::DataContainer container_type;
+	typedef core::DataContainer container_type;
 
 public:
 	explicit ContainerIterator(void);

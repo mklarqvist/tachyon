@@ -1,8 +1,8 @@
 #ifndef SummaryStatistics_H_
 #define SummaryStatistics_H_
 
-namespace Tachyon{
-namespace Math{
+namespace tachyon{
+namespace math{
 
 struct SummaryStatistics{
 private:

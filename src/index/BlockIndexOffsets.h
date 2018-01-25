@@ -4,8 +4,8 @@
 #include "../containers/ContainerHeaderController.h"
 #include "../containers/ContainerHeader.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 struct BlockIndexOffsetsHeader{
 	typedef BlockIndexOffsetsHeader self_type;
@@ -35,8 +35,8 @@ struct BlockIndexOffsetsHeader{
 
 struct BlockIndexOffsets{
 	typedef BlockIndexOffsets self_type;
-	typedef Core::ContainerHeader header_type;
-	typedef Core::ContainerHeaderStride header_stride_type;
+	typedef core::ContainerHeader header_type;
+	typedef core::ContainerHeaderStride header_stride_type;
 
 public:
 	BlockIndexOffsets(void) : key(0){}

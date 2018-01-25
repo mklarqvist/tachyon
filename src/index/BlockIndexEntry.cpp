@@ -3,8 +3,8 @@
 
 #include "BlockIndex.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 BlockIndexBase::BlockIndexBase() :
 	offset_end_of_block(0),

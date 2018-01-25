@@ -28,8 +28,8 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 
 int main(int argc, char** argv){
-	if(Tachyon::Helpers::isBigEndian()){
-		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
+	if(tachyon::helpers::isBigEndian()){
+		std::cerr << tachyon::helpers::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
 		return(1);
 	}
 
@@ -40,9 +40,9 @@ int main(int argc, char** argv){
 	}
 
 	// Literal string input line
-	Tachyon::Constants::LITERAL_COMMAND_LINE = Tachyon::Constants::PROGRAM_NAME;
+	tachyon::constants::LITERAL_COMMAND_LINE = tachyon::constants::PROGRAM_NAME;
 	for(U32 i = 1; i < argc; ++i)
-		Tachyon::Constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
+		tachyon::constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
 	if(strncmp(&argv[1][0], "import", 5) == 0){
 		return(import(argc, argv));
@@ -52,7 +52,7 @@ int main(int argc, char** argv){
 	} else {
 		programMessage();
 		programHelpDetailed();
-		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Illegal command" << std::endl;
+		std::cerr << tachyon::helpers::timestamp("ERROR") << "Illegal command" << std::endl;
 		return(1);
 	}
 	return(1);

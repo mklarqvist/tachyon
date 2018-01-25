@@ -3,8 +3,8 @@
 
 #include "GZFConstants.h"
 
-namespace Tachyon{
-namespace IO{
+namespace tachyon{
+namespace io{
 
 #pragma pack(push, 1)
 struct __attribute__((packed, aligned(1))) __headerBase{
@@ -81,14 +81,14 @@ public:
 	U32 BSIZE;	// remainder size
 
 	inline bool Validate(void) const{
-		return(this->ID1 == Constants::GZIP_ID1
-				&& this->ID2 == Constants::GZIP_ID2
-				&& this->CM == Constants::CM_DEFLATE
-				&& this->FLG == Constants::FLG_FEXTRA
-				&& this->XLEN == Constants::TGZF_XLEN
-				&& this->SI1 == Constants::TGZF_ID1
-				&& this->SI2 == Constants::TGZF_ID2
-				&& this->SLEN == Constants::TGZF_LEN
+		return(this->ID1 == constants::GZIP_ID1
+				&& this->ID2 == constants::GZIP_ID2
+				&& this->CM == constants::CM_DEFLATE
+				&& this->FLG == constants::FLG_FEXTRA
+				&& this->XLEN == constants::TGZF_XLEN
+				&& this->SI1 == constants::TGZF_ID1
+				&& this->SI2 == constants::TGZF_ID2
+				&& this->SLEN == constants::TGZF_LEN
 			);
 	}
 
@@ -129,14 +129,14 @@ public:
 	U16 BSIZE;	// remainder size
 
 	inline bool Validate(void) const{
-		return(this->ID1 == Constants::GZIP_ID1
-				&& this->ID2 == Constants::GZIP_ID2
-				&& this->CM == Constants::CM_DEFLATE
-				&& this->FLG == Constants::FLG_FEXTRA
-				&& this->XLEN == Constants::BGZF_XLEN
-				&& this->SI1 == Constants::BGZF_ID1
-				&& this->SI2 == Constants::BGZF_ID2
-				&& this->SLEN == Constants::BGZF_LEN
+		return(this->ID1 == constants::GZIP_ID1
+				&& this->ID2 == constants::GZIP_ID2
+				&& this->CM == constants::CM_DEFLATE
+				&& this->FLG == constants::FLG_FEXTRA
+				&& this->XLEN == constants::BGZF_XLEN
+				&& this->SI1 == constants::BGZF_ID1
+				&& this->SI2 == constants::BGZF_ID2
+				&& this->SLEN == constants::BGZF_LEN
 			);
 	}
 

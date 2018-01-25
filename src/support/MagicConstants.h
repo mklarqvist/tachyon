@@ -6,8 +6,8 @@
 
 extern int SILENT;
 
-namespace Tachyon{
-namespace Constants{
+namespace tachyon{
+namespace constants{
 
 extern std::string LITERAL_COMMAND_LINE;
 extern std::string INTERPRETED_COMMAND;

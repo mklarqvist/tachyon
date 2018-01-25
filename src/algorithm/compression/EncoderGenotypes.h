@@ -10,8 +10,8 @@
 #include "../../core/base/MetaHot.h"
 #include "../../core/GenotypesSummary.h"
 
-namespace Tachyon{
-namespace Encoding{
+namespace tachyon{
+namespace encoding{
 
 #define ENCODER_GT_DEBUG 0
 
@@ -51,17 +51,17 @@ namespace Encoding{
 
 */
 
-#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (BCF::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD)) | (BCF::BCF_UNPACK_GENOTYPE(B) << (ADD)) | (A & ADD)
+#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (bcf::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD)) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | (A & ADD)
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A >> 1) << (SHIFT + ADD)) | ((B >> 1) << ADD) | (A & ADD)
 
 class EncoderGenotypes {
 private:
 	typedef EncoderGenotypes       self_type;
-	typedef IO::BasicBuffer        buffer_type;
-	typedef BCF::BCFEntry          bcf_type;
-	typedef Core::MetaHot          meta_type;
-	typedef Core::GenotypesSummary helper_type;
-	typedef Core::DataContainer        container_type;
+	typedef io::BasicBuffer        buffer_type;
+	typedef bcf::BCFEntry          bcf_type;
+	typedef core::MetaHot          meta_type;
+	typedef core::GenotypesSummary helper_type;
+	typedef core::DataContainer        container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :

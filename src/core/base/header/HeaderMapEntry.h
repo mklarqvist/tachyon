@@ -5,8 +5,8 @@
 
 #include "../../../io/vcf/VCFHeaderLine.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 struct HeaderMapEntry{
 private:
@@ -47,7 +47,7 @@ private:
 		return(stream);
 	}
 
-	inline const VCF::TACHYON_VCF_HEADER_LINE_TYPE getType(void) const{ return(VCF::TACHYON_VCF_HEADER_LINE_TYPE(this->TYPE)); }
+	inline const vcf::TACHYON_VCF_HEADER_LINE_TYPE getType(void) const{ return(vcf::TACHYON_VCF_HEADER_LINE_TYPE(this->TYPE)); }
 
 public:
 	BYTE TYPE;

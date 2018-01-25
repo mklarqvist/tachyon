@@ -7,16 +7,16 @@
 #include "../compression/BGZFController.h"
 
 
-namespace Tachyon {
-namespace BCF {
+namespace tachyon {
+namespace bcf {
 
 class BCFReader{
 	typedef BCFReader self_type;
-	typedef IO::BasicBuffer buffer_type;
-	typedef IO::BGZFController bgzf_controller_type;
-	typedef IO::BGZFHeader bgzf_type;
-	typedef VCF::VCFHeader header_type;
-	typedef Core::HeaderContig contig_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef io::BGZFController bgzf_controller_type;
+	typedef io::BGZFHeader bgzf_type;
+	typedef vcf::VCFHeader header_type;
+	typedef core::HeaderContig contig_type;
 	typedef BCFEntry entry_type;
 
 public:

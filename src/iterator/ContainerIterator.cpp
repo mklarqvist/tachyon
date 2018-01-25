@@ -1,7 +1,7 @@
 #include "DataContainerIterator.h"
 
-namespace Tachyon{
-namespace Iterator{
+namespace tachyon{
+namespace iterator{
 
 ContainerIterator::ContainerIterator(void) :
 	position(0),
@@ -45,23 +45,23 @@ const int ContainerIterator::setup(const container_type& container){
 	// Factory
 	if(container.header.controller.signedness == false){
 		switch(container.header.controller.type){
-		case(Core::YON_TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
-		case(Core::YON_TYPE_16B):    this->data_iterator = new ContainerIteratorType<U16>(this->container->buffer_data_uncompressed);    break;
-		case(Core::YON_TYPE_32B):    this->data_iterator = new ContainerIteratorType<U32>(this->container->buffer_data_uncompressed);    break;
-		case(Core::YON_TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
-		case(Core::YON_TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
-		//case(Core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
-		case(Core::YON_TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);   break;
+		case(core::YON_TYPE_8B):     this->data_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_data_uncompressed);   break;
+		case(core::YON_TYPE_16B):    this->data_iterator = new ContainerIteratorType<U16>(this->container->buffer_data_uncompressed);    break;
+		case(core::YON_TYPE_32B):    this->data_iterator = new ContainerIteratorType<U32>(this->container->buffer_data_uncompressed);    break;
+		case(core::YON_TYPE_64B):    this->data_iterator = new ContainerIteratorType<U64>(this->container->buffer_data_uncompressed);    break;
+		case(core::YON_TYPE_FLOAT):  this->data_iterator = new ContainerIteratorType<float>(this->container->buffer_data_uncompressed);  break;
+		//case(core::TYPE_DOUBLE): this->data_iterator = new ContainerIteratorType<double>(this->container->buffer_data_uncompressed); break;
+		case(core::YON_TYPE_BOOLEAN):this->data_iterator = new ContainerIteratorType<void>(this->container->buffer_data_uncompressed);   break;
 		default:
 			this->status = YON_IT_ERROR_UNKNOWN_TYPE;
 			return this->status;
 		}
 	} else {
 		switch(container.header.controller.type){
-		case(Core::YON_TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
-		case(Core::YON_TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
-		case(Core::YON_TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
-		case(Core::YON_TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
+		case(core::YON_TYPE_CHAR):this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
+		case(core::YON_TYPE_8B):  this->data_iterator = new ContainerIteratorType<char>(this->container->buffer_data_uncompressed); break;
+		case(core::YON_TYPE_16B): this->data_iterator = new ContainerIteratorType<S16>(this->container->buffer_data_uncompressed);  break;
+		case(core::YON_TYPE_32B): this->data_iterator = new ContainerIteratorType<S32>(this->container->buffer_data_uncompressed);  break;
 		default:
 			this->status = YON_IT_ERROR_UNKNOWN_TYPE;
 			return this->status;
@@ -75,10 +75,10 @@ const int ContainerIterator::setup(const container_type& container){
 	if(this->container->header.controller.mixedStride){
 		this->hasStrideIteratorSet = true;
 		switch(this->container->header_stride.controller.type){
-			case(Core::YON_TYPE_8B):  this->stride_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_strides_uncompressed); break;
-			case(Core::YON_TYPE_16B): this->stride_iterator = new ContainerIteratorType<U16>(this->container->buffer_strides_uncompressed);  break;
-			case(Core::YON_TYPE_32B): this->stride_iterator = new ContainerIteratorType<U32>(this->container->buffer_strides_uncompressed);  break;
-			case(Core::YON_TYPE_64B): this->stride_iterator = new ContainerIteratorType<U64>(this->container->buffer_strides_uncompressed);  break;
+			case(core::YON_TYPE_8B):  this->stride_iterator = new ContainerIteratorType<BYTE>(this->container->buffer_strides_uncompressed); break;
+			case(core::YON_TYPE_16B): this->stride_iterator = new ContainerIteratorType<U16>(this->container->buffer_strides_uncompressed);  break;
+			case(core::YON_TYPE_32B): this->stride_iterator = new ContainerIteratorType<U32>(this->container->buffer_strides_uncompressed);  break;
+			case(core::YON_TYPE_64B): this->stride_iterator = new ContainerIteratorType<U64>(this->container->buffer_strides_uncompressed);  break;
 			default:
 				this->status = YON_IT_ERROR_UNKNOWN_TYPE;
 				return this->status;
@@ -107,7 +107,7 @@ const int ContainerIterator::toString(std::ostream& stream, const std::string& f
 	stream.write(&field_name[0], field_name.size());
 	// Inject an equal sign if the encoded type is not
 	// a BOOLEAN
-	if(this->container->header.controller.type == Core::YON_TYPE_BOOLEAN){
+	if(this->container->header.controller.type == core::YON_TYPE_BOOLEAN){
 		this->status = YON_IT_GOOD;
 		return this->status;
 	}
@@ -134,7 +134,7 @@ const int ContainerIterator::toString(buffer_type& buffer, const std::string& fi
 	buffer.Add(&field_name[0], field_name.size());
 	// Inject an equal sign if the encoded type is not
 	// a BOOLEAN
-	if(this->container->header.controller.type == Core::YON_TYPE_BOOLEAN){
+	if(this->container->header.controller.type == core::YON_TYPE_BOOLEAN){
 		this->status = YON_IT_GOOD;
 		return this->status;
 	}

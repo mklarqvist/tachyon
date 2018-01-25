@@ -1,7 +1,7 @@
 #include "EncoderGenotypes.h"
 
-namespace Tachyon{
-namespace Encoding{
+namespace tachyon{
+namespace encoding{
 
 EncoderGenotypes::EncoderGenotypes() :
 	n_samples(0)
@@ -22,7 +22,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 							  container_type& support,
 							 const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
-		std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
+		std::cerr << helpers::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
 					 "Format is limited to 32768..." << std::endl;
 		return false;
@@ -30,9 +30,9 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 
 	// This is requirement for stride data
 	if(support.n_entries == 0){
-		support.header.controller.type              = Core::YON_TYPE_32B;
+		support.header.controller.type              = core::YON_TYPE_32B;
 		support.header.controller.signedness        = 0;
-		support.header_stride.controller.type       = Core::YON_TYPE_32B;
+		support.header_stride.controller.type       = core::YON_TYPE_32B;
 		support.header_stride.controller.signedness = 0;
 	}
 
@@ -62,22 +62,22 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 		switch(cost.word_width){
 		case 1:
 			this->EncodeDiploidRLEBiallelic<BYTE>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_GT_BYTE;
+			meta_base.controller.gt_primtive_type = core::YON_GT_BYTE;
 			break;
 		case 2:
 			this->EncodeDiploidRLEBiallelic<U16>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_GT_U16;
+			meta_base.controller.gt_primtive_type = core::YON_GT_U16;
 			break;
 		case 4:
 			this->EncodeDiploidRLEBiallelic<U32>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_GT_U32;
+			meta_base.controller.gt_primtive_type = core::YON_GT_U32;
 			break;
 		case 8:
 			this->EncodeDiploidRLEBiallelic<U64>(line, runs, ppa, cost);
-			meta_base.controller.gt_primtive_type = Core::YON_GT_U64;
+			meta_base.controller.gt_primtive_type = core::YON_GT_U64;
 			break;
 		default:
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
 			return false;
 		}
 
@@ -117,27 +117,27 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			support += (U32)cost.n_runs;
 			++support;
 
-			//std::cerr << Helpers::timestamp("DEBUG") << "Cost: " << cost.word_width*cost.n_runs << " @ " << cost.n_runs << '\t' << (int)cost.word_width << std::endl;
+			//std::cerr << helpers::timestamp("DEBUG") << "Cost: " << cost.word_width*cost.n_runs << " @ " << cost.n_runs << '\t' << (int)cost.word_width << std::endl;
 
 			switch(cost.word_width){
 			case 1:
 				this->EncodeDiploidRLEnAllelic<BYTE>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_GT_BYTE;
+				meta_base.controller.gt_primtive_type = core::YON_GT_BYTE;
 				break;
 			case 2:
 				this->EncodeDiploidRLEnAllelic<U16>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_GT_U16;
+				meta_base.controller.gt_primtive_type = core::YON_GT_U16;
 				break;
 			case 4:
 				this->EncodeDiploidRLEnAllelic<U32>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_GT_U32;
+				meta_base.controller.gt_primtive_type = core::YON_GT_U32;
 				break;
 			case 8:
 				this->EncodeDiploidRLEnAllelic<U64>(line, simple, ppa, cost);
-				meta_base.controller.gt_primtive_type = Core::YON_GT_U64;
+				meta_base.controller.gt_primtive_type = core::YON_GT_U64;
 				break;
 			default:
-				std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
+				std::cerr << helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
 				return false;
 			}
 
@@ -164,7 +164,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 			else if(line.body->n_allele + 1 < 128)   this->EncodeDiploidBCF<U16> (line, simple, n_runs, ppa);
 			else if(line.body->n_allele + 1 < 32768) this->EncodeDiploidBCF<U32> (line, simple, n_runs, ppa);
 			else {
-				std::cerr << Helpers::timestamp("ERROR", "ENCODER") <<
+				std::cerr << helpers::timestamp("ERROR", "ENCODER") <<
 							 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
 							 "Format is limited to 32768..." << std::endl;
 				return false;

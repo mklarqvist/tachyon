@@ -30,7 +30,7 @@ void import_usage(void){
 	programMessage();
 	std::cerr <<
 	"Brief:  Convert VCF/BCF -> YON/\n"
-	"Usage:  " << Tachyon::Constants::PROGRAM_NAME << " import [options] -i <in.bcf> -o <output.yon>\n\n"
+	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <in.bcf> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input Tomahawk (required)\n"
 	"  -o FILE  output file prefix (required)\n"
@@ -86,14 +86,14 @@ int import(int argc, char** argv){
 		case 'c':
 			checkpoint_n_variants = atoi(optarg);
 			if(checkpoint_n_variants <= 0){
-				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				std::cerr << tachyon::helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
 		case 'C':
 			checkpoint_bp_window = atof(optarg);
 			if(checkpoint_bp_window <= 0){
-				std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				std::cerr << tachyon::helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
@@ -104,23 +104,23 @@ int import(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << Tachyon::Helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
+			std::cerr << tachyon::helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
-		std::cerr << Tachyon::Helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
+		std::cerr << tachyon::helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << Tachyon::Helpers::timestamp("LOG") << "Calling import..." << std::endl;
+		std::cerr << tachyon::helpers::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
-	Tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
+	tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
 	importer.setPermute(permute);
 
 	if(!importer.Build())

@@ -1,8 +1,8 @@
 #ifndef INDEX_INDEXBLOCKENTRYBITVECTOR_H_
 #define INDEX_INDEXBLOCKENTRYBITVECTOR_H_
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 // Size of entries in these records are
 // inferred from the number of INFO/FORMAT/FILTER

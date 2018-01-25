@@ -7,8 +7,8 @@
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 
-namespace Tachyon{
-namespace Compression{
+namespace tachyon{
+namespace compression{
 
 /**< Lower bounds threshold in fold-change for compression to be kept */
 #define MIN_COMPRESSION_FOLD 1.05
@@ -111,9 +111,9 @@ class CompressionContainer{
 private:
 	typedef CompressionContainer self_type;
 protected:
-	typedef Core::DataContainer stream_type;
-	typedef IO::BasicBuffer buffer_type;
-	typedef Core::PermutationManager permutation_type;
+	typedef core::DataContainer stream_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef core::PermutationManager permutation_type;
 
 public:
 	CompressionContainer(){}
@@ -132,9 +132,9 @@ class UncompressedCodec{
 private:
 	typedef UncompressedCodec self_type;
 protected:
-	typedef Core::DataContainer stream_type;
-	typedef IO::BasicBuffer buffer_type;
-	typedef Core::PermutationManager permutation_type;
+	typedef core::DataContainer stream_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef core::PermutationManager permutation_type;
 
 public:
 	UncompressedCodec(){}
@@ -144,8 +144,8 @@ public:
 	inline const bool encodeStrides(stream_type& stream){ return true; }
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != Core::YON_ENCODE_NONE){
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+		if(stream.header.controller.encoder != core::YON_ENCODE_NONE){
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 		stream.buffer_data_uncompressed.resize(stream.buffer_data.pointer + 16536);
@@ -157,12 +157,12 @@ public:
 
 	const bool decodeStrides(stream_type& stream){
 		if(!stream.header.controller.mixedStride){
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
 			return false;
 		}
 
-		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_NONE){
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+		if(stream.header_stride.controller.encoder != core::YON_ENCODE_NONE){
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -181,7 +181,7 @@ protected:
 class ZSTDCodec : public CompressionContainer{
 private:
 	typedef ZSTDCodec self_type;
-	typedef IO::TGZFController controller_type;
+	typedef io::TGZFController controller_type;
 
 public:
 	ZSTDCodec() : compression_level_data(0), compression_level_strides(0){}
@@ -201,7 +201,7 @@ public:
 
 		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.pointer < 50){
 			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
-			stream.header.controller.encoder = Core::YON_ENCODE_NONE;
+			stream.header.controller.encoder = core::YON_ENCODE_NONE;
 			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
 			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
 
@@ -219,14 +219,14 @@ public:
 									   this->compression_level_data);
 
 			if(ZSTD_isError(ret)){
-			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
 		const float fold = (float)stream.buffer_data_uncompressed.pointer / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_data.data, stream.buffer_data_uncompressed.data, stream.buffer_data_uncompressed.pointer);
-			stream.header.controller.encoder = Core::YON_ENCODE_NONE;
+			stream.header.controller.encoder = core::YON_ENCODE_NONE;
 			stream.buffer_data.pointer       = stream.buffer_data_uncompressed.pointer;
 			stream.header.cLength            = stream.buffer_data_uncompressed.pointer;
 
@@ -235,11 +235,11 @@ public:
 			else return true;
 		}
 
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
+		//std::cerr << helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.pointer << " and output: " << ret << " -> " << (float)stream.buffer_data.pointer/ret << "-fold"  << std::endl;
 
 		memcpy(stream.buffer_data.data, this->buffer.data, ret);
 		stream.header.cLength            = ret;
-		stream.header.controller.encoder = Core::YON_ENCODE_ZSTD;
+		stream.header.controller.encoder = core::YON_ENCODE_ZSTD;
 		stream.buffer_data.pointer       = ret;
 		stream.header.n_extra            = 1;
 		stream.header.extra              = new char[sizeof(BYTE)];
@@ -258,7 +258,7 @@ public:
 	const bool encodeStrides(stream_type& stream){
 		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.pointer < 50){
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.header_stride.controller.encoder = Core::YON_ENCODE_NONE;
+			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
 			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
 
@@ -274,24 +274,24 @@ public:
 								   this->compression_level_data);
 
 		if(ZSTD_isError(ret)){
-			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
 		const float fold = (float)stream.buffer_strides_uncompressed.pointer/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_strides.data, stream.buffer_strides_uncompressed.data, stream.buffer_strides_uncompressed.pointer);
-			stream.header_stride.controller.encoder = Core::YON_ENCODE_NONE;
+			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
 			stream.buffer_strides.pointer           = stream.buffer_strides_uncompressed.pointer;
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.pointer;
 			return true;
 		}
 
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.pointer/ret << "-fold"  << std::endl;
+		//std::cerr << helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.pointer << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.pointer/ret << "-fold"  << std::endl;
 
 		memcpy(stream.buffer_strides.data, this->buffer.data, ret);
 		stream.header_stride.cLength            = ret;
-		stream.header_stride.controller.encoder = Core::YON_ENCODE_ZSTD;
+		stream.header_stride.controller.encoder = core::YON_ENCODE_ZSTD;
 		stream.buffer_strides.pointer           = ret;
 		stream.header_stride.n_extra            = 1;
 		stream.header_stride.extra              = new char[sizeof(BYTE)];
@@ -345,7 +345,7 @@ public:
 			std::cerr << this->buffer.pointer << '\t' << manager.PPA.pointer << std::endl;
 			exit(1);
 		}
-		//std::cerr << Helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.pointer << " and out: " << ret << std::endl;
+		//std::cerr << helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.pointer << " and out: " << ret << std::endl;
 		manager.PPA.pointer = ret;
 		manager.c_length    = ret;
 
@@ -353,8 +353,8 @@ public:
 	}
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != Core::YON_ENCODE_ZSTD){
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+		if(stream.header.controller.encoder != core::YON_ENCODE_ZSTD){
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -365,7 +365,7 @@ public:
 								  stream.buffer_data.pointer);
 
 		if(ZSTD_isError(ret)){
-			std::cerr << Helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
@@ -381,13 +381,13 @@ public:
 		if(!stream.header.controller.mixedStride)
 			return false;
 
-		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_ZSTD){
-			std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+		if(stream.header_stride.controller.encoder != core::YON_ENCODE_ZSTD){
+			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
 
-		if(stream.header_stride.controller.encoder != Core::YON_ENCODE_ZSTD)
+		if(stream.header_stride.controller.encoder != core::YON_ENCODE_ZSTD)
 			return true;
 
 		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);

@@ -1,7 +1,7 @@
 #include "MetaColdContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 MetaColdContainer::MetaColdContainer() : n_entries(0), __entries(nullptr){}
 

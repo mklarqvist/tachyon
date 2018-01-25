@@ -3,8 +3,8 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 DataBlock::DataBlock() :
 	info_containers(new container_type[200]),
@@ -150,7 +150,7 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 			container[i].header.uLength = 0;
 			container[i].header.cLength = 0;
 			container[i].header.controller.mixedStride = false;
-			container[i].header.controller.encoder = Core::YON_ENCODE_NONE;
+			container[i].header.controller.encoder = core::YON_ENCODE_NONE;
 			container[i].n_entries      = 0;
 			container[i].n_additions    = 0;
 			container[i].header.controller.signedness = 0;
@@ -165,7 +165,7 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 
 void DataBlock::updateContainer(container_type& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 &&
-	   container.header.controller.type != Core::YON_TYPE_BOOLEAN)
+	   container.header.controller.type != core::YON_TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content
@@ -278,7 +278,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset->offset);
 			if(!stream.good()){
-				std::cerr << Helpers::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
+				std::cerr << helpers::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
 				return false;
 			}
 
@@ -296,7 +296,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 	stream.seekg(end_of_block - sizeof(U64));
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-	assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
+	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 
 	return(true);
 }
@@ -357,7 +357,7 @@ bool DataBlock::write(std::ofstream& stream,
 	stats.total_format_cost += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
-	stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
+	stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
 	return(true);
 }

@@ -3,8 +3,8 @@
 
 #include <atomic>
 
-namespace Tachyon{
-namespace Algorithm{
+namespace tachyon{
+namespace algorithm{
 
 class SpinLock{
 public:

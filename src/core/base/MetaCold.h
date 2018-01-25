@@ -6,8 +6,8 @@
 #include "../../io/bcf/BCFEntry.h"
 #include "../../containers/DataContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 /** ColdMetaAllele:
  *  @brief Contains parts of the cold component of the hot-cold split of a variant site meta information
@@ -18,7 +18,7 @@ namespace Core{
 struct ColdMetaAllele{
 private:
 	typedef ColdMetaAllele self_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 
 public:
 	ColdMetaAllele() :
@@ -82,8 +82,8 @@ public:
 struct MetaCold{
 private:
 	typedef MetaCold self_type;
-	typedef BCF::BCFEntry bcf_type;
-	typedef Core::DataContainer stream_container;
+	typedef bcf::BCFEntry bcf_type;
+	typedef core::DataContainer stream_container;
 	typedef ColdMetaAllele allele_type;
 
     typedef std::size_t       size_type;

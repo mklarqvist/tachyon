@@ -3,8 +3,8 @@
 
 #include "base/MetaEntry.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 struct GTObject{
 private:
@@ -124,7 +124,7 @@ public:
 
 struct GTObjectDiploidRLE : public GTObject{
 private:
-	typedef Core::MetaEntry meta_type;
+	typedef core::MetaEntry meta_type;
 
 public:
     GTObjectDiploidRLE(void){}
@@ -155,7 +155,7 @@ private:
 
 struct GTObjectDiploidSimple : public GTObject{
 private:
-	typedef Core::MetaEntry meta_type;
+	typedef core::MetaEntry meta_type;
 
 public:
 	GTObjectDiploidSimple(void){}

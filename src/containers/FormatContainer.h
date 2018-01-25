@@ -4,8 +4,8 @@
 #include "DataContainer.h"
 #include "PrimitiveGroupContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 template <class return_type>
 class FormatContainer{
@@ -18,8 +18,8 @@ private:
     typedef const value_type*               const_pointer;
     typedef std::ptrdiff_t                  difference_type;
     typedef std::size_t                     size_type;
-    typedef IO::BasicBuffer                 buffer_type;
-    typedef Core::DataContainer             data_container_type;
+    typedef io::BasicBuffer                 buffer_type;
+    typedef core::DataContainer             data_container_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getStrideFunction)(const buffer_type& buffer, const U32 position) const;
@@ -161,55 +161,55 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
 		getStrideFunction func = nullptr;
 
 		switch(container.header_stride.controller.type){
-		case(Core::YON_TYPE_8B):  func = &self_type::__getStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
-		case(Core::YON_TYPE_16B): func = &self_type::__getStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
-		case(Core::YON_TYPE_32B): func = &self_type::__getStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
-		case(Core::YON_TYPE_64B): func = &self_type::__getStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
+		case(core::YON_TYPE_8B):  func = &self_type::__getStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
+		case(core::YON_TYPE_16B): func = &self_type::__getStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
+		case(core::YON_TYPE_32B): func = &self_type::__getStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
+		case(core::YON_TYPE_64B): func = &self_type::__getStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
 		default: std::cerr << "Disallowed stride" << std::endl; return;
 		}
 
 		if(container.header.isSigned()){
 			switch(container.header.controller.type){
-			case(Core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, func));  break;
-			case(Core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, func));   break;
-			case(Core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
+			case(core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, func));  break;
+			case(core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, func));   break;
+			case(core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, func));    break;
+			case(core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, func));    break;
+			case(core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, func));    break;
+			case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
+			case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.getPrimitiveType()){
-			case(Core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, func));   break;
-			case(Core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, func));    break;
-			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
+			case(core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, func));   break;
+			case(core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, func));    break;
+			case(core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, func));    break;
+			case(core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, func));    break;
+			case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, func));  break;
+			case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
 	} else {
 		if(container.header.isSigned()){
 			switch(container.header.controller.type){
-			case(Core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, container.header.getStride()));  break;
-			case(Core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, container.header.getStride()));   break;
-			case(Core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
+			case(core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, container.header.getStride()));  break;
+			case(core::YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, container.header.getStride()));   break;
+			case(core::YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
+			case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.getPrimitiveType()){
-			case(Core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, container.header.getStride()));   break;
-			case(Core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, container.header.getStride()));    break;
-			case(Core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
-			case(Core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
+			case(core::YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, container.header.getStride()));   break;
+			case(core::YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, container.header.getStride()));    break;
+			case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.getStride()));  break;
+			case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.getStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}

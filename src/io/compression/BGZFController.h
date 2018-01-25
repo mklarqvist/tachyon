@@ -7,13 +7,13 @@
 #include "../BasicBuffer.h"
 #include "GZFHeader.h"
 
-namespace Tachyon {
-namespace IO {
+namespace tachyon {
+namespace io {
 
 class BGZFController {
 	typedef BGZFController self_type;
-		typedef IO::BasicBuffer buffer_type;
-		typedef BGZFHeader header_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef BGZFHeader header_type;
 
 	public:
 		BGZFController();

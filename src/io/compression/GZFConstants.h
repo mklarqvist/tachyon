@@ -3,9 +3,9 @@
 
 #include "../../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace IO{
-namespace Constants{
+namespace tachyon{
+namespace io{
+namespace constants{
 
 // zlib & TGZF constants
 const BYTE GZIP_ID1   = 31;

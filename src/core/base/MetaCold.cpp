@@ -1,7 +1,7 @@
 #include "MetaCold.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 MetaCold::MetaCold(void) :
 	l_body(0),

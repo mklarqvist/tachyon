@@ -4,8 +4,8 @@
 #include <stdio.h> // size_t
 #include "../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace Math{
+namespace tachyon{
+namespace math{
 
 template <class T>
 class SquareMatrix{

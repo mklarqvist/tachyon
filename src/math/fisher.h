@@ -7,8 +7,8 @@
 #include <cerrno>
 #include "../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace Math{
+namespace tachyon{
+namespace math{
 
 #define KF_GAMMA_EPS 1e-14
 #define KF_TINY 1e-290

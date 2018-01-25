@@ -1,7 +1,7 @@
 #include "RadixSortGT.h"
 
-namespace Tachyon {
-namespace Algorithm {
+namespace tachyon {
+namespace algorithm {
 
 RadixSortGT::RadixSortGT() :
 	n_samples(0),
@@ -113,7 +113,7 @@ bool RadixSortGT::pairwiseHammingUpdate(const bcf_entry_type& entry){
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		const BYTE packed = (BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1);
+		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_matrix[this->n_gt_matrix][k] = packed;
 	}
 	++this->n_gt_matrix;
@@ -169,7 +169,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		const BYTE packed = (BCF::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | BCF::BCF_UNPACK_GENOTYPE(fmt_type_value1);
+		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_array[k] = packed;
 	}
 

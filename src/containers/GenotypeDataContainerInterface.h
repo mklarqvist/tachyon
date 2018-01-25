@@ -6,8 +6,8 @@
 #include "../math/SquareMatrix.h"
 #include "DataContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 class GenotypeContainerInterface{
 private:
@@ -18,7 +18,7 @@ private:
 protected:
     typedef GTObject                    gt_object;
     typedef GenotypeSum                 gt_summary;
-    typedef Math::SquareMatrix<double>  square_matrix_type;
+    typedef math::SquareMatrix<double>  square_matrix_type;
 
 public:
     GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}

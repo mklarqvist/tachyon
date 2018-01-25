@@ -7,14 +7,14 @@
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 // Manages the PPA array and the Occ function
 // of the PPA array
 class PermutationManager{
 	typedef PermutationManager self_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 
 public:
 	PermutationManager() : n_samples(0), u_length(0), c_length(0), crc(0){}

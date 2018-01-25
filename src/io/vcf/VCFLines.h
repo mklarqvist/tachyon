@@ -11,8 +11,8 @@
 #include "../../support/helpers.h"
 #include "../../support/MagicConstants.h"
 
-namespace Tachyon{
-namespace VCF{
+namespace tachyon{
+namespace vcf{
 
 //
 #pragma pack(push, 1)
@@ -79,7 +79,7 @@ public:
 		while(true){ // while there is samples in line
 			const char* found = std::find(&this->inputData_[search_position], &this->inputData_[this->dataLength_], '\t');
 
-			if(*found != VCF::Constants::VCF_DELIMITER){
+			if(*found != vcf::constants::VCF_DELIMITER){
 				//std::cerr << "break no match " << (*found == '\n') << '\t' << (int)*found << '\t' << *found << '\t' << found - this->inputData_ << '/' << this->dataLength_ << std::endl;
 				break;
 			}
@@ -99,7 +99,7 @@ public:
 		if(delimiters_found == this->samples_)
 			return true;
 
-		std::cerr << Helpers::timestamp("ERROR", "VCF") << "Found " << delimiters_found << " samples in line but expected " << this->samples_ << "..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "VCF") << "Found " << delimiters_found << " samples in line but expected " << this->samples_ << "..." << std::endl;
 		exit(1);
 		return false;
 
@@ -129,9 +129,9 @@ public:
 		U32 sourceFoundPosition = 0;
 
 		while(true){
-			const char* match = std::find(&source[sourceLastPosition], &source[sourceLength], VCF::Constants::VCF_DELIMITER);
-			if(*match != VCF::Constants::VCF_DELIMITER){
-				std::cerr << Helpers::timestamp("ERROR", "VCF") << "Illegal VCF line" << std::endl;
+			const char* match = std::find(&source[sourceLastPosition], &source[sourceLength], vcf::constants::VCF_DELIMITER);
+			if(*match != vcf::constants::VCF_DELIMITER){
+				std::cerr << helpers::timestamp("ERROR", "VCF") << "Illegal VCF line" << std::endl;
 				return false;
 			}
 
@@ -224,13 +224,13 @@ public:
 	}
 
 	bool isComplex(void){
-		if(strncmp(this->FORMAT, &VCF::Constants::GT_ONLY[0], VCF::Constants::GT_ONLY.size()) == 0 && this->lFORMAT == 2)
+		if(strncmp(this->FORMAT, &vcf::constants::GT_ONLY[0], vcf::constants::GT_ONLY.size()) == 0 && this->lFORMAT == 2)
 			this->Complex = false;
 		else {
-			if(strncmp(this->FORMAT, &VCF::Constants::GT_ONLY[0], VCF::Constants::GT_ONLY.size()) == 0)
+			if(strncmp(this->FORMAT, &vcf::constants::GT_ONLY[0], vcf::constants::GT_ONLY.size()) == 0)
 				this->Complex = true;
 			else {
-				std::cerr << Helpers::timestamp("ERROR", "VCF") << "Could not parse GT information..." << std::endl;
+				std::cerr << helpers::timestamp("ERROR", "VCF") << "Could not parse GT information..." << std::endl;
 				exit(1);
 			}
 		}
@@ -243,19 +243,19 @@ public:
 		this->ref_alt = 0;
 
 		switch(this->REF[0]){
-		case 'A': this->ref_alt ^= Constants::REF_ALT_A << 4; break;
-		case 'T': this->ref_alt ^= Constants::REF_ALT_T << 4; break;
-		case 'G': this->ref_alt ^= Constants::REF_ALT_G << 4; break;
-		case 'C': this->ref_alt ^= Constants::REF_ALT_C << 4; break;
-		case '.': this->ref_alt ^= Constants::REF_ALT_N << 4; break;
+		case 'A': this->ref_alt ^= constants::REF_ALT_A << 4; break;
+		case 'T': this->ref_alt ^= constants::REF_ALT_T << 4; break;
+		case 'G': this->ref_alt ^= constants::REF_ALT_G << 4; break;
+		case 'C': this->ref_alt ^= constants::REF_ALT_C << 4; break;
+		case '.': this->ref_alt ^= constants::REF_ALT_N << 4; break;
 		}
 
 		switch(this->ALT[0]){
-		case 'A': this->ref_alt ^= Constants::REF_ALT_A << 0; break;
-		case 'T': this->ref_alt ^= Constants::REF_ALT_T << 0; break;
-		case 'G': this->ref_alt ^= Constants::REF_ALT_G << 0; break;
-		case 'C': this->ref_alt ^= Constants::REF_ALT_C << 0; break;
-		case '.': this->ref_alt ^= Constants::REF_ALT_N << 0; break;
+		case 'A': this->ref_alt ^= constants::REF_ALT_A << 0; break;
+		case 'T': this->ref_alt ^= constants::REF_ALT_T << 0; break;
+		case 'G': this->ref_alt ^= constants::REF_ALT_G << 0; break;
+		case 'C': this->ref_alt ^= constants::REF_ALT_C << 0; break;
+		case '.': this->ref_alt ^= constants::REF_ALT_N << 0; break;
 		}
 	}
 

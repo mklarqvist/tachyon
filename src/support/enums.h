@@ -1,8 +1,8 @@
 #ifndef SUPPORT_ENUMS_H_
 #define SUPPORT_ENUMS_H_
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 enum TACHYON_CORE_TYPE{
 	YON_TYPE_8B,

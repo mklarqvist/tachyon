@@ -9,8 +9,8 @@
 #include "../io/BasicBuffer.h"
 #include "../algorithm/OpenHashTable.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 DataContainer::DataContainer() :
 	n_entries(0),
@@ -155,7 +155,7 @@ bool DataContainer::checkUniformity(void){
 	this->header.cLength = stride_size * word_width;
 	this->header.controller.uniform = true;
 	this->header.controller.mixedStride = false;
-	this->header.controller.encoder = Core::YON_ENCODE_NONE;
+	this->header.controller.encoder = core::YON_ENCODE_NONE;
 	return(true);
 }
 

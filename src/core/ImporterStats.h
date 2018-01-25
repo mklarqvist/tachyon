@@ -1,8 +1,8 @@
 #ifndef CORE_IMPORTERSTATS_H_
 #define CORE_IMPORTERSTATS_H_
 
-namespace Tachyon{
-namespace Support{
+namespace tachyon{
+namespace support{
 
 struct ImporterStats{
 	typedef ImporterStats self_type;

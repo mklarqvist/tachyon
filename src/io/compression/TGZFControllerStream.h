@@ -3,8 +3,8 @@
 
 #include "TGZFController.h"
 
-namespace Tachyon {
-namespace IO {
+namespace tachyon {
+namespace io {
 
 class TGZFControllerStream : public TGZFController{
 protected:

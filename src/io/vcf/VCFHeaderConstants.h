@@ -4,9 +4,9 @@
 #include <string>
 #include "../../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace VCF{
-namespace Constants{
+namespace tachyon{
+namespace vcf{
+namespace constants{
 
 const std::string HEADER_COLUMN = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
 const char VCF_DELIMITER = '\t';

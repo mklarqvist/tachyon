@@ -4,8 +4,8 @@
 #include "TGZFController.h"
 #include "TGZFControllerStream.h"
 
-namespace Tachyon{
-namespace IO{
+namespace tachyon{
+namespace io{
 
 template <class T>
 class TGZFEntryIterator : public TGZFControllerStream{
@@ -65,7 +65,7 @@ bool TGZFEntryIterator<T>::nextEntry(const T*& entry){
 	if(this->pointer == this->n_entries){
 		//check if allowed to proceed
 		if(this->STATE == TGZF_STATE::TGZF_END){
-			this->stream.seekg(IO::Constants::TGZF_BLOCK_FOOTER_LENGTH, std::ios::cur);
+			this->stream.seekg(io::constants::TGZF_BLOCK_FOOTER_LENGTH, std::ios::cur);
 
 			if(this->stream.tellg() == this->IO_end_offset)
 				return false;
@@ -76,20 +76,20 @@ bool TGZFEntryIterator<T>::nextEntry(const T*& entry){
 		U32 ret_size = 0;
 		if(!parent_type::Inflate(this->stream, (BYTE*)&output_buffer.data[0], this->chunk_size, ret_size)){
 			if(this->STATE != TGZF_STATE::TGZF_END){
-				std::cerr << Helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
+				std::cerr << helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
 				exit(1);
 			}
 		}
 
 		if(ret_size % sizeof(T) != 0){
-			std::cerr << Helpers::timestamp("ERROR","TGZF") << "Impossible: " << ret_size % sizeof(T) << '\t' << ret_size << '/' << this->chunk_size << '\t' << "state: " << this->STATE << " size: " << sizeof(T) << std::endl;
+			std::cerr << helpers::timestamp("ERROR","TGZF") << "Impossible: " << ret_size % sizeof(T) << '\t' << ret_size << '/' << this->chunk_size << '\t' << "state: " << this->STATE << " size: " << sizeof(T) << std::endl;
 			exit(1);
 		}
 
 		if(ret_size == 0){
-			std::cerr << Helpers::timestamp("ERROR","TGZF") << "Returned nothing (state" << this->STATE << ")" << std::endl;
+			std::cerr << helpers::timestamp("ERROR","TGZF") << "Returned nothing (state" << this->STATE << ")" << std::endl;
 			if(this->STATE == TGZF_STATE::TGZF_END){
-				this->stream.seekg(IO::Constants::TGZF_BLOCK_FOOTER_LENGTH, std::ios::cur);
+				this->stream.seekg(io::constants::TGZF_BLOCK_FOOTER_LENGTH, std::ios::cur);
 
 				if(this->stream.tellg() == this->IO_end_offset)
 					return false;
@@ -99,13 +99,13 @@ bool TGZFEntryIterator<T>::nextEntry(const T*& entry){
 
 			if(!parent_type::Inflate(this->stream, (BYTE*)&output_buffer.data[0], this->chunk_size, ret_size)){
 				if(this->STATE != TGZF_STATE::TGZF_END){
-					std::cerr << Helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
+					std::cerr << helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
 					exit(1);
 				}
 			}
 
 			if(ret_size == 0){
-				std::cerr << Helpers::timestamp("ERROR","TGZF") << "Impossible" << std::endl;
+				std::cerr << helpers::timestamp("ERROR","TGZF") << "Impossible" << std::endl;
 				exit(1);
 			}
 

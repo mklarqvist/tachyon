@@ -4,8 +4,8 @@
 #include "../core/base/MetaCold.h"
 #include "DataBlock.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 class MetaColdContainer{
 private:

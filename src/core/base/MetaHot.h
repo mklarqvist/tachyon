@@ -6,8 +6,8 @@
 #include "../../support/enums.h"
 #include "../../support/MagicConstants.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 enum TACHYON_GT_PRIMITIVE_TYPE{
 	YON_GT_BYTE = 0,
@@ -96,12 +96,12 @@ public:
 	}
 
 	inline void setMissing(void){
-		this->ref = Tachyon::Constants::REF_ALT_N;
-		this->alt = Tachyon::Constants::REF_ALT_N;
+		this->ref = constants::REF_ALT_N;
+		this->alt = constants::REF_ALT_N;
 	}
 
-	inline const char getRef(void) const{ return(Constants::REF_ALT_LOOKUP[this->ref]); }
-	inline const char getAlt(void) const{ return(Constants::REF_ALT_LOOKUP[this->alt]); }
+	inline const char getRef(void) const{ return(constants::REF_ALT_LOOKUP[this->ref]); }
+	inline const char getAlt(void) const{ return(constants::REF_ALT_LOOKUP[this->alt]); }
 
 	bool setRef(const char& c);
 	bool setAlt(const char& c);
@@ -125,7 +125,7 @@ public:
 struct __attribute__((packed, aligned(1))) MetaHot{
 private:
 	typedef MetaHot           self_type;
-	typedef IO::BasicBuffer   buffer_type;
+	typedef io::BasicBuffer   buffer_type;
 	typedef MetaHotController controller_type;
 	typedef MetaHotRefAlt     allele_type;
 

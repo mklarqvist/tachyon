@@ -10,8 +10,8 @@
 #include "VCFHeaderConstants.h"
 #include "../../support/helpers.h"
 
-namespace Tachyon{
-namespace VCF{
+namespace tachyon{
+namespace vcf{
 
 enum TACHYON_VCF_HEADER_LINE_TYPE{
 	YON_VCF_HEADER_UNKNOWN,
@@ -51,7 +51,7 @@ public:
 	inline const key_value& operator[](const U32 p) const{ return this->pairs[p]; }
 	inline bool isValid(void) const{ return(this->size_ > 2 && (this->data[0] == '#' && this->data[1] == '#')); }
 	inline bool isCONTIG(void) const{
-		return(strncasecmp(&Constants::HEADER_CONTIG[0], &this->data[0], Constants::HEADER_CONTIG.size()) == 0);
+		return(strncasecmp(&constants::HEADER_CONTIG[0], &this->data[0], constants::HEADER_CONTIG.size()) == 0);
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& pair){
@@ -66,14 +66,14 @@ public:
 		// Make sure this is a valid VCF header line
 		// Rule: has to start with ##
 		if(!this->isValid()){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Invalid VCF header line..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "VCF") << "Invalid VCF header line..." << std::endl;
 			return false;
 		}
 
 		// Attempt to find an equal sign
 		const char* match = std::find(this->data, &this->data[this->size_], '=');
 		if(*match != '='){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match..." << std::endl;
 			return false;
 		}
 
@@ -97,7 +97,7 @@ public:
 		U32 matchPos = match - this->data + 1;
 		if(this->data[matchPos] == '<'){
 			if(this->data[this->size_] != '>'){
-				std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data[this->size_] << std::endl;
+				std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data[this->size_] << std::endl;
 				return false;
 			}
 
@@ -120,7 +120,7 @@ private:
 
 		const char* match = std::find(&this->data[startPos], &this->data[this->size_], '=');
 		if(*match != '='){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
 			return false;
 		}
 		U32 matchPos = match - this->data;
@@ -143,7 +143,7 @@ private:
 			this->pairs.push_back(entry);
 			return false;
 		} else if(*match != match_token){
-			std::cerr << Helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
 			return false;
 		}
 

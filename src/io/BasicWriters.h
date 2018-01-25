@@ -10,13 +10,13 @@
 #include "../io/BasicBuffer.h"
 #include "../support/MagicConstants.h"
 
-namespace Tachyon {
-namespace IO{
+namespace tachyon {
+namespace io{
 
 class GenericWriterInterace {
 protected:
-	typedef IO::BasicBuffer buffer_type;
-	typedef Algorithm::SpinLock lock_type;
+	typedef io::BasicBuffer buffer_type;
+	typedef algorithm::SpinLock lock_type;
 
 public:
 	enum type {cout, file};
@@ -56,7 +56,7 @@ public:
 
 	bool open(void){ return true; }
 	bool open(const std::string output){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Cannot set filename when destination is standard out..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Cannot set filename when destination is standard out..." << std::endl;
 		return false;
 	}
 	void flush(void){ std::cout.flush(); }
@@ -103,24 +103,24 @@ public:
 	}
 
 	bool open(void){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
 		return false;
 	}
 
 	bool open(const std::string output){
 		if(output.length() == 0){
-			std::cerr << Helpers::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
 			return false;
 		}
 
 		this->stream.open(output, std::ios::binary | std::ios::out);
 		if(!this->stream.good()){
-			std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open output file: " << output << "..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "WRITER") << "Could not open output file: " << output << "..." << std::endl;
 			return false;
 		}
 
 		if(!SILENT)
-			std::cerr << Helpers::timestamp("LOG", "WRITER") << "Opening output file: " << output << "..." << std::endl;
+			std::cerr << helpers::timestamp("LOG", "WRITER") << "Opening output file: " << output << "..." << std::endl;
 
 		return true;
 	}

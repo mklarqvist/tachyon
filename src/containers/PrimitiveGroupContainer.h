@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_PRIMITIVEGROUPCONTAINER_H_
 #define CONTAINERS_PRIMITIVEGROUPCONTAINER_H_
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 template <class T>
 class PrimitiveGroupContainer{

@@ -10,8 +10,8 @@
 #include "../support/TypeDefinitions.h"
 #include "../third_party/xxhash/xxhash.h"
 
-namespace Tachyon {
-namespace Hash {
+namespace tachyon {
+namespace hash {
 
 #define HASH_CONSTANT1 452930477
 

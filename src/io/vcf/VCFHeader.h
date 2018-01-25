@@ -13,19 +13,19 @@
 #include "../../core/base/header/HeaderSample.h"
 #include "../BasicReader.h"
 
-namespace Tachyon {
-namespace VCF{
+namespace tachyon {
+namespace vcf{
 
 class VCFHeader {
 	typedef VCFHeader self_type;
-	typedef Hash::HashTable<std::string, S32> hash_table_type;
-	typedef Hash::HashTable<S32, U32> hash_table_map_type;
-	typedef Core::HeaderContig contig_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef hash::HashTable<std::string, S32> hash_table_type;
+	typedef hash::HashTable<S32, U32> hash_table_map_type;
+	typedef core::HeaderContig contig_type;
+	typedef io::BasicBuffer buffer_type;
 	typedef VCFHeaderLine header_line_type;
-	typedef Core::HeaderMapEntry map_entry_type;
-	typedef Core::HeaderSample header_sample_type;
-	typedef IO::BasicReader reader_type;
+	typedef core::HeaderMapEntry map_entry_type;
+	typedef core::HeaderSample header_sample_type;
+	typedef io::BasicReader reader_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 

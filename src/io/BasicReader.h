@@ -10,8 +10,8 @@
 
 #include "../support/MagicConstants.h" // for SILENT
 
-namespace Tachyon{
-namespace IO{
+namespace tachyon{
+namespace io{
 
 /*
  * Basic block-wise reader

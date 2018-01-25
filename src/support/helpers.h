@@ -12,8 +12,8 @@
 
 #include "TypeDefinitions.h"
 
-namespace Tachyon{
-namespace Helpers{
+namespace tachyon{
+namespace helpers{
 
 int isBigEndian(void);
 
@@ -46,14 +46,14 @@ T roundUp(T numToRound, int multiple){
 
 template <class T>
 std::string ToPrettyString(const T& data){
-	return Helpers::NumberThousandsSeparator(std::to_string(data));
+	return helpers::NumberThousandsSeparator(std::to_string(data));
 }
 
 template <class T>
 std::string ToPrettyString(const std::vector<T>& data){
 	std::string ret;
 	for(U32 i = 0; i < data.size() - 1; ++i){
-		ret += Helpers::NumberThousandsSeparator(std::to_string(data[i]));
+		ret += helpers::NumberThousandsSeparator(std::to_string(data[i]));
 		ret += ", ";
 	}
 	ret += std::to_string(data[data.size()-1]);

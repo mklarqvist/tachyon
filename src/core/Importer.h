@@ -13,28 +13,28 @@
 #include "../algorithm/compression/CompressionManager.h"
 #include "../containers/DataBlock.h"
 
-namespace Tachyon {
+namespace tachyon {
 
 class Importer {
 private:
 	typedef Importer                        self_type;
-	typedef IO::BasicReader                 reader_type;
-	typedef VCF::VCFHeader                  header_type;
+	typedef io::BasicReader                 reader_type;
+	typedef vcf::VCFHeader                  header_type;
 	typedef ImportWriter                    writer_type;
-	typedef IO::BasicBuffer                 buffer_type;
-	typedef Encoding::EncoderGenotypes      gt_encoder_type;
-	typedef Index::IndexEntry               index_entry_type;
-	typedef BCF::BCFReader                  bcf_reader_type;
-	typedef BCF::BCFEntry                   bcf_entry_type;
-	typedef Algorithm::RadixSortGT          radix_sorter_type;
-	typedef Core::DataContainer             stream_container;
-	typedef Core::PermutationManager        permutation_type;
-	typedef Core::MetaHot                   meta_type;
-	typedef Core::HashContainer             hash_container_type;
-	typedef Core::HashVectorContainer       hash_vector_container_type;
-	typedef Core::DataBlock                 block_type;
-	typedef Support::ImporterStats          import_stats_type;
-	typedef Compression::CompressionManager compression_manager_type;
+	typedef io::BasicBuffer                 buffer_type;
+	typedef encoding::EncoderGenotypes      gt_encoder_type;
+	typedef index::IndexEntry               index_entry_type;
+	typedef bcf::BCFReader                  bcf_reader_type;
+	typedef bcf::BCFEntry                   bcf_entry_type;
+	typedef algorithm::RadixSortGT          radix_sorter_type;
+	typedef core::DataContainer             stream_container;
+	typedef core::PermutationManager        permutation_type;
+	typedef core::MetaHot                   meta_type;
+	typedef core::HashContainer             hash_container_type;
+	typedef core::HashVectorContainer       hash_vector_container_type;
+	typedef core::DataBlock                 block_type;
+	typedef support::ImporterStats          import_stats_type;
+	typedef compression::CompressionManager compression_manager_type;
 
 public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);

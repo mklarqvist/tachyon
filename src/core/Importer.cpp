@@ -4,7 +4,7 @@
 #include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
 
-namespace Tachyon {
+namespace tachyon {
 
 #define IMPORT_ASSERT 1
 
@@ -37,20 +37,20 @@ void Importer::resetHashes(void){
 bool Importer::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
 	if(!temp.good()){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->inputFile << ")..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->inputFile << ")..." << std::endl;
 		return false;
 	}
 	char tempData[2];
 	temp.read(&tempData[0], 2);
 	temp.close();
 
-	if((BYTE)tempData[0] == IO::Constants::GZIP_ID1 && (BYTE)tempData[1] == IO::Constants::GZIP_ID2){
+	if((BYTE)tempData[0] == io::constants::GZIP_ID1 && (BYTE)tempData[1] == io::constants::GZIP_ID2){
 		if(!this->BuildBCF()){
-			std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
+			std::cerr << helpers::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 			return false;
 		}
 	} else {
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Unknown file format!" << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "IMPORT") << "Unknown file format!" << std::endl;
 		return false;
 	}
 	return true;
@@ -59,18 +59,18 @@ bool Importer::Build(){
 bool Importer::BuildBCF(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
-		std::cerr << Helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
 		return false;
 	}
 
 	this->header = &reader.header;
 	if(this->header->samples == 0){
-		std::cerr << Helpers::timestamp("ERROR", "BCF") << "No samples detected in header..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "BCF") << "No samples detected in header..." << std::endl;
 		return false;
 	}
 
 	if(this->header->samples == 1){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << Tachyon::Constants::PROGRAM_NAME << " with a single sample..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "IMPORT") << "Cannot run " << constants::PROGRAM_NAME << " with a single sample..." << std::endl;
 		return false;
 	}
 
@@ -81,12 +81,12 @@ bool Importer::BuildBCF(void){
 	this->permutator.setSamples(this->header->samples);
 
 	if(!this->writer.Open(this->outputPrefix)){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
 	if(!this->writer.WriteHeader()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
 		return false;
 	}
 	this->writer.stream << *this->header;
@@ -96,7 +96,7 @@ bool Importer::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	// Digest controller
-	Algorithm::DigitalDigestController* digests = new Algorithm::DigitalDigestController[this->header->map.size()];
+	algorithm::DigitalDigestController* digests = new algorithm::DigitalDigestController[this->header->map.size()];
 	for(U32 i = 0; i < this->header->map.size(); ++i){
 		if(!digests[i].initialize()){
 			std::cerr << "failed to init sha512" << std::endl;
@@ -111,7 +111,7 @@ bool Importer::BuildBCF(void){
 	U64 n_variants_read  = 0;
 
 	// Index
-	Index::IndexEntry current_index_entry;
+	index::IndexEntry current_index_entry;
 
 	// Begin import
 	// Get BCF entries
@@ -125,13 +125,13 @@ bool Importer::BuildBCF(void){
 #if IMPORT_ASSERT == 1
 		if(reader.first().body->CHROM == previousContigID){
 			if(!(reader.first().body->POS >= previousFirst && reader.first().body->POS >= previousLast)){
-				std::cerr << Helpers::timestamp("ERROR","IMPORT") << reader.first().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
+				std::cerr << helpers::timestamp("ERROR","IMPORT") << reader.first().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
 				std::cerr << reader[reader.n_entries].body->POS << std::endl;
 				exit(1);
 			}
 		}
 #endif
-		std::cerr << Helpers::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.first().body->POS+1 << "->" << reader.last().body->POS+1 << std::endl;
+		std::cerr << helpers::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.first().body->POS+1 << "->" << reader.last().body->POS+1 << std::endl;
 		this->block.index_entry.contigID    = reader.first().body->CHROM;
 		this->block.index_entry.minPosition = reader.first().body->POS;
 		this->block.index_entry.maxPosition = reader.last().body->POS;
@@ -140,7 +140,7 @@ bool Importer::BuildBCF(void){
 		// Permute or not?
 		if(this->block.index_entry.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
-				std::cerr << Helpers::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
+				std::cerr << helpers::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
 		}
@@ -148,7 +148,7 @@ bool Importer::BuildBCF(void){
 		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->parseBCFLine(reader[i])){
-				std::cerr << Helpers::timestamp("ERROR","IMPORT") << "Failed to parse BCF body..." << std::endl;
+				std::cerr << helpers::timestamp("ERROR","IMPORT") << "Failed to parse BCF body..." << std::endl;
 				return false;
 			}
 		}
@@ -169,32 +169,32 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_format_streams     = this->format_fields.size();
 		this->block.index_entry.n_variants           = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.index_entry.constructBitVector(Index::BlockIndex::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(index::BlockIndex::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.index_entry.constructBitVector(index::BlockIndex::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.index_entry.constructBitVector(index::BlockIndex::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
-		this->block.updateContainerSet(Index::BlockIndex::INDEX_INFO);
-		this->block.updateContainerSet(Index::BlockIndex::INDEX_FORMAT);
+		this->block.updateContainerSet(index::BlockIndex::INDEX_INFO);
+		this->block.updateContainerSet(index::BlockIndex::INDEX_FORMAT);
 
 		// Todo: abstraction
 		// Digests
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			if(!digests[this->header->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
-				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				std::cerr << helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
 		}
 
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			if(!digests[this->header->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
-				std::cerr << Helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				std::cerr << helpers::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 				return false;
 			}
 		}
 
 		// Perform compression using standard parameters
 		if(!compression_manager.compress(this->block)){
-			std::cerr << Helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			std::cerr << helpers::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
 
@@ -250,16 +250,16 @@ bool Importer::BuildBCF(void){
 	this->writer.WriteFinal(data_ends);
 
 	std::cout
-	    << "Header:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
-		<< "GT:        " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
-		<< "PPA:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'
-		<< "Meta:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_meta_cost) << '\n'
-		<< "INFO:      " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
-		<< "FORMAT:    " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
-		<< "IDs:       " << Helpers::toPrettyDiskString(this->import_compressed_stats.total_special_cost) << '\t' << Helpers::toPrettyDiskString(this->import_uncompressed_stats.total_special_cost) << '\n'
-		<< "Index:     " << Helpers::toPrettyDiskString(index_ends - data_ends) << '\n'
-		<< "Checksums: " << Helpers::toPrettyDiskString(digests_ends - index_ends) << '\n'
-		<< "Total:     " << Helpers::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
+	    << "Header:    " << helpers::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
+		<< "GT:        " << helpers::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
+		<< "PPA:       " << helpers::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'
+		<< "Meta:      " << helpers::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_meta_cost) << '\n'
+		<< "INFO:      " << helpers::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
+		<< "FORMAT:    " << helpers::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
+		<< "IDs:       " << helpers::toPrettyDiskString(this->import_compressed_stats.total_special_cost) << '\t' << helpers::toPrettyDiskString(this->import_uncompressed_stats.total_special_cost) << '\n'
+		<< "Index:     " << helpers::toPrettyDiskString(index_ends - data_ends) << '\n'
+		<< "Checksums: " << helpers::toPrettyDiskString(digests_ends - index_ends) << '\n'
+		<< "Total:     " << helpers::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 
 	// All done
 	return(true);
@@ -268,7 +268,7 @@ bool Importer::BuildBCF(void){
 bool Importer::parseBCFLine(bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
-		std::cerr << Helpers::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
 		return false;
 	}
 
@@ -284,19 +284,19 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 							 this->block.gt_support_data_container,
 							 this->permutator.manager->get()))
 	{
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 		return false;
 	}
 
 	if(!this->parseBCFBody(meta, entry)){
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
 		return false;
 	}
 
 	// Complex meta data
-	Core::MetaCold test;
+	core::MetaCold test;
 	if(!test.write(entry, this->block.meta_cold_container)){
-		std::cerr << Helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
+		std::cerr << helpers::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
 	}
 
@@ -339,21 +339,21 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	while(entry.nextInfo(val, info_length, info_value_type, internal_pos)){
 		// Hash INFO values
 		const U32 mapID = this->info_fields.setGet(val);
-		//std::cerr << Helpers::timestamp("DEBUG") << "Field: " << val << "->" << this->header_->mapTable[val] << "->" << this->header_->map[this->header_->mapTable[val]].ID << '\t' << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
+		//std::cerr << helpers::timestamp("DEBUG") << "Field: " << val << "->" << this->header_->mapTable[val] << "->" << this->header_->map[this->header_->mapTable[val]].ID << '\t' << mapID << '\t' << "length: " << info_length << '\t' <<internal_pos << "/" << (entry.body->l_shared + sizeof(U32)*2) << std::endl;
 
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
-			target_container.header_stride.controller.type = Core::YON_TYPE_32B;
+			target_container.header_stride.controller.type = core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(info_value_type == 0)      target_container.setType(Core::YON_TYPE_32B);
-			else if(info_value_type == 1) target_container.setType(Core::YON_TYPE_32B);
-			else if(info_value_type == 2) target_container.setType(Core::YON_TYPE_32B);
-			else if(info_value_type == 3) target_container.setType(Core::YON_TYPE_32B);
-			else if(info_value_type == 5) target_container.setType(Core::YON_TYPE_FLOAT);
-			else if(info_value_type == 7) target_container.setType(Core::YON_TYPE_CHAR);
+			if(info_value_type == 0)      target_container.setType(core::YON_TYPE_32B);
+			else if(info_value_type == 1) target_container.setType(core::YON_TYPE_32B);
+			else if(info_value_type == 2) target_container.setType(core::YON_TYPE_32B);
+			else if(info_value_type == 3) target_container.setType(core::YON_TYPE_32B);
+			else if(info_value_type == 5) target_container.setType(core::YON_TYPE_FLOAT);
+			else if(info_value_type == 7) target_container.setType(core::YON_TYPE_CHAR);
 			if(info_value_type != 5) target_container.header.controller.signedness = 1;
 		}
 
@@ -422,16 +422,16 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(info_length);
-			target_container.header_stride.controller.type = Core::YON_TYPE_32B;
+			target_container.header_stride.controller.type = core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(format_value_type == 0)      target_container.setType(Core::YON_TYPE_32B);
-			else if(format_value_type == 1) target_container.setType(Core::YON_TYPE_32B);
-			else if(format_value_type == 2) target_container.setType(Core::YON_TYPE_32B);
-			else if(format_value_type == 3) target_container.setType(Core::YON_TYPE_32B);
-			else if(format_value_type == 5) target_container.setType(Core::YON_TYPE_FLOAT);
-			else if(format_value_type == 7) target_container.setType(Core::YON_TYPE_CHAR);
+			if(format_value_type == 0)      target_container.setType(core::YON_TYPE_32B);
+			else if(format_value_type == 1) target_container.setType(core::YON_TYPE_32B);
+			else if(format_value_type == 2) target_container.setType(core::YON_TYPE_32B);
+			else if(format_value_type == 3) target_container.setType(core::YON_TYPE_32B);
+			else if(format_value_type == 5) target_container.setType(core::YON_TYPE_FLOAT);
+			else if(format_value_type == 7) target_container.setType(core::YON_TYPE_CHAR);
 			else {
 				std::cerr << "not possible" << std::endl;
 				exit(1);
@@ -471,7 +471,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Illegal: parsing error
 		else {
 			std::cerr << "impossible: " << (int)format_value_type << std::endl;
-			std::cerr << Helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
+			std::cerr << helpers::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_value_type << '\t' << internal_pos << '/' << entry.pointer << std::endl;
 
 			exit(1);
 		}

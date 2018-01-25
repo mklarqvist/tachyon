@@ -8,14 +8,14 @@
 #include "ContainerHeaderController.h"
 #include "ContainerHeader.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 
 // Stream container for importing
 class DataContainer{
 	typedef DataContainer self_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 	typedef ContainerHeader header_type;
 	typedef ContainerHeaderStride header_stride_type;
 

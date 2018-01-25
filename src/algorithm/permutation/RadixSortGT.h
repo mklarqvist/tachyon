@@ -8,8 +8,8 @@
 // if #common variants over some threshold then sort on those only
 // beause they will dominate the RLE cost
 
-namespace Tachyon {
-namespace Algorithm {
+namespace tachyon {
+namespace algorithm {
 
 /*
  * This class performs a radix sort on a
@@ -18,9 +18,9 @@ namespace Algorithm {
  */
 class RadixSortGT {
 	typedef RadixSortGT self_type;
-	typedef BCF::BCFReader bcf_reader_type;
-	typedef BCF::BCFEntry  bcf_entry_type;
-	typedef Core::PermutationManager manager_type;
+	typedef bcf::BCFReader bcf_reader_type;
+	typedef bcf::BCFEntry  bcf_entry_type;
+	typedef core::PermutationManager manager_type;
 
 public:
 	RadixSortGT();

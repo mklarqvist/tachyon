@@ -8,7 +8,7 @@
 #include "../support/helpers.h"
 #include "ImportWriter.h"
 
-namespace Tachyon {
+namespace tachyon {
 
 ImportWriter::ImportWriter()
 {}
@@ -18,16 +18,16 @@ ImportWriter::~ImportWriter(){}
 bool ImportWriter::Open(const std::string output){
 	this->filename = output;
 	this->CheckOutputNames(output);
-	this->stream.open(this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
+	this->stream.open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
 	if(!this->stream.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX << "!" << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
 
 	if(!SILENT){
-		std::cerr << Helpers::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + Constants::OUTPUT_SUFFIX << "..." << std::endl;
+		std::cerr << helpers::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "..." << std::endl;
 	}
 
 	return true;
@@ -35,14 +35,14 @@ bool ImportWriter::Open(const std::string output){
 
 bool ImportWriter::WriteHeader(void){
 	if(!this->stream.good()){
-		std::cerr << Helpers::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
 		return false;
 	}
 
-	this->stream.write(&Constants::FILE_HEADER[0], Constants::FILE_HEADER.size());
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MAJOR),  sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_MINOR),  sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_VERSION_RELEASE),sizeof(U16));
+	this->stream.write(&constants::FILE_HEADER[0], constants::FILE_HEADER.size());
+	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),  sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),  sizeof(U16));
+	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE),sizeof(U16));
 	return true;
 }
 
@@ -57,18 +57,18 @@ void ImportWriter::WriteFinal(const U64& data_ends){
 
 	// Write EOF
 	BYTE eof_data[32];
-	Helpers::HexToBytes(Constants::TACHYON_FILE_EOF, &eof_data[0]);
+	helpers::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
 	this->stream.write((char*)&eof_data[0], 32);
 	this->stream.flush();
 }
 
 void ImportWriter::CheckOutputNames(const std::string& input){
-	std::vector<std::string> paths = Helpers::filePathBaseExtension(input);
+	std::vector<std::string> paths = helpers::filePathBaseExtension(input);
 	this->basePath = paths[0];
 	if(this->basePath.size() > 0)
 		this->basePath += '/';
 
-	if(paths[3].size() == Constants::OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &Constants::OUTPUT_SUFFIX[0], Constants::OUTPUT_SUFFIX.size()) == 0)
+	if(paths[3].size() == constants::OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &constants::OUTPUT_SUFFIX[0], constants::OUTPUT_SUFFIX.size()) == 0)
 		this->baseName = paths[2];
 	else this->baseName = paths[1];
 }

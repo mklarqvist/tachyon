@@ -4,8 +4,8 @@
 #include "CompressionContainer.h"
 #include "../../containers/DataBlock.h"
 
-namespace Tachyon{
-namespace Compression{
+namespace tachyon{
+namespace compression{
 
 class CompressionManager{
 private:
@@ -13,8 +13,8 @@ private:
 	typedef UncompressedCodec no_codec_type;
 	typedef ZSTDCodec zstd_codec_type;
 
-	typedef Core::DataBlock block_type;
-	typedef Core::DataContainer container_type;
+	typedef core::DataBlock block_type;
+	typedef core::DataContainer container_type;
 
 public:
 	CompressionManager(){}
@@ -36,8 +36,8 @@ public:
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.encode(block.meta_format_map_ids);
 
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
-			if(block.info_containers[i].header.controller.type == Core::YON_TYPE_FLOAT ||
-			   block.info_containers[i].header.controller.type == Core::YON_TYPE_DOUBLE){
+			if(block.info_containers[i].header.controller.type == core::YON_TYPE_FLOAT ||
+			   block.info_containers[i].header.controller.type == core::YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 			}
@@ -46,8 +46,8 @@ public:
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
-			if(block.format_containers[i].header.controller.type == Core::YON_TYPE_FLOAT ||
-			   block.format_containers[i].header.controller.type == Core::YON_TYPE_DOUBLE){
+			if(block.format_containers[i].header.controller.type == core::YON_TYPE_FLOAT ||
+			   block.format_containers[i].header.controller.type == core::YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 			}
@@ -127,9 +127,9 @@ public:
 	}
 
 	bool decompress(container_type& container){
-		if(container.header.controller.encoder == Core::YON_ENCODE_ZSTD){
+		if(container.header.controller.encoder == core::YON_ENCODE_ZSTD){
 			if(!this->zstd_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
-		} else if(container.header.controller.encoder == Core::YON_ENCODE_NONE){
+		} else if(container.header.controller.encoder == core::YON_ENCODE_NONE){
 			if(!this->no_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
 		} else {
 			std::cerr << "ILLEGAL CODEC" << std::endl;
@@ -137,9 +137,9 @@ public:
 		}
 
 		if(container.header.controller.mixedStride){
-			if(container.header_stride.controller.encoder == Core::YON_ENCODE_ZSTD){
+			if(container.header_stride.controller.encoder == core::YON_ENCODE_ZSTD){
 				this->zstd_codec.decodeStrides(container);
-			} else if (container.header_stride.controller.encoder == Core::YON_ENCODE_NONE){
+			} else if (container.header_stride.controller.encoder == core::YON_ENCODE_NONE){
 				this->no_codec.decodeStrides(container);
 			}
 		}

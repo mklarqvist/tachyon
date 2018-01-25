@@ -1,7 +1,7 @@
 #include "MetaContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 MetaContainer::MetaContainer(const DataBlock& block) :
 	n_entries(block.meta_hot_container.buffer_data_uncompressed.size() / sizeof(hot_type)),

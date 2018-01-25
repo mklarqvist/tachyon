@@ -3,8 +3,8 @@
 
 #include "GTObject.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 #define DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) ((A & mask) << shift) | (B & mask)
 // Forward declare

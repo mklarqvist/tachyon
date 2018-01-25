@@ -5,8 +5,8 @@
 #include "GenotypeDataContainerInterface.h"
 #include "MetaContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 class GenotypeContainer{
 private:
@@ -20,7 +20,7 @@ private:
     typedef std::size_t                   size_type;
     typedef MetaContainer                 meta_container_type;
     typedef MetaEntry                     meta_type;
-    typedef IO::BasicBuffer               buffer_type;
+    typedef io::BasicBuffer               buffer_type;
     typedef GenotypeSum                   gt_summary_type;
 
     // Function pointers

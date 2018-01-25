@@ -1,8 +1,8 @@
 #ifndef ITERATORSTATUS_H_
 #define ITERATORSTATUS_H_
 
-namespace Tachyon{
-namespace Iterator{
+namespace tachyon{
+namespace iterator{
 
 enum TACHYON_ITERATOR_STATUS {
 	// All OK statuses are positive

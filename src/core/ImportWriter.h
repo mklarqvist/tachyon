@@ -7,7 +7,7 @@
 #include "../support/TypeDefinitions.h"
 #include "../index/SortedIndex.h"
 
-namespace Tachyon {
+namespace tachyon {
 
 inline bool bytePreprocessor(const U32* const data, const size_t& size, char* destination){
 	if(size == 0) return false;
@@ -51,7 +51,7 @@ inline bool bytePreprocessorRevert(const char* const data, const size_t& size, c
 
 class ImportWriter {
 private:
-	typedef Index::SortedIndex sorted_index_type;
+	typedef index::SortedIndex sorted_index_type;
 
 public:
 	ImportWriter();

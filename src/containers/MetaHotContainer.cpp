@@ -1,7 +1,7 @@
 #include "MetaHotContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 MetaHotContainer::MetaHotContainer() : n_entries(0), __entries(nullptr){}
 

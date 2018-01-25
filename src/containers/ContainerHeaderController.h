@@ -7,8 +7,8 @@
 #include <iostream>
 #include "../support/TypeDefinitions.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
 	                    YON_ENCRYPTION_AES_128,

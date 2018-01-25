@@ -1,7 +1,7 @@
 #include "MetaEntry.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 MetaEntry::MetaEntry() :
 	loaded_cold(false),

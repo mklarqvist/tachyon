@@ -8,16 +8,16 @@
 #include "HeaderSample.h"
 #include "../../../algorithm/OpenHashTable.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 class Header{
 private:
 	typedef Header                            self_type;
-	typedef Core::HeaderContig                contig_type;
-	typedef Core::HeaderMapEntry              map_entry_type;
-	typedef Core::HeaderSample                sample_type;
-	typedef Hash::HashTable<std::string, S32> hash_table_type;
+	typedef core::HeaderContig                contig_type;
+	typedef core::HeaderMapEntry              map_entry_type;
+	typedef core::HeaderSample                sample_type;
+	typedef hash::HashTable<std::string, S32> hash_table_type;
 
 public:
 	explicit Header(void) :
@@ -142,8 +142,8 @@ private:
 	}
 
 	friend std::ifstream& operator<<(std::ifstream& stream, self_type& entry){
-		entry.file_header_string.resize(Constants::FILE_HEADER.size());
-		stream.read(&entry.file_header_string[0], Constants::FILE_HEADER.size());
+		entry.file_header_string.resize(constants::FILE_HEADER.size());
+		stream.read(&entry.file_header_string[0], constants::FILE_HEADER.size());
 		stream.read(reinterpret_cast<char*>(&entry.version_major),sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.version_minor),sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.version_patch),sizeof(U16));

@@ -8,8 +8,8 @@
 #include "../core/ImporterStats.h"
 #include "DataContainer.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 /**
  * Primary Tachyon object: stores containers of data and
@@ -18,16 +18,16 @@ namespace Core{
  */
 class DataBlock{
 	typedef DataBlock self_type;
-	typedef Core::DataContainer container_type;
-	typedef Core::PermutationManager permutation_type;
-	typedef Index::BlockIndex index_entry_type;
-	typedef Core::HashContainer hash_container_type;
-	typedef Core::HashVectorContainer hash_vector_container_type;
-	typedef Index::BlockIndexOffsets offset_type;
-	typedef Index::BlockIndexOffsetsHeader offset_minimal_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef core::DataContainer container_type;
+	typedef core::PermutationManager permutation_type;
+	typedef index::BlockIndex index_entry_type;
+	typedef core::HashContainer hash_container_type;
+	typedef core::HashVectorContainer hash_vector_container_type;
+	typedef index::BlockIndexOffsets offset_type;
+	typedef index::BlockIndexOffsetsHeader offset_minimal_type;
+	typedef io::BasicBuffer buffer_type;
 	typedef BlockEntrySettings settings_type;
-	typedef Tachyon::Support::ImporterStats import_stats_type;
+	typedef support::ImporterStats import_stats_type;
 
 public:
 	DataBlock();
@@ -66,13 +66,13 @@ public:
 	 *
 	 * @param target
 	 */
-	inline void updateContainerSet(Index::BlockIndex::INDEX_BLOCK_TARGET target){
+	inline void updateContainerSet(index::BlockIndex::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
-		case(Index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		case(index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_INFO)   :
 			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
 			break;
-		case(Index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		case(index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
@@ -160,7 +160,7 @@ private:
 		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
 			stream << entry.format_containers[i];
 
-		stream.write(reinterpret_cast<const char*>(&Constants::TACHYON_BLOCK_EOF), sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
 		return(stream);
 	}
@@ -184,7 +184,7 @@ private:
 
 		U64 eof_marker;
 		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-		assert(eof_marker == Constants::TACHYON_BLOCK_EOF);
+		assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 
 		return(stream);
 	}

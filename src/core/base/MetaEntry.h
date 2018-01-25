@@ -7,8 +7,8 @@
 #include "MetaHot.h"
 #include "MetaCold.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 /**< Envelope record for meta hot-cold split
  * Is used primarily in the simple API. Has a
@@ -22,7 +22,7 @@ private:
 	typedef MetaCold cold_entry;
 	typedef DataContainer container_type;
 	typedef Header header_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 
 public:
 	MetaEntry();
@@ -53,7 +53,7 @@ public:
 
 	// Check if a field is set
 	const bool fieldSet(const std::string& field, const Header& header) const{
-		Core::HeaderMapEntry* entry = nullptr;
+		core::HeaderMapEntry* entry = nullptr;
 		if(header.getEntry("AC", entry)){
 			entry->IDX;
 		}

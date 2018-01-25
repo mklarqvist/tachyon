@@ -6,8 +6,8 @@
 #include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 
-namespace Tachyon {
-namespace IO{
+namespace tachyon {
+namespace io{
 
 struct BasicBuffer{
 	typedef BasicBuffer self_type;

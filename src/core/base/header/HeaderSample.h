@@ -1,8 +1,8 @@
 #ifndef CORE_BASE_HEADERSAMPLE_H_
 #define CORE_BASE_HEADERSAMPLE_H_
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 struct HeaderSample{
 private:

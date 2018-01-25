@@ -5,8 +5,8 @@
 #include "helpers.h"
 #include "MagicConstants.h"
 
-namespace Tachyon{
-namespace Helpers{
+namespace tachyon{
+namespace helpers{
 
 int isBigEndian(){
 	union {

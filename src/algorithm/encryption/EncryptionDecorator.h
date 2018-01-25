@@ -1,13 +1,13 @@
 #ifndef ALGORITHM_ENCRYPTION_ENCRYPTIONDECORATOR_H_
 #define ALGORITHM_ENCRYPTION_ENCRYPTIONDECORATOR_H_
 
-namespace Tachyon{
-namespace Encryption{
+namespace tachyon{
+namespace encryption{
 
 struct EncryptionDecorator{
 	typedef EncryptionDecorator self_type;
-	typedef Core::DataContainer stream_container;
-	typedef IO::BasicBuffer buffer_type;
+	typedef core::DataContainer stream_container;
+	typedef io::BasicBuffer buffer_type;
 
 	bool encrypt(stream_container& container);
 	bool decrypt(stream_container& container);

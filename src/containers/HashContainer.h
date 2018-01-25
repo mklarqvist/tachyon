@@ -3,12 +3,12 @@
 
 #include "../algorithm/OpenHashTable.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 class HashContainer{
 	typedef HashContainer self_type;
-	typedef Hash::HashTable<U32, U32> hash_table;
+	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32> id_vector;
 
 public:
@@ -66,7 +66,7 @@ private:
 
 class HashVectorContainer{
 	typedef HashVectorContainer self_type;
-	typedef Hash::HashTable<U64, U32> hash_table;
+	typedef hash::HashTable<U64, U32> hash_table;
 	typedef std::vector< std::vector<U32> > id_vector;
 
 public:

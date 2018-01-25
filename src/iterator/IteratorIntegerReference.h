@@ -3,13 +3,13 @@
 
 #include "../io/BasicBuffer.h"
 
-namespace Tachyon{
-namespace Iterator{
+namespace tachyon{
+namespace iterator{
 
 template <class return_primitive_type = U32>
 class IteratorIntegerReference{
     typedef IteratorIntegerReference self_type;
-    typedef IO::BasicBuffer          buffer_type;
+    typedef io::BasicBuffer          buffer_type;
     typedef return_primitive_type    T;
 
 public:
@@ -60,7 +60,7 @@ class IteratorIntegerReferenceImpl : public IteratorIntegerReference<return_prim
 private:
     typedef IteratorIntegerReferenceImpl self_type;
     typedef IteratorIntegerReference<return_primitive_type> parent_type;
-    typedef IO::BasicBuffer          buffer_type;
+    typedef io::BasicBuffer          buffer_type;
     typedef return_primitive_type    T;
 
 public:

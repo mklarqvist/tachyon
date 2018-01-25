@@ -3,8 +3,8 @@
 #include "../../support/MagicConstants.h" // for SILENT
 #include "TGZFControllerStream.h"
 
-namespace Tachyon{
-namespace IO{
+namespace tachyon{
+namespace io{
 
 TGZFControllerStream::TGZFControllerStream() : STATE(TGZF_STATE::TGZF_INIT), chunk_size(65536), total_out(0), bytes_read(0), BSIZE(0){}
 TGZFControllerStream::~TGZFControllerStream(){}
@@ -13,16 +13,16 @@ bool TGZFControllerStream::InflateOpen(std::ifstream& stream){
 	this->buffer.reset();
 	this->buffer.resize(this->chunk_size);
 	this->bytes_read = 0;
-	stream.read(&this->buffer.data[0], IO::Constants::TGZF_BLOCK_HEADER_LENGTH);
+	stream.read(&this->buffer.data[0], io::constants::TGZF_BLOCK_HEADER_LENGTH);
 	const header_type* h = reinterpret_cast<const header_type*>(&this->buffer.data[0]);
 
 	if(!h->Validate()){
-		std::cerr << Helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		exit(1);
 	}
 
-	this->BSIZE = h->BSIZE - Constants::TGZF_BLOCK_HEADER_LENGTH - Constants::TGZF_BLOCK_FOOTER_LENGTH; // data to read
+	this->BSIZE = h->BSIZE - constants::TGZF_BLOCK_HEADER_LENGTH - constants::TGZF_BLOCK_FOOTER_LENGTH; // data to read
 	this->total_out = 0;
 
 	this->d_stream = z_stream();
@@ -33,9 +33,9 @@ bool TGZFControllerStream::InflateOpen(std::ifstream& stream){
 	this->d_stream.next_in  = Z_NULL;
 	this->STATE = TGZF_STATE::TGZF_HEADER;
 
-	int ret = inflateInit2(&this->d_stream, Constants::GZIP_WINDOW_BITS);
+	int ret = inflateInit2(&this->d_stream, constants::GZIP_WINDOW_BITS);
 	if (ret != Z_OK){
-		std::cerr << Helpers::timestamp("ERROR","TGZF") << "Failed inflatinit" << std::endl;
+		std::cerr << helpers::timestamp("ERROR","TGZF") << "Failed inflatinit" << std::endl;
 		this->STATE = TGZF_STATE::TGZF_ERROR;
 		return ret;
 	}
@@ -89,7 +89,7 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 		this->d_stream.next_in  = (Bytef*)&this->buffer.data[0];
 
 		if(total == 0){
-			std::cerr << Helpers::timestamp("WARNING","TGZF") << "Nothing read!" << std::endl;
+			std::cerr << helpers::timestamp("WARNING","TGZF") << "Nothing read!" << std::endl;
 			return false;
 		}
 		this->buffer.pointer = total;
@@ -104,7 +104,7 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 	assert(status != Z_STREAM_ERROR);
 
 	if(status != Z_OK && status != Z_STREAM_END){
-		std::cerr << Helpers::timestamp("ERROR","TGZF") << "inflate failed: " << (int)status << std::endl;
+		std::cerr << helpers::timestamp("ERROR","TGZF") << "inflate failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -120,13 +120,13 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 	status = inflateEnd(&this->d_stream);
 	if(status != Z_OK){
 		inflateEnd(&this->d_stream);
-		std::cerr << Helpers::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
+		std::cerr << helpers::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
 	if(this->d_stream.total_out == 0){
 		if(!SILENT)
-			std::cerr << Helpers::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
+			std::cerr << helpers::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
 	}
 
 	this->STATE = TGZF_STATE::TGZF_END;

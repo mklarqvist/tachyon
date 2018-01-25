@@ -11,8 +11,8 @@
 #include "BlockIndexBitvector.h"
 #include "../containers/HashContainer.h"
 
-namespace Tachyon{
-namespace Index{
+namespace tachyon{
+namespace index{
 
 #define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 2*sizeof(U32)*9 + 6*sizeof(U16)
 
@@ -220,11 +220,11 @@ private:
 	typedef BlockIndexBase            base_type;
 	typedef BlockIndexController      controller_type;
 	typedef BlockIndexBitvector       bit_vector;
-	typedef Hash::HashTable<U32, U32> hash_table;
+	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
-	typedef Core::HashContainer       hash_container_type;
-	typedef Core::HashVectorContainer hash_vector_container_type;
+	typedef core::HashContainer       hash_container_type;
+	typedef core::HashVectorContainer hash_vector_container_type;
 	typedef BlockIndexOffsets         offset_type;
 	typedef BlockIndexOffsetsHeader   offset_minimal_type;
 

@@ -1,7 +1,7 @@
 #include "MetaHot.h"
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 // ctor
 MetaHot::MetaHot() :
@@ -48,12 +48,12 @@ MetaHotRefAlt::~MetaHotRefAlt(){}
 
 bool MetaHotRefAlt::setRef(const char& c){
 	switch(c){
-	case 'A': this->ref = Tachyon::Constants::REF_ALT_A; break;
-	case 'T': this->ref = Tachyon::Constants::REF_ALT_T; break;
-	case 'G': this->ref = Tachyon::Constants::REF_ALT_G; break;
-	case 'C': this->ref = Tachyon::Constants::REF_ALT_C; break;
+	case 'A': this->ref = constants::REF_ALT_A; break;
+	case 'T': this->ref = constants::REF_ALT_T; break;
+	case 'G': this->ref = constants::REF_ALT_G; break;
+	case 'C': this->ref = constants::REF_ALT_C; break;
 	default:
-		std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
 		return false;
 	}
 	return true;
@@ -61,13 +61,13 @@ bool MetaHotRefAlt::setRef(const char& c){
 
 bool MetaHotRefAlt::setAlt(const char& c){
 	switch(c){
-	case 'A': this->alt = Tachyon::Constants::REF_ALT_A; break;
-	case 'T': this->alt = Tachyon::Constants::REF_ALT_T; break;
-	case 'G': this->alt = Tachyon::Constants::REF_ALT_G; break;
-	case 'C': this->alt = Tachyon::Constants::REF_ALT_C; break;
-	case 'N': this->alt = Tachyon::Constants::REF_ALT_N; break;
+	case 'A': this->alt = constants::REF_ALT_A; break;
+	case 'T': this->alt = constants::REF_ALT_T; break;
+	case 'G': this->alt = constants::REF_ALT_G; break;
+	case 'C': this->alt = constants::REF_ALT_C; break;
+	case 'N': this->alt = constants::REF_ALT_N; break;
 	default:
-		std::cerr << Helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
+		std::cerr << helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
 		return false;
 	}
 	return true;

@@ -9,15 +9,15 @@
 #include "../BasicBuffer.h"
 #include "GZFHeader.h"
 
-namespace Tachyon{
-namespace IO{
+namespace tachyon{
+namespace io{
 
 class TGZFController{
 private:
 	typedef TGZFController self_type;
 
 protected:
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 	typedef TGZFHeader header_type;
 
 public:

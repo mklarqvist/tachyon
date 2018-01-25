@@ -3,8 +3,8 @@
 
 #include <chrono>
 
-namespace Tachyon{
-namespace Algorithm{
+namespace tachyon{
+namespace algorithm{
 
 class Timer {
 public:

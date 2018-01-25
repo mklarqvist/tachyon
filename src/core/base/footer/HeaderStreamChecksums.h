@@ -1,8 +1,8 @@
 #ifndef CORE_BASE_FOOTER_FOOTERSTREAMCHECKSUMS_H_
 #define CORE_BASE_FOOTER_FOOTERSTREAMCHECKSUMS_H_
 
-namespace Tachyon{
-namespace Core{
+namespace tachyon{
+namespace core{
 
 struct FooterStreamChecksums{
 private:

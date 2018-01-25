@@ -4,8 +4,8 @@
 #include "../vcf/VCFHeader.h"
 #include "../../third_party/xxhash/xxhash.h"
 
-namespace Tachyon {
-namespace BCF {
+namespace tachyon {
+namespace bcf {
 
 #define BCF_ENTRY_BASE_ALLOCATION 262144
 // Enforce assertions of correctness
@@ -62,7 +62,7 @@ struct BCFTypeString{
 
 struct BCFEntry{
 	typedef BCFEntry self_type;
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 	typedef BCFEntryBody body_type;
 	typedef BCFTypeString string_type;
 	typedef BCFAtomicBase base_type;

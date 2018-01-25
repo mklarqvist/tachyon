@@ -9,12 +9,12 @@
 #include <zstd.h>
 
 // Declare extern
-std::string Tachyon::Constants::LITERAL_COMMAND_LINE;
-std::string Tachyon::Constants::INTERPRETED_COMMAND;
+std::string tachyon::constants::LITERAL_COMMAND_LINE;
+std::string tachyon::constants::INTERPRETED_COMMAND;
 
 void programMessage(const bool separator = true){
-	std::cerr << "Program: " << Tachyon::Constants::PROGRAM_NAME << " " << VERSION << std::endl;
-	std::cerr << "Libraries: " << Tachyon::Constants::PROGRAM_NAME << '-' << Tachyon::Constants::TACHYON_LIB_VERSION << "; "
+	std::cerr << "Program: " << tachyon::constants::PROGRAM_NAME << " " << VERSION << std::endl;
+	std::cerr << "Libraries: " << tachyon::constants::PROGRAM_NAME << '-' << tachyon::constants::TACHYON_LIB_VERSION << "; "
               << SSLeay_version(SSLEAY_VERSION) << "; "
               << "ZSTD-" << ZSTD_versionString() << std::endl;
 	std::cerr << "Contact: Marcus D. R. Klarqvist <mk819@cam.ac.uk>" << std::endl;
@@ -24,7 +24,7 @@ void programMessage(const bool separator = true){
 }
 
 void programHelp(void){
-	std::cerr << "Usage: " << Tachyon::Constants::PROGRAM_NAME << " [--version] [--help] <commands> <argument>" << std::endl;
+	std::cerr << "Usage: " << tachyon::constants::PROGRAM_NAME << " [--version] [--help] <commands> <argument>" << std::endl;
 	std::cerr << "Commands: import, view" << std::endl;
 }
 

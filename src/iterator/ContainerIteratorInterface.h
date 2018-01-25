@@ -3,8 +3,8 @@
 
 #include <cassert>
 
-namespace Tachyon{
-namespace Iterator{
+namespace tachyon{
+namespace iterator{
 
 #define BCF_BYTE_MISSING  0x80
 #define BCF_BYTE_EOV      0x81
@@ -36,7 +36,7 @@ namespace Iterator{
  */
 class ContainerIteratorDataInterface{
 protected:
-	typedef IO::BasicBuffer buffer_type;
+	typedef io::BasicBuffer buffer_type;
 
 private:
 	typedef ContainerIteratorDataInterface self_type;
@@ -53,7 +53,7 @@ public:
 		__missing_value(BCF_BYTE_MISSING),
 		__end_of_vector_value(BCF_BYTE_EOV),
 		__source_sign(0),
-		__source_type(Core::TACHYON_CORE_TYPE(0)),
+		__source_type(core::TACHYON_CORE_TYPE(0)),
 		toStringFunction(nullptr),
 		toStringBufferFunction(nullptr),
 		buffer(buffer)
@@ -106,15 +106,15 @@ public:
 	 * @param signedness
 	 */
 	void setType(const U16& type, const BYTE signedness){
-		if(type == Core::YON_TYPE_BOOLEAN){
+		if(type == core::YON_TYPE_BOOLEAN){
 			this->type_size = 0;
-		} else if(type == Core::YON_TYPE_CHAR){
+		} else if(type == core::YON_TYPE_CHAR){
 			this->type_size              = sizeof(char);
 			this->__missing_value        = BCF_BYTE_MISSING;
 			this->__end_of_vector_value  = BCF_BYTE_EOV;
 			this->toStringFunction       = &self_type::__toStringNoSeparator<char>;
 			this->toStringBufferFunction = &self_type::__toStringNoSeparator<char>;
-		} else if(type == Core::YON_TYPE_8B){
+		} else if(type == core::YON_TYPE_8B){
 			this->type_size              = sizeof(BYTE);
 			this->__missing_value        = BCF_BYTE_MISSING;
 			this->__end_of_vector_value  = BCF_BYTE_EOV;
@@ -126,7 +126,7 @@ public:
 				this->toStringFunction       = &self_type::__toStringUnsignedSmall<BYTE>;
 				this->toStringBufferFunction = &self_type::__toStringUnsignedSmall<BYTE>;
 			}
-		} else if(type == Core::YON_TYPE_16B){
+		} else if(type == core::YON_TYPE_16B){
 			this->type_size = sizeof(U16);
 			this->__missing_value       = BCF_SHORT_MISSING;
 			this->__end_of_vector_value = BCF_SHORT_EOV;
@@ -138,7 +138,7 @@ public:
 				this->toStringFunction       = &self_type::__toStringUnsigned<U16>;
 				this->toStringBufferFunction = &self_type::__toStringUnsigned<U16>;
 			}
-		} else if(type == Core::YON_TYPE_32B){
+		} else if(type == core::YON_TYPE_32B){
 			this->type_size = sizeof(U32);
 			this->__missing_value = BCF_INT_MISSING;
 			this->__end_of_vector_value = BCF_INT_EOV;
@@ -150,37 +150,37 @@ public:
 				this->toStringFunction       = &self_type::__toStringUnsigned<U32>;
 				this->toStringBufferFunction = &self_type::__toStringUnsigned<U32>;
 			}
-		} else if(type == Core::YON_TYPE_FLOAT){
+		} else if(type == core::YON_TYPE_FLOAT){
 			this->type_size = sizeof(float);
 			this->__missing_value        = 0;
 			this->__end_of_vector_value  = 0;
 			this->toStringFunction       = &self_type::__toStringFloat<float>;
 			this->toStringBufferFunction = &self_type::__toStringFloat<float>;
-		} else if(type == Core::YON_TYPE_DOUBLE){
+		} else if(type == core::YON_TYPE_DOUBLE){
 			this->type_size = sizeof(double);
 			this->__missing_value        = 0;
 			this->__end_of_vector_value  = 0;
 			this->toStringFunction       = &self_type::__toStringFloat<double>;
 			this->toStringBufferFunction = &self_type::__toStringFloat<double>;
-		} else if(type == Core::YON_TYPE_64B){
+		} else if(type == core::YON_TYPE_64B){
 			this->type_size = sizeof(U64);
 			this->__missing_value        = 0;
 			this->__end_of_vector_value  = 0;
 			this->toStringFunction       = &self_type::__toStringUnsigned<U64>;
 			this->toStringBufferFunction = &self_type::__toStringUnsigned<U64>;
 		} else {
-				std::cerr << Helpers::timestamp("ERROR") << std::endl;
+				std::cerr << helpers::timestamp("ERROR") << std::endl;
 				exit(1);
 		}
 
-		if(type == Core::YON_TYPE_BOOLEAN){
+		if(type == core::YON_TYPE_BOOLEAN){
 			this->n_entries = 0;
 		} else {
 			this->n_entries = buffer.pointer / this->type_size;
 			assert(buffer.pointer % this->type_size == 0);
 		}
 
-		this->__source_type = Core::TACHYON_CORE_TYPE(type);
+		this->__source_type = core::TACHYON_CORE_TYPE(type);
 		this->__source_sign = signedness;
 	}
 
@@ -490,7 +490,7 @@ private:
 	U32 __missing_value;
 	U32 __end_of_vector_value;
 	BYTE __source_sign;
-	Core::TACHYON_CORE_TYPE __source_type;
+	core::TACHYON_CORE_TYPE __source_type;
 	toStringFunctionDefinition toStringFunction;
 	toStringBufferFunctionDefinition toStringBufferFunction;
 
