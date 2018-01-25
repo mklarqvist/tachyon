@@ -410,6 +410,21 @@ public:
 	U64 iterateGT(std::ostream& stream = std::cout){
 		algorithm::Timer timer;
 		timer.Start();
+
+		core::HeaderMapEntry* entry = nullptr;
+		if(this->header.getEntry("GP", entry)){
+			std::cerr << "GP@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
+			U32 target = 0;
+			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+				std::cerr << i << '/' << this->block.index_entry.n_format_streams << '\t' << this->block.index_entry.format_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.format_offsets[i].key].ID << std::endl;
+				if(this->block.index_entry.format_offsets[i].key == entry->IDX){
+					target = i;
+					break;
+				}
+			}
+			std::cerr << "target stream is: " << target << std::endl;
+			core::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
+		}
 		/*
 		iterator::GenotypeIterator it_gt(this->block);
 

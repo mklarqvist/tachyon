@@ -8,21 +8,22 @@ RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include src/third_party/zlib/subdir.mk
--include src/third_party/xxhash/subdir.mk
--include src/support/subdir.mk
--include src/iterator/subdir.mk
--include src/io/vcf/subdir.mk
--include src/io/compression/subdir.mk
--include src/io/bcf/subdir.mk
--include src/io/subdir.mk
--include src/index/subdir.mk
--include src/core/base/subdir.mk
--include src/core/subdir.mk
--include src/containers/subdir.mk
--include src/algorithm/permutation/subdir.mk
--include src/algorithm/compression/subdir.mk
--include src/subdir.mk
+-include tachyon/third_party/zlib/subdir.mk
+-include tachyon/third_party/xxhash/subdir.mk
+-include tachyon/support/subdir.mk
+-include tachyon/iterator/subdir.mk
+-include tachyon/io/vcf/subdir.mk
+-include tachyon/io/compression/subdir.mk
+-include tachyon/io/bcf/subdir.mk
+-include tachyon/io/subdir.mk
+-include tachyon/index/subdir.mk
+-include tachyon/core/base/header/subdir.mk
+-include tachyon/core/base/subdir.mk
+-include tachyon/core/subdir.mk
+-include tachyon/containers/subdir.mk
+-include tachyon/algorithm/permutation/subdir.mk
+-include tachyon/algorithm/compression/subdir.mk
+-include tachyon/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -58,7 +59,7 @@ all: tachyon
 tachyon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/usr/local/Cellar/openssl/1.0.2n/lib -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
@@ -72,7 +73,6 @@ post-build:
 	-mkdir -p ../bin; mv tachyon ../bin/;
 	-@echo ' '
 
-.PHONY: all clean dependents
-.SECONDARY: post-build
+.PHONY: all clean dependents post-build
 
 -include ../makefile.targets

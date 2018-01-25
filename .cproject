@@ -36,6 +36,7 @@
 								<option id="gnu.cpp.compiler.option.optimization.flags.590057917" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" useByScannerDiscovery="false" value="-msse4.2" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.1889738111" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0  -DVERSION=\&quot;$(GIT_VERSION)\&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1261490090" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/local/Cellar/openssl/1.0.2n/include/"/>
 									<listOptionValue builtIn="false" value="/usr/include/openssl/"/>
 									<listOptionValue builtIn="false" value="/usr/local/include/"/>
 								</option>

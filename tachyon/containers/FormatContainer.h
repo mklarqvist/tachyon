@@ -106,6 +106,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
+			std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << std::endl;
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, (this->*func)(container.buffer_strides_uncompressed, i) );
 			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive) * n_samples;
 		}
@@ -129,6 +130,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
+			std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << std::endl;
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 			current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 		}

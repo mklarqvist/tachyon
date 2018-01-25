@@ -23,19 +23,20 @@ CPP_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-src/algorithm/compression \
-src/algorithm/permutation \
-src/containers \
-src/core \
-src/core/base \
-src/index \
-src/io \
-src/io/bcf \
-src/io/compression \
-src/io/vcf \
-src/iterator \
-src \
-src/support \
-src/third_party/xxhash \
-src/third_party/zlib \
+tachyon/algorithm/compression \
+tachyon/algorithm/permutation \
+tachyon/containers \
+tachyon/core \
+tachyon/core/base \
+tachyon/core/base/header \
+tachyon/index \
+tachyon/io \
+tachyon/io/bcf \
+tachyon/io/compression \
+tachyon/io/vcf \
+tachyon/iterator \
+tachyon \
+tachyon/support \
+tachyon/third_party/xxhash \
+tachyon/third_party/zlib \
 
