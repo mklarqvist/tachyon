@@ -27,6 +27,10 @@ private:
     pointer   __containers;
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class T>
 PrimitiveGroupContainer<T>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :
 	__n_objects(n_objects),

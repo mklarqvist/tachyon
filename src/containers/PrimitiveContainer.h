@@ -94,6 +94,9 @@ private:
 };
 
 
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries) :
 	n_entries(n_entries),

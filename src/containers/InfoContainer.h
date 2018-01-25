@@ -201,6 +201,10 @@ InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
 	}
 }
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class return_type>
 InfoContainer<return_type>::~InfoContainer(){
 	for(std::size_t i = 0; i < this->n_entries; ++i)

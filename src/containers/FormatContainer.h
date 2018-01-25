@@ -88,6 +88,12 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
 
 private:
+    /**<
+     *
+     * @param container  Data container
+     * @param n_samples  Number of samples
+     * @param func       Function pointer to element accessor of stride data
+     */
     template <class actual_primitive>
     void __setup(const data_container_type& container, const U64& n_samples, getStrideFunction func){
 		if(container.buffer_strides_uncompressed.size() == 0)
@@ -106,6 +112,12 @@ private:
 		assert(current_offset == container.buffer_data_uncompressed.size());
 	}
 
+    /**<
+     *
+     * @param container   Data container
+     * @param n_samples   Number of samples
+     * @param stride_size Fixed stride size
+     */
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size){
 		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
@@ -132,6 +144,10 @@ private:
     size_t  n_entries;
     pointer __containers;
 };
+
+
+// IMPLEMENTATION -------------------------------------------------------------
+
 
 template <class return_type>
 FormatContainer<return_type>::FormatContainer(const data_container_type& container, const U64 n_samples) :

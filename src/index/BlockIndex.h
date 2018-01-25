@@ -9,7 +9,7 @@
 #include "../containers/ContainerHeader.h"
 #include "BlockIndexOffsets.h"
 #include "BlockIndexBitvector.h"
-#include "../core/HashContainer.h"
+#include "../containers/HashContainer.h"
 
 namespace Tachyon{
 namespace Index{
@@ -64,9 +64,9 @@ public:
  * 4) Controller flags
  */
 struct BlockIndexBase{
-	typedef BlockIndexBase self_type;
-	typedef BlockIndexController controller_type;
-	typedef BlockIndexOffsets offset_type;
+	typedef BlockIndexBase          self_type;
+	typedef BlockIndexController    controller_type;
+	typedef BlockIndexOffsets       offset_type;
 	typedef BlockIndexOffsetsHeader offset_minimal_type;
 
 public:
@@ -216,17 +216,17 @@ public:
 
 struct BlockIndex : public BlockIndexBase{
 private:
-	typedef BlockIndex self_type;
-	typedef BlockIndexBase base_type;
-	typedef BlockIndexController controller_type;
-	typedef BlockIndexBitvector bit_vector;
+	typedef BlockIndex                self_type;
+	typedef BlockIndexBase            base_type;
+	typedef BlockIndexController      controller_type;
+	typedef BlockIndexBitvector       bit_vector;
 	typedef Hash::HashTable<U32, U32> hash_table;
-	typedef std::vector<U32> id_vector;
-	typedef std::vector< id_vector > pattern_vector;
-	typedef Core::Support::HashContainer hash_container_type;
-	typedef Core::Support::HashVectorContainer hash_vector_container_type;
-	typedef BlockIndexOffsets offset_type;
-	typedef BlockIndexOffsetsHeader offset_minimal_type;
+	typedef std::vector<U32>          id_vector;
+	typedef std::vector< id_vector >  pattern_vector;
+	typedef Core::HashContainer       hash_container_type;
+	typedef Core::HashVectorContainer hash_vector_container_type;
+	typedef BlockIndexOffsets         offset_type;
+	typedef BlockIndexOffsetsHeader   offset_minimal_type;
 
 public:
 	// Internal use only

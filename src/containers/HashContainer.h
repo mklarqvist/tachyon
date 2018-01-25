@@ -5,7 +5,6 @@
 
 namespace Tachyon{
 namespace Core{
-namespace Support{
 
 class HashContainer{
 	typedef HashContainer self_type;
@@ -123,7 +122,6 @@ private:
 	hash_table htable;
 };
 
-}
 }
 }
 
