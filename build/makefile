@@ -53,24 +53,24 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: tachyon
+all: tachyon2
 
 # Tool invocations
-tachyon: $(OBJS) $(USER_OBJS)
+tachyon2: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -L/usr/local/Cellar/openssl/1.0.2n/lib -pthread -o "tachyon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/usr/local/Cellar/openssl/1.0.2n/lib -pthread -o "tachyon2" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) tachyon
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) tachyon2
 	-@echo ' '
 
 post-build:
-	-mkdir -p ../bin; mv tachyon ../bin/;
+	-mkdir -p ../bin; mv tachyon2 ../bin/tachyon;
 	-@echo ' '
 
 .PHONY: all clean dependents post-build
