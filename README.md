@@ -4,6 +4,7 @@
 
 # Tachyon
 ![screenshot](yon_logo.png)
+
 Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. 
 We describe algorithms to directly query, manipulate, and explore this jointly compressed genotypic representation in-place.
 
