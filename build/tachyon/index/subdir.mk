@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../tachyon/index/BlockIndexEntry.cpp 
+../tachyon/index/datablock_header_entry.cpp 
 
 OBJS += \
-./tachyon/index/BlockIndexEntry.o 
+./tachyon/index/datablock_header_entry.o 
 
 CPP_DEPS += \
-./tachyon/index/BlockIndexEntry.d 
+./tachyon/index/datablock_header_entry.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

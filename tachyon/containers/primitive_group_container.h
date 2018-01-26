@@ -1,5 +1,7 @@
-#ifndef CONTAINERS_PRIMITIVEGROUPCONTAINER_H_
-#define CONTAINERS_PRIMITIVEGROUPCONTAINER_H_
+#ifndef CONTAINERS_PRIMITIVE_GROUP_CONTAINER_H_
+#define CONTAINERS_PRIMITIVE_GROUP_CONTAINER_H_
+
+#include "primitive_container.h"
 
 namespace tachyon{
 namespace core{
@@ -114,4 +116,4 @@ PrimitiveGroupContainer<T>::~PrimitiveGroupContainer(){
 
 
 
-#endif /* CONTAINERS_PRIMITIVEGROUPCONTAINER_H_ */
+#endif /* CONTAINERS_PRIMITIVE_GROUP_CONTAINER_H_ */

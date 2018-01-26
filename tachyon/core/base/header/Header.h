@@ -8,6 +8,8 @@
 #include "HeaderSample.h"
 #include "../../../algorithm/OpenHashTable.h"
 
+#include <unordered_map>
+
 namespace tachyon{
 namespace core{
 

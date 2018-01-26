@@ -1,9 +1,9 @@
-#ifndef CONTAINERS_GENOTYPECONTAINER_H_
-#define CONTAINERS_GENOTYPECONTAINER_H_
+#ifndef CONTAINERS_GENOTYPE_CONTAINER_H_
+#define CONTAINERS_GENOTYPE_CONTAINER_H_
 
-#include "DataBlock.h"
-#include "GenotypeDataContainerInterface.h"
-#include "MetaContainer.h"
+#include "datablock.h"
+#include "genotype_data_container_interface.h"
+#include "meta_container.h"
 
 namespace tachyon{
 namespace core{
@@ -240,4 +240,4 @@ private:
 
 
 
-#endif /* CONTAINERS_GENOTYPECONTAINER_H_ */
+#endif /* CONTAINERS_GENOTYPE_CONTAINER_H_ */

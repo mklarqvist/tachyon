@@ -1,29 +1,28 @@
-#ifndef CONTAINERS_METACONTAINER_H_
-#define CONTAINERS_METACONTAINER_H_
+#ifndef CONTAINERS_META_COLD_CONTAINER_H_
+#define CONTAINERS_META_COLD_CONTAINER_H_
 
-#include "../core/base/MetaEntry.h"
-#include "DataBlock.h"
+#include "../core/base/MetaCold.h"
+#include "datablock.h"
 
 namespace tachyon{
 namespace core{
 
-class MetaContainer {
+class MetaColdContainer{
 private:
-	typedef MetaContainer     self_type;
     typedef std::size_t       size_type;
-    typedef MetaEntry         value_type;
+    typedef MetaCold          value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;
-    typedef MetaHot           hot_type;
-    typedef MetaCold          cold_type;
 
 public:
-	MetaContainer(const DataBlock& block);
-	~MetaContainer(void);
+    MetaColdContainer();
+    MetaColdContainer(const DataBlock& block);
+    MetaColdContainer(const DataContainer& container);
+    ~MetaColdContainer(void);
 
-	class iterator{
+    class iterator{
 	private:
 		typedef iterator self_type;
 		typedef std::forward_iterator_tag iterator_category;
@@ -82,7 +81,7 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
 
 private:
-    void __ctor_setup(const DataBlock& block);
+    void __ctor_setup(const DataContainer& container);
 
 private:
     size_t  n_entries;
@@ -92,4 +91,4 @@ private:
 }
 }
 
-#endif /* CONTAINERS_METACONTAINER_H_ */
+#endif /* CONTAINERS_META_COLD_CONTAINER_H_ */

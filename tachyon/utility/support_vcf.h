@@ -5,17 +5,17 @@
 #include <iostream>
 #include <cmath>
 #include "../support/TypeDefinitions.h"
-#include "../containers/PrimitiveContainer.h"
+#include "../containers/primitive_container.h"
 
 namespace tachyon{
 namespace util{
 
-#define YON_ARRAY_BYTE_MISSING  0x80
-#define YON_ARRAY_BYTE_EOV      0x81
-#define YON_ARRAY_SHORT_MISSING 0x8000
-#define YON_ARRAY_SHORT_EOV     0x8001
-#define YON_ARRAY_INT_MISSING   0x80000000
-#define YON_ARRAY_INT_EOV       0x80000001
+#define YON_BYTE_MISSING        0x80
+#define YON_BYTE_EOV            0x81
+#define YON_SHORT_MISSING       0x8000
+#define YON_SHORT_EOV           0x8001
+#define YON_INT_MISSING         0x80000000
+#define YON_INT_EOV             0x80000001
 #define YON_FLOAT_NAN           0x7FC00000
 #define YON_FLOAT_MISSING       0x7F800001
 #define YON_FLOAT_EOV           0x7F800002

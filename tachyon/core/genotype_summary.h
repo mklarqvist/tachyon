@@ -1,7 +1,7 @@
 #ifndef ENCODERGENOTYPESRLEHELPER_H_
 #define ENCODERGENOTYPESRLEHELPER_H_
 
-#include "GTObject.h"
+#include "genotype_object.h"
 
 namespace tachyon{
 namespace core{

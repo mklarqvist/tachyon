@@ -5,10 +5,10 @@
 #include <bitset>
 #include <cassert>
 
-#include "../../containers/DataContainer.h"
+#include "../../containers/datacontainer.h"
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/base/MetaHot.h"
-#include "../../core/GenotypesSummary.h"
+#include "../../core/genotype_summary.h"
 
 namespace tachyon{
 namespace encoding{

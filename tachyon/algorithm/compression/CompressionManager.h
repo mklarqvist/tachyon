@@ -1,8 +1,8 @@
 #ifndef ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
 #define ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
 
+#include "../../containers/datablock.h"
 #include "CompressionContainer.h"
-#include "../../containers/DataBlock.h"
 
 namespace tachyon{
 namespace compression{

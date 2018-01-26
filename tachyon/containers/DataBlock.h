@@ -2,11 +2,11 @@
 #define CORE_BLOCKENTRY_H_
 
 #include "../algorithm/permutation/PermutationManager.h"
-#include "../index/BlockIndex.h"
 #include "../io/vcf/VCFHeader.h"
-#include "BlockEntrySettings.h"
 #include "../core/ImporterStats.h"
-#include "DataContainer.h"
+#include "../index/datablock_header.h"
+#include "datablock_settings.h"
+#include "datacontainer.h"
 
 namespace tachyon{
 namespace core{
@@ -20,13 +20,13 @@ class DataBlock{
 	typedef DataBlock self_type;
 	typedef core::DataContainer container_type;
 	typedef core::PermutationManager permutation_type;
-	typedef index::BlockIndex index_entry_type;
+	typedef index::DataBlockHeader index_entry_type;
 	typedef core::HashContainer hash_container_type;
 	typedef core::HashVectorContainer hash_vector_container_type;
-	typedef index::BlockIndexOffsets offset_type;
-	typedef index::BlockIndexOffsetsHeader offset_minimal_type;
+	typedef index::DataBlockOffsets offset_type;
+	typedef index::DataBlockOffsetsHeader offset_minimal_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef BlockEntrySettings settings_type;
+	typedef DataBlockSettings settings_type;
 	typedef support::ImporterStats import_stats_type;
 
 public:
@@ -66,13 +66,13 @@ public:
 	 *
 	 * @param target
 	 */
-	inline void updateContainerSet(index::BlockIndex::INDEX_BLOCK_TARGET target){
+	inline void updateContainerSet(index::DataBlockHeader::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
-		case(index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		case(index::DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_INFO)   :
 			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
 			break;
-		case(index::BlockIndex::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		case(index::DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);

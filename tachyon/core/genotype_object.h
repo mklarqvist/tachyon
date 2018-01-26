@@ -1,5 +1,5 @@
-#ifndef CORE_GTOBJECT_H_
-#define CORE_GTOBJECT_H_
+#ifndef CORE_GENOTYPE_OBJECT_H_
+#define CORE_GENOTYPE_OBJECT_H_
 
 #include "base/MetaEntry.h"
 

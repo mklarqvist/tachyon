@@ -7,12 +7,12 @@ namespace index{
 // Size of entries in these records are
 // inferred from the number of INFO/FORMAT/FILTER
 // entries in all the records in a block
-struct BlockIndexBitvector{
-	typedef BlockIndexBitvector self_type;
+struct DataBlockBitvector{
+	typedef DataBlockBitvector self_type;
 
 public:
-	BlockIndexBitvector() : n_keys(0), keys(nullptr), bit_bytes(nullptr){}
-	~BlockIndexBitvector(){
+	DataBlockBitvector() : n_keys(0), keys(nullptr), bit_bytes(nullptr){}
+	~DataBlockBitvector(){
 		delete [] this->keys;
 		delete [] this->bit_bytes;
 	}

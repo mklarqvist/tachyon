@@ -5,30 +5,28 @@
 
 #include "zstd.h"
 #include "zstd_errors.h"
-#include "../containers/DataBlock.h"
+#include "../containers/datablock.h"
 #include "../algorithm/compression/CompressionManager.h"
 #include "base/header/Header.h"
 #include "../index/SortedIndex.h"
 
 #include "../algorithm/Timer.h"
+#include "../containers/abstract_integer_container.h"
+#include "../containers/format_container.h"
+#include "../containers/genotype_container.h"
+#include "../containers/info_container.h"
+#include "../containers/meta_cold_container.h"
+#include "../containers/meta_hot_container.h"
 
 #include "../iterator/IteratorIntegerReference.h"
 
-#include "../containers/MetaHotContainer.h"
-#include "../containers/MetaColdContainer.h"
-#include "../containers/MetaContainer.h"
-#include "../containers/AbstractIntegerContainer.h"
-#include "../core/GTObject.h"
-#include "../containers/GenotypeContainer.h"
-#include "../containers/InfoContainer.h"
-#include "../iterator/DataContainerIterator.h"
+#include "../containers/meta_container.h"
+#include "../core/genotype_object.h"
 
 #include "../math/fisher.h"
 #include "../math/SquareMatrix.h"
 
-#include "../containers/PrimitiveGroupContainer.h"
-#include "../containers/FormatContainer.h"
-
+#include "../containers/primitive_group_container.h"
 #include "../utility/support_vcf.h"
 
 namespace tachyon{
@@ -39,7 +37,7 @@ class TachyonReader{
 	typedef io::BasicBuffer buffer_type;
 	typedef core::Header header_type;
 	typedef compression::CompressionManager codec_manager_type;
-	typedef core::BlockEntrySettings settings_type;
+	typedef core::DataBlockSettings settings_type;
 	typedef index::SortedIndex index_type;
 
 public:
@@ -180,234 +178,6 @@ public:
 	 */
 	bool nextVariant(void);
 
-	bool toVCFStringFast(std::ostream& stream = std::cout){
-		core::MetaContainer it(this->block); // factory
-
-		// Setup containers
-		// INFO
-		iterator::ContainerIterator* info_iterators = nullptr;
-		if(this->settings.importInfoAll){
-			info_iterators = new iterator::ContainerIterator[this->block.index_entry.n_info_streams];
-
-			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-				info_iterators[i].setup(this->block.info_containers[i]);
-			}
-		}
-
-		// FORMAT
-		iterator::ContainerIterator* format_iterators = nullptr;
-		if(this->settings.importFormatAll){
-			format_iterators = new iterator::ContainerIterator[this->block.index_entry.n_format_streams];
-			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-				format_iterators[i].setup(this->block.format_containers[i]);
-			}
-		}
-
-		// One buffer per variant
-		// Faster output?
-		//std::cerr << this->block.size() << '/' << this->n_internal_buffers << std::endl;
-		if(this->block.size() > this->n_internal_buffers){
-			//std::cerr << "here: " << this->n_internal_buffers << std::endl;
-			for(U32 i = 0; i < this->n_internal_buffers; ++i)
-				this->internal_buffers[i].deleteAll();
-			delete [] this->internal_buffers;
-
-			this->n_internal_buffers = this->block.size() * 5;
-			this->internal_buffers = new buffer_type[5*this->block.size()];
-			for(U32 i = 0; i < 5*this->block.size(); ++i){
-				this->internal_buffers[i].resize(5012);
-				//std::cerr << i << '\t' << this->internal_buffers[i].capacity() << std::endl;
-			}
-		}
-
-		// Base
-		for(U32 i = 0; i < this->block.size(); ++i){
-			const core::MetaEntry& m = it[i];
-
-			m.toVCFString(this->internal_buffers[i],
-                          this->header,
-                          this->block.index_entry.contigID,
-                          this->block.index_entry.minPosition);
-		}
-
-		// Memory layout:
-		// Cycle over patterns
-		// Cycle over entries
-		// Cycle over each key in pattern
-		// If key available: add to buffer
-		if(this->settings.importInfoAll){
-			const U32 n_patterns = this->block.index_entry.n_info_patterns;
-			for(U32 p = 0; p < n_patterns; ++p){
-				// Cycle over streams that are set in the given bit-vector
-				const index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[p];
-				const U32 n_keys = target_info_vector.n_keys;
-				const U32* const keys = &target_info_vector.keys[0];
-
-				for(U32 k = 0; k < n_keys; ++k){
-					const U32& current_key = keys[k];
-
-					for(U32 i = 0; i < this->block.size(); ++i){
-						const core::MetaEntry& m = it[i];
-						if(m.getInfoPatternID() != p)
-							continue;
-
-						info_iterators[current_key].toString(this->internal_buffers[i], this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[current_key].key]].ID);
-						if(k + 1 != n_keys)
-							this->internal_buffers[i] += ';';
-
-						++info_iterators[current_key];
-					}
-				}
-			}
-		}
-
-		for(U32 i = 0; i < this->block.size(); ++i){
-			stream.write(this->internal_buffers[i].data, this->internal_buffers[i].pointer);
-			stream.put('\n');
-			this->internal_buffers[i].reset();
-		}
-
-		delete [] info_iterators;
-		delete [] format_iterators;
-		return true;
-	}
-
-	bool toVCFString(std::ostream& stream = std::cout){
-		//core::HeaderMapEntry* entry = nullptr;
-		/*
-		if(this->header.getEntry("GT", entry)){
-			std::cerr << "GT@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
-		}
-		if(this->header.getEntry("PASS", entry)){
-			std::cerr << "PASS@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
-		}
-		if(this->header.getEntry("AC", entry)){
-			std::cerr << "AC@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
-		}
-		*/
-
-		core::MetaContainer it(this->block); // factory
-
-		// Setup containers
-		// INFO
-		iterator::ContainerIterator* info_iterators = nullptr;
-		if(this->settings.importInfoAll){
-			info_iterators = new iterator::ContainerIterator[this->block.index_entry.n_info_streams];
-
-			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-				info_iterators[i].setup(this->block.info_containers[i]);
-			}
-		}
-
-		// FORMAT
-		iterator::ContainerIterator* format_iterators = nullptr;
-		if(this->settings.importFormatAll){
-			format_iterators = new iterator::ContainerIterator[this->block.index_entry.n_format_streams];
-			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-				format_iterators[i].setup(this->block.format_containers[i]);
-			}
-		}
-
-		for(U32 i = 0; i < this->block.size(); ++i){
-			const core::MetaEntry& m = it[i];
-
-			//stream << m.hot.controller.mixed_phasing << ":" << m.hot.controller.phase << ';' << m.hot.controller.anyMissing << ',' << m.hot.controller.anyNA << ':' <<
-			//	   m.hot.controller.rle << "->" << m.hot.controller.rle_type << '\t' << (int)m.hot.getGenotypeType() << '\t';
-
-			// Discussion: it is more attractive to have the
-			// struct have knowledge of itself
-			// it is not pretty to have to pass along
-			// references to the header and index
-			// every time
-			m.toVCFString(stream,
-                          this->header,
-                          this->block.index_entry.contigID,
-                          this->block.index_entry.minPosition);
-
-			if(this->block.index_entry.n_filter_streams == 0){
-				stream << ".\t";
-			} else {
-				for(U32 k = 0; k < this->block.index_entry.n_filter_streams; ++k){
-					// Check if field is set
-					if(this->block.index_entry.filter_bit_vectors[m.getFilterPatternID()][k]){
-					// Lookup what that field is
-						stream.write(&this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID[0], this->header.getEntry(this->block.index_entry.filter_offsets[k].key).ID.size()) << '\t';
-					}
-				}
-			}
-
-			U32 set = 0;
-			if(this->settings.importInfoAll){
-				// Cycle over streams that are set in the given bit-vector
-
-				const index::BlockIndexBitvector& target_info_vector = this->block.index_entry.info_bit_vectors[m.getInfoPatternID()];
-				const U32 n_keys = target_info_vector.n_keys;
-				const U32* const firstKey = &target_info_vector.keys[0];
-
-				for(U32 k = 0; k < n_keys; ++k){
-					// Check if field is set
-					const U32& current_key = firstKey[k];
-					if(target_info_vector[current_key]){
-						info_iterators[current_key].toString(stream, this->header.entries[this->header.mapTable[this->block.index_entry.info_offsets[firstKey[k]].key]].ID);
-
-						if(set + 1 != target_info_vector.n_keys)
-							stream.put(';');
-
-						++info_iterators[current_key];
-						++set;
-					}
-				}
-			}
-
-			if(this->settings.importFormatAll){
-				// Start FORMAT description field
-				const index::BlockIndexBitvector& target_format_vector = this->block.index_entry.format_bit_vectors[m.getFormatPatternID()];
-				const U32 n_keys_format = target_format_vector.n_keys;
-				const U32* const firstKey_format = &target_format_vector.keys[0];
-
-				stream.put('\t');
-				if(n_keys_format){
-					stream << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[0]].key]].ID;
-					for(U32 j = 1; j < n_keys_format; ++j){
-						stream.put(':');
-						stream << this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[j]].key]].ID;
-					}
-				} else {
-					goto end_format;
-				}
-				stream.put('\t');
-
-				// Format here
-				// Has to admix iterators
-				// Cycle over streams that are set in the given bit-vector
-				set = 0;
-
-				for(U32 s = 0; s < this->header.n_samples; ++s){
-
-					set = 0;
-					stream.put('\t');
-				}
-
-				for(U32 k = 0; k < n_keys_format; ++k){
-					if(this->header.entries[this->header.mapTable[this->block.index_entry.format_offsets[firstKey_format[k]].key]].ID == "GT"){
-						continue;
-					}
-					// Check if field is set
-					const U32& current_key = firstKey_format[k];
-					format_iterators[current_key].incrementStride();
-				}
-			}
-
-			end_format:
-			stream << '\n';
-
-		}
-		stream.flush();
-
-		delete [] info_iterators;
-		delete [] format_iterators;
-		return true;
-	}
 
 	U64 iterateGT(std::ostream& stream = std::cout){
 		algorithm::Timer timer;
@@ -430,9 +200,9 @@ public:
 			std::cerr << "target stream is: " << target << std::endl;
 			core::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
 			std::cerr << "format: " << it.size() << std::endl;
-			for(U32 i = 0; i < it.size(); ++i){ // variants
-				for(U32 j = 0; j < it[i].size(); ++j){ // individuals
-					util::to_vcf_string(std::cout, it[i][j]);
+			for(U32 variant = 0; variant < it.size(); ++variant){ // variants
+				for(U32 sample = 0; sample < it[variant].size(); ++sample){ // individuals
+					util::to_vcf_string(std::cout, it[variant][sample]);
 					//for(U32 k = 0; k < it[i][j].size(); ++k)
 					//	std::cerr << it[i][j][k] << ' ';
 					std::cerr<<"\t";
@@ -441,42 +211,6 @@ public:
 			}
 			std::cerr << std::endl;
 		}
-		/*
-		iterator::GenotypeIterator it_gt(this->block);
-
-		//iterator::MetaIterator* it1 = this->block.getMetaIterator();
-		//iterator::MetaIterator* it2 = this->block.getMetaIterator(core::YON_GT_RLE_DIPLOID_BIALLELIC);
-		//iterator::MetaIterator* it3 = this->block.getMetaIterator(core::YON_GT_RLE_DIPLOID_NALLELIC);
-
-
-		//std::cerr << it1->size() << '\t' << it2->size() << '\t' << it3->size() << std::endl;
-		//delete it1; delete it2; delete it3;
-		//delete it2;
-
-		U32 cost[4];
-		cost[0] = 1; cost[1] = 2; cost[2] = 4; cost[3] = 8;
-		U64 total_cost = 0;
-		for(U32 i = 0; i < this->block.size(); ++i){
-			//std::cerr << it_gt.getCurrentObjectLength() << ',' << it_gt.getCurrentTargetStream() << ' ';
-			U32 n_sum = 0;
-			for(U32 j = 0; j < it_gt.getCurrentObjectLength(); ++j){
-				const core::GTDiploidObject& current_gt = it_gt.getCurrentGTObject();
-				//std::cerr << std::bitset<32>(current_gt) << ' ';
-				//std::cerr << (int)current_gt.alleles[0] << (current_gt.phase ? '|' : '/') << (int)current_gt.alleles[1] << ':' << current_gt.n_objects << '/' << it_gt.getCurrentObjectLength() << ' ';
-				it_gt.incrementGT();
-				n_sum += current_gt.n_objects;
-			}
-			//std::cerr << '\t' << n_sum << std::endl;
-			assert(n_sum == 2504);
-			total_cost += cost[it_gt.getCurrentMeta().hot.controller.gt_primtive_type] * it_gt.getCurrentObjectLength();
-			++it_gt;
-		}
-		//std::cerr << std::endl;
-		//std::cerr << "Total bytes: " << total_cost << "/" << it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed() << std::endl;
-		assert(total_cost == it_gt.container_rle->getSizeUncompressed() + it_gt.container_simple->getSizeUncompressed());
-		std::cerr << this->block.size() << '\t' << Helpers::ToPrettyString((U64)((double)this->block.size()*this->header.n_samples/timer.Elapsed().count())) << '\t' << timer.ElapsedString() << std::endl;
-		//it_gt.reset();
-		*/
 		return this->block.size();
 	}
 

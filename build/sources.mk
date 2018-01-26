@@ -34,7 +34,6 @@ tachyon/io \
 tachyon/io/bcf \
 tachyon/io/compression \
 tachyon/io/vcf \
-tachyon/iterator \
 tachyon \
 tachyon/support \
 tachyon/third_party/xxhash \

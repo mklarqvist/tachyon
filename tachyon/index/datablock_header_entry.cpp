@@ -1,12 +1,12 @@
 #include <cmath>
 #include <cassert>
 
-#include "BlockIndex.h"
+#include "datablock_header.h"
 
 namespace tachyon{
 namespace index{
 
-BlockIndexBase::BlockIndexBase() :
+DataBlockHeaderBase::DataBlockHeaderBase() :
 	offset_end_of_block(0),
 	contigID(-1),
 	minPosition(0),
@@ -23,9 +23,9 @@ BlockIndexBase::BlockIndexBase() :
 	l_filter_bitvector(0)
 {}
 
-BlockIndexBase::~BlockIndexBase(){}
+DataBlockHeaderBase::~DataBlockHeaderBase(){}
 
-BlockIndex::BlockIndex():
+DataBlockHeader::DataBlockHeader():
 	info_offsets(nullptr),
 	format_offsets(nullptr),
 	filter_offsets(nullptr),
@@ -34,7 +34,7 @@ BlockIndex::BlockIndex():
 	filter_bit_vectors(nullptr)
 {}
 
-BlockIndex::~BlockIndex(){
+DataBlockHeader::~DataBlockHeader(){
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
 	delete [] this->filter_offsets;
@@ -43,8 +43,8 @@ BlockIndex::~BlockIndex(){
 	delete [] this->filter_bit_vectors;
 }
 
-void BlockIndex::reset(void){
-	this->BlockIndexBase::reset();
+void DataBlockHeader::reset(void){
+	this->DataBlockHeaderBase::reset();
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
@@ -61,7 +61,7 @@ void BlockIndex::reset(void){
 	this->filter_bit_vectors = nullptr;
 }
 
-bool BlockIndex::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
+bool DataBlockHeader::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
 	if(values.size() == 0)
 		return false;
 
@@ -85,7 +85,7 @@ bool BlockIndex::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_conta
 	return false;
 }
 
-bool BlockIndex::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
+bool DataBlockHeader::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
 

@@ -7,9 +7,9 @@
 #include "../io/BasicBuffer.h"
 #include "../containers/ContainerHeaderController.h"
 #include "../containers/ContainerHeader.h"
-#include "BlockIndexOffsets.h"
-#include "BlockIndexBitvector.h"
-#include "../containers/HashContainer.h"
+#include "../containers/hash_container.h"
+#include "datablock_bitvector.h"
+#include "datablock_offsets.h"
 
 namespace tachyon{
 namespace index{
@@ -20,18 +20,18 @@ namespace index{
  * This structure is for internal use only and describes
  * various internal states as flags.
  */
-struct BlockIndexController{
-	typedef BlockIndexController self_type;
+struct DataBlockHeaderController{
+	typedef DataBlockHeaderController self_type;
 
 public:
-	BlockIndexController():
+	DataBlockHeaderController():
 		hasGT(0),
 		isDiploid(0),
 		hasGTPermuted(0),
 		anyEncrypted(0),
 		unused(0)
 	{}
-	~BlockIndexController(){}
+	~DataBlockHeaderController(){}
 
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 
@@ -63,15 +63,15 @@ public:
  * 3) Number of containers and ID patterns
  * 4) Controller flags
  */
-struct BlockIndexBase{
-	typedef BlockIndexBase          self_type;
-	typedef BlockIndexController    controller_type;
-	typedef BlockIndexOffsets       offset_type;
-	typedef BlockIndexOffsetsHeader offset_minimal_type;
+struct DataBlockHeaderBase{
+	typedef DataBlockHeaderBase          self_type;
+	typedef DataBlockHeaderController    controller_type;
+	typedef DataBlockOffsets       offset_type;
+	typedef DataBlockOffsetsHeader offset_minimal_type;
 
 public:
-	BlockIndexBase();
-	virtual ~BlockIndexBase();
+	DataBlockHeaderBase();
+	virtual ~DataBlockHeaderBase();
 
 	inline const U16& size(void) const{ return(this->n_variants); }
 
@@ -214,27 +214,27 @@ public:
 	BYTE l_filter_bitvector;
 };
 
-struct BlockIndex : public BlockIndexBase{
+struct DataBlockHeader : public DataBlockHeaderBase{
 private:
-	typedef BlockIndex                self_type;
-	typedef BlockIndexBase            base_type;
-	typedef BlockIndexController      controller_type;
-	typedef BlockIndexBitvector       bit_vector;
+	typedef DataBlockHeader           self_type;
+	typedef DataBlockHeaderBase       base_type;
+	typedef DataBlockHeaderController controller_type;
+	typedef DataBlockBitvector       bit_vector;
 	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
 	typedef core::HashContainer       hash_container_type;
 	typedef core::HashVectorContainer hash_vector_container_type;
-	typedef BlockIndexOffsets         offset_type;
-	typedef BlockIndexOffsetsHeader   offset_minimal_type;
+	typedef DataBlockOffsets         offset_type;
+	typedef DataBlockOffsetsHeader   offset_minimal_type;
 
 public:
 	// Internal use only
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
-	BlockIndex();
-	~BlockIndex();
+	DataBlockHeader();
+	~DataBlockHeader();
 	void reset(void);
 
 	// Allocate offset vectors
@@ -263,7 +263,7 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		const BlockIndexBase* const base = reinterpret_cast<const BlockIndexBase* const>(&entry);
+		const DataBlockHeaderBase* const base = reinterpret_cast<const DataBlockHeaderBase* const>(&entry);
 		stream << *base;
 
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
@@ -304,7 +304,7 @@ public:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		BlockIndexBase* base = reinterpret_cast<BlockIndexBase*>(&entry);
+		DataBlockHeaderBase* base = reinterpret_cast<DataBlockHeaderBase*>(&entry);
 		stream >> *base;
 
 		entry.info_offsets = new offset_minimal_type[entry.n_info_streams];

@@ -7,10 +7,10 @@
 namespace tachyon{
 namespace index{
 
-struct BlockIndexOffsetsHeader{
-	typedef BlockIndexOffsetsHeader self_type;
+struct DataBlockOffsetsHeader{
+	typedef DataBlockOffsetsHeader self_type;
 
-	BlockIndexOffsetsHeader() : key(0), offset(0){}
+	DataBlockOffsetsHeader() : key(0), offset(0){}
 
 	void clear(void){
 		this->key = 0;
@@ -33,16 +33,16 @@ struct BlockIndexOffsetsHeader{
 	U32 offset;
 };
 
-struct BlockIndexOffsets{
-	typedef BlockIndexOffsets self_type;
+struct DataBlockOffsets{
+	typedef DataBlockOffsets self_type;
 	typedef core::ContainerHeader header_type;
 	typedef core::ContainerHeaderStride header_stride_type;
 
 public:
-	BlockIndexOffsets(void) : key(0){}
-	BlockIndexOffsets(const U32& key, const header_type& h) : key(key), header(h){}
-	BlockIndexOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
-	~BlockIndexOffsets(void){}
+	DataBlockOffsets(void) : key(0){}
+	DataBlockOffsets(const U32& key, const header_type& h) : key(key), header(h){}
+	DataBlockOffsets(const U32& key, const header_type& h, const header_stride_type& s) : key(key), header(h), header_stride(s){}
+	~DataBlockOffsets(void){}
 
 	inline bool update(const U32& key){
 		this->key = key;

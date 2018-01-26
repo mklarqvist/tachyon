@@ -1,8 +1,8 @@
-#ifndef CONTAINERS_FORMATCONTAINER_H_
-#define CONTAINERS_FORMATCONTAINER_H_
+#ifndef CONTAINERS_FORMAT_CONTAINER_H_
+#define CONTAINERS_FORMAT_CONTAINER_H_
 
-#include "DataContainer.h"
-#include "PrimitiveGroupContainer.h"
+#include "datacontainer.h"
+#include "primitive_group_container.h"
 
 namespace tachyon{
 namespace core{
@@ -233,4 +233,4 @@ FormatContainer<return_type>::~FormatContainer(){
 }
 
 
-#endif /* CONTAINERS_FORMATCONTAINER_H_ */
+#endif /* CONTAINERS_FORMAT_CONTAINER_H_ */

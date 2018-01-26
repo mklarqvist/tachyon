@@ -1,16 +1,17 @@
-#ifndef CONTAINERS_METAHOTCONTAINER_H_
-#define CONTAINERS_METAHOTCONTAINER_H_
+#ifndef CONTAINER_PRIMITIVECONTAINER_H_
+#define CONTAINER_PRIMITIVECONTAINER_H_
 
-#include "../core/base/MetaHot.h"
-#include "DataBlock.h"
+#include "../math/SummaryStatistics.h"
+#include "datablock.h"
 
 namespace tachyon{
 namespace core{
 
-class MetaHotContainer{
+template <class return_type>
+class PrimitiveContainer{
 private:
     typedef std::size_t       size_type;
-    typedef MetaHot           value_type;
+    typedef return_type       value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;
@@ -18,10 +19,9 @@ private:
     typedef std::ptrdiff_t    difference_type;
 
 public:
-    MetaHotContainer();
-    MetaHotContainer(const DataBlock& block);
-    MetaHotContainer(const DataContainer& container);
-    ~MetaHotContainer(void);
+    PrimitiveContainer();
+    PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries);
+    ~PrimitiveContainer(void);
 
     class iterator{
     private:
@@ -81,15 +81,71 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
 
+    // Math
+    inline math::SummaryStatistics summary_statistics(void) const{
+    	    math::SummaryStatistics ss;
+    	    for(U32 i = 0; i < this->n_entries; ++i)
+    	    	    ss += this->at(i);
+
+    	    ss.calculate();
+    	    return(ss);
+    }
+
+private:
+    template <class native_primitive>
+    void __setup(const DataContainer& container, const U32& offset){
+    	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data[offset]);
+    	for(U32 i = 0; i < this->n_entries; ++i)
+    		this->__entries[i] = data[i];
+    }
 
 private:
     size_t  n_entries;
     pointer __entries;
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	if(container.header.controller.signedness){
+		switch(container.header.controller.type){
+		case(core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset));  break;
+		case(core::YON_TYPE_CHAR):   (this->__setup<char>(container, offset));   break;
+		case(core::YON_TYPE_16B):    (this->__setup<S16>(container, offset));    break;
+		case(core::YON_TYPE_32B):    (this->__setup<S32>(container, offset));    break;
+		case(core::YON_TYPE_64B):    (this->__setup<S64>(container, offset));    break;
+		case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
+		default: std::cerr << "Disallowed" << std::endl; return;
+		}
+	} else {
+		switch(container.header.controller.type){
+		case(core::YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
+		case(core::YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
+		case(core::YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
+		case(core::YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
+		case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
+		default: std::cerr << "Disallowed" << std::endl; return;
+		}
+	}
+
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::~PrimitiveContainer(void){
+	delete [] this->__entries;
+}
+
 }
 }
 
 
 
-#endif /* CONTAINERS_METAHOTCONTAINER_H_ */
+#endif /* PrimitiveContainer_H_ */

@@ -1,5 +1,5 @@
-#ifndef CONTAINERS_ABSTRACTINTEGERCONTAINER_H_
-#define CONTAINERS_ABSTRACTINTEGERCONTAINER_H_
+#ifndef CONTAINERS_ABSTRACT_INTEGER_CONTAINER_H_
+#define CONTAINERS_ABSTRACT_INTEGER_CONTAINER_H_
 
 #include "../iterator/IteratorIntegerReference.h"
 #include "../math/SummaryStatistics.h"
@@ -213,4 +213,4 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const DataC
 
 
 
-#endif /* CONTAINERS_ABSTRACTINTEGERCONTAINER_H_ */
+#endif /* CONTAINERS_ABSTRACT_INTEGER_CONTAINER_H_ */

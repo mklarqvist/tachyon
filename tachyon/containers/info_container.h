@@ -1,8 +1,8 @@
 #ifndef CONTAINER_INFOCONTAINER_H_
 #define CONTAINER_INFOCONTAINER_H_
 
-#include "DataContainer.h"
-#include "PrimitiveContainer.h"
+#include "datacontainer.h"
+#include "primitive_container.h"
 
 namespace tachyon{
 namespace core{
