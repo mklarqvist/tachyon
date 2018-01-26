@@ -27,6 +27,7 @@ private:
 public:
     FormatContainer();
     FormatContainer(const data_container_type& container, const U64 n_samples);
+    FormatContainer(const data_container_type& container, const U64 n_samples, const U32 format_id); // use when balancing
     ~FormatContainer(void);
 
     class iterator{

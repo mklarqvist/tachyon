@@ -29,6 +29,8 @@
 #include "../containers/PrimitiveGroupContainer.h"
 #include "../containers/FormatContainer.h"
 
+#include "../utility/support_vcf.h"
+
 namespace tachyon{
 
 class TachyonReader{
@@ -430,9 +432,10 @@ public:
 			std::cerr << "format: " << it.size() << std::endl;
 			for(U32 i = 0; i < it.size(); ++i){ // variants
 				for(U32 j = 0; j < it[i].size(); ++j){ // individuals
-					for(U32 k = 0; k < it[i][j].size(); ++k)
-						std::cerr << it[i][j][k] << ' ';
-					std::cerr<<"||";
+					util::to_vcf_string(std::cout, it[i][j]);
+					//for(U32 k = 0; k < it[i][j].size(); ++k)
+					//	std::cerr << it[i][j][k] << ' ';
+					std::cerr<<"\t";
 				}
 				std::cerr << '\n';
 			}
