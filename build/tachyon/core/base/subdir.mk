@@ -4,19 +4,19 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../tachyon/core/base/MetaCold.cpp \
-../tachyon/core/base/MetaEntry.cpp \
-../tachyon/core/base/MetaHot.cpp 
+../tachyon/core/base/meta_cold.cpp \
+../tachyon/core/base/meta_entry.cpp \
+../tachyon/core/base/meta_hot.cpp 
 
 OBJS += \
-./tachyon/core/base/MetaCold.o \
-./tachyon/core/base/MetaEntry.o \
-./tachyon/core/base/MetaHot.o 
+./tachyon/core/base/meta_cold.o \
+./tachyon/core/base/meta_entry.o \
+./tachyon/core/base/meta_hot.o 
 
 CPP_DEPS += \
-./tachyon/core/base/MetaCold.d \
-./tachyon/core/base/MetaEntry.d \
-./tachyon/core/base/MetaHot.d 
+./tachyon/core/base/meta_cold.d \
+./tachyon/core/base/meta_entry.d \
+./tachyon/core/base/meta_hot.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

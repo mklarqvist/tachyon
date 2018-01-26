@@ -1,5 +1,5 @@
-#ifndef CORE_BASE_METACOLD_H_
-#define CORE_BASE_METACOLD_H_
+#ifndef CORE_BASE_META_COLD_H_
+#define CORE_BASE_META_COLD_H_
 
 #include <cassert>
 
@@ -205,4 +205,4 @@ public:
 }
 }
 
-#endif /* CORE_BASE_METACOLD_H_ */
+#endif /* CORE_BASE_META_COLD_H_ */

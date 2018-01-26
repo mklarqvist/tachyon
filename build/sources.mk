@@ -28,8 +28,8 @@ tachyon/algorithm/permutation \
 tachyon/containers/core \
 tachyon/containers \
 tachyon/core \
-tachyon/core/base \
 tachyon/core/base/header \
+tachyon/core/base \
 tachyon/io \
 tachyon/io/bcf \
 tachyon/io/compression \

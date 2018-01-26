@@ -8,7 +8,7 @@
 #include "../../third_party/zlib/zlib.h"
 
 namespace tachyon{
-namespace compression{
+namespace algorithm{
 
 /**< Lower bounds threshold in fold-change for compression to be kept */
 #define MIN_COMPRESSION_FOLD 1.05
@@ -113,7 +113,7 @@ private:
 protected:
 	typedef containers::DataContainer stream_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef core::PermutationManager permutation_type;
+	typedef algorithm::PermutationManager permutation_type;
 
 public:
 	CompressionContainer(){}
@@ -134,7 +134,7 @@ private:
 protected:
 	typedef containers::DataContainer stream_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef core::PermutationManager permutation_type;
+	typedef algorithm::PermutationManager permutation_type;
 
 public:
 	UncompressedCodec(){}

@@ -7,7 +7,7 @@
 #include "zstd_errors.h"
 
 #include "../containers/datablock.h"
-#include "../algorithm/compression/CompressionManager.h"
+#include "../algorithm/compression/compression_manager.h"
 #include "base/header/Header.h"
 #include "../index/SortedIndex.h"
 
@@ -37,7 +37,7 @@ class TachyonReader{
 	typedef containers::DataBlock block_entry_type;
 	typedef io::BasicBuffer buffer_type;
 	typedef core::Header header_type;
-	typedef compression::CompressionManager codec_manager_type;
+	typedef algorithm::CompressionManager codec_manager_type;
 	typedef containers::core::DataBlockSettings settings_type;
 	typedef index::SortedIndex index_type;
 

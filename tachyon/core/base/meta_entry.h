@@ -1,12 +1,12 @@
-#ifndef CORE_BASE_METAENTRY_H_
-#define CORE_BASE_METAENTRY_H_
+#ifndef CORE_BASE_META_ENTRY_H_
+#define CORE_BASE_META_ENTRY_H_
 
 #include <limits>
 
 #include "../../containers/core/datablock_header.h"
 #include "header/Header.h"
-#include "MetaHot.h"
-#include "MetaCold.h"
+#include "meta_cold.h"
+#include "meta_hot.h"
 
 
 namespace tachyon{
@@ -107,4 +107,4 @@ private:
 }
 }
 
-#endif /* CORE_BASE_METAENTRY_H_ */
+#endif /* CORE_BASE_META_ENTRY_H_ */

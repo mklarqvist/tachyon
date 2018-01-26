@@ -6,12 +6,12 @@
 #include <cassert>
 
 #include "../../containers/datacontainer.h"
+#include "../../core/base/meta_hot.h"
 #include "../../io/bcf/BCFEntry.h"
-#include "../../core/base/MetaHot.h"
 #include "../../core/genotype_summary.h"
 
 namespace tachyon{
-namespace encoding{
+namespace algorithm{
 
 #define ENCODER_GT_DEBUG 0
 
@@ -54,14 +54,14 @@ namespace encoding{
 #define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (bcf::BCF_UNPACK_GENOTYPE(A) << (SHIFT + ADD)) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | (A & ADD)
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A >> 1) << (SHIFT + ADD)) | ((B >> 1) << ADD) | (A & ADD)
 
-class EncoderGenotypes {
+class GenotypeEncoder {
 private:
-	typedef EncoderGenotypes       self_type;
-	typedef io::BasicBuffer        buffer_type;
-	typedef bcf::BCFEntry          bcf_type;
-	typedef core::MetaHot          meta_type;
+	typedef GenotypeEncoder              self_type;
+	typedef io::BasicBuffer              buffer_type;
+	typedef bcf::BCFEntry                bcf_type;
+	typedef core::MetaHot                meta_type;
 	typedef containers::GenotypesSummary helper_type;
-	typedef containers::DataContainer        container_type;
+	typedef containers::DataContainer    container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
@@ -97,9 +97,9 @@ private:
 	} rle_helper_type;
 
 public:
-	EncoderGenotypes();
-	EncoderGenotypes(const U64 samples);
-	~EncoderGenotypes();
+	GenotypeEncoder();
+	GenotypeEncoder(const U64 samples);
+	~GenotypeEncoder();
 	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 
@@ -120,7 +120,7 @@ private:
 };
 
 template <class YON_RLE_TYPE, class BCF_GT_TYPE>
-bool EncoderGenotypes::EncodeDiploidBCF(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
 		                                   container_type& simple,
 										              U64& n_runs,
 										  const U32* const ppa){
@@ -153,7 +153,7 @@ bool EncoderGenotypes::EncodeDiploidBCF(const bcf_type& line,
 }
 
 template <class YON_RLE_TYPE>
-bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 		                                         container_type& runs,
 												const U32* const ppa,
 								          const rle_helper_type& helper){
@@ -231,7 +231,7 @@ bool EncoderGenotypes::EncodeDiploidRLEBiallelic(const bcf_type& line,
 }
 
 template <class YON_RLE_TYPE>
-bool EncoderGenotypes::EncodeDiploidRLEnAllelic(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 		                                        container_type& runs,
 											   const U32* const ppa,
 										 const rle_helper_type& helper){

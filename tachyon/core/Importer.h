@@ -1,16 +1,16 @@
 #ifndef CORE_IMPORTER_H_
 #define CORE_IMPORTER_H_
 
+#include "../algorithm/compression/compression_manager.h"
+#include "../algorithm/compression/genotype_encoder.h"
 #include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
 #include "../algorithm/permutation/RadixSortGT.h"
-#include "../algorithm/compression/EncoderGenotypes.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexIndexEntry.h"
 #include "ImportWriter.h"
 #include "ImporterStats.h"
-#include "../algorithm/compression/CompressionManager.h"
 #include "../containers/DataBlock.h"
 
 namespace tachyon {
@@ -22,19 +22,19 @@ private:
 	typedef vcf::VCFHeader                  header_type;
 	typedef ImportWriter                    writer_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef encoding::EncoderGenotypes      gt_encoder_type;
+	typedef algorithm::GenotypeEncoder      gt_encoder_type;
 	typedef index::IndexEntry               index_entry_type;
 	typedef bcf::BCFReader                  bcf_reader_type;
 	typedef bcf::BCFEntry                   bcf_entry_type;
 	typedef algorithm::RadixSortGT          radix_sorter_type;
-	typedef containers::DataContainer             stream_container;
-	typedef core::PermutationManager        permutation_type;
+	typedef containers::DataContainer       stream_container;
+	typedef algorithm::PermutationManager   permutation_type;
 	typedef core::MetaHot                   meta_type;
-	typedef containers::HashContainer             hash_container_type;
-	typedef containers::HashVectorContainer       hash_vector_container_type;
-	typedef containers::DataBlock                 block_type;
+	typedef containers::HashContainer       hash_container_type;
+	typedef containers::HashVectorContainer hash_vector_container_type;
+	typedef containers::DataBlock           block_type;
 	typedef support::ImporterStats          import_stats_type;
-	typedef compression::CompressionManager compression_manager_type;
+	typedef algorithm::CompressionManager   compression_manager_type;
 
 public:
 	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);

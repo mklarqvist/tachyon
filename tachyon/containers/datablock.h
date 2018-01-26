@@ -19,7 +19,7 @@ namespace containers{
 class DataBlock{
 	typedef DataBlock self_type;
 	typedef DataContainer container_type;
-	typedef tachyon::core::PermutationManager permutation_type;
+	typedef algorithm::PermutationManager permutation_type;
 	typedef containers::core::DataBlockHeader index_entry_type;
 	typedef HashContainer hash_container_type;
 	typedef HashVectorContainer hash_vector_container_type;

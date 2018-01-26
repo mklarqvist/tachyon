@@ -20,7 +20,7 @@ class RadixSortGT {
 	typedef RadixSortGT self_type;
 	typedef bcf::BCFReader bcf_reader_type;
 	typedef bcf::BCFEntry  bcf_entry_type;
-	typedef core::PermutationManager manager_type;
+	typedef PermutationManager manager_type;
 
 public:
 	RadixSortGT();

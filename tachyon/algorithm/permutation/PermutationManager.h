@@ -8,7 +8,7 @@
 #include "../../third_party/zlib/zlib.h"
 
 namespace tachyon{
-namespace core{
+namespace algorithm{
 
 // Manages the PPA array and the Occ function
 // of the PPA array

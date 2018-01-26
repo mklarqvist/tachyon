@@ -1,21 +1,21 @@
-#include "EncoderGenotypes.h"
+#include "genotype_encoder.h"
 
 namespace tachyon{
-namespace encoding{
+namespace algorithm{
 
-EncoderGenotypes::EncoderGenotypes() :
+GenotypeEncoder::GenotypeEncoder() :
 	n_samples(0)
 {
 }
 
-EncoderGenotypes::EncoderGenotypes(const U64 samples) :
+GenotypeEncoder::GenotypeEncoder(const U64 samples) :
 	n_samples(samples)
 {
 }
 
-EncoderGenotypes::~EncoderGenotypes(){}
+GenotypeEncoder::~GenotypeEncoder(){}
 
-bool EncoderGenotypes::Encode(const bcf_type& line,
+bool GenotypeEncoder::Encode(const bcf_type& line,
 		                           meta_type& meta_base,
 							  container_type& runs,
 							  container_type& simple,
@@ -178,7 +178,7 @@ bool EncoderGenotypes::Encode(const bcf_type& line,
 	return false;
 }
 
-const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa){
+const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	const BYTE ploidy = 2;
 	U32 internal_buffer_offset = line.p_genotypes;
@@ -297,7 +297,7 @@ const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEBialle
 	return(rle_helper_type(word_width, chosen_runs, firstPhase, mixedPhase, anyMissing, anyNA));
 }
 
-const EncoderGenotypes::rle_helper_type EncoderGenotypes::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa){
+const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa){
 	const BYTE ploidy        = 2;
 	U32 internal_pos_rle     = line.p_genotypes;
 	const SBYTE& pre_allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);

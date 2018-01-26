@@ -1,5 +1,5 @@
-#ifndef CORE_BASE_METAHOT_H_
-#define CORE_BASE_METAHOT_H_
+#ifndef CORE_BASE_META_HOT_H_
+#define CORE_BASE_META_HOT_H_
 
 /*======  Dependencies  ======*/
 #include "../../io/basic_buffer.h"
@@ -211,4 +211,4 @@ public:
 }
 }
 
-#endif /* CORE_BASE_METAHOT_H_ */
+#endif /* CORE_BASE_META_HOT_H_ */

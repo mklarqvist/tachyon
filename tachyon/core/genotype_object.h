@@ -1,7 +1,7 @@
 #ifndef CORE_GENOTYPE_OBJECT_H_
 #define CORE_GENOTYPE_OBJECT_H_
 
-#include "base/MetaEntry.h"
+#include "base/meta_entry.h"
 
 namespace tachyon{
 namespace core{

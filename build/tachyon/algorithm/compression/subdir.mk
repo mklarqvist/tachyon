@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../tachyon/algorithm/compression/EncoderGenotypes.cpp 
+../tachyon/algorithm/compression/genotype_encoder.cpp 
 
 OBJS += \
-./tachyon/algorithm/compression/EncoderGenotypes.o 
+./tachyon/algorithm/compression/genotype_encoder.o 
 
 CPP_DEPS += \
-./tachyon/algorithm/compression/EncoderGenotypes.d 
+./tachyon/algorithm/compression/genotype_encoder.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

@@ -1,11 +1,11 @@
-#ifndef ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
-#define ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_
+#ifndef ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
+#define ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 
 #include "../../containers/datablock.h"
-#include "CompressionContainer.h"
+#include "compression_container.h"
 
 namespace tachyon{
-namespace compression{
+namespace algorithm{
 
 class CompressionManager{
 private:
@@ -156,4 +156,4 @@ private:
 
 
 
-#endif /* ALGORITHM_COMPRESSION_COMPRESSIONMANAGER_H_ */
+#endif /* ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_ */

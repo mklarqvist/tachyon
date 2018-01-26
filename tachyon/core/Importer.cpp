@@ -1,8 +1,8 @@
 #include <fstream>
 
 #include "Importer.h"
-#include "base/MetaCold.h"
 #include "../algorithm/DigitalDigestController.h"
+#include "base/meta_cold.h"
 
 namespace tachyon {
 
