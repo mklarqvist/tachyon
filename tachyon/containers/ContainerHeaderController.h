@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace core{

@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-#include "../../io/BasicBuffer.h"
+#include "../../io/basic_buffer.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
 
@@ -34,7 +34,7 @@ public:
 		for(U32 i = 0; i < this->n_samples; ++i)
 			(*this)[i] = i;
 
-		this->PPA.pointer = this->n_samples*sizeof(U32);
+		this->PPA.n_chars = this->n_samples*sizeof(U32);
 		this->u_length = 0;
 		this->c_length = 0;
 		this->crc = 0;
@@ -42,13 +42,13 @@ public:
 
 	// Lookup
 	// Convenience function used during import
-	U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA.data)); }
-	U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.data[p * sizeof(U32)])); }
+	U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA.buffer)); }
+	U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.buffer[p * sizeof(U32)])); }
 
 	bool generateCRC(void){
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->PPA.data, this->n_samples*sizeof(U32));
+		crc = crc32(crc, (Bytef*)this->PPA.buffer, this->n_samples*sizeof(U32));
 		this->crc = crc;
 		return true;
 	}
@@ -58,7 +58,7 @@ public:
 		stream.write(reinterpret_cast<const char*>(&manager.u_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.c_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.crc), sizeof(U32));
-		stream.write(manager.PPA.data, manager.c_length);
+		stream.write(manager.PPA.buffer, manager.c_length);
 		return(stream);
 	}
 
@@ -68,12 +68,12 @@ public:
 		stream.read(reinterpret_cast<char*>(&manager.c_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.crc), sizeof(U32));
 		manager.PPA.resize(manager.u_length);
-		stream.read(manager.PPA.data, manager.c_length);
-		manager.PPA.pointer = manager.c_length;
+		stream.read(manager.PPA.buffer, manager.c_length);
+		manager.PPA.n_chars = manager.c_length;
 		return(stream);
 	}
 
-	inline const U32 getObjectSize(void) const{ return(sizeof(U32)*4 + this->PPA.pointer); }
+	inline const U32 getObjectSize(void) const{ return(sizeof(U32)*4 + this->PPA.n_chars); }
 
 public:
 	U32 n_samples; // redundancy but convenient

@@ -7,8 +7,8 @@
 
 #include "../support/helpers.h"
 #include "../algorithm/spinlock.h"
-#include "../io/BasicBuffer.h"
 #include "../support/MagicConstants.h"
+#include "basic_buffer.h"
 
 namespace tachyon {
 namespace io{

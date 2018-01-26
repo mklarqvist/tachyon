@@ -1,7 +1,7 @@
 #ifndef CONTAINER_PRIMITIVECONTAINER_H_
 #define CONTAINER_PRIMITIVECONTAINER_H_
 
-#include "../math/SummaryStatistics.h"
+#include "../math/summary_statistics.h"
 #include "datablock.h"
 
 namespace tachyon{
@@ -94,7 +94,7 @@ public:
 private:
     template <class native_primitive>
     void __setup(const DataContainer& container, const U32& offset){
-    	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data[offset]);
+    	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
     	for(U32 i = 0; i < this->n_entries; ++i)
     		this->__entries[i] = data[i];
     }

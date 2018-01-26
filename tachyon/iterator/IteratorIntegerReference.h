@@ -1,7 +1,7 @@
 #ifndef ITERATOR_ITERATORINTEGERREFERENCE_H_
 #define ITERATOR_ITERATORINTEGERREFERENCE_H_
 
-#include "../io/BasicBuffer.h"
+#include "../io/basic_buffer.h"
 
 namespace tachyon{
 namespace iterator{

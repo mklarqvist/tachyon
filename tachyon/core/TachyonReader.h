@@ -5,6 +5,7 @@
 
 #include "zstd.h"
 #include "zstd_errors.h"
+
 #include "../containers/datablock.h"
 #include "../algorithm/compression/CompressionManager.h"
 #include "base/header/Header.h"
@@ -24,7 +25,7 @@
 #include "../core/genotype_object.h"
 
 #include "../math/fisher.h"
-#include "../math/SquareMatrix.h"
+#include "../math/square_matrix.h"
 
 #include "../containers/primitive_group_container.h"
 #include "../utility/support_vcf.h"

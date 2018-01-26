@@ -6,7 +6,7 @@
 #include <cstring>
 
 #include "../support/enums.h"
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace core{

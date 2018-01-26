@@ -70,13 +70,13 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header, const 
 	dest += '\t';
 	//dest += std::to_string(blockPos + this->hot.position + 1);
 
-	if(dest.pointer + 100 >= dest.capacity()){
+	if(dest.size() + 100 >= dest.capacity()){
 		//std::cerr << "resizing: " << dest.capacity() << "->" << dest.capacity()*2 << std::endl;
 		dest.resize(dest.capacity()*2);
 	}
-	assert(dest.pointer + 100 < dest.capacity());
-	int ret = sprintf(&dest.data[dest.pointer], "%llu", blockPos + this->hot.position + 1);
-	dest.pointer += ret;
+	assert(dest.size() + 100 < dest.capacity());
+	int ret = sprintf(&dest.buffer[dest.size()], "%llu", blockPos + this->hot.position + 1);
+	dest.n_chars += ret;
 	dest += '\t';
 
 	// If we have cold meta
@@ -102,8 +102,8 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header, const 
 		if(std::isnan(this->cold.QUAL)) dest += "\t.\t";
 		else {
 			dest += '\t';
-			ret = sprintf(&dest.data[dest.pointer], "%g", this->cold.QUAL);
-			dest.pointer += ret;
+			ret = sprintf(&dest.buffer[dest.size()], "%g", this->cold.QUAL);
+			dest.n_chars += ret;
 			dest += '\t';
 		}
 	}

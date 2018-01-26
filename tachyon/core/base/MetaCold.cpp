@@ -92,7 +92,7 @@ bool MetaCold::write(const bcf_type& entry, stream_container& buffer){
 	}
 	this->l_body += sizeof(U32);
 
-	const U64 start = buffer.buffer_data_uncompressed.pointer;
+	const U64 start = buffer.buffer_data_uncompressed.size();
 	buffer.buffer_data_uncompressed += this->l_body;
 
 	// Write out data
@@ -112,7 +112,7 @@ bool MetaCold::write(const bcf_type& entry, stream_container& buffer){
 	}
 
 	// Assert length is correct
-	assert(buffer.buffer_data_uncompressed.pointer - start == this->l_body);
+	assert(buffer.buffer_data_uncompressed.size() - start == this->l_body);
 
 	return true;
 }

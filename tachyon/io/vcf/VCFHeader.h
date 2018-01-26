@@ -6,11 +6,11 @@
 #include "../../support/helpers.h"
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderLine.h"
-#include "../BasicBuffer.h"
 #include "../../algorithm/OpenHashTable.h"
 #include "../../core/base/header/HeaderContig.h"
 #include "../../core/base/header/HeaderMapEntry.h"
 #include "../../core/base/header/HeaderSample.h"
+#include "../basic_buffer.h"
 #include "../BasicReader.h"
 
 namespace tachyon {

@@ -34,13 +34,13 @@ public:
 	 * @return
 	 */
 	inline bool updateCompressed(const container_type& container){
-		if(!this->update(container.buffer_data.data, container.buffer_data.pointer)){
+		if(!this->update(container.buffer_data.buffer, container.buffer_data.n_chars)){
 			std::cerr << "failed update" << std::endl;
 			return false;
 		}
 
 		if(container.header.controller.mixedStride){
-			if(!this->update(container.buffer_strides.data, container.buffer_strides.pointer)){
+			if(!this->update(container.buffer_strides.buffer, container.buffer_strides.n_chars)){
 				std::cerr << "failed update" << std::endl;
 				return false;
 			}
@@ -54,13 +54,13 @@ public:
 	 * @return
 	 */
 	inline bool updateUncompressed(const container_type& container){
-		if(!this->update(container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer)){
+		if(!this->update(container.buffer_data_uncompressed.buffer, container.buffer_data_uncompressed.size())){
 			std::cerr << "failed update" << std::endl;
 			return false;
 		}
 
 		if(container.header.controller.mixedStride){
-			if(!this->update(container.buffer_strides_uncompressed.data, container.buffer_strides_uncompressed.pointer)){
+			if(!this->update(container.buffer_strides_uncompressed.buffer, container.buffer_strides_uncompressed.size())){
 				std::cerr << "failed update" << std::endl;
 				return false;
 			}

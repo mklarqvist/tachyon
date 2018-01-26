@@ -32,7 +32,7 @@ void MetaColdContainer::__ctor_setup(const DataContainer& container){
 	U32 count_entries  = 0;
 	const U64& limit   = container.buffer_data_uncompressed.size();
 	while(true){
-		const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.data[current_offset]);
+		const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.buffer[current_offset]);
 		assert(current_offset + l_body <= limit);
 		current_offset += l_body;
 		++count_entries;
@@ -43,8 +43,8 @@ void MetaColdContainer::__ctor_setup(const DataContainer& container){
 
 	current_offset = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
-		const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.data[current_offset]);
-		new( &this->__entries[i] ) value_type( &container.buffer_data_uncompressed.data[current_offset] );
+		const U32& l_body = *reinterpret_cast<const U32* const>(&container.buffer_data_uncompressed.buffer[current_offset]);
+		new( &this->__entries[i] ) value_type( &container.buffer_data_uncompressed.buffer[current_offset] );
 		current_offset += l_body;
 	}
 }

@@ -3,7 +3,7 @@
 
 #include "../core/genotype_summary.h"
 #include "../core/genotype_object.h"
-#include "../math/SquareMatrix.h"
+#include "../math/square_matrix.h"
 #include "datacontainer.h"
 
 namespace tachyon{

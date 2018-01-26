@@ -1,8 +1,8 @@
-#ifndef MATH_SQUAREMATRIX_H_
-#define MATH_SQUAREMATRIX_H_
+#ifndef MATH_SQUARE_MATRIX_H_
+#define MATH_SQUARE_MATRIX_H_
 
 #include <stdio.h> // size_t
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace math{
@@ -63,4 +63,4 @@ private:
 }
 }
 
-#endif /* MATH_SQUAREMATRIX_H_ */
+#endif /* MATH_SQUARE_MATRIX_H_ */

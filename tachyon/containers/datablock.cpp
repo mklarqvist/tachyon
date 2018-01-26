@@ -1,6 +1,6 @@
-#include "../support/TypeDefinitions.h"
 #include "../support/helpers.h"
 #include "datablock.h"
+#include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace core{
@@ -142,7 +142,7 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 	for(U32 i = 0; i < length; ++i){
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
-		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.pointer == 0){
+		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.size() == 0){
 			container[i].header.controller.type = YON_TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
 			container[i].header.stride  = 0;
@@ -175,13 +175,13 @@ void DataBlock::updateContainer(container_type& container, bool reformat){
 	}
 
 	// Set uncompressed length
-	container.header.uLength = container.buffer_data_uncompressed.pointer;
+	container.header.uLength = container.buffer_data_uncompressed.size();
 
 	// If we have mixed striding
 	if(container.header.controller.mixedStride == true){
 		// Reformat stream to use as small word size as possible
 		if(reformat) container.reformatStride();
-		container.header_stride.uLength = container.buffer_strides_uncompressed.pointer;
+		container.header_stride.uLength = container.buffer_strides_uncompressed.size();
 	}
 }
 
@@ -318,31 +318,31 @@ bool DataBlock::write(std::ofstream& stream,
 	stream << this->meta_hot_container;
 	stream << this->meta_cold_container;
 	stats.total_meta_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_meta_cost += this->meta_hot_container.buffer_data_uncompressed.pointer;
-	stats_uncompressed.total_meta_cost += this->meta_cold_container.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_meta_cost += this->meta_hot_container.buffer_data_uncompressed.size();
+	stats_uncompressed.total_meta_cost += this->meta_cold_container.buffer_data_uncompressed.size();
 	last_pos = stream.tellp();
 
 	stream << this->gt_rle_container;
 	stream << this->gt_simple_container;
 	stream << this->gt_support_data_container;
 	stats.total_gt_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_gt_cost += this->gt_rle_container.buffer_data_uncompressed.pointer;
-	stats_uncompressed.total_gt_cost += this->gt_simple_container.buffer_data_uncompressed.pointer;
-	stats_uncompressed.total_gt_cost += this->gt_support_data_container.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_gt_cost += this->gt_rle_container.buffer_data_uncompressed.size();
+	stats_uncompressed.total_gt_cost += this->gt_simple_container.buffer_data_uncompressed.size();
+	stats_uncompressed.total_gt_cost += this->gt_support_data_container.buffer_data_uncompressed.size();
 	last_pos = stream.tellp();
 
 	stream << this->meta_info_map_ids;
 	stream << this->meta_filter_map_ids;
 	stream << this->meta_format_map_ids;
 	stats.total_special_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_special_cost += this->meta_info_map_ids.buffer_data_uncompressed.pointer;
-	stats_uncompressed.total_special_cost += this->meta_filter_map_ids.buffer_data_uncompressed.pointer;
-	stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.pointer;
+	stats_uncompressed.total_special_cost += this->meta_info_map_ids.buffer_data_uncompressed.size();
+	stats_uncompressed.total_special_cost += this->meta_filter_map_ids.buffer_data_uncompressed.size();
+	stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.size();
 	last_pos = stream.tellp();
 
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 		stream << this->info_containers[i];
-		stats_uncompressed.total_info_cost += this->info_containers[i].buffer_data_uncompressed.pointer;
+		stats_uncompressed.total_info_cost += this->info_containers[i].buffer_data_uncompressed.size();
 	}
 
 	stats.total_info_cost += (U64)stream.tellp() - last_pos;
@@ -350,7 +350,7 @@ bool DataBlock::write(std::ofstream& stream,
 
 	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
 		stream << this->format_containers[i];
-		stats_uncompressed.total_format_cost += this->format_containers[i].buffer_data_uncompressed.pointer;
+		stats_uncompressed.total_format_cost += this->format_containers[i].buffer_data_uncompressed.size();
 	}
 
 	stats.total_format_cost += (U64)stream.tellp() - last_pos;

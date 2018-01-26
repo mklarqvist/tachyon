@@ -2,7 +2,7 @@
 #define CONTAINERS_ABSTRACT_INTEGER_CONTAINER_H_
 
 #include "../iterator/IteratorIntegerReference.h"
-#include "../math/SummaryStatistics.h"
+#include "../math/summary_statistics.h"
 
 namespace tachyon{
 namespace core{
@@ -106,7 +106,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			new( &this->__iterators[i] ) tachyon::iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.data[current_offset], (this->*func)(container.buffer_strides_uncompressed, i) );
+			new( &this->__iterators[i] ) tachyon::iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.buffer[current_offset], (this->*func)(container.buffer_strides_uncompressed, i) );
 			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
 		}
 		std::cerr << "setup: " << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (S64)container.buffer_data_uncompressed.size() - current_offset << '\t' << (int)sizeof(actual_primitive) << std::endl;
@@ -124,7 +124,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			new( &this->__iterators[i] ) tachyon::iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.data[current_offset], stride_size );
+			new( &this->__iterators[i] ) tachyon::iterator::IteratorIntegerReferenceImpl<actual_primitive, return_primitive>( &container.buffer_data_uncompressed.buffer[current_offset], stride_size );
 			current_offset += stride_size * sizeof(actual_primitive);
 		}
 		std::cerr << "setup uniform: " << current_offset << '/' << container.buffer_data_uncompressed.size() << std::endl;
@@ -133,7 +133,7 @@ private:
 
 	// Access function
 	template <class stride_primitive> inline const U32 __getNextStride(const buffer_type& buffer, const U32 position) const{
-		return(*reinterpret_cast<const stride_primitive* const>(&buffer.data[position*sizeof(stride_primitive)]));
+		return(*reinterpret_cast<const stride_primitive* const>(&buffer.buffer[position*sizeof(stride_primitive)]));
 	}
 
 private:
@@ -155,7 +155,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const DataC
 	if(container.buffer_data_uncompressed.size() == 0)
 		return;
 
-	memcpy(this->__buffer, container.buffer_data_uncompressed.data, container.buffer_data_uncompressed.pointer);
+	memcpy(this->__buffer, container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
 
 	if(container.header.controller.mixedStride){
 		nextStrideFunction func = nullptr;

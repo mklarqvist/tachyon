@@ -2,7 +2,7 @@
 #define CORE_BASE_METAHOT_H_
 
 /*======  Dependencies  ======*/
-#include "../../io/BasicBuffer.h"
+#include "../../io/basic_buffer.h"
 #include "../../support/enums.h"
 #include "../../support/MagicConstants.h"
 

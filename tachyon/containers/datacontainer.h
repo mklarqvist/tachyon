@@ -4,7 +4,7 @@
 #include <bitset>
 
 #include "../support/enums.h"
-#include "../io/BasicBuffer.h"
+#include "../io/basic_buffer.h"
 #include "ContainerHeaderController.h"
 #include "ContainerHeader.h"
 
@@ -156,9 +156,9 @@ public:
 		if(this->header.controller.mixedStride)
 			total_size += header_stride.getObjectSize();
 
-		total_size += this->buffer_data.pointer;
+		total_size += this->buffer_data.size();
 		if(this->header.controller.mixedStride)
-			total_size += this->buffer_strides.pointer;
+			total_size += this->buffer_strides.size();
 
 		return(total_size);
 	}
@@ -185,12 +185,12 @@ private:
 			stream >> entry.header_stride;
 
 		entry.buffer_data.resize(entry.header.uLength);
-		stream.read(entry.buffer_data.data, entry.header.cLength);
-		entry.buffer_data.pointer = entry.header.cLength;
+		stream.read(entry.buffer_data.buffer, entry.header.cLength);
+		entry.buffer_data.n_chars = entry.header.cLength;
 		if(entry.header.controller.mixedStride){
 			entry.buffer_strides.resize(entry.header_stride.uLength);
-			stream.read(entry.buffer_strides.data, entry.header_stride.cLength);
-			entry.buffer_strides.pointer = entry.header_stride.cLength;
+			stream.read(entry.buffer_strides.buffer, entry.header_stride.cLength);
+			entry.buffer_strides.n_chars = entry.header_stride.cLength;
 		}
 		return(stream);
 	}

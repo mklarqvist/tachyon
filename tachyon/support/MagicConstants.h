@@ -2,7 +2,7 @@
 #define MAGICCONSTANTS_H_
 
 #include <string>
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 
 extern int SILENT;
 

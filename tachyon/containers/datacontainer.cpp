@@ -2,11 +2,11 @@
 
 #include <cassert>
 
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../third_party/zlib/zconf.h"
 #include "../third_party/zlib/zlib.h"
-#include "../io/BasicBuffer.h"
+#include "../io/basic_buffer.h"
 #include "../algorithm/OpenHashTable.h"
 
 namespace tachyon{
@@ -59,7 +59,7 @@ const bool DataContainer::generateCRC(void){
 	} else {
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.data, this->buffer_data_uncompressed.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
 		this->header.crc = crc;
 	}
 
@@ -71,7 +71,7 @@ const bool DataContainer::generateCRC(void){
 			U32 crc = crc32(0, NULL, 0);
 			if(this->buffer_strides_uncompressed.size() > 0){
 				crc = crc32(0, NULL, 0);
-				crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
+				crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
 				this->header_stride.crc = crc;
 			}
 		}
@@ -86,7 +86,7 @@ bool DataContainer::checkCRC(int target){
 
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.data, this->buffer_data_uncompressed.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
 		return(crc == this->header.crc);
 	} else if(target == 1){
 		if(this->buffer_strides_uncompressed.size() == 0)
@@ -94,7 +94,7 @@ bool DataContainer::checkCRC(int target){
 
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.data, this->buffer_strides_uncompressed.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
 		return(crc == this->header_stride.crc);
 	} else if(target == 3){
 		if(this->buffer_data.size() == 0)
@@ -102,7 +102,7 @@ bool DataContainer::checkCRC(int target){
 
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data.data, this->buffer_data.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_data.buffer, this->buffer_data.size());
 		return(crc == this->header.crc);
 	} else if(target == 4){
 		if(this->buffer_strides.size() == 0)
@@ -110,7 +110,7 @@ bool DataContainer::checkCRC(int target){
 
 		// Checksum for main buffer
 		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides.data, this->buffer_strides.pointer);
+		crc = crc32(crc, (Bytef*)this->buffer_strides.buffer, this->buffer_strides.size());
 		return(crc == this->header_stride.crc);
 	}
 	return true;
@@ -137,10 +137,10 @@ bool DataContainer::checkUniformity(void){
 	default: return false; break;
 	}
 
-	const U64 first_hash = XXH64(&this->buffer_data_uncompressed.data[0], stride_update, 2147483647);
+	const U64 first_hash = XXH64(&this->buffer_data_uncompressed.buffer[0], stride_update, 2147483647);
 
 	for(U32 i = 1; i < this->n_entries; ++i){
-		if(XXH64(&this->buffer_data_uncompressed.data[i*stride_update], stride_update, 2147483647) != first_hash){
+		if(XXH64(&this->buffer_data_uncompressed.buffer[i*stride_update], stride_update, 2147483647) != first_hash){
 			//std::cerr << "not uniform" << std::endl;
 			return(false);
 		}
@@ -150,7 +150,7 @@ bool DataContainer::checkUniformity(void){
 	this->n_additions = 1;
 	// Data pointers are updated in case there is no reformatting
 	// see StreamContainer::reformat()
-	this->buffer_data_uncompressed.pointer = stride_size * word_width;
+	this->buffer_data_uncompressed.n_chars = stride_size * word_width;
 	this->header.uLength = stride_size * word_width;
 	this->header.cLength = stride_size * word_width;
 	this->header.controller.uniform = true;
@@ -166,7 +166,7 @@ bool DataContainer::checkUniformity(void){
  type S32. No other values can be shrunk
  */
 void DataContainer::reformat(){
-	if(this->buffer_data_uncompressed.pointer)
+	if(this->buffer_data_uncompressed.size())
 		return;
 
 	// Recode integer types only
@@ -177,8 +177,8 @@ void DataContainer::reformat(){
 		return;
 
 	// At this point all integers are S32
-	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data);
-	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data);
+	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.buffer);
+	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.buffer);
 	S32 min = dat[0];
 	S32 max = dat[0];
 	bool hasMissing = false;
@@ -289,14 +289,14 @@ void DataContainer::reformat(){
 		}
 	}
 
-	memcpy(this->buffer_data_uncompressed.data, this->buffer_data.data, this->buffer_data.pointer);
-	this->buffer_data_uncompressed.pointer = this->buffer_data.pointer;
-	this->header.uLength = this->buffer_data_uncompressed.pointer;
+	memcpy(this->buffer_data_uncompressed.buffer, this->buffer_data.buffer, this->buffer_data.size());
+	this->buffer_data_uncompressed.n_chars = this->buffer_data.size();
+	this->header.uLength = this->buffer_data_uncompressed.size();
 	this->buffer_data.reset();
 }
 
 void DataContainer::reformatStride(){
-	if(this->buffer_strides_uncompressed.pointer == 0)
+	if(this->buffer_strides_uncompressed.size() == 0)
 		return;
 
 	if(this->header.controller.mixedStride == false)
@@ -310,7 +310,7 @@ void DataContainer::reformatStride(){
 	}
 
 	// At this point all integers are S32
-	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.data);
+	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.buffer);
 	U32 max = dat[0];
 
 	for(U32 j = 1; j < this->n_entries; ++j)
@@ -324,7 +324,7 @@ void DataContainer::reformatStride(){
 
 	// This cannot ever be uniform
 	this->buffer_strides.reset();
-	this->buffer_strides.resize(this->buffer_strides_uncompressed.pointer);
+	this->buffer_strides.resize(this->buffer_strides_uncompressed.size());
 
 	if(byte_width == 1){
 		this->header_stride.controller.type = YON_TYPE_8B;
@@ -354,10 +354,10 @@ void DataContainer::reformatStride(){
 		std::cerr << "illegal" << std::endl;
 		exit(1);
 	}
-	//std::cerr << "recode shrink strides: " << this->buffer_strides.pointer << '\t' << buffer.pointer << std::endl;
-	memcpy(this->buffer_strides_uncompressed.data, this->buffer_strides.data, this->buffer_strides.pointer);
-	this->buffer_strides_uncompressed.pointer = this->buffer_strides.pointer;
-	this->header_stride.uLength = this->buffer_strides_uncompressed.pointer;
+	//std::cerr << "recode shrink strides: " << this->buffer_strides.size() << '\t' << buffer.size() << std::endl;
+	memcpy(this->buffer_strides_uncompressed.buffer, this->buffer_strides.buffer, this->buffer_strides.size());
+	this->buffer_strides_uncompressed.n_chars = this->buffer_strides.size();
+	this->header_stride.uLength = this->buffer_strides_uncompressed.size();
 	this->buffer_strides.reset();
 }
 

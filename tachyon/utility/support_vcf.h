@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 #include "../containers/primitive_container.h"
 
 namespace tachyon{

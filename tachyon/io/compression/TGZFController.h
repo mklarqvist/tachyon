@@ -6,7 +6,7 @@
 #include "../../support/helpers.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
-#include "../BasicBuffer.h"
+#include "../basic_buffer.h"
 #include "GZFHeader.h"
 
 namespace tachyon{
@@ -38,7 +38,7 @@ public:
 	inline void setCompression(const S32& compression){ this->compression_level = compression; }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(entry.buffer.data, entry.buffer.pointer);
+		stream.write(entry.buffer.buffer, entry.buffer.n_chars);
 		return stream;
 	}
 

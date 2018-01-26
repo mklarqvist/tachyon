@@ -126,7 +126,7 @@ private:
 
 	// Access function
 	template <class stride_primitive> inline const U32 __getStride(const buffer_type& buffer, const U32 position) const{
-		return(*reinterpret_cast<const stride_primitive* const>(&buffer.data[position*sizeof(stride_primitive)]));
+		return(*reinterpret_cast<const stride_primitive* const>(&buffer.buffer[position*sizeof(stride_primitive)]));
 	}
 
 private:

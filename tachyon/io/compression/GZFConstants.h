@@ -1,7 +1,7 @@
 #ifndef GZFCONSTANTS_H_
 #define GZFCONSTANTS_H_
 
-#include "../../support/TypeDefinitions.h"
+#include "../../support/type_definitions.h"
 
 namespace tachyon{
 namespace io{

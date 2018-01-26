@@ -1,7 +1,7 @@
 #ifndef CORE_BASE_HEADER_HEADER_H_
 #define CORE_BASE_HEADER_HEADER_H_
 
-#include "../../../support/TypeDefinitions.h"
+#include "../../../support/type_definitions.h"
 #include "../../../support/MagicConstants.h"
 #include "HeaderContig.h"
 #include "HeaderMapEntry.h"

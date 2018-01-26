@@ -42,8 +42,8 @@ public:
 			return;
 		}
 
-		const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data;
-		const char* const data_simple = block.gt_simple_container.buffer_data_uncompressed.data;
+		const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data();
+		const char* const data_simple = block.gt_simple_container.buffer_data_uncompressed.data();
 
 		if(block.gt_support_data_container.buffer_data_uncompressed.size() == 0){
 			std::cerr << "is 0" << std::endl;
@@ -226,7 +226,7 @@ public:
 
 private:
     template <class intrinsic_primitive> inline const U32 getNative(const buffer_type& buffer, const U32 position) const{
-    		return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.data[position*sizeof(intrinsic_primitive)]));
+    		return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
     }
 
 private:

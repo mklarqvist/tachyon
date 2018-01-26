@@ -1,7 +1,7 @@
 #ifndef CORE_IMPORTER_H_
 #define CORE_IMPORTER_H_
 
-#include "../support/TypeDefinitions.h"
+#include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
 #include "../algorithm/permutation/RadixSortGT.h"
