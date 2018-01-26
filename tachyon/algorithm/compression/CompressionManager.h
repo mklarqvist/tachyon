@@ -13,8 +13,8 @@ private:
 	typedef UncompressedCodec no_codec_type;
 	typedef ZSTDCodec zstd_codec_type;
 
-	typedef core::DataBlock block_type;
-	typedef core::DataContainer container_type;
+	typedef containers::DataBlock block_type;
+	typedef containers::DataContainer container_type;
 
 public:
 	CompressionManager(){}

@@ -3,7 +3,7 @@
 
 #include <limits>
 
-#include "../../index/datablock_header.h"
+#include "../../containers/core/datablock_header.h"
 #include "header/Header.h"
 #include "MetaHot.h"
 #include "MetaCold.h"
@@ -22,7 +22,7 @@ struct MetaEntry{
 private:
 	typedef MetaHot hot_entry;
 	typedef MetaCold cold_entry;
-	typedef DataContainer container_type;
+	typedef containers::DataContainer container_type;
 	typedef Header header_type;
 	typedef io::BasicBuffer buffer_type;
 
@@ -54,15 +54,15 @@ public:
 	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
 
 	// Check if a field is set
-	inline const bool check_info_field(const index::DataBlockHeader& block, const U32 info_identifier) const{
+	inline const bool check_info_field(const containers::core::DataBlockHeader& block, const U32 info_identifier) const{
 		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
 	}
 
-	inline const bool check_format_field(const index::DataBlockHeader& block, const U32 format_identifier) const{
+	inline const bool check_format_field(const containers::core::DataBlockHeader& block, const U32 format_identifier) const{
 		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
 	}
 
-	inline const bool check_filter_field(const index::DataBlockHeader& block, const U32 filter_identifier) const{
+	inline const bool check_filter_field(const containers::core::DataBlockHeader& block, const U32 filter_identifier) const{
 		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
 	}
 

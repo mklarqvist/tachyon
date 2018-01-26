@@ -10,7 +10,7 @@ namespace algorithm{
 class DigitalDigestController{
 private:
 	typedef DigitalDigestController self_type;
-	typedef core::DataContainer container_type;
+	typedef containers::DataContainer container_type;
 
 public:
 	DigitalDigestController(void){}

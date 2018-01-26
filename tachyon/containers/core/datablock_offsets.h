@@ -1,11 +1,12 @@
 #ifndef INDEX_INDEXBLOCKENTRYOFFSETS_H_
 #define INDEX_INDEXBLOCKENTRYOFFSETS_H_
 
-#include "../containers/ContainerHeaderController.h"
-#include "../containers/ContainerHeader.h"
+#include "../ContainerHeaderController.h"
+#include "../ContainerHeader.h"
 
 namespace tachyon{
-namespace index{
+namespace containers{
+namespace core{
 
 struct DataBlockOffsetsHeader{
 	typedef DataBlockOffsetsHeader self_type;
@@ -35,8 +36,8 @@ struct DataBlockOffsetsHeader{
 
 struct DataBlockOffsets{
 	typedef DataBlockOffsets self_type;
-	typedef core::ContainerHeader header_type;
-	typedef core::ContainerHeaderStride header_stride_type;
+	typedef ContainerHeader header_type;
+	typedef ContainerHeaderStride header_stride_type;
 
 public:
 	DataBlockOffsets(void) : key(0){}
@@ -103,6 +104,7 @@ public:
 	header_stride_type header_stride;
 };
 
+}
 }
 }
 

@@ -4,7 +4,8 @@
 #include "datablock_header.h"
 
 namespace tachyon{
-namespace index{
+namespace containers{
+namespace core{
 
 DataBlockHeaderBase::DataBlockHeaderBase() :
 	offset_end_of_block(0),
@@ -144,5 +145,6 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target, offset_minimal_t
 	return true;
 }
 
+}
 }
 }

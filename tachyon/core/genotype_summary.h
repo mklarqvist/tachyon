@@ -4,7 +4,7 @@
 #include "genotype_object.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 #define DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) ((A & mask) << shift) | (B & mask)
 // Forward declare

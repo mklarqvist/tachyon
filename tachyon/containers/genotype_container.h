@@ -6,7 +6,7 @@
 #include "meta_container.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 class GenotypeContainer{
 private:
@@ -19,9 +19,9 @@ private:
     typedef std::ptrdiff_t                difference_type;
     typedef std::size_t                   size_type;
     typedef MetaContainer                 meta_container_type;
-    typedef MetaEntry                     meta_type;
+    typedef tachyon::core::MetaEntry      meta_type;
     typedef io::BasicBuffer               buffer_type;
-    typedef GenotypeSum                   gt_summary_type;
+    typedef containers::GenotypeSum    gt_summary_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
@@ -60,19 +60,19 @@ public:
 		// data (0: rle, 1: simple), strides (n_objects)
 		getNativeFuncDef getObjects = nullptr;
 		switch(block.gt_support_data_container.header.controller.type){
-		case(YON_TYPE_8B):  getObjects = &self_type::getNative<BYTE>; break;
-		case(YON_TYPE_16B): getObjects = &self_type::getNative<U16>; break;
-		case(YON_TYPE_32B): getObjects = &self_type::getNative<U32>; break;
-		case(YON_TYPE_64B): getObjects = &self_type::getNative<U64>; break;
+		case(tachyon::core::YON_TYPE_8B):  getObjects = &self_type::getNative<BYTE>; break;
+		case(tachyon::core::YON_TYPE_16B): getObjects = &self_type::getNative<U16>; break;
+		case(tachyon::core::YON_TYPE_32B): getObjects = &self_type::getNative<U32>; break;
+		case(tachyon::core::YON_TYPE_64B): getObjects = &self_type::getNative<U64>; break;
 		default: std::cerr << "illegal type" << std::endl; return;
 		}
 
 		getNativeFuncDef getTarget = nullptr;
 		switch(block.gt_support_data_container.header_stride.controller.type){
-		case(YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
-		case(YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
-		case(YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
-		case(YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
+		case(tachyon::core::YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
+		case(tachyon::core::YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
+		case(tachyon::core::YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
+		case(tachyon::core::YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
 		default: std::cerr << "illegal type" << std::endl; return;
 		}
 

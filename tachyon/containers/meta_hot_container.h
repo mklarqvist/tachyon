@@ -5,12 +5,12 @@
 #include "datablock.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 class MetaHotContainer{
 private:
     typedef std::size_t       size_type;
-    typedef MetaHot           value_type;
+    typedef tachyon::core::MetaHot           value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;

@@ -5,7 +5,7 @@
 #include "datablock.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 template <class return_type>
 class PrimitiveContainer{
@@ -115,23 +115,23 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 {
 	if(container.header.controller.signedness){
 		switch(container.header.controller.type){
-		case(core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset));  break;
-		case(core::YON_TYPE_CHAR):   (this->__setup<char>(container, offset));   break;
-		case(core::YON_TYPE_16B):    (this->__setup<S16>(container, offset));    break;
-		case(core::YON_TYPE_32B):    (this->__setup<S32>(container, offset));    break;
-		case(core::YON_TYPE_64B):    (this->__setup<S64>(container, offset));    break;
-		case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
-		case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
+		case(tachyon::core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset));  break;
+		case(tachyon::core::YON_TYPE_CHAR):   (this->__setup<char>(container, offset));   break;
+		case(tachyon::core::YON_TYPE_16B):    (this->__setup<S16>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_32B):    (this->__setup<S32>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_64B):    (this->__setup<S64>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
 		switch(container.header.controller.type){
-		case(core::YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
-		case(core::YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
-		case(core::YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
-		case(core::YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
-		case(core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
-		case(core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
+		case(tachyon::core::YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
+		case(tachyon::core::YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
+		case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
+		case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}

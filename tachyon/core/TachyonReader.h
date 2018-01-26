@@ -34,11 +34,11 @@ namespace tachyon{
 
 class TachyonReader{
 	typedef TachyonReader self_type;
-	typedef core::DataBlock block_entry_type;
+	typedef containers::DataBlock block_entry_type;
 	typedef io::BasicBuffer buffer_type;
 	typedef core::Header header_type;
 	typedef compression::CompressionManager codec_manager_type;
-	typedef core::DataBlockSettings settings_type;
+	typedef containers::core::DataBlockSettings settings_type;
 	typedef index::SortedIndex index_type;
 
 public:
@@ -184,7 +184,7 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		core::MetaContainer meta(this->block);
+		containers::MetaContainer meta(this->block);
 		std::cerr << "Expect: " << meta.size() << std::endl;
 
 		core::HeaderMapEntry* entry = nullptr;
@@ -199,7 +199,7 @@ public:
 				}
 			}
 			std::cerr << "target stream is: " << target << std::endl;
-			core::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
+			containers::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
 			std::cerr << "format: " << it.size() << std::endl;
 			for(U32 variant = 0; variant < it.size(); ++variant){ // variants
 				for(U32 sample = 0; sample < it[variant].size(); ++sample){ // individuals
@@ -219,7 +219,7 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		core::GenotypeContainer gt(this->block);
+		containers::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].compareSamplesPairwise(square);
 
@@ -229,9 +229,9 @@ public:
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		core::GenotypeContainer gt(this->block);
+		containers::GenotypeContainer gt(this->block);
 		math::Fisher fisher(1000);
-		core::GenotypeSum gt_summary;
+		containers::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<core::GTObject> objects = gt[i].getObjects();
 			//const U32 n_entries = gt[i].getSum();
@@ -263,7 +263,7 @@ public:
 
 		core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("AF", entry)){
-			core::InfoContainer<double> it_i(this->block.info_containers[1]);
+			containers::InfoContainer<double> it_i(this->block.info_containers[1]);
 			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){

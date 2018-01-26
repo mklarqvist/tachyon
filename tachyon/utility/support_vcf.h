@@ -33,15 +33,15 @@ std::ostream& to_vcf_string(std::ostream& stream, const float* const values, con
 std::ostream& to_vcf_string(std::ostream& stream, const double* const values, const U32 n_entries);
 
 // Primtive container declarations
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<BYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<U16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<U32>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<U64>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<SBYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<S16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<S32>& container);
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<char>& container);
-inline std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<float>& container){
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<BYTE>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U16>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U32>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U64>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<SBYTE>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<S16>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<S32>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<char>& container);
+inline std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<float>& container){
 	if(container.size() == 0)
 		return(stream);
 
@@ -64,7 +64,7 @@ inline std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContaine
 
 	return(stream);
 }
-std::ostream& to_vcf_string(std::ostream& stream, core::PrimitiveContainer<double>& container);
+std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<double>& container);
 
 }
 }

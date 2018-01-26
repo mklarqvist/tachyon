@@ -4,7 +4,7 @@
 #include "../algorithm/OpenHashTable.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 class HashContainer{
 	typedef HashContainer self_type;

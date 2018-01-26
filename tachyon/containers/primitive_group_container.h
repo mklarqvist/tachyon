@@ -4,7 +4,7 @@
 #include "primitive_container.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 template <class T>
 class PrimitiveGroupContainer{

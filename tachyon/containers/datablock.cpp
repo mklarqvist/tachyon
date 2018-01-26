@@ -3,22 +3,22 @@
 #include "../support/type_definitions.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 DataBlock::DataBlock() :
 	info_containers(new container_type[200]),
 	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	this->meta_format_map_ids.setType(YON_TYPE_32B);
-	this->meta_filter_map_ids.setType(YON_TYPE_32B);
-	this->meta_info_map_ids.setType(YON_TYPE_32B);
-	this->gt_rle_container.setType(YON_TYPE_STRUCT);
-	this->gt_simple_container.setType(YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(YON_TYPE_32B);
+	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);
 	this->gt_support_data_container.header.controller.signedness = true;
-	this->meta_hot_container.setType(YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(YON_TYPE_STRUCT);
+	this->meta_hot_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -49,14 +49,14 @@ void DataBlock::clear(void){
 
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always U32 fields
-	this->meta_format_map_ids.setType(YON_TYPE_32B);
-	this->meta_filter_map_ids.setType(YON_TYPE_32B);
-	this->meta_info_map_ids.setType(YON_TYPE_32B);
-	this->gt_rle_container.setType(YON_TYPE_STRUCT);
-	this->gt_simple_container.setType(YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(YON_TYPE_32B);
-	this->meta_hot_container.setType(YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(YON_TYPE_STRUCT);
+	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_hot_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -143,13 +143,13 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
 		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.size() == 0){
-			container[i].header.controller.type = YON_TYPE_BOOLEAN;
+			container[i].header.controller.type = tachyon::core::YON_TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
 			container[i].header.stride  = 0;
 			container[i].header.uLength = 0;
 			container[i].header.cLength = 0;
 			container[i].header.controller.mixedStride = false;
-			container[i].header.controller.encoder = core::YON_ENCODE_NONE;
+			container[i].header.controller.encoder = tachyon::core::YON_ENCODE_NONE;
 			container[i].n_entries      = 0;
 			container[i].n_additions    = 0;
 			container[i].header.controller.signedness = 0;
@@ -164,11 +164,11 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 
 void DataBlock::updateContainer(container_type& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 &&
-	   container.header.controller.type != core::YON_TYPE_BOOLEAN)
+	   container.header.controller.type != tachyon::core::YON_TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content
-	if(container.header.controller.type != YON_TYPE_STRUCT){
+	if(container.header.controller.type != tachyon::core::YON_TYPE_STRUCT){
 		container.checkUniformity();
 		// Reformat stream to use as small word size as possible
 		if(reformat) container.reformat();
@@ -250,7 +250,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 	// If we have supplied a list of identifiers
 	else if(settings.info_ID_list.size() > 0) {
-		SettingsMap map_entry;
+		core::SettingsMap map_entry;
 		// Cycle over all the keys we are interested in
 		U32 iterator_index = 0;
 		for(U32 i = 0; i < settings.info_ID_list.size(); ++i){
@@ -260,7 +260,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 				// Push back field into map
 				if(this->index_entry.info_offsets[j].key == settings.info_ID_list[i]){
 					settings.load_info_ID_loaded.push_back(
-							SettingsMap(
+							core::SettingsMap(
 									iterator_index++,                   // iterator value
 									j,                                  // local index id
 									&this->index_entry.info_offsets[j]) // offset

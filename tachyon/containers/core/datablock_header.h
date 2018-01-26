@@ -4,15 +4,16 @@
 #include <fstream>
 #include <bitset>
 
-#include "../containers/ContainerHeaderController.h"
-#include "../containers/ContainerHeader.h"
-#include "../containers/hash_container.h"
-#include "../io/basic_buffer.h"
+#include "../ContainerHeaderController.h"
+#include "../ContainerHeader.h"
+#include "../hash_container.h"
+#include "../../io/basic_buffer.h"
 #include "datablock_bitvector.h"
 #include "datablock_offsets.h"
 
 namespace tachyon{
-namespace index{
+namespace containers{
+namespace core{
 
 #define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 2*sizeof(U32)*9 + 6*sizeof(U16)
 
@@ -223,8 +224,8 @@ private:
 	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
-	typedef core::HashContainer       hash_container_type;
-	typedef core::HashVectorContainer hash_vector_container_type;
+	typedef containers::HashContainer       hash_container_type;
+	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef DataBlockOffsets         offset_type;
 	typedef DataBlockOffsetsHeader   offset_minimal_type;
 
@@ -412,6 +413,7 @@ public:
 	// HTable: check if field exists in a given pattern
 };
 
+}
 }
 }
 

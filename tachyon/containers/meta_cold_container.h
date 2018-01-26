@@ -5,12 +5,12 @@
 #include "datablock.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 class MetaColdContainer{
 private:
     typedef std::size_t       size_type;
-    typedef MetaCold          value_type;
+    typedef tachyon::core::MetaCold          value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;

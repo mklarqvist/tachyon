@@ -1,7 +1,7 @@
 #include "meta_hot_container.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 MetaHotContainer::MetaHotContainer() : n_entries(0), __entries(nullptr){}
 
@@ -11,7 +11,7 @@ MetaHotContainer::MetaHotContainer(const DataBlock& block) :
 {
 	assert(block.meta_hot_container.buffer_data_uncompressed.size() % sizeof(value_type) == 0);
 
-	const MetaHot* const d = reinterpret_cast<const MetaHot* const>(block.meta_hot_container.buffer_data_uncompressed.buffer);
+	const value_type* const d = reinterpret_cast<const value_type* const>(block.meta_hot_container.buffer_data_uncompressed.buffer);
 	for(U32 i = 0; i < this->n_entries; ++i)
 		this->__entries[i] = d[i];
 }
@@ -22,7 +22,7 @@ MetaHotContainer::MetaHotContainer(const DataContainer& container) :
 {
 	assert(container.buffer_data_uncompressed.size() % sizeof(value_type) == 0);
 
-	const MetaHot* const d = reinterpret_cast<const MetaHot* const>(container.buffer_data_uncompressed.buffer);
+	const value_type* const d = reinterpret_cast<const value_type* const>(container.buffer_data_uncompressed.buffer);
 	for(U32 i = 0; i < this->n_entries; ++i)
 		this->__entries[i] = d[i];
 }

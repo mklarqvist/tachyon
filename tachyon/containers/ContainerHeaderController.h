@@ -8,6 +8,7 @@
 #include "../support/type_definitions.h"
 
 namespace tachyon{
+namespace containers{
 namespace core{
 
 enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
@@ -53,6 +54,7 @@ public:
 		encryption: 2; // Encryption type
 };
 
+}
 }
 }
 

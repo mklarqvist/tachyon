@@ -9,15 +9,15 @@
 #include "ContainerHeader.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 
 // Stream container for importing
 class DataContainer{
 	typedef DataContainer self_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef ContainerHeader header_type;
-	typedef ContainerHeaderStride header_stride_type;
+	typedef core::ContainerHeader header_type;
+	typedef core::ContainerHeaderStride header_stride_type;
 
 public:
 	DataContainer();
@@ -28,7 +28,7 @@ public:
 	 *
 	 * @param value
 	 */
-	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
+	inline void setType(const tachyon::core::TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
 
 	/**<
 	 *
@@ -163,8 +163,8 @@ public:
 		return(total_size);
 	}
 
-	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.controller.type)); }
-	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
+	inline const tachyon::core::TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->header.controller.type)); }
+	inline const tachyon::core::TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

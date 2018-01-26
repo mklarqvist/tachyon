@@ -5,7 +5,7 @@
 #include "../math/summary_statistics.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 template <class return_primitive>
 class AbstractIntegerContainer{
@@ -161,46 +161,46 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const DataC
 		nextStrideFunction func = nullptr;
 
 		switch(container.header_stride.controller.type){
-		case(core::YON_TYPE_8B):  func = &self_type::__getNextStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
-		case(core::YON_TYPE_16B): func = &self_type::__getNextStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
-		case(core::YON_TYPE_32B): func = &self_type::__getNextStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
-		case(core::YON_TYPE_64B): func = &self_type::__getNextStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
+		case(tachyon::core::YON_TYPE_8B):  func = &self_type::__getNextStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
+		case(tachyon::core::YON_TYPE_16B): func = &self_type::__getNextStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
+		case(tachyon::core::YON_TYPE_32B): func = &self_type::__getNextStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
+		case(tachyon::core::YON_TYPE_64B): func = &self_type::__getNextStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 
 		// Assuming there is stride data
 		if(container.header.controller.signedness){
 			switch(container.header.controller.type){
-			case(core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
-			case(core::YON_TYPE_16B): (this->__setup<S16>(container, func));  break;
-			case(core::YON_TYPE_32B): (this->__setup<S32>(container, func));  break;
-			case(core::YON_TYPE_64B): (this->__setup<S64>(container, func));  break;
+			case(tachyon::core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
+			case(tachyon::core::YON_TYPE_16B): (this->__setup<S16>(container, func));  break;
+			case(tachyon::core::YON_TYPE_32B): (this->__setup<S32>(container, func));  break;
+			case(tachyon::core::YON_TYPE_64B): (this->__setup<S64>(container, func));  break;
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		} else {
 			switch(container.header.controller.type){
-			case(core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
-			case(core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
-			case(core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
-			case(core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
+			case(tachyon::core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
+			case(tachyon::core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
+			case(tachyon::core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
+			case(tachyon::core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		}
 	} else {
 		if(container.header.controller.signedness){
 			switch(container.header.controller.type){
-			case(core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
-			case(core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
-			case(core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
-			case(core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
+			case(tachyon::core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
+			case(tachyon::core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
+			case(tachyon::core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
+			case(tachyon::core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		} else {
 			switch(container.header.controller.type){
-			case(core::YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
-			case(core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
-			case(core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
-			case(core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
+			case(tachyon::core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		}

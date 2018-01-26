@@ -1,9 +1,10 @@
 #ifndef CORE_BLOCKENTRYSETTINGS_H_
 #define CORE_BLOCKENTRYSETTINGS_H_
 
-#include "../index/datablock_offsets.h"
+#include "core/datablock_offsets.h"
 
 namespace tachyon{
+namespace containers{
 namespace core{
 
 /**<
@@ -11,7 +12,7 @@ namespace core{
  */
 struct SettingsMap{
 	typedef SettingsMap self_type;
-	typedef index::DataBlockOffsetsHeader offset_minimal_type;
+	typedef containers::core::DataBlockOffsetsHeader offset_minimal_type;
 
 	SettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
 	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
@@ -147,6 +148,7 @@ public:
 	std::vector<map_type> load_format_ID_loaded;
 };
 
+}
 }
 }
 

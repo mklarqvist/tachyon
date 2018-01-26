@@ -9,6 +9,7 @@
 #include "../support/type_definitions.h"
 
 namespace tachyon{
+namespace containers{
 namespace core{
 
 /*
@@ -156,12 +157,12 @@ struct ContainerHeader{
 	const BYTE getPrimitiveWidth(void) const{
 		// We do not care about signedness here
 		switch(this->controller.type){
-		case(core::YON_TYPE_8B): return(sizeof(BYTE));
-		case(core::YON_TYPE_16B): return(sizeof(U16));
-		case(core::YON_TYPE_32B): return(sizeof(U16));
-		case(core::YON_TYPE_64B): return(sizeof(U16));
-		case(core::YON_TYPE_FLOAT): return(sizeof(U16));
-		case(core::YON_TYPE_DOUBLE): return(sizeof(U16));
+		case(tachyon::core::YON_TYPE_8B): return(sizeof(BYTE));
+		case(tachyon::core::YON_TYPE_16B): return(sizeof(U16));
+		case(tachyon::core::YON_TYPE_32B): return(sizeof(U16));
+		case(tachyon::core::YON_TYPE_64B): return(sizeof(U16));
+		case(tachyon::core::YON_TYPE_FLOAT): return(sizeof(U16));
+		case(tachyon::core::YON_TYPE_DOUBLE): return(sizeof(U16));
 		}
 		return 0;
 	}
@@ -171,8 +172,8 @@ struct ContainerHeader{
 	inline const bool isUniform(void) const{ return(this->controller.uniform); }
 	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
 	inline const bool isSigned(void) const{ return(this->controller.signedness); }
-	inline const core::TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(core::TACHYON_CORE_TYPE(this->controller.type)); }
-	inline const core::TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(core::TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline const tachyon::core::TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->controller.type)); }
+	inline const tachyon::core::TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(tachyon::core::TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Checksum
 	inline const U32& getChecksum(void) const{ return(this->crc); }
@@ -321,6 +322,7 @@ public:
 	char* extra;                // extra length is encoder specific
 };
 
+}
 }
 }
 

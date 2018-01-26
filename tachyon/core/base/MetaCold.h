@@ -83,7 +83,7 @@ struct MetaCold{
 private:
 	typedef MetaCold self_type;
 	typedef bcf::BCFEntry bcf_type;
-	typedef core::DataContainer stream_container;
+	typedef containers::DataContainer stream_container;
 	typedef ColdMetaAllele allele_type;
 
     typedef std::size_t       size_type;

@@ -7,17 +7,17 @@
 #include "datacontainer.h"
 
 namespace tachyon{
-namespace core{
+namespace containers{
 
 class GenotypeContainerInterface{
 private:
     typedef GenotypeContainerInterface  self_type;
     typedef std::size_t                 size_type;
-    typedef MetaEntry                   meta_type;
+    typedef tachyon::core::MetaEntry    meta_type;
 
 protected:
-    typedef GTObject                    gt_object;
-    typedef GenotypeSum                 gt_summary;
+    typedef tachyon::core::GTObject     gt_object;
+    typedef GenotypeSum  gt_summary;
     typedef math::SquareMatrix<double>  square_matrix_type;
 
 public:
@@ -68,8 +68,8 @@ private:
     typedef const value_type*             const_pointer;
     typedef std::ptrdiff_t                difference_type;
     typedef std::size_t                   size_type;
-    typedef MetaEntry                     meta_type;
-    typedef MetaHotController             hot_controller_type;
+    typedef tachyon::core::MetaEntry                     meta_type;
+    typedef tachyon::core::MetaHotController             hot_controller_type;
 
 public:
     GenotypeContainerDiploidRLE(){}
@@ -171,8 +171,8 @@ public:
     }
 
     std::vector<gt_object> getObjects(void) const{
-    		std::vector<GTObject> ret(this->n_entries);
-    		GTObjectDiploidRLE* entries = reinterpret_cast<GTObjectDiploidRLE*>(&ret[0]);
+    		std::vector<tachyon::core::GTObject> ret(this->n_entries);
+    		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
     		for(U32 i = 0; i < this->n_entries; ++i)
     			entries[i](this->at(i), *this->__meta);
 
@@ -208,8 +208,8 @@ private:
     typedef const value_type*              const_pointer;
     typedef std::ptrdiff_t                 difference_type;
     typedef std::size_t                    size_type;
-    typedef MetaEntry                      meta_type;
-    typedef MetaHotController              hot_controller_type;
+    typedef tachyon::core::MetaEntry                      meta_type;
+    typedef tachyon::core::MetaHotController              hot_controller_type;
 
 public:
     GenotypeContainerDiploidSimple(){}
@@ -258,8 +258,8 @@ public:
 	}
 
 	std::vector<gt_object> getObjects(void) const{
-		std::vector<GTObject> ret(this->n_entries);
-		GTObjectDiploidSimple* entries = reinterpret_cast<GTObjectDiploidSimple*>(&ret[0]);
+		std::vector<tachyon::core::GTObject> ret(this->n_entries);
+		tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 		for(U32 i = 0; i < this->n_entries; ++i){
 			entries[i](this->at(i), *this->__meta);
 		}

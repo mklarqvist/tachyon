@@ -111,7 +111,7 @@ class CompressionContainer{
 private:
 	typedef CompressionContainer self_type;
 protected:
-	typedef core::DataContainer stream_type;
+	typedef containers::DataContainer stream_type;
 	typedef io::BasicBuffer buffer_type;
 	typedef core::PermutationManager permutation_type;
 
@@ -132,7 +132,7 @@ class UncompressedCodec{
 private:
 	typedef UncompressedCodec self_type;
 protected:
-	typedef core::DataContainer stream_type;
+	typedef containers::DataContainer stream_type;
 	typedef io::BasicBuffer buffer_type;
 	typedef core::PermutationManager permutation_type;
 

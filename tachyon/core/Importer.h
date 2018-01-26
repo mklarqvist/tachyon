@@ -27,12 +27,12 @@ private:
 	typedef bcf::BCFReader                  bcf_reader_type;
 	typedef bcf::BCFEntry                   bcf_entry_type;
 	typedef algorithm::RadixSortGT          radix_sorter_type;
-	typedef core::DataContainer             stream_container;
+	typedef containers::DataContainer             stream_container;
 	typedef core::PermutationManager        permutation_type;
 	typedef core::MetaHot                   meta_type;
-	typedef core::HashContainer             hash_container_type;
-	typedef core::HashVectorContainer       hash_vector_container_type;
-	typedef core::DataBlock                 block_type;
+	typedef containers::HashContainer             hash_container_type;
+	typedef containers::HashVectorContainer       hash_vector_container_type;
+	typedef containers::DataBlock                 block_type;
 	typedef support::ImporterStats          import_stats_type;
 	typedef compression::CompressionManager compression_manager_type;
 

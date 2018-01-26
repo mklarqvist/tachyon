@@ -60,8 +60,8 @@ private:
 	typedef io::BasicBuffer        buffer_type;
 	typedef bcf::BCFEntry          bcf_type;
 	typedef core::MetaHot          meta_type;
-	typedef core::GenotypesSummary helper_type;
-	typedef core::DataContainer        container_type;
+	typedef containers::GenotypesSummary helper_type;
+	typedef containers::DataContainer        container_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
