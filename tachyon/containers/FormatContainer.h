@@ -106,7 +106,7 @@ private:
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << std::endl;
+			std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, (this->*func)(container.buffer_strides_uncompressed, i) );
 			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive) * n_samples;
 		}
@@ -121,16 +121,18 @@ private:
      */
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size){
-		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
 
 		if(this->n_entries == 0)
 			return;
 
 		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+		std::cerr << "n_entries = " << this->n_entries << std::endl;
+
 
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << std::endl;
+			//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << "fixed: " << stride_size << std::endl;
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 			current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 		}
@@ -163,10 +165,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
 		getStrideFunction func = nullptr;
 
 		switch(container.header_stride.controller.type){
-		case(core::YON_TYPE_8B):  func = &self_type::__getStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
-		case(core::YON_TYPE_16B): func = &self_type::__getStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
-		case(core::YON_TYPE_32B): func = &self_type::__getStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
-		case(core::YON_TYPE_64B): func = &self_type::__getStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64);  break;
+		case(core::YON_TYPE_8B):  func = &self_type::__getStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE) / n_samples; break;
+		case(core::YON_TYPE_16B): func = &self_type::__getStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16) / n_samples;  break;
+		case(core::YON_TYPE_32B): func = &self_type::__getStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32) / n_samples;  break;
+		case(core::YON_TYPE_64B): func = &self_type::__getStride<U64>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U64) / n_samples;  break;
 		default: std::cerr << "Disallowed stride" << std::endl; return;
 		}
 

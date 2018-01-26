@@ -411,6 +411,9 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
+		core::MetaContainer meta(this->block);
+		std::cerr << "Expect: " << meta.size() << std::endl;
+
 		core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getEntry("GP", entry)){
 			std::cerr << "GP@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
@@ -424,6 +427,16 @@ public:
 			}
 			std::cerr << "target stream is: " << target << std::endl;
 			core::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
+			std::cerr << "format: " << it.size() << std::endl;
+			for(U32 i = 0; i < it.size(); ++i){ // variants
+				for(U32 j = 0; j < it[i].size(); ++j){ // individuals
+					for(U32 k = 0; k < it[i][j].size(); ++k)
+						std::cerr << it[i][j][k] << ' ';
+					std::cerr<<"||";
+				}
+				std::cerr << '\n';
+			}
+			std::cerr << std::endl;
 		}
 		/*
 		iterator::GenotypeIterator it_gt(this->block);

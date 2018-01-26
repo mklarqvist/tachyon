@@ -13,6 +13,10 @@ Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
+### Notice
+Tachyon is under active development and the specification and/or the API interfaces may change at any time! Commits may break functionality!  
+THERE IS NO API STABILITY PROMISE WHATSOEVER!
+
 ### Installation instructions
 Building requires [zstd][zstd] and [openssl][openssl]
 ```bash
