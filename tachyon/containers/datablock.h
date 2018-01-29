@@ -1,7 +1,7 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
-#include "../algorithm/permutation/PermutationManager.h"
+#include "../algorithm/permutation/permutation_manager.h"
 #include "../io/vcf/VCFHeader.h"
 #include "../core/ImporterStats.h"
 #include "core/datablock_header.h"

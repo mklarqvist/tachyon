@@ -3,10 +3,10 @@
 
 #include "../algorithm/compression/compression_manager.h"
 #include "../algorithm/compression/genotype_encoder.h"
+#include "../algorithm/permutation/radix_sort_gt.h"
 #include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "../algorithm/permutation/RadixSortGT.h"
 #include "../index/IndexEntry.h"
 #include "../index/IndexIndexEntry.h"
 #include "ImportWriter.h"

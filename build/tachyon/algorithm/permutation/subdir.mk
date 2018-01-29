@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../tachyon/algorithm/permutation/RadixSortGT.cpp 
+../tachyon/algorithm/permutation/permutation_manager.cpp \
+../tachyon/algorithm/permutation/radix_sort_gt.cpp 
 
 OBJS += \
-./tachyon/algorithm/permutation/RadixSortGT.o 
+./tachyon/algorithm/permutation/permutation_manager.o \
+./tachyon/algorithm/permutation/radix_sort_gt.o 
 
 CPP_DEPS += \
-./tachyon/algorithm/permutation/RadixSortGT.d 
+./tachyon/algorithm/permutation/permutation_manager.d \
+./tachyon/algorithm/permutation/radix_sort_gt.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

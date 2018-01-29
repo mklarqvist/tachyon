@@ -1,4 +1,4 @@
-#include "RadixSortGT.h"
+#include "radix_sort_gt.h"
 
 namespace tachyon {
 namespace algorithm {
