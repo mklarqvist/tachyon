@@ -41,10 +41,6 @@ public:
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
 
-	bool buildPairwiseHamming(const bcf_reader_type& reader);
-	bool pairwiseHammingUpdate(const bcf_entry_type& entry);
-	bool buildTest(void);
-
 public:
 	U64 n_samples; // total number of entries in file
 	U32 position;  // number of entries parsed
@@ -52,8 +48,6 @@ public:
 	BYTE* GT_array;// packed genotype array
 	U32** bins;    // bin i
 	manager_type* manager; // permutation manager
-	U32 n_gt_matrix;
-	BYTE** GT_matrix;// packed genotype matrix
 };
 
 } /* namespace Algorithm */

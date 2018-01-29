@@ -8,9 +8,7 @@ RadixSortGT::RadixSortGT() :
 	position(0),
 	GT_array(nullptr),
 	bins(new U32*[9]),
-	manager(nullptr),
-	n_gt_matrix(0),
-	GT_matrix(nullptr)
+	manager(nullptr)
 {
 	memset(&p_i, 0, sizeof(U32)*9);
 }
@@ -69,76 +67,6 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 	// Return TRUE if the number of parsed
 	// entries is > 0
 	return(this->position > 0);
-}
-
-bool RadixSortGT::buildPairwiseHamming(const bcf_reader_type& reader){
-	if(reader.size() == 0)
-		return false;
-
-	this->GT_matrix = new BYTE*[reader.size()];
-
-	// Cycle over BCF entries
-	for(U32 i = 0; i < reader.size(); ++i){
-		this->GT_matrix[i] = new BYTE[this->n_samples];
-
-		// Has to be biallelic
-		// otherwise skip
-		if(!reader[i].isBiallelic())
-			continue;
-
-		if(!this->pairwiseHammingUpdate(reader[i]))
-			continue;
-
-	}
-
-	this->buildTest();
-
-	for(U32 i = 0; i < reader.size(); ++i){
-		delete [] this->GT_matrix[i];
-	}
-	delete this->GT_matrix;
-	this->n_gt_matrix = 0;
-
-	// Return TRUE if the number of parsed
-	// entries is > 0
-	return true;
-}
-
-bool RadixSortGT::pairwiseHammingUpdate(const bcf_entry_type& entry){
-	if(!entry.isBiallelic())
-		return false;
-
-	U32 internal_pos = entry.p_genotypes;
-	U32 k = 0;
-	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
-		this->GT_matrix[this->n_gt_matrix][k] = packed;
-	}
-	++this->n_gt_matrix;
-
-	return true;
-
-}
-
-bool RadixSortGT::buildTest(void){
-	// Start with current neighbour cost
-	//const U32 n_entries = this->n_samples*this->n_samples/2 - this->n_samples;
-	//U32* distances = new U32[n_entries];
-	std::vector< std::pair<U32, U32> >(this->n_samples);
-
-
-	U32 m = 0;
-	for(U32 i = 0; i < this->n_samples - 1; ++i){
-		U32 hamming = 0;
-		for(U32 k = 0; k < this->n_gt_matrix; ++k){
-			if(this->GT_matrix[k][i] != this->GT_matrix[k][i+1]) ++hamming;
-		}
-		std::cerr << hamming << std::endl;
-	}
-
-	return true;
 }
 
 bool RadixSortGT::update(const bcf_entry_type& entry){

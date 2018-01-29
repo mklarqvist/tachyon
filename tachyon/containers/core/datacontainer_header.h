@@ -5,8 +5,9 @@
 #include <fstream>
 #include <cstring>
 
-#include "../support/enums.h"
-#include "../support/type_definitions.h"
+#include "../../support/enums.h"
+#include "../../support/type_definitions.h"
+#include "datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
@@ -22,11 +23,11 @@ namespace core{
  CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   CRC             POSSIBLE COMPRESSION PARAMETERS
                  OFFSET
 */
-struct ContainerHeader{
-	typedef ContainerHeader self_type;
-	typedef ContainerHeaderController controller_type;
+struct DataContainerHeader{
+	typedef DataContainerHeader self_type;
+	typedef DataContainerHeaderController controller_type;
 
-	ContainerHeader() :
+	DataContainerHeader() :
 		stride(-1),
 		offset(0),
 		cLength(0),
@@ -36,7 +37,7 @@ struct ContainerHeader{
 		extra(nullptr)
 	{}
 
-	ContainerHeader(const ContainerHeader& other) :
+	DataContainerHeader(const DataContainerHeader& other) :
 		controller(other.controller),
 		stride(other.stride),
 		offset(other.offset),
@@ -53,7 +54,7 @@ struct ContainerHeader{
 	}
 
 	/* noexcept needed to enable optimizations in containers */
-	ContainerHeader(ContainerHeader&& other) noexcept :
+	DataContainerHeader(DataContainerHeader&& other) noexcept :
 		controller(other.controller),
 		stride(other.stride),
 		offset(other.offset),
@@ -67,7 +68,7 @@ struct ContainerHeader{
 	}
 
 	 // copy assignment
-	ContainerHeader& operator=(const ContainerHeader& other){
+	DataContainerHeader& operator=(const DataContainerHeader& other){
 		this->controller = other.controller;
 		this->stride     = other.stride;
 		this->offset     = other.offset;
@@ -87,7 +88,7 @@ struct ContainerHeader{
 
 
 	/** Move assignment operator */
-	ContainerHeader& operator=(ContainerHeader&& other) noexcept{
+	DataContainerHeader& operator=(DataContainerHeader&& other) noexcept{
 		this->controller = other.controller;
 		this->stride     = other.stride;
 		this->offset     = other.offset;
@@ -101,7 +102,7 @@ struct ContainerHeader{
 		return *this;
 	}
 
-	~ContainerHeader(){ delete [] this->extra; }
+	~DataContainerHeader(){ delete [] this->extra; }
 
 	inline void reset(void){
 		this->controller.clear();
@@ -201,11 +202,11 @@ public:
  CNT     COMP LENGTH     UNCOMP LENGTH   POSSIBLE COMPRESSION PARAMETERS
 
 */
-struct ContainerHeaderStride{
-	typedef ContainerHeaderStride self_type;
-	typedef ContainerHeaderController controller_type;
+struct DataContainerHeaderStride{
+	typedef DataContainerHeaderStride self_type;
+	typedef DataContainerHeaderController controller_type;
 
-	ContainerHeaderStride() :
+	DataContainerHeaderStride() :
 		cLength(0),
 		uLength(0),
 		crc(0),
@@ -213,7 +214,7 @@ struct ContainerHeaderStride{
 		extra(nullptr)
 	{}
 
-	ContainerHeaderStride(const self_type& other) :
+	DataContainerHeaderStride(const self_type& other) :
 		controller(other.controller),
 		cLength(other.cLength),
 		uLength(other.uLength),
@@ -228,7 +229,7 @@ struct ContainerHeaderStride{
 	}
 
 	/* noexcept needed to enable optimizations in containers */
-	ContainerHeaderStride(self_type&& other) noexcept :
+	DataContainerHeaderStride(self_type&& other) noexcept :
 		controller(other.controller),
 		cLength(other.cLength),
 		uLength(other.uLength),
@@ -265,7 +266,7 @@ struct ContainerHeaderStride{
 		return *this;
 	}
 
-	~ContainerHeaderStride(){
+	~DataContainerHeaderStride(){
 		delete [] this->extra;
 	}
 

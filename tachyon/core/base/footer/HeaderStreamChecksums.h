@@ -67,9 +67,9 @@ private:
 	}
 
 public:
-	U16 n_width;
+	U16   n_width;
 	BYTE* uncompressed_checksum;
-	BYTE*   compressed_checksum;
+	BYTE* compressed_checksum;
 };
 
 }

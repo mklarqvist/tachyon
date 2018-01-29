@@ -4,10 +4,10 @@
 #include <fstream>
 #include <bitset>
 
-#include "../ContainerHeaderController.h"
-#include "../ContainerHeader.h"
 #include "../hash_container.h"
 #include "../../io/basic_buffer.h"
+#include "datacontainer_header.h"
+#include "datacontainer_header_controller.h"
 #include "datablock_bitvector.h"
 #include "datablock_offsets.h"
 

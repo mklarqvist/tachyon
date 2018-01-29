@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
-#include "../support/type_definitions.h"
+#include "../../support/type_definitions.h"
 
 namespace tachyon{
 namespace containers{
@@ -17,11 +17,11 @@ enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
 					    YON_ENCRYPTION_RSA_4096};
 
 // Controller type for stream container
-struct ContainerHeaderController{
-	typedef ContainerHeaderController self_type;
+struct DataContainerHeaderController{
+	typedef DataContainerHeaderController self_type;
 
 public:
-	ContainerHeaderController() :
+	DataContainerHeaderController() :
 		signedness(0),
 		mixedStride(0),
 		type(0),
@@ -29,7 +29,7 @@ public:
 		uniform(0),
 		encryption(0)
 	{}
-	~ContainerHeaderController(){}
+	~DataContainerHeaderController(){}
 
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 	inline bool isEncrypted(void) const{ return(this->encryption > 0); }

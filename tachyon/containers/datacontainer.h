@@ -5,8 +5,8 @@
 
 #include "../support/enums.h"
 #include "../io/basic_buffer.h"
-#include "ContainerHeaderController.h"
-#include "ContainerHeader.h"
+#include "core/datacontainer_header.h"
+#include "core/datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
@@ -16,8 +16,8 @@ namespace containers{
 class DataContainer{
 	typedef DataContainer self_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef core::ContainerHeader header_type;
-	typedef core::ContainerHeaderStride header_stride_type;
+	typedef core::DataContainerHeader header_type;
+	typedef core::DataContainerHeaderStride header_stride_type;
 
 public:
 	DataContainer();

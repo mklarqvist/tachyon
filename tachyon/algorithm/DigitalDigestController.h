@@ -116,7 +116,7 @@ private:
 
 public:
 	SHA512_CTX context;
-	BYTE sha512_digest[64];
+	BYTE       sha512_digest[64];
 };
 
 }

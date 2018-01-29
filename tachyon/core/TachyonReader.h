@@ -8,7 +8,6 @@
 
 #include "../containers/datablock.h"
 #include "../algorithm/compression/compression_manager.h"
-#include "base/header/Header.h"
 #include "../index/SortedIndex.h"
 
 #include "../algorithm/Timer.h"
@@ -29,6 +28,7 @@
 
 #include "../containers/primitive_group_container.h"
 #include "../utility/support_vcf.h"
+#include "base/header/yon_tachyonheader.h"
 
 namespace tachyon{
 
@@ -36,7 +36,7 @@ class TachyonReader{
 	typedef TachyonReader self_type;
 	typedef containers::DataBlock block_entry_type;
 	typedef io::BasicBuffer buffer_type;
-	typedef core::Header header_type;
+	typedef core::TachyonHeader header_type;
 	typedef algorithm::CompressionManager codec_manager_type;
 	typedef containers::core::DataBlockSettings settings_type;
 	typedef index::SortedIndex index_type;
@@ -52,6 +52,28 @@ public:
 	}
 
 	inline settings_type& getSettings(void){ return(this->settings); }
+
+	/**<
+	 * Checks if a target field exists in the header.
+	 * @param field_name Field name
+	 * @return           Returns the block-offset for that field if it exists. -2 if it does not exist in the header, -1 if it does not exist in the current block
+	 */
+	inline const int hasField(const std::string& field_name) const{
+		core::HeaderMapEntry* match = nullptr;
+		if(this->header.getEntry(field_name, match)){
+			U32 target = -1;
+			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+				//std::cerr << i << '/' << this->block.index_entry.n_format_streams << '\t' << this->block.index_entry.format_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.format_offsets[i].key].ID << std::endl;
+				if(this->block.index_entry.format_offsets[i].key == match->IDX){
+					target = i;
+					break;
+				}
+			}
+			//std::cerr << "target stream is: " << target << std::endl;
+			return(target);
+		}
+		return(-2);
+	}
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -184,28 +206,13 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		containers::MetaContainer meta(this->block);
-		std::cerr << "Expect: " << meta.size() << std::endl;
+		int target_container = this->hasField("DS");
+		if(target_container){
+			containers::FormatContainer<float> it(this->block.format_containers[target_container], this->header.n_samples);
 
-		core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getEntry("GP", entry)){
-			std::cerr << "GP@" << entry->ID << '\t' << entry->IDX << '\t' << (int)entry->TYPE << std::endl;
-			U32 target = 0;
-			for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-				std::cerr << i << '/' << this->block.index_entry.n_format_streams << '\t' << this->block.index_entry.format_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.format_offsets[i].key].ID << std::endl;
-				if(this->block.index_entry.format_offsets[i].key == entry->IDX){
-					target = i;
-					break;
-				}
-			}
-			std::cerr << "target stream is: " << target << std::endl;
-			containers::FormatContainer<float> it(this->block.format_containers[target], this->header.n_samples);
-			std::cerr << "format: " << it.size() << std::endl;
 			for(U32 variant = 0; variant < it.size(); ++variant){ // variants
 				for(U32 sample = 0; sample < it[variant].size(); ++sample){ // individuals
 					util::to_vcf_string(std::cout, it[variant][sample]);
-					//for(U32 k = 0; k < it[i][j].size(); ++k)
-					//	std::cerr << it[i][j][k] << ' ';
 					std::cerr<<"\t";
 				}
 				std::cerr << '\n';
