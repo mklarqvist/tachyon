@@ -137,11 +137,10 @@ public:
 		else return nullptr;
 	}
 
-	// Todo: balance container with 0's when data is missing
 	template <class T>
-	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name) const{
+	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container, const std::vector<bool>& pattern_matches) const{
 		int info_field = this->has_info_field(field_name);
-		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field]));
+		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field], meta_container, pattern_matches));
 		else return nullptr;
 	}
 
@@ -267,7 +266,15 @@ public:
 		containers::MetaContainer meta(this->block);
 		std::cerr << block.size() << std::endl;
 
-		std::vector<bool> ac_matches = this->get_info_field_pattern_matches("IMPRECISE");
+		std::vector<bool> pattern_matches = this->get_info_field_pattern_matches("SVLEN");
+		containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("SVLEN", meta, pattern_matches);
+		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("SVLEN");
+
+		if(it2!=nullptr)
+			std::cerr << "it = " << it2->size() << std::endl;
+		if(it3 != nullptr)
+			std::cerr << "it2 = " << it3->size() << std::endl;
+		delete it2;
 		return(0);
 
 		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");
