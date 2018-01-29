@@ -58,7 +58,7 @@ public:
 	 * @param field_name Field name
 	 * @return           Returns the block-offset for that field if it exists. -2 if it does not exist in the header, -1 if it does not exist in the current block
 	 */
-	inline const int has_format_field(const std::string& field_name) const{
+	const int has_format_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
 		if(this->header.getEntry(field_name, match)){
 			U32 target = -1;
@@ -75,7 +75,7 @@ public:
 		return(-2);
 	}
 
-	inline const int has_info_field(const std::string& field_name) const{
+	const int has_info_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
 		if(this->header.getEntry(field_name, match)){
 			U32 target = -1;
@@ -87,6 +87,21 @@ public:
 				}
 			}
 			//std::cerr << "target stream is: " << target << std::endl;
+			return(target);
+		}
+		return(-2);
+	}
+
+	const int has_filter_field(const std::string& field_name) const{
+		core::HeaderMapEntry* match = nullptr;
+		if(this->header.getEntry(field_name, match)){
+			U32 target = -1;
+			for(U32 i = 0; i < this->block.index_entry.n_filter_streams; ++i){
+				if(this->block.index_entry.filter_offsets[i].key == match->IDX){
+					target = i;
+					break;
+				}
+			}
 			return(target);
 		}
 		return(-2);
