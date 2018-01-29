@@ -9,15 +9,15 @@ namespace containers{
 
 class MetaContainer {
 private:
-	typedef MetaContainer     self_type;
-    typedef std::size_t       size_type;
-    typedef tachyon::core::MetaEntry         value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
-    typedef tachyon::core::MetaHot           hot_type;
-    typedef tachyon::core::MetaCold          cold_type;
+	typedef MetaContainer            self_type;
+    typedef std::size_t              size_type;
+    typedef tachyon::core::MetaEntry value_type;
+    typedef value_type&              reference;
+    typedef const value_type&        const_reference;
+    typedef value_type*              pointer;
+    typedef const value_type*        const_pointer;
+    typedef tachyon::core::MetaHot   hot_type;
+    typedef tachyon::core::MetaCold  cold_type;
 
 public:
 	MetaContainer(const DataBlock& block);

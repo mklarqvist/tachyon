@@ -8,8 +8,13 @@
 #include "meta_cold.h"
 #include "meta_hot.h"
 
-
 namespace tachyon{
+
+// Forward declaration for friendship
+namespace containers{
+	class MetaContainer;
+}
+
 namespace core{
 
 /**< Envelope record for meta hot-cold split
@@ -96,6 +101,8 @@ private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
 private:
+	friend containers::MetaContainer;
+
 	bool loaded_cold;      // Boolean triggered if cold meta object was overloaded
 	U32 info_pattern_id;   // Info pattern ID
 	U32 filter_pattern_id; // Filter pattern ID

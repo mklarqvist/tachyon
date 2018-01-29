@@ -1,8 +1,9 @@
-#ifndef INDEX_SORTEDINDEX_H_
-#define INDEX_SORTEDINDEX_H_
+#ifndef INDEX_SORTED_INDEX_H_
+#define INDEX_SORTED_INDEX_H_
 #include <bitset>
-#include "IndexEntry.h"
-#include "IndexIndexEntry.h"
+
+#include "index_entry.h"
+#include "index_index_entry.h"
 
 namespace tachyon{
 namespace index{
@@ -93,4 +94,4 @@ private:
 }
 }
 
-#endif /* INDEX_SORTEDINDEX_H_ */
+#endif /* INDEX_SORTED_INDEX_H_ */

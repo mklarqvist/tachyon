@@ -120,11 +120,11 @@ int view(int argc, char** argv){
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	U32 n_blocks = 0;
-	while(reader.getNextBlock()){
+	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
-		n_variants += reader.iterateGT();
+		n_variants += reader.iterate_genotypes();
 		//reader.calculateIBS(square);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;

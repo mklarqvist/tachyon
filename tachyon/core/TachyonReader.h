@@ -8,9 +8,9 @@
 
 #include "../containers/datablock.h"
 #include "../algorithm/compression/compression_manager.h"
-#include "../index/SortedIndex.h"
+#include "../algorithm/timer.h"
+#include "../index/sorted_index.h"
 
-#include "../algorithm/Timer.h"
 #include "../containers/abstract_integer_container.h"
 #include "../containers/format_container.h"
 #include "../containers/genotype_container.h"
@@ -58,7 +58,7 @@ public:
 	 * @param field_name Field name
 	 * @return           Returns the block-offset for that field if it exists. -2 if it does not exist in the header, -1 if it does not exist in the current block
 	 */
-	inline const int hasField(const std::string& field_name) const{
+	inline const int has_format_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
 		if(this->header.getEntry(field_name, match)){
 			U32 target = -1;
@@ -73,6 +73,61 @@ public:
 			return(target);
 		}
 		return(-2);
+	}
+
+	inline const int has_info_field(const std::string& field_name) const{
+		core::HeaderMapEntry* match = nullptr;
+		if(this->header.getEntry(field_name, match)){
+			U32 target = -1;
+			for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+				//std::cerr << i << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << std::endl;
+				if(this->block.index_entry.info_offsets[i].key == match->IDX){
+					target = i;
+					break;
+				}
+			}
+			//std::cerr << "target stream is: " << target << std::endl;
+			return(target);
+		}
+		return(-2);
+	}
+
+	inline const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const{
+		int info_field = this->has_info_field(field_name);
+		std::vector<bool> ret;
+		if(info_field >= 0){
+			// Collect all matches
+			// Place in array
+			// 0 = false, 1 = true
+			ret.resize(this->block.index_entry.n_info_patterns, false);
+			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
+				std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][info_field] << std::endl;
+				ret[i] = this->block.index_entry.info_bit_vectors[i][info_field];
+			}
+		}
+		return(ret);
+	}
+
+	template <class T>
+	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
+		int format_field = this->has_format_field(field_name);
+		if(format_field >= 0) return(new containers::FormatContainer<T>(this->block.format_containers[format_field], this->header.n_samples));
+		else return nullptr;
+	}
+
+	template <class T>
+	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
+		int info_field = this->has_info_field(field_name);
+		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field]));
+		else return nullptr;
+	}
+
+	// Todo: balance container with 0's when data is missing
+	template <class T>
+	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name) const{
+		int info_field = this->has_info_field(field_name);
+		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field]));
+		else return nullptr;
 	}
 
 	/**<
@@ -155,7 +210,7 @@ public:
 	 * Get the next YON block in-order
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool getNextBlock(){
+	bool get_next_block(){
 		// If the stream is faulty then return
 		if(!this->stream.good()){
 			std::cerr << "faulty stream" << std::endl;
@@ -191,34 +246,38 @@ public:
 	 * @param b
 	 * @return
 	 */
-	bool seekBlock(const U32& b);
+	bool seek_to_block(const U32& b);
 
-	/**<
-	 * Move all internal pointers up to the next available
-	 * variant. If the next variant is in another block then
-	 * load that block by invoking nextBlock().
-	 * @return Returns TRUE if successful or FALSE otherwise
-	 */
-	bool nextVariant(void);
+	U64 iterate_genotypes(std::ostream& stream = std::cout){
+		containers::MetaContainer meta(this->block);
+		std::cerr << block.size() << std::endl;
 
+		std::vector<bool> ac_matches = this->get_info_field_pattern_matches("AC");
+		return(0);
 
-	U64 iterateGT(std::ostream& stream = std::cout){
-		algorithm::Timer timer;
-		timer.Start();
+		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");
+		if(af != nullptr){
+			std::cerr << "in info container: " << af->size() << std::endl;
+			for(U32 variant = 0; variant < af->size(); ++variant){
+				util::to_vcf_string(stream, (*af)[variant]) << ' ';
+			}
+			std::cerr << std::endl;
+		} else std::cerr << "AC not found" << std::endl;
+		delete af;
+		return(0);
 
-		int target_container = this->hasField("DS");
-		if(target_container){
-			containers::FormatContainer<float> it(this->block.format_containers[target_container], this->header.n_samples);
-
-			for(U32 variant = 0; variant < it.size(); ++variant){ // variants
-				for(U32 sample = 0; sample < it[variant].size(); ++sample){ // individuals
-					util::to_vcf_string(std::cout, it[variant][sample]);
+		containers::FormatContainer<float>* it = this->get_format_container<float>("GP");
+		if(it != nullptr){
+			for(U32 variant = 0; variant < it->size(); ++variant){ // variants
+				for(U32 sample = 0; sample < (*it)[variant].size(); ++sample){ // individuals
+					util::to_vcf_string(std::cout, (*it)[variant][sample]);
 					std::cerr<<"\t";
 				}
 				std::cerr << '\n';
 			}
 			std::cerr << std::endl;
 		}
+		delete it;
 		return this->block.size();
 	}
 
@@ -287,19 +346,19 @@ public:
 	}
 
 public:
-	std::string input_file;
+	std::string   input_file;
 	std::ifstream stream;
-	U64 filesize;
-	U64 l_data;
+	U64           filesize;
+	U64           l_data;   // Size in bytes from end of header to start of footer
 
-	settings_type settings;
-	header_type   header;
-	index_type    index;
-	block_entry_type block;
+	settings_type      settings;
+	header_type        header;
+	index_type         index;
+	block_entry_type   block;
 	codec_manager_type codec_manager;
 
 private:
-	U32 n_internal_buffers;
+	U32          n_internal_buffers;
 	buffer_type* internal_buffers;
 };
 

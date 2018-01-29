@@ -220,11 +220,11 @@ private:
 	typedef DataBlockHeader           self_type;
 	typedef DataBlockHeaderBase       base_type;
 	typedef DataBlockHeaderController controller_type;
-	typedef DataBlockBitvector       bit_vector;
+	typedef DataBlockBitvector        bit_vector;
 	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
-	typedef containers::HashContainer       hash_container_type;
+	typedef containers::HashContainer hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef DataBlockOffsets         offset_type;
 	typedef DataBlockOffsetsHeader   offset_minimal_type;

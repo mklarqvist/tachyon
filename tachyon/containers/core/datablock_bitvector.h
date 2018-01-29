@@ -10,6 +10,12 @@ namespace core{
 // entries in all the records in a block
 struct DataBlockBitvector{
 	typedef DataBlockBitvector self_type;
+    typedef std::size_t        size_type;
+    typedef U32                value_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
 
 public:
 	DataBlockBitvector() : n_keys(0), keys(nullptr), bit_bytes(nullptr){}
@@ -18,40 +24,86 @@ public:
 		delete [] this->bit_bytes;
 	}
 
+	class iterator{
+	private:
+		typedef iterator self_type;
+		typedef std::forward_iterator_tag iterator_category;
+
+	public:
+		iterator(pointer ptr) : ptr_(ptr) { }
+		void operator++() { ptr_++; }
+		void operator++(int junk) { ptr_++; }
+		reference operator*() const{ return *ptr_; }
+		pointer operator->() const{ return ptr_; }
+		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+	private:
+		pointer ptr_;
+	};
+
+	class const_iterator{
+	private:
+		typedef const_iterator self_type;
+		typedef std::forward_iterator_tag iterator_category;
+
+	public:
+		const_iterator(pointer ptr) : ptr_(ptr) { }
+		void operator++() { ptr_++; }
+		void operator++(int junk) { ptr_++; }
+		const_reference operator*() const{ return *ptr_; }
+		const_pointer operator->() const{ return ptr_; }
+		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+	private:
+		pointer ptr_;
+	};
+
 	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
 
-	inline void allocate(const U32& n_keys, const U32& w){
+	inline void allocate(const U32& n_keys, const U32& n_bytes){
 		delete [] this->keys;
 		delete [] this->bit_bytes;
 		this->keys = new U32[n_keys];
-		this->bit_bytes = new BYTE[w];
-		memset(this->bit_bytes, 0, w);
+		this->bit_bytes = new BYTE[n_bytes];
+		memset(this->bit_bytes, 0, n_bytes);
 		this->n_keys = n_keys;
 	}
 
-	inline void allocate(const U32& w){
+	inline void allocate(const U32& n_bytes){
 		delete [] this->bit_bytes;
-		this->bit_bytes = new BYTE[w];
-		memset(this->bit_bytes, 0, w);
+		this->bit_bytes = new BYTE[n_bytes];
+		memset(this->bit_bytes, 0, n_bytes);
 	}
 
-	template <class T>
-	inline const bool operator[](const T& p) const{ return((this->bit_bytes[p / 8] & (1 << (p % 8))) >> (p % 8)); }
+    // Element access
+    inline reference key_at(const size_type& position){ return(this->keys[position]); }
+    inline const_reference key_at(const size_type& position) const{ return(this->keys[position]); }
+    inline pointer key_data(void){ return(this->keys); }
+    inline const_pointer key_data(void) const{ return(this->keys); }
+    inline reference key_front(void){ return(this->keys[0]); }
+    inline const_reference key_front(void) const{ return(this->keys[0]); }
+    inline reference key_back(void){ return(this->keys[this->n_keys - 1]); }
+    inline const_reference key_back(void) const{ return(this->keys[this->n_keys - 1]); }
 
-	inline const U32& head(void) const{ return(this->keys[0]); }
+    // Bit access
+    inline const bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
 
-	inline const U32& tail(void) const{
-		if(this->n_keys == 0) return(this->tail());
-		return(this->keys[this->n_keys - 1]);
-	}
+    // Capacity
+    inline const bool empty(void) const{ return(this->n_keys == 0); }
+    inline const value_type& size(void) const{ return(this->n_keys); }
 
-	inline const U32* const firstKey(void) const{ return(&this->keys[0]); }
+    // Iterator
+    inline iterator begin(){ return iterator(&this->keys[0]); }
+    inline iterator end()  { return iterator(&this->keys[this->n_keys - 1]); }
+    inline const_iterator begin()  const{ return const_iterator(&this->keys[0]); }
+    inline const_iterator end()    const{ return const_iterator(&this->keys[this->n_keys - 1]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->keys[0]); }
+    inline const_iterator cend()   const{ return const_iterator(&this->keys[this->n_keys - 1]); }
 
-	inline const U32* const lastKey(void) const {
-		if(this->n_keys == 0) return(this->firstKey());
-		return(&this->keys[this->n_keys - 1]);
-	}
+	// Utility
+	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
+private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
 		for(U32 i = 0; i < entry.n_keys; ++i)
@@ -69,12 +121,10 @@ public:
 		return(stream);
 	}
 
-	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
-
 public:
-	U32   n_keys;
-	U32*  keys;
-	BYTE* bit_bytes;
+	value_type n_keys;
+	pointer    keys;
+	BYTE*      bit_bytes;
 };
 
 }

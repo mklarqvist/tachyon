@@ -7,11 +7,11 @@
 #include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "../index/IndexEntry.h"
-#include "../index/IndexIndexEntry.h"
 #include "ImportWriter.h"
 #include "ImporterStats.h"
 #include "../containers/DataBlock.h"
+#include "../index/index_entry.h"
+#include "../index/index_index_entry.h"
 
 namespace tachyon {
 

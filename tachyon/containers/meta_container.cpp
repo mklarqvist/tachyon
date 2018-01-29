@@ -54,6 +54,66 @@ void MetaContainer::__ctor_setup(const DataBlock& block){
 			new( &this->__entries[i] ) value_type( hot_entries[i] );
 		}
 	}
+
+
+	U32 n_filter_ids = 0;
+	U32 n_format_ids = 0;
+	U32 n_info_ids   = 0;
+	if(block.meta_filter_map_ids.buffer_data_uncompressed.size()){
+		assert(block.meta_filter_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
+		const U32* const filter_ids = reinterpret_cast<const U32* const>(block.meta_filter_map_ids.buffer_data_uncompressed.data());
+		if(block.meta_filter_map_ids.header.isUniform()){
+			assert(block.meta_filter_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
+			n_filter_ids = this->size();
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).filter_pattern_id = filter_ids[0];
+		} else {
+			assert(block.meta_filter_map_ids.buffer_data_uncompressed.size() / sizeof(U32) == this->size());
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).filter_pattern_id = filter_ids[i];
+
+			n_filter_ids = block.meta_filter_map_ids.buffer_data_uncompressed.size() / sizeof(U32);
+		}
+	}
+
+	if(block.meta_info_map_ids.buffer_data_uncompressed.size()){
+		assert(block.meta_info_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
+		const U32* const info_ids = reinterpret_cast<const U32* const>(block.meta_info_map_ids.buffer_data_uncompressed.data());
+		if(block.meta_info_map_ids.header.isUniform()){
+			assert(block.meta_info_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
+			n_info_ids = this->size();
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).info_pattern_id = info_ids[0];
+
+		} else {
+			assert(block.meta_info_map_ids.buffer_data_uncompressed.size() / sizeof(U32) == this->size());
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).info_pattern_id = info_ids[i];
+
+			n_info_ids = block.meta_info_map_ids.buffer_data_uncompressed.size() / sizeof(U32);
+		}
+	}
+
+	if(block.meta_format_map_ids.buffer_data_uncompressed.size()){
+		assert(block.meta_format_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
+		const U32* const format_ids = reinterpret_cast<const U32* const>(block.meta_format_map_ids.buffer_data_uncompressed.data());
+		if(block.meta_format_map_ids.header.isUniform()){
+			assert(block.meta_format_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
+			n_format_ids = this->size();
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).format_pattern_id = format_ids[0];
+
+		} else {
+			assert(block.meta_format_map_ids.buffer_data_uncompressed.size() / sizeof(U32) == this->size());
+			for(U32 i = 0; i < this->size(); ++i)
+				this->at(i).format_pattern_id = format_ids[i];
+
+			n_format_ids = block.meta_format_map_ids.buffer_data_uncompressed.size() / sizeof(U32);
+		}
+	}
+
+	assert(n_filter_ids == n_format_ids);
+	assert(n_format_ids == n_info_ids);
 }
 
 }

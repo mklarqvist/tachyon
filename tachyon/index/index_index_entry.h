@@ -1,7 +1,7 @@
-#ifndef INDEX_INDEXINDEXENTRY_H_
-#define INDEX_INDEXINDEXENTRY_H_
+#ifndef INDEX_INDEX_INDEX_ENTRY_H_
+#define INDEX_INDEX_INDEX_ENTRY_H_
 
-#include "IndexEntry.h"
+#include "index_entry.h"
 
 namespace tachyon{
 namespace index{
@@ -109,4 +109,4 @@ public:
 
 
 
-#endif /* INDEX_INDEXINDEXENTRY_H_ */
+#endif /* INDEX_INDEX_INDEX_ENTRY_H_ */

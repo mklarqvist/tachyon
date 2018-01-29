@@ -1,5 +1,5 @@
-#ifndef INDEX_INDEXENTRY_H_
-#define INDEX_INDEXENTRY_H_
+#ifndef INDEX_INDEX_ENTRY_H_
+#define INDEX_INDEX_ENTRY_H_
 
 #include <fstream>
 

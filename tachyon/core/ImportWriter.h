@@ -4,8 +4,8 @@
 #include <cassert>
 #include <fstream>
 
+#include "../index/sorted_index.h"
 #include "../support/type_definitions.h"
-#include "../index/SortedIndex.h"
 
 namespace tachyon {
 

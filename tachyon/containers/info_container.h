@@ -19,13 +19,16 @@ private:
     typedef std::ptrdiff_t                  difference_type;
     typedef std::size_t                     size_type;
     typedef io::BasicBuffer                 buffer_type;
+    typedef DataContainer                   data_container_type;
+    typedef MetaContainer                   meta_container_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getStrideFunction)(const buffer_type& buffer, const U32 position) const;
 
 public:
     InfoContainer();
-    InfoContainer(const DataContainer& container);
+    InfoContainer(const data_container_type& container);
+    InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const U32 info_identifier);
     ~InfoContainer(void);
 
     class iterator{
@@ -88,7 +91,7 @@ public:
 
 private:
     template <class actual_primitive>
-    void __setup(const DataContainer& container, getStrideFunction func){
+    void __setup(const data_container_type& container, getStrideFunction func){
 		if(container.buffer_strides_uncompressed.size() == 0)
 			return;
 
@@ -107,7 +110,7 @@ private:
 	}
 
 	template <class actual_primitive>
-	void __setup(const DataContainer& container, const U32 stride_size){
+	void __setup(const data_container_type& container, const U32 stride_size){
 		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
 
 		if(this->n_entries == 0)
@@ -139,7 +142,7 @@ private:
 
 
 template <class return_type>
-InfoContainer<return_type>::InfoContainer(const DataContainer& container) :
+InfoContainer<return_type>::InfoContainer(const data_container_type& container) :
 	n_entries(0),
 	__containers(nullptr)
 {
