@@ -28,7 +28,7 @@ private:
 public:
     InfoContainer();
     InfoContainer(const data_container_type& container);
-    InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const U32 info_identifier);
+    InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
     ~InfoContainer(void);
 
     class iterator{
@@ -109,6 +109,29 @@ private:
 		assert(current_offset == container.buffer_data_uncompressed.size());
 	}
 
+    template <class actual_primitive>
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, std::vector<bool>& pattern_matches, getStrideFunction func){
+    	    this->n_entries = meta_container.size();
+		if(this->n_entries == 0)
+			return;
+
+		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+		U32 current_offset = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// If pattern matches
+			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+				new( &this->__containers[i] ) value_type( data_container, current_offset, (this->*func)(data_container.buffer_strides_uncompressed, i) );
+				current_offset += (this->*func)(data_container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
+			}
+			// Otherwise place an empty
+			else {
+				new( &this->__containers[i] ) value_type( );
+			}
+		}
+		assert(current_offset == data_container.buffer_data_uncompressed.size());
+	}
+
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U32 stride_size){
 		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
@@ -125,6 +148,29 @@ private:
 			current_offset += stride_size * sizeof(actual_primitive);
 		}
 		assert(current_offset == container.buffer_data_uncompressed.size());
+	}
+
+	template <class actual_primitive>
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, std::vector<bool>& pattern_matches, const U32 stride_size){
+		this->n_entries = meta_container.size();
+		if(this->n_entries == 0)
+			return;
+
+		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+		U32 current_offset = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// If pattern matches
+			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+				new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );
+				current_offset += stride_size * sizeof(actual_primitive);
+			}
+			// Otherwise place an empty
+			else {
+				new( &this->__containers[i] ) value_type( );
+			}
+		}
+		assert(current_offset == data_container.buffer_data_uncompressed.size());
 	}
 
 	// Access function
@@ -149,7 +195,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 	if(container.buffer_data_uncompressed.size() == 0)
 		return;
 
-	if(container.header.controller.mixedStride){
+	if(container.header.hasMixedStride()){
 		getStrideFunction func = nullptr;
 
 		switch(container.header_stride.controller.type){
@@ -161,47 +207,47 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 		}
 
 		if(container.header.isSigned()){
-			switch(container.header.controller.type){
-			case(tachyon::core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
-			case(tachyon::core::YON_TYPE_CHAR): (this->__setup<char>(container, func)); break;
-			case(tachyon::core::YON_TYPE_16B): (this->__setup<S16>(container, func));   break;
-			case(tachyon::core::YON_TYPE_32B): (this->__setup<S32>(container, func));   break;
-			case(tachyon::core::YON_TYPE_64B): (this->__setup<S64>(container, func));   break;
-			case(tachyon::core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
-			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			switch(container.header.getPrimitiveType()){
+			case(tachyon::core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, func));  break;
+			case(tachyon::core::YON_TYPE_CHAR):   (this->__setup<char>(container, func));   break;
+			case(tachyon::core::YON_TYPE_16B):    (this->__setup<S16>(container, func));    break;
+			case(tachyon::core::YON_TYPE_32B):    (this->__setup<S32>(container, func));    break;
+			case(tachyon::core::YON_TYPE_64B):    (this->__setup<S64>(container, func));    break;
+			case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, func));  break;
+			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.getPrimitiveType()){
-			case(tachyon::core::YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
-			case(tachyon::core::YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
-			case(tachyon::core::YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
-			case(tachyon::core::YON_TYPE_64B): (this->__setup<U64>(container, func));  break;
-			case(tachyon::core::YON_TYPE_FLOAT): (this->__setup<float>(container, func));   break;
-			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func));   break;
+			case(tachyon::core::YON_TYPE_8B):     (this->__setup<BYTE>(container, func));   break;
+			case(tachyon::core::YON_TYPE_16B):    (this->__setup<U16>(container, func));    break;
+			case(tachyon::core::YON_TYPE_32B):    (this->__setup<U32>(container, func));    break;
+			case(tachyon::core::YON_TYPE_64B):    (this->__setup<U64>(container, func));    break;
+			case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, func));  break;
+			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, func)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}
 	} else {
-		if(container.header.controller.signedness){
-			switch(container.header.controller.type){
-			case(tachyon::core::YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
-			case(tachyon::core::YON_TYPE_CHAR): (this->__setup<char>(container, container.header.stride)); break;
-			case(tachyon::core::YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
-			case(tachyon::core::YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
-			case(tachyon::core::YON_TYPE_64B): (this->__setup<S64>(container, container.header.stride));   break;
-			case(tachyon::core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
-			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+		if(container.header.isSigned()){
+			switch(container.header.getPrimitiveType()){
+			case(tachyon::core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_CHAR):   (this->__setup<char>(container, container.header.stride));   break;
+			case(tachyon::core::YON_TYPE_16B):    (this->__setup<S16>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_32B):    (this->__setup<S32>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_64B):    (this->__setup<S64>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(container.header.controller.type){
-			case(tachyon::core::YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
-			case(tachyon::core::YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
-			case(tachyon::core::YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;
-			case(tachyon::core::YON_TYPE_64B): (this->__setup<U64>(container, container.header.stride));  break;
-			case(tachyon::core::YON_TYPE_FLOAT): (this->__setup<float>(container, container.header.stride));   break;
-			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride));   break;
+			switch(container.header.getPrimitiveType()){
+			case(tachyon::core::YON_TYPE_8B):     (this->__setup<BYTE>(container, container.header.stride));   break;
+			case(tachyon::core::YON_TYPE_16B):    (this->__setup<U16>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_32B):    (this->__setup<U32>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_64B):    (this->__setup<U64>(container, container.header.stride));    break;
+			case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.stride));  break;
+			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
 			}
 		}

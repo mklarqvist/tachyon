@@ -108,24 +108,16 @@ public:
 	}
 
 	inline const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const{
-		int info_field = this->has_info_field(field_name);
+		int local_info_field_id = this->has_info_field(field_name);
 		std::vector<bool> ret;
-		if(info_field >= 0){
+		if(local_info_field_id >= 0){
 			// Collect all matches
 			// Place in array
 			// 0 = false, 1 = true
-			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
-				for(U32 j = 0; j < this->block.index_entry.info_bit_vectors[i].size(); ++j){
-					if(this->block.index_entry.info_bit_vectors[i].key_at(j) == info_field){
-						std::cerr << "map: " << info_field << "->" << i << "/" << j << std::endl;
-					}
-				}
-			}
-
 			ret.resize(this->block.index_entry.n_info_patterns, false);
 			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
-				std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][info_field] << std::endl;
-				ret[i] = this->block.index_entry.info_bit_vectors[i][info_field];
+				std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
+				ret[i] = this->block.index_entry.info_bit_vectors[i][local_info_field_id];
 			}
 		}
 		return(ret);
@@ -319,16 +311,16 @@ public:
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::GenotypeContainer gt(this->block);
-		math::Fisher fisher(1000);
-		containers::GenotypeSum gt_summary;
+		//math::Fisher fisher(1000);
+		//containers::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<core::GTObject> objects = gt[i].getObjects();
 			//const U32 n_entries = gt[i].getSum();
-			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
-			gt[i].getSummary(gt_summary);
+			//if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
+			//gt[i].getSummary(gt_summary);
 
-			const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
-			const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total);
+			//const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
+			//const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total);
 			//if(p < 1e-3){
 			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
 			//	stream << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
@@ -341,7 +333,7 @@ public:
 			//assert(gt_summary.alleleCount() == 2*this->header.n_samples);
 			//assert(gt_summary.genotypeCount() == this->header.n_samples);
 			//assert(n_entries == this->header.n_samples);
-			gt_summary.clear();
+			//gt_summary.clear();
 		}
 		//std::cerr << std::endl;
 		//std::cerr << gt.size() << std::endl;
