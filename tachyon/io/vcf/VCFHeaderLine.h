@@ -66,14 +66,14 @@ public:
 		// Make sure this is a valid VCF header line
 		// Rule: has to start with ##
 		if(!this->isValid()){
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Invalid VCF header line..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Invalid VCF header line..." << std::endl;
 			return false;
 		}
 
 		// Attempt to find an equal sign
 		const char* match = std::find(this->data, &this->data[this->size_], '=');
 		if(*match != '='){
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match..." << std::endl;
 			return false;
 		}
 
@@ -97,7 +97,7 @@ public:
 		U32 matchPos = match - this->data + 1;
 		if(this->data[matchPos] == '<'){
 			if(this->data[this->size_] != '>'){
-				std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data[this->size_] << std::endl;
+				std::cerr << utility::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: " << this->data[this->size_] << std::endl;
 				return false;
 			}
 
@@ -120,7 +120,7 @@ private:
 
 		const char* match = std::find(&this->data[startPos], &this->data[this->size_], '=');
 		if(*match != '='){
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no equal match in next key..." << std::endl;
 			return false;
 		}
 		U32 matchPos = match - this->data;
@@ -143,7 +143,7 @@ private:
 			this->pairs.push_back(entry);
 			return false;
 		} else if(*match != match_token){
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Corrupted VCF header entry: no comma match in next key..." << std::endl;
 			return false;
 		}
 

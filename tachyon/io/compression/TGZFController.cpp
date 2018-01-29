@@ -23,9 +23,9 @@ void TGZFController::Clear(){ this->buffer.reset(); }
 bool TGZFController::Inflate(buffer_type& input, buffer_type& output) const{
 	const header_type& header = *reinterpret_cast<const header_type* const>(&input[0]);
 	if(!header.Validate()){
-		 std::cerr << helpers::timestamp("ERROR","TGZF") << "Invalid TGZF header" << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","TGZF") << "Output length: " << header.BSIZE << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","TGZF") << std::endl;
+		 std::cerr << utility::timestamp("ERROR","TGZF") << "Invalid TGZF header" << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","TGZF") << "Output length: " << header.BSIZE << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","TGZF") << std::endl;
 		 std::cerr << header << std::endl;
 		 exit(1);
 	}
@@ -61,7 +61,7 @@ bool TGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	int status = inflateInit2(&zs, this->bit_window);
 
 	if(status != Z_OK){
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "Zlib inflateInit failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "Zlib inflateInit failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -69,7 +69,7 @@ bool TGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	status = inflate(&zs, Z_FINISH);
 	if(status != Z_STREAM_END){
 		inflateEnd(&zs);
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "Zlib inflateEnd failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "Zlib inflateEnd failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -77,12 +77,12 @@ bool TGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	status = inflateEnd(&zs);
 	if(status != Z_OK){
 		inflateEnd(&zs);
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
 	if(zs.total_out == 0)
-		std::cerr << helpers::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
+		std::cerr << utility::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
 
 	output.n_chars += zs.total_out;
 
@@ -91,7 +91,7 @@ bool TGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 
 bool TGZFController::Deflate(const buffer_type& buffer){
 	if(buffer.n_chars > std::numeric_limits<U32>::max()){
-		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Format is limited to 2^32 bits. Buffer overflow..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "TGZF") << "Format is limited to 2^32 bits. Buffer overflow..." << std::endl;
 		return(false);
 	}
 
@@ -135,7 +135,7 @@ bool TGZFController::Deflate(const buffer_type& buffer){
 							  Z_DEFAULT_STRATEGY);
 
 	if ( status != Z_OK ){
-		std::cerr << helpers::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflateInit2 failed" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflateInit2 failed" << std::endl;
 		return false;
 	}
 
@@ -147,14 +147,14 @@ bool TGZFController::Deflate(const buffer_type& buffer){
 		deflateEnd(&zs);
 
 		// there was not enough space available in buffer
-		std::cerr << helpers::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflate failed (insufficient space)" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflate failed (insufficient space)" << std::endl;
 		return false;
 	}
 
 	// finalize the compression routine
 	status = deflateEnd(&zs);
 	if ( status != Z_OK ){
-		std::cerr << helpers::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflateEnd failed (not ok)" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "ZLIB") << "DeflateBlock: zlib deflateEnd failed (not ok)" << std::endl;
 		return false;
 	}
 
@@ -166,14 +166,14 @@ bool TGZFController::Deflate(const buffer_type& buffer){
 	// store the compressed length
 	U32* test = reinterpret_cast<U32*>(&this->buffer[16]);
 	*test = compressedLength;
-	//std::cerr << helpers::timestamp("DEBUG") << data.pointer << "->" << compressedLength-1 << " stored: " << *test << std::endl;
+	//std::cerr << utility::timestamp("DEBUG") << data.pointer << "->" << compressedLength-1 << " stored: " << *test << std::endl;
 
 	//std::time_t result = std::time(nullptr);
 	//std::asctime(std::localtime(&result));
 	//U32* time = reinterpret_cast<U32*>(&this->buffer[4]);
 	//*time = result;
 	//*time = 0;
-	//std::cerr << helpers::timestamp("DEBUG") << "Time: " << *time << std::endl;
+	//std::cerr << utility::timestamp("DEBUG") << "Time: " << *time << std::endl;
 
 	memset(&buffer.buffer[compressedLength - constants::TGZF_BLOCK_FOOTER_LENGTH], 0, constants::TGZF_BLOCK_FOOTER_LENGTH);
 
@@ -209,7 +209,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	const header_type* h = reinterpret_cast<const header_type*>(&input.buffer[0]);
 	input.n_chars = io::constants::TGZF_BLOCK_HEADER_LENGTH;
 	if(!h->Validate()){
-		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		return false;
 	}
@@ -222,7 +222,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 
 	stream.read(&input.buffer[io::constants::TGZF_BLOCK_HEADER_LENGTH], h->BSIZE - io::constants::TGZF_BLOCK_HEADER_LENGTH);
 	if(!stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Truncated file..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "TGZF") << "Truncated file..." << std::endl;
 		return false;
 	}
 
@@ -232,7 +232,7 @@ bool TGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	this->buffer.reset();
 
 	if(!this->Inflate(input, this->buffer)){
-		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Failed inflate!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "TGZF") << "Failed inflate!" << std::endl;
 		return false;
 	}
 

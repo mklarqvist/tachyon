@@ -86,14 +86,14 @@ int import(int argc, char** argv){
 		case 'c':
 			checkpoint_n_variants = atoi(optarg);
 			if(checkpoint_n_variants <= 0){
-				std::cerr << tachyon::helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
 		case 'C':
 			checkpoint_bp_window = atof(optarg);
 			if(checkpoint_bp_window <= 0){
-				std::cerr << tachyon::helpers::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
@@ -104,20 +104,20 @@ int import(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << tachyon::helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
-		std::cerr << tachyon::helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << tachyon::helpers::timestamp("LOG") << "Calling import..." << std::endl;
+		std::cerr << tachyon::utility::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
 	tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);

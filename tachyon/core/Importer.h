@@ -9,7 +9,7 @@
 #include "../io/bcf/BCFReader.h"
 #include "ImportWriter.h"
 #include "ImporterStats.h"
-#include "../containers/DataBlock.h"
+#include "../containers/datablock.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
 

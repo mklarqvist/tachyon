@@ -53,7 +53,7 @@ bool MetaHotRefAlt::setRef(const char& c){
 	case 'G': this->ref = constants::REF_ALT_G; break;
 	case 'C': this->ref = constants::REF_ALT_C; break;
 	default:
-		std::cerr << helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "ENCODING") << "Illegal SNV reference..." << std::endl;
 		return false;
 	}
 	return true;
@@ -67,7 +67,7 @@ bool MetaHotRefAlt::setAlt(const char& c){
 	case 'C': this->alt = constants::REF_ALT_C; break;
 	case 'N': this->alt = constants::REF_ALT_N; break;
 	default:
-		std::cerr << helpers::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "ENCODING") << "Illegal SNV alternative..." << std::endl;
 		return false;
 	}
 	return true;

@@ -114,6 +114,14 @@ public:
 			// Collect all matches
 			// Place in array
 			// 0 = false, 1 = true
+			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
+				for(U32 j = 0; j < this->block.index_entry.info_bit_vectors[i].size(); ++j){
+					if(this->block.index_entry.info_bit_vectors[i].key_at(j) == info_field){
+						std::cerr << "map: " << info_field << "->" << i << "/" << j << std::endl;
+					}
+				}
+			}
+
 			ret.resize(this->block.index_entry.n_info_patterns, false);
 			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
 				std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][info_field] << std::endl;
@@ -179,7 +187,7 @@ public:
 		// Seek to EOF and make check
 		this->stream.seekg(this->filesize - 32);
 		BYTE eof_data[32];
-		helpers::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
+		utility::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
 		BYTE eof_match[32];
 		this->stream.read((char*)&eof_match[0], 32);
 		for(U32 i = 0; i < 32; ++i){
@@ -267,7 +275,7 @@ public:
 		containers::MetaContainer meta(this->block);
 		std::cerr << block.size() << std::endl;
 
-		std::vector<bool> ac_matches = this->get_info_field_pattern_matches("AC");
+		std::vector<bool> ac_matches = this->get_info_field_pattern_matches("IMPRECISE");
 		return(0);
 
 		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");
@@ -306,7 +314,7 @@ public:
 
 		square /= (U64)2*this->header.n_samples*gt.size();
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
-		std::cerr << "Updates: " << helpers::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << helpers::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
+		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){

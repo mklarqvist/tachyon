@@ -112,7 +112,7 @@ public:
 			this->n_chars = copy_to;
 		}
 
-		//std::cerr << Helpers::timestamp("DEBUG") << "Resizing buffer: " << this->capacity() << " -> " << new_size << "\tcopyto: " << copy_to << std::endl;
+		//std::cerr << utility::timestamp("DEBUG") << "Resizing buffer: " << this->capacity() << " -> " << new_size << "\tcopyto: " << copy_to << std::endl;
 		char* target = this->buffer;
 		this->buffer = new char[new_size];
 		memcpy(&this->buffer[0], &target[0], copy_to);

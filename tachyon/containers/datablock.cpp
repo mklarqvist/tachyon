@@ -277,7 +277,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset->offset);
 			if(!stream.good()){
-				std::cerr << helpers::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
+				std::cerr << utility::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
 				return false;
 			}
 

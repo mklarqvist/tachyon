@@ -17,7 +17,7 @@ bool TGZFControllerStream::InflateOpen(std::ifstream& stream){
 	const header_type* h = reinterpret_cast<const header_type*>(&this->buffer.buffer[0]);
 
 	if(!h->Validate()){
-		std::cerr << helpers::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "TGZF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		exit(1);
 	}
@@ -35,7 +35,7 @@ bool TGZFControllerStream::InflateOpen(std::ifstream& stream){
 
 	int ret = inflateInit2(&this->d_stream, constants::GZIP_WINDOW_BITS);
 	if (ret != Z_OK){
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "Failed inflatinit" << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "Failed inflatinit" << std::endl;
 		this->STATE = TGZF_STATE::TGZF_ERROR;
 		return ret;
 	}
@@ -89,7 +89,7 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 		this->d_stream.next_in  = (Bytef*)&this->buffer.buffer[0];
 
 		if(total == 0){
-			std::cerr << helpers::timestamp("WARNING","TGZF") << "Nothing read!" << std::endl;
+			std::cerr << utility::timestamp("WARNING","TGZF") << "Nothing read!" << std::endl;
 			return false;
 		}
 		this->buffer.n_chars = total;
@@ -104,7 +104,7 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 	assert(status != Z_STREAM_ERROR);
 
 	if(status != Z_OK && status != Z_STREAM_END){
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "inflate failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "inflate failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -120,13 +120,13 @@ bool TGZFControllerStream::__Inflate(std::ifstream& stream, const BYTE* output, 
 	status = inflateEnd(&this->d_stream);
 	if(status != Z_OK){
 		inflateEnd(&this->d_stream);
-		std::cerr << helpers::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","TGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
 	if(this->d_stream.total_out == 0){
 		if(!SILENT)
-			std::cerr << helpers::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
+			std::cerr << utility::timestamp("LOG", "TGZF") << "Detected empty TGZF block" << std::endl;
 	}
 
 	this->STATE = TGZF_STATE::TGZF_END;

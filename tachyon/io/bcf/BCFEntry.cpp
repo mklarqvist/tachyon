@@ -205,7 +205,7 @@ bool BCFEntry::parse(void){
 
 	this->ploidy = fmt_type.high;
 	if(fmt_type.high != 2){
-		std::cerr << helpers::timestamp("LOG","BCF") << "Non-diploid variant: " << this->body->CHROM << ':' << this->body->POS+1 << " ploidy: " << this->ploidy << std::endl;
+		std::cerr << utility::timestamp("LOG","BCF") << "Non-diploid variant: " << this->body->CHROM << ':' << this->body->POS+1 << " ploidy: " << this->ploidy << std::endl;
 		//this->isGood = false;
 		//return false;
 	}
@@ -253,7 +253,7 @@ void BCFEntry::SetRefAlt(void){
 	case 'G': this->ref_alt ^= constants::REF_ALT_G << 4; break;
 	case 'C': this->ref_alt ^= constants::REF_ALT_C << 4; break;
 	default:
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
 		exit(1);
 	}
 
@@ -264,7 +264,7 @@ void BCFEntry::SetRefAlt(void){
 	case 'C': this->ref_alt ^= constants::REF_ALT_C << 0; break;
 	case '.': this->ref_alt ^= constants::REF_ALT_N << 0; break;
 	default:
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
 		exit(1);
 	}
 }

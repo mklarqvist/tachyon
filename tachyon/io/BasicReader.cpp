@@ -23,14 +23,14 @@ bool BasicReader::open(std::string filename){
 bool BasicReader::open(void){
 	// Check that filename is set
 	if(this->filename_.size() == 0){
-		std::cerr << helpers::timestamp("ERROR", "IO") << "No input file given..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "No input file given..." << std::endl;
 		return false;
 	}
 
 	// Open stream at the end of the file
 	this->stream_.open(this->filename_, std::ios::binary | std::ios::ate);
 	if(!this->good()){
-		std::cerr << helpers::timestamp("ERROR", "IO") << "Failed to open file..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "Failed to open file..." << std::endl;
 		return false;
 	}
 
@@ -40,7 +40,7 @@ bool BasicReader::open(void){
 
 	// If filesize is 0 return
 	if(this->filesize_ <= 0){
-		std::cerr << helpers::timestamp("ERROR", "IO") << "File size is 0..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "File size is 0..." << std::endl;
 		return false;
 	}
 
@@ -48,7 +48,7 @@ bool BasicReader::open(void){
 	this->end_ = 0;
 
 	if(!SILENT)
-		std::cerr << helpers::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
+		std::cerr << utility::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
 
 	return(true);
 }
@@ -104,13 +104,13 @@ bool BasicReader::getLine(void){ // Read until finding a new line into buffer
 	this->end_ += this->stream_.gcount();
 
 	if(this->stream_.eof()){
-		//std::cerr << Tachyon::helpers::timestamp("LOG", "IO") << "EOF found check bit: " << this->stream_.eof() << std::endl;
+		//std::cerr << Tachyon::utility::timestamp("LOG", "IO") << "EOF found check bit: " << this->stream_.eof() << std::endl;
 		return false;
 	}
 
 	if((this->stream_.fail()) && (this->capacity_ - this->end_ - 1 == 0)){
 		if(!SILENT)
-			std::cerr << helpers::timestamp("LOG", "IO") << "Resizing buffer from: " << this->capacity_ << " -> " << this->capacity_*2 << std::endl;
+			std::cerr << utility::timestamp("LOG", "IO") << "Resizing buffer from: " << this->capacity_ << " -> " << this->capacity_*2 << std::endl;
 
 		this->resize();
 		this->stream_.clear();
@@ -118,8 +118,8 @@ bool BasicReader::getLine(void){ // Read until finding a new line into buffer
 	}
 
 	if(this->stream_.fail()){
-		std::cerr << helpers::timestamp("ERROR", "IO") << "IO stream failed!" << std::endl;
-		std::cerr << helpers::timestamp("ERROR", "IO") << "Stream position: " << this->stream_.tellg() << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "IO stream failed!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "Stream position: " << this->stream_.tellg() << std::endl;
 		return false;
 	}
 

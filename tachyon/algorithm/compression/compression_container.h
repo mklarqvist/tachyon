@@ -145,7 +145,7 @@ public:
 
 	const bool decode(stream_type& stream){
 		if(stream.header.controller.encoder != core::YON_ENCODE_NONE){
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 		stream.buffer_data_uncompressed.resize(stream.buffer_data.n_chars + 16536);
@@ -157,12 +157,12 @@ public:
 
 	const bool decodeStrides(stream_type& stream){
 		if(!stream.header.controller.mixedStride){
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
 			return false;
 		}
 
 		if(stream.header_stride.controller.encoder != core::YON_ENCODE_NONE){
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -219,7 +219,7 @@ public:
 									   this->compression_level_data);
 
 			if(ZSTD_isError(ret)){
-			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
@@ -235,7 +235,7 @@ public:
 			else return true;
 		}
 
-		//std::cerr << helpers::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_data.n_chars/ret << "-fold"  << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_data.n_chars/ret << "-fold"  << std::endl;
 
 		memcpy(stream.buffer_data.buffer, this->buffer.buffer, ret);
 		stream.header.cLength            = ret;
@@ -274,7 +274,7 @@ public:
 								   this->compression_level_data);
 
 		if(ZSTD_isError(ret)){
-			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
@@ -287,7 +287,7 @@ public:
 			return true;
 		}
 
-		//std::cerr << helpers::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
 
 		memcpy(stream.buffer_strides.buffer, this->buffer.buffer, ret);
 		stream.header_stride.cLength            = ret;
@@ -345,7 +345,7 @@ public:
 			std::cerr << this->buffer.n_chars << '\t' << manager.PPA.n_chars << std::endl;
 			exit(1);
 		}
-		//std::cerr << helpers::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
 		manager.PPA.n_chars = ret;
 		manager.c_length    = ret;
 
@@ -354,7 +354,7 @@ public:
 
 	const bool decode(stream_type& stream){
 		if(stream.header.controller.encoder != core::YON_ENCODE_ZSTD){
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
@@ -365,7 +365,7 @@ public:
 								  stream.buffer_data.n_chars);
 
 		if(ZSTD_isError(ret)){
-			std::cerr << helpers::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
@@ -382,7 +382,7 @@ public:
 			return false;
 
 		if(stream.header_stride.controller.encoder != core::YON_ENCODE_ZSTD){
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 

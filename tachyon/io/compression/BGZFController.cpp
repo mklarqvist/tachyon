@@ -20,9 +20,9 @@ void BGZFController::Clear(){ this->buffer.reset(); }
 U32 BGZFController::InflateSize(buffer_type& input) const{
 	const header_type& header = *reinterpret_cast<const header_type* const>(&input.buffer[0]);
 	if(!header.Validate()){
-		 std::cerr << helpers::timestamp("ERROR","BGZF") << "Invalid BGZF header" << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","BGZF") << "Output length: " << header.BSIZE << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","BGZF") << std::endl;
+		 std::cerr << utility::timestamp("ERROR","BGZF") << "Invalid BGZF header" << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","BGZF") << "Output length: " << header.BSIZE << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","BGZF") << std::endl;
 		 std::cerr << header << std::endl;
 		 exit(1);
 	}
@@ -33,9 +33,9 @@ U32 BGZFController::InflateSize(buffer_type& input) const{
 bool BGZFController::Inflate(buffer_type& input, buffer_type& output) const{
 	const header_type& header = *reinterpret_cast<const header_type* const>(&input[0]);
 	if(!header.Validate()){
-		 std::cerr << helpers::timestamp("ERROR","BGZF") << "Invalid BGZF header" << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","BGZF") << "Output length: " << header.BSIZE << std::endl;
-		 std::cerr << helpers::timestamp("DEBUG","BGZF") << std::endl;
+		 std::cerr << utility::timestamp("ERROR","BGZF") << "Invalid BGZF header" << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","BGZF") << "Output length: " << header.BSIZE << std::endl;
+		 std::cerr << utility::timestamp("DEBUG","BGZF") << std::endl;
 		 std::cerr << header << std::endl;
 		 exit(1);
 	}
@@ -71,7 +71,7 @@ bool BGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	int status = inflateInit2(&zs, constants::GZIP_WINDOW_BITS);
 
 	if(status != Z_OK){
-		std::cerr << helpers::timestamp("ERROR","BGZF") << "Zlib inflateInit failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","BGZF") << "Zlib inflateInit failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -79,7 +79,7 @@ bool BGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	status = inflate(&zs, Z_FINISH);
 	if(status != Z_STREAM_END){
 		inflateEnd(&zs);
-		std::cerr << helpers::timestamp("ERROR","BGZF") << "Zlib inflateEnd failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","BGZF") << "Zlib inflateEnd failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
@@ -87,12 +87,12 @@ bool BGZFController::__Inflate(buffer_type& input, buffer_type& output, const he
 	status = inflateEnd(&zs);
 	if(status != Z_OK){
 		inflateEnd(&zs);
-		std::cerr << helpers::timestamp("ERROR","BGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
+		std::cerr << utility::timestamp("ERROR","BGZF") << "Zlib inflateFinalize failed: " << (int)status << std::endl;
 		exit(1);
 	}
 
 	//if(zs.total_out == 0)
-	//	std::cerr << helpers::timestamp("LOG", "BGZF") << "Detected empty BGZF block" << std::endl;
+	//	std::cerr << utility::timestamp("LOG", "BGZF") << "Detected empty BGZF block" << std::endl;
 
 	output.n_chars += zs.total_out;
 
@@ -103,14 +103,14 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	input.resize(sizeof(header_type));
 	stream.read(&input.buffer[0], io::constants::BGZF_BLOCK_HEADER_LENGTH);
 	if(!stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
 		return false;
 	}
 
 	const header_type* h = reinterpret_cast<const header_type*>(&input.buffer[0]);
 	input.n_chars = io::constants::BGZF_BLOCK_HEADER_LENGTH;
 	if(!h->Validate()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Failed to validate!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Failed to validate!" << std::endl;
 		std::cerr << *h << std::endl;
 		return false;
 	}
@@ -123,7 +123,7 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 
 	stream.read(&input.buffer[io::constants::BGZF_BLOCK_HEADER_LENGTH], (h->BSIZE + 1) - io::constants::BGZF_BLOCK_HEADER_LENGTH);
 	if(!stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Truncated file..." << std::endl;
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool BGZFController::InflateBlock(std::ifstream& stream, buffer_type& input){
 	this->buffer.reset();
 
 	if(!this->Inflate(input, this->buffer)){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Failed inflate!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Failed inflate!" << std::endl;
 		return false;
 	}
 

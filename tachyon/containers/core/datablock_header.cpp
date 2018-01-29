@@ -86,12 +86,16 @@ bool DataBlockHeader::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	return false;
 }
 
-bool DataBlockHeader::__constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns){
+bool DataBlockHeader::__constructBitVector(bit_vector*& target,
+                                  offset_minimal_type*  offset,
+                                  hash_container_type&  values,
+                           hash_vector_container_type& patterns)
+{
+	if(values.size() == 0) return false;
 	BYTE bitvector_width = ceil((float)values.size()/8);
 	if(values.size() == 1) bitvector_width = 1;
 
-	// Clear data if present
-	// Allocate new bit-vectors
+	// Create new bit-vectors
 	delete [] target;
 	target = new bit_vector[patterns.size()];
 
@@ -101,47 +105,24 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target, offset_minimal_t
 
 	// Cycle over pattern size
 	for(U32 i = 0; i < patterns.size(); ++i){
-		// Dump data
-		//std::cerr << i << '\t';
-		//for(U32 j = 0; j < patterns[i].size(); ++j){
-		//	std::cerr << patterns[i][j] << '\t';
-		//}
-		//std::cerr << std::endl;
-
-
-		//
-		//std::cerr << i << '\t';
 		for(U32 j = 0; j < patterns[i].size(); ++j){
-			U32 retval = 0;
-			if(!values.getRaw(patterns[i][j], retval)){
+			U32 local_key = 0;
+			// Map from absolute key to local key
+			if(!values.getRaw(patterns[i][j], local_key)){
 				std::cerr << "impossible to get " << patterns[i][j] << std::endl;
 				exit(1);
 			}
-			target[i].bit_bytes[retval/8] ^= 1 << (retval % 8);
-			//std::cerr << retval << '\t';
-			target[i].keys[j] = retval;
-			offset[retval].key = patterns[i][j];
-			//std::cerr << target[i].keys[j] << std::endl;
+
+			// Flip bit at local key position
+			target[i].bit_bytes[local_key/8] ^= 1 << (local_key % 8);
+
+			// Store local key in key-chain
+			target[i].keys[j] = local_key;
+
+			// Store absolute key
+			offset[local_key].key = patterns[i][j];
 		}
-		//std::cerr << std::endl;
-
-		//std::cerr << i << '\t';
-		//for(U32 j = 0; j < bitvector_width; ++j)
-		//	std::cerr << std::bitset<8>(target[i].bit_bytes[j]);
-
-		//std::cerr << std::endl;
-
-		//std::cerr << i << '\t';
-		//for(U32 j = 0; j < patterns[i].size(); ++j){
-		//	std::cerr << offset[target[i].keys[j]].key << '\t';
-		//}
-
-
-		//std::cerr << std::endl << std::endl;
 	}
-	//std::cerr << std::endl;
-	//assert(this->info_offsets[0].key == 15);
-
 	return true;
 }
 

@@ -22,12 +22,12 @@ bool ImportWriter::Open(const std::string output){
 
 	// Check streams
 	if(!this->stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
 
 	if(!SILENT){
-		std::cerr << helpers::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "..." << std::endl;
+		std::cerr << utility::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "..." << std::endl;
 	}
 
 	return true;
@@ -35,7 +35,7 @@ bool ImportWriter::Open(const std::string output){
 
 bool ImportWriter::WriteHeader(void){
 	if(!this->stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
 		return false;
 	}
 
@@ -57,13 +57,13 @@ void ImportWriter::WriteFinal(const U64& data_ends){
 
 	// Write EOF
 	BYTE eof_data[32];
-	helpers::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
+	utility::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
 	this->stream.write((char*)&eof_data[0], 32);
 	this->stream.flush();
 }
 
 void ImportWriter::CheckOutputNames(const std::string& input){
-	std::vector<std::string> paths = helpers::filePathBaseExtension(input);
+	std::vector<std::string> paths = utility::filePathBaseExtension(input);
 	this->basePath = paths[0];
 	if(this->basePath.size() > 0)
 		this->basePath += '/';

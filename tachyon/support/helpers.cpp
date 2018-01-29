@@ -6,7 +6,7 @@
 #include "type_definitions.h"
 
 namespace tachyon{
-namespace helpers{
+namespace utility{
 
 int isBigEndian(){
 	union {

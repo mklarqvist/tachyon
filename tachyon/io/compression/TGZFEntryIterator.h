@@ -76,18 +76,18 @@ bool TGZFEntryIterator<T>::nextEntry(const T*& entry){
 		U32 ret_size = 0;
 		if(!parent_type::Inflate(this->stream, (BYTE*)&output_buffer.data[0], this->chunk_size, ret_size)){
 			if(this->STATE != TGZF_STATE::TGZF_END){
-				std::cerr << helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
+				std::cerr << utility::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
 				exit(1);
 			}
 		}
 
 		if(ret_size % sizeof(T) != 0){
-			std::cerr << helpers::timestamp("ERROR","TGZF") << "Impossible: " << ret_size % sizeof(T) << '\t' << ret_size << '/' << this->chunk_size << '\t' << "state: " << this->STATE << " size: " << sizeof(T) << std::endl;
+			std::cerr << utility::timestamp("ERROR","TGZF") << "Impossible: " << ret_size % sizeof(T) << '\t' << ret_size << '/' << this->chunk_size << '\t' << "state: " << this->STATE << " size: " << sizeof(T) << std::endl;
 			exit(1);
 		}
 
 		if(ret_size == 0){
-			std::cerr << helpers::timestamp("ERROR","TGZF") << "Returned nothing (state" << this->STATE << ")" << std::endl;
+			std::cerr << utility::timestamp("ERROR","TGZF") << "Returned nothing (state" << this->STATE << ")" << std::endl;
 			if(this->STATE == TGZF_STATE::TGZF_END){
 				this->stream.seekg(io::constants::TGZF_BLOCK_FOOTER_LENGTH, std::ios::cur);
 
@@ -99,13 +99,13 @@ bool TGZFEntryIterator<T>::nextEntry(const T*& entry){
 
 			if(!parent_type::Inflate(this->stream, (BYTE*)&output_buffer.data[0], this->chunk_size, ret_size)){
 				if(this->STATE != TGZF_STATE::TGZF_END){
-					std::cerr << helpers::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
+					std::cerr << utility::timestamp("ERROR","TGZF") << "Invalid state (" << this->STATE << ")" << std::endl;
 					exit(1);
 				}
 			}
 
 			if(ret_size == 0){
-				std::cerr << helpers::timestamp("ERROR","TGZF") << "Impossible" << std::endl;
+				std::cerr << utility::timestamp("ERROR","TGZF") << "Impossible" << std::endl;
 				exit(1);
 			}
 

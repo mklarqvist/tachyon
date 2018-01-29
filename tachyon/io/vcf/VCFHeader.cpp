@@ -141,8 +141,8 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 
 			// Throw error if this pattern is not found
 			if(found != 2){
-				std::cerr << helpers::timestamp("WARNING","VCF") << "Illegal contig entry line with no length defined!" << std::endl;
-				std::cerr << helpers::timestamp("WARNING","VCF") << "Offending line: " << std::string(data, length+1) << std::endl;
+				std::cerr << utility::timestamp("WARNING","VCF") << "Illegal contig entry line with no length defined!" << std::endl;
+				std::cerr << utility::timestamp("WARNING","VCF") << "Offending line: " << std::string(data, length+1) << std::endl;
 				contig.bp_length = std::numeric_limits<U32>::max();
 			}
 			this->contigs.push_back(contig);
@@ -156,7 +156,7 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 		return true;
 	}
 
-	std::cerr << helpers::timestamp("ERROR","VCF") << "Failed to parse VCF..." << std::endl;
+	std::cerr << utility::timestamp("ERROR","VCF") << "Failed to parse VCF..." << std::endl;
 	return false;
 }
 
@@ -171,13 +171,13 @@ bool VCFHeader::buildContigTable(void){
 		this->contigsHashTable = new hash_table_type(this->contigs.size() * 2);
 
 	if(!SILENT)
-		std::cerr << helpers::timestamp("LOG", "VCF") << "Constructing lookup table for " << this->contigs.size() << " contigs..." << std::endl;
+		std::cerr << utility::timestamp("LOG", "VCF") << "Constructing lookup table for " << this->contigs.size() << " contigs..." << std::endl;
 
 	for(U32 i = 0; i < this->contigs.size(); ++i){
 		if(!(*this).getContig(this->contigs[i].name, retValue)){
 			(*this).addContig(this->contigs[i].name, i);
 		} else {
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Duplicated contig found (" << this->getContig(*retValue).name << "). Illegal..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated contig found (" << this->getContig(*retValue).name << "). Illegal..." << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 			return false;
 		}
@@ -192,20 +192,20 @@ bool VCFHeader::parseFirstLine(reader_type& stream){
 	}
 
 	if(!stream.getLine()){
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Could not validate file..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Could not validate file..." << std::endl;
 		this->error_bit = STREAM_BAD;
 		return false;
 	}
 
 	// Parse
 	if(strncmp(&stream[0], &vcf::constants::HEADER_VCF_FORMAT[0], vcf::constants::HEADER_VCF_FORMAT.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Invalid VCF format..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Invalid VCF format..." << std::endl;
 		this->error_bit = VCF_ERROR_LINE1;
 		return false;
 	}
 
 	if(strncmp(&stream[0], &vcf::constants::HEADER_VCF_VERSION[0], vcf::constants::HEADER_VCF_VERSION.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Invalid VCF version < 4.x..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Invalid VCF version < 4.x..." << std::endl;
 		this->error_bit = VCF_ERROR_LINE1;
 		return false;
 	}
@@ -218,14 +218,14 @@ bool VCFHeader::parseFirstLine(reader_type& stream){
 bool VCFHeader::parseFirstLine(const char* const data, U32& offset){
 	offset = 4;
 	if(strncmp(&data[offset], &vcf::constants::HEADER_VCF_FORMAT[0], vcf::constants::HEADER_VCF_FORMAT.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Invalid VCF format..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Invalid VCF format..." << std::endl;
 		std::cerr << std::string(&data[offset], 100) << std::endl;
 		this->error_bit = VCF_ERROR_LINE1;
 		return false;
 	}
 
 	if(strncmp(&data[offset], &vcf::constants::HEADER_VCF_VERSION[0], vcf::constants::HEADER_VCF_VERSION.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Invalid VCF version < 4.x..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Invalid VCF version < 4.x..." << std::endl;
 		this->error_bit = VCF_ERROR_LINE1;
 		return false;
 	}
@@ -242,7 +242,7 @@ bool VCFHeader::parseHeaderLines(reader_type& stream){
 			break;
 
 		if(!this->checkLine(stream.buffer_, stream.size() - 2)){
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Failed to validate header lines" << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Failed to validate header lines" << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 			return false;
 		}
@@ -266,7 +266,7 @@ bool VCFHeader::parseHeaderLines(const char* const data, U32& offset){
 			break;
 
 		if(!this->checkLine(&line[0], line.size() - 1)){
-			std::cerr << helpers::timestamp("ERROR", "BCF") << "Failed to validate header lines" << std::endl;
+			std::cerr << utility::timestamp("ERROR", "BCF") << "Failed to validate header lines" << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 			return false;
 		}
@@ -281,7 +281,7 @@ bool VCFHeader::parseSampleLine(reader_type& stream){
 	// At broken position is main header line
 	// Validate header
 	if(strncmp(&vcf::constants::HEADER_COLUMN[0], &stream.buffer_[0], vcf::constants::HEADER_COLUMN.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
 		this->error_bit = VCF_ERROR_SAMPLE;
 		return false;
 	}
@@ -316,7 +316,7 @@ bool VCFHeader::parseSampleLine(reader_type& stream){
 
 		if(!this->getSample(sampleName, retValue)) this->addSample(sampleName);
 		else {
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 		}
 
@@ -331,7 +331,7 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 	// At broken position is main header line
 	// Validate header
 	if(strncmp(&vcf::constants::HEADER_COLUMN[0], &data[offset], vcf::constants::HEADER_COLUMN.size()) != 0){
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Could not validate header line" << std::endl;
 		this->error_bit = VCF_ERROR_SAMPLE;
 		return false;
 	}
@@ -371,7 +371,7 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 			if(!this->getSample(sampleName, retValue))
 				this->addSample(sampleName);
 			else {
-				std::cerr << helpers::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
+				std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
 				this->error_bit = VCF_ERROR_LINES;
 			}
 			break;
@@ -387,7 +387,7 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 		if(!this->getSample(sampleName, retValue))
 			this->addSample(sampleName);
 		else {
-			std::cerr << helpers::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 		}
 		offset += found - &data[offset] + 1;

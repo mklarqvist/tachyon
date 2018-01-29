@@ -26,7 +26,7 @@ BCFReader::~BCFReader(){
 bool BCFReader::nextBlock(void){
 	// Stream died
 	if(!this->stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Stream died!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Stream died!" << std::endl;
 		this->state = bcf_reader_state::BCF_STREAM_ERROR;
 		return false;
 	}
@@ -61,7 +61,7 @@ bool BCFReader::nextVariant(BCFEntry& entry){
 		const S32 partial = (S32)this->bgzf_controller.buffer.size() - this->current_pointer;
 		entry.add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 		if(!this->nextBlock()){
-			std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
+			std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
 			return false;
 		}
 
@@ -112,7 +112,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		this->n_entries = 1;
 		firstPos = this->entries[0]->body->POS;
 		firstContig = this->entries[0]->body->CHROM;
-		//std::cerr << helpers::timestamp("LOG", "SWITCHING") << firstPos << '\t' << firstContig << std::endl;
+		//std::cerr << utility::timestamp("LOG", "SWITCHING") << firstPos << '\t' << firstContig << std::endl;
 	} else {
 		// Only set this to 0 if there is no carry
 		// over data from the previous cycle
@@ -141,7 +141,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			const S32 partial = (S32)this->bgzf_controller.buffer.size() - this->current_pointer;
 			this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 			if(!this->nextBlock()){
-				std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
+				std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
 				return false;
 			}
 
@@ -162,7 +162,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 				this->entries[this->n_entries]->add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
 				remainder -= this->bgzf_controller.buffer.size() - this->current_pointer;
 				if(!this->nextBlock()){
-					std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
+					std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
 					return false;
 				}
 
@@ -194,7 +194,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		// when the input file is sorted
 		if(!across_contigs){
 			if(this->entries[this->n_entries]->body->CHROM != firstContig){
-				std::cerr << helpers::timestamp("LOG","CONTIG") << "Switch in CHROM: " << firstContig << "->" << this->entries[this->n_entries]->body->CHROM << std::endl;
+				std::cerr << utility::timestamp("LOG","CONTIG") << "Switch in CHROM: " << firstContig << "->" << this->entries[this->n_entries]->body->CHROM << std::endl;
 				//std::cerr << "Last is now: " << this->last().body->CHROM << ':' << this->last().body->POS << std::endl;
 				this->n_carry_over = 1;
 				return(this->size() > 0);
@@ -203,7 +203,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 		// Check break condition for window
 		if(this->entries[this->n_entries]->body->POS - firstPos > bp_window){
-			//std::cerr << helpers::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries]->body->POS) - firstPos << ")" << std::endl;
+			//std::cerr << utility::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries]->body->POS) - firstPos << ")" << std::endl;
 			++this->n_entries;
 			break;
 		}
@@ -217,17 +217,17 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 bool BCFReader::parseHeader(void){
 	if(this->bgzf_controller.buffer.size() == 0){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "No buffer!" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "No buffer!" << std::endl;
 		return false;
 	}
 
 	if(this->bgzf_controller.buffer.size() < 5){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "Corrupted header!" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "Corrupted header!" << std::endl;
 		return false;
 	}
 
 	if(strncmp(&this->bgzf_controller.buffer.buffer[0], "BCF\2\2", 5) != 0){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to validate MAGIC" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "Failed to validate MAGIC" << std::endl;
 		return false;
 	}
 
@@ -254,7 +254,7 @@ bool BCFReader::parseHeader(void){
 	}
 
 	if(!this->header.parse(&this->header_buffer[0], this->header_buffer.size())){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to parse header!" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "Failed to parse header!" << std::endl;
 		return false;
 	}
 
@@ -264,7 +264,7 @@ bool BCFReader::parseHeader(void){
 bool BCFReader::open(const std::string input){
 	this->stream.open(input, std::ios::binary | std::ios::in | std::ios::ate);
 	if(!this->stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Failed to open file: " << input << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Failed to open file: " << input << std::endl;
 		return false;
 	}
 
@@ -272,17 +272,17 @@ bool BCFReader::open(const std::string input){
 	this->stream.seekg(0);
 
 	if(!this->stream.good()){
-		std::cerr << helpers::timestamp("ERROR", "BCF") << "Bad stream!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Bad stream!" << std::endl;
 		return false;
 	}
 
 	if(!this->nextBlock()){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to get first block!" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get first block!" << std::endl;
 		return false;
 	}
 
 	if(!this->parseHeader()){
-		std::cerr << helpers::timestamp("ERROR","BCF") << "Failed to parse header!" << std::endl;
+		std::cerr << utility::timestamp("ERROR","BCF") << "Failed to parse header!" << std::endl;
 		return false;
 	}
 

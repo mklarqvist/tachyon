@@ -28,8 +28,8 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 
 int main(int argc, char** argv){
-	if(tachyon::helpers::isBigEndian()){
-		std::cerr << tachyon::helpers::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
+	if(tachyon::utility::isBigEndian()){
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
 		return(1);
 	}
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv){
 	} else {
 		programMessage();
 		programHelpDetailed();
-		std::cerr << tachyon::helpers::timestamp("ERROR") << "Illegal command" << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Illegal command" << std::endl;
 		return(1);
 	}
 	return(1);

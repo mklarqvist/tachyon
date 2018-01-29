@@ -99,7 +99,7 @@ public:
 		if(delimiters_found == this->samples_)
 			return true;
 
-		std::cerr << helpers::timestamp("ERROR", "VCF") << "Found " << delimiters_found << " samples in line but expected " << this->samples_ << "..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "VCF") << "Found " << delimiters_found << " samples in line but expected " << this->samples_ << "..." << std::endl;
 		exit(1);
 		return false;
 
@@ -131,7 +131,7 @@ public:
 		while(true){
 			const char* match = std::find(&source[sourceLastPosition], &source[sourceLength], vcf::constants::VCF_DELIMITER);
 			if(*match != vcf::constants::VCF_DELIMITER){
-				std::cerr << helpers::timestamp("ERROR", "VCF") << "Illegal VCF line" << std::endl;
+				std::cerr << utility::timestamp("ERROR", "VCF") << "Illegal VCF line" << std::endl;
 				return false;
 			}
 
@@ -230,7 +230,7 @@ public:
 			if(strncmp(this->FORMAT, &vcf::constants::GT_ONLY[0], vcf::constants::GT_ONLY.size()) == 0)
 				this->Complex = true;
 			else {
-				std::cerr << helpers::timestamp("ERROR", "VCF") << "Could not parse GT information..." << std::endl;
+				std::cerr << utility::timestamp("ERROR", "VCF") << "Could not parse GT information..." << std::endl;
 				exit(1);
 			}
 		}

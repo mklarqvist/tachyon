@@ -88,20 +88,20 @@ int view(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << tachyon::helpers::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
-		std::cerr << tachyon::helpers::timestamp("ERROR") << "No input value specified..." << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << tachyon::helpers::timestamp("LOG") << "Calling view..." << std::endl;
+		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 
 	tachyon::TachyonReader reader;
@@ -131,7 +131,7 @@ int view(int argc, char** argv){
 	}
 	std::cerr << n_blocks << std::endl;
 	//std::cout << square << std::endl;
-	std::cerr << "Variants: " << tachyon::helpers::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::helpers::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
+	std::cerr << "Variants: " << tachyon::utility::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::utility::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;
 }

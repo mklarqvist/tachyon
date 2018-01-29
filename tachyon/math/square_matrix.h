@@ -31,7 +31,7 @@ public:
 	inline const T& operator()(const U32& i, const U32& j) const{ return(this->__data[i][j]); }
 
 	template <class Y>
-	self_type& operator/=(const Y value){
+	self_type& operator/=(const Y& value){
 		if(value == 0)
 			return(*this);
 

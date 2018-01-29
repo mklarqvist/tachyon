@@ -22,7 +22,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 							  container_type& support,
 							 const U32* const ppa){
 	if(line.body->n_allele + 1 >= 32768){
-		std::cerr << helpers::timestamp("ERROR", "ENCODER") <<
+		std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
 					 "Format is limited to 32768..." << std::endl;
 		return false;
@@ -77,7 +77,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			meta_base.controller.gt_primtive_type = core::YON_GT_U64;
 			break;
 		default:
-			std::cerr << helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
 			return false;
 		}
 
@@ -117,7 +117,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			support += (U32)cost.n_runs;
 			++support;
 
-			//std::cerr << helpers::timestamp("DEBUG") << "Cost: " << cost.word_width*cost.n_runs << " @ " << cost.n_runs << '\t' << (int)cost.word_width << std::endl;
+			//std::cerr << utility::timestamp("DEBUG") << "Cost: " << cost.word_width*cost.n_runs << " @ " << cost.n_runs << '\t' << (int)cost.word_width << std::endl;
 
 			switch(cost.word_width){
 			case 1:
@@ -137,7 +137,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 				meta_base.controller.gt_primtive_type = core::YON_GT_U64;
 				break;
 			default:
-				std::cerr << helpers::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
+				std::cerr << utility::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
 				return false;
 			}
 
@@ -164,7 +164,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			else if(line.body->n_allele + 1 < 128)   this->EncodeDiploidBCF<U16> (line, simple, n_runs, ppa);
 			else if(line.body->n_allele + 1 < 32768) this->EncodeDiploidBCF<U32> (line, simple, n_runs, ppa);
 			else {
-				std::cerr << helpers::timestamp("ERROR", "ENCODER") <<
+				std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 							 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
 							 "Format is limited to 32768..." << std::endl;
 				return false;
