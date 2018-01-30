@@ -53,7 +53,7 @@ while(reader.get_next_block()){ // As long as there is YON blocks available
         for(U32 variant = 0; variant < gp_container->size(); ++variant){
             for(U32 sample = 0; sample < gp_container->at(variant).size(); ++sample){
                 // Write the data to `cout` in `VCF` formatting
-                util::to_vcf_string(std::cout, gp_container->at(variant).at(sample)) << ' ';
+                utility::to_vcf_string(std::cout, gp_container->at(variant).at(sample)) << ' ';
             }
             std::cout << '\n';
         }
@@ -85,9 +85,9 @@ reader.open(my_input_file);
  */
 while(reader.get_next_block()){
     // Variant-balanced
-	containers::InfoContainer<U32>* info_balanced   = this->get_balanced_info_container<U32>("SVLEN", meta);
-	// Not variant-balanced
-	containers::InfoContainer<U32>* info_unbalanced = this->get_info_container<U32>("SVLEN");
+    containers::InfoContainer<U32>* info_balanced   = this->get_balanced_info_container<U32>("SVLEN", meta);
+    // Not variant-balanced 
+    containers::InfoContainer<U32>* info_unbalanced = this->get_info_container<U32>("SVLEN");
     // Print the sizes of the two containers
     // The size of the balanced container is always the number of variants
     // In contrast, the unbalanced one returns a container only for the 

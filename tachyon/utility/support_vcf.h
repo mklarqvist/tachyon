@@ -8,7 +8,7 @@
 #include "../containers/primitive_container.h"
 
 namespace tachyon{
-namespace util{
+namespace utility{
 
 #define YON_BYTE_MISSING        0x80
 #define YON_BYTE_EOV            0x81

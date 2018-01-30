@@ -1,7 +1,7 @@
 #include "support_vcf.h"
 
 namespace tachyon{
-namespace util{
+namespace utility{
 
 std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<BYTE>& container){
 	if(container.size() == 0)

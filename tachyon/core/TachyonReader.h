@@ -449,7 +449,7 @@ public:
 		if(af != nullptr){
 			std::cerr << "in info container: " << af->size() << std::endl;
 			for(U32 variant = 0; variant < af->size(); ++variant){
-				util::to_vcf_string(stream, (*af)[variant]) << ' ';
+				utility::to_vcf_string(stream, (*af)[variant]) << ' ';
 			}
 			std::cerr << std::endl;
 		} else std::cerr << "AC not found" << std::endl;
@@ -460,7 +460,7 @@ public:
 		if(it != nullptr){
 			for(U32 variant = 0; variant < it->size(); ++variant){ // variants
 				for(U32 sample = 0; sample < (*it)[variant].size(); ++sample){ // individuals
-					util::to_vcf_string(std::cout, (*it)[variant][sample]);
+					utility::to_vcf_string(std::cout, (*it)[variant][sample]);
 					std::cerr<<"\t";
 				}
 				std::cerr << '\n';
