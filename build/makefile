@@ -8,6 +8,7 @@ RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include tachyon/utility/subdir.mk
 -include tachyon/third_party/zlib/subdir.mk
 -include tachyon/third_party/xxhash/subdir.mk
 -include tachyon/support/subdir.mk

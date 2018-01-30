@@ -38,4 +38,5 @@ tachyon \
 tachyon/support \
 tachyon/third_party/xxhash \
 tachyon/third_party/zlib \
+tachyon/utility \
 

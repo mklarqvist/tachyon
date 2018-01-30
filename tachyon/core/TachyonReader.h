@@ -300,9 +300,16 @@ public:
 		// Not variant-balanced
 		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AC");
 
-		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("DS", meta, this->header.n_samples);
+		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta, this->header.n_samples);
 		if(it4 != nullptr){
 			std::cerr << "balanced format = " << it4->size() << std::endl;
+			for(U32 i = 0; i < it4->size(); ++i){
+				for(U32 j = 0; j < it4->at(i).size(); ++j){
+					util::to_vcf_string(stream, it4->at(i).at(j)) << ' ';
+				}
+				std::cerr << '\n';
+			}
+			std::cerr << '\n';
 		}
 		delete it4;
 
