@@ -28,7 +28,7 @@ public:
 	inline double getSigmaSquared(void) const{ return(this->standard_deviation*this->standard_deviation); }
 
 	template <class T> void operator+=(const T& value){
-		this->total += value;
+		this->total         += value;
 		this->total_squared += value*value;
 		++this->n_total;
 		if(value < this->min) this->min = value;

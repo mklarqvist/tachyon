@@ -3,6 +3,7 @@
 
 #include <limits>
 
+#include "summary_statistics.h"
 #include "../containers/primitive_container.h"
 
 namespace tachyon{
@@ -56,6 +57,17 @@ inline T median(const containers::PrimitiveContainer<T>& container){
 
 	return(container[container.size()/2]);
 }
+
+template <class T>
+inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer<T>& container){
+	math::SummaryStatistics ss;
+	for(U32 i = 0; i < container.size(); ++i)
+		ss += container[i];
+
+	ss.calculate();
+	return(ss);
+}
+
 
 }
 }

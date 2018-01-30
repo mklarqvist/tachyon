@@ -414,30 +414,35 @@ public:
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
-		std::cerr << block.size() << std::endl;
+		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AC", meta);
+		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AR2", meta);
 		// Not variant-balanced
-		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AC");
+		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
 
 		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it4 != nullptr){
 			std::cerr << "balanced format = " << it4->size() << std::endl;
+
+			/*
 			for(U32 i = 0; i < it4->size(); ++i){
 				for(U32 j = 0; j < it4->at(i).size(); ++j){
 					//util::to_vcf_string(stream, it4->at(i).at(j)) << ' ';
-					std::cerr << math::max(it4->at(i).at(j)) << ' ';
+					//std::cerr << math::max(it4->at(i).at(j)) << ' ';
+					const math::SummaryStatistics ss = math::summary_statistics(it4->at(i).at(j));
+					stream << ss.min << "-" << ss.max << "(" << ss.mean << "," << ss.getSigmaSquared() << ") ";
 				}
-				std::cerr << '\n';
+				stream << '\n';
 			}
-			std::cerr << '\n';
+			stream << '\n';
+			*/
 		}
 		delete it4;
 
-		if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
-		if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;
-		delete it2;
+		//if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
+		//if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;
+		//delete it2;
 		return(0);
 
 		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");

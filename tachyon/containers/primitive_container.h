@@ -81,16 +81,6 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
 
-    // Math
-    inline math::SummaryStatistics summary_statistics(void) const{
-    	    math::SummaryStatistics ss;
-    	    for(U32 i = 0; i < this->n_entries; ++i)
-    	    	    ss += this->at(i);
-
-    	    ss.calculate();
-    	    return(ss);
-    }
-
 private:
     template <class native_primitive>
     void __setup(const DataContainer& container, const U32& offset){
