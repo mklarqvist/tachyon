@@ -159,15 +159,25 @@ private:
 		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
 		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
-			// If pattern matches
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
-				new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );
-				current_offset += stride_size * sizeof(actual_primitive);
-			}
-			// Otherwise place an empty
-			else {
-				new( &this->__containers[i] ) value_type( );
+		// Case 1: if data is uniform
+		if(data_container.header.isUniform()){
+			for(U32 i = 0; i < this->n_entries; ++i)
+				new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
+
+			current_offset += stride_size * sizeof(actual_primitive);
+		}
+		// Case 2: if data is not uniform
+		else {
+			for(U32 i = 0; i < this->n_entries; ++i){
+				// If pattern matches
+				if(pattern_matches[meta_container[i].getInfoPatternID()]){
+					new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );
+					current_offset += stride_size * sizeof(actual_primitive);
+				}
+				// Otherwise place an empty
+				else {
+					new( &this->__containers[i] ) value_type( );
+				}
 			}
 		}
 		assert(current_offset == data_container.buffer_data_uncompressed.size());
@@ -194,8 +204,6 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 {
 	if(data_container.buffer_data_uncompressed.size() == 0)
 		return;
-
-	std::cerr << "in ctor" << std::endl;
 
 	if(data_container.header.hasMixedStride()){
 		getStrideFunction func = nullptr;
