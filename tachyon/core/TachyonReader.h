@@ -30,6 +30,8 @@
 #include "../utility/support_vcf.h"
 #include "base/header/yon_tachyonheader.h"
 
+#include "../math/basic_vector_math.h"
+
 namespace tachyon{
 
 class TachyonReader{
@@ -144,7 +146,7 @@ public:
 	}
 
 	/**<
-	 * Calculates which pattern matches are found for the given field
+	 * Calculates which INFO pattern matches are found for the given field
 	 * name in the current loaded block.
 	 * @param field_name INFO field name
 	 * @return           Returns a vector of booleans representing pattern matches
@@ -166,9 +168,10 @@ public:
 	}
 
 	/**<
-	 *
-	 * @param field_name
-	 * @return
+	 * Calculates which FORMAT pattern matches are found for the given field
+	 * name in the current loaded block.
+	 * @param field_name FORMAT field name
+	 * @return           Returns a vector of booleans representing pattern matches
 	 */
 	const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const{
 		int local_format_field_id = this->has_format_field(field_name);
@@ -187,9 +190,9 @@ public:
 	}
 
 	/**<
-	 *
-	 * @param field_name
-	 * @return
+	 * Factory function for FORMAT container given an input `field` name
+	 * @param field_name FORMAT field name to create a container for
+	 * @return           Returns an instance of a `FormatContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
 	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
@@ -199,14 +202,15 @@ public:
 	}
 
 	/**<
-	 *
-	 * @param field_name
-	 * @param meta_container
-	 * @param n_samples
-	 * @return
+	 * Factory function for balanced FORMAT container given an input `field` name.
+	 * Balances the container such that variants that do not have the given field
+	 * will have an empty container placed instead.
+	 * @param field_name     FORMAT field name to create a container for
+	 * @param meta_container Container for meta objects used to balance the FORMAT container
+	 * @return               Returns an instance of a balanced `FormatContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
-	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container, const U64& n_samples) const{
+	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
 		int format_field = this->has_format_field(field_name);
 		if(format_field >= 0){
 			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
@@ -217,15 +221,15 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, n_samples));
+			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, this->header.n_samples));
 		}
 		else return nullptr;
 	}
 
 	/**<
-	 *
-	 * @param field_name
-	 * @return
+	 * Factory function for INFO container given an input `field` name
+	 * @param field_name INFO field name to create a container for
+	 * @return           Returns an instance of a `InfoContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
 	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
@@ -235,10 +239,12 @@ public:
 	}
 
 	/**<
-	 *
-	 * @param field_name
-	 * @param meta_container
-	 * @return
+	 * Factory function for balanced INFO container given an input `field` name.
+	 * Balances the container such that variants that do not have the given field
+	 * will have an empty container placed instead.
+	 * @param field_name     INFO field name to create a container for
+	 * @param meta_container Container for meta objects used to balance the INFO container
+	 * @return               Returns an instance of a balanced `InfoContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
 	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
@@ -415,12 +421,13 @@ public:
 		// Not variant-balanced
 		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AC");
 
-		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta, this->header.n_samples);
+		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it4 != nullptr){
 			std::cerr << "balanced format = " << it4->size() << std::endl;
 			for(U32 i = 0; i < it4->size(); ++i){
 				for(U32 j = 0; j < it4->at(i).size(); ++j){
-					util::to_vcf_string(stream, it4->at(i).at(j)) << ' ';
+					//util::to_vcf_string(stream, it4->at(i).at(j)) << ' ';
+					std::cerr << math::max(it4->at(i).at(j)) << ' ';
 				}
 				std::cerr << '\n';
 			}
