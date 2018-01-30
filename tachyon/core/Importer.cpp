@@ -231,6 +231,7 @@ bool Importer::BuildBCF(void){
 	// Finalize SHA-512 digests
 	const U64 digests_start = this->writer.stream.tellp();
 
+	// Write digests
 	for(U32 i = 0; i < this->header->map.size(); ++i){
 		digests[i].finalize();
 		this->writer.stream << digests[i];

@@ -1,6 +1,8 @@
 #ifndef SummaryStatistics_H_
 #define SummaryStatistics_H_
 
+#include <limits>
+
 namespace tachyon{
 namespace math{
 

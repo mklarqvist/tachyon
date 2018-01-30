@@ -21,6 +21,7 @@ public:
 			memset(this->__data[i], 0, sizeof(T)*this->__width);
 		}
 	}
+
 	~SquareMatrix(){
 		for(U32 i = 0; i < this->__width; ++i)
 			delete [] this->__data[i];

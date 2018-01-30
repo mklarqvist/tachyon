@@ -33,17 +33,24 @@
 namespace tachyon{
 
 class TachyonReader{
-	typedef TachyonReader self_type;
-	typedef containers::DataBlock block_entry_type;
-	typedef io::BasicBuffer buffer_type;
-	typedef core::TachyonHeader header_type;
-	typedef algorithm::CompressionManager codec_manager_type;
+	typedef TachyonReader                       self_type;
+	typedef containers::DataBlock               block_entry_type;
+	typedef io::BasicBuffer                     buffer_type;
+	typedef core::TachyonHeader                 header_type;
+	typedef algorithm::CompressionManager       codec_manager_type;
 	typedef containers::core::DataBlockSettings settings_type;
-	typedef index::SortedIndex index_type;
+	typedef index::SortedIndex                  index_type;
 
 public:
 	TachyonReader() : filesize(0), n_internal_buffers(0), internal_buffers(nullptr){}
-	TachyonReader(const std::string& filename) : input_file(filename), filesize(0), n_internal_buffers(0), internal_buffers(nullptr){}
+	TachyonReader(const std::string& filename) :
+		input_file(filename),
+		filesize(0),
+		n_internal_buffers(0),
+		internal_buffers(nullptr)
+	{}
+
+	// Dtor
 	~TachyonReader(){
 		for(U32 i = 0; i < this->n_internal_buffers; ++i)
 			this->internal_buffers[i].deleteAll();
@@ -51,12 +58,23 @@ public:
 		delete [] this->internal_buffers;
 	}
 
+	/**<
+	 * Retrieve current settings records. Settings object is used
+	 * prior to each read of a `block` and can be freely modified
+	 * before each call. Modifying the settings after a read block
+	 * has been invoked has no effect on the loaded `block` data.
+	 * @return
+	 */
 	inline settings_type& getSettings(void){ return(this->settings); }
 
 	/**<
-	 * Checks if a target field exists in the header.
-	 * @param field_name Field name
-	 * @return           Returns the block-offset for that field if it exists. -2 if it does not exist in the header, -1 if it does not exist in the current block
+	 * Checks if a FORMAT `field` is set in the header and then checks
+	 * if that field exists in the current block. If it does return
+	 * the local key. If the field is not described in the header at
+	 * all then return -2. If it exists in the header but not in the
+	 * loaded block then return -1.
+	 * @param field_name FORMAT field name to search for (e.g. "GL")
+	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
 	const int has_format_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
@@ -75,6 +93,15 @@ public:
 		return(-2);
 	}
 
+	/**<
+	 * Checks if a INFO `field` is set in the header and then checks
+	 * if that field exists in the current block. If it does return
+	 * the local key. If the field is not described in the header at
+	 * all then return -2. If it exists in the header but not in the
+	 * loaded block then return -1.
+	 * @param field_name INFO field name to search for (e.g. "AC")
+	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
+	 */
 	const int has_info_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
 		if(this->header.getEntry(field_name, match)){
@@ -92,6 +119,15 @@ public:
 		return(-2);
 	}
 
+	/**<
+	 * Checks if a FILTER `field` is set in the header and then checks
+	 * if that field exists in the current block. If it does return
+	 * the local key. If the field is not described in the header at
+	 * all then return -2. If it exists in the header but not in the
+	 * loaded block then return -1.
+	 * @param field_name FILTER field name to search for (e.g. "PASS")
+	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
+	 */
 	const int has_filter_field(const std::string& field_name) const{
 		core::HeaderMapEntry* match = nullptr;
 		if(this->header.getEntry(field_name, match)){
@@ -107,7 +143,13 @@ public:
 		return(-2);
 	}
 
-	inline const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const{
+	/**<
+	 * Calculates which pattern matches are found for the given field
+	 * name in the current loaded block.
+	 * @param field_name INFO field name
+	 * @return           Returns a vector of booleans representing pattern matches
+	 */
+	const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const{
 		int local_info_field_id = this->has_info_field(field_name);
 		std::vector<bool> ret;
 		if(local_info_field_id >= 0){
@@ -123,7 +165,12 @@ public:
 		return(ret);
 	}
 
-	inline const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const{
+	/**<
+	 *
+	 * @param field_name
+	 * @return
+	 */
+	const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const{
 		int local_format_field_id = this->has_format_field(field_name);
 		std::vector<bool> ret;
 		if(local_format_field_id >= 0){
@@ -139,6 +186,11 @@ public:
 		return(ret);
 	}
 
+	/**<
+	 *
+	 * @param field_name
+	 * @return
+	 */
 	template <class T>
 	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
 		int format_field = this->has_format_field(field_name);
@@ -146,16 +198,35 @@ public:
 		else return nullptr;
 	}
 
+	/**<
+	 *
+	 * @param field_name
+	 * @param meta_container
+	 * @param n_samples
+	 * @return
+	 */
 	template <class T>
 	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container, const U64& n_samples) const{
 		int format_field = this->has_format_field(field_name);
 		if(format_field >= 0){
 			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
+			U32 matches = 0;
+			for(U32 i = 0; i < pattern_matches.size(); ++i)
+				matches += pattern_matches[i];
+
+			if(matches == 0)
+				return nullptr;
+
 			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, n_samples));
 		}
 		else return nullptr;
 	}
 
+	/**<
+	 *
+	 * @param field_name
+	 * @return
+	 */
 	template <class T>
 	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
 		int info_field = this->has_info_field(field_name);
@@ -163,11 +234,25 @@ public:
 		else return nullptr;
 	}
 
+	/**<
+	 *
+	 * @param field_name
+	 * @param meta_container
+	 * @return
+	 */
 	template <class T>
 	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
 		int info_field = this->has_info_field(field_name);
 		if(info_field >= 0){
 			const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
+
+			U32 matches = 0;
+			for(U32 i = 0; i < pattern_matches.size(); ++i)
+				matches += pattern_matches[i];
+
+			if(matches == 0)
+				return nullptr;
+
 			return(new containers::InfoContainer<T>(this->block.info_containers[info_field], meta_container, pattern_matches));
 		}
 		else return nullptr;
@@ -183,12 +268,15 @@ public:
 			std::cerr << "no filename" << std::endl;
 			return false;
 		}
+
 		this->stream.open(this->input_file, std::ios::binary | std::ios::in | std::ios::ate);
 		this->filesize = (U64)this->stream.tellg();
+
 		if(!this->stream.good()){
 			std::cerr << "failed to read file" << std::endl;
 			return false;
 		}
+
 		this->stream.seekg(0);
 		if(!this->stream.good()){
 			std::cerr << "failed to rewind" << std::endl;
@@ -197,10 +285,12 @@ public:
 
 		// Load header
 		this->stream << this->header;
+
 		if(!this->stream.good()){
 			std::cerr << "failed to get header" << std::endl;
 			return false;
 		}
+
 		// Keep track of start position
 		const U64 return_pos = this->stream.tellg();
 
@@ -216,6 +306,7 @@ public:
 				return false;
 			}
 		}
+
 		// Seek back to find start of index
 		// Seek to that start of index
 		// Load index
@@ -235,7 +326,7 @@ public:
 	 * @param filename Target input filename
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
-	bool open(const std::string& filename){
+	inline bool open(const std::string& filename){
 		this->input_file = filename;
 		return(this->open());
 	}
@@ -248,6 +339,29 @@ public:
 	 * @return      Returns TRUE if operation was successful or FALSE otherwise
 	 */
 	bool operator[](const U32 index);
+
+	/**<
+	 *
+	 * @param position
+	 * @return
+	 */
+	bool seektoBlock(const U32 position);
+
+	/**<
+	 *
+	 * @param chromosome_name
+	 * @return
+	 */
+	bool seekToBlockChromosome(const std::string& chromosome_name);
+
+	/**<
+	 *
+	 * @param chromosome_name
+	 * @param from_bp_position
+	 * @param to_bp_position
+	 * @return
+	 */
+	bool seekToBlockChromosome(const std::string& chromosome_name, const U32 from_bp_position, const U32 to_bp_position);
 
 	/**<
 	 * Get the next YON block in-order
@@ -291,6 +405,7 @@ public:
 	 */
 	bool seek_to_block(const U32& b);
 
+	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		std::cerr << block.size() << std::endl;

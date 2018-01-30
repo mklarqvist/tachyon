@@ -2,11 +2,13 @@
 #define TACHYON_UTILITY_H_
 
 #include <iostream>
-#include "support/helpers.h"
-#include "support/MagicConstants.h"
+
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <zstd.h>
+
+#include "support/helpers.h"
+#include "support/MagicConstants.h"
 
 // Declare extern
 std::string tachyon::constants::LITERAL_COMMAND_LINE;

@@ -10,15 +10,23 @@ namespace index{
 
 class SortedIndex{
 private:
-	typedef SortedIndex self_type;
-	typedef IndexEntry index_entry_type;
+	typedef SortedIndex     self_type;
+	typedef IndexEntry      index_entry_type;
 	typedef IndexIndexEntry index_index_type;
 
 public:
 	SortedIndex() : n_superindex(0), n_index(0){}
 	~SortedIndex(){}
 
+	/**<
+	 * Builds the meta-index of index entries when
+	 * the input data is sorted
+	 * @return Returns TRUE upon success or FALSE otherwise
+	 */
 	bool buildSuperIndex(void){
+		if(this->index.size() == 0)
+			return false;
+
 		index_index_type indexindex;
 		indexindex(this->index[0]);
 		for(U32 i = 1; i < this->index.size(); ++i){

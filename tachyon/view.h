@@ -23,22 +23,15 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+//#include "utility.h"
 #include "core/TachyonReader.h"
 
 void view_usage(void){
-	programMessage();
-	std::cerr <<
-	"About:  Convert YON->VCF/BCF/\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " view [options] -i <in.vcf>/<in.bcf> -o <output>\n\n"
-	"Options:\n"
-	"  -i FILE  input Tachyon file (required)\n"
-	"  -o FILE  output file prefix or - for stdout\n"
-	"  -s       Hide all program messages [null]\n";
+
 }
 
 int view(int argc, char** argv){
-	if(argc == 1){
+	if(argc <= 2){
 		programMessage();
 		programHelpDetailed();
 		return(1);
