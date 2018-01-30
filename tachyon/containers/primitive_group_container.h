@@ -20,7 +20,7 @@ private:
     typedef DataContainer         data_container_type;
 
 public:
-    // PrimitiveGroupContainer();
+    PrimitiveGroupContainer();
     PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each);
     ~PrimitiveGroupContainer(void);
 
@@ -90,6 +90,9 @@ private:
 
 // IMPLEMENTATION -------------------------------------------------------------
 
+
+template <class T>
+PrimitiveGroupContainer<T>::PrimitiveGroupContainer() : __n_objects(0), __containers(nullptr){}
 
 template <class T>
 PrimitiveGroupContainer<T>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :

@@ -90,103 +90,23 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries - 1]); }
 
 private:
+    // For mixed strides
     template <class actual_primitive>
-    void __setup(const data_container_type& container, getStrideFunction func){
-		if(container.buffer_strides_uncompressed.size() == 0)
-			return;
-
-		if(this->n_entries == 0)
-			return;
-
-		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
-
-		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
-			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
-			new( &this->__containers[i] ) value_type( container, current_offset, (this->*func)(container.buffer_strides_uncompressed, i) );
-			current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
-		}
-		assert(current_offset == container.buffer_data_uncompressed.size());
-	}
+    void __setup(const data_container_type& container, getStrideFunction func);
 
     template <class actual_primitive>
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, getStrideFunction func){
-    	    this->n_entries = meta_container.size();
-		if(this->n_entries == 0)
-			return;
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, getStrideFunction func);
 
-		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
-
-		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
-			// If pattern matches
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
-				new( &this->__containers[i] ) value_type( data_container, current_offset, (this->*func)(data_container.buffer_strides_uncompressed, i) );
-				current_offset += (this->*func)(data_container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
-			}
-			// Otherwise place an empty
-			else {
-				new( &this->__containers[i] ) value_type( );
-			}
-		}
-		assert(current_offset == data_container.buffer_data_uncompressed.size());
-	}
+    // For fixed strides
+	template <class actual_primitive>
+	void __setup(const data_container_type& container, const U32 stride_size);
 
 	template <class actual_primitive>
-	void __setup(const data_container_type& container, const U32 stride_size){
-		this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size);
 
-		if(this->n_entries == 0)
-			return;
-
-		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
-
-		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
-			//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
-			new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
-			current_offset += stride_size * sizeof(actual_primitive);
-		}
-		assert(current_offset == container.buffer_data_uncompressed.size());
-	}
-
-	template <class actual_primitive>
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size){
-		this->n_entries = meta_container.size();
-		if(this->n_entries == 0)
-			return;
-
-		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
-
-		U32 current_offset = 0;
-		// Case 1: if data is uniform
-		if(data_container.header.isUniform()){
-			for(U32 i = 0; i < this->n_entries; ++i)
-				new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
-
-			current_offset += stride_size * sizeof(actual_primitive);
-		}
-		// Case 2: if data is not uniform
-		else {
-			for(U32 i = 0; i < this->n_entries; ++i){
-				// If pattern matches
-				if(pattern_matches[meta_container[i].getInfoPatternID()]){
-					new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );
-					current_offset += stride_size * sizeof(actual_primitive);
-				}
-				// Otherwise place an empty
-				else {
-					new( &this->__containers[i] ) value_type( );
-				}
-			}
-		}
-		assert(current_offset == data_container.buffer_data_uncompressed.size());
-	}
-
-	// Access function
-	template <class stride_primitive> inline const U32 __getStride(const buffer_type& buffer, const U32 position) const{
-		return(*reinterpret_cast<const stride_primitive* const>(&buffer.buffer[position*sizeof(stride_primitive)]));
-	}
+	// Stride access function
+	template <class stride_primitive>
+	inline const U32 __getStride(const buffer_type& buffer, const U32 position) const;
 
 private:
     size_t  n_entries;
@@ -198,7 +118,9 @@ private:
 
 
 template <class return_type>
-InfoContainer<return_type>::InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches) :
+InfoContainer<return_type>::InfoContainer(const data_container_type& data_container,
+                                          const meta_container_type& meta_container,
+                                            const std::vector<bool>& pattern_matches) :
 	n_entries(0),
 	__containers(nullptr)
 {
@@ -335,6 +257,116 @@ InfoContainer<return_type>::~InfoContainer(){
 		((this->__containers + i)->~PrimitiveContainer)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
+}
+
+template <class return_type>
+template <class actual_primitive>
+void InfoContainer<return_type>::__setup(const data_container_type& container, getStrideFunction func){
+	if(container.buffer_strides_uncompressed.size() == 0)
+		return;
+
+	if(this->n_entries == 0)
+		return;
+
+	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+	U32 current_offset = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
+		new( &this->__containers[i] ) value_type( container, current_offset, (this->*func)(container.buffer_strides_uncompressed, i) );
+		current_offset += (this->*func)(container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
+	}
+	assert(current_offset == container.buffer_data_uncompressed.size());
+}
+
+template <class return_type>
+template <class actual_primitive>
+void InfoContainer<return_type>::__setupBalanced(const data_container_type& data_container,
+                                                 const meta_container_type& meta_container,
+                                                   const std::vector<bool>& pattern_matches,
+                                                         getStrideFunction  func){
+	this->n_entries = meta_container.size();
+	if(this->n_entries == 0)
+		return;
+
+	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+	U32 current_offset = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		// If pattern matches
+		if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			new( &this->__containers[i] ) value_type( data_container, current_offset, (this->*func)(data_container.buffer_strides_uncompressed, i) );
+			current_offset += (this->*func)(data_container.buffer_strides_uncompressed, i) * sizeof(actual_primitive);
+		}
+		// Otherwise place an empty
+		else {
+			new( &this->__containers[i] ) value_type( );
+		}
+	}
+	assert(current_offset == data_container.buffer_data_uncompressed.size());
+}
+
+template <class return_type>
+template <class actual_primitive>
+void InfoContainer<return_type>::__setup(const data_container_type& container, const U32 stride_size){
+	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+
+	if(this->n_entries == 0)
+		return;
+
+	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+	U32 current_offset = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
+		new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
+		current_offset += stride_size * sizeof(actual_primitive);
+	}
+	assert(current_offset == container.buffer_data_uncompressed.size());
+}
+
+template <class return_type>
+template <class actual_primitive>
+void InfoContainer<return_type>::__setupBalanced(const data_container_type& data_container,
+                                                 const meta_container_type& meta_container,
+                                                   const std::vector<bool>& pattern_matches,
+                                                                 const U32  stride_size){
+	this->n_entries = meta_container.size();
+	if(this->n_entries == 0)
+		return;
+
+	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+
+	U32 current_offset = 0;
+	// Case 1: if data is uniform
+	if(data_container.header.isUniform()){
+		for(U32 i = 0; i < this->n_entries; ++i)
+			new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
+
+		current_offset += stride_size * sizeof(actual_primitive);
+	}
+	// Case 2: if data is not uniform
+	else {
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// If pattern matches
+			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+				new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );
+				current_offset += stride_size * sizeof(actual_primitive);
+			}
+			// Otherwise place an empty
+			else {
+				new( &this->__containers[i] ) value_type( );
+			}
+		}
+	}
+	assert(current_offset == data_container.buffer_data_uncompressed.size());
+}
+
+// Stride access function
+template <class return_type>
+template <class stride_primitive>
+inline const U32 InfoContainer<return_type>::__getStride(const buffer_type& buffer, const U32 position) const{
+	return(*reinterpret_cast<const stride_primitive* const>(&buffer.buffer[position*sizeof(stride_primitive)]));
 }
 
 }

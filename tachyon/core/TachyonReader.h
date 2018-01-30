@@ -116,8 +116,24 @@ public:
 			// 0 = false, 1 = true
 			ret.resize(this->block.index_entry.n_info_patterns, false);
 			for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
-				std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
+				//std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
 				ret[i] = this->block.index_entry.info_bit_vectors[i][local_info_field_id];
+			}
+		}
+		return(ret);
+	}
+
+	inline const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const{
+		int local_format_field_id = this->has_format_field(field_name);
+		std::vector<bool> ret;
+		if(local_format_field_id >= 0){
+			// Collect all matches
+			// Place in array
+			// 0 = false, 1 = true
+			ret.resize(this->block.index_entry.n_format_patterns, false);
+			for(U32 i = 0; i < this->block.index_entry.n_format_patterns; ++i){
+				//std::cerr << i << '\t' << this->block.index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
+				ret[i] = this->block.index_entry.format_bit_vectors[i][local_format_field_id];
 			}
 		}
 		return(ret);
@@ -131,6 +147,16 @@ public:
 	}
 
 	template <class T>
+	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container, const U64& n_samples) const{
+		int format_field = this->has_format_field(field_name);
+		if(format_field >= 0){
+			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
+			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, n_samples));
+		}
+		else return nullptr;
+	}
+
+	template <class T>
 	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
 		int info_field = this->has_info_field(field_name);
 		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field]));
@@ -138,9 +164,12 @@ public:
 	}
 
 	template <class T>
-	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container, const std::vector<bool>& pattern_matches) const{
+	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
 		int info_field = this->has_info_field(field_name);
-		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field], meta_container, pattern_matches));
+		if(info_field >= 0){
+			const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
+			return(new containers::InfoContainer<T>(this->block.info_containers[info_field], meta_container, pattern_matches));
+		}
 		else return nullptr;
 	}
 
@@ -266,14 +295,19 @@ public:
 		containers::MetaContainer meta(this->block);
 		std::cerr << block.size() << std::endl;
 
-		std::vector<bool> pattern_matches = this->get_info_field_pattern_matches("SVLEN");
-		containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("SVLEN", meta, pattern_matches);
-		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("SVLEN");
+		// Variant-balanced
+		containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AC", meta);
+		// Not variant-balanced
+		containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AC");
 
-		if(it2!=nullptr)
-			std::cerr << "it = " << it2->size() << std::endl;
-		if(it3 != nullptr)
-			std::cerr << "it2 = " << it3->size() << std::endl;
+		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("DS", meta, this->header.n_samples);
+		if(it4 != nullptr){
+			std::cerr << "balanced format = " << it4->size() << std::endl;
+		}
+		delete it4;
+
+		if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
+		if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;
 		delete it2;
 		return(0);
 
