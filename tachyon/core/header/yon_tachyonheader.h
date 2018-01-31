@@ -64,17 +64,17 @@ private:
 	}
 
 public:
-	std::string file_header_string;
-	U16 version_major;
-	U16 version_minor;
-	U16 version_patch;
-	U32 n_contigs;
-	U32 n_samples;
-	U32 n_entries;
-	contig_type* contigs;
-	sample_type* samples;
-	map_entry_type* entries;
-	U32* mapTable;
+	std::string      file_header_string;
+	U16              version_major;
+	U16              version_minor;
+	U16              version_patch;
+	U32              n_contigs;
+	U32              n_samples;
+	U32              n_entries;
+	contig_type*     contigs;
+	sample_type*     samples;
+	map_entry_type*  entries;
+	U32*             mapTable;
 
 	// Constructed during run-time
 	hash_table_type* htable_contigs; // hash table for contig names

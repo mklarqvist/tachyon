@@ -11,14 +11,14 @@ namespace io{
 
 struct BasicBuffer{
 private:
-    typedef BasicBuffer                     self_type;
-    typedef char                            value_type;
-    typedef value_type&                     reference;
-    typedef const value_type&               const_reference;
-    typedef value_type*                     pointer;
-    typedef const value_type*               const_pointer;
-    typedef std::ptrdiff_t                  difference_type;
-    typedef std::size_t                     size_type;
+    typedef BasicBuffer       self_type;
+    typedef char              value_type;
+    typedef value_type&       reference;
+    typedef const value_type& const_reference;
+    typedef value_type*       pointer;
+    typedef const value_type* const_pointer;
+    typedef std::ptrdiff_t    difference_type;
+    typedef std::size_t       size_type;
 
 public:
 	BasicBuffer() : n_chars(0), width(0), buffer(nullptr){}
@@ -296,10 +296,12 @@ public:
 	}
 
 
-	inline char& operator[](const U64 position){ return this->buffer[position]; }
-	inline const char& operator[](const U64 position) const{ return this->buffer[position]; }
-	inline char* data(void){ return(this->buffer); }
-	inline const char* data(void) const{ return(this->buffer); }
+	inline reference operator[](const U64 position){ return this->buffer[position]; }
+	inline const_reference operator[](const U64 position) const{ return this->buffer[position]; }
+	inline reference at(const U64 position){ return this->buffer[position]; }
+	inline const_reference at(const U64 position) const{ return this->buffer[position]; }
+	inline pointer data(void){ return(this->buffer); }
+	inline const_pointer data(void) const{ return(this->buffer); }
 
 private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& data){
@@ -308,9 +310,9 @@ private:
 	}
 
 public:
-	U64 n_chars;
-	U64 width;
-	char* buffer;
+	U64     n_chars;
+	U64     width;
+	pointer buffer;
 };
 
 } /* namespace IO */

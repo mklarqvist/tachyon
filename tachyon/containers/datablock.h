@@ -17,20 +17,21 @@ namespace containers{
  * contents.
  */
 class DataBlock{
-	typedef DataBlock self_type;
-	typedef DataContainer container_type;
-	typedef algorithm::PermutationManager permutation_type;
-	typedef containers::core::DataBlockHeader index_entry_type;
-	typedef HashContainer hash_container_type;
-	typedef HashVectorContainer hash_vector_container_type;
-	typedef containers::core::DataBlockOffsets offset_type;
+	typedef DataBlock                                self_type;
+	typedef DataContainer                            container_type;
+	typedef algorithm::PermutationManager            permutation_type;
+	typedef containers::core::DataBlockHeader        index_entry_type;
+	typedef HashContainer                            hash_container_type;
+	typedef HashVectorContainer                      hash_vector_container_type;
+	typedef containers::core::DataBlockOffsets       offset_type;
 	typedef containers::core::DataBlockOffsetsHeader offset_minimal_type;
-	typedef io::BasicBuffer buffer_type;
-	typedef core::DataBlockSettings settings_type;
-	typedef support::ImporterStats import_stats_type;
+	typedef io::BasicBuffer                          buffer_type;
+	typedef core::DataBlockSettings                  settings_type;
+	typedef support::ImporterStats                   import_stats_type;
 
 public:
 	DataBlock();
+	DataBlock(const U32 n_info_fields, const U32 n_format_fields);
 	~DataBlock();
 
 	/**< @brief Resize base container buffer streams
@@ -202,6 +203,12 @@ public:
 	container_type    gt_simple_container;
 	container_type*   info_containers;
 	container_type*   format_containers;
+
+public:
+	// Utility
+	size_t n_capacity_info_;
+	size_t n_capacity_format_;
+	U64    disk_offset_;       // utility primitive to support the construction of iterators over blocks
 };
 
 }

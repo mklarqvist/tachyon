@@ -83,11 +83,7 @@ public:
 
 private:
     template <class native_primitive>
-    void __setup(const DataContainer& container, const U32& offset){
-    	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
-    	for(U32 i = 0; i < this->n_entries; ++i)
-    		this->__entries[i] = data[i];
-    }
+    void __setup(const DataContainer& container, const U32& offset);
 
 private:
     size_t  n_entries;
@@ -139,6 +135,14 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 template <class return_type>
 PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 	delete [] this->__entries;
+}
+
+template <class return_type>
+template <class native_primitive>
+void PrimitiveContainer<return_type>::__setup(const DataContainer& container, const U32& offset){
+const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
+for(U32 i = 0; i < this->n_entries; ++i)
+	this->__entries[i] = data[i];
 }
 
 }
