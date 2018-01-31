@@ -28,8 +28,10 @@ public:
 
 	// Lookup
 	// Convenience function used during import
-	inline U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA.buffer)); }
-	inline U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.buffer[p * sizeof(U32)])); }
+	inline U32* get(void){ return(reinterpret_cast<U32*>(this->PPA.buffer)); }
+	inline const U32* get(void) const{ return(reinterpret_cast<U32*>(this->PPA.buffer)); }
+	inline U32& operator[](const U32& p){ return(*reinterpret_cast<U32*>(&this->PPA.buffer[p * sizeof(U32)])); }
+	inline const U32& operator[](const U32& p) const{ return(*reinterpret_cast<U32*>(&this->PPA.buffer[p * sizeof(U32)])); }
 
 
 private:

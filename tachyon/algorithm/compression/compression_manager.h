@@ -59,6 +59,12 @@ public:
 	}
 
 	bool decompress(block_type& block){
+		if(block.ppa_manager.PPA.n_chars){
+			if(!this->decompress(block.ppa_manager)){
+				std::cerr << "failed to decompress ppa!" << std::endl;
+			}
+		}
+
 		if(block.meta_hot_container.getSizeCompressed()){
 			if(!this->decompress(block.meta_hot_container)){
 				std::cerr << "failed to decompress!" << std::endl;
@@ -124,6 +130,10 @@ public:
 		}
 
 		return true;
+	}
+
+	bool decompress(algorithm::PermutationManager& permutation_manager){
+		return(this->zstd_codec.decode(permutation_manager));
 	}
 
 	bool decompress(container_type& container){

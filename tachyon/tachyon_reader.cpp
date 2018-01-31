@@ -2,9 +2,32 @@
 
 namespace tachyon{
 
+TachyonReader::TachyonReader() :
+	filesize(0),
+	l_data(0),
+	n_internal_buffers(0),
+	internal_buffers(nullptr)
+{}
+
+TachyonReader::TachyonReader(const std::string& filename) :
+	input_file(filename),
+	filesize(0),
+	l_data(0),
+	n_internal_buffers(0),
+	internal_buffers(nullptr)
+{}
+
+// Dtor
+TachyonReader::~TachyonReader(){
+	for(U32 i = 0; i < this->n_internal_buffers; ++i)
+		this->internal_buffers[i].deleteAll();
+
+	delete [] this->internal_buffers;
+}
+
 bool TachyonReader::open(void){
 	if(this->input_file.size() == 0){
-		std::cerr << "no filename" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "No input file specified!" << std::endl;
 		return false;
 	}
 

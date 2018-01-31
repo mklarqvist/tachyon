@@ -38,28 +38,9 @@ class TachyonReader{
 	typedef index::SortedIndex                  index_type;
 
 public:
-	TachyonReader() :
-		filesize(0),
-		l_data(0),
-		n_internal_buffers(0),
-		internal_buffers(nullptr)
-	{}
-
-	TachyonReader(const std::string& filename) :
-		input_file(filename),
-		filesize(0),
-		l_data(0),
-		n_internal_buffers(0),
-		internal_buffers(nullptr)
-	{}
-
-	// Dtor
-	~TachyonReader(){
-		for(U32 i = 0; i < this->n_internal_buffers; ++i)
-			this->internal_buffers[i].deleteAll();
-
-		delete [] this->internal_buffers;
-	}
+	TachyonReader();
+	TachyonReader(const std::string& filename);
+	~TachyonReader();
 
 	/**<
 	 * Retrieve current settings records. Settings object is used
@@ -219,7 +200,7 @@ public:
 	 * @param index Block index value in range [0..n_blocks)
 	 * @return      Returns TRUE if operation was successful or FALSE otherwise
 	 */
-	bool operator[](const U32 index);
+	bool operator[](const U32 position);
 
 	/**<
 	 *
@@ -258,7 +239,7 @@ public:
 	 * @param b
 	 * @return
 	 */
-	bool seek_to_block(const U32& b);
+	bool seek_to_block(const U32& position);
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
@@ -269,6 +250,25 @@ public:
 		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AR2", meta);
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
+
+		bool* test = new bool[this->header.n_samples];
+		memset(test, 0, sizeof(bool)*this->header.n_samples);
+
+		for(U32 i = 0; i < this->header.n_samples; ++i){
+			if(test[i]){
+				std::cerr << "illegal" << std::endl;
+				exit(1);
+			}
+			test[i] = true;
+			std::cerr << this->block.ppa_manager[i] << ' ';
+		}
+		std::cerr << std::endl;
+
+		for(U32 i = 0; i < this->header.n_samples; ++i){
+			assert(test[i]);
+		}
+
+		return(0);
 
 		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it4 != nullptr){

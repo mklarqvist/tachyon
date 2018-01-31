@@ -24,8 +24,8 @@ Documentation is currently sparse.
 ### Installation instructions
 Building requires [zstd][zstd] and [openssl][openssl]
 ```bash
-git clone --recursive https://github.com/mklarqvist/Tachyon
-cd Tachyon/build
+git clone --recursive https://github.com/mklarqvist/tachyon
+cd tachyon/build
 make
 ```
 

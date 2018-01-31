@@ -23,9 +23,10 @@ namespace algorithm{
  * @param destination Destination char* buffer of permuted data
  * @return TRUE if passing or FALSE otherwise
  */
-inline const U32 permuteIntBits(const char* const data,
-                                       const U32& size,
-								            char* destination){
+inline const U32 permuteIntBits(const char* const  data,
+                                        const U32  size,
+                                             char* destination)
+{
 	if(size == 0) return 0;
 	U32 internal_size = size + (32-size%32); // Balance bytes
 	assert(internal_size % 32 == 0);
@@ -62,16 +63,17 @@ inline const U32 permuteIntBits(const char* const data,
 			target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
+	std::cerr << "in: " << size << "->" << internal_size << std::endl;
 	return internal_size;
 }
 
 inline const U32 unpermuteIntBits(char* data,
-                                         const U32& size,
-								              char* destination){
-
+                             const U32  size,
+                                  char* destination)
+{
 	if(size == 0) return 0;
-	U32 internal_size = size + (32-size%32); // Balance bytes
-	assert(internal_size % 32 == 0);
+	//U32 internal_size = size + (32-size%32); // Balance bytes
+	//assert(internal_size % 32 == 0);
 
 	BYTE* temp = reinterpret_cast<BYTE*>(data); // Recast destination as U32
 	U32* dest = reinterpret_cast<U32*>(destination); // Recast destination as U32
@@ -79,7 +81,7 @@ inline const U32 unpermuteIntBits(char* data,
 	memset(destination, 0, size); // Set all bytes to 0
 	//const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
 	BYTE* target[32]; // Bucket pointers
-	const U32 partition_size = internal_size / 32; // Partition size
+	const U32 partition_size = size / 32; // Partition size
 
 	// Assign a pointer to each bucket
 	for(U32 i = 0; i < 32; ++i)
@@ -104,7 +106,8 @@ inline const U32 unpermuteIntBits(char* data,
 		}
 	}
 
-	return internal_size;
+	//std::cerr << "out: " << internal_size << "/" << size/sizeof(U32) << std::endl;
+	return size;
 }
 
 class CompressionContainer{
@@ -310,32 +313,38 @@ public:
 		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 
 		U32 crc = crc32(0, NULL, 0);
-		manager.crc      = crc32(crc, (Bytef*)manager.PPA.buffer, manager.PPA.n_chars);
-		manager.u_length = manager.PPA.n_chars;
+		manager.crc      = crc32(crc, (Bytef*)manager.PPA.data(), manager.PPA.size());
+		manager.u_length = manager.PPA.size();
 		buffer_type buffer_debug(this->buffer);
 
 		//const U32 in = manager.PPA.n_chars;
-		const int p_ret = permuteIntBits(&manager.PPA.buffer[0],
-				                          manager.PPA.n_chars,
-										 &this->buffer.buffer[0]);
+		const int p_ret = permuteIntBits(manager.PPA.data(),
+				                         manager.PPA.size(),
+										 this->buffer.data());
 
 		this->buffer.n_chars = p_ret;
+
 		/*
-		const int up_ret = unpermuteIntBits(&this->buffer.buffer[0],
-											in,
-										    &manager.PPA.buffer[0]);
+		const int up_ret = unpermuteIntBits(this->buffer.data(),
+											this->buffer.size(),
+										    manager.PPA.data());
 
 		U32 crc2 = crc32(0, NULL, 0);
-		crc2 = crc32(crc2, (Bytef*)manager.PPA.buffer, manager.PPA.n_chars);
+		crc2 = crc32(crc2, (Bytef*)manager.PPA.data(), up_ret);
 
-		//std::cerr << p_ret << '\t' << up_ret << std::endl;
+		for(U32 i = 0; i < manager.n_samples; ++i)
+			std::cerr << manager[i] << ' ';
+		std::cerr << std::endl;
+
+		std::cerr << in << "->" << p_ret << "->" << up_ret << std::endl;
 		assert(manager.crc==crc2);
 		*/
 
+
 		size_t ret = ZSTD_compress(manager.PPA.buffer,
 								   manager.PPA.capacity(),
-								   this->buffer.buffer,
-								   this->buffer.n_chars,
+								   this->buffer.data(),
+								   this->buffer.size(),
 								   this->compression_level_data);
 
 
@@ -359,10 +368,10 @@ public:
 		}
 
 		stream.buffer_data_uncompressed.resize(stream.header.uLength + 16536);
-		int ret = ZSTD_decompress(stream.buffer_data_uncompressed.buffer,
+		int ret = ZSTD_decompress(stream.buffer_data_uncompressed.data(),
 								  stream.buffer_data_uncompressed.capacity(),
-								  stream.buffer_data.buffer,
-								  stream.buffer_data.n_chars);
+								  stream.buffer_data.data(),
+								  stream.buffer_data.size());
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
@@ -391,10 +400,10 @@ public:
 			return true;
 
 		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);
-		int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.buffer,
-								  stream.buffer_strides_uncompressed.capacity(),
-								  stream.buffer_strides.buffer,
-								  stream.buffer_strides.n_chars);
+		int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.data(),
+										 stream.buffer_strides_uncompressed.capacity(),
+										 stream.buffer_strides.data(),
+										 stream.buffer_strides.size());
 
 		assert(ret_stride >= 0);
 		stream.buffer_strides_uncompressed.n_chars = ret_stride;
@@ -406,6 +415,35 @@ public:
 	}
 
 	const bool decode(permutation_type& manager){
+		std::cerr << "size: " << manager.PPA.size() << '\t' << this->buffer.size() << std::endl;
+		this->buffer.reset();
+		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
+		std::cerr << "samples: " << manager.n_samples << std::endl;
+		size_t ret = ZSTD_decompress(this->buffer.data(),
+			    					 this->buffer.capacity(),
+									 manager.PPA.data(),
+								     manager.PPA.size());
+
+		if(ZSTD_isError(ret)){
+			std::cerr << "error zstd permute_ : " << ZSTD_getErrorCode(ret) << std::endl;
+			std::cerr << ZSTD_getErrorName(ret) << std::endl;
+			std::cerr << this->buffer.n_chars << '\t' << manager.PPA.n_chars << std::endl;
+			exit(1);
+		}
+
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
+		//manager.PPA.n_chars = ret;
+		//manager.c_length    = ret;
+
+		manager.PPA.resize(ret + 16536);
+		std::cerr << "uncomp size: " << ret << '/' << manager.PPA.size() << std::endl;
+		const int up_ret = unpermuteIntBits(this->buffer.data(),
+											ret,
+											manager.PPA.data());
+
+		//memcpy(manager.PPA.buffer, this->buffer.data(), up_ret);
+		manager.PPA.n_chars = up_ret;
+		std::cerr << "ret: " << up_ret << '\t' << manager.PPA.capacity() << std::endl;
 		return true;
 	}
 
