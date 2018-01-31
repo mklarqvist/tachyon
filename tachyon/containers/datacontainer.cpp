@@ -130,10 +130,13 @@ bool DataContainer::checkUniformity(void){
 
 	BYTE word_width = sizeof(char);
 	switch(this->header.controller.type){
-	case tachyon::core::YON_TYPE_32B:   stride_update *= sizeof(S32);   word_width = sizeof(S32);   break;
-	case tachyon::core::YON_TYPE_FLOAT: stride_update *= sizeof(float); word_width = sizeof(float); break;
-	case tachyon::core::YON_TYPE_8B:    stride_update *= sizeof(char);  word_width = sizeof(char);  break;
-	case tachyon::core::YON_TYPE_CHAR:  stride_update *= sizeof(char);  word_width = sizeof(char);  break;
+	case tachyon::core::YON_TYPE_32B:    stride_update *= sizeof(S32);    word_width = sizeof(S32);    break;
+	case tachyon::core::YON_TYPE_DOUBLE: stride_update *= sizeof(double); word_width = sizeof(double); break;
+	case tachyon::core::YON_TYPE_FLOAT:  stride_update *= sizeof(float);  word_width = sizeof(float);  break;
+	case tachyon::core::YON_TYPE_8B:     stride_update *= sizeof(char);   word_width = sizeof(char);   break;
+	case tachyon::core::YON_TYPE_16B:    stride_update *= sizeof(U16);    word_width = sizeof(U16);    break;
+	case tachyon::core::YON_TYPE_64B:    stride_update *= sizeof(U64);    word_width = sizeof(U64);    break;
+	case tachyon::core::YON_TYPE_CHAR:   stride_update *= sizeof(char);   word_width = sizeof(char);   break;
 	default: return false; break;
 	}
 
@@ -146,16 +149,16 @@ bool DataContainer::checkUniformity(void){
 		}
 	}
 
-	this->n_entries = 1;
+	this->n_entries   = 1;
 	this->n_additions = 1;
 	// Data pointers are updated in case there is no reformatting
 	// see StreamContainer::reformat()
 	this->buffer_data_uncompressed.n_chars = stride_size * word_width;
-	this->header.uLength = stride_size * word_width;
-	this->header.cLength = stride_size * word_width;
-	this->header.controller.uniform = true;
-	this->header.controller.mixedStride = false;
-	this->header.controller.encoder = tachyon::core::YON_ENCODE_NONE;
+	this->header.uLength                   = stride_size * word_width;
+	this->header.cLength                   = stride_size * word_width;
+	this->header.controller.uniform        = true;
+	this->header.controller.mixedStride    = false;
+	this->header.controller.encoder        = tachyon::core::YON_ENCODE_NONE;
 	return(true);
 }
 
@@ -166,12 +169,14 @@ bool DataContainer::checkUniformity(void){
  type S32. No other values can be shrunk
  */
 void DataContainer::reformat(){
-	if(this->buffer_data_uncompressed.size())
+	if(this->buffer_data_uncompressed.size() == 0)
 		return;
 
 	// Recode integer types only
-	if(!(this->header.controller.type == tachyon::core::YON_TYPE_32B && this->header.controller.signedness == 1))
+	if(!(this->header.controller.type == tachyon::core::YON_TYPE_32B && this->header.controller.signedness == 1)){
+		//std::cerr << utility::timestamp("DEBUG") << "Not reformatting because: " << this->header.getPrimitiveType() << "," << this->header.isSigned() << std::endl;
 		return;
+	}
 
 	if(this->header.controller.uniform == true)
 		return;
@@ -258,7 +263,7 @@ void DataContainer::reformat(){
 			this->header.controller.type = tachyon::core::YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
-				if(udat[j] == 0x80000000) this->buffer_data += (BYTE)0x80;
+				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
 				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
 				else this->buffer_data += (SBYTE)dat[j];
 			}
@@ -268,7 +273,7 @@ void DataContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S16)dat[j];
-				if(udat[j] == 0x80000000) this->buffer_data += (U16)0x8000;
+				if(udat[j] == 0x80000000)      this->buffer_data += (U16)0x8000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
 				else this->buffer_data += (S16)dat[j];
 			}
@@ -278,7 +283,7 @@ void DataContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S32)dat[j];
-				if(udat[j] == 0x80000000) this->buffer_data += (U32)0x80000000;
+				if(udat[j] == 0x80000000)      this->buffer_data += (U32)0x80000000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
 				else this->buffer_data += (S32)dat[j];
 			}

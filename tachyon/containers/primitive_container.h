@@ -103,7 +103,9 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 }
 
 template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries) :
+PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container,
+                                                              const U32& offset,
+                                                              const U32  n_entries) :
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
@@ -129,7 +131,6 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}
-
 }
 
 template <class return_type>
