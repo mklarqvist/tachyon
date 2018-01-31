@@ -1,7 +1,7 @@
 #ifndef CONTAINERS_META_CONTAINER_H_
 #define CONTAINERS_META_CONTAINER_H_
 
-#include "../core/base/meta_entry.h"
+#include "../core/meta_entry.h"
 #include "datablock.h"
 
 namespace tachyon{

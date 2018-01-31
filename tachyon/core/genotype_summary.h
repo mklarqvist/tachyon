@@ -6,7 +6,8 @@
 namespace tachyon{
 namespace containers{
 
-#define DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) ((A & mask) << shift) | (B & mask)
+#define DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) (((A) & mask) << shift) | ((B) & mask)
+
 // Forward declare
 class GenotypeContainerInterface;
 template <class T> class GenotypeContainerDiploidRLE;

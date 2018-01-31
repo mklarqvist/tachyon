@@ -2,7 +2,7 @@
 
 #include "Importer.h"
 #include "../algorithm/DigitalDigestController.h"
-#include "base/meta_cold.h"
+#include "meta_cold.h"
 
 namespace tachyon {
 

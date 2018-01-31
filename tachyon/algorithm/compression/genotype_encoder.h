@@ -6,7 +6,7 @@
 #include <cassert>
 
 #include "../../containers/datacontainer.h"
-#include "../../core/base/meta_hot.h"
+#include "../../core/meta_hot.h"
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/genotype_summary.h"
 

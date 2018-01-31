@@ -4,7 +4,7 @@
 
 # Tachyon
 <div align="center">
-<img src="https://github.com/mklarqvist/Tachyon/blob/master/yon_logo.png"><br><br>
+<img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
 Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium in large-scale cohorts.
@@ -27,6 +27,12 @@ Building requires [zstd][zstd] and [openssl][openssl]
 git clone --recursive https://github.com/mklarqvist/Tachyon
 cd Tachyon/build
 make
+```
+
+### ABI examples
+Import a `bcf` file to `yon`
+```bash
+tachyon import -i <file.bcf> -o <outfile.yon> -c <variants checkpoint> -C <base pair checkpoint>
 ```
 
 ### C++ API Examples
@@ -73,14 +79,14 @@ while(reader.get_next_block()){ // As long as there is YON blocks available
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
 tachyon::TachyonReader reader;
-reader.getSettings().loadFormat("GL");
+reader.getSettings().loadInfo("SVLEN");
 reader.open(my_input_file);
 
 /**<
  * The `InfoContainer` class stores the data for each variant as
  * container[variant][data]. Both `InfoContainer` and `FormatContainer`
  * supports variant-balancing of the classes. Balancing refers to filling
- * variant sites in the file with empty objects if no tdaargetta is present
+ * variant sites in the file with empty objects if no target data is present
  * at that site. 
  */
 while(reader.get_next_block()){

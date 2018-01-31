@@ -16,8 +16,7 @@ RM := rm
 -include tachyon/io/compression/subdir.mk
 -include tachyon/io/bcf/subdir.mk
 -include tachyon/io/subdir.mk
--include tachyon/core/base/header/subdir.mk
--include tachyon/core/base/subdir.mk
+-include tachyon/core/header/subdir.mk
 -include tachyon/core/subdir.mk
 -include tachyon/containers/core/subdir.mk
 -include tachyon/containers/subdir.mk

@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-#include "../../../io/vcf/VCFHeaderLine.h"
+#include "../../io/vcf/VCFHeaderLine.h"
 
 namespace tachyon{
 namespace core{

@@ -7,9 +7,9 @@
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderLine.h"
 #include "../../algorithm/OpenHashTable.h"
-#include "../../core/base/header/header_contig.h"
-#include "../../core/base/header/header_map_entry.h"
-#include "../../core/base/header/header_sample.h"
+#include "../../core/header/header_contig.h"
+#include "../../core/header/header_map_entry.h"
+#include "../../core/header/header_sample.h"
 #include "../basic_buffer.h"
 #include "../BasicReader.h"
 

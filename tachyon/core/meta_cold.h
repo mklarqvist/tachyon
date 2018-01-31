@@ -3,8 +3,8 @@
 
 #include <cassert>
 
-#include "../../io/bcf/BCFEntry.h"
-#include "../../containers/datacontainer.h"
+#include "../io/bcf/BCFEntry.h"
+#include "../containers/datacontainer.h"
 
 namespace tachyon{
 namespace core{

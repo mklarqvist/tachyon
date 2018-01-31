@@ -1,9 +1,9 @@
 #ifndef CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 #define CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 
-#include "../../../support/type_definitions.h"
-#include "../../../support/MagicConstants.h"
-#include "../../../algorithm/OpenHashTable.h"
+#include "../../support/type_definitions.h"
+#include "../../support/MagicConstants.h"
+#include "../../algorithm/OpenHashTable.h"
 #include "header_contig.h"
 #include "header_map_entry.h"
 #include "header_sample.h"
