@@ -323,10 +323,25 @@ public:
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::GenotypeContainer gt(this->block);
-		math::Fisher fisher(1000);
-		containers::GenotypeSum gt_summary;
+		//math::Fisher fisher(1000);
+		//containers::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
-			//std::vector<core::GTObject> objects = gt[i].getObjects();
+			std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
+			std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.n_samples);
+			std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
+			std::cerr << "Permuted: ";
+			for(U32 i = 0; i < objects_all.size(); ++i)
+				std::cerr << (int)objects_all[i].alleles[0].first << (objects_all[i].alleles[0].second ? "|" : "/") << (int)objects_all[i].alleles[1].first << ' ';
+			std::cerr << std::endl;
+
+			algorithm::PermutationManager& ppa = this->block.ppa_manager;
+			std::cerr << "Restored: ";
+			for(U32 i = 0; i < objects_all.size(); ++i){
+				std::cerr << (int)objects_all[ppa[i]].alleles[0].first << (objects_all[ppa[i]].alleles[0].second ? "|" : "/") << (int)objects_all[ppa[i]].alleles[1].first << ' ';
+			}
+			std::cerr << std::endl;
+			/*
+
 			const U32 n_entries = gt[i].getSum();
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
 			gt[i].getSummary(gt_summary);
@@ -346,6 +361,7 @@ public:
 			assert(gt_summary.genotypeCount() == this->header.n_samples);
 			assert(n_entries == this->header.n_samples);
 			gt_summary.clear();
+			*/
 		}
 		//std::cerr << std::endl;
 		//std::cerr << gt.size() << std::endl;

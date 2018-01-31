@@ -43,7 +43,8 @@ public:
     virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
     virtual gt_summary getSummary(void) const =0;
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
-    virtual std::vector<gt_object> getObjects(void) const =0;
+    virtual std::vector<gt_object> getLiteralObjects(void) const =0;
+    virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
 
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
@@ -170,7 +171,7 @@ public:
     	    return(square_matrix);
     }
 
-    std::vector<gt_object> getObjects(void) const{
+    std::vector<gt_object> getLiteralObjects(void) const{
     		std::vector<tachyon::core::GTObject> ret(this->n_entries);
     		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
     		for(U32 i = 0; i < this->n_entries; ++i)
@@ -178,6 +179,37 @@ public:
 
     		return(ret);
     }
+
+    std::vector<gt_object> getObjects(const U64& n_samples) const{
+		std::vector<tachyon::core::GTObject> ret(n_samples);
+		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
+
+		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+
+		U32 cum_pos = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			const U32 length   = this->at(i) >> (2*shift + add);
+			const BYTE alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
+			const BYTE alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+
+			BYTE phasing = 0;
+			if(add) phasing = this->at(i) & 1;
+			else    phasing = this->__meta->getControllerPhase();
+
+			for(U32 j = 0; j < length; ++j, cum_pos++){
+				entries[cum_pos].alleles = new std::pair<char,char>[2];
+				entries[cum_pos].alleles[0].first = alleleA;
+				entries[cum_pos].alleles[1].first = alleleB;
+				entries[cum_pos].alleles[0].second = phasing;
+				entries[cum_pos].alleles[1].second = phasing;
+				entries[cum_pos].n_objects  = 1;
+				entries[cum_pos].n_alleles  = 2;
+			}
+		}
+
+		return(ret);
+	}
 
     gt_summary& updateSummary(gt_summary& gt_summary_object) const{
     		gt_summary_object += *this;
@@ -257,7 +289,7 @@ public:
 		return(square_matrix);
 	}
 
-	std::vector<gt_object> getObjects(void) const{
+	std::vector<gt_object> getLiteralObjects(void) const{
 		std::vector<tachyon::core::GTObject> ret(this->n_entries);
 		tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 		for(U32 i = 0; i < this->n_entries; ++i){
@@ -265,6 +297,10 @@ public:
 		}
 		return(ret);
 	}
+
+	 std::vector<gt_object> getObjects(const U64& n_samples) const{
+		 return(std::vector<gt_object>());
+	 }
 
     gt_summary& updateSummary(gt_summary& gt_summary_object) const{
     		gt_summary_object += *this;
