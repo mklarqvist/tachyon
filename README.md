@@ -58,7 +58,7 @@ reader.open(my_input_file);
  *  The `FormatContainer` class stores the data for each variant 
  *  for each individual as container[variant][sample][data]
  */
-while(reader.get_next_block()){ // As long as there is YON blocks available
+while(reader.get_next_block()){ // As long as there are YON blocks available
     containers::FormatContainer<float>* gp_container = this->get_balanced_format_container<float>("GL", meta);
     if(gp_container != nullptr){
         for(U32 variant = 0; variant < gp_container->size(); ++variant){
@@ -94,7 +94,7 @@ reader.open(my_input_file);
  * variant sites in the file with empty objects if no target data is present
  * at that site. 
  */
-while(reader.get_next_block()){
+while(reader.get_next_block()){ // As long as there are YON blocks available
     // Variant-balanced
     containers::InfoContainer<U32>* info_balanced   = this->get_balanced_info_container<U32>("SVLEN", meta);
     // Not variant-balanced 
