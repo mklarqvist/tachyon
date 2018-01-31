@@ -113,15 +113,17 @@ int view(int argc, char** argv){
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	U32 n_blocks = 0;
+	U64 square_division = 0;
 	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
 		n_variants += reader.iterate_genotypes();
-		//reader.calculateIBS(square);
+		//square_division += reader.calculateIBS(square);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;
 	}
+	//square /= square_division;
 	std::cerr << n_blocks << std::endl;
 	//std::cout << square << std::endl;
 	std::cerr << "Variants: " << tachyon::utility::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::utility::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;

@@ -50,12 +50,14 @@ public:
 			exit(1);
 		}
 
-		if(block.gt_support_data_container.header.controller.uniform){
-			std::cerr << "data is uniform" << std::endl;
-			exit(1);
+		getNativeFuncDef getTarget = nullptr;
+		switch(block.gt_support_data_container.header_stride.controller.type){
+		case(tachyon::core::YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
+		case(tachyon::core::YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
+		case(tachyon::core::YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
+		case(tachyon::core::YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
+		default: std::cerr << "illegal type" << std::endl; return;
 		}
-
-
 
 		// data (0: rle, 1: simple), strides (n_objects)
 		getNativeFuncDef getObjects = nullptr;
@@ -67,14 +69,47 @@ public:
 		default: std::cerr << "illegal type" << std::endl; return;
 		}
 
-		getNativeFuncDef getTarget = nullptr;
-		switch(block.gt_support_data_container.header_stride.controller.type){
-		case(tachyon::core::YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
-		case(tachyon::core::YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
-		case(tachyon::core::YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
-		case(tachyon::core::YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
-		default: std::cerr << "illegal type" << std::endl; return;
+		// Meta data is uniform
+		if(block.gt_support_data_container.header.isUniform()){
+			std::cerr << "data is uniform" << std::endl;
+			U32 current_offset_rle    = 0;
+			U32 current_offset_simple = 0;
+			const U32 target = block.gt_support_data_container.header.stride;
+			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, 0);
+			assert(block.gt_support_data_container.header.stride > 0);
+
+			for(U32 i = 0; i < this->n_entries; ++i){
+				if(target == 1){
+					if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
+
+					current_offset_rle += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
+				} else if(target == 2){
+					if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+					else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
+						new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
+
+					current_offset_simple += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
+				} else {
+					std::cerr << "illegal" << std::endl;
+					exit(1);
+				}
+			}
+			return;
 		}
+
+
 
 		if(block.gt_support_data_container.header.controller.mixedStride){
 			U32 current_offset_rle    = 0;
@@ -226,7 +261,7 @@ public:
 
 private:
     template <class intrinsic_primitive> inline const U32 getNative(const buffer_type& buffer, const U32 position) const{
-    		return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
+    	return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
     }
 
 private:

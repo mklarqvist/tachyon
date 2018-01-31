@@ -58,6 +58,7 @@ inline T median(const containers::PrimitiveContainer<T>& container){
 	return(container[container.size()/2]);
 }
 
+// Todo: need to skip missing values and EOV values
 template <class T>
 inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer<T>& container){
 	math::SummaryStatistics ss;
@@ -68,6 +69,32 @@ inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer
 	return(ss);
 }
 
+template <class T>
+inline SummaryStatistics summary_statistics(const containers::InfoContainer<T>& info_container){
+	math::SummaryStatistics ss;
+	for(U32 i = 0; i < info_container.size(); ++i){
+		for(U32 j = 0; j < info_container[i].size(); ++j)
+			ss += info_container[i][j];
+	}
+
+	ss.calculate();
+	return(ss);
+}
+
+template <class T>
+inline SummaryStatistics summary_statistics(const containers::FormatContainer<T>& format_container){
+	math::SummaryStatistics ss;
+	for(U32 i = 0; i < format_container.size(); ++i){
+		for(U32 j = 0; j < format_container[i].size(); ++j){
+			for(U32 k = 0; k < format_container[i][j].size(); ++k){
+				ss += format_container[i][j][k];
+			}
+		}
+	}
+
+	ss.calculate();
+	return(ss);
+}
 
 }
 }

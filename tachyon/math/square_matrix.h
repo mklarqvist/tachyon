@@ -44,6 +44,25 @@ public:
 		return(*this);
 	}
 
+	self_type& operator+=(const self_type& other){
+		for(U32 i = 0; i < this->__width; ++i){
+			for(U32 j = 0; j < this->__width; ++j){
+				this->__data[i][j] += other.__data[i][j];
+			}
+		}
+		return(*this);
+	}
+
+	bool unpermute(const algorithm::PermutationManager& ppa_manager){
+		assert(ppa_manager.n_samples == this->__width);
+		for(U32 i = 0; i < ppa_manager.n_samples; ++i){
+			for(U32 j = i; j < ppa_manager.n_samples; ++j){
+				std::swap(this->__data[ppa_manager[i]][ppa_manager[j]], this->__data[i][j]);
+			}
+		}
+		return true;
+	}
+
 private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& matrix){
 		for(U32 i = 0; i < matrix.__width; ++i){

@@ -251,28 +251,11 @@ public:
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
 
-		bool* test = new bool[this->header.n_samples];
-		memset(test, 0, sizeof(bool)*this->header.n_samples);
-
-		for(U32 i = 0; i < this->header.n_samples; ++i){
-			if(test[i]){
-				std::cerr << "illegal" << std::endl;
-				exit(1);
-			}
-			test[i] = true;
-			std::cerr << this->block.ppa_manager[i] << ' ';
-		}
-		std::cerr << std::endl;
-
-		for(U32 i = 0; i < this->header.n_samples; ++i){
-			assert(test[i]);
-		}
-
-		return(0);
-
 		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it4 != nullptr){
 			std::cerr << "balanced format = " << it4->size() << std::endl;
+			math::SummaryStatistics ss = math::summary_statistics(*it4);
+			std::cerr << ss.mean << "+-" << ss.getSigmaSquared() << " (" << ss.min << "-" << ss.max << ") n = " << ss.n_total << std::endl;
 
 			/*
 			for(U32 i = 0; i < it4->size(); ++i){
@@ -320,17 +303,22 @@ public:
 		return this->block.size();
 	}
 
-	void calculateIBS(math::SquareMatrix<double>& square){
+	U64 calculateIBS(math::SquareMatrix<double>& square){
 		algorithm::Timer timer;
 		timer.Start();
 
+		tachyon::math::SquareMatrix<double> square_internal(this->header.n_samples);
 		containers::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].compareSamplesPairwise(square);
+			gt[i].compareSamplesPairwise(square_internal);
 
-		square /= (U64)2*this->header.n_samples*gt.size();
+		//square /= (U64)2*this->header.n_samples*gt.size();
+		square_internal.unpermute(this->block.ppa_manager);
+		square += square_internal;
+
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
 		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
+		return((U64)2*this->header.n_samples*gt.size());
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
