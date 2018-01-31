@@ -47,7 +47,7 @@ tachyon view -i <input.yon>
  * the FORMAT field GL into the iterable template class
  * `FormatContainer`. This is a complete example!
  */
-#include <tachyon/tachyon.h>
+#include <tachyon/tachyon_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
 tachyon::TachyonReader reader;
@@ -80,7 +80,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
  * the INFO field SVLEN into the iterable template class
  * `InfoContainer`. This is a complete example!
  */
-#include <tachyon/tachyon.h>
+#include <tachyon/tachyon_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
 tachyon::TachyonReader reader;

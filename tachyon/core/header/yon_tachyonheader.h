@@ -23,9 +23,9 @@ public:
 	explicit TachyonHeader(void);
 	~TachyonHeader();
 
-	inline const contig_type& getContig(const U32& p) const{ return(this->contigs[p]); }
-	inline const sample_type& getSample(const U32& p) const{ return(this->samples[p]); }
-	inline const map_entry_type& getEntry(const U32& p) const{ return(this->entries[p]); }
+	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }
+	inline const sample_type& getSample(const U32& position) const{ return(this->samples[position]); }
+	inline const map_entry_type& getEntry(const U32& position) const{ return(this->entries[position]); }
 
 	const bool getContig(const std::string& p, contig_type*& target) const;
 	const bool getSample(const std::string& p, sample_type*& target) const;

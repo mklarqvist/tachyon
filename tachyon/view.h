@@ -23,8 +23,8 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-//#include "utility.h"
-#include "core/TachyonReader.h"
+#include "utility.h"
+#include "tachyon_reader.h"
 
 void view_usage(void){
 

@@ -27,6 +27,7 @@ DataBlock::DataBlock() :
 
 DataBlock::~DataBlock(){
 	delete [] this->info_containers;
+	delete [] this->format_containers;
 }
 
 void DataBlock::clear(void){
