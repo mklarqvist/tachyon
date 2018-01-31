@@ -117,8 +117,8 @@ int view(int argc, char** argv){
 	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
-		//n_variants += reader.iterateMeta();
-		n_variants += reader.iterate_genotypes();
+		n_variants += reader.iterateMeta();
+		//n_variants += reader.iterate_genotypes();
 		//square_division += reader.calculateIBS(square);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;

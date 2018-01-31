@@ -415,10 +415,8 @@ public:
 	}
 
 	const bool decode(permutation_type& manager){
-		std::cerr << "size: " << manager.PPA.size() << '\t' << this->buffer.size() << std::endl;
 		this->buffer.reset();
 		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
-		std::cerr << "samples: " << manager.n_samples << std::endl;
 		size_t ret = ZSTD_decompress(this->buffer.data(),
 			    					 this->buffer.capacity(),
 									 manager.PPA.data(),
@@ -436,14 +434,12 @@ public:
 		//manager.c_length    = ret;
 
 		manager.PPA.resize(ret + 16536);
-		std::cerr << "uncomp size: " << ret << '/' << manager.PPA.size() << std::endl;
 		const int up_ret = unpermuteIntBits(this->buffer.data(),
 											ret,
 											manager.PPA.data());
 
 		//memcpy(manager.PPA.buffer, this->buffer.data(), up_ret);
 		manager.PPA.n_chars = up_ret;
-		std::cerr << "ret: " << up_ret << '\t' << manager.PPA.capacity() << std::endl;
 		return true;
 	}
 

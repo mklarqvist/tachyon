@@ -109,6 +109,29 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+More advanced example using genotype summary statistics
+```c++
+while(reader.get_next_block()){ // As long as there are YON blocks available
+    containers::GenotypeContainer gt(this->block);
+    math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
+    containers::GenotypeSum gt_summary; // Genotype summary statistics
+    for(U32 i = 0; i < gt.size(); ++i){ // Foreach variant
+        // If there's > 5 alleles continue
+        if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
+        // Calculate summary statistics
+        gt[i].getSummary(gt_summary);
+
+        const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
+        const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
+        if(p < 1e-3){ // If P < 0.001 report it
+            gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+            std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
+        }
+        gt_summary.clear();
+    }
+}
+```
+
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
 [tomahawk]: https://github.com/mklarqvist/tomahawk
