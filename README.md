@@ -59,6 +59,9 @@ reader.open(my_input_file);
  *  for each individual as container[variant][sample][data]
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
+    // Meta container
+    containers::MetaContainer meta(this->block);
+    // FORMAT container with float return type primitive
     containers::FormatContainer<float>* gp_container = this->get_balanced_format_container<float>("GL", meta);
     if(gp_container != nullptr){
         for(U32 variant = 0; variant < gp_container->size(); ++variant){
@@ -95,6 +98,8 @@ reader.open(my_input_file);
  * at that site. 
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
+    // Meta container
+    containers::MetaContainer meta(this->block);
     // Variant-balanced
     containers::InfoContainer<U32>* info_balanced   = this->get_balanced_info_container<U32>("SVLEN", meta);
     // Not variant-balanced 
@@ -111,6 +116,18 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 
 More advanced example using genotype summary statistics
 ```c++
+/**<
+* In this example we will use the genotype summary statistics
+* to calculate allele-specific bias using a Fisher's 2x2 exact
+* test
+*/
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadFormat("GL");
+reader.open(my_input_file);
+
 while(reader.get_next_block()){ // As long as there are YON blocks available
     containers::GenotypeContainer gt(this->block);
     math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
@@ -121,18 +138,40 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         // Calculate summary statistics
         gt[i].getSummary(gt_summary);
 
+        // Calculate total number of alt-alleles (allele 1, where 0 is ref)
         const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
         const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
         if(p < 1e-3){ // If P < 0.001 report it
             gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
             std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
         }
-        gt_summary.clear();
+        gt_summary.clear(); // Recycle summary object
     }
 }
 ```
 
 ```c++
+/**<
+* The higher-order primitive GTObject allows for single-genotype
+* manipulation whenever summary statistics is insufficient. There
+* are three levels of return types:
+* 1) The literal internal representation (preffered use). This
+*    function returns the implementation representation as a generic
+*    GTObject. 
+* 2) Unpacked (one genotype -> one sample) GTObject but in permuted
+*    order. These genotypes are in the internal sorted order and does
+*    not match with the tachyon sample header
+* 3) Unpacked (one genotype -> one sample) GTObject in original order.
+*    These genotype objects are returned in the same order as described
+*    in the tachyon sample header. 
+*/
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadFormat("GL");
+reader.open(my_input_file);
+
 while(reader.get_next_block()){ // As long as there are YON blocks available
     containers::GenotypeContainer gt(this->block);
     for(U32 i = 0; i < gt.size(); ++i){
