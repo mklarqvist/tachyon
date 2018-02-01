@@ -132,6 +132,31 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+```c++
+while(reader.get_next_block()){ // As long as there are YON blocks available
+    containers::GenotypeContainer gt(this->block);
+    for(U32 i = 0; i < gt.size(); ++i){
+        // All of these functions are in relative terms very expensive!
+        // Avoid using them unless you have to!
+        // Vector of literal genotype representations (lower level)
+        std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
+        // Vector of genotype objects (high level permuted)
+        std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.n_samples);
+        // Vector of genotype objects (high level unpermuted - original)
+        std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.n_samples, this->block.ppa_manager);
+
+        // Print the difference
+        std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
+        // Dump data
+        gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+        for(U32 j = 0; j < objects_true.size(); ++j){
+            std::cout << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
+        }
+        std::cout << '\n';
+    }
+}
+```
+
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
 [tomahawk]: https://github.com/mklarqvist/tomahawk

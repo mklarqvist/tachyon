@@ -18,7 +18,8 @@ private:
 protected:
     typedef tachyon::core::GTObject     gt_object;
     typedef GenotypeSum  gt_summary;
-    typedef math::SquareMatrix<double>  square_matrix_type;
+    typedef math::SquareMatrix<double>    square_matrix_type;
+    typedef algorithm::PermutationManager permutation_type;
 
 public:
     GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}
@@ -45,6 +46,7 @@ public:
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
     virtual std::vector<gt_object> getLiteralObjects(void) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
+    virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
 
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
@@ -124,7 +126,7 @@ public:
 
     	    		const U32 ref_length = this->at(i) >> (2*shift + add);
     	    		const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
-			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+    	    		const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
 
     	    		// Cycle over implicit elements in object
     	    		for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
@@ -184,8 +186,8 @@ public:
 		std::vector<tachyon::core::GTObject> ret(n_samples);
 		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
 
-		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
-		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+		const BYTE shift = this->__meta->isAnyGTMissing()   ? 2 : 1;
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
 		U32 cum_pos = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
@@ -199,32 +201,43 @@ public:
 
 			for(U32 j = 0; j < length; ++j, cum_pos++){
 				entries[cum_pos].alleles = new std::pair<char,char>[2];
-				entries[cum_pos].alleles[0].first = alleleA;
-				entries[cum_pos].alleles[1].first = alleleB;
+				entries[cum_pos].alleles[0].first  = alleleA;
+				entries[cum_pos].alleles[1].first  = alleleB;
 				entries[cum_pos].alleles[0].second = phasing;
 				entries[cum_pos].alleles[1].second = phasing;
-				entries[cum_pos].n_objects  = 1;
-				entries[cum_pos].n_alleles  = 2;
+				entries[cum_pos].n_objects = 1;
+				entries[cum_pos].n_alleles = 2;
 			}
 		}
-
 		return(ret);
 	}
 
+    std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
+    	std::vector<tachyon::core::GTObject> ret(this->getObjects(n_samples));
+    	//tachyon::core::GTObject** pointer = new tachyon::core::GTObject*[n_samples];
+
+    	std::vector<tachyon::core::GTObject> ret_unpermuted(n_samples);
+    	for(U32 i = 0; i < n_samples; ++i)
+    		ret_unpermuted[i] = ret[ppa_manager[i]];
+
+    	//delete [] pointer;
+    	return(ret_unpermuted);
+    }
+
     gt_summary& updateSummary(gt_summary& gt_summary_object) const{
-    		gt_summary_object += *this;
-    		return(gt_summary_object);
+		gt_summary_object += *this;
+		return(gt_summary_object);
     }
 
     gt_summary getSummary(void) const{
-    	    gt_summary summary;
-    	    	summary += *this;
-    	    	return(summary);
+		gt_summary summary;
+		summary += *this;
+		return(summary);
     }
 
     gt_summary& getSummary(gt_summary& gt_summary_object) const{
-    	    gt_summary_object += *this;
-    	    return(gt_summary_object);
+		gt_summary_object += *this;
+		return(gt_summary_object);
     }
 };
 
@@ -299,6 +312,10 @@ public:
 	}
 
 	 std::vector<gt_object> getObjects(const U64& n_samples) const{
+		 return(std::vector<gt_object>());
+	 }
+
+	 std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
 		 return(std::vector<gt_object>());
 	 }
 

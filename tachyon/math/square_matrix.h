@@ -53,14 +53,13 @@ public:
 		return(*this);
 	}
 
-	bool unpermute(const algorithm::PermutationManager& ppa_manager){
-		assert(ppa_manager.n_samples == this->__width);
-		for(U32 i = 0; i < ppa_manager.n_samples; ++i){
-			for(U32 j = i; j < ppa_manager.n_samples; ++j){
-				std::swap(this->__data[ppa_manager[i]][ppa_manager[j]], this->__data[i][j]);
+	self_type& add(const self_type& other, const algorithm::PermutationManager& ppa_manager){
+		for(U32 i = 0; i < this->__width; ++i){
+			for(U32 j = 0; j < this->__width; ++j){
+				this->__data[i][j] += other.__data[ppa_manager[i]][ppa_manager[j]];
 			}
 		}
-		return true;
+		return(*this);
 	}
 
 private:

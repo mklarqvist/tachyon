@@ -21,30 +21,31 @@ public:
 
     GTObject(const self_type& other) : n_alleles(other.n_alleles), n_objects(other.n_objects), alleles(new value_type[other.n_objects])
     {
-    		for(U32 i = 0; i < this->n_alleles; ++i)
-    			this->alleles[i] = other.alleles[i];
+		for(U32 i = 0; i < this->n_alleles; ++i)
+			this->alleles[i] = other.alleles[i];
     }
 
     GTObject(self_type&& other) noexcept : n_alleles(other.n_alleles), n_objects(other.n_objects), alleles(other.alleles)
-    	{
-    		other.alleles = nullptr;
+	{
+		other.alleles = nullptr;
     }
 
     GTObject& operator=(const self_type& other){
-    		this->n_alleles = other.n_alleles;
-    		if(this->n_alleles == other.n_alleles){
-    			for(U32 i = 0; i < this->n_alleles; ++i)
-    				this->alleles[i] = other.alleles[i];
-    		} else {
-    			delete [] this->alleles;
-    			this->alleles = new value_type[this->n_alleles];
 
-    			for(U32 i = 0; i < this->n_alleles; ++i)
+		if(this->n_alleles == other.n_alleles){
+			for(U32 i = 0; i < this->n_alleles; ++i)
 				this->alleles[i] = other.alleles[i];
-    		}
+		} else {
+			delete [] this->alleles;
+			this->alleles = new value_type[other.n_alleles];
 
-    		this-> n_objects = other.n_objects;
-    		return(*this);
+			for(U32 i = 0; i < other.n_alleles; ++i)
+				this->alleles[i] = other.alleles[i];
+		}
+
+		this->n_alleles  = other.n_alleles;
+		this-> n_objects = other.n_objects;
+		return(*this);
     }
 
     GTObject& operator=(self_type&& other) noexcept{
@@ -53,8 +54,8 @@ public:
 			return *this;
 		}
 
-    		this->n_alleles = other.n_alleles;
-    		this->n_objects = other.n_objects;
+		this->n_alleles = other.n_alleles;
+		this->n_objects = other.n_objects;
 		delete [] this->alleles;
 		this->alleles = other.alleles;
 		other.alleles = nullptr;

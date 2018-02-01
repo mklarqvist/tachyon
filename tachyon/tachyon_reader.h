@@ -313,8 +313,7 @@ public:
 			gt[i].compareSamplesPairwise(square_internal);
 
 		//square /= (U64)2*this->header.n_samples*gt.size();
-		square_internal.unpermute(this->block.ppa_manager);
-		square += square_internal;
+		square.add(square_internal, this->block.ppa_manager);
 
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
 		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
@@ -324,22 +323,42 @@ public:
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::GenotypeContainer gt(this->block);
 		//math::Fisher fisher(1000);
-		//containers::GenotypeSum gt_summary;
+		//containers::GenotypeSum gt_summary1, gt_summary2;
 		for(U32 i = 0; i < gt.size(); ++i){
-			std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
-			std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.n_samples);
-			std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
-			std::cerr << "Permuted: ";
-			for(U32 i = 0; i < objects_all.size(); ++i)
-				std::cerr << (int)objects_all[i].alleles[0].first << (objects_all[i].alleles[0].second ? "|" : "/") << (int)objects_all[i].alleles[1].first << ' ';
-			std::cerr << std::endl;
+			//std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
+			std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.n_samples);
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.n_samples, this->block.ppa_manager);
+			//std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
+			gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			//std::cerr << "\nPermuted: ";
+			//for(U32 j = 0; j < objects_all.size(); ++j)
+			//	std::cerr << (int)objects_all[j].alleles[0].first << (objects_all[j].alleles[0].second ? "|" : "/") << (int)objects_all[j].alleles[1].first << ' ';
+			//std::cerr << std::endl;
 
+			/*
 			algorithm::PermutationManager& ppa = this->block.ppa_manager;
-			std::cerr << "Restored: ";
-			for(U32 i = 0; i < objects_all.size(); ++i){
-				std::cerr << (int)objects_all[ppa[i]].alleles[0].first << (objects_all[ppa[i]].alleles[0].second ? "|" : "/") << (int)objects_all[ppa[i]].alleles[1].first << ' ';
+			core::GTObject** pointers = new core::GTObject*[objects_all.size()];
+			//for(U32 j = 0; j < objects_all.size(); ++j) pointers[j] = nullptr;
+			for(U32 j = 0; j < objects_all.size(); ++j){
+				//assert(pointers[ppa[j]] == nullptr);
+				pointers[ppa[j]] = &objects_all[j];
 			}
-			std::cerr << std::endl;
+
+			//for(U32 j = 0; j < objects_all.size(); ++j) assert(pointers[j] != nullptr);
+
+			//std::cerr << "Restored: ";
+			for(U32 j = 0; j < objects_all.size(); ++j){
+				stream << (int)pointers[j]->alleles[0].first << (pointers[j]->alleles[1].second ? "|" : "/") << (int)pointers[j]->alleles[1].first << ' ';
+			}
+			stream << '\n';
+
+			delete [] pointers;
+			//delete pointers;
+	*/
+			for(U32 j = 0; j < objects_true.size(); ++j){
+				stream << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
+			}
+			stream << '\n';
 			/*
 
 			const U32 n_entries = gt[i].getSum();
