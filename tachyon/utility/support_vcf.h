@@ -6,6 +6,7 @@
 #include <cmath>
 #include "../support/type_definitions.h"
 #include "../containers/primitive_container.h"
+#include "../core/genotype_object.h"
 
 namespace tachyon{
 namespace utility{
@@ -46,6 +47,10 @@ std::ostream& to_vcf_string_char(std::ostream& stream, containers::PrimitiveCont
 std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<float>& container);
 
 //std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<double>& container);
+
+std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object);
+std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects);
+
 
 }
 }

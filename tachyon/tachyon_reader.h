@@ -326,7 +326,7 @@ public:
 		//containers::GenotypeSum gt_summary1, gt_summary2;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
-			std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.n_samples);
+			//std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.n_samples);
 			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.n_samples, this->block.ppa_manager);
 			//std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
 			gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
@@ -355,10 +355,17 @@ public:
 			delete [] pointers;
 			//delete pointers;
 	*/
-			for(U32 j = 0; j < objects_true.size(); ++j){
-				stream << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
+
+			utility::to_vcf_string(stream, objects_true) << '\n';
+			//utility::to_vcf_string(stream, objects_true[0]) << '\t';
+			/*
+			for(U32 j = 1; j < objects_true.size(); ++j){
+				stream << '\t';
+				utility::to_vcf_string(stream, objects_true[j]);
+				//stream << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
 			}
 			stream << '\n';
+			*/
 			/*
 
 			const U32 n_entries = gt[i].getSum();

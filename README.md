@@ -95,7 +95,7 @@ reader.open(my_input_file);
  * container[variant][data]. Both `InfoContainer` and `FormatContainer`
  * supports variant-balancing of the classes. Balancing refers to filling
  * variant sites in the file with empty objects if no target data is present
- * at that site. 
+ * at that site.
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
     // Meta container
@@ -118,8 +118,8 @@ More advanced example using genotype summary statistics
 ```c++
 /**<
 * In this example we will use the genotype summary statistics
-* to calculate allele-specific bias using a Fisher's 2x2 exact
-* test
+* to calculate strand-specific bias of an alelle using a Fisher's 
+* 2x2 exact test. This is a complete example!
 */
 #include <tachyon/tachyon_reader.h>
 
@@ -164,6 +164,8 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 * 3) Unpacked (one genotype -> one sample) GTObject in original order.
 *    These genotype objects are returned in the same order as described
 *    in the tachyon sample header. 
+*
+* This is a complete example!
 */
 #include <tachyon/tachyon_reader.h>
 
@@ -187,11 +189,8 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         // Print the difference
         std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
         // Dump data
-        gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-        for(U32 j = 0; j < objects_true.size(); ++j){
-            std::cout << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
-        }
-        std::cout << '\n';
+        gt[i].getMeta().toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+        utility::to_vcf_string(std::cout, objects_true) << '\n';
     }
 }
 ```
