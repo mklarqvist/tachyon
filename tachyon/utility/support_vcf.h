@@ -48,6 +48,7 @@ std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer
 
 //std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<double>& container);
 
+// Genotype objects
 std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object);
 std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects);
 

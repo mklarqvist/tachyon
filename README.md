@@ -16,6 +16,11 @@ Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
+### Acknowledgements
+[James Bonfield](https://github.com/jkbonfield), Wellcome Trust Sanger Institute  
+[Petr Daněček](https://github.com/pd3), Wellcome Trust Sanger Institute  
+[Richard Durbin](https://github.com/richarddurbin), Wellcome Trust Sanger Institute, and Department of Genetics, University of Cambridge  
+
 ### Notice
 Tachyon is under active development and the specification and/or the API interfaces may change at any time! Commits may break functionality!  
 THERE IS NO API STABILITY PROMISE WHATSOEVER!  
@@ -43,7 +48,8 @@ tachyon view -i <input.yon>
 ### C++ API Examples
 ```c++
 /**<
- * Tachyon: in this example we will load data from
+ * Tachyon: https://github.com/mklarqvist/tachyon 
+ * In this example we will load data from
  * the FORMAT field GL into the iterable template class
  * `FormatContainer`. This is a complete example!
  */
@@ -79,7 +85,8 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 
 ```c++
 /**<
- * Tachyon: in this example we will load data from
+ * Tachyon: https://github.com/mklarqvist/tachyon 
+ * In this example we will load data from
  * the INFO field SVLEN into the iterable template class
  * `InfoContainer`. This is a complete example!
  */
@@ -117,6 +124,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 More advanced example using genotype summary statistics
 ```c++
 /**<
+* Tachyon: https://github.com/mklarqvist/tachyon 
 * In this example we will use the genotype summary statistics
 * to calculate strand-specific bias of an alelle using a Fisher's 
 * 2x2 exact test. This is a complete example!
@@ -142,7 +150,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
         const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
         if(p < 1e-3){ // If P < 0.001 report it
-            gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+            gt[i].getMeta().toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
             std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
         }
         gt_summary.clear(); // Recycle summary object
@@ -152,6 +160,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 
 ```c++
 /**<
+* Tachyon: https://github.com/mklarqvist/tachyon 
 * The higher-order primitive GTObject allows for single-genotype
 * manipulation whenever summary statistics is insufficient. There
 * are three levels of return types:

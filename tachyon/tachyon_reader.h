@@ -313,7 +313,7 @@ public:
 			gt[i].compareSamplesPairwise(square_internal);
 
 		//square /= (U64)2*this->header.n_samples*gt.size();
-		square.add(square_internal, this->block.ppa_manager);
+		square.addUpperTriagonal(square_internal, this->block.ppa_manager);
 
 		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
 		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;

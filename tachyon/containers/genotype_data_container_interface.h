@@ -115,32 +115,32 @@ public:
     }
 
     square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const{
-    		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
-    		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
 
-    		U32 start_position = 0;
-    	    for(U32 i = 0; i < this->n_entries; ++i){
-    	    		// self check
+		U32 start_position = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// self check
 
 
-    	    		const U32 ref_length = this->at(i) >> (2*shift + add);
-    	    		const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
-    	    		const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+			const U32 ref_length = this->at(i) >> (2*shift + add);
+			const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
+			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
 
-    	    		// Cycle over implicit elements in object
-    	    		for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
-    	    			for(U32 end_sample = start_sample + 1; end_sample < start_position + ref_length; ++end_sample){
-    	    				square_matrix(start_sample, end_sample) += 2;
-    	    				//++cum_length;
-    	    			}
-    	    		}
-    	    		//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << start_position << "," << start_position + ref_length << ")\n";
+			// Cycle over implicit elements in object
+			for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
+				for(U32 end_sample = start_sample + 1; end_sample < start_position + ref_length; ++end_sample){
+					square_matrix(start_sample, end_sample) += 2;
+					//++cum_length;
+				}
+			}
+			//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << start_position << "," << start_position + ref_length << ")\n";
 
-    	    		U32 internal_start = start_position + ref_length;
+			U32 internal_start = start_position + ref_length;
 
-    	    		// Compare to next object
-    	    		for(U32 j = i + 1; j < this->n_entries; ++j){
+			// Compare to next object
+			for(U32 j = i + 1; j < this->n_entries; ++j){
 				const U32 length = this->at(j) >> (2*shift + add);
 				const BYTE alleleA = (this->at(j) & ((1 << shift) - 1) << add) >> add;
 				const BYTE alleleB = (this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
@@ -165,12 +165,11 @@ public:
 					}
 				}
 				internal_start += length;
-    	    		}
-
-    	    		start_position += ref_length;
-    	    }
-    	    //std::cerr << start_position << std::endl;
-    	    return(square_matrix);
+			}
+			start_position += ref_length;
+		}
+		//std::cerr << start_position << std::endl;
+        return(square_matrix);
     }
 
     std::vector<gt_object> getLiteralObjects(void) const{
