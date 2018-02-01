@@ -29,6 +29,7 @@ public:
 
 public:
 	BCFReader();
+	BCFReader(const std::string& file_name);
 	~BCFReader();
 
 	class iterator{
@@ -90,19 +91,56 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->entries[0]); }
 	inline const_iterator cend()   const{ return const_iterator(&this->entries[this->n_entries - 1]); }
 
-	bool nextBlock(void);
-	bool nextVariant(reference entry);
-	bool parseHeader(void);
+	/**<
+	 * Attempts to open a target input file. Internally
+	 * checks if the input file is an actual BCF file and
+	 * the first TGZF can be opened and the BCF header is
+	 * valid.
+	 * @param input Input target BCF file
+	 * @return      Returns TRUE upon success or FALSE otherwise
+	 */
 	bool open(const std::string input);
+	bool open(void);
 
+	/**<
+	 * Loads another TGZF block into memory
+	 * @return Returns TRUE upon success or FALSE otherwise
+	 */
+	bool nextBlock(void);
+
+	/**<
+	 * Attempts to overload `entry` input BCFEntry with
+	 * data
+	 * @param entry Input BCFEntry that will be overloaded
+	 * @return      Returns TRUE upon success or FALSE otherwise
+	 */
+	bool nextVariant(reference entry);
+
+	/**<
+	 * Attempts to load either `n_variants` number of variants or
+	 * variants covering >= `bp_window` base pairs. The function
+	 * is successful whenever n_variants or bp_window is satisfied
+	 * or if there is no more variants to load.
+	 * @param n_variants     Number of variants
+	 * @param bp_window      Non-overlapping window size in base-pairs
+	 * @param across_contigs Allow the algorithm to span over two or more different chromosomes
+	 * @return               Returns TRUE upon success or FALSE otherwise
+	 */
 	bool getVariants(const U32 n_variants, const double bp_window, bool across_contigs = false); // get N number of variants into buffer
 
 	inline const bool hasCarryOver(void) const{ return(this->n_carry_over); }
 
-	inline reference first(void){ return((*this)[0]); }
-	inline reference last(void){ return((*this)[this->n_entries - 1]); }
+private:
+	/**<
+	 * Parse the TGZF header of a block given
+	 * the current buffer data loaded.
+	 * Internal use only
+	 * @return Returns TRUE on success or FALSE otherwise
+	 */
+	bool parseHeader(void);
 
 public:
+	std::string          file_name;
 	std::ifstream        stream;
 	U64                  filesize;
 	U32                  current_pointer;

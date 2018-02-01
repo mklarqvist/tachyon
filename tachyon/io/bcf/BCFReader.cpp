@@ -13,6 +13,17 @@ BCFReader::BCFReader() :
 		entries(nullptr)
 {}
 
+BCFReader::BCFReader(const std::string& file_name) :
+		file_name(file_name),
+		filesize(0),
+		current_pointer(0),
+		state(bcf_reader_state::BCF_INIT),
+		n_entries(0),
+		n_capacity(0),
+		n_carry_over(0),
+		entries(nullptr)
+{}
+
 BCFReader::~BCFReader(){
 	this->buffer.deleteAll();
 	this->header_buffer.deleteAll();
@@ -100,12 +111,9 @@ bool BCFReader::nextVariant(reference entry){
 }
 
 bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool across_contigs){
-	std::cerr << utility::timestamp("DEBUG") << this->n_entries << std::endl;
-
-
-	// If there is any carry over
 	S64 firstPos    = 0;
 	S32 firstContig = -1;
+	// If there is any carry over
 	if(this->n_carry_over == 1){
 		value_type last = std::move(this->entries[this->n_entries]);
 
@@ -123,7 +131,9 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		firstPos         = this->entries[0].body->POS;
 		firstContig      = this->entries[0].body->CHROM;
 		//std::cerr << utility::timestamp("LOG", "SWITCHING") << firstPos << '\t' << firstContig << std::endl;
-	} else {
+	}
+	// Nothing carried over
+	else {
 		std::cerr << "no carry over" << std::endl;
 		// Only set this to 0 if there is no carry
 		// over data from the previous cycle
@@ -140,10 +150,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		this->n_entries  = 0;
 	}
 
-	std::cerr << "here" << std::endl;
-
 	// Entries
-	//this->entries = new entry_type*[n_variants];
 	this->n_carry_over = 0;
 
 	// EOF
@@ -158,42 +165,9 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		}
 
 		new( &this->entries[this->n_entries] ) value_type( );
-
-		if(this->current_pointer + 8 > this->bgzf_controller.buffer.size()){
-			const S32 partial = (S32)this->bgzf_controller.buffer.size() - this->current_pointer;
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
-			if(!this->nextBlock()){
-				std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
-				return false;
-			}
-
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[0], 8 - partial);
-			this->current_pointer = 8 - partial;
-		} else {
-			this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], 8);
-			this->current_pointer += 8;
-		}
-
-		U64 remainder = this->entries[this->n_entries].sizeBody();
-		if(remainder > this->entries[this->n_entries].capacity())
-			this->entries[this->n_entries].resize(remainder + 1024);
-
-
-		while(remainder > 0){
-			if(this->current_pointer + remainder > this->bgzf_controller.buffer.size()){
-				this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], this->bgzf_controller.buffer.size() - this->current_pointer);
-				remainder -= this->bgzf_controller.buffer.size() - this->current_pointer;
-				if(!this->nextBlock()){
-					std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next block in partial" << std::endl;
-					return false;
-				}
-
-			} else {
-				this->entries[this->n_entries].add(&this->bgzf_controller.buffer[this->current_pointer], remainder);
-				this->current_pointer += remainder;
-				remainder = 0;
-				break;
-			}
+		if(!this->nextVariant(this->entries[this->n_entries])){
+			std::cerr << "failed to get next" << std::endl;
+			return false;
 		}
 
 		// Interpret char stream
@@ -210,8 +184,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 		// Make sure that data does not span over
 		// multiple CHROM fields
-		// Note: this should be toggleable as a
-		// passable parameter
 		// Note: This property is maintainable only
 		// when the input file is sorted
 		if(!across_contigs){
@@ -283,10 +255,13 @@ bool BCFReader::parseHeader(void){
 	return true;
 }
 
-bool BCFReader::open(const std::string input){
-	this->stream.open(input, std::ios::binary | std::ios::in | std::ios::ate);
+bool BCFReader::open(){
+	if(this->file_name.size() == 0)
+		return false;
+
+	this->stream.open(this->file_name, std::ios::binary | std::ios::in | std::ios::ate);
 	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR", "BCF") << "Failed to open file: " << input << std::endl;
+		std::cerr << utility::timestamp("ERROR", "BCF") << "Failed to open file: " << this->file_name << std::endl;
 		return false;
 	}
 
@@ -309,6 +284,11 @@ bool BCFReader::open(const std::string input){
 	}
 
 	return true;
+}
+
+bool BCFReader::open(const std::string input){
+	this->file_name = input;
+	return(this->open());
 }
 
 }

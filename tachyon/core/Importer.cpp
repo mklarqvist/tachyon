@@ -123,18 +123,18 @@ bool Importer::BuildBCF(void){
 
 		// Debug assertion
 #if IMPORT_ASSERT == 1
-		if(reader.first().body->CHROM == previousContigID){
-			if(!(reader.first().body->POS >= previousFirst && reader.first().body->POS >= previousLast)){
-				std::cerr << utility::timestamp("ERROR","IMPORT") << reader.first().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
+		if(reader.front().body->CHROM == previousContigID){
+			if(!(reader.front().body->POS >= previousFirst && reader.front().body->POS >= previousLast)){
+				std::cerr << utility::timestamp("ERROR","IMPORT") << reader.front().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
 				std::cerr << reader[reader.n_entries].body->POS << std::endl;
 				exit(1);
 			}
 		}
 #endif
-		std::cerr << utility::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.first().body->POS+1 << "->" << reader.last().body->POS+1 << std::endl;
-		this->block.index_entry.contigID    = reader.first().body->CHROM;
-		this->block.index_entry.minPosition = reader.first().body->POS;
-		this->block.index_entry.maxPosition = reader.last().body->POS;
+		std::cerr << utility::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
+		this->block.index_entry.contigID    = reader.front().body->CHROM;
+		this->block.index_entry.minPosition = reader.front().body->POS;
+		this->block.index_entry.maxPosition = reader.back().body->POS;
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
@@ -204,9 +204,9 @@ bool Importer::BuildBCF(void){
 		current_index_entry.byte_offset = this->writer.stream.tellp();
 		this->block.write(this->writer.stream, this->import_compressed_stats, this->import_uncompressed_stats);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
-		current_index_entry.contigID    = reader.first().body->CHROM;
-		current_index_entry.minPosition = reader.first().body->POS;
-		current_index_entry.maxPosition = reader.last().body->POS;
+		current_index_entry.contigID    = reader.front().body->CHROM;
+		current_index_entry.minPosition = reader.front().body->POS;
+		current_index_entry.maxPosition = reader.back().body->POS;
 		current_index_entry.n_variants  = reader.size();
 		this->writer.index += current_index_entry;
 		current_index_entry.reset();
@@ -216,9 +216,9 @@ bool Importer::BuildBCF(void){
 		this->block.clear();
 		this->permutator.reset();
 		this->writer.stream.flush();
-		previousContigID = reader.first().body->CHROM;
-		previousFirst    = reader.first().body->POS;
-		previousLast     = reader.last().body->POS;
+		previousContigID = reader.front().body->CHROM;
+		previousFirst    = reader.front().body->POS;
+		previousLast     = reader.back().body->POS;
 	}
 	// Done importing
 	this->writer.stream.flush();

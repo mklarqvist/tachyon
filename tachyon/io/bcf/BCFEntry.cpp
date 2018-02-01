@@ -61,7 +61,6 @@ BCFEntry::BCFEntry(const self_type& other):
 	// FORMAT
 	formatID(new U32[256])
 {
-	std::cerr << "in copy ctor" << std::endl;
 	memcpy(this->data, other.data, other.pointer);
 	this->parse();
 }
