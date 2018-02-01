@@ -122,9 +122,7 @@ public:
 		U32 start_position = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// self check
-
-
-			const U32 ref_length = this->at(i) >> (2*shift + add);
+			const U32 ref_length   = this->at(i) >> (2*shift + add);
 			const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
 			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
 
@@ -141,7 +139,7 @@ public:
 
 			// Compare to next object
 			for(U32 j = i + 1; j < this->n_entries; ++j){
-				const U32 length = this->at(j) >> (2*shift + add);
+				const U32 length   = this->at(j) >> (2*shift + add);
 				const BYTE alleleA = (this->at(j) & ((1 << shift) - 1) << add) >> add;
 				const BYTE alleleB = (this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
 

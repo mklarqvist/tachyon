@@ -19,7 +19,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-*/
+==============================================================================*/
 #include <iostream>
 #include <getopt.h>
 
@@ -112,6 +112,7 @@ int view(int argc, char** argv){
 	timer.Start();
 
 	tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
+	tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
 	U32 n_blocks = 0;
 	U64 square_division = 0;
 	while(reader.get_next_block()){
@@ -119,9 +120,10 @@ int view(int argc, char** argv){
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
 		//n_variants += reader.iterate_genotypes();
-		square_division += reader.calculateIBS(square);
+		square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;
+		if(n_blocks == 10) break;
 	}
 	square /= square_division;
 	std::cerr << n_blocks << std::endl;

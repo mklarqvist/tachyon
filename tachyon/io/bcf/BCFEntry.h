@@ -68,6 +68,10 @@ struct BCFEntry{
 	typedef BCFAtomicBase base_type;
 
 	BCFEntry(void);  // ctor
+	BCFEntry(const self_type& other);  // copy ctor
+	BCFEntry(self_type&& other) noexcept;
+	BCFEntry& operator=(const self_type& other);
+	BCFEntry& operator=(self_type&& other) noexcept;
 	~BCFEntry(void); // dtor
 
 	void resize(const U32 size);

@@ -35,16 +35,138 @@ BCFEntry::BCFEntry(void):
 
 }
 
-BCFEntry::~BCFEntry(void){
+BCFEntry::BCFEntry(const self_type& other):
+	pointer(other.pointer),
+	limit(other.limit),
+	l_ID(other.l_ID),
+	p_genotypes(other.p_genotypes),
+	ref_alt(other.ref_alt),
+	isGood(other.isGood),
+	data(new char[other.limit]),
+	body(reinterpret_cast<body_type*>(this->data)),
+	alleles(new string_type[100]),
+	ID(nullptr),
+	genotypes(nullptr),
+	ploidy(other.ploidy),
+	filter_start(other.filter_start),
+	n_filter(other.n_filter),
+	// Vectors of identifiers
+	filterPointer(other.filterPointer),
+	infoPointer(other.infoPointer),
+	formatPointer(other.formatPointer),
+	// FILTER
+	filterID(new U32[256]),
+	// INFO
+	infoID(new U32[256]),
+	// FORMAT
+	formatID(new U32[256])
+{
+	std::cerr << "in copy ctor" << std::endl;
+	memcpy(this->data, other.data, other.pointer);
+	this->parse();
+}
+
+BCFEntry::BCFEntry(self_type&& other) noexcept :
+	pointer(other.pointer),
+	limit(other.limit),
+	l_ID(other.l_ID),
+	p_genotypes(other.p_genotypes),
+	ref_alt(other.ref_alt),
+	isGood(other.isGood),
+	data(other.data),
+	body(other.body),
+	alleles(other.alleles),
+	ID(other.ID),
+	genotypes(other.genotypes),
+	ploidy(other.ploidy),
+	filter_start(other.filter_start),
+	n_filter(other.n_filter),
+	// Vectors of identifiers
+	filterPointer(other.filterPointer),
+	infoPointer(other.infoPointer),
+	formatPointer(other.formatPointer),
+	// FILTER
+	filterID(other.filterID),
+	// INFO
+	infoID(other.infoID),
+	// FORMAT
+	formatID(other.formatID)
+{
+	other.data = nullptr;
+	other.body = nullptr;
+	other.alleles = nullptr;
+	other.ID = nullptr;
+	other.genotypes = nullptr;
+	other.filterID = nullptr;
+	other.infoID = nullptr;
+	other.formatID = nullptr;
+}
+
+BCFEntry& BCFEntry::operator=(const self_type& other){
+	self_type tmp(other);         // re-use copy-constructor
+	*this = std::move(tmp); // re-use move-assignment
+	return *this;
+}
+
+BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
+	if (this == &other)
+	{
+		// take precautions against `foo = std::move(foo)`
+		return *this;
+	}
+
 	delete [] this->data;
+	delete [] this->alleles;
 	delete [] this->filterID;
 	delete [] this->infoID;
 	delete [] this->formatID;
+	pointer = other.pointer;
+	limit = other.limit;
+	l_ID = other.l_ID;
+	p_genotypes = other.p_genotypes;
+	ref_alt = other.ref_alt;
+	isGood = other.isGood;
+	data = other.data;
+	body = other.body;
+	alleles = other.alleles;
+	ID = other.ID;
+	genotypes = other.genotypes;
+	ploidy = other.ploidy;
+	filter_start = other.filter_start;
+	n_filter = other.n_filter;
+	// Vectors of identifiers
+	filterPointer = other.filterPointer;
+	infoPointer = other.infoPointer;
+	formatPointer = other.formatPointer;
+	// FILTER
+	filterID = other.filterID;
+	// INFO
+	infoID = other.infoID;
+	// FORMAT
+	formatID = other.formatID;
+
+	other.data = nullptr;
+	other.alleles = nullptr;
+	other.filterID = nullptr;
+	other.infoID = nullptr;
+	other.formatID = nullptr;
+
+	return *this;
+}
+
+BCFEntry::~BCFEntry(void){
+	delete [] this->data;
 	delete [] this->alleles;
+	delete [] this->filterID;
+	delete [] this->infoID;
+	delete [] this->formatID;
 }
 
 void BCFEntry::resize(const U32 size){
-	if(size == 0) return;
+	if(size == 0)
+		return;
+
+	//std::cerr << "resizing: " << this->pointer << "->" << size << std::endl;
 
 	char* temp = this->data;
 	this->data = new char[size];

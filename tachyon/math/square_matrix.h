@@ -53,6 +53,14 @@ public:
 	self_type& add(const self_type& other, const ppa_type& ppa_manager);
 	self_type& addUpperTriagonal(const self_type& other, const ppa_type& ppa_manager);
 
+	// Utility
+	void clear(void){
+		for(U32 i = 0; i < this->__width; ++i){
+			for(U32 j = 0; j < this->__width; ++j)
+				this->__data[i][j] = 0;
+		}
+	}
+
 private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& matrix){
 		for(U32 i = 0; i < matrix.__width; ++i){
@@ -116,8 +124,10 @@ SquareMatrix<T>& SquareMatrix<T>::operator*=(const self_type& other){
 
 template <class T>
 SquareMatrix<T>& SquareMatrix<T>::add(const self_type& other, const ppa_type& ppa_manager){
+	assert(ppa_manager.n_samples == this->__width);
 	for(U32 i = 0; i < this->__width; ++i){
 		for(U32 j = 0; j < this->__width; ++j){
+			//std::cerr << "(" << i << "," << j << ") -> (" << ppa_manager[i] << "," << ppa_manager[j] << ")" << std::endl;
 			this->__data[i][j] += other.__data[ppa_manager[i]][ppa_manager[j]];
 		}
 	}
@@ -126,12 +136,15 @@ SquareMatrix<T>& SquareMatrix<T>::add(const self_type& other, const ppa_type& pp
 
 template <class T>
 SquareMatrix<T>& SquareMatrix<T>::addUpperTriagonal(const self_type& other, const ppa_type& ppa_manager){
+	assert(ppa_manager.n_samples == this->__width);
 	for(U32 i = 0; i < this->__width; ++i){
-		for(U32 j = i; j < this->__width; ++j){
-			if(i > ppa_manager[i] || j > ppa_manager[j])
-				continue;
+		const U32& pA = ppa_manager[i];
 
-			this->__data[i][j] += other.__data[ppa_manager[i]][ppa_manager[j]];
+		for(U32 j = i; j < this->__width; ++j){
+			const U32& pB = ppa_manager[j];
+			//std::cerr << i << "/" << j << '\t' << pA << '/' << pB << '\t' << (int)this->__data[i][j] << std::endl;
+			if(pA >= pB) this->__data[pB][pA] += other.__data[i][j];
+			else         this->__data[pA][pB] += other.__data[i][j];
 		}
 	}
 	return(*this);

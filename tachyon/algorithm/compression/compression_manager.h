@@ -9,11 +9,10 @@ namespace algorithm{
 
 class CompressionManager{
 private:
-	typedef CompressionManager self_type;
-	typedef UncompressedCodec no_codec_type;
-	typedef ZSTDCodec zstd_codec_type;
-
-	typedef containers::DataBlock block_type;
+	typedef CompressionManager        self_type;
+	typedef UncompressedCodec         no_codec_type;
+	typedef ZSTDCodec                 zstd_codec_type;
+	typedef containers::DataBlock     block_type;
 	typedef containers::DataContainer container_type;
 
 public:
@@ -157,7 +156,7 @@ public:
 	}
 
 private:
-	no_codec_type no_codec;
+	no_codec_type   no_codec;
 	zstd_codec_type zstd_codec;
 };
 

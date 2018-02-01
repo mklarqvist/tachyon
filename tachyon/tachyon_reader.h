@@ -303,19 +303,20 @@ public:
 		return this->block.size();
 	}
 
-	U64 calculateIBS(math::SquareMatrix<double>& square){
+	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
 		algorithm::Timer timer;
 		timer.Start();
 
-		tachyon::math::SquareMatrix<double> square_internal(this->header.n_samples);
 		containers::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].compareSamplesPairwise(square_internal);
+			gt[i].compareSamplesPairwise(square_temporary);
 
 		//square /= (U64)2*this->header.n_samples*gt.size();
-		square.addUpperTriagonal(square_internal, this->block.ppa_manager);
+		square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
+		square_temporary.clear();
 
-		const U64 updates = 2*(this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 * gt.size();
+		// 2 * (Upper triagonal + diagonal) * number of variants
+		const U64 updates = 2*((this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 + this->header.n_samples) * gt.size();
 		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
 		return((U64)2*this->header.n_samples*gt.size());
 	}
