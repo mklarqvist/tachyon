@@ -7,7 +7,7 @@
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium in large-scale cohorts.
+Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic propertcd ~ies. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium in large-scale cohorts.
 
 The Tachyon specification has complete backward-compatibility with `VCF`/`BCF` and is many 10s- to 100s-fold smaller compared to `BCF`. The library supports additional functionality like field-specific and granular encryption (symmetric, assymetric, and eventually homomorphic).
 
@@ -133,7 +133,7 @@ More advanced example using genotype summary statistics
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
 tachyon::TachyonReader reader;
-reader.getSettings().loadFormat("GL");
+reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
 while(reader.get_next_block()){ // As long as there are YON blocks available
@@ -180,7 +180,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
 tachyon::TachyonReader reader;
-reader.getSettings().loadFormat("GL");
+reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
 while(reader.get_next_block()){ // As long as there are YON blocks available
@@ -202,6 +202,47 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         utility::to_vcf_string(std::cout, objects_true) << '\n';
     }
 }
+```
+
+```c++
+/**<
+* Tachyon: https://github.com/mklarqvist/tachyon 
+* In this example we will calculate the identity-by-descent
+* between samples using the math::SquareMatrix object.
+*
+* This is a complete example!
+*/
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadGenotypes(true);
+reader.open(my_input_file);
+
+// Allocate two matrices of size N*N
+// The second object is a temporary matrix used when
+// genotype data is permuted.
+tachyon::math::SquareMatrix<double> square(reader.header.getSampleNumber());
+tachyon::math::SquareMatrix<double> square_temporary(reader.header.getSampleNumber());
+U64 n_alleles = 0;
+while(reader.get_next_block()){ // As long as there are YON blocks available
+    containers::GenotypeContainer gt(this->block);
+    // Compare genotypes pairwise for each M in the current YON block
+    for(U32 i = 0; i < gt.size(); ++i)
+        gt[i].comparePairwise(square_temporary);
+
+    // Add the data from the temporary matrix to the main matrix
+    // in the unpermuted genotype order
+    square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
+    square_temporary.clear(); // Recycle memory
+
+    // 2 * (Upper triagonal + diagonal) * number of variants
+    // This is equivalent to (choose(N, 2) + N) * M_block
+    const U64 updates = 2*((this->header.getSampleNumber()*this->header.getSampleNumber() - this->header.getSampleNumber())/2 + this->header.getSampleNumber()) * gt.size();
+    n_aleles += 2*this->header.getSampleNumber()*gt.size(); // 2*N*M_block
+}
+square /= n_alleles; // Divide matrix by the number of observed alleles
+std::cout << square << std::endl; // Print output
 ```
 
 [openssl]:  https://www.openssl.org/

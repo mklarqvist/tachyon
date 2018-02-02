@@ -11,25 +11,32 @@ namespace containers{
 
 class GenotypeContainerInterface{
 private:
-    typedef GenotypeContainerInterface  self_type;
-    typedef std::size_t                 size_type;
-    typedef tachyon::core::MetaEntry    meta_type;
+    typedef GenotypeContainerInterface       self_type;
+    typedef std::size_t                      size_type;
 
 protected:
-    typedef tachyon::core::GTObject     gt_object;
-    typedef GenotypeSum  gt_summary;
-    typedef math::SquareMatrix<double>    square_matrix_type;
-    typedef algorithm::PermutationManager permutation_type;
+    typedef tachyon::core::MetaEntry         meta_type;
+    typedef tachyon::core::MetaHotController hot_controller_type;
+    typedef tachyon::core::GTObject          gt_object;
+    typedef GenotypeSum                      gt_summary;
+    typedef math::SquareMatrix<double>       square_matrix_type;
+    typedef algorithm::PermutationManager    permutation_type;
 
 public:
-    GenotypeContainerInterface(void) : n_entries(0), __data(nullptr), __meta(nullptr){}
+    GenotypeContainerInterface(void) :
+    	n_entries(0),
+		__data(nullptr),
+		__meta(nullptr)
+	{}
+
     GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
-	__data(new char[n_bytes]),
-    __meta(&meta)
+		__data(new char[n_bytes]),
+		__meta(&meta)
     {
     		memcpy(this->__data, data, n_bytes);
     }
+
     virtual ~GenotypeContainerInterface(){ delete [] this->__data; }
 
     // GT-specific functionality
@@ -39,7 +46,7 @@ public:
     //virtual void std::vector<bool> getSamplesMissingness(void) =0;
     //virtual void std::vector<U32> getSamplesPloidy(void) =0;
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
-    virtual square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const =0;
+    virtual square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const =0;
     virtual U32 getSum(void) const =0;
     virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
     virtual gt_summary getSummary(void) const =0;
@@ -52,6 +59,33 @@ public:
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
     inline const meta_type& getMeta(void) const{ return(*this->__meta); }
+
+protected:
+    template <class Y>
+    inline float comparatorSamplesDiploid(const Y& alleleA, const Y& ref_alleleA, const Y& alleleB, const Y& ref_alleleB) const{
+    	// If allele A and allele B is identical in both samples but the alleles are different
+		// e.g. 0|0 == 0|0
+    	if(alleleA == ref_alleleA && alleleB == ref_alleleB && alleleA != alleleB){ // identical but heterozygote
+			return(1);
+		}
+    	// If allele A and allele B is identical in both samples
+		// e.g. 0|0 == 0|0
+    	else if(alleleA == ref_alleleA && alleleB == ref_alleleB){ // identical
+			return(0);
+		}
+		// If neither allele A nor B is the same
+		// e.g. 0|1 == 1|0
+		// e.g. 1|1 == 0|0
+		else if(!(alleleA == ref_alleleA || alleleB == ref_alleleB)){
+			return(2);
+		}
+		// Otherwise one allele matches
+		// e.g. 0|0 == 0|1
+		// e.g. 1|0 == 1|1
+		else {
+			return(1);
+		}
+    }
 
 protected:
     size_type        n_entries;
@@ -71,8 +105,6 @@ private:
     typedef const value_type*             const_pointer;
     typedef std::ptrdiff_t                difference_type;
     typedef std::size_t                   size_type;
-    typedef tachyon::core::MetaEntry                     meta_type;
-    typedef tachyon::core::MetaHotController             hot_controller_type;
 
 public:
     GenotypeContainerDiploidRLE(){}
@@ -114,7 +146,7 @@ public:
     		return(count);
     }
 
-    square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const{
+    square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const{
 		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
 		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
@@ -125,6 +157,9 @@ public:
 			const U32 ref_length   = this->at(i) >> (2*shift + add);
 			const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
 			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+			//const U16 ref_genotype      = (((this->at(i) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
+			//const U16 ref_genotype_swap = (((this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift)) << 8) | ((this->at(i) & ((1 << shift) - 1) << add) >> add);
+
 
 			// Cycle over implicit elements in object
 			for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
@@ -142,16 +177,11 @@ public:
 				const U32 length   = this->at(j) >> (2*shift + add);
 				const BYTE alleleA = (this->at(j) & ((1 << shift) - 1) << add) >> add;
 				const BYTE alleleB = (this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-
-				BYTE score = 2;
-				if(alleleA == ref_alleleA && alleleB == ref_alleleB){ // identical
-					score = 2;
-				} else if(!(alleleA == ref_alleleA || alleleB == ref_alleleB)){
-					score = 0;
+				//const U16 comp_genotype = (((this->at(j) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
+				const float score = this->comparatorSamplesDiploid(alleleA, ref_alleleA, alleleB, ref_alleleB);
+				if(score == 0){
 					internal_start += length;
 					continue;
-				} else {
-					score = 1;
 				}
 
 				// Cycle over implicit elements in object
@@ -210,10 +240,9 @@ public:
 	}
 
     std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-    	std::vector<tachyon::core::GTObject> ret(this->getObjects(n_samples));
-    	//tachyon::core::GTObject** pointer = new tachyon::core::GTObject*[n_samples];
+    	std::vector<gt_object> ret(this->getObjects(n_samples));
+    	std::vector<gt_object> ret_unpermuted(n_samples);
 
-    	std::vector<tachyon::core::GTObject> ret_unpermuted(n_samples);
     	for(U32 i = 0; i < n_samples; ++i)
     		ret_unpermuted[i] = ret[ppa_manager[i]];
 
@@ -241,17 +270,15 @@ public:
 template <class T>
 class GenotypeContainerDiploidSimple : public GenotypeContainerInterface{
 private:
-	typedef GenotypeContainerInterface     parent_type;
-    typedef GenotypeContainerDiploidSimple self_type;
-    typedef T                              value_type;
-    typedef value_type&                    reference;
-    typedef const value_type&              const_reference;
-    typedef value_type*                    pointer;
-    typedef const value_type*              const_pointer;
-    typedef std::ptrdiff_t                 difference_type;
-    typedef std::size_t                    size_type;
-    typedef tachyon::core::MetaEntry                      meta_type;
-    typedef tachyon::core::MetaHotController              hot_controller_type;
+	typedef GenotypeContainerInterface       parent_type;
+    typedef GenotypeContainerDiploidSimple   self_type;
+    typedef T                                value_type;
+    typedef value_type&                      reference;
+    typedef const value_type&                const_reference;
+    typedef value_type*                      pointer;
+    typedef const value_type*                const_pointer;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef std::size_t                      size_type;
 
 public:
     GenotypeContainerDiploidSimple(){}
@@ -294,13 +321,13 @@ public:
 		return(count);
 	}
 
-	square_matrix_type& compareSamplesPairwise(square_matrix_type& square_matrix) const{
+	square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const{
 
 		return(square_matrix);
 	}
 
 	std::vector<gt_object> getLiteralObjects(void) const{
-		std::vector<tachyon::core::GTObject> ret(this->n_entries);
+		std::vector<gt_object> ret(this->n_entries);
 		tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 		for(U32 i = 0; i < this->n_entries; ++i){
 			entries[i](this->at(i), *this->__meta);

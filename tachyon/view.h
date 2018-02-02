@@ -123,7 +123,7 @@ int view(int argc, char** argv){
 		square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		++n_blocks;
-		if(n_blocks == 10) break;
+		//if(n_blocks == 50) break;
 	}
 	square /= square_division;
 	std::cerr << n_blocks << std::endl;

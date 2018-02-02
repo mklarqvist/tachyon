@@ -309,7 +309,7 @@ public:
 
 		containers::GenotypeContainer gt(this->block);
 		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].compareSamplesPairwise(square_temporary);
+			gt[i].comparePairwise(square_temporary);
 
 		//square /= (U64)2*this->header.n_samples*gt.size();
 		square.addUpperTriagonal(square_temporary, this->block.ppa_manager);

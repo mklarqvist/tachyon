@@ -55,7 +55,7 @@ private:
 	}
 
 private:
-	char buffer[13];
+	char buffer[64];
 	std::chrono::high_resolution_clock::time_point _start;
 
 };
