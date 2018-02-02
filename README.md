@@ -244,6 +244,39 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 square /= n_alleles; // Divide matrix by the number of observed alleles
 std::cout << square << std::endl; // Print output
 ```
+Lets plot this output matrix in `R`
+```R
+diff<-read.delim("ibd_matrix.txt",h=F)
+diff2<-matrix(0,ncol(diff)-1,ncol(diff)-1)
+# Utility function to convert upper triagonal matrix into
+# square matrix with empty diagonal removed
+helper<-function(dataset,position){ t(dataset[position,-position])+dataset[-position,position] }
+for(i in 1:(ncol(diff)-1)) diff2[,i]<-helper(diff,i)
+groupings<-read.delim("~/Downloads/integrated_call_samples_v3.20130502.ALL.panel")
+
+library(RColorBrewer)
+#colors = rainbow(length(unique(groupings$super_pop)))
+colors = brewer.pal(length(unique(groupings$super_pop)), "Accent")
+names(colors) = unique(groupings$super_pop)
+
+# Load and run t-SNE with various perplexities
+library(Rtsne)
+tsneP20 <- Rtsne(diff2, dims = 5, perplexity=20,verbose=TRUE, max_iter = 500)
+tsneP30 <- Rtsne(diff2, dims = 5, perplexity=30,verbose=TRUE, max_iter = 500)
+tsneP40 <- Rtsne(diff2, dims = 5, perplexity=40,verbose=TRUE, max_iter = 500)
+tsneP50 <- Rtsne(diff2, dims = 5, perplexity=50,verbose=TRUE, max_iter = 500)
+
+# Plot some data
+plot(tsneP20$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+legend("topright",legend = names(colors),fill=colors,cex=.6)
+plot(tsneP30$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+legend("topright",legend = names(colors),fill=colors,cex=.6)
+plot(tsneP40$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+legend("topright",legend = names(colors),fill=colors,cex=.6)
+plot(tsneP50$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+legend("topright",legend = names(colors),fill=colors,cex=.6)
+
+```
 
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd

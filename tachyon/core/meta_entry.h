@@ -89,6 +89,18 @@ public:
 	inline const std::string getName(void) const{ return(this->cold.getName()); }
 	inline const U16& getNumberAlleles(void) const{ return(this->cold.getNumberAlleles()); }
 
+	inline const char getBiallelicAlleleLiteral(const U32 position) const{
+		if(this->isBiallelic()){
+			assert(position == 0 || position == 1);
+			switch(position){
+			case(0): return(this->hot.ref_alt.getRefAlleleLiteral());
+			case(1): return(this->hot.ref_alt.getAltAlleleLiteral());
+			default: std::cerr << "Illegal allele in biallelic!" << std::endl; exit(1);
+			}
+		} else
+			exit(1);
+	}
+
 	// Set and get for patterns
 	inline U32& getInfoPatternID(void){ return(this->info_pattern_id); }
 	inline U32& getFormatPatternID(void){ return(this->format_pattern_id); }

@@ -103,6 +103,9 @@ public:
 	inline const char getRef(void) const{ return(constants::REF_ALT_LOOKUP[this->ref]); }
 	inline const char getAlt(void) const{ return(constants::REF_ALT_LOOKUP[this->alt]); }
 
+	inline const BYTE getRefAlleleLiteral(void) const{ return(this->ref); }
+	inline const BYTE getAltAlleleLiteral(void) const{ return(this->alt); }
+
 	bool setRef(const char& c);
 	bool setAlt(const char& c);
 

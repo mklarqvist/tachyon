@@ -111,23 +111,31 @@ int view(int argc, char** argv){
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
-	tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
+	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
+	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
 	U32 n_blocks = 0;
-	U64 square_division = 0;
+	//U64 square_division = 0;
+	std::vector<tachyon::core::TiTvObject> global_titv(reader.header.n_samples);
 	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
 		//n_variants += reader.iterate_genotypes();
-		square_division += reader.calculateIBS(square, square_temporary);
+		//square_division += reader.calculateIBD(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
+		n_variants += reader.getTiTVRatios(std::cout, global_titv);
 		++n_blocks;
 		//if(n_blocks == 50) break;
 	}
-	square /= square_division;
+
+	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTG\tTC\tTT\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\t\n";
+	for(U32 i = 0; i < global_titv.size(); ++i){
+		std::cout << i << '\t' << global_titv[i] << '\n';
+	}
+
+	//square /= square_division;
 	std::cerr << n_blocks << std::endl;
-	std::cout << square << std::endl;
+	//std::cout << square << std::endl;
 	std::cerr << "Variants: " << tachyon::utility::ToPrettyString(n_variants) << '\t' << timer.ElapsedString() << '\t' << tachyon::utility::ToPrettyString((U64)((double)n_variants*2504/timer.Elapsed().count())) << std::endl;
 
 	return 0;

@@ -303,7 +303,7 @@ public:
 		return this->block.size();
 	}
 
-	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
+	U64 calculateIBD(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
 		algorithm::Timer timer;
 		timer.Start();
 
@@ -319,6 +319,19 @@ public:
 		const U64 updates = 2*((this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 + this->header.n_samples) * gt.size();
 		std::cerr << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
 		return((U64)2*this->header.n_samples*gt.size());
+	}
+
+	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TiTvObject>& global){
+		containers::GenotypeContainer gt(this->block);
+		std::vector<tachyon::core::TiTvObject> objects(this->header.n_samples);
+		for(U32 i = 0; i < gt.size(); ++i)
+			gt[i].updateTransitionTransversions(objects);
+
+		for(U32 i = 0; i < objects.size(); ++i){
+			global[this->block.ppa_manager[i]] += objects[i];
+			//stream << i << '\t' << objects[i] << '\n';
+		}
+		return(gt.size());
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){

@@ -3,6 +3,7 @@
 
 #include "../core/genotype_summary.h"
 #include "../core/genotype_object.h"
+#include "../core/ti_tv_object.h"
 #include "../math/square_matrix.h"
 #include "datacontainer.h"
 
@@ -21,6 +22,7 @@ protected:
     typedef GenotypeSum                      gt_summary;
     typedef math::SquareMatrix<double>       square_matrix_type;
     typedef algorithm::PermutationManager    permutation_type;
+    typedef tachyon::core::TiTvObject        ti_tv_object_type;
 
 public:
     GenotypeContainerInterface(void) :
@@ -55,6 +57,8 @@ public:
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
 
+    virtual void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const =0;
+
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
@@ -65,19 +69,19 @@ protected:
     inline float comparatorSamplesDiploid(const Y& alleleA, const Y& ref_alleleA, const Y& alleleB, const Y& ref_alleleB) const{
     	// If allele A and allele B is identical in both samples but the alleles are different
 		// e.g. 0|0 == 0|0
-    	if(alleleA == ref_alleleA && alleleB == ref_alleleB && alleleA != alleleB){ // identical but heterozygote
+    	if((alleleA == ref_alleleA && alleleB == ref_alleleB) || (alleleA == ref_alleleB && alleleB == ref_alleleA)){ // identical but heterozygote
 			return(1);
 		}
-    	// If allele A and allele B is identical in both samples
+    	// If allele A and allele B are identical in both samples
 		// e.g. 0|0 == 0|0
     	else if(alleleA == ref_alleleA && alleleB == ref_alleleB){ // identical
-			return(0);
+			return(2);
 		}
-		// If neither allele A nor B is the same
+		// If neither allele A nor B are the same
 		// e.g. 0|1 == 1|0
 		// e.g. 1|1 == 0|0
 		else if(!(alleleA == ref_alleleA || alleleB == ref_alleleB)){
-			return(2);
+			return(0);
 		}
 		// Otherwise one allele matches
 		// e.g. 0|0 == 0|1
@@ -265,6 +269,51 @@ public:
 		gt_summary_object += *this;
 		return(gt_summary_object);
     }
+
+    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{
+    	if(this->size() == 0)
+    		return;
+
+    	// Has to be a SNV
+    	if(this->getMeta().isSimpleSNV() == false){
+    		//std::cerr << "skipping" << std::endl;
+    		return;
+    	}
+
+    	// Todo: current biallelic only
+    	if(this->getMeta().isBiallelic() == false)
+    		return;
+
+    	const BYTE shift = this->__meta->isAnyGTMissing()   ? 2 : 1;
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
+
+		// If alleleA/B == ref then update self
+		// If allele != ref then update ref->observed
+		BYTE references[2];
+		references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
+		references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
+		references[2] = 4; // Missing
+
+		const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
+		const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
+
+    	// Cycle over genotype objects
+		U32 cum_position = 0;
+    	for(U32 i = 0; i < this->size(); ++i){
+    		const U32 length   = this->at(i) >> (2*shift + add);
+			const BYTE alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
+			const BYTE alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+
+			for(U32 j = 0; j < length; ++j, cum_position++){
+				++objects[cum_position].base_conversions[references[0]][references[alleleA]];
+				++objects[cum_position].base_conversions[references[0]][references[alleleB]];
+				objects[cum_position].n_transitions   += transition_map_target[alleleA];
+				objects[cum_position].n_transversions += transversion_map_target[alleleA];
+				objects[cum_position].n_transitions   += transition_map_target[alleleB];
+				objects[cum_position].n_transversions += transversion_map_target[alleleB];
+			}
+    	}
+    }
 };
 
 template <class T>
@@ -358,6 +407,8 @@ public:
     	    gt_summary_object += *this;
     	    return(gt_summary_object);
     }
+
+    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{}
 };
 
 
