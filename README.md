@@ -246,14 +246,26 @@ std::cout << square << std::endl; // Print output
 ```
 Lets plot this output matrix in `R`
 ```R
-diff<-read.delim("ibd_matrix.txt",h=F)
+# In this example we have computed the IBD matrix for
+# the 2,504 samples from the 1000 genomes project
+# Calculating this matrix takes roughly ~1 hour on a single
+# core on a laptop
+#
+# Upper triagonal similiary
+diff<-read.delim("1kgp3_chr20_ibd_matrix.txt",h=F)
+# Square matrix
 diff2<-matrix(0,ncol(diff)-1,ncol(diff)-1)
+
 # Utility function to convert upper triagonal matrix into
 # square matrix with empty diagonal removed
 helper<-function(dataset,position){ t(dataset[position,-position])+dataset[-position,position] }
 for(i in 1:(ncol(diff)-1)) diff2[,i]<-helper(diff,i)
-groupings<-read.delim("~/Downloads/integrated_call_samples_v3.20130502.ALL.panel")
 
+# Load sample meta data (including labels)
+# Available online at http://www.internationalgenome.org/
+groupings<-read.delim("integrated_call_samples_v3.20130502.ALL.panel")
+
+# Generate some colours
 library(RColorBrewer)
 #colors = rainbow(length(unique(groupings$super_pop)))
 colors = brewer.pal(length(unique(groupings$super_pop)), "Accent")
