@@ -144,20 +144,25 @@ public:
 
     // GT-specific
     U32 getSum(void) const{
-    		U32 count = 0;
-    		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
-    		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
-
-    		for(U32 i = 0; i < this->n_entries; ++i)
-			count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
-
-    		return(count);
-    }
-
-    square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const{
+		U32 count = 0;
 		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
 		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
+		for(U32 i = 0; i < this->n_entries; ++i)
+		count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
+
+		return(count);
+    }
+
+    square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const{
+    	// Has to be a SNV
+		if(this->getMeta().isSimpleSNV() == false){
+			//std::cerr << "skipping" << std::endl;
+			return square_matrix;
+		}
+
+		const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
 		U32 start_position = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
@@ -382,7 +387,55 @@ public:
 	}
 
 	square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const{
+		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
+		U32 start_position = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// self check
+			const U32 ref_length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE ref_alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE ref_alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+			//const U16 ref_genotype      = ((YON_GT_RLE_ALLELE_A(this->at(i), shift, add)) << 8) | (YON_GT_RLE_ALLELE_B(this->at(i), shift, add));
+			//const U16 ref_genotype_swap = ((YON_GT_RLE_ALLELE_B(this->at(i), shift, add)) << 8) | (YON_GT_RLE_ALLELE_A(this->at(i), shift, add));
+
+
+			// Cycle over implicit elements in object
+			for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
+				for(U32 end_sample = start_sample + 1; end_sample < start_position + ref_length; ++end_sample){
+					square_matrix(start_sample, end_sample) += 2;
+					//++cum_length;
+				}
+			}
+			//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << start_position << "," << start_position + ref_length << ")\n";
+
+			U32 internal_start = start_position + ref_length;
+
+			// Compare to next object
+			for(U32 j = i + 1; j < this->n_entries; ++j){
+				const U32 length   = YON_GT_RLE_LENGTH(this->at(j), shift, add);
+				const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(j), shift, add);
+				const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(j), shift, add);
+				//const U16 comp_genotype = (((this->at(j) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
+				const float score = this->comparatorSamplesDiploid(alleleA, ref_alleleA, alleleB, ref_alleleB);
+				if(score == 0){
+					internal_start += length;
+					continue;
+				}
+
+				// Cycle over implicit elements in object
+				//std::cerr << "(" << start_position << "," << start_position + ref_length << ")(" << internal_start << "," << internal_start + length << ")\n";
+				for(U32 start_sample = start_position; start_sample < start_position + ref_length; ++start_sample){
+					for(U32 end_sample = internal_start; end_sample < internal_start + length; ++end_sample){
+						square_matrix(start_sample, end_sample) += score;
+						//++cum_length;
+					}
+				}
+				internal_start += length;
+			}
+			start_position += ref_length;
+		}
+		//std::cerr << start_position << std::endl;
 		return(square_matrix);
 	}
 
@@ -395,29 +448,62 @@ public:
 		return(ret);
 	}
 
-	 std::vector<gt_object> getObjects(const U64& n_samples) const{
-		 return(std::vector<gt_object>());
-	 }
+	std::vector<gt_object> getObjects(const U64& n_samples) const{
+		std::vector<tachyon::core::GTObject> ret(n_samples);
+		tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 
-	 std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-		 return(std::vector<gt_object>());
-	 }
+		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
-    gt_summary& updateSummary(gt_summary& gt_summary_object) const{
-    		gt_summary_object += *this;
-    		return(gt_summary_object);
-    }
+		U32 cum_pos = 0;
+		for(U32 i = 0; i < this->n_entries; ++i){
+			const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
-    gt_summary getSummary(void) const{
-        	gt_summary summary;
-        	summary += *this;
-        	return(summary);
-    }
+			BYTE phasing = 0;
+			if(add) phasing = this->at(i) & 1;
+			else    phasing = this->__meta->getControllerPhase();
 
-    gt_summary& getSummary(gt_summary& gt_summary_object) const{
-    	    gt_summary_object += *this;
-    	    return(gt_summary_object);
-    }
+			for(U32 j = 0; j < length; ++j, cum_pos++){
+				entries[cum_pos].alleles = new std::pair<char,char>[2];
+				entries[cum_pos].alleles[0].first  = alleleA;
+				entries[cum_pos].alleles[1].first  = alleleB;
+				entries[cum_pos].alleles[0].second = phasing;
+				entries[cum_pos].alleles[1].second = phasing;
+				entries[cum_pos].n_objects = 1;
+				entries[cum_pos].n_alleles = 2;
+			}
+		}
+		return(ret);
+	}
+
+	std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
+		std::vector<gt_object> ret(this->getObjects(n_samples));
+		std::vector<gt_object> ret_unpermuted(n_samples);
+
+		for(U32 i = 0; i < n_samples; ++i)
+			ret_unpermuted[i] = ret[ppa_manager[i]];
+
+		//delete [] pointer;
+		return(ret_unpermuted);
+	}
+
+	gt_summary& updateSummary(gt_summary& gt_summary_object) const{
+		gt_summary_object += *this;
+		return(gt_summary_object);
+	}
+
+	gt_summary getSummary(void) const{
+		gt_summary summary;
+		summary += *this;
+		return(summary);
+	}
+
+	gt_summary& getSummary(gt_summary& gt_summary_object) const{
+		gt_summary_object += *this;
+		return(gt_summary_object);
+	}
 
     void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{
 		if(this->size() == 0)
