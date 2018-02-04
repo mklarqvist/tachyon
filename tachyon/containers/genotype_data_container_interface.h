@@ -52,11 +52,42 @@ public:
     //virtual void std::vector<bool> getSamplesMissingness(void) =0;
     //virtual void std::vector<U32> getSamplesPloidy(void) =0;
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
+
+    /**<
+     *
+     * @param square_matrix
+     * @return
+     */
     virtual square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const =0;
+
+    /**<
+     *
+     * @return
+     */
     virtual U32 getSum(void) const =0;
+
+    // Summary statistics
+    /**<
+     *
+     * @param gt_summary_object
+     * @return
+     */
     virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
+
+    /**<
+     *
+     * @return
+     */
     virtual gt_summary getSummary(void) const =0;
+
+    /**<
+     *
+     * @param gt_summary_object
+     * @return
+     */
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
+
+
     virtual std::vector<gt_object> getLiteralObjects(void) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;

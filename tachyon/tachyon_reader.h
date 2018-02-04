@@ -303,7 +303,7 @@ public:
 		return this->block.size();
 	}
 
-	U64 calculateIBD(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
+	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
 		algorithm::Timer timer;
 		timer.Start();
 

@@ -246,13 +246,14 @@ std::cout << square << std::endl; // Print output
 ```
 Lets plot this output matrix in `R`
 ```R
-# In this example we have computed the IBD matrix for
-# the 2,504 samples from the 1000 genomes project
+# In this example we have pre-computed the identity-by-state
+# matrix for the 2,504 samples from the 1000 genomes project
+# using genotypes from chromosme 20.
 # Calculating this matrix takes roughly ~1 hour on a single
 # core on a laptop
 #
 # Upper triagonal similiary
-diff<-read.delim("1kgp3_chr20_ibd_matrix.txt",h=F)
+diff<-read.delim("1kgp3_chr20_ibs_matrix.txt",h=F)
 # Square matrix
 diff2<-matrix(0,ncol(diff)-1,ncol(diff)-1)
 
@@ -273,21 +274,23 @@ names(colors) = unique(groupings$super_pop)
 
 # Load and run t-SNE with various perplexities
 library(Rtsne)
+tsneP10 <- Rtsne(diff2, dims = 5, perplexity=10,verbose=TRUE, max_iter = 500)
 tsneP20 <- Rtsne(diff2, dims = 5, perplexity=20,verbose=TRUE, max_iter = 500)
 tsneP30 <- Rtsne(diff2, dims = 5, perplexity=30,verbose=TRUE, max_iter = 500)
 tsneP40 <- Rtsne(diff2, dims = 5, perplexity=40,verbose=TRUE, max_iter = 500)
 tsneP50 <- Rtsne(diff2, dims = 5, perplexity=50,verbose=TRUE, max_iter = 500)
 
 # Plot some data
-plot(tsneP20$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+plot(tsneP10$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
-plot(tsneP30$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+plot(tsneP20$Y[,1],tsneP20$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
-plot(tsneP40$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+plot(tsneP30$Y[,1],tsneP30$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
-plot(tsneP50$Y[,1],tsneP10$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+plot(tsneP40$Y[,1],tsneP40$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
-
+plot(tsneP50$Y[,1],tsneP50$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
+legend("topright",legend = names(colors),fill=colors,cex=.6)
 ```
 
 [openssl]:  https://www.openssl.org/
