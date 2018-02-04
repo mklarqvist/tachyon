@@ -41,7 +41,7 @@ public:
 		if(this->n_transversions + this->n_transitions == 0)
 			return 0;
 
-		return((double)this->n_transversions / this->n_transitions);
+		return((double)this->n_transitions / this->n_transversions);
 	}
 
 private:

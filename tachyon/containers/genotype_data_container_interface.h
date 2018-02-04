@@ -294,10 +294,11 @@ public:
 
 		// If alleleA/B == ref then update self
 		// If allele != ref then update ref->observed
-		BYTE* references = new BYTE[this->getMeta().getNumberAlleles() + 1];
+		BYTE references[4];
 		references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
 		references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
-		references[this->getMeta().getNumberAlleles()] = 4; // Missing
+		references[2] = 4; // Missing
+		references[3] = 4; // EOV
 
 		const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
 		const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
@@ -309,17 +310,20 @@ public:
 			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
+			if(alleleA == 2 || alleleB == 2){
+				cum_position += length;
+				continue;
+			}
+
 			for(U32 j = 0; j < length; ++j, cum_position++){
 				++objects[cum_position].base_conversions[references[0]][references[alleleA]];
 				++objects[cum_position].base_conversions[references[0]][references[alleleB]];
-				objects[cum_position].n_transitions   += transition_map_target[alleleA];
-				objects[cum_position].n_transversions += transversion_map_target[alleleA];
-				objects[cum_position].n_transitions   += transition_map_target[alleleB];
-				objects[cum_position].n_transversions += transversion_map_target[alleleB];
+				objects[cum_position].n_transitions   += transition_map_target[references[alleleA]];
+				objects[cum_position].n_transversions += transversion_map_target[references[alleleA]];
+				objects[cum_position].n_transitions   += transition_map_target[references[alleleB]];
+				objects[cum_position].n_transversions += transversion_map_target[references[alleleB]];
 			}
     	}
-    	// Cleanup
-    	delete references;
     }
 };
 
@@ -433,11 +437,11 @@ public:
 				++n_variants_is_snv;
 
 				switch(this->getMeta().cold.alleles[i].allele[0]){
-				case('A'): references[i].first = 0; break;
-				case('T'): references[i].first = 1; break;
-				case('G'): references[i].first = 2; break;
-				case('C'): references[i].first = 3; break;
-				case('N'): references[i].first = 4; break;
+				case('A'): references[i].first = constants::REF_ALT_A; break;
+				case('T'): references[i].first = constants::REF_ALT_T; break;
+				case('G'): references[i].first = constants::REF_ALT_G; break;
+				case('C'): references[i].first = constants::REF_ALT_C; break;
+				case('N'): references[i].first = constants::REF_ALT_N; break;
 				}
 
 				references[i].second = true;
@@ -459,7 +463,6 @@ public:
 
 		const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0].first];
 		const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0].first];
-
 		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
 		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
@@ -471,24 +474,28 @@ public:
 			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
 			// Allele 0 is encoded as missing
-			if(alleleA == 0 || alleleB == 0)
+			if(alleleA == 0 || alleleB == 0){
+				cum_position += length;
 				continue;
+			}
 
-			if(references[alleleA-1].second == false || references[alleleB-1].second == false)
+			if(references[alleleA-1].second == false || references[alleleB-1].second == false){
+				cum_position += length;
 				continue;
+			}
 
 			for(U32 j = 0; j < length; ++j, cum_position++){
 				++objects[cum_position].base_conversions[references[0].first][references[alleleA-1].first];
 				++objects[cum_position].base_conversions[references[0].first][references[alleleB-1].first];
-				objects[cum_position].n_transitions   += transition_map_target[alleleA-1];
-				objects[cum_position].n_transversions += transversion_map_target[alleleA-1];
-				objects[cum_position].n_transitions   += transition_map_target[alleleB-1];
-				objects[cum_position].n_transversions += transversion_map_target[alleleB-1];
+				objects[cum_position].n_transitions   += transition_map_target[references[alleleA-1].first];
+				objects[cum_position].n_transversions += transversion_map_target[references[alleleA-1].first];
+				objects[cum_position].n_transitions   += transition_map_target[references[alleleB-1].first];
+				objects[cum_position].n_transversions += transversion_map_target[references[alleleB-1].first];
 			}
 		}
 
 		// Cleanup
-		delete references;
+		delete [] references;
 	}
 };
 

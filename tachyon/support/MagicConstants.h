@@ -53,6 +53,7 @@ const BYTE REF_ALT_G = 2;
 const BYTE REF_ALT_C = 3;
 const BYTE REF_ALT_N = 4;
 
+//                                     A  T  G  C  N
 const BYTE TRANSITION_MAP_BASE_A[5] = {0, 0, 1, 0, 0}; // A->G
 const BYTE TRANSITION_MAP_BASE_T[5] = {0, 0, 0, 1, 0}; // T->C
 const BYTE TRANSITION_MAP_BASE_G[5] = {1, 0, 0, 0, 0}; // G->A
@@ -60,6 +61,7 @@ const BYTE TRANSITION_MAP_BASE_C[5] = {0, 1, 0, 0, 0}; // C->T
 const BYTE TRANSITION_MAP_BASE_N[5] = {0, 0, 0, 0, 0}; // None
 const BYTE* const TRANSITION_MAP[5] = {TRANSITION_MAP_BASE_A, TRANSITION_MAP_BASE_T, TRANSITION_MAP_BASE_G, TRANSITION_MAP_BASE_C, TRANSITION_MAP_BASE_N};
 
+//                                       A  T  G  C  N
 const BYTE TRANSVERSION_MAP_BASE_A[5] = {0, 1, 0, 1, 0};
 const BYTE TRANSVERSION_MAP_BASE_T[5] = {1, 0, 1, 0, 0};
 const BYTE TRANSVERSION_MAP_BASE_G[5] = {0, 1, 0, 1, 0};
