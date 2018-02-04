@@ -2,7 +2,8 @@
 #define CONTAINERS_GENOTYPE_CONTAINER_H_
 
 #include "datablock.h"
-#include "genotype_data_container_interface.h"
+#include "genotype_container_diploid_rle.h"
+#include "genotype_container_diploid_simple.h"
 #include "meta_container.h"
 
 namespace tachyon{
@@ -21,7 +22,7 @@ private:
     typedef MetaContainer                 meta_container_type;
     typedef tachyon::core::MetaEntry      meta_type;
     typedef io::BasicBuffer               buffer_type;
-    typedef containers::GenotypeSum    gt_summary_type;
+    typedef containers::GenotypeSum       gt_summary_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
