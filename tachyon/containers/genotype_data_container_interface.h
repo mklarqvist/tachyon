@@ -10,6 +10,10 @@
 namespace tachyon{
 namespace containers{
 
+#define YON_GT_RLE_ALLELE_A(PRIMITITVE, SHIFT, ADD) (((PRIMITITVE) & ((1 << (SHIFT)) - 1) << (ADD)) >> (ADD));
+#define YON_GT_RLE_ALLELE_B(PRIMITIVE, SHIFT, ADD)  (((PRIMITIVE) & ((1 << (SHIFT)) - 1) << ((ADD)+(SHIFT))) >> ((ADD)+(SHIFT)));
+#define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD) ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
+
 class GenotypeContainerInterface{
 private:
     typedef GenotypeContainerInterface       self_type;
@@ -145,7 +149,7 @@ public:
     		const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
 
     		for(U32 i = 0; i < this->n_entries; ++i)
-			count += this->at(i) >> (2*shift + add);
+			count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
 
     		return(count);
     }
@@ -158,11 +162,11 @@ public:
 		U32 start_position = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// self check
-			const U32 ref_length   = this->at(i) >> (2*shift + add);
-			const BYTE ref_alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
-			const BYTE ref_alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-			//const U16 ref_genotype      = (((this->at(i) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
-			//const U16 ref_genotype_swap = (((this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift)) << 8) | ((this->at(i) & ((1 << shift) - 1) << add) >> add);
+			const U32 ref_length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE ref_alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE ref_alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+			//const U16 ref_genotype      = ((YON_GT_RLE_ALLELE_A(this->at(i), shift, add)) << 8) | (YON_GT_RLE_ALLELE_B(this->at(i), shift, add));
+			//const U16 ref_genotype_swap = ((YON_GT_RLE_ALLELE_B(this->at(i), shift, add)) << 8) | (YON_GT_RLE_ALLELE_A(this->at(i), shift, add));
 
 
 			// Cycle over implicit elements in object
@@ -178,9 +182,9 @@ public:
 
 			// Compare to next object
 			for(U32 j = i + 1; j < this->n_entries; ++j){
-				const U32 length   = this->at(j) >> (2*shift + add);
-				const BYTE alleleA = (this->at(j) & ((1 << shift) - 1) << add) >> add;
-				const BYTE alleleB = (this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+				const U32 length   = YON_GT_RLE_LENGTH(this->at(j), shift, add);
+				const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(j), shift, add);
+				const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(j), shift, add);
 				//const U16 comp_genotype = (((this->at(j) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
 				const float score = this->comparatorSamplesDiploid(alleleA, ref_alleleA, alleleB, ref_alleleB);
 				if(score == 0){
@@ -222,9 +226,9 @@ public:
 
 		U32 cum_pos = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			const U32 length   = this->at(i) >> (2*shift + add);
-			const BYTE alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
-			const BYTE alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+			const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
 			BYTE phasing = 0;
 			if(add) phasing = this->at(i) & 1;
@@ -281,18 +285,19 @@ public:
     	}
 
     	// Todo: current biallelic only
-    	if(this->getMeta().isBiallelic() == false)
+    	if(this->getMeta().isBiallelic() == false){
     		return;
+    	}
 
     	const BYTE shift = this->__meta->isAnyGTMissing()   ? 2 : 1;
 		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
 		// If alleleA/B == ref then update self
 		// If allele != ref then update ref->observed
-		BYTE references[2];
+		BYTE* references = new BYTE[this->getMeta().getNumberAlleles() + 1];
 		references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
 		references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
-		references[2] = 4; // Missing
+		references[this->getMeta().getNumberAlleles()] = 4; // Missing
 
 		const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
 		const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
@@ -300,9 +305,9 @@ public:
     	// Cycle over genotype objects
 		U32 cum_position = 0;
     	for(U32 i = 0; i < this->size(); ++i){
-    		const U32 length   = this->at(i) >> (2*shift + add);
-			const BYTE alleleA = (this->at(i) & ((1 << shift) - 1) << add) >> add;
-			const BYTE alleleB = (this->at(i) & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
+    		const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
 			for(U32 j = 0; j < length; ++j, cum_position++){
 				++objects[cum_position].base_conversions[references[0]][references[alleleA]];
@@ -313,6 +318,8 @@ public:
 				objects[cum_position].n_transversions += transversion_map_target[alleleB];
 			}
     	}
+    	// Cleanup
+    	delete references;
     }
 };
 
@@ -365,7 +372,7 @@ public:
 		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
 
 		for(U32 i = 0; i < this->n_entries; ++i)
-			count += this->at(i) >> (2*shift + add);
+			count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
 
 		return(count);
 	}
@@ -408,7 +415,81 @@ public:
     	    return(gt_summary_object);
     }
 
-    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{}
+    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{
+		if(this->size() == 0)
+			return;
+
+		// Reference has to be a SNV
+		if(this->getMeta().cold.alleles[0].l_allele != 1)
+			return;
+
+		// Check
+		U32 n_variants_is_snv = 0;
+		// Lookup for reference
+		std::pair<BYTE, bool>* references = new std::pair<BYTE, bool>[this->getMeta().getNumberAlleles() + 1];
+
+		for(U32 i = 0; i < this->__meta->getNumberAlleles(); ++i){
+			if(this->getMeta().cold.alleles[i].l_allele == 1){
+				++n_variants_is_snv;
+
+				switch(this->getMeta().cold.alleles[i].allele[0]){
+				case('A'): references[i].first = 0; break;
+				case('T'): references[i].first = 1; break;
+				case('G'): references[i].first = 2; break;
+				case('C'): references[i].first = 3; break;
+				case('N'): references[i].first = 4; break;
+				}
+
+				references[i].second = true;
+			} else {
+				references[i].second = false;
+				references[i].first  = 5;
+			}
+		}
+
+		if(n_variants_is_snv == 0){
+			delete [] references;
+			return;
+		}
+
+		if(references[0].second == false){
+			delete [] references;
+			return;
+		}
+
+		const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0].first];
+		const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0].first];
+
+		const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
+
+		// Cycle over genotype objects
+		U32 cum_position = 0;
+		for(U32 i = 0; i < this->size(); ++i){
+			const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+
+			// Allele 0 is encoded as missing
+			if(alleleA == 0 || alleleB == 0)
+				continue;
+
+			if(references[alleleA-1].second == false || references[alleleB-1].second == false)
+				continue;
+
+			for(U32 j = 0; j < length; ++j, cum_position++){
+				++objects[cum_position].base_conversions[references[0].first][references[alleleA-1].first];
+				++objects[cum_position].base_conversions[references[0].first][references[alleleB-1].first];
+				objects[cum_position].n_transitions   += transition_map_target[alleleA-1];
+				objects[cum_position].n_transversions += transversion_map_target[alleleA-1];
+				objects[cum_position].n_transitions   += transition_map_target[alleleB-1];
+				objects[cum_position].n_transversions += transversion_map_target[alleleB-1];
+			}
+		}
+
+		// Cleanup
+		delete references;
+	}
 };
 
 

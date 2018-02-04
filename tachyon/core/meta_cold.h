@@ -73,8 +73,8 @@ private:
 	}
 
 public:
-	U16 l_allele; /**< Byte length of allele data */
-	char* allele; /**< Char array of allele */
+	U16   l_allele; /**< Byte length of allele data */
+	char* allele;   /**< Char array of allele */
 };
 
 // Do NOT reinterpret_cast this struct as an array

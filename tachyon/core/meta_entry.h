@@ -112,15 +112,15 @@ public:
 private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
-private:
+public:
 	friend containers::MetaContainer;
 
-	bool loaded_cold;      // Boolean triggered if cold meta object was overloaded
-	U32 info_pattern_id;   // Info pattern ID
-	U32 filter_pattern_id; // Filter pattern ID
-	U32 format_pattern_id; // Format pattern ID
-	hot_entry hot;         // Hot meta object
-	cold_entry cold;       // Cold meta object - can be empty
+	bool       loaded_cold;       // Boolean triggered if cold meta object was overloaded
+	U32        info_pattern_id;   // Info pattern ID
+	U32        filter_pattern_id; // Filter pattern ID
+	U32        format_pattern_id; // Format pattern ID
+	hot_entry  hot;               // Hot meta object
+	cold_entry cold;              // Cold meta object - can be empty
 };
 
 }
