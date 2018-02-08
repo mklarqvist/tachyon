@@ -292,6 +292,8 @@ legend("topright",legend = names(colors),fill=colors,cex=.6)
 plot(tsneP50$Y[,1],tsneP50$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
 ```
+Generated output
+![screenshot](examples/1kgp3_chr20_ibs.png)
 
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
