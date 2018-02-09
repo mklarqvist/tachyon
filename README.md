@@ -66,9 +66,9 @@ reader.open(my_input_file);
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
     // Meta container
-    containers::MetaContainer meta(this->block);
+    containers::MetaContainer meta(reader.block);
     // FORMAT container with float return type primitive
-    containers::FormatContainer<float>* gp_container = this->get_balanced_format_container<float>("GL", meta);
+    containers::FormatContainer<float>* gp_container = reader.get_balanced_format_container<float>("GL", meta);
     if(gp_container != nullptr){
         for(U32 variant = 0; variant < gp_container->size(); ++variant){
             for(U32 sample = 0; sample < gp_container->at(variant).size(); ++sample){
@@ -106,11 +106,11 @@ reader.open(my_input_file);
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
     // Meta container
-    containers::MetaContainer meta(this->block);
+    containers::MetaContainer meta(reader.block);
     // Variant-balanced
-    containers::InfoContainer<U32>* info_balanced   = this->get_balanced_info_container<U32>("SVLEN", meta);
+    containers::InfoContainer<U32>* info_balanced   = reader.get_balanced_info_container<U32>("SVLEN", meta);
     // Not variant-balanced 
-    containers::InfoContainer<U32>* info_unbalanced = this->get_info_container<U32>("SVLEN");
+    containers::InfoContainer<U32>* info_unbalanced = reader.get_info_container<U32>("SVLEN");
     // Print the sizes of the two containers
     // The size of the balanced container is always the number of variants
     // In contrast, the unbalanced one returns a container only for the 
@@ -137,7 +137,7 @@ reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
 while(reader.get_next_block()){ // As long as there are YON blocks available
-    containers::GenotypeContainer gt(this->block);
+    containers::GenotypeContainer gt(reader.block);
     math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
     containers::GenotypeSum gt_summary; // Genotype summary statistics
     for(U32 i = 0; i < gt.size(); ++i){ // Foreach variant
@@ -150,7 +150,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
         const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
         if(p < 1e-3){ // If P < 0.001 report it
-            gt[i].getMeta().toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+            gt[i].getMeta().toVCFString(std::cout, reader.header, reader.block.index_entry.contigID, reader.block.index_entry.minPosition);
             std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
         }
         gt_summary.clear(); // Recycle summary object
@@ -184,21 +184,21 @@ reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
 while(reader.get_next_block()){ // As long as there are YON blocks available
-    containers::GenotypeContainer gt(this->block);
+    containers::GenotypeContainer gt(reader.block);
     for(U32 i = 0; i < gt.size(); ++i){
         // All of these functions are in relative terms very expensive!
         // Avoid using them unless you have to!
         // Vector of literal genotype representations (lower level)
         std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
         // Vector of genotype objects (high level permuted)
-        std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.n_samples);
+        std::vector<core::GTObject> objects_all = gt[i].getObjects(reader.header.n_samples);
         // Vector of genotype objects (high level unpermuted - original)
-        std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.n_samples, this->block.ppa_manager);
+        std::vector<core::GTObject> objects_true = gt[i].getObjects(reader.header.n_samples, reader.block.ppa_manager);
 
         // Print the difference
         std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
         // Dump data
-        gt[i].getMeta().toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+        gt[i].getMeta().toVCFString(std::cout, reader.header, reader.block.index_entry.contigID, reader.block.index_entry.minPosition);
         utility::to_vcf_string(std::cout, objects_true) << '\n';
     }
 }
@@ -226,20 +226,20 @@ tachyon::math::SquareMatrix<double> square(reader.header.getSampleNumber());
 tachyon::math::SquareMatrix<double> square_temporary(reader.header.getSampleNumber());
 U64 n_alleles = 0;
 while(reader.get_next_block()){ // As long as there are YON blocks available
-    containers::GenotypeContainer gt(this->block);
+    containers::GenotypeContainer gt(reader.block);
     // Compare genotypes pairwise for each M in the current YON block
     for(U32 i = 0; i < gt.size(); ++i)
         gt[i].comparePairwise(square_temporary);
 
     // Add the data from the temporary matrix to the main matrix
     // in the unpermuted genotype order
-    square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
+    square.addUpperTriagonal(square_temporary, reader.block.ppa_manager);
     square_temporary.clear(); // Recycle memory
 
     // 2 * (Upper triagonal + diagonal) * number of variants
     // This is equivalent to (choose(N, 2) + N) * M_block
-    const U64 updates = 2*((this->header.getSampleNumber()*this->header.getSampleNumber() - this->header.getSampleNumber())/2 + this->header.getSampleNumber()) * gt.size();
-    n_aleles += 2*this->header.getSampleNumber()*gt.size(); // 2*N*M_block
+    const U64 updates = 2*((reader.header.getSampleNumber()*reader.header.getSampleNumber() - reader.header.getSampleNumber())/2 + reader.header.getSampleNumber()) * gt.size();
+    n_aleles += 2*reader.header.getSampleNumber()*gt.size(); // 2*N*M_block
 }
 square /= n_alleles; // Divide matrix by the number of observed alleles
 std::cout << square << std::endl; // Print output
@@ -292,7 +292,7 @@ legend("topright",legend = names(colors),fill=colors,cex=.6)
 plot(tsneP50$Y[,1],tsneP50$Y[,2],pch=20,cex=.8,col=colors[groupings$super_pop])
 legend("topright",legend = names(colors),fill=colors,cex=.6)
 ```
-Generated output
+Generated output  
 ![screenshot](examples/1kgp3_chr20_ibs.png)
 
 [openssl]:  https://www.openssl.org/

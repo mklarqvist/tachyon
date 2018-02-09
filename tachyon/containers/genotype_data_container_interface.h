@@ -28,6 +28,9 @@ protected:
     typedef algorithm::PermutationManager    permutation_type;
     typedef tachyon::core::TiTvObject        ti_tv_object_type;
 
+    // Function pointers
+	typedef float (self_type::*matrix_comparator)(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB);
+
 public:
     GenotypeContainerInterface(void) :
     	n_entries(0),
@@ -100,8 +103,7 @@ public:
     inline const meta_type& getMeta(void) const{ return(*this->__meta); }
 
 protected:
-    template <class Y>
-    inline float comparatorSamplesDiploid(const Y& alleleA, const Y& ref_alleleA, const Y& alleleB, const Y& ref_alleleB) const{
+    inline float comparatorSamplesDiploid(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB) const{
     	// If allele A and allele B is identical in both samples but the alleles are different
 		// e.g. 0|0 == 0|0
     	if((alleleA == ref_alleleA && alleleB == ref_alleleB) || (alleleA == ref_alleleB && alleleB == ref_alleleA)){ // identical but heterozygote
