@@ -191,9 +191,9 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
         // Vector of literal genotype representations (lower level)
         std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
         // Vector of genotype objects (high level permuted)
-        std::vector<core::GTObject> objects_all = gt[i].getObjects(reader.header.n_samples);
+        std::vector<core::GTObject> objects_all = gt[i].getObjects(reader.header.getSampleNumber());
         // Vector of genotype objects (high level unpermuted - original)
-        std::vector<core::GTObject> objects_true = gt[i].getObjects(reader.header.n_samples, reader.block.ppa_manager);
+        std::vector<core::GTObject> objects_true = gt[i].getObjects(reader.header.getSampleNumber(), reader.block.ppa_manager);
 
         // Print the difference
         std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
