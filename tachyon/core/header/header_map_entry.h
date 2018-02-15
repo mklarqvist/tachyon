@@ -8,6 +8,9 @@
 namespace tachyon{
 namespace core{
 
+/**<
+ * FORMAT/FILTER/INFO field entry
+ */
 struct HeaderMapEntry{
 private:
 	typedef HeaderMapEntry self_type;
@@ -50,8 +53,8 @@ private:
 	inline const vcf::TACHYON_VCF_HEADER_LINE_TYPE getType(void) const{ return(vcf::TACHYON_VCF_HEADER_LINE_TYPE(this->TYPE)); }
 
 public:
-	BYTE TYPE;
-	S32 IDX;
+	BYTE        TYPE;
+	S32         IDX;
 	std::string ID;
 };
 

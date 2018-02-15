@@ -1,16 +1,16 @@
-#ifndef CONTAINERS_META_HOT_CONTAINER_H_
-#define CONTAINERS_META_HOT_CONTAINER_H_
+#ifndef CONTAINERS_PRIMITIVE_CONTAINER_STRING_H_
+#define CONTAINERS_PRIMITIVE_CONTAINER_STRING_H_
 
-#include "../core/meta_hot.h"
-#include "datablock.h"
+#include "primitive_container.h"
 
 namespace tachyon{
 namespace containers{
 
-class MetaHotContainer{
+template <>
+class PrimitiveContainer<std::string>{
 private:
     typedef std::size_t       size_type;
-    typedef tachyon::core::MetaHot           value_type;
+    typedef std::string       value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;
@@ -18,10 +18,9 @@ private:
     typedef std::ptrdiff_t    difference_type;
 
 public:
-    MetaHotContainer();
-    MetaHotContainer(const DataBlock& block);
-    MetaHotContainer(const DataContainer& container);
-    ~MetaHotContainer(void);
+    PrimitiveContainer();
+    PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries);
+    ~PrimitiveContainer(void);
 
     class iterator{
     private:
@@ -81,15 +80,56 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
+private:
+    void __setup(const DataContainer& container, const U32& offset);
 
 private:
     size_t  n_entries;
     pointer __entries;
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
+PrimitiveContainer<std::string>::PrimitiveContainer() :
+	n_entries(0),
+	__entries(nullptr)
+{
+
+}
+
+PrimitiveContainer<std::string>::PrimitiveContainer(const DataContainer& container,
+                                                              const U32& offset,
+                                                              const U32  n_entries) :
+	n_entries(n_entries),
+	__entries(new value_type[n_entries])
+{
+	if(container.header.controller.signedness){
+		switch(container.header.controller.type){
+		case(tachyon::core::YON_TYPE_CHAR):   (this->__setup(container, offset));   break;
+		default: std::cerr << "Disallowed" << std::endl; return;
+		}
+	} else {
+		switch(container.header.controller.type){
+		default: std::cerr << "Disallowed" << std::endl; return;
+		}
+	}
+}
+
+PrimitiveContainer<std::string>::~PrimitiveContainer(void){
+	delete [] this->__entries;
+}
+
+void PrimitiveContainer<std::string>::__setup(const DataContainer& container, const U32& offset){
+	//const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
+	//for(U32 i = 0; i < this->n_entries; ++i)
+	//	this->__entries[i] = data[i];
+}
+
 }
 }
 
 
 
-#endif /* CONTAINERS_META_HOT_CONTAINER_H_ */
+#endif /* CONTAINERS_PRIMITIVE_CONTAINER_STRING_H_ */

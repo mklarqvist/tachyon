@@ -9,12 +9,12 @@ namespace containers{
 
 class MetaColdContainer{
 private:
-    typedef std::size_t       size_type;
-    typedef tachyon::core::MetaCold          value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
+    typedef std::size_t              size_type;
+    typedef tachyon::core::MetaCold  value_type;
+    typedef value_type&              reference;
+    typedef const value_type&        const_reference;
+    typedef value_type*              pointer;
+    typedef const value_type*        const_pointer;
 
 public:
     MetaColdContainer();
@@ -74,11 +74,11 @@ public:
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__entries[0]); }
-    inline iterator end(){ return iterator(&this->__entries[this->n_entries - 1]); }
+    inline iterator end(){ return iterator(&this->__entries[this->n_entries]); }
     inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
+    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries - 1]); }
+    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
 private:
     void __ctor_setup(const DataContainer& container);

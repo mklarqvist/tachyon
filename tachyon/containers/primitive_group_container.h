@@ -76,11 +76,11 @@ public:
 
 	// Iterator
 	inline iterator begin(){ return iterator(&this->__containers[0]); }
-	inline iterator end(){ return iterator(&this->__containers[this->__n_objects - 1]); }
+	inline iterator end(){ return iterator(&this->__containers[this->__n_objects]); }
 	inline const_iterator begin() const{ return const_iterator(&this->__containers[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->__containers[this->__n_objects - 1]); }
+	inline const_iterator end() const{ return const_iterator(&this->__containers[this->__n_objects]); }
 	inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->__n_objects - 1]); }
+	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->__n_objects]); }
 
 private:
     size_type __n_objects;

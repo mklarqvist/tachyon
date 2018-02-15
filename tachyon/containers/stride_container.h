@@ -1,27 +1,46 @@
-#ifndef CONTAINERS_META_HOT_CONTAINER_H_
-#define CONTAINERS_META_HOT_CONTAINER_H_
+#ifndef CONTAINERS_STRIDE_CONTAINER_H_
+#define CONTAINERS_STRIDE_CONTAINER_H_
 
-#include "../core/meta_hot.h"
-#include "datablock.h"
+#include "datacontainer.h"
 
 namespace tachyon{
 namespace containers{
 
-class MetaHotContainer{
+/**<
+ * Primary container to handle stride data from data containers
+ * This class should be considered for internal use only
+ */
+template <class return_primitive = U32>
+class StrideContainer{
 private:
     typedef std::size_t       size_type;
-    typedef tachyon::core::MetaHot           value_type;
+    typedef return_primitive  value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;
     typedef std::ptrdiff_t    difference_type;
+    typedef DataContainer     data_container_type;
 
 public:
-    MetaHotContainer();
-    MetaHotContainer(const DataBlock& block);
-    MetaHotContainer(const DataContainer& container);
-    ~MetaHotContainer(void);
+    StrideContainer() :
+    	isUniform_(false),
+		n_entries(0),
+		__entries(nullptr)
+	{
+    }
+
+    StrideContainer(const data_container_type& container) :
+    	isUniform_(false),
+		n_entries(0),
+		__entries(nullptr)
+    {
+    	this->__setup(container);
+    }
+
+    ~StrideContainer(void){
+    	delete [] this->__entries;
+    }
 
     class iterator{
     private:
@@ -81,10 +100,33 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
+private:
+    void __setup(const data_container_type& container){
+    	switch(container.header_stride.controller.type){
+		case(tachyon::core::YON_TYPE_8B):  (this->__allocate<SBYTE>(container));  break;
+		case(tachyon::core::YON_TYPE_16B): (this->__allocate<S16>(container));    break;
+		case(tachyon::core::YON_TYPE_32B): (this->__allocate<S32>(container));    break;
+		case(tachyon::core::YON_TYPE_64B): (this->__allocate<S64>(container));    break;
+		default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive!" << std::endl; exit(1);
+		}
+    }
+
+    template <class intrinsic_type>
+    void __allocate(const data_container_type& container){
+    	this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
+    	this->__entries = new value_type[this->size()];
+    	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.buffer_strides_uncompressed.data());
+    	for(size_type i = 0; i < this->size(); ++i)
+    		this->__entries[i] = strides[i];
+
+    	if(container.header_stride.controller.uniform)
+    		this->isUniform_ = true;
+    }
 
 private:
-    size_t  n_entries;
-    pointer __entries;
+    bool       isUniform_;
+    size_type  n_entries;
+    pointer    __entries;
 };
 
 }
@@ -92,4 +134,4 @@ private:
 
 
 
-#endif /* CONTAINERS_META_HOT_CONTAINER_H_ */
+#endif /* CONTAINERS_STRIDE_CONTAINER_H_ */

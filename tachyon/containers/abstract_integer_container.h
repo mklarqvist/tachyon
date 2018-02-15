@@ -80,11 +80,11 @@ public:
 
 	// Iterator
 	inline iterator begin(){ return iterator(&this->__iterators[0]); }
-	inline iterator end(){ return iterator(&this->__iterators[this->n_entries - 1]); }
+	inline iterator end(){ return iterator(&this->__iterators[this->n_entries]); }
 	inline const_iterator begin() const{ return const_iterator(&this->__iterators[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->__iterators[this->n_entries - 1]); }
+	inline const_iterator end() const{ return const_iterator(&this->__iterators[this->n_entries]); }
 	inline const_iterator cbegin() const{ return const_iterator(&this->__iterators[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->__iterators[this->n_entries - 1]); }
+	inline const_iterator cend() const{ return const_iterator(&this->__iterators[this->n_entries]); }
 
 	// Math
 	math::SummaryStatistics getSummaryStatistics(void){

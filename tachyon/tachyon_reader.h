@@ -247,10 +247,11 @@ public:
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		containers::InfoContainer<char>* it2 = this->get_balanced_info_container<char>("CS", meta);
+		containers::InfoContainer<float>* it2 = this->get_balanced_info_container<float>("AF", meta);
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
-
+		delete it2;
+		return(0);
 		//containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it2 != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
