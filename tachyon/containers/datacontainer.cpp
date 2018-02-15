@@ -162,12 +162,6 @@ bool DataContainer::checkUniformity(void){
 	return(true);
 }
 
-/*
- This function is called during import to shrink each
- word-type to fit min(x) and max(x) in the worst case.
- At this stage all integer values in the stream is of
- type S32. No other values can be shrunk
- */
 void DataContainer::reformat(){
 	if(this->buffer_data_uncompressed.size() == 0)
 		return;
@@ -251,7 +245,7 @@ void DataContainer::reformat(){
 				this->buffer_data += (U64)dat[j];
 
 		} else {
-			std::cerr << "illegal" << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitvie type!" << std::endl;
 			exit(1);
 		}
 	}
@@ -289,7 +283,7 @@ void DataContainer::reformat(){
 			}
 
 		} else {
-			std::cerr << "illegal" << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitvie type!" << std::endl;
 			exit(1);
 		}
 	}
@@ -310,7 +304,7 @@ void DataContainer::reformatStride(){
 	// Recode integer types
 	if(!(this->header_stride.controller.type == tachyon::core::YON_TYPE_32B &&
 	   this->header_stride.controller.signedness == 0)){
-		std::cerr << "illegal at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Illegal at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
 		exit(1);
 	}
 
@@ -356,7 +350,7 @@ void DataContainer::reformatStride(){
 			this->buffer_strides += (U64)dat[j];
 
 	} else {
-		std::cerr << "illegal" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Illegal primtive type!" << std::endl;
 		exit(1);
 	}
 	//std::cerr << "recode shrink strides: " << this->buffer_strides.size() << '\t' << buffer.size() << std::endl;

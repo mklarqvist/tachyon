@@ -18,7 +18,7 @@
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
 #include "core/genotype_object.h"
-#include "core/header/yon_tachyonheader.h"
+#include "core/header/tachyon_header.h"
 #include "math/fisher.h"
 #include "math/square_matrix.h"
 #include "math/basic_vector_math.h"
@@ -247,15 +247,28 @@ public:
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AR2", meta);
+		containers::InfoContainer<char>* it2 = this->get_balanced_info_container<char>("CS", meta);
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
 
-		containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
-		if(it4 != nullptr){
-			std::cerr << "balanced format = " << it4->size() << std::endl;
-			math::SummaryStatistics ss = math::summary_statistics(*it4);
-			std::cerr << ss.mean << "+-" << ss.getSigmaSquared() << " (" << ss.min << "-" << ss.max << ") n = " << ss.n_total << std::endl;
+		//containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
+		if(it2 != nullptr){
+			//std::cerr << "balanced format = " << it4->size() << std::endl;
+			//math::SummaryStatistics ss = math::summary_statistics(*it4);
+			//std::cerr << ss.mean << "+-" << ss.getSigmaSquared() << " (" << ss.min << "-" << ss.max << ") n = " << ss.n_total << std::endl;
+
+			for(size_t i = 0; i < it2->size(); ++i){
+				if(it2->at(i).size() == 0) continue;
+				else {
+
+					meta.at(i).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+					std::cout << "\t";
+					utility::to_vcf_string(std::cout, (*it2)[i]);
+					std::cout << "\n";
+				}
+
+
+			}
 
 			/*
 			for(U32 i = 0; i < it4->size(); ++i){
@@ -270,7 +283,7 @@ public:
 			stream << '\n';
 			*/
 		}
-		delete it4;
+		delete it2;
 
 		//if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
 		//if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;

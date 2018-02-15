@@ -343,8 +343,16 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
-		for(U32 i = 0; i < this->n_entries; ++i)
-			new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
+		for(U32 i = 0; i < this->n_entries; ++i){
+			// If pattern matches
+			if(pattern_matches[meta_container[i].getFormatPatternID()]){
+				new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
+			}
+			// Otherwise place an empty
+			else {
+				new( &this->__containers[i] ) value_type( );
+			}
+		}
 
 		current_offset += stride_size * sizeof(actual_primitive);
 	}

@@ -179,7 +179,7 @@ private:
 	size_type n_capacity;
 
 	// Basic
-	pointer index;
+	pointer      index;
 	pointer_meta indexindex;
 };
 

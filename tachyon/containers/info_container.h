@@ -206,7 +206,6 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 		if(container.header.isSigned()){
 			switch(container.header.getPrimitiveType()){
 			case(tachyon::core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, func));  break;
-			case(tachyon::core::YON_TYPE_CHAR):   (this->__setup<char>(container, func));   break;
 			case(tachyon::core::YON_TYPE_16B):    (this->__setup<S16>(container, func));    break;
 			case(tachyon::core::YON_TYPE_32B):    (this->__setup<S32>(container, func));    break;
 			case(tachyon::core::YON_TYPE_64B):    (this->__setup<S64>(container, func));    break;
@@ -229,7 +228,6 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 		if(container.header.isSigned()){
 			switch(container.header.getPrimitiveType()){
 			case(tachyon::core::YON_TYPE_8B):     (this->__setup<SBYTE>(container, container.header.stride));  break;
-			case(tachyon::core::YON_TYPE_CHAR):   (this->__setup<char>(container, container.header.stride));   break;
 			case(tachyon::core::YON_TYPE_16B):    (this->__setup<S16>(container, container.header.stride));    break;
 			case(tachyon::core::YON_TYPE_32B):    (this->__setup<S32>(container, container.header.stride));    break;
 			case(tachyon::core::YON_TYPE_64B):    (this->__setup<S64>(container, container.header.stride));    break;
@@ -246,6 +244,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			case(tachyon::core::YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.stride));  break;
 			case(tachyon::core::YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
+
 			}
 		}
 	}
@@ -330,7 +329,8 @@ template <class actual_primitive>
 void InfoContainer<return_type>::__setupBalanced(const data_container_type& data_container,
                                                  const meta_container_type& meta_container,
                                                    const std::vector<bool>& pattern_matches,
-                                                                 const U32  stride_size){
+                                                                 const U32  stride_size)
+{
 	this->n_entries = meta_container.size();
 	if(this->n_entries == 0)
 		return;
@@ -340,9 +340,13 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
-		for(U32 i = 0; i < this->n_entries; ++i)
-			new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
-
+		for(U32 i = 0; i < this->n_entries; ++i){
+			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+				new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
+			} else {
+				new( &this->__containers[i] ) value_type( );
+			}
+		}
 		current_offset += stride_size * sizeof(actual_primitive);
 	}
 	// Case 2: if data is not uniform

@@ -63,7 +63,6 @@ inline const U32 permuteIntBits(const char* const  data,
 			target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
-	std::cerr << "in: " << size << "->" << internal_size << std::endl;
 	return internal_size;
 }
 

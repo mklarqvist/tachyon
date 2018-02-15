@@ -134,7 +134,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 	}
 	// Nothing carried over
 	else {
-		std::cerr << "no carry over" << std::endl;
 		// Only set this to 0 if there is no carry
 		// over data from the previous cycle
 		for(std::size_t i = 0; i < this->n_entries; ++i)

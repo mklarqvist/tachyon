@@ -14,9 +14,9 @@ namespace containers{
 
 // Stream container for importing
 class DataContainer{
-	typedef DataContainer self_type;
-	typedef io::BasicBuffer buffer_type;
-	typedef core::DataContainerHeader header_type;
+	typedef DataContainer                   self_type;
+	typedef io::BasicBuffer                 buffer_type;
+	typedef core::DataContainerHeader       header_type;
 	typedef core::DataContainerHeaderStride header_stride_type;
 
 public:
@@ -46,7 +46,10 @@ public:
 	/**<
 	 *
 	 */
-	inline void setMixedStrides(void){ this->header.stride = -1; this->header.controller.mixedStride = true; }
+	inline void setMixedStrides(void){
+		this->header.stride = -1;
+		this->header.controller.mixedStride = true;
+	}
 
 	// Operators
 	inline void operator++(void){ ++this->n_entries; }
@@ -141,7 +144,10 @@ public:
 	bool checkUniformity(void);
 
 	/**<
-	 *
+	 * This function is called during import to shrink each
+	 * word-type to fit min(x) and max(x) in the worst case.
+	 * At this stage all integer values in the stream is of
+	 * type S32. No other values can be shrunk
 	 */
 	void reformat(void);
 
