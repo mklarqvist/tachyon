@@ -2,24 +2,30 @@
 #define CONTAINERS_PRIMITIVE_CONTAINER_STRING_H_
 
 #include "primitive_container.h"
+#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{
 
+/**<
+ * Primitive container for strings
+ */
 template <>
 class PrimitiveContainer<std::string>{
 private:
-    typedef std::size_t       size_type;
-    typedef std::string       value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
-    typedef std::ptrdiff_t    difference_type;
+    typedef std::size_t          size_type;
+    typedef std::string          value_type;
+    typedef value_type&          reference;
+    typedef const value_type&    const_reference;
+    typedef value_type*          pointer;
+    typedef const value_type*    const_pointer;
+    typedef std::ptrdiff_t       difference_type;
+    typedef StrideContainer<U32> stride_container_type;
+    typedef DataContainer        data_container_type;
 
 public:
     PrimitiveContainer();
-    PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries);
+    PrimitiveContainer(const data_container_type& container);
     ~PrimitiveContainer(void);
 
     class iterator{
@@ -81,7 +87,8 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
 private:
-    void __setup(const DataContainer& container, const U32& offset);
+    void __setup(const data_container_type& container);
+    void __setup(const data_container_type& container, const U32 stride_size);
 
 private:
     size_t  n_entries;
@@ -99,21 +106,19 @@ PrimitiveContainer<std::string>::PrimitiveContainer() :
 
 }
 
-PrimitiveContainer<std::string>::PrimitiveContainer(const DataContainer& container,
-                                                              const U32& offset,
-                                                              const U32  n_entries) :
+PrimitiveContainer<std::string>::PrimitiveContainer(const data_container_type& container) :
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
-	if(container.header.controller.signedness){
-		switch(container.header.controller.type){
-		case(tachyon::core::YON_TYPE_CHAR):   (this->__setup(container, offset));   break;
-		default: std::cerr << "Disallowed" << std::endl; return;
-		}
+	if(container.header.getPrimitiveType() != tachyon::core::YON_TYPE_CHAR){
+		std::cerr << "disallowed type" << std::endl;
+		return;
+	}
+
+	if(container.header.hasMixedStride()){
+		this->__setup(container);
 	} else {
-		switch(container.header.controller.type){
-		default: std::cerr << "Disallowed" << std::endl; return;
-		}
+		this->__setup(container, container.header.stride);
 	}
 }
 
@@ -121,7 +126,13 @@ PrimitiveContainer<std::string>::~PrimitiveContainer(void){
 	delete [] this->__entries;
 }
 
-void PrimitiveContainer<std::string>::__setup(const DataContainer& container, const U32& offset){
+void PrimitiveContainer<std::string>::__setup(const data_container_type& container){
+	//const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
+	//for(U32 i = 0; i < this->n_entries; ++i)
+	//	this->__entries[i] = data[i];
+}
+
+void PrimitiveContainer<std::string>::__setup(const data_container_type& container, const U32 stride_size){
 	//const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
 	//for(U32 i = 0; i < this->n_entries; ++i)
 	//	this->__entries[i] = data[i];

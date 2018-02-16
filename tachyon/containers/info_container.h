@@ -245,7 +245,6 @@ void InfoContainer<return_type>::__setup(const data_container_type& container){
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 	stride_container_type strides(container);
-	std::cerr << "strides is: " << strides.size() << std::endl;
 
 	U32 current_offset = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -270,11 +269,13 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	stride_container_type strides(data_container);
 
 	U32 current_offset = 0;
+	U32 stride_offset = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		// If pattern matches
 		if(pattern_matches[meta_container[i].getInfoPatternID()]){
-			new( &this->__containers[i] ) value_type( data_container, current_offset, strides[i] );
-			current_offset += strides[i] * sizeof(actual_primitive);
+			new( &this->__containers[i] ) value_type( data_container, current_offset, strides[stride_offset] );
+			current_offset += strides[stride_offset] * sizeof(actual_primitive);
+			++stride_offset;
 		}
 		// Otherwise place an empty
 		else {

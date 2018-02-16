@@ -9,6 +9,9 @@
 namespace tachyon{
 namespace containers{
 
+/**<
+ * Primary class for FORMAT data
+ */
 template <class return_type>
 class FormatContainer{
 private:
@@ -298,11 +301,13 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 		stride_container_type strides(data_container);
 
 		U32 current_offset = 0;
+		U32 strides_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getFormatPatternID()]){
-				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[i] );
-				current_offset += strides[i] * sizeof(actual_primitive);
+				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
+				current_offset += strides[strides_offset] * sizeof(actual_primitive);
+				++strides_offset;
 			}
 			// Otherwise place an empty
 			else {

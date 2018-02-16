@@ -190,6 +190,11 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObje
 	return(stream);
 }
 
+std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
+	stream << string;
+	return(stream);
+}
+
 
 }
 }

@@ -25,6 +25,7 @@
 #include "utility/support_vcf.h"
 #include "iterator/IteratorIntegerReference.h"
 #include "index/sorted_index.h"
+#include "containers/info_container_string.h"
 
 namespace tachyon{
 
@@ -247,11 +248,10 @@ public:
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		containers::InfoContainer<float>* it2 = this->get_balanced_info_container<float>("AF", meta);
+		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("SVTYPE", meta);
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
-		delete it2;
-		return(0);
+
 		//containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it2 != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
@@ -261,14 +261,11 @@ public:
 			for(size_t i = 0; i < it2->size(); ++i){
 				if(it2->at(i).size() == 0) continue;
 				else {
-
 					meta.at(i).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
 					std::cout << "\t";
 					utility::to_vcf_string(std::cout, (*it2)[i]);
 					std::cout << "\n";
 				}
-
-
 			}
 
 			/*

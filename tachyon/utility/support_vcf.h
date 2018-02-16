@@ -32,6 +32,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const S32* const values, const
 std::ostream& to_vcf_string(std::ostream& stream, const char* const values, const U32 n_entries);
 std::ostream& to_vcf_string(std::ostream& stream, const float* const values, const U32 n_entries);
 std::ostream& to_vcf_string(std::ostream& stream, const double* const values, const U32 n_entries);
+std::ostream& to_vcf_string(std::ostream& stream, const std::string& string);
 
 // Primitive container declarations
 // Unsigned values does not have missing values
