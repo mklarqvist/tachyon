@@ -49,7 +49,6 @@ public:
     	n_entries(0),
 		__containers(nullptr)
     {
-    	std::cerr << "in balanced build" << std::endl;
     	if(data_container.header.hasMixedStride())
 			this->__setupBalanced(data_container, meta_container, pattern_matches);
 		else
@@ -194,19 +193,34 @@ private:
 
 		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
-			// If pattern matches
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
-				new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], stride_size);
-				current_offset += stride_size;
+		if(data_container.header.isUniform() == false){
+			U32 current_offset = 0;
+			for(U32 i = 0; i < this->n_entries; ++i){
+				// If pattern matches
+				if(pattern_matches[meta_container[i].getInfoPatternID()]){
+					new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], stride_size);
+					current_offset += stride_size;
+				}
+				// Otherwise place an empty
+				else {
+					new( &this->__containers[i] ) value_type( );
+				}
 			}
-			// Otherwise place an empty
-			else {
-				new( &this->__containers[i] ) value_type( );
+			assert(current_offset == data_container.buffer_data_uncompressed.size());
+		}
+		// Data is uniform
+		else {
+			for(U32 i = 0; i < this->n_entries; ++i){
+				// If pattern matches
+				if(pattern_matches[meta_container[i].getInfoPatternID()]){
+					new( &this->__containers[i] ) value_type(data_container.buffer_data_uncompressed.data(), stride_size);
+				}
+				// Otherwise place an empty
+				else {
+					new( &this->__containers[i] ) value_type( );
+				}
 			}
 		}
-		assert(current_offset == data_container.buffer_data_uncompressed.size());
     }
 
 private:

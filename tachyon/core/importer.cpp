@@ -1,8 +1,9 @@
 #include <fstream>
 
-#include "Importer.h"
 #include "../algorithm/DigitalDigestController.h"
+#include "importer.h"
 #include "meta_cold.h"
+#include "footer/footer.h"
 
 namespace tachyon {
 
@@ -80,16 +81,13 @@ bool Importer::BuildBCF(void){
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->samples);
 
-	if(!this->writer.Open(this->outputPrefix)){
+	if(!this->writer.open(this->outputPrefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
-	if(!this->writer.WriteHeader()){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to write header..." << std::endl;
-		return false;
-	}
-	this->writer.stream << *this->header;
+	core::TachyonHeader header(*this->header);
+	header.write(this->writer.stream);
 
 	// Resize containers
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
@@ -210,6 +208,8 @@ bool Importer::BuildBCF(void){
 		current_index_entry.n_variants  = reader.size();
 		this->writer.index += current_index_entry;
 		current_index_entry.reset();
+		++this->writer.n_blocks_written;
+		this->writer.n_variants_written += reader.size();
 
 		// Reset and update
 		this->resetHashes();
@@ -222,7 +222,11 @@ bool Importer::BuildBCF(void){
 	}
 	// Done importing
 	this->writer.stream.flush();
-	const U64 data_ends = this->writer.stream.tellp();
+
+	core::Footer footer;
+	footer.offset_end_of_data = this->writer.stream.tellp();
+	footer.n_blocks           = this->writer.n_blocks_written;
+	footer.n_variants         = this->writer.n_variants_written;
 
 	// Write index
 	this->writer.WriteIndex();
@@ -245,10 +249,12 @@ bool Importer::BuildBCF(void){
 	this->writer.stream.flush();
 	const U64 digests_ends = this->writer.stream.tellp();
 
+	this->writer.stream << footer;
+	this->writer.stream.flush();
 
 	// Place markers
-	this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
-	this->writer.WriteFinal(data_ends);
+	//this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
+	//this->writer.WriteFinal(data_ends);
 
 	std::cout
 	    << "Header:    " << utility::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
@@ -258,7 +264,7 @@ bool Importer::BuildBCF(void){
 		<< "INFO:      " << utility::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
 		<< "FORMAT:    " << utility::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
 		<< "IDs:       " << utility::toPrettyDiskString(this->import_compressed_stats.total_special_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_special_cost) << '\n'
-		<< "Index:     " << utility::toPrettyDiskString(index_ends - data_ends) << '\n'
+		<< "Index:     " << utility::toPrettyDiskString(index_ends - footer.offset_end_of_data) << '\n'
 		<< "Checksums: " << utility::toPrettyDiskString(digests_ends - index_ends) << '\n'
 		<< "Total:     " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 

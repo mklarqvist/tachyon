@@ -23,6 +23,7 @@ const std::string TACHYON_LIB_VERSION = std::to_string(TACHYON_VERSION_MAJOR) + 
 const std::string PROGRAM_NAME = "tachyon";
 const std::string OUTPUT_SUFFIX = "yon"; // yonder
 const std::string FILE_HEADER = "TACHYON\7";
+const U32 FILE_HEADER_LENGTH = 8;
 
 /*------   Genotype packing   ------*/
 const BYTE ALLELE_PACK_WIDTH = 2; // bit / allele
@@ -76,6 +77,7 @@ const U64 TACHYON_BLOCK_EOF = 7964708207515128046;
 // 32b SHA-256 digest
 // echo -n "TACHYON-EOF" | openssl dgst -sha256
 const std::string TACHYON_FILE_EOF = "fa20427e118a1f0c7e1195e4f85e15e74368b112e70dd89fd02772e1d90cb5dd";
+const BYTE TACHYON_FILE_EOF_LENGTH = 32;
 
 }
 }

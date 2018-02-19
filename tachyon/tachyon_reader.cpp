@@ -4,7 +4,6 @@ namespace tachyon{
 
 TachyonReader::TachyonReader() :
 	filesize(0),
-	l_data(0),
 	n_internal_buffers(0),
 	internal_buffers(nullptr)
 {}
@@ -12,7 +11,6 @@ TachyonReader::TachyonReader() :
 TachyonReader::TachyonReader(const std::string& filename) :
 	input_file(filename),
 	filesize(0),
-	l_data(0),
 	n_internal_buffers(0),
 	internal_buffers(nullptr)
 {}
@@ -33,6 +31,23 @@ bool TachyonReader::open(void){
 
 	this->stream.open(this->input_file, std::ios::binary | std::ios::in | std::ios::ate);
 	this->filesize = (U64)this->stream.tellg();
+
+	if(this->filesize < YON_FOOTER_LENGTH){
+		std::cerr << "file is corrupted" << std::endl;
+		return false;
+	}
+
+	this->stream.seekg(this->filesize - YON_FOOTER_LENGTH);
+	if(!this->stream.good()){
+		std::cerr << "failed to seek" << std::endl;
+		return false;
+	}
+	this->stream >> this->footer;
+
+	if(this->footer.validate() == false){
+		std::cerr << "failed to validate footer" << std::endl;
+		return false;
+	}
 
 	if(!this->stream.good()){
 		std::cerr << "failed to read file" << std::endl;
@@ -56,26 +71,11 @@ bool TachyonReader::open(void){
 	// Keep track of start position
 	const U64 return_pos = this->stream.tellg();
 
-	// Seek to EOF and make check
-	this->stream.seekg(this->filesize - 32);
-	BYTE eof_data[32];
-	utility::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
-	BYTE eof_match[32];
-	this->stream.read((char*)&eof_match[0], 32);
-	for(U32 i = 0; i < 32; ++i){
-		if(eof_data[i] != eof_match[i]){
-			std::cerr << "File is truncated!" << std::endl;
-			return false;
-		}
-	}
-
 	// Seek back to find start of index
 	// Seek to that start of index
 	// Load index
 	// Seek back to start of the file
-	this->stream.seekg(this->filesize - 32 - sizeof(U64));
-	this->stream.read((char*)reinterpret_cast<char*>(&this->l_data), sizeof(U64));
-	this->stream.seekg(this->l_data);
+	this->stream.seekg(this->footer.offset_end_of_data);
 	this->stream >> this->index;
 	this->stream.seekg(return_pos);
 
@@ -91,7 +91,7 @@ bool TachyonReader::get_next_block(){
 
 	// If the current position is the EOF then
 	// exit the function
-	if((U64)this->stream.tellg() == this->l_data)
+	if((U64)this->stream.tellg() == this->footer.offset_end_of_data)
 		return false;
 
 	// Reset and re-use

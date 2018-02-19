@@ -115,7 +115,7 @@ int view(int argc, char** argv){
 	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
 	U32 n_blocks = 0;
 	//U64 square_division = 0;
-	std::vector<tachyon::core::TiTvObject> global_titv(reader.header.n_samples);
+	std::vector<tachyon::core::TiTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();

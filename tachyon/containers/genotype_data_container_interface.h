@@ -1,18 +1,14 @@
 #ifndef CONTAINERS_GENOTYPE_DATA_CONTAINER_INTERFACE_H_
 #define CONTAINERS_GENOTYPE_DATA_CONTAINER_INTERFACE_H_
 
-#include "../core/genotype_summary.h"
 #include "../core/genotype_object.h"
+#include "../core/genotype_summary.h"
 #include "../core/ti_tv_object.h"
 #include "../math/square_matrix.h"
 #include "datacontainer.h"
 
 namespace tachyon{
 namespace containers{
-
-#define YON_GT_RLE_ALLELE_A(PRIMITITVE, SHIFT, ADD) (((PRIMITITVE) & ((1 << (SHIFT)) - 1) << (ADD)) >> (ADD));
-#define YON_GT_RLE_ALLELE_B(PRIMITIVE, SHIFT, ADD)  (((PRIMITIVE) & ((1 << (SHIFT)) - 1) << ((ADD)+(SHIFT))) >> ((ADD)+(SHIFT)));
-#define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD) ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
 
 class GenotypeContainerInterface{
 private:

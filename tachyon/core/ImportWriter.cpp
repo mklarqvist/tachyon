@@ -10,12 +10,14 @@
 
 namespace tachyon {
 
-ImportWriter::ImportWriter()
+ImportWriter::ImportWriter() :
+	n_blocks_written(0),
+	n_variants_written(0)
 {}
 
 ImportWriter::~ImportWriter(){}
 
-bool ImportWriter::Open(const std::string output){
+bool ImportWriter::open(const std::string output){
 	this->filename = output;
 	this->CheckOutputNames(output);
 	this->stream.open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
@@ -30,19 +32,6 @@ bool ImportWriter::Open(const std::string output){
 		std::cerr << utility::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "..." << std::endl;
 	}
 
-	return true;
-}
-
-bool ImportWriter::WriteHeader(void){
-	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Stream is bad!" << std::endl;
-		return false;
-	}
-
-	this->stream.write(&constants::FILE_HEADER[0], constants::FILE_HEADER.size());
-	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),  sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),  sizeof(U16));
-	this->stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE),sizeof(U16));
 	return true;
 }
 

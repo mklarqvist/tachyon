@@ -23,8 +23,8 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
+#include "core/importer.h"
 #include "utility.h"
-#include "core/Importer.h"
 
 void import_usage(void){
 	programMessage();

@@ -5,21 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../tachyon/core/ImportWriter.cpp \
-../tachyon/core/Importer.cpp \
+../tachyon/core/importer.cpp \
 ../tachyon/core/meta_cold.cpp \
 ../tachyon/core/meta_entry.cpp \
 ../tachyon/core/meta_hot.cpp 
 
 OBJS += \
 ./tachyon/core/ImportWriter.o \
-./tachyon/core/Importer.o \
+./tachyon/core/importer.o \
 ./tachyon/core/meta_cold.o \
 ./tachyon/core/meta_entry.o \
 ./tachyon/core/meta_hot.o 
 
 CPP_DEPS += \
 ./tachyon/core/ImportWriter.d \
-./tachyon/core/Importer.d \
+./tachyon/core/importer.d \
 ./tachyon/core/meta_cold.d \
 ./tachyon/core/meta_entry.d \
 ./tachyon/core/meta_hot.d 

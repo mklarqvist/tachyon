@@ -4,6 +4,8 @@
 #include <cstring>
 #include <openssl/sha.h>
 
+#include "../containers/datacontainer.h"
+
 namespace tachyon{
 namespace algorithm{
 

@@ -4,12 +4,6 @@ namespace tachyon{
 namespace core{
 
 TachyonHeader::TachyonHeader(void) :
-	version_major(0),
-	version_minor(0),
-	version_patch(0),
-	n_contigs(0),
-	n_samples(0),
-	n_entries(0),
 	contigs(nullptr),
 	samples(nullptr),
 	entries(nullptr),
@@ -18,6 +12,19 @@ TachyonHeader::TachyonHeader(void) :
 	htable_samples(nullptr),
 	htable_entries(nullptr)
 {}
+
+TachyonHeader::TachyonHeader(const vcf_header_type& vcf_header) :
+	contigs(nullptr),
+	samples(nullptr),
+	entries(nullptr),
+	mapTable(nullptr),
+	htable_contigs(nullptr),
+	htable_samples(nullptr),
+	htable_entries(nullptr)
+{
+	// Invoke copy operator
+	*this = vcf_header;
+}
 
 TachyonHeader::~TachyonHeader(){
 	delete [] this->contigs;
@@ -60,13 +67,13 @@ const bool TachyonHeader::getEntry(const std::string& p, map_entry_type*& target
 }
 
 bool TachyonHeader::buildMapTable(void){
-	if(this->n_entries == 0)
+	if(this->header_magic.n_declarations == 0)
 		return false;
 
 	delete [] this->mapTable;
 
 	S32 largest_idx = -1;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->header_magic.n_declarations; ++i){
 		if(this->entries[i].IDX > largest_idx)
 			largest_idx = this->entries[i].IDX;
 	}
@@ -74,7 +81,7 @@ bool TachyonHeader::buildMapTable(void){
 	this->mapTable = new U32[largest_idx + 1];
 	memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
 	S32 localID = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->header_magic.n_declarations; ++i){
 		this->mapTable[this->entries[i].IDX] = localID++;
 		//std::cerr << i << "->" << this->mapTable[i] << std::endl;
 	}
@@ -83,35 +90,35 @@ bool TachyonHeader::buildMapTable(void){
 }
 
 bool TachyonHeader::buildHashTables(void){
-	if(this->n_contigs){
-		if(this->n_contigs*2 < 5012){
+	if(this->header_magic.n_contigs){
+		if(this->header_magic.n_contigs*2 < 5012){
 			this->htable_contigs = new hash_table_type(5012);
 		} else
-			this->htable_contigs = new hash_table_type(this->n_contigs*2);
+			this->htable_contigs = new hash_table_type(this->header_magic.n_contigs*2);
 
-		for(S32 i = 0; i < this->n_contigs; ++i){
+		for(S32 i = 0; i < this->header_magic.n_contigs; ++i){
 			this->htable_contigs->SetItem(&this->contigs[i].name[0], &this->contigs[i].name, i, this->contigs[i].name.size());
 		}
 	}
 
-	if(this->n_samples){
-		if(this->n_samples*2 < 5012){
+	if(this->header_magic.n_samples){
+		if(this->header_magic.n_samples*2 < 5012){
 			this->htable_samples = new hash_table_type(5012);
 		} else
-			this->htable_samples = new hash_table_type(this->n_samples*2);
+			this->htable_samples = new hash_table_type(this->header_magic.n_samples*2);
 
-		for(S32 i = 0; i < this->n_samples; ++i){
+		for(S32 i = 0; i < this->header_magic.n_samples; ++i){
 			this->htable_samples->SetItem(&this->samples[i].name[0], &this->samples[i].name, i, this->samples[i].name.size());
 		}
 	}
 
-	if(this->n_entries){
-		if(this->n_entries*2 < 5012){
+	if(this->header_magic.n_declarations){
+		if(this->header_magic.n_declarations*2 < 5012){
 			this->htable_entries = new hash_table_type(5012);
 		} else
-			this->htable_entries = new hash_table_type(this->n_entries*2);
+			this->htable_entries = new hash_table_type(this->header_magic.n_declarations*2);
 
-		for(S32 i = 0; i < this->n_entries; ++i){
+		for(S32 i = 0; i < this->header_magic.n_declarations; ++i){
 			this->htable_entries->SetItem(&this->entries[i].ID[0], &this->entries[i].ID, i, this->entries[i].ID.size());
 		}
 	}

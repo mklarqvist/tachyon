@@ -6,37 +6,32 @@
 #include "../../support/helpers.h"
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderLine.h"
+#include "../basic_buffer.h"
+#include "../BasicReader.h"
 #include "../../algorithm/OpenHashTable.h"
 #include "../../core/header/header_contig.h"
 #include "../../core/header/header_map_entry.h"
 #include "../../core/header/header_sample.h"
-#include "../basic_buffer.h"
-#include "../BasicReader.h"
 
 namespace tachyon {
 namespace vcf{
 
 class VCFHeader {
-	typedef VCFHeader self_type;
+	typedef VCFHeader                         self_type;
 	typedef hash::HashTable<std::string, S32> hash_table_type;
-	typedef hash::HashTable<S32, U32> hash_table_map_type;
-	typedef core::HeaderContig contig_type;
-	typedef io::BasicBuffer buffer_type;
-	typedef VCFHeaderLine header_line_type;
-	typedef core::HeaderMapEntry map_entry_type;
-	typedef core::HeaderSample header_sample_type;
-	typedef io::BasicReader reader_type;
+	typedef hash::HashTable<S32, U32>         hash_table_map_type;
+	typedef core::HeaderContig                contig_type;
+	typedef io::BasicBuffer                   buffer_type;
+	typedef VCFHeaderLine                     header_line_type;
+	typedef core::HeaderMapEntry              map_entry_type;
+	typedef core::HeaderSample                header_sample_type;
+	typedef io::BasicReader                   reader_type;
 
 	enum VCF_ERROR_TYPE {VCF_PASS, VCF_ERROR_LINE1, VCF_ERROR_LINES, VCF_ERROR_SAMPLE, STREAM_BAD};
 
 public:
 	VCFHeader();
 	~VCFHeader();
-
-	void unsetBorrowedPointers(void){
-		this->contigsHashTable = nullptr;
-		this->sampleHashTable = nullptr;
-	}
 
 	inline bool good(void) const{ return(this->error_bit == VCF_PASS); }
 	inline bool valid(void) const{ return(this->version > 0); }
@@ -59,7 +54,7 @@ public:
 	bool parse(reader_type& stream);
 	bool parse(const char* const data, const U32& length);
 
-	FORCE_INLINE const map_entry_type& operator[](const U32& p) const{ return(this->map[p]); }
+	inline const map_entry_type& operator[](const U32& p) const{ return(this->map[p]); }
 
 private:
 	// These functions are unsafe as they require contigHashTable to be
@@ -88,17 +83,21 @@ private:
 private:
 	// Output only
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		const U32 n_contigs = entry.contigs.size();
-		const U32 n_samples = entry.sampleNames.size();
+		const U32 n_contigs     = entry.contigs.size();
+		const U32 n_samples     = entry.sampleNames.size();
 		const U32 n_meta_fields = entry.map.size();
+
+		// Contigs
 		stream.write(reinterpret_cast<const char*>(&n_contigs),sizeof(U32));
 		for(U32 i = 0; i < n_contigs; ++i)
 			stream << entry.contigs[i];
 
+		// Sample names
 		stream.write(reinterpret_cast<const char*>(&n_samples),sizeof(U32));
 		for(U32 i = 0; i < n_samples; ++i)
 			stream << entry.sampleNames[i];
 
+		// Declarations
 		stream.write(reinterpret_cast<const char*>(&n_meta_fields),sizeof(U32));
 		for(U32 i = 0; i < n_meta_fields; ++i)
 			stream << entry.map[i];

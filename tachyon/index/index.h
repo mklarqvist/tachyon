@@ -1,5 +1,5 @@
-#ifndef INDEX_SORTED_INDEX_H_
-#define INDEX_SORTED_INDEX_H_
+#ifndef INDEX_INDEX_H_
+#define INDEX_INDEX_H_
 #include <bitset>
 
 #include "index_entry.h"
@@ -8,9 +8,9 @@
 namespace tachyon{
 namespace index{
 
-class SortedIndex{
+class Index{
 private:
-	typedef SortedIndex       self_type;
+	typedef Index       self_type;
     typedef std::size_t       size_type;
     typedef IndexEntry        value_type;
     typedef value_type&       reference;
@@ -21,14 +21,14 @@ private:
 	typedef meta_type*        pointer_meta;
 
 public:
-	SortedIndex() :
+	Index() :
 		n_superindex(0),
 		n_index(0),
 		n_capacity(1000),
 		index(new value_type[1000]),
 		indexindex(new meta_type[1000])
 	{}
-	~SortedIndex(){}
+	~Index(){}
 
 	/**<
 	 * Builds the meta-index of index entries when
@@ -186,4 +186,4 @@ private:
 }
 }
 
-#endif /* INDEX_SORTED_INDEX_H_ */
+#endif /* INDEX_INDEX_H_ */

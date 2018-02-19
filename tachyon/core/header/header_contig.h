@@ -10,25 +10,25 @@ struct HeaderContig{
 	typedef HeaderContig self_type;
 
 public:
-	HeaderContig() : bp_length(0), blocks(0){}
+	HeaderContig() : bp_length(0), n_blocks(0){}
 	~HeaderContig(){}
 
-	inline void operator++(void){ ++this->blocks; }
-	inline void operator--(void){ --this->blocks; }
-	template <class T> inline void operator+=(const T value){ this->blocks += value; }
-	template <class T> inline void operator-=(const T value){ this->blocks -= value; }
+	inline void operator++(void){ ++this->n_blocks; }
+	inline void operator--(void){ --this->n_blocks; }
+	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
+	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& contig){
-		out << contig.name << '\t' << contig.bp_length << '\t' << contig.blocks;
+		out << contig.name << '\t' << contig.bp_length << '\t' << contig.n_blocks;
 		return(out);
 	}
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const U32 l_name = entry.name.size();
-		stream.write(reinterpret_cast<const char*>(&l_name), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&l_name),          sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.bp_length), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.blocks), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),  sizeof(U32));
 		stream.write(&entry.name[0], entry.name.size());
 		return(stream);
 	}
@@ -37,7 +37,7 @@ private:
 		U32 l_name = 0;
 		stream.read(reinterpret_cast<char*>(&l_name),          sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.bp_length), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.blocks),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_blocks),  sizeof(U32));
 		entry.name.resize(l_name);
 		stream.read(&entry.name[0], l_name);
 
@@ -46,9 +46,7 @@ private:
 
 public:
 	U64 bp_length;
-	// keep track of how many blocks we've seen for this contig
-	// used during import
-	U32 blocks;
+	U32 n_blocks;
 	std::string name;
 };
 

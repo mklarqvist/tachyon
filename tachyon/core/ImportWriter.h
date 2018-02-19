@@ -4,7 +4,7 @@
 #include <cassert>
 #include <fstream>
 
-#include "../index/sorted_index.h"
+#include "../index/index.h"
 #include "../support/type_definitions.h"
 
 namespace tachyon {
@@ -51,14 +51,13 @@ inline bool bytePreprocessorRevert(const char* const data, const size_t& size, c
 
 class ImportWriter {
 private:
-	typedef index::SortedIndex sorted_index_type;
+	typedef index::Index sorted_index_type;
 
 public:
 	ImportWriter();
 	~ImportWriter();
 
-	bool Open(const std::string output);
-	bool WriteHeader(void);
+	bool open(const std::string output);
 	void WriteIndex(void);
 	void WriteFinal(const U64& data_ends);
 	void CheckOutputNames(const std::string& input);
@@ -66,9 +65,13 @@ public:
 public:
 	// Stream information
 	std::ofstream stream;   // stream for data
-	std::string filename;
-	std::string basePath;
-	std::string baseName;
+	std::string   filename;
+	std::string   basePath;
+	std::string   baseName;
+
+	//
+	U64 n_blocks_written;
+	U64 n_variants_written;
 
 	// Basic
 	sorted_index_type index;

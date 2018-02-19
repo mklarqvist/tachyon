@@ -19,13 +19,14 @@
 #include "containers/meta_container.h"
 #include "core/genotype_object.h"
 #include "core/header/tachyon_header.h"
+#include "core/footer/footer.h"
 #include "math/fisher.h"
 #include "math/square_matrix.h"
 #include "math/basic_vector_math.h"
 #include "utility/support_vcf.h"
 #include "iterator/IteratorIntegerReference.h"
-#include "index/sorted_index.h"
 #include "containers/info_container_string.h"
+#include "index/index.h"
 
 namespace tachyon{
 
@@ -34,9 +35,10 @@ class TachyonReader{
 	typedef containers::DataBlock               block_entry_type;
 	typedef io::BasicBuffer                     buffer_type;
 	typedef core::TachyonHeader                 header_type;
+	typedef core::Footer                        footer_type;
 	typedef algorithm::CompressionManager       codec_manager_type;
 	typedef containers::core::DataBlockSettings settings_type;
-	typedef index::SortedIndex                  index_type;
+	typedef index::Index                        index_type;
 
 public:
 	TachyonReader();
@@ -109,7 +111,7 @@ public:
 	template <class T>
 	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
 		int format_field = this->has_format_field(field_name);
-		if(format_field >= 0) return(new containers::FormatContainer<T>(this->block.format_containers[format_field], this->header.n_samples));
+		if(format_field >= 0) return(new containers::FormatContainer<T>(this->block.format_containers[format_field], this->header.getSampleNumber()));
 		else return nullptr;
 	}
 
@@ -133,7 +135,7 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, this->header.n_samples));
+			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, this->header.getSampleNumber()));
 		}
 		else return nullptr;
 	}
@@ -322,19 +324,19 @@ public:
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].comparePairwise(square_temporary);
 
-		//square /= (U64)2*this->header.n_samples*gt.size();
+		//square /= (U64)2*this->header.getSampleNumber()*gt.size();
 		square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
 		square_temporary.clear();
 
 		// 2 * (Upper triagonal + diagonal) * number of variants
-		const U64 updates = 2*((this->header.n_samples*this->header.n_samples - this->header.n_samples)/2 + this->header.n_samples) * gt.size();
+		const U64 updates = 2*((this->header.getSampleNumber()*this->header.getSampleNumber() - this->header.getSampleNumber())/2 + this->header.getSampleNumber()) * gt.size();
 		std::cerr << utility::timestamp("DEBUG") << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-		return((U64)2*this->header.n_samples*gt.size());
+		return((U64)2*this->header.getSampleNumber()*gt.size());
 	}
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TiTvObject>& global){
 		containers::GenotypeContainer gt(this->block);
-		std::vector<tachyon::core::TiTvObject> objects(this->header.n_samples);
+		std::vector<tachyon::core::TiTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].updateTransitionTransversions(objects);
 
@@ -351,8 +353,8 @@ public:
 		//containers::GenotypeSum gt_summary1, gt_summary2;
 		for(U32 i = 0; i < gt.size(); ++i){
 			//std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
-			//std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.n_samples);
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.n_samples, this->block.ppa_manager);
+			//std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.getSampleNumber());
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 			//std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
 			gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
 			//std::cerr << "\nPermuted: ";
@@ -408,9 +410,9 @@ public:
 			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
 			//	std::cerr << '\t' << gt_summary << std::endl;
 			//}
-			assert(gt_summary.alleleCount() == 2*this->header.n_samples);
-			assert(gt_summary.genotypeCount() == this->header.n_samples);
-			assert(n_entries == this->header.n_samples);
+			assert(gt_summary.alleleCount() == 2*this->header.getSampleNumber());
+			assert(gt_summary.genotypeCount() == this->header.getSampleNumber());
+			assert(n_entries == this->header.getSampleNumber());
 			gt_summary.clear();
 			*/
 		}
@@ -443,10 +445,10 @@ public:
 	std::string   input_file;
 	std::ifstream stream;
 	U64           filesize;
-	U64           l_data;   // Size in bytes from end of header to start of footer
 
 	settings_type      settings;
 	header_type        header;
+	footer_type        footer;
 	index_type         index;
 	block_entry_type   block;
 	codec_manager_type codec_manager;

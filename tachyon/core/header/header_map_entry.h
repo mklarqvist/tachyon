@@ -50,6 +50,10 @@ private:
 		return(stream);
 	}
 
+	/**<
+	 * Determines the appropriate Tachyon family type (FORMAT, INFO, FILTER, or otherwise)
+	 * @return Returns a Tachyon family type
+	 */
 	inline const vcf::TACHYON_VCF_HEADER_LINE_TYPE getType(void) const{ return(vcf::TACHYON_VCF_HEADER_LINE_TYPE(this->TYPE)); }
 
 public:

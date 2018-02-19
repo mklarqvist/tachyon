@@ -6,8 +6,6 @@
 namespace tachyon{
 namespace containers{
 
-#define DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) (((A) & mask) << shift) | ((B) & mask)
-
 // Forward declare
 class GenotypeContainerInterface;
 template <class T> class GenotypeContainerDiploidRLE;
@@ -118,23 +116,23 @@ struct GenotypeSum{
 
 	// Genotype accessors
 	inline U64& operator()(const BYTE& allele1, const BYTE& allele2){
-		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
+		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline const U64& operator()(const BYTE& allele1, const BYTE& allele2) const{
-		assert((DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
+		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2){
-		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
+		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	inline const U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2) const{
-		assert((DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
+		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
+		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
 	}
 
 	// Allele accessors
