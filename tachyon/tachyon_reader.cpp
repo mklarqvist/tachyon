@@ -33,30 +33,30 @@ bool TachyonReader::open(void){
 	this->filesize = (U64)this->stream.tellg();
 
 	if(this->filesize < YON_FOOTER_LENGTH){
-		std::cerr << "file is corrupted" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "File is corrupted!" << std::endl;
 		return false;
 	}
 
 	this->stream.seekg(this->filesize - YON_FOOTER_LENGTH);
 	if(!this->stream.good()){
-		std::cerr << "failed to seek" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Failed to seek in file!" << std::endl;
 		return false;
 	}
 	this->stream >> this->footer;
 
 	if(this->footer.validate() == false){
-		std::cerr << "failed to validate footer" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Failed to validate footer!" << std::endl;
 		return false;
 	}
 
 	if(!this->stream.good()){
-		std::cerr << "failed to read file" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Failed to read file!" << std::endl;
 		return false;
 	}
 
 	this->stream.seekg(0);
 	if(!this->stream.good()){
-		std::cerr << "failed to rewind" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Failed to rewind file!" << std::endl;
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool TachyonReader::open(void){
 	this->stream << this->header;
 
 	if(!this->stream.good()){
-		std::cerr << "failed to get header" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Ffailed to get header!" << std::endl;
 		return false;
 	}
 
@@ -74,9 +74,11 @@ bool TachyonReader::open(void){
 	// Seek back to find start of index
 	// Seek to that start of index
 	// Load index
+	// Load checksums
 	// Seek back to start of the file
 	this->stream.seekg(this->footer.offset_end_of_data);
 	this->stream >> this->index;
+	this->stream >> this->checksums;
 	this->stream.seekg(return_pos);
 
 	return(this->stream.good());
@@ -85,7 +87,7 @@ bool TachyonReader::open(void){
 bool TachyonReader::get_next_block(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
-		std::cerr << "faulty stream" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
 		return false;
 	}
 

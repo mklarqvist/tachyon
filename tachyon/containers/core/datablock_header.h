@@ -139,27 +139,21 @@ public:
 		this->minPosition = 0;
 		this->maxPosition = 0;
 		this->n_variants = 0;
-
 		this->offset_ppa.clear();
 		this->offset_hot_meta.clear();
 		this->offset_cold_meta.clear();
 		this->offset_gt_rle.clear();
 		this->offset_gt_simple.clear();
-
 		this->offset_gt_helper.clear();
 		this->offset_meta_filter_id.clear();
 		this->offset_meta_format_id.clear();
 		this->offset_meta_info_id.clear();
-
 		this->n_info_streams = 0;
 		this->n_info_patterns = 0;
-
 		this->n_format_streams = 0;
 		this->n_format_patterns = 0;
-
 		this->n_filter_streams = 0;
 		this->n_filter_patterns = 0;
-
 		this->l_info_bitvector = 0;
 		this->l_format_bitvector = 0;
 		this->l_filter_bitvector = 0;

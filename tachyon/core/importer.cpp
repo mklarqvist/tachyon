@@ -97,7 +97,10 @@ bool Importer::BuildBCF(void){
 
 	// Digest controller
 	containers::ChecksumContainer checksums;
-	checksums.allocate(this->header->map.size());
+	if(checksums.allocate(this->header->map.size()) == false){
+		std::cerr << "failed to allocate" << std::endl;
+		return false;
+	}
 	//tachyon::core::DigitalDigestPair* digests = new tachyon::core::DigitalDigestPair[this->header->map.size()];
 
 	// Start import

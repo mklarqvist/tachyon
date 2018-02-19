@@ -15,6 +15,14 @@ private:
 
 public:
 	DigitalDigest(void){ this->initialize(); }
+	DigitalDigest(const self_type& other) :
+		data_context(other.data_context),
+		stride_context(other.stride_context)
+	{
+		memcpy(&this->data_digest[0],   other.data_digest,   64);
+		memcpy(&this->stride_digest[0], other.stride_digest, 64);
+	}
+
 	~DigitalDigest(void){}
 
 	/**<
@@ -87,13 +95,13 @@ private:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.data_digest), 64);
-		stream.write(reinterpret_cast<const char*>(&entry.stride_digest), 64);
+		stream.write(reinterpret_cast<const char* const>(&entry.data_digest),   64);
+		stream.write(reinterpret_cast<const char* const>(&entry.stride_digest), 64);
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.data_digest), 64);
+		stream.read(reinterpret_cast<char*>(&entry.data_digest),   64);
 		stream.read(reinterpret_cast<char*>(&entry.stride_digest), 64);
 		return(stream);
 	}
@@ -112,6 +120,14 @@ private:
 
 public:
 	DigitalDigestPair(){}
+
+	DigitalDigestPair(const self_type& other) :
+		uncompressed(other.uncompressed),
+		compressed(other.compressed)
+	{
+
+	}
+
 	~DigitalDigestPair(){}
 
 	inline bool finalize(void){

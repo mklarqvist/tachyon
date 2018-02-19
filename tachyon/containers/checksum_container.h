@@ -17,7 +17,7 @@ private:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
-    typedef containers::DataBlock block_type;
+    typedef containers::DataBlock    block_type;
 
 public:
 	ChecksumContainer(void);
@@ -86,65 +86,37 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
     // Overload
-    bool allocate(const size_type n_entries){
-    	if(n_entries > this->size())
-    		return false;
+    /**<
+     * Allocates a number of empty elements
+     * @param n_entries Number of entries to allocate
+     * @return          Returns TRUE if successful or FALSE otherwise
+     */
+    bool allocate(const size_type n_entries);
 
-    	this->n_entries = n_entries;
-    	for(size_type i = 0; i < this->size(); ++i)
-    		new( &this->__entries[this->n_entries] ) value_type( );
+    /**<
+     * Add an element to the container
+     * @param value Target element
+     */
+    void operator+=(const_reference value);
 
-    	return true;
-    }
+    /**<
+     * Finalize all digital digest controllers in the container.
+     * This functions has to be called prior to reading/writing to disk
+     */
+    void finalize(void);
 
-    void operator+=(const_reference value){
-    	if(this->size() + 1 == this->capacity()){
-    		// is full
-    		std::cerr << "is full: need resize" << std::endl;
-    		return;
-    	}
-
-    	// Invoke copy-ctor
-    	new( &this->__entries[this->n_entries] ) value_type( value );
-    	++this->n_entries;
-    }
-
-    void finalize(void){
-    	if(this->size() == 0) return;
-    	for(size_type i = 0; i < this->size(); ++i)
-    		this->at(i).finalize();
-    }
-
-	bool update(const block_type& block, const U32* const mapTable){
-		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
-			if(!(*this)[mapTable[block.index_entry.info_offsets[i].key]].uncompressed.update(block.info_containers[i].buffer_data_uncompressed, block.info_containers[i].buffer_strides_uncompressed, block.info_containers[i].header.hasMixedStride())){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-
-			if(!(*this)[mapTable[block.index_entry.info_offsets[i].key]].compressed.update(block.info_containers[i].buffer_data, block.info_containers[i].buffer_strides, block.info_containers[i].header.hasMixedStride())){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-		}
-
-		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
-			if(!(*this)[mapTable[block.index_entry.format_offsets[i].key]].uncompressed.update(block.format_containers[i].buffer_data_uncompressed, block.format_containers[i].buffer_strides_uncompressed, block.format_containers[i].header.hasMixedStride())){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-
-			if(!(*this)[mapTable[block.index_entry.format_offsets[i].key]].compressed.update(block.format_containers[i].buffer_data, block.format_containers[i].buffer_strides, block.format_containers[i].header.hasMixedStride())){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-		}
-		return true;
-	}
+    /**<
+     * Updates all target digital digest records in the container given
+     * the input data block
+     * @param block    Input data block container
+     * @param mapTable Supportive map functionality
+     * @return         Returns TRUE upon success or FALSE otherwise
+     */
+	bool update(const block_type& block, const U32* const mapTable);
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){
-		out.write((char*)reinterpret_cast<const size_type* const>(&container.n_entries), sizeof(size_type));
+		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries), sizeof(size_type));
 		for(size_type i = 0; i < container.size(); ++i)
 			out << container[i];
 

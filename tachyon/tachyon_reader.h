@@ -17,6 +17,7 @@
 #include "containers/meta_hot_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
+#include "containers/checksum_container.h"
 #include "core/genotype_object.h"
 #include "core/header/tachyon_header.h"
 #include "core/footer/footer.h"
@@ -39,6 +40,7 @@ class TachyonReader{
 	typedef algorithm::CompressionManager       codec_manager_type;
 	typedef containers::core::DataBlockSettings settings_type;
 	typedef index::Index                        index_type;
+	typedef containers::ChecksumContainer       checksum_type;
 
 public:
 	TachyonReader();
@@ -450,6 +452,7 @@ public:
 	header_type        header;
 	footer_type        footer;
 	index_type         index;
+	checksum_type      checksums;
 	block_entry_type   block;
 	codec_manager_type codec_manager;
 
