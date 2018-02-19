@@ -1,0 +1,173 @@
+#ifndef CONTAINERS_CHECKSUM_CONTAINER_H_
+#define CONTAINERS_CHECKSUM_CONTAINER_H_
+
+#include "datablock.h"
+#include "../algorithm/digital_digest.h"
+
+namespace tachyon{
+namespace containers{
+
+class ChecksumContainer {
+private:
+	typedef ChecksumContainer        self_type;
+    typedef std::size_t              size_type;
+    typedef tachyon::core::DigitalDigestPair  value_type;
+    typedef value_type&              reference;
+    typedef const value_type&        const_reference;
+    typedef value_type*              pointer;
+    typedef const value_type*        const_pointer;
+    typedef io::BasicBuffer          buffer_type;
+    typedef containers::DataBlock block_type;
+
+public:
+	ChecksumContainer(void);
+	ChecksumContainer(const size_type capacity);
+	ChecksumContainer(const char* const data, const U32 l_data);
+	ChecksumContainer(const buffer_type& buffer);
+	~ChecksumContainer(void);
+
+	class iterator{
+	private:
+		typedef iterator self_type;
+		typedef std::forward_iterator_tag iterator_category;
+
+	public:
+		iterator(pointer ptr) : ptr_(ptr) { }
+		void operator++() { ptr_++; }
+		void operator++(int junk) { ptr_++; }
+		reference operator*() const{ return *ptr_; }
+		pointer operator->() const{ return ptr_; }
+		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+	private:
+		pointer ptr_;
+	};
+
+	class const_iterator{
+	private:
+		typedef const_iterator self_type;
+		typedef std::forward_iterator_tag iterator_category;
+
+	public:
+		const_iterator(pointer ptr) : ptr_(ptr) { }
+		void operator++() { ptr_++; }
+		void operator++(int junk) { ptr_++; }
+		const_reference operator*() const{ return *ptr_; }
+		const_pointer operator->() const{ return ptr_; }
+		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
+		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
+	private:
+		pointer ptr_;
+	};
+
+    // Element access
+    inline reference at(const size_type& position){ return(this->__entries[position]); }
+    inline const_reference at(const size_type& position) const{ return(this->__entries[position]); }
+    inline reference operator[](const size_type& position){ return(this->__entries[position]); }
+    inline const_reference operator[](const size_type& position) const{ return(this->__entries[position]); }
+    inline pointer data(void){ return(this->__entries); }
+    inline const_pointer data(void) const{ return(this->__entries); }
+    inline reference front(void){ return(this->__entries[0]); }
+    inline const_reference front(void) const{ return(this->__entries[0]); }
+    inline reference back(void){ return(this->__entries[this->n_entries - 1]); }
+    inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
+
+    // Capacity
+    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline const size_type& size(void) const{ return(this->n_entries); }
+    inline const size_type& capacity(void) const{ return(this->n_capacity); }
+
+    // Iterator
+    inline iterator begin(){ return iterator(&this->__entries[0]); }
+    inline iterator end(){ return iterator(&this->__entries[this->n_entries]); }
+    inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
+    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
+    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
+
+    // Overload
+    bool allocate(const size_type n_entries){
+    	if(n_entries > this->size())
+    		return false;
+
+    	this->n_entries = n_entries;
+    	for(size_type i = 0; i < this->size(); ++i)
+    		new( &this->__entries[this->n_entries] ) value_type( );
+
+    	return true;
+    }
+
+    void operator+=(const_reference value){
+    	if(this->size() + 1 == this->capacity()){
+    		// is full
+    		std::cerr << "is full: need resize" << std::endl;
+    		return;
+    	}
+
+    	// Invoke copy-ctor
+    	new( &this->__entries[this->n_entries] ) value_type( value );
+    	++this->n_entries;
+    }
+
+    void finalize(void){
+    	if(this->size() == 0) return;
+    	for(size_type i = 0; i < this->size(); ++i)
+    		this->at(i).finalize();
+    }
+
+	bool update(const block_type& block, const U32* const mapTable){
+		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+			if(!(*this)[mapTable[block.index_entry.info_offsets[i].key]].uncompressed.update(block.info_containers[i].buffer_data_uncompressed, block.info_containers[i].buffer_strides_uncompressed, block.info_containers[i].header.hasMixedStride())){
+				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
+
+			if(!(*this)[mapTable[block.index_entry.info_offsets[i].key]].compressed.update(block.info_containers[i].buffer_data, block.info_containers[i].buffer_strides, block.info_containers[i].header.hasMixedStride())){
+				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
+		}
+
+		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
+			if(!(*this)[mapTable[block.index_entry.format_offsets[i].key]].uncompressed.update(block.format_containers[i].buffer_data_uncompressed, block.format_containers[i].buffer_strides_uncompressed, block.format_containers[i].header.hasMixedStride())){
+				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
+
+			if(!(*this)[mapTable[block.index_entry.format_offsets[i].key]].compressed.update(block.format_containers[i].buffer_data, block.format_containers[i].buffer_strides, block.format_containers[i].header.hasMixedStride())){
+				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
+
+private:
+	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){
+		out.write((char*)reinterpret_cast<const size_type* const>(&container.n_entries), sizeof(size_type));
+		for(size_type i = 0; i < container.size(); ++i)
+			out << container[i];
+
+		return(out);
+	}
+
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& container){
+		stream.read((char*)reinterpret_cast<size_type*>(&container.n_entries), sizeof(size_type));
+		container.allocate(container.n_entries);
+		for(size_type i = 0; i < container.size(); ++i)
+			stream >> container[i];
+
+		return(stream);
+	}
+
+private:
+    size_t  n_entries;
+    size_t  n_capacity;
+    pointer __entries;
+};
+
+}
+}
+
+
+#endif /* CONTAINERS_CHECKSUM_CONTAINER_H_ */

@@ -25,8 +25,8 @@ public:
 		n_superindex(0),
 		n_index(0),
 		n_capacity(1000),
-		index(new value_type[1000]),
-		indexindex(new meta_type[1000])
+		index(new value_type[this->n_capacity]),
+		indexindex(new meta_type[this->n_capacity])
 	{}
 	~Index(){}
 
@@ -140,9 +140,6 @@ public:
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		//const U32 n_superindex = entry.indexindex.size();
-		//const U32 n_index      = entry.index.size();
-
 		stream.write(reinterpret_cast<const char*>(&entry.n_superindex), sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&entry.n_index),      sizeof(size_type));
 
@@ -159,10 +156,8 @@ private:
 		stream.read(reinterpret_cast<char*>(&entry.n_superindex), sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&entry.n_index),      sizeof(size_type));
 
-		entry.index = new value_type[entry.n_index];
+		entry.index      = new value_type[entry.n_index];
 		entry.indexindex = new meta_type[entry.n_superindex];
-		//entry.indexindex.resize(entry.n_superindex);
-		//entry.index.resize(entry.n_index);
 
 		for(U32 i = 0; i < entry.n_superindex; ++i)
 			stream >> entry.indexindex[i];

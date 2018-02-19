@@ -1,9 +1,11 @@
 #include <fstream>
 
-#include "../algorithm/DigitalDigestController.h"
 #include "importer.h"
+
+#include "../algorithm/digital_digest.h"
 #include "meta_cold.h"
 #include "footer/footer.h"
+#include "../containers/checksum_container.h"
 
 namespace tachyon {
 
@@ -94,13 +96,9 @@ bool Importer::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	// Digest controller
-	algorithm::DigitalDigestController* digests = new algorithm::DigitalDigestController[this->header->map.size()];
-	for(U32 i = 0; i < this->header->map.size(); ++i){
-		if(!digests[i].initialize()){
-			std::cerr << "failed to init sha512" << std::endl;
-			return false;
-		}
-	}
+	containers::ChecksumContainer checksums;
+	checksums.allocate(this->header->map.size());
+	//tachyon::core::DigitalDigestPair* digests = new tachyon::core::DigitalDigestPair[this->header->map.size()];
 
 	// Start import
 	U32 previousFirst    = 0;
@@ -174,25 +172,15 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(containers::core::DataBlockHeader::INDEX_INFO);
 		this->block.updateContainerSet(containers::core::DataBlockHeader::INDEX_FORMAT);
 
-		// Todo: abstraction
-		// Digests
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			if(!digests[this->header->mapTable[this->block.index_entry.info_offsets[i].key]].updateUncompressed(this->block.info_containers[i])){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-		}
-
-		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			if(!digests[this->header->mapTable[this->block.index_entry.format_offsets[i].key]].updateUncompressed(this->block.format_containers[i])){
-				std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
-				return false;
-			}
-		}
-
 		// Perform compression using standard parameters
 		if(!compression_manager.compress(this->block)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			return false;
+		}
+
+		// Digests
+		if(checksums.update(this->block, this->header->mapTable) == false){
+			std::cerr << "faield to update" << std::endl;
 			return false;
 		}
 
@@ -233,19 +221,10 @@ bool Importer::BuildBCF(void){
 	const U64 index_ends = this->writer.stream.tellp();
 
 	// Finalize SHA-512 digests
-	const U64 digests_start = this->writer.stream.tellp();
-
 	// Write digests
-	for(U32 i = 0; i < this->header->map.size(); ++i){
-		digests[i].finalize();
-		this->writer.stream << digests[i];
-		//std::cerr << std::hex;
-		//for(U32 j = 0; j < 64; ++j)
-		//	std::cerr << std::hex << (int)digests[i].sha512_digest[j];
+	checksums.finalize();
+	this->writer.stream << checksums;
 
-		//std::cerr << std::dec << std::endl;
-	}
-	delete [] digests;
 	this->writer.stream.flush();
 	const U64 digests_ends = this->writer.stream.tellp();
 

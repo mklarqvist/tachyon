@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../tachyon/containers/checksum_container.cpp \
 ../tachyon/containers/datablock.cpp \
 ../tachyon/containers/datacontainer.cpp \
 ../tachyon/containers/meta_cold_container.cpp \
@@ -11,6 +12,7 @@ CPP_SRCS += \
 ../tachyon/containers/meta_hot_container.cpp 
 
 OBJS += \
+./tachyon/containers/checksum_container.o \
 ./tachyon/containers/datablock.o \
 ./tachyon/containers/datacontainer.o \
 ./tachyon/containers/meta_cold_container.o \
@@ -18,6 +20,7 @@ OBJS += \
 ./tachyon/containers/meta_hot_container.o 
 
 CPP_DEPS += \
+./tachyon/containers/checksum_container.d \
 ./tachyon/containers/datablock.d \
 ./tachyon/containers/datacontainer.d \
 ./tachyon/containers/meta_cold_container.d \

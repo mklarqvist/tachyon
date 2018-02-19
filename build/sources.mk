@@ -25,8 +25,8 @@ CPP_DEPS :=
 SUBDIRS := \
 tachyon/algorithm/compression \
 tachyon/algorithm/permutation \
-tachyon/containers/core \
 tachyon/containers \
+tachyon/containers/core \
 tachyon/core \
 tachyon/core/header \
 tachyon/io \
