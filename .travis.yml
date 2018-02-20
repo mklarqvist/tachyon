@@ -118,8 +118,13 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - gcc --version && g++ --version
   - gcc -march=native -dM -E - < /dev/null | egrep "SSE|AVX" | sort
+  - git clone --recursive https://github.com/facebook/zstd
+  - cd zstd
+  - make -j4
+  - sudo make install
+  - which zstd
+  - find /usr/ -name "zstd.h"
 script:
   - git submodule update --recursive
   - cd build
   - make -j4
-

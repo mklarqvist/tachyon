@@ -42,7 +42,9 @@ public:
 
 	/**<
 	 *
-	 * @param container
+	 * @param data_buffer
+	 * @param stride_buffer
+	 * @param has_strides
 	 * @return
 	 */
 	inline bool update(const buffer_type& data_buffer, const buffer_type& stride_buffer, const bool has_strides = true){

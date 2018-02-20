@@ -133,10 +133,6 @@ private:
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
 
-	// Access function
-	template <class stride_primitive>
-	inline const U32 __getStride(const buffer_type& buffer, const U32 position) const;
-
 private:
     size_t  n_entries;
     pointer __containers;
@@ -385,12 +381,6 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 		}
 	}
 	assert(current_offset == container.buffer_data_uncompressed.size());
-}
-
-// Access function
-template <class return_type>
-template <class stride_primitive> inline const U32 FormatContainer<return_type>::__getStride(const buffer_type& buffer, const U32 position) const{
-	return(*reinterpret_cast<const stride_primitive* const>(&buffer.buffer[position * sizeof(stride_primitive)]));
 }
 
 }

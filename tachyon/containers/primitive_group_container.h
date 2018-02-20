@@ -10,14 +10,14 @@ template <class T>
 class PrimitiveGroupContainer{
 private:
     typedef PrimitiveGroupContainer self_type;
-    typedef PrimitiveContainer<T> value_type;
-    typedef std::size_t           size_type;
-    typedef value_type&           reference;
-    typedef const value_type&     const_reference;
-    typedef value_type*           pointer;
-    typedef const value_type*     const_pointer;
-    typedef std::ptrdiff_t        difference_type;
-    typedef DataContainer         data_container_type;
+    typedef PrimitiveContainer<T>   value_type;
+    typedef std::size_t             size_type;
+    typedef value_type&             reference;
+    typedef const value_type&       const_reference;
+    typedef value_type*             pointer;
+    typedef const value_type*       const_pointer;
+    typedef std::ptrdiff_t          difference_type;
+    typedef DataContainer           data_container_type;
 
 public:
     PrimitiveGroupContainer();

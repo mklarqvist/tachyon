@@ -127,9 +127,15 @@ PrimitiveContainer<std::string>::~PrimitiveContainer(void){
 }
 
 void PrimitiveContainer<std::string>::__setup(const data_container_type& container){
+	/*
+	stride_container_type strides(container);
 	//const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
-	//for(U32 i = 0; i < this->n_entries; ++i)
-	//	this->__entries[i] = data[i];
+	U32 offset = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		this->__entries[i] = std::string(&container.buffer_data_uncompressed[offset], strides[i]);
+		offset += strides[i];
+	}
+	*/
 }
 
 void PrimitiveContainer<std::string>::__setup(const data_container_type& container, const U32 stride_size){

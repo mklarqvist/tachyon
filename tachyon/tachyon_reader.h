@@ -11,8 +11,10 @@
 #include "containers/datablock.h"
 #include "containers/abstract_integer_container.h"
 #include "containers/format_container.h"
+#include "containers/format_container_string.h"
 #include "containers/genotype_container.h"
 #include "containers/info_container.h"
+#include "containers/info_container_string.h"
 #include "containers/meta_cold_container.h"
 #include "containers/meta_hot_container.h"
 #include "containers/primitive_group_container.h"
@@ -26,7 +28,6 @@
 #include "math/basic_vector_math.h"
 #include "utility/support_vcf.h"
 #include "iterator/IteratorIntegerReference.h"
-#include "containers/info_container_string.h"
 #include "index/index.h"
 
 namespace tachyon{
@@ -241,7 +242,7 @@ public:
 	 * This allows the user to seek to a specific block and
 	 * change the settings (i.e. what fields to load) and
 	 * then invoke nextBlock() for example.
-	 * @param b
+	 * @param position
 	 * @return
 	 */
 	bool seek_to_block(const U32& position);
