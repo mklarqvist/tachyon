@@ -50,6 +50,7 @@ private:
 	void resetHashes(void);
 
 private:
+	bool GT_available_;
 	bool permute;               // permute GT flag
 	U32 checkpoint_n_snps;      // number of variants until checkpointing
 	double checkpoint_bases;    // number of bases until checkpointing

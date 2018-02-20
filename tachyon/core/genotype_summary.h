@@ -163,11 +163,11 @@ private:
 		for(U32 i = 1; i < entry.n_alleles; ++i){
 			out << ',' << entry.getAllele(i);
 		}
-		out << "] allelesA = [" << entry.getAllele(0);
+		out << "] allelesA = [" << entry.getAlleleA(0);
 		for(U32 i = 1; i < entry.n_alleles; ++i){
 			out << ',' << entry.getAlleleA(i);
 		}
-		out << "] allelesB = [" << entry.getAllele(0);
+		out << "] allelesB = [" << entry.getAlleleB(0);
 		for(U32 i = 1; i < entry.n_alleles; ++i){
 			out << ',' << entry.getAlleleB(i);
 		}

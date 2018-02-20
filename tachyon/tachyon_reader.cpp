@@ -3,25 +3,16 @@
 namespace tachyon{
 
 TachyonReader::TachyonReader() :
-	filesize(0),
-	n_internal_buffers(0),
-	internal_buffers(nullptr)
+	filesize(0)
 {}
 
 TachyonReader::TachyonReader(const std::string& filename) :
 	input_file(filename),
-	filesize(0),
-	n_internal_buffers(0),
-	internal_buffers(nullptr)
+	filesize(0)
 {}
 
 // Dtor
-TachyonReader::~TachyonReader(){
-	for(U32 i = 0; i < this->n_internal_buffers; ++i)
-		this->internal_buffers[i].deleteAll();
-
-	delete [] this->internal_buffers;
-}
+TachyonReader::~TachyonReader(){}
 
 bool TachyonReader::open(void){
 	if(this->input_file.size() == 0){
@@ -32,11 +23,12 @@ bool TachyonReader::open(void){
 	this->stream.open(this->input_file, std::ios::binary | std::ios::in | std::ios::ate);
 	this->filesize = (U64)this->stream.tellg();
 
-	if(this->filesize < YON_FOOTER_LENGTH){
+	if(this->filesize <= YON_FOOTER_LENGTH){
 		std::cerr << utility::timestamp("ERROR") << "File is corrupted!" << std::endl;
 		return false;
 	}
 
+	// Seek to start of footer
 	this->stream.seekg(this->filesize - YON_FOOTER_LENGTH);
 	if(!this->stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to seek in file!" << std::endl;
@@ -44,6 +36,7 @@ bool TachyonReader::open(void){
 	}
 	this->stream >> this->footer;
 
+	// Validate footer
 	if(this->footer.validate() == false){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate footer!" << std::endl;
 		return false;
@@ -54,6 +47,7 @@ bool TachyonReader::open(void){
 		return false;
 	}
 
+	// Seek to start of file
 	this->stream.seekg(0);
 	if(!this->stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to rewind file!" << std::endl;
@@ -61,21 +55,19 @@ bool TachyonReader::open(void){
 	}
 
 	// Load header
-	this->stream << this->header;
+	this->stream >> this->header;
+	if(!this->header.header_magic.validate()){
+		std::cerr << utility::timestamp("ERROR") << "Failed to validate header!" << std::endl;
+		return false;
+	}
 
 	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR") << "Ffailed to get header!" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;
 		return false;
 	}
 
 	// Keep track of start position
 	const U64 return_pos = this->stream.tellg();
-
-	// Seek back to find start of index
-	// Seek to that start of index
-	// Load index
-	// Load checksums
-	// Seek back to start of the file
 	this->stream.seekg(this->footer.offset_end_of_data);
 	this->stream >> this->index;
 	this->stream >> this->checksums;

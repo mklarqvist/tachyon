@@ -15,6 +15,7 @@ Importer::Importer(std::string inputFile,
 		           std::string outputPrefix,
                      const U32 checkpoint_n_snps,
                   const double checkpoint_bases) :
+	GT_available_(false),
 	permute(true),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
@@ -90,6 +91,8 @@ bool Importer::BuildBCF(void){
 
 	core::TachyonHeader header(*this->header);
 	header.write(this->writer.stream);
+	this->GT_available_ = header.has_format_field("GT");
+	this->block.index_entry.controller.hasGT = this->GT_available_;
 
 	// Resize containers
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
@@ -137,10 +140,12 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
 
 		// Permute or not?
-		if(this->block.index_entry.controller.hasGTPermuted){
-			if(!this->permutator.build(reader)){
-				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
-				return false;
+		if(this->GT_available_){
+			if(this->block.index_entry.controller.hasGTPermuted){
+				if(!this->permutator.build(reader)){
+					std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
+					return false;
+				}
 			}
 		}
 
@@ -155,14 +160,15 @@ bool Importer::BuildBCF(void){
 		// Stats
 		n_variants_read += reader.size();
 
-		assert(this->block.gt_support_data_container.n_entries == reader.size());
+		if(this->GT_available_)
+			assert(this->block.gt_support_data_container.n_entries == reader.size());
+
 		assert(this->block.meta_info_map_ids.n_entries         == reader.size());
 		assert(this->block.meta_filter_map_ids.n_entries       == reader.size());
 		assert(this->block.meta_format_map_ids.n_entries       == reader.size());
 
 		// Update head meta
-		this->block.index_entry.controller.hasGT     = true;
-		this->block.index_entry.controller.isDiploid = true;
+		this->block.index_entry.controller.hasGT     = this->GT_available_;
 		this->block.index_entry.n_info_streams       = this->info_fields.size();
 		this->block.index_entry.n_filter_streams     = this->filter_fields.size();
 		this->block.index_entry.n_format_streams     = this->format_fields.size();
@@ -269,15 +275,17 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	meta.ref_alt  = entry.ref_alt;
 
 	// GT encoding
-	if(!this->encoder.Encode(entry,
-			                 meta,
-							 this->block.gt_rle_container,
-							 this->block.gt_simple_container,
-							 this->block.gt_support_data_container,
-							 this->permutator.manager->get()))
-	{
-		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
-		return false;
+	if(this->GT_available_){
+		if(!this->encoder.Encode(entry,
+								 meta,
+								 this->block.gt_rle_container,
+								 this->block.gt_simple_container,
+								 this->block.gt_support_data_container,
+								 this->permutator.manager->get()))
+		{
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
+			return false;
+		}
 	}
 
 	if(!this->parseBCFBody(meta, entry)){

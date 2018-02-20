@@ -76,6 +76,9 @@ public:
 		this->entries = new map_entry_type[this->header_magic.n_declarations];
 		for(U32 i = 0; i < this->header_magic.n_declarations; ++i)
 			this->entries[i] = vcf_header.map[i];
+
+		this->buildMapTable();
+		this->buildHashTables();
 	}
 
 	// write
@@ -94,11 +97,35 @@ public:
 		return(stream);
 	}
 
+	const bool has_format_field(const std::string& field_name) const{
+		map_entry_type* match = nullptr;
+		if(this->getEntry(field_name, match))
+			return true;
+
+		return false;
+	}
+
+	const bool has_info_field(const std::string& field_name) const{
+		map_entry_type* match = nullptr;
+		if(this->getEntry(field_name, match))
+			return true;
+
+		return false;
+	}
+
+	const bool has_filter_field(const std::string& field_name) const{
+		map_entry_type* match = nullptr;
+		if(this->getEntry(field_name, match))
+			return true;
+
+		return(false);
+	}
+
 private:
 	bool buildMapTable(void);
 	bool buildHashTables(void);
 
-	friend std::ifstream& operator<<(std::ifstream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.header_magic;
 
 		entry.contigs = new contig_type[entry.header_magic.n_contigs];

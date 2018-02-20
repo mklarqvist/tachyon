@@ -27,7 +27,6 @@ struct DataBlockHeaderController{
 public:
 	DataBlockHeaderController():
 		hasGT(0),
-		isDiploid(0),
 		hasGTPermuted(0),
 		anyEncrypted(0),
 		unused(0)
@@ -50,10 +49,9 @@ public:
 
 public:
 	U16 hasGT:         1,  // This block has GT FORMAT data
-	    isDiploid:     1,  // are all data diploid
 		hasGTPermuted: 1,  // have the GT fields been permuted
 		anyEncrypted:  1,  // any data encrypted
-		unused:        12; // reserved for future use
+		unused:        13; // reserved for future use
 };
 
 /** @brief Fixed-sized components of an IndexBlockEntry

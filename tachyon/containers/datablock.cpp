@@ -226,15 +226,12 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->gt_support_data_container;
 	}
 
-
-	// Todo: always load?
-	stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
-	stream >> this->meta_info_map_ids;
-	//stream.seekg(start_offset + this->index_entry.offset_meta_filter_id.offset);
-	stream >> this->meta_filter_map_ids;
-	//stream.seekg(start_offset + this->index_entry.offset_meta_format_id.offset);
-	stream >> this->meta_format_map_ids;
-
+	if(settings.importMetaHot || settings.importMetaCold){
+		stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
+		stream >> this->meta_info_map_ids;
+		stream >> this->meta_filter_map_ids;
+		stream >> this->meta_format_map_ids;
+	}
 
 	// Load all info
 	if(settings.importInfoAll){

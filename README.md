@@ -122,6 +122,32 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+```c++
+/**<
+ * Tachyon: https://github.com/mklarqvist/tachyon 
+ * In this example we will load data from
+ * the INFO field MEINFO into the iterable template class
+ * `InfoContainer`. This is a complete example!
+ */
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadInfo("MEINFO");
+reader.open(my_input_file);
+
+/**<
+ * The `InfoContainer` class
+ */
+while(reader.get_next_block()){ // As long as there are YON blocks available
+    // Meta container
+    containers::MetaContainer meta(reader.block);
+    containers::InfoContainer<std::string>* meinfo_container = reader.get_balanced_info_container<std::string>("MEINFO", meta);
+    std::cout << meinfo_container->size() << std::endl;
+    delete meinfo_container;
+}
+```
+
 More advanced example using genotype summary statistics
 ```c++
 /**<

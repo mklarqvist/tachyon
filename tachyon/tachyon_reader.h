@@ -358,72 +358,16 @@ public:
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::GenotypeContainer gt(this->block);
-		//math::Fisher fisher(1000);
-		//containers::GenotypeSum gt_summary1, gt_summary2;
+		containers::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
-			//std::vector<core::GTObject> objects = gt[i].getLiteralObjects();
-			//std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.getSampleNumber());
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-			//std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
-			gt[i].getMeta().toVCFString(stream, this->header);
-			//std::cerr << "\nPermuted: ";
-			//for(U32 j = 0; j < objects_all.size(); ++j)
-			//	std::cerr << (int)objects_all[j].alleles[0].first << (objects_all[j].alleles[0].second ? "|" : "/") << (int)objects_all[j].alleles[1].first << ' ';
-			//std::cerr << std::endl;
-
-			/*
-			algorithm::PermutationManager& ppa = this->block.ppa_manager;
-			core::GTObject** pointers = new core::GTObject*[objects_all.size()];
-			//for(U32 j = 0; j < objects_all.size(); ++j) pointers[j] = nullptr;
-			for(U32 j = 0; j < objects_all.size(); ++j){
-				//assert(pointers[ppa[j]] == nullptr);
-				pointers[ppa[j]] = &objects_all[j];
-			}
-
-			//for(U32 j = 0; j < objects_all.size(); ++j) assert(pointers[j] != nullptr);
-
-			//std::cerr << "Restored: ";
-			for(U32 j = 0; j < objects_all.size(); ++j){
-				stream << (int)pointers[j]->alleles[0].first << (pointers[j]->alleles[1].second ? "|" : "/") << (int)pointers[j]->alleles[1].first << ' ';
-			}
-			stream << '\n';
-
-			delete [] pointers;
-			//delete pointers;
-	*/
-
-			utility::to_vcf_string(stream, objects_true) << '\n';
-			//utility::to_vcf_string(stream, objects_true[0]) << '\t';
-			/*
-			for(U32 j = 1; j < objects_true.size(); ++j){
-				stream << '\t';
-				utility::to_vcf_string(stream, objects_true[j]);
-				//stream << (int)objects_true[j].alleles[0].first << (objects_true[j].alleles[1].second ? "|" : "/") << (int)objects_true[j].alleles[1].first << ' ';
-			}
-			stream << '\n';
-			*/
-			/*
-
-			const U32 n_entries = gt[i].getSum();
+			// If there's > 5 alleles continue
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
+			// Calculate summary statistics
 			gt[i].getSummary(gt_summary);
 
-			const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
-			const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total);
-			if(p < 1e-3){
-				gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-				stream << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
-			}
-
-			//if(!gt[i].getMeta().isBiallelic()){
-			//	gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
-			//	std::cerr << '\t' << gt_summary << std::endl;
-			//}
-			assert(gt_summary.alleleCount() == 2*this->header.getSampleNumber());
-			assert(gt_summary.genotypeCount() == this->header.getSampleNumber());
-			assert(n_entries == this->header.getSampleNumber());
-			gt_summary.clear();
-			*/
+			// Calculate total number of alt-alleles (allele 1, where 0 is ref)
+			//std::cerr << gt_summary << '\n';
+			gt_summary.clear(); // Recycle summary object
 		}
 		//std::cerr << std::endl;
 		//std::cerr << gt.size() << std::endl;
@@ -462,10 +406,6 @@ public:
 	checksum_type      checksums;
 	block_entry_type   block;
 	codec_manager_type codec_manager;
-
-private:
-	U32          n_internal_buffers;
-	buffer_type* internal_buffers;
 };
 
 }

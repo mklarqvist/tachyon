@@ -59,7 +59,7 @@ public:
 
 	inline bool validateMagic(void) const{ return(strncmp(&this->magic_string[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) == 0); }
 	inline bool validate(void) const{
-		return(this->validateMagic() && this->n_samples > 0 && this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0) && this->l_header > 0 && this->l_header_uncompressed > 0);
+		return(this->validateMagic() && this->n_samples > 0 && this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0));
 	}
 
 	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
