@@ -124,6 +124,8 @@ before_install:
   - sudo make install
   - which zstd
   - find /usr/ -name "zstd.h"
+  - cd ..
+  - pwd
 script:
   - git submodule update --recursive
   - cd build
