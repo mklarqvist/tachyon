@@ -58,7 +58,7 @@ public:
 	}
 
 	bool decompress(block_type& block){
-		if(block.ppa_manager.PPA.n_chars){
+		if(block.ppa_manager.PPA.size()){
 			if(!this->decompress(block.ppa_manager)){
 				std::cerr << "failed to decompress ppa!" << std::endl;
 			}

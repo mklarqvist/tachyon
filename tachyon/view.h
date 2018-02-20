@@ -100,7 +100,7 @@ int view(int argc, char** argv){
 	tachyon::TachyonReader reader;
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
-	reader.getSettings().loadAll(true);
+	reader.getSettings().loadMeta(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;

@@ -223,6 +223,8 @@ bool Importer::BuildBCF(void){
 	this->writer.WriteIndex();
 	const U64 index_ends = this->writer.stream.tellp();
 
+
+
 	// Finalize SHA-512 digests
 	// Write digests
 	checksums.finalize();

@@ -75,7 +75,7 @@ public:
 	 */
 	inline void clear(void){
 		this->finalize();
-		memset(&this->data_digest[0], 0, 64);
+		memset(&this->data_digest[0],   0, 64);
 		memset(&this->stride_digest[0], 0, 64);
 		this->initialize();
 	}

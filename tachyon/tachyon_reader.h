@@ -249,6 +249,12 @@ public:
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
+		//for(size_t i = 0; i < meta.size(); ++i){
+			meta[0].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			stream.put('\n');
+		//}
+		return meta.size();
+
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced

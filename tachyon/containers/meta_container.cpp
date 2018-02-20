@@ -27,7 +27,6 @@ void MetaContainer::__ctor_setup(const DataBlock& block){
 	// iteratively call ctor for metaentry(cold,hot) or metaentry(hot)
 	const U64& limit = block.meta_cold_container.buffer_data_uncompressed.size();
 	if(limit){
-
 		// Determine number of entries
 		U32 current_offset = 0;
 		U32 count_entries  = 0;
