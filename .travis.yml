@@ -11,6 +11,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-4.9
+            - libssl-dev
+            - liblz4-dev
       env:
          - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
       compiler: gcc
@@ -23,6 +25,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-5
+            - libssl-dev
+            - liblz4-dev
       env:
          - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       compiler: gcc
@@ -35,6 +39,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-6
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       compiler: gcc
@@ -48,6 +54,8 @@ matrix:
             - llvm-toolchain-precise-3.6
           packages:
             - clang-3.6
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
       compiler: clang
@@ -61,6 +69,8 @@ matrix:
             - llvm-toolchain-precise-3.7
           packages:
             - clang-3.7
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-3.7 && CXX=clang++-3.7"
       compiler: clang
@@ -74,6 +84,8 @@ matrix:
             - llvm-toolchain-precise-3.8
           packages:
             - clang-3.8
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
       compiler: clang
@@ -86,6 +98,8 @@ matrix:
             - llvm-toolchain-trusty-3.9
           packages:
             - clang-3.9
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
       compiler: clang
@@ -98,6 +112,8 @@ matrix:
             - llvm-toolchain-trusty-4.0
           packages:
             - clang-4.0
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
       compiler: clang
@@ -110,6 +126,8 @@ matrix:
             - llvm-toolchain-trusty-5.0
           packages:
             - clang-5.0
+            - libssl-dev
+            - liblz4-dev
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       compiler: clang
