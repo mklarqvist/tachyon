@@ -36,7 +36,7 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& contain
 
 FormatContainer<std::string>::~FormatContainer(){
 	for(std::size_t i = 0; i < this->n_entries; ++i)
-		((this->__containers + i)->~basic_string)();
+		((this->__containers + i)->~PrimitiveGroupContainer)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
 }
@@ -54,7 +54,7 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 	U32 current_offset = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
-		//new( &this->__containers[i] ) value_type( container, current_offset, n_samples, strides[i] );
+		new( &this->__containers[i] ) value_type( container, current_offset, n_samples, strides[i] );
 		current_offset += strides[i] * n_samples;
 	}
 	assert(current_offset == container.buffer_data_uncompressed.size());
@@ -73,7 +73,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getFormatPatternID()]){
-				//new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
+				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
 				current_offset += strides[strides_offset];
 				++strides_offset;
 			}
@@ -98,7 +98,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getFormatPatternID()]){
-				//new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
+				new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
 			}
 			// Otherwise place an empty
 			else {
@@ -113,7 +113,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getFormatPatternID()]){
-				//new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
+				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
 				current_offset += stride_size * n_samples;
 			}
 			// Otherwise place an empty
@@ -136,15 +136,15 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 	U32 current_offset = 0;
 	// Case 1: data is uniform -> give all samples the same value
 	if(container.header.isUniform()){
-		//for(U32 i = 0; i < this->n_entries; ++i)
-			//new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
+		for(U32 i = 0; i < this->n_entries; ++i)
+			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 
 	}
 	// Case 2: data is not uniform -> interpret data
 	else {
 		for(U32 i = 0; i < this->n_entries; ++i){
 			//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << "fixed: " << stride_size << std::endl;
-			//new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
+			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 			current_offset += stride_size * n_samples;
 		}
 	}

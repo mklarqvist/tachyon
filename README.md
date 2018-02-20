@@ -1,4 +1,5 @@
-[![Release](https://img.shields.io/badge/Release-beta_0.2-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Release](https://img.shields.io/badge/Release-beta_0.1-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 

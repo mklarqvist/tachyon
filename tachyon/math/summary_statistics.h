@@ -1,7 +1,10 @@
 #ifndef SummaryStatistics_H_
 #define SummaryStatistics_H_
 
+#include <cmath>
 #include <limits>
+
+#include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace math{

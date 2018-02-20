@@ -10,7 +10,8 @@ CPP_SRCS += \
 ../tachyon/containers/format_container_string.cpp \
 ../tachyon/containers/meta_cold_container.cpp \
 ../tachyon/containers/meta_container.cpp \
-../tachyon/containers/meta_hot_container.cpp 
+../tachyon/containers/meta_hot_container.cpp \
+../tachyon/containers/primitive_group_container_string.cpp 
 
 OBJS += \
 ./tachyon/containers/checksum_container.o \
@@ -19,7 +20,8 @@ OBJS += \
 ./tachyon/containers/format_container_string.o \
 ./tachyon/containers/meta_cold_container.o \
 ./tachyon/containers/meta_container.o \
-./tachyon/containers/meta_hot_container.o 
+./tachyon/containers/meta_hot_container.o \
+./tachyon/containers/primitive_group_container_string.o 
 
 CPP_DEPS += \
 ./tachyon/containers/checksum_container.d \
@@ -28,7 +30,8 @@ CPP_DEPS += \
 ./tachyon/containers/format_container_string.d \
 ./tachyon/containers/meta_cold_container.d \
 ./tachyon/containers/meta_container.d \
-./tachyon/containers/meta_hot_container.d 
+./tachyon/containers/meta_hot_container.d \
+./tachyon/containers/primitive_group_container_string.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

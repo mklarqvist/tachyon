@@ -2,28 +2,34 @@
 #define CONTAINERS_FORMAT_CONTAINER_STRING_H_
 
 #include "format_container.h"
+#include "primitive_group_container_string.h"
 
 namespace tachyon{
 namespace containers{
 
 /**<
- * Primary class for FORMAT data
+ * Primary class for FORMAT data: special case for char
+ * interpreted as std::string
+ *
+ * String containers have the special property that there
+ * can only be one element. This is an intrinsic limitation
+ * of the specification
  */
 template <>
 class FormatContainer<std::string>{
 private:
-    typedef FormatContainer                 self_type;
-    typedef std::string                     value_type;
-    typedef value_type&                     reference;
-    typedef const value_type&               const_reference;
-    typedef value_type*                     pointer;
-    typedef const value_type*               const_pointer;
-    typedef std::ptrdiff_t                  difference_type;
-    typedef std::size_t                     size_type;
-    typedef io::BasicBuffer                 buffer_type;
-    typedef DataContainer                   data_container_type;
-    typedef MetaContainer                   meta_container_type;
-    typedef StrideContainer<U32>            stride_container_type;
+    typedef FormatContainer       self_type;
+    typedef PrimitiveGroupContainer<std::string> value_type;
+    typedef value_type&           reference;
+    typedef const value_type&     const_reference;
+    typedef value_type*           pointer;
+    typedef const value_type*     const_pointer;
+    typedef std::ptrdiff_t        difference_type;
+    typedef std::size_t           size_type;
+    typedef io::BasicBuffer       buffer_type;
+    typedef DataContainer         data_container_type;
+    typedef MetaContainer         meta_container_type;
+    typedef StrideContainer<U32>  stride_container_type;
 
 public:
     FormatContainer();
@@ -92,9 +98,8 @@ public:
 private:
     /**<
      *
-     * @param container  Data container
-     * @param n_samples  Number of samples
-     * @param func       Function pointer to element accessor of stride data
+     * @param container
+     * @param n_samples
      */
     void __setup(const data_container_type& container, const U64& n_samples);
 
@@ -104,7 +109,6 @@ private:
      * @param meta_container
      * @param pattern_matches
      * @param n_samples
-     * @param func
      */
 	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples);
 
@@ -120,9 +124,9 @@ private:
 
     /**<
      *
-     * @param container   Data container
-     * @param n_samples   Number of samples
-     * @param stride_size Fixed stride size
+     * @param container
+     * @param n_samples
+     * @param stride_size
      */
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
 

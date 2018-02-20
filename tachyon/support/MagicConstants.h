@@ -14,23 +14,23 @@ extern std::string INTERPRETED_COMMAND;
 
 /*------   Version   ------*/
 const S32 TACHYON_VERSION_MAJOR    = 0;
-const S32 TACHYON_VERSION_MINOR    = 2;
+const S32 TACHYON_VERSION_MINOR    = 1;
 const S32 TACHYON_VERSION_RELEASE  = 0;
 const S32 TACHYON_VERSION_NUMBER   = (TACHYON_VERSION_MAJOR *100*100 + TACHYON_VERSION_MINOR *100 + TACHYON_VERSION_RELEASE);
 const std::string TACHYON_LIB_VERSION = std::to_string(TACHYON_VERSION_MAJOR) + '.' + std::to_string(TACHYON_VERSION_MINOR) + '.' + std::to_string(TACHYON_VERSION_RELEASE);
 
 /*------   Basics   ------*/
-const std::string PROGRAM_NAME = "tachyon";
+const std::string PROGRAM_NAME  = "tachyon";
 const std::string OUTPUT_SUFFIX = "yon"; // yonder
-const std::string FILE_HEADER = "TACHYON\7";
-const U32 FILE_HEADER_LENGTH = 8;
+const std::string FILE_HEADER   = "TACHYON\7";
+const U32 FILE_HEADER_LENGTH    = 8;
 
 /*------   Genotype packing   ------*/
 const BYTE ALLELE_PACK_WIDTH = 2; // bit / allele
-const BYTE SNP_PACK_WIDTH = ALLELE_PACK_WIDTH * 2; // bits / genotype
+const BYTE SNP_PACK_WIDTH    = ALLELE_PACK_WIDTH * 2; // bits / genotype
 
 // Encoding for alleles
-const char ALLELE_LOOKUP[4] = {2, 3, 0, 1};
+const char ALLELE_LOOKUP[4]         = {2, 3, 0, 1};
 const char ALLELE_LOOKUP_REVERSE[4] = {'0', '1', '.', '?'};
 
 /*------   Map 1- or 2-bit allele to genotypes   ------*/
