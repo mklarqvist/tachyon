@@ -43,20 +43,16 @@ public:
 	 * for output to the target ostream
 	 * @param dest
 	 * @param header
-	 * @param blockContigID
-	 * @param blockPos
 	 */
-	void toVCFString(std::ostream& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
+	void toVCFString(std::ostream& dest, const header_type& header) const;
 
 	/**<
 	 * Translated MetaEntry record into a VCF string
 	 * for output to the target buffer
 	 * @param dest
 	 * @param header
-	 * @param blockContigID
-	 * @param blockPos
 	 */
-	void toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const;
+	void toVCFString(buffer_type& dest, const header_type& header) const;
 
 	// Check if a field is set
 	inline const bool check_info_field(const containers::core::DataBlockHeader& block, const U32 info_identifier) const{
@@ -88,6 +84,8 @@ public:
 	inline const float getQuality(void) const{ return(this->cold.QUAL); }
 	inline const std::string getName(void) const{ return(this->cold.getName()); }
 	inline const U16& getNumberAlleles(void) const{ return(this->cold.getNumberAlleles()); }
+	inline const U32 getContigID(void) const{ return(this->hot.contigID); }
+	inline const U64 getPosition(void) const{ return(this->hot.position); }
 
 	inline const char getBiallelicAlleleLiteral(const U32 position) const{
 		if(this->isBiallelic()){

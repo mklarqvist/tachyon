@@ -186,6 +186,7 @@ private:
 		buffer += (U16)*reinterpret_cast<const U16* const>(&entry.controller);
 		buffer += (BYTE)*reinterpret_cast<const BYTE* const>(&entry.ref_alt);
 		buffer += entry.position;
+		buffer += entry.contigID;
 		return(buffer);
 	}
 
@@ -202,12 +203,8 @@ public:
 	 * is stored in the cold meta sub-structure.
 	 */
 	allele_type ref_alt;
-
-	/**< Genomic position in base-0 encoded as the actual
-	 * position minus the smallest position in the block
-	 * (see BlockEntry.minPosition)
-	 */
-	U32 position;
+	U64 position;
+	U32 contigID;
 };
 #pragma pack(pop)
 

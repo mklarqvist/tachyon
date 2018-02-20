@@ -5,19 +5,22 @@ namespace core{
 
 // ctor
 MetaHot::MetaHot() :
-	position(0)
+	position(0),
+	contigID(0)
 {}
 
 MetaHot::MetaHot(const self_type& other) :
 	controller(other.controller),
 	ref_alt(other.ref_alt),
-	position(other.position)
+	position(other.position),
+	contigID(other.contigID)
 {}
 
 MetaHot::MetaHot(self_type&& other) noexcept :
 	controller(other.controller),
 	ref_alt(other.ref_alt),
-	position(other.position)
+	position(other.position),
+	contigID(other.contigID)
 {
 
 }
@@ -26,6 +29,7 @@ MetaHot& MetaHot::operator=(const self_type& other) noexcept{
 	this->controller = other.controller;
 	this->ref_alt    = other.ref_alt;
 	this->position   = other.position;
+	this->contigID   = other.contigID;
 	return(*this);
 }
 
@@ -36,6 +40,7 @@ MetaHot& MetaHot::operator=(self_type&& other) noexcept{
 	this->controller = other.controller;
 	this->ref_alt    = other.ref_alt;
 	this->position   = other.position;
+	this->contigID   = other.contigID;
 	return(*this);
 }
 

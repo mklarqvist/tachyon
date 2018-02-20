@@ -264,7 +264,8 @@ bool Importer::parseBCFLine(bcf_entry_type& entry){
 	}
 
 	meta_type meta;
-	meta.position = entry.body->POS - this->block.index_entry.minPosition;
+	meta.position = entry.body->POS;
+	meta.contigID = entry.body->CHROM;
 	meta.ref_alt  = entry.ref_alt;
 
 	// GT encoding

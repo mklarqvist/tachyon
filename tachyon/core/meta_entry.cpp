@@ -38,9 +38,9 @@ MetaEntry::MetaEntry(const hot_entry& hot, char* cold) :
 
 MetaEntry::~MetaEntry(){ /* do nothing */ };
 
-void MetaEntry::toVCFString(std::ostream& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const{
-	dest.write(&header.getContig(blockContigID).name[0], header.getContig(blockContigID).name.size()) << '\t';
-	dest << blockPos + this->hot.position + 1 << '\t';
+void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const{
+	dest.write(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size()) << '\t';
+	dest << this->hot.position + 1 << '\t';
 
 	// If we have cold meta
 	if(this->hasLoadedColdMeta()){
@@ -65,8 +65,8 @@ void MetaEntry::toVCFString(std::ostream& dest, const header_type& header, const
 	}
 }
 
-void MetaEntry::toVCFString(buffer_type& dest, const header_type& header, const S32& blockContigID, const U64& blockPos) const{
-	dest.Add(&header.getContig(blockContigID).name[0], header.getContig(blockContigID).name.size());
+void MetaEntry::toVCFString(buffer_type& dest, const header_type& header) const{
+	dest.Add(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size());
 	dest += '\t';
 	//dest += std::to_string(blockPos + this->hot.position + 1);
 
@@ -75,7 +75,7 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header, const 
 		dest.resize(dest.capacity()*2);
 	}
 	assert(dest.size() + 100 < dest.capacity());
-	int ret = sprintf(&dest.buffer[dest.size()], "%llu", blockPos + this->hot.position + 1);
+	int ret = sprintf(&dest.buffer[dest.size()], "%llu", this->hot.position + 1);
 	dest.n_chars += ret;
 	dest += '\t';
 

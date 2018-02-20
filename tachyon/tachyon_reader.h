@@ -250,7 +250,7 @@ public:
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		//for(size_t i = 0; i < meta.size(); ++i){
-			meta[0].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			meta[0].toVCFString(stream, this->header);
 			stream.put('\n');
 		//}
 		return meta.size();
@@ -271,7 +271,7 @@ public:
 			for(size_t i = 0; i < it2->size(); ++i){
 				if(it2->at(i).size() == 0) continue;
 				else {
-					meta.at(i).toVCFString(std::cout, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+					meta.at(i).toVCFString(std::cout, this->header);
 					std::cout << "\t";
 					utility::to_vcf_string(std::cout, (*it2)[i]);
 					std::cout << "\n";
@@ -364,7 +364,7 @@ public:
 			//std::vector<core::GTObject> objects_all  = gt[i].getObjects(this->header.getSampleNumber());
 			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 			//std::cerr << objects.size() << '\t' << objects_all.size() << std::endl;
-			gt[i].getMeta().toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+			gt[i].getMeta().toVCFString(stream, this->header);
 			//std::cerr << "\nPermuted: ";
 			//for(U32 j = 0; j < objects_all.size(); ++j)
 			//	std::cerr << (int)objects_all[j].alleles[0].first << (objects_all[j].alleles[0].second ? "|" : "/") << (int)objects_all[j].alleles[1].first << ' ';
