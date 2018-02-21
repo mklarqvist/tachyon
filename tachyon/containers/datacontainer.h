@@ -55,59 +55,14 @@ public:
 	inline void operator++(void){ ++this->n_entries; }
 	inline void addStride(const U32& value){ this->buffer_strides_uncompressed += (U32)value; }
 
-	inline void operator+=(const SBYTE& value){
+	template <class T>
+	inline void operator+=(const T& value){
 		//assert(this->header.controller.type == 0);
-		this->buffer_data_uncompressed += value;
+		this->buffer_data_uncompressed += (T)value;
 		++this->n_additions;
 	}
 
-	inline void operator+=(const BYTE& value){
-		//assert(this->header.controller.type == 1);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const S16& value){
-		//assert(this->header.controller.type == 2);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const U16& value){
-		//assert(this->header.controller.type == 3);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const S32& value){
-		//assert(this->header.controller.type == 4);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const U32& value){
-		//assert(this->header.controller.type == 5);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const U64& value){
-		//assert(this->header.controller.type == 6);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const float& value){
-		//assert(this->header.controller.type == 7);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
-
-	inline void operator+=(const double& value){
-		//assert(this->header.controller.type == 8);
-		this->buffer_data_uncompressed += value;
-		++this->n_additions;
-	}
+	inline const U32& size(void) const{ return(this->n_entries); }
 
 	void reset(void);
 	void resize(const U32 size);
@@ -202,15 +157,18 @@ private:
 	}
 
 public:
-	header_type header;
+	header_type        header;
 	header_stride_type header_stride;
+
 	// Not written - used internally only during import
 	U32 n_entries;   // number of container entries
 	U32 n_additions; // number of times an addition operation was executed
+
 	// Buffers - only bit that are written to disk
 	// from here
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
+
 	// These buffers are for internal use only
 	// They are used during decompression and are
 	// not written to disk

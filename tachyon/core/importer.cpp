@@ -94,6 +94,9 @@ bool Importer::BuildBCF(void){
 	// Resize containers
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
 	this->block.resize(resize_to);
+	if(this->header->samples == 0){
+		this->block.resize(this->checkpoint_n_snps * sizeof(U32) * 100);
+	}
 
 	// Digest controller
 	containers::ChecksumContainer checksums;
@@ -157,7 +160,7 @@ bool Importer::BuildBCF(void){
 		// Stats
 		n_variants_read += reader.size();
 
-		if(this->GT_available_)
+		if(this->GT_available_ && this->header->samples)
 			assert(this->block.gt_support_data_container.n_entries == reader.size());
 
 		assert(this->block.meta_info_map_ids.n_entries   == reader.size());
@@ -179,7 +182,7 @@ bool Importer::BuildBCF(void){
 		this->block.updateContainerSet(containers::core::DataBlockHeader::INDEX_FORMAT);
 
 		// Perform compression using standard parameters
-		if(!compression_manager.compress(this->block)){
+		if(!this->compression_manager.compress(this->block)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
@@ -272,7 +275,7 @@ bool Importer::add(bcf_entry_type& entry){
 	meta.ref_alt  = entry.ref_alt;
 
 	// GT encoding
-	if(this->GT_available_){
+	if(entry.hasGenotypes){
 		if(!this->encoder.Encode(entry,
 								 meta,
 								 this->block.gt_rle_container,

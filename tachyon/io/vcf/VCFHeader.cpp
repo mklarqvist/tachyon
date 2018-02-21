@@ -337,7 +337,7 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 	}
 
 	if(offset+vcf::constants::HEADER_COLUMN.size()+2 == length){
-		std::cerr << "no samples" << std::endl;
+		//std::cerr << "no samples" << std::endl;
 		this->buildSampleTable(0);
 		return true;
 	}

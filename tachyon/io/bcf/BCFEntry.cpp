@@ -363,7 +363,7 @@ bool BCFEntry::parse(const U64 n_samples){
 	assert(internal_pos == (this->body->l_shared + sizeof(U32)*2));
 
 	if(internal_pos == this->l_data){
-		std::cerr << "have no FORMAT data" << std::endl;
+		//std::cerr << "have no FORMAT data" << std::endl;
 		return true;
 	}
 

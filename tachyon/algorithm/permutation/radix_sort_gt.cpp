@@ -54,10 +54,8 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 	// Cycle over BCF entries
 	for(U32 i = 0; i < reader.size(); ++i){
 		// Have to have genotypes available
-		if(reader[i].hasGenotypes == false){
-			std::cerr << "no genotypes sskip" << std::endl;
+		if(reader[i].hasGenotypes == false)
 			continue;
-		}
 
 		// Has to be biallelic
 		// otherwise skip
@@ -72,7 +70,7 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 
 	// Return TRUE if the number of parsed
 	// entries is > 0
-	return(this->position > 0);
+	return(true);
 }
 
 bool RadixSortGT::update(const bcf_entry_type& entry){

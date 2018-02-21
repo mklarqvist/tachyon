@@ -214,7 +214,7 @@ public:
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_data_uncompressed.n_chars + 65536);
+		this->buffer.resize(stream.buffer_data_uncompressed.size() + 65536);
 		size_t ret = ZSTD_compress(this->buffer.data(),
 								   this->buffer.capacity(),
 								   stream.buffer_data_uncompressed.data(),
@@ -309,6 +309,9 @@ public:
 	 * @return
 	 */
 	const bool encode(permutation_type& manager){
+		if(manager.PPA.size() == 0)
+			return true;
+
 		this->buffer.reset();
 		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 
