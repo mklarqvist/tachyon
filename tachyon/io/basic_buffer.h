@@ -295,7 +295,6 @@ public:
 		return *this;
 	}
 
-
 	inline reference operator[](const U64 position){ return this->buffer[position]; }
 	inline const_reference operator[](const U64 position) const{ return this->buffer[position]; }
 	inline reference at(const U64 position){ return this->buffer[position]; }

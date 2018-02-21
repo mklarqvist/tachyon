@@ -96,17 +96,19 @@ public:
 			case(1): return(this->hot.ref_alt.getAltAlleleLiteral());
 			default: std::cerr << "Illegal allele in biallelic!" << std::endl; exit(1);
 			}
-		} else
+		} else {
+			std::cerr << "cannot get this" << std::endl;
 			exit(1);
+		}
 	}
 
 	// Set and get for patterns
-	inline U32& getInfoPatternID(void){ return(this->info_pattern_id); }
-	inline U32& getFormatPatternID(void){ return(this->format_pattern_id); }
-	inline U32& getFilterPatternID(void){ return(this->filter_pattern_id); }
-	inline const U32& getInfoPatternID(void) const{ return(this->info_pattern_id); }
-	inline const U32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
-	inline const U32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
+	inline S32& getInfoPatternID(void){ return(this->info_pattern_id); }
+	inline S32& getFormatPatternID(void){ return(this->format_pattern_id); }
+	inline S32& getFilterPatternID(void){ return(this->filter_pattern_id); }
+	inline const S32& getInfoPatternID(void) const{ return(this->info_pattern_id); }
+	inline const S32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
+	inline const S32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
 
 private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
@@ -115,9 +117,9 @@ public:
 	friend containers::MetaContainer;
 
 	bool       loaded_cold;       // Boolean triggered if cold meta object was overloaded
-	U32        info_pattern_id;   // Info pattern ID
-	U32        filter_pattern_id; // Filter pattern ID
-	U32        format_pattern_id; // Format pattern ID
+	S32        info_pattern_id;   // Info pattern ID
+	S32        filter_pattern_id; // Filter pattern ID
+	S32        format_pattern_id; // Format pattern ID
 	hot_entry  hot;               // Hot meta object
 	cold_entry cold;              // Cold meta object - can be empty
 };

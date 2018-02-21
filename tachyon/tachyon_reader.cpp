@@ -135,6 +135,7 @@ const int TachyonReader::has_info_field(const std::string& field_name) const{
 		//std::cerr << "target stream is: " << target << std::endl;
 		return(target);
 	}
+	std::cerr << "no match at all: " << field_name << std::endl;
 	return(-2);
 }
 

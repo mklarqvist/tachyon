@@ -71,8 +71,12 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 		U32 current_offset = 0;
 		U32 strides_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
+			// There are no INFO fields
+			if(meta_container[i].getInfoPatternID() == -1){
+				new( &this->__containers[i] ) value_type( );
+			}
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
 				current_offset += strides[strides_offset];
 				++strides_offset;
@@ -96,8 +100,12 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
 		for(U32 i = 0; i < this->n_entries; ++i){
+			// There are no INFO fields
+			if(meta_container[i].getInfoPatternID() == -1){
+				new( &this->__containers[i] ) value_type( );
+			}
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
 			}
 			// Otherwise place an empty
@@ -111,8 +119,12 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 	// Case 2: if data is not uniform
 	else {
 		for(U32 i = 0; i < this->n_entries; ++i){
+			// There are no INFO fields
+			if(meta_container[i].getInfoPatternID() == -1){
+				new( &this->__containers[i] ) value_type( );
+			}
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
 				current_offset += stride_size * n_samples;
 			}

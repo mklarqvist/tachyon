@@ -259,7 +259,9 @@ public:
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("DP_HIST_ALT", meta);
+		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AC", meta);
+		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ", meta);
+
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
 

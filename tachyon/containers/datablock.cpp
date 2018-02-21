@@ -11,8 +11,11 @@ DataBlock::DataBlock() :
 {
 	// Base container streams are always of type TYPE_STRUCT
 	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_format_map_ids.header.controller.signedness = 1;
 	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.header.controller.signedness = 1;
 	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.header.controller.signedness = 1;
 	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);
@@ -49,10 +52,13 @@ void DataBlock::clear(void){
 	this->ppa_manager.reset();
 
 	// Base container data types are always TYPE_STRUCT
-	// Map ID fields are always U32 fields
+	// Map ID fields are always S32 fields
 	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_format_map_ids.header.controller.signedness = 1;
 	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.header.controller.signedness = 1;
 	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.header.controller.signedness = 1;
 	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
 	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);

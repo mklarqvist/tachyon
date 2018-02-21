@@ -17,11 +17,6 @@ Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
-### Acknowledgements
-[James Bonfield](https://github.com/jkbonfield), Wellcome Trust Sanger Institute  
-[Petr Daněček](https://github.com/pd3), Wellcome Trust Sanger Institute  
-[Richard Durbin](https://github.com/richarddurbin), Wellcome Trust Sanger Institute, and Department of Genetics, University of Cambridge  
-
 ### Notice
 Tachyon is under active development and the specification and/or the API interfaces may change at any time! Commits may break functionality!  
 THERE IS NO API STABILITY PROMISE WHATSOEVER!  
@@ -137,7 +132,7 @@ reader.getSettings().loadInfo("MEINFO");
 reader.open(my_input_file);
 
 /**<
- * The `InfoContainer` class
+ * The `InfoContainer` class has to be templated as std::string if the underlying data is of type `char`
  */
 while(reader.get_next_block()){ // As long as there are YON blocks available
     // Meta container
@@ -325,6 +320,11 @@ Generated output
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
 [tomahawk]: https://github.com/mklarqvist/tomahawk
+
+### Acknowledgements
+[James Bonfield](https://github.com/jkbonfield), Wellcome Trust Sanger Institute  
+[Petr Daněček](https://github.com/pd3), Wellcome Trust Sanger Institute  
+[Richard Durbin](https://github.com/richarddurbin), Wellcome Trust Sanger Institute, and Department of Genetics, University of Cambridge  
 
 ### License
 [MIT](LICENSE)

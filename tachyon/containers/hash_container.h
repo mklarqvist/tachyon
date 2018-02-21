@@ -12,7 +12,7 @@ class HashContainer{
 	typedef std::vector<U32> id_vector;
 
 public:
-	HashContainer() : htable(16384){}
+	HashContainer() : htable(65536, 250){}
 	~HashContainer(){}
 
 	inline const bool get(const U32& value, U32& ret){
@@ -35,7 +35,9 @@ public:
 
 	inline bool set(const U32& value){
 		U32 tot = this->data.size();
-		this->htable.SetItem(&value, tot, sizeof(U32));
+		if(!this->htable.SetItem(&value, tot, sizeof(U32)))
+			return false;
+
 		this->data.push_back(value);
 		return true;
 	}
@@ -46,7 +48,9 @@ public:
 			return(*ret);
 		} else {
 			U32 tot = this->data.size();
-			this->htable.SetItem(&value, tot, sizeof(U32));
+			if(!this->htable.SetItem(&value, tot, sizeof(U32)))
+				return false;
+
 			this->data.push_back(value);
 			return(tot);
 		}
@@ -60,7 +64,7 @@ public:
 	}
 
 private:
-	id_vector data;
+	id_vector  data;
 	hash_table htable;
 };
 
@@ -70,7 +74,7 @@ class HashVectorContainer{
 	typedef std::vector< std::vector<U32> > id_vector;
 
 public:
-	HashVectorContainer() : htable(16384){}
+	HashVectorContainer() : htable(65536, 250){}
 	~HashVectorContainer(){}
 
 	inline bool get(const U64& value, std::vector<U32>& ret){
@@ -93,7 +97,9 @@ public:
 
 	inline bool set(const std::vector<U32>& value, const U64& hashValue){
 		U32 tot = this->data.size();
-		this->htable.SetItem(&hashValue, tot, sizeof(U64));
+		if(!this->htable.SetItem(&hashValue, tot, sizeof(U64))){
+			return false;
+		}
 		this->data.push_back(value);
 		return true;
 	}
@@ -104,7 +110,9 @@ public:
 			return(*ret);
 		} else {
 			U32 tot = this->data.size();
-			this->htable.SetItem(&hashValue, tot, sizeof(U64));
+			if(!this->htable.SetItem(&hashValue, tot, sizeof(U64))){
+				return false;
+			}
 			this->data.push_back(value);
 			return(tot);
 		}

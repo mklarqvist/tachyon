@@ -271,8 +271,12 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	U32 current_offset = 0;
 	U32 stride_offset = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
+		// There are no INFO fields
+		if(meta_container[i].getInfoPatternID() == -1){
+			new( &this->__containers[i] ) value_type( );
+		}
 		// If pattern matches
-		if(pattern_matches[meta_container[i].getInfoPatternID()]){
+		else if(pattern_matches[meta_container[i].getInfoPatternID()]){
 			new( &this->__containers[i] ) value_type( data_container, current_offset, strides[stride_offset] );
 			current_offset += strides[stride_offset] * sizeof(actual_primitive);
 			++stride_offset;
@@ -321,7 +325,12 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
 		for(U32 i = 0; i < this->n_entries; ++i){
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			// There are no INFO fields
+			if(meta_container[i].getInfoPatternID() == -1){
+				new( &this->__containers[i] ) value_type( );
+			}
+			// If pattern matches
+			else if(pattern_matches[meta_container[i].getInfoPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, 0, stride_size );
 			} else {
 				new( &this->__containers[i] ) value_type( );

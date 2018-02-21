@@ -72,7 +72,12 @@ public:
 	DataBlockHeaderBase();
 	virtual ~DataBlockHeaderBase();
 
-	inline const U16& size(void) const{ return(this->n_variants); }
+
+
+	inline const U32& size(void) const{ return(this->n_variants); }
+	inline const S32& getContigID(void) const{ return(this->contigID); }
+	inline const S64& getMinPosition(void) const{ return(this->minPosition); }
+	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block), sizeof(U32));
@@ -167,8 +172,8 @@ public:
 
 	// Genomic information
 	S32 contigID;       // contig identifier
-	U64 minPosition;    // minimum coordinate in this block
-	U64 maxPosition;    // maximum coordinate in this block
+	S64 minPosition;    // minimum coordinate in this block
+	S64 maxPosition;    // maximum coordinate in this block
 	U32 n_variants;     // number of variants in this block
 
 	// Virtual offsets to the start of various
@@ -218,8 +223,8 @@ private:
 	typedef std::vector< id_vector >  pattern_vector;
 	typedef containers::HashContainer hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
-	typedef DataBlockOffsets         offset_type;
-	typedef DataBlockOffsetsHeader   offset_minimal_type;
+	typedef DataBlockOffsets          offset_type;
+	typedef DataBlockOffsetsHeader    offset_minimal_type;
 
 public:
 	// Internal use only
@@ -392,17 +397,10 @@ public:
 	offset_minimal_type* info_offsets;
 	offset_minimal_type* format_offsets;
 	offset_minimal_type* filter_offsets;
-
-	// Structure of bit-vectors
-	bit_vector* info_bit_vectors;
-	bit_vector* format_bit_vectors;
-	bit_vector* filter_bit_vectors;
-
-	//typedef Hash::HashTable<U32, U32> hash_table;
-	//typedef Hash::HashTable<std::string, U32> hash_table_string;
-	// HTable: check if field exists
-
-	// HTable: check if field exists in a given pattern
+	bit_vector*          info_bit_vectors;
+	bit_vector*          format_bit_vectors;
+	bit_vector*          filter_bit_vectors;
+	// Todo: compress offsets and bit vectors
 };
 
 }

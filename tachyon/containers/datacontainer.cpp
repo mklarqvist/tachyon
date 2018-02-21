@@ -304,22 +304,25 @@ void DataContainer::reformatStride(){
 	// Recode integer types
 	if(!(this->header_stride.controller.type == tachyon::core::YON_TYPE_32B &&
 	   this->header_stride.controller.signedness == 0)){
-		std::cerr << utility::timestamp("ERROR") << "Illegal at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Illegal to have non-U32 values at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
 		exit(1);
 	}
 
-	// At this point all integers are S32
-	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.buffer);
-	U32 max = dat[0];
+	// At this point all integers are U32
+	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.data());
+	assert(this->buffer_strides_uncompressed.size() % sizeof(U32) == 0);
+	assert(this->buffer_strides_uncompressed.size() / sizeof(U32) == this->n_entries);
 
-	for(U32 j = 1; j < this->n_entries; ++j)
-		if(dat[j] > max) max = dat[j];
+	U32 max = 1;
+	for(U32 j = 0; j < this->n_entries; ++j){
+		if(dat[j] > max)
+			max = dat[j];
+	}
 
-	BYTE byte_width = ceil(ceil(log2(max + 1))/8);
-
-	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
-	else if(byte_width > 4) byte_width = 8;
+	BYTE byte_width = ceil(log2(max + 1) / 8);
 	if(byte_width == 0) byte_width = 1;
+	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
+	if(byte_width > 4) byte_width = 8;
 
 	// This cannot ever be uniform
 	this->buffer_strides.reset();
@@ -328,33 +331,41 @@ void DataContainer::reformatStride(){
 	if(byte_width == 1){
 		this->header_stride.controller.type = tachyon::core::YON_TYPE_8B;
 
-		for(U32 j = 0; j < this->n_entries; ++j)
+		for(U32 j = 0; j < this->n_entries; ++j){
+			//assert((BYTE)dat[j] == dat[j]);
 			this->buffer_strides += (BYTE)dat[j];
+		}
 
 	} else if(byte_width == 2){
 		this->header_stride.controller.type = tachyon::core::YON_TYPE_16B;
 
-		for(U32 j = 0; j < this->n_entries; ++j)
+		for(U32 j = 0; j < this->n_entries; ++j){
+			//assert((U16)dat[j] == dat[j]);
 			this->buffer_strides += (U16)dat[j];
+		}
 
 	} else if(byte_width == 4){
 		this->header_stride.controller.type = tachyon::core::YON_TYPE_32B;
 
-		for(U32 j = 0; j < this->n_entries; ++j)
+		for(U32 j = 0; j < this->n_entries; ++j){
+			//assert((U32)dat[j] == dat[j]);
 			this->buffer_strides += (U32)dat[j];
+		}
 
 	} else if(byte_width == 8){
 		this->header_stride.controller.type = tachyon::core::YON_TYPE_64B;
 
-		for(U32 j = 0; j < this->n_entries; ++j)
+		for(U32 j = 0; j < this->n_entries; ++j){
+			//assert((U64)dat[j] == dat[j]);
 			this->buffer_strides += (U64)dat[j];
+		}
 
 	} else {
 		std::cerr << utility::timestamp("ERROR") << "Illegal primtive type!" << std::endl;
 		exit(1);
 	}
 	//std::cerr << "recode shrink strides: " << this->buffer_strides.size() << '\t' << buffer.size() << std::endl;
-	memcpy(this->buffer_strides_uncompressed.buffer, this->buffer_strides.buffer, this->buffer_strides.size());
+	memcpy(this->buffer_strides_uncompressed.data(), this->buffer_strides.data(), this->buffer_strides.size());
 	this->buffer_strides_uncompressed.n_chars = this->buffer_strides.size();
 	this->header_stride.uLength = this->buffer_strides_uncompressed.size();
 	this->buffer_strides.reset();

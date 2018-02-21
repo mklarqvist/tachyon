@@ -160,12 +160,11 @@ bool Importer::BuildBCF(void){
 		// Stats
 		n_variants_read += reader.size();
 
-		if(this->GT_available_ && this->header->samples)
-			assert(this->block.gt_support_data_container.n_entries == reader.size());
-
-		assert(this->block.meta_info_map_ids.n_entries   == reader.size());
-		assert(this->block.meta_filter_map_ids.n_entries == reader.size());
-		assert(this->block.meta_format_map_ids.n_entries == reader.size());
+		//if(this->GT_available_ && this->header->samples)
+		//	assert(this->block.gt_support_data_container.n_entries == reader.size());
+		//assert(this->block.meta_info_map_ids.n_entries   == reader.size());
+		//assert(this->block.meta_filter_map_ids.n_entries == reader.size());
+		//assert(this->block.meta_format_map_ids.n_entries == reader.size());
 
 		// Update head meta
 		this->block.index_entry.controller.hasGT = this->GT_available_;
@@ -319,12 +318,12 @@ bool Importer::add(bcf_entry_type& entry){
 }
 
 bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
-	for(U32 i = 0; i < entry.n_filter; ++i){
+	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
 		this->filter_fields.setGet(entry.filterID[i].mapID);
 	}
 
-	for(U32 i = 0; i < entry.body->n_info; ++i){
+	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
 		const U32 mapID = this->info_fields.setGet(entry.infoID[i].mapID);
 
@@ -377,7 +376,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 	}
 
-	for(U32 i = 0; i < entry.body->n_fmt; ++i){
+	for(U32 i = 0; i < entry.formatPointer; ++i){
 		assert(entry.formatID[i].mapID != -1);
 		const U32 mapID = this->format_fields.setGet(entry.formatID[i].mapID);
 		U32 internal_pos = entry.formatID[i].l_offset;
@@ -439,78 +438,115 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		else {
 			std::cerr << "impossible: " << (int)entry.formatID[i].primitive_type << std::endl;
 			std::cerr << utility::timestamp("LOG") << entry.formatID[i].mapID << '\t' << entry.formatID[i].l_stride << '\t' << (int)entry.formatID[i].primitive_type << '\t' << internal_pos << '/' << entry.l_data << std::endl;
-
 			exit(1);
 		}
 	}
 
-	// Hash FILTER pattern
-	const U64 hash_filter_vector = entry.hashFilter();
+	if(entry.filterPointer){
+		// Hash FILTER pattern
+		const U64 hash_filter_vector = entry.hashFilter();
 
-	U32 mapID = 0;
-	if(this->filter_patterns.getRaw(hash_filter_vector, mapID)){
+		U32 mapID = 0;
+		if(this->filter_patterns.getRaw(hash_filter_vector, mapID)){
 
+		} else {
+			std::vector<U32> ret_pattern;
+			for(U32 i = 0; i < entry.filterPointer; ++i)
+				ret_pattern.push_back(entry.filterID[i].mapID);
+
+			mapID = this->filter_patterns.size();
+			assert(mapID < 65536);
+			if(!this->filter_patterns.set(ret_pattern, hash_filter_vector)){
+				std::cerr << "failed to insert filter: " << ret_pattern.size() << " and " << hash_filter_vector << std::endl;
+				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
+
+
+				for(size_t i = 0; i < ret_pattern.size(); ++i){
+					std::cerr << ret_pattern[i] << std::endl;
+				}
+				exit(1);
+			}
+		}
+
+		// Store this map in the meta
+		this->block.meta_filter_map_ids += (S32)mapID;
+		++this->block.meta_filter_map_ids;
 	} else {
-		std::vector<U32> ret_pattern;
-		for(U32 i = 0; i < entry.filterPointer; ++i)
-			ret_pattern.push_back(entry.filterID[i].mapID);
-
-		mapID = this->filter_patterns.size();
-		assert(mapID < 65536);
-		this->filter_patterns.set(ret_pattern, hash_filter_vector);
+		this->block.meta_filter_map_ids += -1;
+		++this->block.meta_filter_map_ids;
 	}
 
-	// Store this map in the meta
-	this->block.meta_filter_map_ids += mapID;
-	//meta.FILTER_map_ID = mapID;
+	if(entry.infoPointer){
+		U32 mapID = 0;
+		// Hash INFO pattern
 
-	// Hash INFO pattern
-	const U64 hash_info_vector = entry.hashInfo();
+		const U64 hash_info_vector = entry.hashInfo();
+		//const U64 hash_info_vector = 0;
 
-	mapID = 0;
-	if(this->info_patterns.getRaw(hash_info_vector, mapID)){
+		if(this->info_patterns.getRaw(hash_info_vector, mapID)){
 
+		} else {
+			std::vector<U32> ret_pattern;
+			for(U32 i = 0; i < entry.infoPointer; ++i)
+				ret_pattern.push_back(entry.infoID[i].mapID);
+
+			mapID = this->info_patterns.size();
+			assert(mapID < 65536);
+			if(!this->info_patterns.set(ret_pattern, hash_info_vector)){
+				std::cerr << "failed to insert info: " << ret_pattern.size() << " and " << hash_info_vector << std::endl;
+				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
+
+
+				for(size_t i = 0; i < ret_pattern.size(); ++i){
+					std::cerr << ret_pattern[i] << std::endl;
+				}
+				exit(1);
+			}
+		}
+
+		// Store this map in the meta
+		//meta.INFO_map_ID = mapID;
+		this->block.meta_info_map_ids += (S32)mapID;
+		++this->block.meta_info_map_ids;
 	} else {
-		std::vector<U32> ret_pattern;
-		for(U32 i = 0; i < entry.infoPointer; ++i)
-			ret_pattern.push_back(entry.infoID[i].mapID);
-
-		mapID = this->info_patterns.size();
-		assert(mapID < 65536);
-		this->info_patterns.set(ret_pattern, hash_info_vector);
+		this->block.meta_info_map_ids += -1;
+		++this->block.meta_info_map_ids;
 	}
 
-	// Store this map in the meta
-	//meta.INFO_map_ID = mapID;
-	this->block.meta_info_map_ids += mapID;
+	if(entry.formatPointer){
+		U32 mapID = 0;
+		// Hash FORMAT pattern
+		const U64 hash_format_vector = entry.hashFormat();
+
+		if(this->format_patterns.getRaw(hash_format_vector, mapID)){
+
+		} else {
+			std::vector<U32> ret_pattern;
+			for(U32 i = 0; i < entry.formatPointer; ++i)
+				ret_pattern.push_back(entry.formatID[i].mapID);
+
+			mapID = this->format_patterns.size();
+			assert(mapID < 65536);
+			if(!this->format_patterns.set(ret_pattern, hash_format_vector)){
+				std::cerr << "failed to insert format: " << ret_pattern.size() << " and " << hash_format_vector << std::endl;
+				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
 
 
-	// Hash FORMAT pattern
-	const U64 hash_format_vector = entry.hashFormat();
+				for(size_t i = 0; i < ret_pattern.size(); ++i){
+					std::cerr << ret_pattern[i] << std::endl;
+				}
+				exit(1);
+			}
+		}
 
-	mapID = 0;
-	if(this->format_patterns.getRaw(hash_format_vector, mapID)){
+		// Store this map in the meta
+		//meta.FORMAT_map_ID = mapID;
+		this->block.meta_format_map_ids += (S32)mapID;
+		++this->block.meta_format_map_ids;
 	} else {
-		std::vector<U32> ret_pattern;
-		for(U32 i = 0; i < entry.formatPointer; ++i)
-			ret_pattern.push_back(entry.formatID[i].mapID);
-
-		mapID = this->format_patterns.size();
-		assert(mapID < 65536);
-		this->format_patterns.set(ret_pattern, hash_format_vector);
+		this->block.meta_format_map_ids += -1;
+		++this->block.meta_format_map_ids;
 	}
-
-	// Store this map in the meta
-	//meta.FORMAT_map_ID = mapID;
-	this->block.meta_format_map_ids += mapID;
-
-	// Update
-	++this->block.meta_info_map_ids;
-	++this->block.meta_format_map_ids;
-	++this->block.meta_filter_map_ids;
-	this->block.meta_info_map_ids.addStride((S32)1);
-	this->block.meta_format_map_ids.addStride((S32)1);
-	this->block.meta_filter_map_ids.addStride((S32)1);
 
 	// Return
 	return true;

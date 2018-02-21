@@ -41,7 +41,12 @@ public:
 	 * @param value
 	 * @return
 	 */
-	inline const bool checkStrideSize(const S32& value) const{ return this->header.stride == value; }
+	inline const bool checkStrideSize(const U32& value) const{
+		if(this->header.hasMixedStride() == false)
+			return false;
+
+		return(this->header.stride == value);
+	}
 
 	/**<
 	 *
@@ -53,7 +58,7 @@ public:
 
 	// Operators
 	inline void operator++(void){ ++this->n_entries; }
-	inline void addStride(const U32& value){ this->buffer_strides_uncompressed += (U32)value; }
+	inline void addStride(const U32 value){ this->buffer_strides_uncompressed += (U32)value; }
 
 	template <class T>
 	inline void operator+=(const T& value){

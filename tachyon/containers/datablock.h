@@ -47,7 +47,7 @@ public:
 	 */
 	void clear(void);
 
-	inline const U32 size(void) const{ return(this->index_entry.n_variants); }
+	inline const U32& size(void) const{ return(this->index_entry.n_variants); }
 
 	/**<
 	 * Wrapper function for INFO, FORMAT, and FILTER disk
@@ -64,8 +64,9 @@ public:
 	}
 
 	/**<
-	 *
-	 * @param target
+	 * Wrapper function (indirection) for invoking the updateContainer
+	 * function for either all INFO or FORMAT containers
+	 * @param target Enum target for groups of containers
 	 */
 	inline void updateContainerSet(containers::core::DataBlockHeader::INDEX_BLOCK_TARGET target){
 		// Determine target
@@ -110,7 +111,13 @@ public:
 	 */
 	bool read(std::ifstream& stream, settings_type& settings);
 
-
+	/**<
+	 * Standard way of writing out a YON block.
+	 * @param stream              Target output stream
+	 * @param stats               Statistics object for tracking compression levels
+	 * @param stats_uncompressed  Statistics ojbect for tracking the uncompressed sizes of data
+	 * @return                    Returns TRUE upon success or FALSE otherwise
+	 */
 	bool write(std::ofstream& stream, import_stats_type& stats, import_stats_type& stats_uncompressed);
 
 private:
