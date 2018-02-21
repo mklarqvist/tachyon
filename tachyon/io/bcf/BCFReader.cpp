@@ -104,9 +104,14 @@ bool BCFReader::nextVariant(reference entry){
 		}
 	}
 
-	if(!entry.parse()){
+	if(!entry.parse(this->header.samples)){
 		std::cerr << "parse error" << std::endl;
 		exit(1);
+	}
+
+	if(this->entries[this->n_entries].body->n_fmt > 0 && this->map_gt_id != -1){
+		if(this->entries[this->n_entries].formatID[0].mapID == this->map_gt_id)
+			this->entries[this->n_entries].hasGenotypes = true;
 	}
 
 	return true;
@@ -118,7 +123,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 	// If there is any carry over
 	if(this->n_carry_over == 1){
 		value_type last = std::move(this->entries[this->n_entries]);
-		last.parse2(this->header.samples);
+		last.parse(this->header.samples);
 		if(last.body->n_fmt > 0 && this->map_gt_id != -1){
 			if(last.formatID[0].mapID == this->map_gt_id)
 				last.hasGenotypes = true;
@@ -175,15 +180,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			std::cerr << "failed to get next" << std::endl;
 			return false;
 		}
-
-		// Interpret char stream
-		this->entries[this->n_entries].parse2(this->header.samples);
-		if(this->entries[this->n_entries].body->n_fmt > 0 && this->map_gt_id != -1){
-			if(this->entries[this->n_entries].formatID[0].mapID == this->map_gt_id)
-				this->entries[this->n_entries].hasGenotypes = true;
-		}
-		//std::cerr << this->entries[this->n_entries].body->CHROM << ':' << this->entries[this->n_entries].body->POS+1 << std::endl;
-
 
 		// Check position
 		if(this->n_entries == 0){

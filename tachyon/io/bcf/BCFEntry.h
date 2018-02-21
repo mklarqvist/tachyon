@@ -112,9 +112,8 @@ struct BCFEntry{
 	void __parseID(U32& internal_pos);
 	void __parseRefAlt(U32& internal_pos);
 
-	bool parse2(const U64 n_samples);
+	bool parse(const U64 n_samples);
 
-	bool parse(void);
 	void SetRefAlt(void);
 	double getMissingness(const U64& samples) const;
 	inline const bool& good(void) const{ return(this->isGood); }

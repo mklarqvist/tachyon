@@ -301,7 +301,8 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 	return true;
 }
 
-bool BCFEntry::parse2(const U64 n_samples){
+bool BCFEntry::parse(const U64 n_samples){
+	this->body = reinterpret_cast<body_type*>(this->data);
 	U32 internal_pos = sizeof(body_type);
 	this->__parseID(internal_pos);
 	this->__parseRefAlt(internal_pos);
@@ -417,48 +418,6 @@ bool BCFEntry::parse2(const U64 n_samples){
 	assert(internal_pos == this->l_data);
 
 	this->isGood = true;
-	return true;
-}
-
-bool BCFEntry::parse(void){
-	U32 internal_pos = sizeof(body_type);
-	this->__parseID(internal_pos);
-	this->__parseRefAlt(internal_pos);
-	this->SetRefAlt();
-
-	// start of FILTER
-	this->filter_start = internal_pos;
-
-	// Move up to start of FORMAT
-	internal_pos = this->body->l_shared + sizeof(U32)*2;
-
-	//std::cerr << internal_pos << "/" << this->l_data << std::endl;
-	if(internal_pos == this->l_data){
-		std::cerr << "have no FORMAT data" << std::endl;
-	}
-
-	// Format key and value
-	const base_type& fmt_key = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
-#if BCF_ASSERT == 1
-	assert(fmt_key.high == 1);
-#endif
-	this->getInteger(fmt_key.low, internal_pos);
-	const base_type& fmt_type = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
-
-	this->ploidy = fmt_type.high;
-	if(fmt_type.high != 2){
-		std::cerr << utility::timestamp("LOG","BCF") << "Non-diploid variant: " << this->body->CHROM << ':' << this->body->POS+1 << " ploidy: " << this->ploidy << std::endl;
-		//this->isGood = false;
-		//return false;
-	}
-
-	// Store virtual offsets into the stream
-	// Parse filter
-
-	// Parse info
-	// parse format
-
-	this->isGood    = true;
 	return true;
 }
 
