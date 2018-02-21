@@ -81,15 +81,8 @@ std::string datetime(){
 std::string timestamp(const std::string type){
 	std::stringstream ret;
 
-	ret << "\33[2K\r\033[0m";
-	if(type == "ERROR") ret << "\033[0;31m";
-	else if(type == "WARNING") ret << "\033[38;5;208m";
-
 	ret << "[" << datetime() << "]";
 	ret << "[" << type << "] ";
-
-	// Restore colour if terminated here
-	if(type == "ERROR" || type == "WARNING") ret << "\e[0m";
 
 	return(ret.str());
 }
@@ -97,16 +90,9 @@ std::string timestamp(const std::string type){
 std::string timestamp(const std::string type, const std::string type2){
 	std::stringstream ret;
 
-	ret << "\33[2K\r\033[0m";
-	if(type == "ERROR") ret << "\033[0;31m";
-	else if(type == "WARNING") ret << "\033[38;5;208m";
-
 	ret << "[" << datetime() << "]";
 	ret << "[" << type << "]";
 	ret << "[" << type2 << "] ";
-
-	// Restore colour if terminated here
-	if(type == "ERROR" || type == "WARNING") ret << "\e[0m";
 
 	return(ret.str());
 }

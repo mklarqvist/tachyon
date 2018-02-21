@@ -100,7 +100,7 @@ int view(int argc, char** argv){
 	tachyon::TachyonReader reader;
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
-	reader.getSettings().loadGenotypes(true);
+	reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -119,8 +119,8 @@ int view(int argc, char** argv){
 	while(reader.get_next_block()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
-		n_variants += reader.iterateMeta();
-		//n_variants += reader.iterate_genotypes();
+		//n_variants += reader.iterateMeta();
+		n_variants += reader.iterate_genotypes();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);

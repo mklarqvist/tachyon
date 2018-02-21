@@ -77,6 +77,7 @@ public:
 	inline const bool isAnyGTSpecial(void) const{ return(this->hot.isAnyGTSpecial()); }
 	inline const bool getControllerPhase(void) const{ return(this->hot.getControllerPhase()); }
 	inline const bool isGTMixedPhasing(void) const{ return(this->hot.isGTMixedPhasing()); }
+	inline const bool hasGenotypes(void) const{ return(this->hot.hasGT()); }
 
 	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(this->hot.getGenotypeType()); }
 	inline const BYTE getGTPrimitiveWidth(void) const{ return(this->hot.getPrimitiveWidth()); }

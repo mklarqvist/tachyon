@@ -273,9 +273,11 @@ bool Importer::add(bcf_entry_type& entry){
 	meta.position = entry.body->POS;
 	meta.contigID = entry.body->CHROM;
 	meta.ref_alt  = entry.ref_alt;
+	meta.controller.simple_snv = entry.isSimple();
 
 	// GT encoding
 	if(entry.hasGenotypes){
+		meta.controller.gt_available = true;
 		if(!this->encoder.Encode(entry,
 								 meta,
 								 this->block.gt_rle_container,
@@ -286,6 +288,8 @@ bool Importer::add(bcf_entry_type& entry){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 			return false;
 		}
+	} else {
+		meta.controller.gt_available = false;
 	}
 
 	if(!this->parseBCFBody(meta, entry)){
@@ -316,10 +320,12 @@ bool Importer::add(bcf_entry_type& entry){
 
 bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.n_filter; ++i){
+		assert(entry.filterID[i].mapID != -1);
 		this->filter_fields.setGet(entry.filterID[i].mapID);
 	}
 
 	for(U32 i = 0; i < entry.body->n_info; ++i){
+		assert(entry.infoID[i].mapID != -1);
 		const U32 mapID = this->info_fields.setGet(entry.infoID[i].mapID);
 
 		stream_container& target_container = this->block.info_containers[mapID];
@@ -372,23 +378,12 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	}
 
 	for(U32 i = 0; i < entry.body->n_fmt; ++i){
+		assert(entry.formatID[i].mapID != -1);
 		const U32 mapID = this->format_fields.setGet(entry.formatID[i].mapID);
 		U32 internal_pos = entry.formatID[i].l_offset;
-		if(this->header->map[this->header->mapTable[entry.formatID[i].mapID]].ID == "GT"){
-			entry.hasGenotypes = true;
-			BYTE multiplier = sizeof(U32);
-			switch(entry.formatID[i].primitive_type){
-				case(7):
-				case(1): multiplier = sizeof(SBYTE); break;
-				case(2): multiplier = sizeof(S16);   break;
-				case(5):
-				case(3): multiplier = sizeof(S32);   break;
-				case(0): break; // FLAG
-				default: std::cerr << "illegal" << std::endl; exit(1); return false;
-			}
-			internal_pos += this->header->samples * entry.formatID[i].l_stride * multiplier;
+
+		if(entry.hasGenotypes)
 			continue;
-		}
 
 		// Hash INFO values
 		stream_container& target_container = this->block.format_containers[mapID];

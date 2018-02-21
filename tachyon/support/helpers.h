@@ -25,6 +25,7 @@ std::vector<std::string> splitLastOf(const std::string& s, const char delim, con
 
 std::string timestamp(const std::string type);
 std::string timestamp(const std::string type, const std::string type2);
+inline void flushErrPointer(std::ostream& stream){ stream << "\33[2K\r\033[0m"; }
 std::string datetime();
 std::string NumberThousandsSeparator(std::string number);
 
@@ -32,8 +33,6 @@ std::string basePath(const std::string& input);
 std::string baseName(const std::string& input);
 std::string extensionName(const std::string& input);
 std::vector<std::string> filePathBaseExtension(const std::string& input);
-
-std::string program_string();
 
 template <class T>
 T roundUp(T numToRound, int multiple){
@@ -59,9 +58,6 @@ std::string ToPrettyString(const std::vector<T>& data){
 	ret += std::to_string(data[data.size()-1]);
 	return ret;
 }
-
-bool matchPositionalStringTWO(const std::string& param);
-bool parsePositionalStringTWO(const std::string& param);
 
 inline std::string secondsToTimestring(const double& value){
 	U32 internalVal = value;

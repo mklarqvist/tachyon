@@ -251,15 +251,15 @@ public:
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		//for(size_t i = 0; i < meta.size(); ++i){
-			meta[0].toVCFString(stream, this->header);
-			stream.put('\n');
+			//meta[0].toVCFString(stream, this->header);
+			//stream.put('\n');
 		//}
-		return meta.size();
+		//return meta.size();
 
 		//std::cerr << block.size() << std::endl;
 
 		// Variant-balanced
-		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("MEINFO", meta);
+		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("DP_HIST_ALT", meta);
 		// Not variant-balanced
 		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
 
@@ -297,7 +297,7 @@ public:
 		//if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
 		//if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;
 		//delete it2;
-		return(0);
+		return(meta.size());
 
 		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");
 		if(af != nullptr){

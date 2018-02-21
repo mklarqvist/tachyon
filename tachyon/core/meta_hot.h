@@ -54,7 +54,8 @@ struct MetaHotController{
 	 * 8) What machine word-size the run-length encoded objects are
 	 * 9) If the variant site is diploid
 	 * 10) If there is mixed ploidy
-	 * 11-16) Reserved for future use
+	 * 11) This variant site have genotypes
+	 * 12-16) Reserved for future use
 	 *
 	 * If the genotypes are NOT diploid then
 	 */
@@ -68,7 +69,8 @@ struct MetaHotController{
 		gt_primtive_type: 2, // type of RLE (BYTE, U16, U32, U64)
 		diploid:          1, // is diploid
 		mixed_ploidy:     1, // has mixed ploidy (e.g. X chromosome or CNV)
-		unused:           5; // reserved
+        gt_available:     1, // if there is any GT data
+		unused:           4; // reserved
 };
 
 /**
@@ -145,6 +147,7 @@ public:
 	inline const controller_type& getController(void) const{ return(this->controller); }
 
 	// Supportive boolean functions
+	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
 	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }

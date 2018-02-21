@@ -61,10 +61,10 @@ struct BCFTypeString{
 };
 
 struct BCFKeyTuple{
-	BCFKeyTuple() : mapID(0), primitive_type(0), l_stride(0), l_offset(0){}
+	BCFKeyTuple() : mapID(-1), primitive_type(0), l_stride(0), l_offset(0){}
 	~BCFKeyTuple(){}
 
-	U32  mapID;
+	S32  mapID;
 	BYTE primitive_type;
 	U32  l_stride;
 	U32  l_offset;
