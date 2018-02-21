@@ -45,7 +45,7 @@ public:
 
 private:
 	bool BuildBCF();  // import a BCF file
-	bool parseBCFLine(bcf_entry_type& line); // Import a BCF line
+	bool add(bcf_entry_type& line); // Import a BCF line
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 	void resetHashes(void);
 

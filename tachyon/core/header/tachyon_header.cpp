@@ -66,6 +66,15 @@ const bool TachyonHeader::getEntry(const std::string& p, map_entry_type*& target
 	return false;
 }
 
+const core::HeaderMapEntry* TachyonHeader::getEntry(const std::string& p) const{
+	if(this->htable_entries == nullptr) return nullptr;
+	S32* ret = nullptr;
+	if(this->htable_entries->GetItem(&p[0], &p, ret, p.size()))
+		return(&this->entries[*ret]);
+
+	return nullptr;
+}
+
 bool TachyonHeader::buildMapTable(void){
 	if(this->header_magic.n_declarations == 0)
 		return false;

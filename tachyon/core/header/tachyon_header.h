@@ -39,6 +39,7 @@ public:
 	const bool getContig(const std::string& p, contig_type*& target) const;
 	const bool getSample(const std::string& p, sample_type*& target) const;
 	const bool getEntry(const std::string& p, map_entry_type*& target) const;
+	const map_entry_type* getEntry(const std::string& p) const;
 
 	inline const U64& getSampleNumber(void) const{ return(this->header_magic.n_samples); }
 	inline U64& getSampleNumber(void){ return(this->header_magic.n_samples); }

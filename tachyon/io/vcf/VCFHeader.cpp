@@ -336,6 +336,12 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 		return false;
 	}
 
+	if(offset+vcf::constants::HEADER_COLUMN.size()+2 == length){
+		std::cerr << "no samples" << std::endl;
+		this->buildSampleTable(0);
+		return true;
+	}
+
 	offset += vcf::constants::HEADER_COLUMN.size() + 1;
 	U64 delimiters_found = 0;
 	U32 offset_original = offset;

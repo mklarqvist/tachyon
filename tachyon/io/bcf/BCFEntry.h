@@ -60,6 +60,16 @@ struct BCFTypeString{
 	char* data; // reinterpret me as char*
 };
 
+struct BCFKeyTuple{
+	BCFKeyTuple() : mapID(0), primitive_type(0), l_stride(0), l_offset(0){}
+	~BCFKeyTuple(){}
+
+	U32  mapID;
+	BYTE primitive_type;
+	U32  l_stride;
+	U32  l_offset;
+};
+
 struct BCFEntry{
 	typedef BCFEntry self_type;
 	typedef io::BasicBuffer buffer_type;
@@ -78,7 +88,7 @@ struct BCFEntry{
 	void add(const char* const data, const U32 length);
 
 	inline void reset(void){
-		this->pointer = 0;
+		this->l_data = 0;
 		this->isGood = false;
 		this->infoPointer = 0;
 		this->formatPointer = 0;
@@ -87,8 +97,8 @@ struct BCFEntry{
 		this->filter_start = 0;
 	}
 
-	inline const U32& size(void) const{ return(this->pointer); }
-	inline const U32& capacity(void) const{ return(this->limit); }
+	inline const U32& size(void) const{ return(this->l_data); }
+	inline const U32& capacity(void) const{ return(this->l_capacity); }
 	inline const U64 sizeBody(void) const{ return(this->body->l_shared + this->body->l_indiv); }
 
 	inline const bool isBiallelicSimple(void) const{
@@ -101,6 +111,8 @@ struct BCFEntry{
 
 	void __parseID(U32& internal_pos);
 	void __parseRefAlt(U32& internal_pos);
+
+	bool parse2(const U64 n_samples);
 
 	bool parse(void);
 	void SetRefAlt(void);
@@ -187,17 +199,17 @@ struct BCFEntry{
 	bool nextFormat(S32& value, U32& length, BYTE& value_type, U32& position);
 
 public:
-	U32 pointer;     // byte width
-	U32 limit;       // capacity
+	U32 l_data;     // byte width
+	U32 l_capacity;       // capacity
 	U32 l_ID;
-	U32 p_genotypes; // position genotype data begin
 	BYTE ref_alt;    // parsed
 	bool isGood;
 	char* data;      // hard copy data to buffer, interpret internally
 	body_type* body; // BCF2 body
 	string_type* alleles; // pointer to pointer of ref alleles and their lengths
 	char* ID;
-	char* genotypes;
+
+	bool hasGenotypes;
 	BYTE ploidy;
 
 	//
@@ -211,11 +223,9 @@ public:
 	U16 formatPointer;
 
 	// FILTER
-	U32* filterID;
-	// INFO
-	U32* infoID;
-	// FORMAT
-	U32* formatID;
+	BCFKeyTuple* filterID;
+	BCFKeyTuple* infoID;
+	BCFKeyTuple* formatID;
 };
 
 }

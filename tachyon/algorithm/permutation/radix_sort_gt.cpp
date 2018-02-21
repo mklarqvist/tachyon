@@ -53,6 +53,12 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 
 	// Cycle over BCF entries
 	for(U32 i = 0; i < reader.size(); ++i){
+		// Have to have genotypes available
+		if(reader[i].hasGenotypes == false){
+			std::cerr << "no genotypes sskip" << std::endl;
+			continue;
+		}
+
 		// Has to be biallelic
 		// otherwise skip
 		if(!reader[i].isBiallelic())
@@ -92,7 +98,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	// ./. -> 1010b = 10 -> 8
 	//
 	// Update GT_array
-	U32 internal_pos = entry.p_genotypes;
+	U32 internal_pos = entry.formatID[0].l_offset;
 	U32 k = 0;
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
@@ -120,7 +126,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 		case 8:  target_ID = 6; break;
 		case 9:  target_ID = 7; break;
 		case 10: target_ID = 8; break;
-		default: std::cerr << "illegal" << std::endl; exit(1);
+		default: std::cerr << "illegal in radix" << std::endl; exit(1);
 		}
 
 		// Update bin i at position i with ppa[j]

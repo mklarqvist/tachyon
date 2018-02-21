@@ -144,6 +144,7 @@ public:
 	std::ifstream        stream;
 	U64                  filesize;
 	U32                  current_pointer;
+	S32                  map_gt_id;
 	buffer_type          buffer;
 	buffer_type          header_buffer;
 	bgzf_controller_type bgzf_controller;

@@ -181,7 +181,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa){
 	// Assess RLE cost
 	const BYTE ploidy = 2;
-	U32 internal_buffer_offset = line.p_genotypes;
+	U32 internal_buffer_offset = line.formatID[0].l_offset;
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset++]);
 
@@ -228,7 +228,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 	}
 
 	// Reset
-	internal_buffer_offset = line.p_genotypes;
+	internal_buffer_offset = line.formatID[0].l_offset;
 
 	//\///////////////////
 	// Step 2
@@ -299,7 +299,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 
 const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa){
 	const BYTE ploidy        = 2;
-	U32 internal_pos_rle     = line.p_genotypes;
+	U32 internal_pos_rle     = line.formatID[0].l_offset;
 	const SBYTE& pre_allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);
 	const SBYTE& pre_allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);
 
@@ -346,7 +346,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	}
 
 	// Reset
-	internal_pos_rle = line.p_genotypes;
+	internal_pos_rle = line.formatID[0].l_offset;
 
 	// Assess RLE cost
 	const BYTE shift     = ceil(log2(line.body->n_allele + anyMissing + 1));

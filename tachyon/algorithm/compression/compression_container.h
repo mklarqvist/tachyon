@@ -132,15 +132,16 @@ protected:
 
 class UncompressedCodec{
 private:
-	typedef UncompressedCodec self_type;
+	typedef UncompressedCodec             self_type;
+
 protected:
-	typedef containers::DataContainer stream_type;
-	typedef io::BasicBuffer buffer_type;
+	typedef containers::DataContainer     stream_type;
+	typedef io::BasicBuffer               buffer_type;
 	typedef algorithm::PermutationManager permutation_type;
 
 public:
 	UncompressedCodec(){}
-	~UncompressedCodec(){}
+	~UncompressedCodec(){ this->buffer.deleteAll(); }
 	inline const bool encode(permutation_type& manager){ return true; }
 	inline const bool encode(stream_type& stream){ return true; }
 	inline const bool encodeStrides(stream_type& stream){ return true; }
@@ -182,7 +183,7 @@ protected:
 // ZSTD codec
 class ZSTDCodec : public CompressionContainer{
 private:
-	typedef ZSTDCodec self_type;
+	typedef ZSTDCodec          self_type;
 	typedef io::TGZFController controller_type;
 
 public:
@@ -201,11 +202,11 @@ public:
 	const bool encode(stream_type& stream){
 		stream.generateCRC();
 
-		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.n_chars < 50){
-			memcpy(stream.buffer_data.buffer, stream.buffer_data_uncompressed.buffer, stream.buffer_data_uncompressed.n_chars);
+		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.size() < 50){
+			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
 			stream.header.controller.encoder = core::YON_ENCODE_NONE;
-			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.n_chars;
-			stream.header.cLength            = stream.buffer_data_uncompressed.n_chars;
+			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
+			stream.header.cLength            = stream.buffer_data_uncompressed.size();
 
 			if(stream.header.controller.mixedStride == true)
 				return(this->encodeStrides(stream));
@@ -214,23 +215,23 @@ public:
 
 		this->buffer.reset();
 		this->buffer.resize(stream.buffer_data_uncompressed.n_chars + 65536);
-			size_t ret = ZSTD_compress(this->buffer.buffer,
-                                       this->buffer.capacity(),
-									   stream.buffer_data_uncompressed.buffer,
-									   stream.buffer_data_uncompressed.n_chars,
-									   this->compression_level_data);
+		size_t ret = ZSTD_compress(this->buffer.data(),
+								   this->buffer.capacity(),
+								   stream.buffer_data_uncompressed.data(),
+								   stream.buffer_data_uncompressed.size(),
+								   this->compression_level_data);
 
-			if(ZSTD_isError(ret)){
+		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
 		}
 
-		const float fold = (float)stream.buffer_data_uncompressed.n_chars / ret;
+		const float fold = (float)stream.buffer_data_uncompressed.size() / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
-			memcpy(stream.buffer_data.buffer, stream.buffer_data_uncompressed.buffer, stream.buffer_data_uncompressed.n_chars);
+			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
 			stream.header.controller.encoder = core::YON_ENCODE_NONE;
-			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.n_chars;
-			stream.header.cLength            = stream.buffer_data_uncompressed.n_chars;
+			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
+			stream.header.cLength            = stream.buffer_data_uncompressed.size();
 
 			if(stream.header.controller.mixedStride == true)
 				return(this->encodeStrides(stream));
@@ -239,7 +240,7 @@ public:
 
 		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_data.n_chars/ret << "-fold"  << std::endl;
 
-		memcpy(stream.buffer_data.buffer, this->buffer.buffer, ret);
+		memcpy(stream.buffer_data.data(), this->buffer.data(), ret);
 		stream.header.cLength            = ret;
 		stream.header.controller.encoder = core::YON_ENCODE_ZSTD;
 		stream.buffer_data.n_chars       = ret;
@@ -258,21 +259,21 @@ public:
 	 * @return
 	 */
 	const bool encodeStrides(stream_type& stream){
-		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.n_chars < 50){
-			memcpy(stream.buffer_strides.buffer, stream.buffer_strides_uncompressed.buffer, stream.buffer_strides_uncompressed.n_chars);
+		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.size() < 50){
+			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
 			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
-			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.n_chars;
-			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.n_chars;
+			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
+			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
 
 			return true;
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_strides_uncompressed.n_chars + 65536);
-		size_t ret = ZSTD_compress(this->buffer.buffer,
+		this->buffer.resize(stream.buffer_strides_uncompressed.size() + 65536);
+		size_t ret = ZSTD_compress(this->buffer.data(),
                                    this->buffer.capacity(),
-								   stream.buffer_strides_uncompressed.buffer,
-								   stream.buffer_strides_uncompressed.n_chars,
+								   stream.buffer_strides_uncompressed.data(),
+								   stream.buffer_strides_uncompressed.size(),
 								   this->compression_level_data);
 
 		if(ZSTD_isError(ret)){
@@ -280,18 +281,18 @@ public:
 			exit(1);
 		}
 
-		const float fold = (float)stream.buffer_strides_uncompressed.n_chars/ret;
+		const float fold = (float)stream.buffer_strides_uncompressed.size()/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
-			memcpy(stream.buffer_strides.buffer, stream.buffer_strides_uncompressed.buffer, stream.buffer_strides_uncompressed.n_chars);
+			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
 			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
-			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.n_chars;
-			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.n_chars;
+			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
+			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
 			return true;
 		}
 
 		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
 
-		memcpy(stream.buffer_strides.buffer, this->buffer.buffer, ret);
+		memcpy(stream.buffer_strides.data(), this->buffer.data(), ret);
 		stream.header_stride.cLength            = ret;
 		stream.header_stride.controller.encoder = core::YON_ENCODE_ZSTD;
 		stream.buffer_strides.n_chars           = ret;
@@ -311,10 +312,9 @@ public:
 		this->buffer.reset();
 		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 
-		U32 crc = crc32(0, NULL, 0);
+		U32 crc          = crc32(0, NULL, 0);
 		manager.crc      = crc32(crc, (Bytef*)manager.PPA.data(), manager.PPA.size());
 		manager.u_length = manager.PPA.size();
-		buffer_type buffer_debug(this->buffer);
 
 		//const U32 in = manager.PPA.n_chars;
 		const int p_ret = permuteIntBits(manager.PPA.data(),
@@ -340,7 +340,7 @@ public:
 		*/
 
 
-		size_t ret = ZSTD_compress(manager.PPA.buffer,
+		size_t ret = ZSTD_compress(manager.PPA.data(),
 								   manager.PPA.capacity(),
 								   this->buffer.data(),
 								   this->buffer.size(),

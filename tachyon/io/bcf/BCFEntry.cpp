@@ -7,17 +7,16 @@ namespace tachyon {
 namespace bcf {
 
 BCFEntry::BCFEntry(void):
-	pointer(0),
-	limit(262144),
+	l_data(0),
+	l_capacity(262144),
 	l_ID(0),
-	p_genotypes(0),
 	ref_alt(0),
 	isGood(false),
-	data(new char[this->limit]),
+	data(new char[this->l_capacity]),
 	body(reinterpret_cast<body_type*>(this->data)),
 	alleles(new string_type[100]),
 	ID(nullptr),
-	genotypes(nullptr),
+	hasGenotypes(false),
 	ploidy(0),
 	filter_start(0),
 	n_filter(0),
@@ -26,27 +25,26 @@ BCFEntry::BCFEntry(void):
 	infoPointer(0),
 	formatPointer(0),
 	// FILTER
-	filterID(new U32[256]),
+	filterID(new BCFKeyTuple[256]),
 	// INFO
-	infoID(new U32[256]),
+	infoID(new BCFKeyTuple[256]),
 	// FORMAT
-	formatID(new U32[256])
+	formatID(new BCFKeyTuple[256])
 {
 
 }
 
 BCFEntry::BCFEntry(const self_type& other):
-	pointer(other.pointer),
-	limit(other.limit),
+	l_data(other.l_data),
+	l_capacity(other.l_capacity),
 	l_ID(other.l_ID),
-	p_genotypes(other.p_genotypes),
 	ref_alt(other.ref_alt),
 	isGood(other.isGood),
-	data(new char[other.limit]),
+	data(new char[other.l_capacity]),
 	body(reinterpret_cast<body_type*>(this->data)),
 	alleles(new string_type[100]),
 	ID(nullptr),
-	genotypes(nullptr),
+	hasGenotypes(other.hasGenotypes),
 	ploidy(other.ploidy),
 	filter_start(other.filter_start),
 	n_filter(other.n_filter),
@@ -55,28 +53,32 @@ BCFEntry::BCFEntry(const self_type& other):
 	infoPointer(other.infoPointer),
 	formatPointer(other.formatPointer),
 	// FILTER
-	filterID(new U32[256]),
+	filterID(new BCFKeyTuple[256]),
 	// INFO
-	infoID(new U32[256]),
+	infoID(new BCFKeyTuple[256]),
 	// FORMAT
-	formatID(new U32[256])
+	formatID(new BCFKeyTuple[256])
 {
-	memcpy(this->data, other.data, other.pointer);
-	this->parse();
+	memcpy(this->data, other.data, other.l_data);
+	for(U32 i = 0; i < 256; ++i){
+		this->filterID[i] = other.filterID[i];
+		this->formatID[i] = other.formatID[i];
+		this->infoID[i]   = other.infoID[i];
+	}
+	// have to call parse2 again
 }
 
 BCFEntry::BCFEntry(self_type&& other) noexcept :
-	pointer(other.pointer),
-	limit(other.limit),
+	l_data(other.l_data),
+	l_capacity(other.l_capacity),
 	l_ID(other.l_ID),
-	p_genotypes(other.p_genotypes),
 	ref_alt(other.ref_alt),
 	isGood(other.isGood),
 	data(other.data),
 	body(other.body),
 	alleles(other.alleles),
 	ID(other.ID),
-	genotypes(other.genotypes),
+	hasGenotypes(other.hasGenotypes),
 	ploidy(other.ploidy),
 	filter_start(other.filter_start),
 	n_filter(other.n_filter),
@@ -91,14 +93,13 @@ BCFEntry::BCFEntry(self_type&& other) noexcept :
 	// FORMAT
 	formatID(other.formatID)
 {
-	other.data = nullptr;
-	other.body = nullptr;
-	other.alleles = nullptr;
-	other.ID = nullptr;
-	other.genotypes = nullptr;
-	other.filterID = nullptr;
-	other.infoID = nullptr;
-	other.formatID = nullptr;
+	other.data      = nullptr;
+	other.body      = nullptr;
+	other.alleles   = nullptr;
+	other.ID        = nullptr;
+	other.filterID  = nullptr;
+	other.infoID    = nullptr;
+	other.formatID  = nullptr;
 }
 
 BCFEntry& BCFEntry::operator=(const self_type& other){
@@ -119,17 +120,16 @@ BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
 	delete [] this->filterID;
 	delete [] this->infoID;
 	delete [] this->formatID;
-	pointer = other.pointer;
-	limit = other.limit;
+	l_data = other.l_data;
+	l_capacity = other.l_capacity;
 	l_ID = other.l_ID;
-	p_genotypes = other.p_genotypes;
 	ref_alt = other.ref_alt;
 	isGood = other.isGood;
 	data = other.data;
 	body = other.body;
 	alleles = other.alleles;
 	ID = other.ID;
-	genotypes = other.genotypes;
+	hasGenotypes = other.hasGenotypes;
 	ploidy = other.ploidy;
 	filter_start = other.filter_start;
 	n_filter = other.n_filter;
@@ -144,10 +144,10 @@ BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
 	// FORMAT
 	formatID = other.formatID;
 
-	other.data = nullptr;
-	other.alleles = nullptr;
+	other.data     = nullptr;
+	other.alleles  = nullptr;
 	other.filterID = nullptr;
-	other.infoID = nullptr;
+	other.infoID   = nullptr;
 	other.formatID = nullptr;
 
 	return *this;
@@ -165,24 +165,22 @@ void BCFEntry::resize(const U32 size){
 	if(size == 0)
 		return;
 
-	//std::cerr << "resizing: " << this->pointer << "->" << size << std::endl;
-
 	char* temp = this->data;
 	this->data = new char[size];
-	memcpy(this->data, temp, this->pointer);
+	memcpy(this->data, temp, this->l_data);
 	delete [] temp;
 	this->body = reinterpret_cast<body_type*>(this->data);
 
-	if(size > this->limit)
-		this->limit = size;
+	if(size > this->l_capacity)
+		this->l_capacity = size;
 }
 
 void BCFEntry::add(const char* const data, const U32 length){
-	if(this->pointer + length > this-> capacity())
-		this->resize(this->pointer + length + 65536);
+	if(this->l_data + length > this-> capacity())
+		this->resize(this->l_data + length + 65536);
 
-	memcpy(&this->data[this->pointer], data, length);
-	this->pointer += length;
+	memcpy(&this->data[this->l_data], data, length);
+	this->l_data += length;
 }
 
 void BCFEntry::__parseID(U32& internal_pos){
@@ -235,7 +233,7 @@ bool BCFEntry::nextFilter(S32& value, U32& position){
 		return false;
 
 	value = this->getInteger(this->filter_key.low, position);
-	this->filterID[this->filterPointer++] = value;
+	this->filterID[this->filterPointer++].mapID = value;
 
 	return true;
 }
@@ -256,7 +254,7 @@ bool BCFEntry::nextInfo(S32& value, U32& length, BYTE& value_type, U32& position
 	//std::cerr << "info_key: " << (int)info_key.high << '\t' << (int)info_key.low << " position: " << position << std::endl;
 	value = this->getInteger(info_key.low, position);
 	//std::cerr << "internal: " << value << '\t' << std::bitset<32>(value) << " position: " << position << std::endl;
-	this->infoID[this->infoPointer++] = value;
+	this->infoID[this->infoPointer++].mapID = value;
 
 	// Data for this identifier
 	const base_type& info_value = *reinterpret_cast<const base_type* const>(&this->data[position++]);
@@ -287,7 +285,7 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 
 	// format identifier
 	value = this->getInteger(format_key.low, position);
-	this->formatID[this->formatPointer++] = value;
+	this->formatID[this->formatPointer++].mapID = value;
 
 	// Data for this identifier
 	const base_type& format_value = *reinterpret_cast<const base_type* const>(&this->data[position++]);
@@ -303,6 +301,125 @@ bool BCFEntry::nextFormat(S32& value, U32& length, BYTE& value_type, U32& positi
 	return true;
 }
 
+bool BCFEntry::parse2(const U64 n_samples){
+	U32 internal_pos = sizeof(body_type);
+	this->__parseID(internal_pos);
+	this->__parseRefAlt(internal_pos);
+	this->SetRefAlt();
+
+	// start of FILTER
+	this->filter_start = internal_pos;
+
+	// At FILTER
+	// Typed vector
+	const base_type& filter_key = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
+	U32 n_filter     = filter_key.high;
+	if(n_filter == 15) n_filter = this->getInteger(filter_key.low, internal_pos);
+	this->n_filter   = n_filter;
+	this->filter_key = filter_key;
+
+	S32 val = 0;
+	while(this->nextFilter(val, internal_pos)){}
+
+	// At INFO
+	U32  info_length;
+	BYTE info_primitive_type;
+	for(U32 i = 0; i < this->body->n_info; ++i){
+		if(this->nextInfo(val, info_length, info_primitive_type, internal_pos) == false){
+			std::cerr << "illegal match info" << std::endl;
+			exit(1);
+		}
+		this->infoID[i].l_stride       = info_length;
+		this->infoID[i].primitive_type = info_primitive_type;
+		this->infoID[i].l_offset       = internal_pos;
+
+		// Flags and integers
+		// These are BCF value types
+		if(info_primitive_type <= 3){
+			for(U32 j = 0; j < info_length; ++j){
+				this->getInteger(info_primitive_type, internal_pos);
+			}
+		}
+		// Floats
+		else if(info_primitive_type == 5){
+			for(U32 j = 0; j < info_length; ++j){
+				this->getFloat(internal_pos);
+			}
+		}
+		// Chars
+		else if(info_primitive_type == 7){
+			for(U32 j = 0; j < info_length; ++j){
+				this->getChar(internal_pos);
+			}
+		}
+		// Illegal: parsing error
+		else {
+			std::cerr << "impossible in info: " << (int)info_primitive_type << std::endl;
+			exit(1);
+		}
+	}
+
+	assert(internal_pos == (this->body->l_shared + sizeof(U32)*2));
+
+	if(internal_pos == this->l_data){
+		std::cerr << "have no FORMAT data" << std::endl;
+		return true;
+	}
+
+	BYTE format_primitive_type = 0;
+	for(U32 i = 0; i < this->body->n_fmt; ++i){
+		if(this->nextFormat(val, info_length, format_primitive_type, internal_pos) == false){
+			std::cerr << "illegal match format" << std::endl;
+			exit(1);
+		}
+
+		if(i == 0){
+			this->ploidy = 2;
+		}
+
+		this->formatID[i].l_stride       = info_length;
+		this->formatID[i].primitive_type = format_primitive_type;
+		this->formatID[i].l_offset       = internal_pos;
+
+		//std::cerr << "FORMAT val: " << val << std::endl;
+
+		// Flags and integers
+		// These are BCF value types
+		if(format_primitive_type <= 3){
+			for(U32 s = 0; s < n_samples; ++s){
+				for(U32 j = 0; j < info_length; ++j)
+					this->getInteger(format_primitive_type, internal_pos);
+			}
+		}
+		// Floats
+		else if(format_primitive_type == 5){
+			for(U32 s = 0; s < n_samples; ++s){
+				for(U32 j = 0; j < info_length; ++j)
+					this->getFloat(internal_pos);
+
+			}
+		}
+		// Chars
+		else if(format_primitive_type == 7){
+			for(U32 s = 0; s < n_samples; ++s){
+				for(U32 j = 0; j < info_length; ++j)
+					this->getChar(internal_pos);
+			}
+		}
+		// Illegal: parsing error
+		else {
+			std::cerr << "impossible in format: " << (int)format_primitive_type << std::endl;
+			std::cerr << utility::timestamp("LOG") << val << '\t' << info_length << '\t' << (int)format_primitive_type << '\t' << internal_pos << '/' << this->l_data << std::endl;
+			exit(1);
+		}
+	}
+
+	assert(internal_pos == this->l_data);
+
+	this->isGood = true;
+	return true;
+}
+
 bool BCFEntry::parse(void){
 	U32 internal_pos = sizeof(body_type);
 	this->__parseID(internal_pos);
@@ -315,8 +432,12 @@ bool BCFEntry::parse(void){
 	// Move up to start of FORMAT
 	internal_pos = this->body->l_shared + sizeof(U32)*2;
 
+	//std::cerr << internal_pos << "/" << this->l_data << std::endl;
+	if(internal_pos == this->l_data){
+		std::cerr << "have no FORMAT data" << std::endl;
+	}
+
 	// Format key and value
-	// Todo: ascertain that first KEY is GT field
 	const base_type& fmt_key = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
 #if BCF_ASSERT == 1
 	assert(fmt_key.high == 1);
@@ -337,18 +458,18 @@ bool BCFEntry::parse(void){
 	// Parse info
 	// parse format
 
-	this->isGood = true;
-	this->genotypes = &this->data[internal_pos];
-	this->p_genotypes = internal_pos;
-
+	this->isGood    = true;
 	return true;
 }
 
 double BCFEntry::getMissingness(const U64& samples) const{
-	if(!this->good())
+	if(this->good() == false)
 		return(1);
 
-	U32 internal_pos = this->p_genotypes;
+	if(this->body->n_fmt == 0)
+		return 0;
+
+	U32 internal_pos = this->formatID[0].l_offset;
 	U64 n_missing = 0;
 	for(U32 i = 0; i < samples; ++i){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<SBYTE*>(&this->data[internal_pos++]);

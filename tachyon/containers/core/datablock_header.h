@@ -65,8 +65,8 @@ public:
 struct DataBlockHeaderBase{
 	typedef DataBlockHeaderBase          self_type;
 	typedef DataBlockHeaderController    controller_type;
-	typedef DataBlockOffsets       offset_type;
-	typedef DataBlockOffsetsHeader offset_minimal_type;
+	typedef DataBlockOffsets             offset_type;
+	typedef DataBlockOffsetsHeader       offset_minimal_type;
 
 public:
 	DataBlockHeaderBase();
@@ -123,7 +123,7 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
 
-		entry.l_info_bitvector = ceil((float)entry.n_info_streams/8);
+		entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
 		entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
 		entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
 
@@ -146,13 +146,13 @@ public:
 		this->offset_meta_filter_id.clear();
 		this->offset_meta_format_id.clear();
 		this->offset_meta_info_id.clear();
-		this->n_info_streams = 0;
-		this->n_info_patterns = 0;
-		this->n_format_streams = 0;
-		this->n_format_patterns = 0;
-		this->n_filter_streams = 0;
-		this->n_filter_patterns = 0;
-		this->l_info_bitvector = 0;
+		this->n_info_streams     = 0;
+		this->n_info_patterns    = 0;
+		this->n_format_streams   = 0;
+		this->n_format_patterns  = 0;
+		this->n_filter_streams   = 0;
+		this->n_filter_patterns  = 0;
+		this->l_info_bitvector   = 0;
 		this->l_format_bitvector = 0;
 		this->l_filter_bitvector = 0;
 	}

@@ -131,7 +131,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
 
 	// Virtual byte offset into start of genotypes
 	// in BCF entry
-	U32 bcf_gt_pos = line.p_genotypes;
+	U32 bcf_gt_pos = line.formatID[0].l_offset;
 
 	// Pack genotypes as
 	// allele A | alleleB | isPhased
@@ -158,7 +158,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 												const U32* const ppa,
 								          const rle_helper_type& helper){
 	const BYTE ploidy   = 2;
-	U32 bcf_gt_pos      = line.p_genotypes; // virtual byte offset of genotype start
+	U32 bcf_gt_pos      = line.formatID[0].l_offset; // virtual byte offset of genotype start
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
@@ -236,7 +236,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 											   const U32* const ppa,
 										 const rle_helper_type& helper){
 	const BYTE ploidy   = 2;
-	U32 bcf_gt_pos      = line.p_genotypes; // virtual byte offset of genotype start
+	U32 bcf_gt_pos      = line.formatID[0].l_offset; // virtual byte offset of genotype start
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
