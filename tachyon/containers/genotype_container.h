@@ -9,6 +9,10 @@
 namespace tachyon{
 namespace containers{
 
+// forward declaration for getters
+template <class T> class GenotypeContainerDiploidRLE;
+template <class T> class GenotypeContainerDiploidSimple;
+
 class GenotypeContainer{
 private:
     typedef GenotypeContainer             self_type;
@@ -77,6 +81,16 @@ public:
 	inline const_reference operator[](const U32& position) const{ return(this->__iterators[position]); }
 	inline reference       at(const U32& position){ return(this->__iterators[position]); }
 	inline const_reference at(const U32& position) const{ return(this->__iterators[position]); }
+
+	// Getters
+	inline GenotypeContainerDiploidSimple<BYTE>* getDiploidSimpleByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U16>* getDiploidSimpleU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U32>* getDiploidSimpleU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U64>* getDiploidSimpleU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<BYTE>* getDiploidRLEByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U16>* getDiploidRLEU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U32>* getDiploidRLEU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U64>* getDiploidRLEU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
 
 
 	// GT summary

@@ -52,7 +52,7 @@ public:
 	gt_summary& updateSummary(gt_summary& gt_summary_object) const;
 	gt_summary getSummary(void) const;
 	gt_summary& getSummary(gt_summary& gt_summary_object) const;
-    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const;
+    void getTsTv(std::vector<ts_tv_object_type>& objects) const;
 };
 
 
@@ -215,7 +215,7 @@ GenotypeSum& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary&
 }
 
 template <class return_type>
-void GenotypeContainerDiploidSimple<return_type>::updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{
+void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
 	if(this->size() == 0)
 		return;
 

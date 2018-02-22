@@ -116,11 +116,11 @@ public:
 
     // Iterator
     inline iterator       begin(){ return iterator(&this->alleles[0]); }
-    inline iterator       end(){ return iterator(&this->alleles[this->n_objects - 1]); }
+    inline iterator       end(){ return iterator(&this->alleles[this->n_objects]); }
     inline const_iterator begin() const{ return const_iterator(&this->alleles[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->alleles[this->n_objects - 1]); }
+    inline const_iterator end() const{ return const_iterator(&this->alleles[this->n_objects]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->alleles[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_objects - 1]); }
+    inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_objects]); }
 
 public:
     BYTE      n_alleles;
@@ -138,7 +138,7 @@ public:
     template <class T>
     void operator()(const T& gt_primitive, const meta_type& meta_entry)
     {
-    		this->__interpret<T>(gt_primitive, meta_entry);
+    	this->__interpret<T>(gt_primitive, meta_entry);
     }
 
 private:
@@ -153,9 +153,9 @@ private:
 		if(add) this->alleles[0].second = gt_primitive & 1;
 		else    this->alleles[0].second = meta_entry.getControllerPhase();
 
-		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
-		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-		this->n_objects        = gt_primitive >> (2*shift + add);
+		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
+		this->alleles[0].first = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
+		this->alleles[1].first = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
 	}
 };
 
@@ -169,7 +169,7 @@ public:
     template <class T>
     void operator()(const T& gt_primitive, const meta_type& meta_entry)
     {
-    		this->__interpret<T>(gt_primitive, meta_entry);
+    	this->__interpret<T>(gt_primitive, meta_entry);
     }
 
 private:
@@ -184,9 +184,9 @@ private:
 		if(add) this->alleles[0].second = gt_primitive & 1;
 		else    this->alleles[0].second = meta_entry.getControllerPhase();
 
-		this->alleles[0].first = (gt_primitive & ((1 << shift) - 1) << add) >> add;
-		this->alleles[1].first = (gt_primitive & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-		this->n_objects        = gt_primitive >> (2*shift + add);
+		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
+		this->alleles[0].first = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
+		this->alleles[1].first = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
 	}
 };
 

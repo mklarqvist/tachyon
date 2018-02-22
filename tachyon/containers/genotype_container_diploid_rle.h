@@ -25,10 +25,10 @@ public:
     ~GenotypeContainerDiploidRLE();
 
     void operator()(const char* const data, const U32 n_entries, const meta_type& meta_entry){
-    		this->n_entries = n_entries;
-    		delete [] this->__data;
+		this->n_entries = n_entries;
+		delete [] this->__data;
 
-    		const T* const re = reinterpret_cast<const T* const>(data);
+		const T* const re = reinterpret_cast<const T* const>(data);
 		for(U32 i = 0; i < n_entries; ++i)
 			this->__data[i] = re[i];
     }
@@ -52,7 +52,7 @@ public:
     gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
     gt_summary& getSummary(gt_summary& gt_summary_object) const;
-    void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const;
+    void getTsTv(std::vector<ts_tv_object_type>& objects) const;
 };
 
 
@@ -117,7 +117,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidRLE<return_type>::comparePai
 
 		// Compare to next object
 		for(U32 j = i + 1; j < this->n_entries; ++j){
-			const U32 length   = YON_GT_RLE_LENGTH(this->at(j), shift, add);
+			const U32  length  = YON_GT_RLE_LENGTH(this->at(j), shift, add);
 			const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(j), shift, add);
 			const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(j), shift, add);
 			//const U16 comp_genotype = (((this->at(j) & ((1 << shift) - 1) << add) >> add) << 8) | ((this->at(j) & ((1 << shift) - 1) << (add+shift)) >> (add+shift));
@@ -216,7 +216,7 @@ GenotypeSum& GenotypeContainerDiploidRLE<return_type>::getSummary(gt_summary& gt
 }
 
 template <class return_type>
-void GenotypeContainerDiploidRLE<return_type>::updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const{
+void GenotypeContainerDiploidRLE<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
 	if(this->size() == 0)
 		return;
 
@@ -247,7 +247,7 @@ void GenotypeContainerDiploidRLE<return_type>::updateTransitionTransversions(std
 	// Cycle over genotype objects
 	U32 cum_position = 0;
 	for(U32 i = 0; i < this->size(); ++i){
-		const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 

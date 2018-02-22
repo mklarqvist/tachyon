@@ -1,5 +1,5 @@
-#ifndef CORE_TI_TV_OBJECT_H_
-#define CORE_TI_TV_OBJECT_H_
+#ifndef CORE_TS_TV_OBJECT_H_
+#define CORE_TS_TV_OBJECT_H_
 
 #include "../support/type_definitions.h"
 #include "meta_entry.h"
@@ -7,13 +7,13 @@
 namespace tachyon{
 namespace core{
 
-struct TiTvObject{
+struct TsTvObject{
 private:
-	typedef TiTvObject self_type;
+	typedef TsTvObject self_type;
 	typedef MetaEntry  meta_type;
 
 public:
-	TiTvObject() : n_transitions(0), n_transversions(0)
+	TsTvObject() : n_transitions(0), n_transversions(0)
 	{
 		for(U32 i = 0; i < 5; ++i){
 			this->base_conversions[i] = new U64[5];
@@ -21,7 +21,7 @@ public:
 		}
 	}
 
-	~TiTvObject(){
+	~TsTvObject(){
 		for(U32 i = 0; i < 5; ++i)
 			delete [] this->base_conversions[i];
 	}
@@ -67,4 +67,4 @@ public:
 
 
 
-#endif /* CORE_TI_TV_OBJECT_H_ */
+#endif /* CORE_TS_TV_OBJECT_H_ */

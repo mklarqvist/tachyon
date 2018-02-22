@@ -3,7 +3,7 @@
 
 #include "../core/genotype_object.h"
 #include "../core/genotype_summary.h"
-#include "../core/ti_tv_object.h"
+#include "../core/ts_tv_object.h"
 #include "../math/square_matrix.h"
 #include "datacontainer.h"
 
@@ -22,7 +22,7 @@ protected:
     typedef GenotypeSum                      gt_summary;
     typedef math::SquareMatrix<double>       square_matrix_type;
     typedef algorithm::PermutationManager    permutation_type;
-    typedef tachyon::core::TiTvObject        ti_tv_object_type;
+    typedef tachyon::core::TsTvObject        ts_tv_object_type;
 
     // Function pointers
 	typedef float (self_type::*matrix_comparator)(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB);
@@ -91,7 +91,7 @@ public:
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
 
-    virtual void updateTransitionTransversions(std::vector<ti_tv_object_type>& objects) const =0;
+    virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
@@ -101,7 +101,7 @@ public:
 protected:
     inline float comparatorSamplesDiploid(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB) const{
     	// If allele A and allele B is identical in both samples but the alleles are different
-		// e.g. 0|0 == 0|0
+		// e.g. 0|1 == 1|0
     	if((alleleA == ref_alleleA && alleleB == ref_alleleB) || (alleleA == ref_alleleB && alleleB == ref_alleleA)){ // identical but heterozygote
 			return(1);
 		}

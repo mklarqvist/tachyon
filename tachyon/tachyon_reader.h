@@ -247,25 +247,14 @@ public:
 	 */
 	bool seek_to_block(const U32& position);
 
+
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
+
+
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
-		//for(size_t i = 0; i < meta.size(); ++i){
-			//meta[0].toVCFString(stream, this->header);
-			//stream.put('\n');
-		//}
-		//return meta.size();
-
-		//std::cerr << block.size() << std::endl;
-
-		// Variant-balanced
-		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("AC", meta);
 		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
 
-		// Not variant-balanced
-		//containers::InfoContainer<U32>* it3 = this->get_info_container<U32>("AR2");
-
-		//containers::FormatContainer<float>* it4 = this->get_balanced_format_container<float>("GP", meta);
 		if(it2 != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
 			//math::SummaryStatistics ss = math::summary_statistics(*it4);
@@ -298,36 +287,7 @@ public:
 			*/
 		}
 		delete it2;
-
-		//if(it2!=nullptr)   std::cerr << "it  = " << it2->size() << std::endl;
-		//if(it3 != nullptr) std::cerr << "it2 = " << it3->size() << std::endl;
-		//delete it2;
-		return(meta.size());
-
-		containers::InfoContainer<U32>* af = this->get_info_container<U32>("AC");
-		if(af != nullptr){
-			std::cerr << "in info container: " << af->size() << std::endl;
-			for(U32 variant = 0; variant < af->size(); ++variant){
-				utility::to_vcf_string(stream, (*af)[variant]) << ' ';
-			}
-			std::cerr << std::endl;
-		} else std::cerr << "AC not found" << std::endl;
-		delete af;
-		return(0);
-
-		containers::FormatContainer<float>* it = this->get_format_container<float>("GP");
-		if(it != nullptr){
-			for(U32 variant = 0; variant < it->size(); ++variant){ // variants
-				for(U32 sample = 0; sample < (*it)[variant].size(); ++sample){ // individuals
-					utility::to_vcf_string(std::cout, (*it)[variant][sample]);
-					std::cerr<<"\t";
-				}
-				std::cerr << '\n';
-			}
-			std::cerr << std::endl;
-		}
-		delete it;
-		return this->block.size();
+		return(this->block.size());
 	}
 
 	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
@@ -348,11 +308,11 @@ public:
 		return((U64)2*this->header.getSampleNumber()*gt.size());
 	}
 
-	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TiTvObject>& global){
+	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TsTvObject>& global){
 		containers::GenotypeContainer gt(this->block);
-		std::vector<tachyon::core::TiTvObject> objects(this->header.getSampleNumber());
+		std::vector<tachyon::core::TsTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].updateTransitionTransversions(objects);
+			gt[i].getTsTv(objects);
 
 		for(U32 i = 0; i < objects.size(); ++i){
 			global[this->block.ppa_manager[i]] += objects[i];
@@ -400,16 +360,19 @@ public:
 	}
 
 public:
-	std::string   input_file;
-	std::ifstream stream;
-	U64           filesize;
+	std::string        input_file;
+	std::ifstream      stream;
+	U64                filesize;
 
+	// Actual data
+	block_entry_type   block;
+
+	// Supportive objects
 	settings_type      settings;
 	header_type        header;
 	footer_type        footer;
 	index_type         index;
 	checksum_type      checksums;
-	block_entry_type   block;
 	codec_manager_type codec_manager;
 };
 
