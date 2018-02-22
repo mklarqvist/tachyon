@@ -41,7 +41,8 @@ Viewing a `yon` file
 tachyon view -i <input.yon>
 ```
 
-### C++ API Examples
+## C++ API Examples
+### Standard containers
 ```c++
 /**<
  * Tachyon: https://github.com/mklarqvist/tachyon 
@@ -177,6 +178,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+### Genotype containers / objects
 More advanced example using genotype summary statistics
 ```c++
 /**<
@@ -260,6 +262,7 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+### Math objects
 ```c++
 /**<
 * Tachyon: https://github.com/mklarqvist/tachyon 
