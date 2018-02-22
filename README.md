@@ -121,47 +121,6 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 /**<
  * Tachyon: https://github.com/mklarqvist/tachyon 
  * In this example we will load data from
- * the VEP-generated CSQ string and tokenize it using
- * built-in utility functions
- */
-#include <tachyon/tachyon_reader.h>
-
-std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
-reader.getSettings().loadInfo("CSQ");
-reader.open(my_input_file);
-
-/**<
- * The `InfoContainer` class stores the data for each variant as
- * container[variant][data]. Both `InfoContainer` and `FormatContainer`
- * supports variant-balancing of the classes. Balancing refers to filling
- * variant sites in the file with empty objects if no target data is present
- * at that site.
- */
-while(reader.get_next_block()){ // As long as there are YON blocks available
-    containers::MetaContainer meta(reader.block);
-    containers::InfoContainer<std::string>* csq_data = reader.get_balanced_info_container<U32>("std::string", meta);
-    if(it2 != nullptr){
-        for(size_t i = 0; i < csq_data->size(); ++i){
-            if(csq_data->at(i).size() == 0) continue;
-            else {
-                meta.at(i).toVCFString(std::cout, this->header);
-                std::cout.put('\t');
-                // Tokenize CSQ string into a vector of strings
-                std::vector<std::string> ret = utility::split((*csq_data)[i],'|');
-                // Dump element 6 out of ret.size() total elements
-                std::cout << ret[6] << "\n";
-            }
-        }
-    }
-    delete csq_data;
-}
-```
-
-```c++
-/**<
- * Tachyon: https://github.com/mklarqvist/tachyon 
- * In this example we will load data from
  * the INFO field MEINFO into the iterable template class
  * `InfoContainer`. This is a complete example!
  */
@@ -181,6 +140,40 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
     containers::InfoContainer<std::string>* meinfo_container = reader.get_balanced_info_container<std::string>("MEINFO", meta);
     std::cout << meinfo_container->size() << std::endl;
     delete meinfo_container;
+}
+```
+
+```c++
+/**<
+ * Tachyon: https://github.com/mklarqvist/tachyon 
+ * In this example we will load data from
+ * the VEP-generated CSQ string and tokenize it using
+ * built-in utility functions
+ */
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadInfo("CSQ");
+reader.open(my_input_file);
+
+while(reader.get_next_block()){ // As long as there are YON blocks available
+    containers::MetaContainer meta(reader.block);
+    containers::InfoContainer<std::string>* csq_data = reader.get_balanced_info_container<U32>("std::string", meta);
+    if(it2 != nullptr){
+        for(size_t i = 0; i < csq_data->size(); ++i){
+            if(csq_data->at(i).size() == 0) continue;
+            else {
+                meta.at(i).toVCFString(std::cout, this->header);
+                std::cout.put('\t');
+                // Tokenize CSQ string into a vector of strings
+                std::vector<std::string> ret = utility::split((*csq_data)[i],'|');
+                // Dump element 6 out of ret.size() total elements
+                std::cout << ret[6] << "\n";
+            }
+        }
+    }
+    delete csq_data;
 }
 ```
 
