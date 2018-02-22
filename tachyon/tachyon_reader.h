@@ -257,13 +257,16 @@ public:
 
 		//
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
-			std::cerr << i << ": " << block.index_entry.info_offsets[i].key << "->" << this->header.getEntry(block.index_entry.info_offsets[i].key).ID << std::endl;
+			std::cerr << i << ": " << this->header.mapTable[block.index_entry.info_offsets[i].key] << "->" << this->header.getEntry(this->header.mapTable[block.index_entry.info_offsets[i].key]).ID << std::endl;
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_info_patterns; ++i){
 			std::cerr << i << ": ";
-			for(U32 j = 0; j < block.index_entry.info_bit_vectors[i].n_keys; ++j)
-				std::cerr << block.index_entry.info_bit_vectors[i].keys[j] << ",";
+			for(U32 j = 0; j < block.index_entry.info_bit_vectors[i].n_keys; ++j){
+				const U32& key = this->header.mapTable[this->block.index_entry.info_offsets[block.index_entry.info_bit_vectors[i].keys[j]].key];
+				std::cerr << this->header.getEntry(key).ID << ",";
+				//assert(this->header.getEntry(key).TYPE == 3);
+			}
 			std::cerr << std::endl;
 		}
 

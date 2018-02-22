@@ -320,11 +320,13 @@ bool Importer::add(bcf_entry_type& entry){
 bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
+		assert(this->header->map.at(entry.filterID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER));
 		this->filter_fields.setGet(entry.filterID[i].mapID);
 	}
 
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
+		assert(this->header->map.at(entry.infoID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO));
 		const U32 mapID = this->info_fields.setGet(entry.infoID[i].mapID);
 
 		stream_container& target_container = this->block.info_containers[mapID];
@@ -378,6 +380,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 	for(U32 i = 0; i < entry.formatPointer; ++i){
 		assert(entry.formatID[i].mapID != -1);
+		assert(this->header->map.at(entry.formatID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT));
+
 		const U32 mapID = this->format_fields.setGet(entry.formatID[i].mapID);
 		U32 internal_pos = entry.formatID[i].l_offset;
 

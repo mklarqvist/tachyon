@@ -37,7 +37,8 @@ struct MetaHotController{
 		gt_primtive_type(0),
 		diploid(0),
 		mixed_ploidy(0),
-		unused(6)
+		gt_available(0),
+		unused(0)
 	{}
 
 	// Dtor

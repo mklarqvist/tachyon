@@ -63,6 +63,10 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 	if(!this->parseSampleLine(data, offset, length))
 		return false;
 
+	/**<
+	 * Store IDX values from BCF in a vector
+	 */
+	std::vector<map_entry_type> temp_map;
 	for(U32 i = 0 ; i < this->lines.size(); ++i){
 		if(this->lines[i].isIndexable == false)
 			continue;
@@ -71,29 +75,48 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		S32 idx = -1;
 		for(U32 j = 0; j < this->lines[i].pairs.size(); ++j){
 			//std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
-			if(this->lines[i].pairs[j].KEY == "IDX"){
+			if(this->lines[i].pairs[j].KEY == "IDX")
 				idx = atoi(&this->lines[i].pairs[j].VALUE[0]);
-			}
 		}
 		//std::cerr << "IDX in: " << idx << std::endl;
 		assert(idx != -1);
 
-		map_entry_type map_value(this->lines[i].pairs[0].VALUE, this->lines[i].type, idx);
-		this->map.push_back(map_value);
+		temp_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+		switch((int)this->lines[i].type){
+		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO):   temp_map.back().isInfo   = true; break;
+		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER): temp_map.back().isFilter = true; break;
+		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT): temp_map.back().isFormat = true; break;
+		}
 	}
 
-	std::sort(this->map.begin(), this->map.end());
-	const S32 largest_idx = this->map.back().IDX;
-	//for(U32 i = 0; i < this->map.size(); ++i)
-	//	std::cerr << this->map[i].IDX << '\t' << this->map[i].ID << std::endl;
+	// Sort data
+	std::sort(temp_map.begin(), temp_map.end());
+	this->map.push_back(temp_map[0]);
+	for(U32 i = 1; i < temp_map.size(); ++i){
+		if(temp_map[i].IDX == this->map.back().IDX){
+			this->map.back().isFilter += temp_map[i].isFilter;
+			this->map.back().isFormat += temp_map[i].isFormat;
+			this->map.back().isInfo   += temp_map[i].isInfo;
+			continue;
+		}
+		this->map.push_back(temp_map[i]);
+		//std::cerr << "sorted: " << i << "->" << temp_map[i].IDX << std::endl;
+	}
 
-	//std::cerr << "largest: " << largest_idx << std::endl;
+	const S32 largest_idx = this->map.back().IDX;
+	//std::cerr << "largest:" << largest_idx << std::endl;
 	this->mapTable = new U32[largest_idx + 1];
 	memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
 	S32 localID = 0;
-	for(U32 i = 0; i < this->map.size(); ++i){
+	mapTable[this->map[0].IDX] = 0;
+	for(U32 i = 1; i < this->map.size(); ++i){
+		if(this->map[i - 1].IDX == this->map[i].IDX){
+			mapTable[this->map[i].IDX] = mapTable[this->map[i-1].IDX];
+			//std::cerr << i << "->" << mapTable[this->map[i].IDX] << std::endl;
+			continue;
+		}
 		mapTable[this->map[i].IDX] = localID++;
-		//std::cerr << i << "->" << mapTable[i] << std::endl;
+		//std::cerr << i << "->" << mapTable[this->map[i].IDX] << std::endl;
 	}
 
 	if(this->map.size()*2 < 1024)
