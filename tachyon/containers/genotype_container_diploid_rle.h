@@ -1,7 +1,7 @@
 #ifndef CONTAINERS_GENOTYPE_CONTAINER_DIPLOID_RLE_H_
 #define CONTAINERS_GENOTYPE_CONTAINER_DIPLOID_RLE_H_
 
-#include "genotype_data_container_interface.h"
+#include "genotype_container_interface.h"
 
 namespace tachyon{
 namespace containers{

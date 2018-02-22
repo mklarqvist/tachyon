@@ -188,14 +188,33 @@ struct BCFEntry{
 
 	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
 
-	inline const U64 hashFilter(void){return(XXH64((const void*)this->filterID, sizeof(U32)*this->filterPointer, BCF_HASH_SEED));}
-	inline const U64 hashInfo(void)  {return(XXH64((const void*)this->infoID,   sizeof(U32)*this->infoPointer,   BCF_HASH_SEED));}
-	inline const U64 hashFormat(void){return(XXH64((const void*)this->formatID, sizeof(U32)*this->formatPointer, BCF_HASH_SEED));}
+	inline const U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }
+	inline const U64 hashInfo(void){ return(this->__hashTarget(this->infoID, this->infoPointer)); }
+	inline const U64 hashFormat(void){ return(this->__hashTarget(this->formatID, this->formatPointer)); }
 
 	// Iterators over fields
 	bool nextFilter(S32& value, U32& position);
 	bool nextInfo(S32& value, U32& length, BYTE& value_type, U32& position);
 	bool nextFormat(S32& value, U32& length, BYTE& value_type, U32& position);
+
+private:
+	const U64 __hashTarget(const BCFKeyTuple* tuples, const U16& n_entries){
+		XXH64_state_t* const state = XXH64_createState();
+		if (state==NULL) abort();
+
+		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
+		if (resetResult == XXH_ERROR) abort();
+
+		for(U32 i = 0; i < n_entries; ++i){
+			XXH_errorcode const addResult = XXH64_update(state, (const void*)&tuples[i].mapID, sizeof(S32));
+			if (addResult == XXH_ERROR) abort();
+		}
+
+		U64 hash = XXH64_digest(state);
+		XXH64_freeState(state);
+
+		return hash;
+	}
 
 public:
 	U32 l_data;     // byte width

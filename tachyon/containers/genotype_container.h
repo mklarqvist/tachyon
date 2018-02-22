@@ -15,22 +15,21 @@ template <class T> class GenotypeContainerDiploidSimple;
 
 class GenotypeContainer{
 private:
-    typedef GenotypeContainer             self_type;
-    typedef GenotypeContainerInterface    value_type;
-    typedef value_type&                   reference;
-    typedef const value_type&             const_reference;
-    typedef value_type*                   pointer;
-    typedef const value_type*             const_pointer;
-    typedef std::ptrdiff_t                difference_type;
-    typedef std::size_t                   size_type;
-    typedef MetaContainer                 meta_container_type;
-    typedef tachyon::core::MetaEntry      meta_type;
-    typedef io::BasicBuffer               buffer_type;
-    typedef containers::GenotypeSum       gt_summary_type;
+    typedef GenotypeContainer          self_type;
+    typedef GenotypeContainerInterface value_type;
+    typedef value_type&                reference;
+    typedef const value_type&          const_reference;
+    typedef value_type*                pointer;
+    typedef const value_type*          const_pointer;
+    typedef std::ptrdiff_t             difference_type;
+    typedef std::size_t                size_type;
+    typedef MetaContainer              meta_container_type;
+    typedef tachyon::core::MetaEntry   meta_type;
+    typedef io::BasicBuffer            buffer_type;
+    typedef containers::GenotypeSum    gt_summary_type;
 
     // Function pointers
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
-
 
 public:
     GenotypeContainer(const DataBlock& block);
@@ -82,16 +81,23 @@ public:
 	inline reference       at(const U32& position){ return(this->__iterators[position]); }
 	inline const_reference at(const U32& position) const{ return(this->__iterators[position]); }
 
-	// Getters
+	// Advanced getters
 	inline GenotypeContainerDiploidSimple<BYTE>* getDiploidSimpleByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U16>* getDiploidSimpleU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U32>* getDiploidSimpleU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U64>* getDiploidSimpleU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<BYTE>* getDiploidRLEByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U16>* getDiploidRLEU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U32>* getDiploidRLEU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U64>* getDiploidRLEU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
-
+	inline GenotypeContainerDiploidSimple<U16>*  getDiploidSimpleU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U32>*  getDiploidSimpleU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U64>*  getDiploidSimpleU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<BYTE>*    getDiploidRLEByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U16>*     getDiploidRLEU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U32>*     getDiploidRLEU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<BYTE>* getDiploidSimpleByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U16>*  getDiploidSimpleU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U32>*  getDiploidSimpleU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U64>*  getDiploidSimpleU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<BYTE>*    getDiploidRLEByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U16>*     getDiploidRLEU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U32>*     getDiploidRLEU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
 
 	// GT summary
 	gt_summary_type calculateSummary(void) const{
@@ -116,7 +122,5 @@ private:
 
 }
 }
-
-
 
 #endif /* CONTAINERS_GENOTYPE_CONTAINER_H_ */

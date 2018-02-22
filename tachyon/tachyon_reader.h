@@ -255,6 +255,21 @@ public:
 		containers::MetaContainer meta(this->block);
 		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
 
+		//
+		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+			std::cerr << i << ": " << block.index_entry.info_offsets[i].key << "->" << this->header.getEntry(block.index_entry.info_offsets[i].key).ID << std::endl;
+		}
+
+		for(U32 i = 0; i < block.index_entry.n_info_patterns; ++i){
+			std::cerr << i << ": ";
+			for(U32 j = 0; j < block.index_entry.info_bit_vectors[i].n_keys; ++j)
+				std::cerr << block.index_entry.info_bit_vectors[i].keys[j] << ",";
+			std::cerr << std::endl;
+		}
+
+		delete it2;
+		return 0;
+
 		if(it2 != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
 			//math::SummaryStatistics ss = math::summary_statistics(*it4);
