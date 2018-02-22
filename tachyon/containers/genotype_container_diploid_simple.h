@@ -96,7 +96,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidSimple<return_type>::compare
 	U32 start_position = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		// self check
-		const U32 ref_length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const U32  ref_length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		const BYTE ref_alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		const BYTE ref_alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 		//const U16 ref_genotype      = ((YON_GT_RLE_ALLELE_A(this->at(i), shift, add)) << 8) | (YON_GT_RLE_ALLELE_B(this->at(i), shift, add));

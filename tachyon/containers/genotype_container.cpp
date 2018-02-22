@@ -87,7 +87,6 @@ GenotypeContainer::GenotypeContainer(const DataBlock& block) :
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
-			// new( &this->__iterators[i] ) value_type( &container.buffer_data_uncompressed.data[current_offset], getStride(i), this->__meta_container[i] );
 			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
 			const U32 target    = (this->*getTarget)(block.gt_support_data_container.buffer_strides_uncompressed, i);
 
@@ -158,18 +157,16 @@ GenotypeContainer::GenotypeContainer(const DataBlock& block) :
 			}
 		}
 
-		//std::cerr << "fixed stride" << std::endl;
-		//std::cerr << current_offset_rle << '\t' << block.gt_rle_container.buffer_data_uncompressed.size() << std::endl;
 		assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 	}
 }
 
 GenotypeContainer::~GenotypeContainer(){
-		for(std::size_t i = 0; i < this->n_entries; ++i)
-			(this->__iterators + i)->~GenotypeContainerInterface();
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		(this->__iterators + i)->~GenotypeContainerInterface();
 
-		::operator delete[](static_cast<void*>(this->__iterators));
+	::operator delete[](static_cast<void*>(this->__iterators));
 }
 
 }

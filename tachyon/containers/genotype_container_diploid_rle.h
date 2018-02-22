@@ -100,7 +100,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidRLE<return_type>::comparePai
 	U32 start_position = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		// self check
-		const U32 ref_length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const U32  ref_length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		const BYTE ref_alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		const BYTE ref_alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
@@ -163,7 +163,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::g
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
-		const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 

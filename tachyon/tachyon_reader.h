@@ -276,10 +276,10 @@ public:
 				else {
 					meta.at(i).toVCFString(std::cout, this->header);
 					std::cout << "\t";
-					//utility::to_vcf_string(std::cout, (*it2)[i]);
-					std::vector<std::string> ret = utility::split((*it2)[i],'|');
+					utility::to_vcf_string(std::cout, (*it2)[i]);
+					//std::vector<std::string> ret = utility::split((*it2)[i],'|');
 					//for(U32 k = 0; k < ret.size(); ++k)
-					std::cerr << ret[6] << "\n";
+					//std::cerr << ret[6] << "\n";
 					std::cout.put('\n');
 				}
 			}

@@ -14,8 +14,9 @@ private:
 	typedef algorithm::PermutationManager ppa_type;
 
 public:
-
-	SquareMatrix(const U32 width) : __width(width), __data(new T*[__width])
+	SquareMatrix(const U32 width) :
+		__width(width),
+		__data(new T*[__width])
 	{
 		for(U32 i = 0; i < this->__width; ++i){
 			this->__data[i] = new T[width];
