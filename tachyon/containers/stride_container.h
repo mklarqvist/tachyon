@@ -103,10 +103,10 @@ public:
 private:
     void __setup(const data_container_type& container){
     	switch(container.header_stride.controller.type){
-		case(tachyon::core::YON_TYPE_8B):  (this->__allocate<BYTE>(container));  break;
-		case(tachyon::core::YON_TYPE_16B): (this->__allocate<U16>(container));    break;
-		case(tachyon::core::YON_TYPE_32B): (this->__allocate<U32>(container));    break;
-		case(tachyon::core::YON_TYPE_64B): (this->__allocate<U64>(container));    break;
+		case(tachyon::core::YON_TYPE_8B):  (this->__allocate<BYTE>(container)); break;
+		case(tachyon::core::YON_TYPE_16B): (this->__allocate<U16>(container));  break;
+		case(tachyon::core::YON_TYPE_32B): (this->__allocate<U32>(container));  break;
+		case(tachyon::core::YON_TYPE_64B): (this->__allocate<U64>(container));  break;
 		default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive!" << std::endl; exit(1);
 		}
     }

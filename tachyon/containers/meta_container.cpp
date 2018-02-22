@@ -78,7 +78,6 @@ void MetaContainer::__ctor_setup(const DataBlock& block){
 	if(block.meta_info_map_ids.buffer_data_uncompressed.size()){
 		assert(block.meta_info_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
 		const S32* const info_ids = reinterpret_cast<const S32* const>(block.meta_info_map_ids.buffer_data_uncompressed.data());
-		std::cerr << "uniformity: " << block.meta_info_map_ids.header.isUniform() << std::endl;
 		if(block.meta_info_map_ids.header.isUniform()){
 			assert(block.meta_info_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
 			//n_info_ids = this->size();

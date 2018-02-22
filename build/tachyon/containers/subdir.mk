@@ -8,6 +8,8 @@ CPP_SRCS += \
 ../tachyon/containers/datablock.cpp \
 ../tachyon/containers/datacontainer.cpp \
 ../tachyon/containers/format_container_string.cpp \
+../tachyon/containers/genotype_container.cpp \
+../tachyon/containers/info_container_string.cpp \
 ../tachyon/containers/meta_cold_container.cpp \
 ../tachyon/containers/meta_container.cpp \
 ../tachyon/containers/meta_hot_container.cpp \
@@ -18,6 +20,8 @@ OBJS += \
 ./tachyon/containers/datablock.o \
 ./tachyon/containers/datacontainer.o \
 ./tachyon/containers/format_container_string.o \
+./tachyon/containers/genotype_container.o \
+./tachyon/containers/info_container_string.o \
 ./tachyon/containers/meta_cold_container.o \
 ./tachyon/containers/meta_container.o \
 ./tachyon/containers/meta_hot_container.o \
@@ -28,6 +32,8 @@ CPP_DEPS += \
 ./tachyon/containers/datablock.d \
 ./tachyon/containers/datacontainer.d \
 ./tachyon/containers/format_container_string.d \
+./tachyon/containers/genotype_container.d \
+./tachyon/containers/info_container_string.d \
 ./tachyon/containers/meta_cold_container.d \
 ./tachyon/containers/meta_container.d \
 ./tachyon/containers/meta_hot_container.d \

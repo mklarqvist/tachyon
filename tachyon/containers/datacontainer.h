@@ -11,8 +11,11 @@
 namespace tachyon{
 namespace containers{
 
-
-// Stream container for importing
+/**<
+ * Primary data container in Tachyon. Stores the data itself
+ * in compressed/uncompressed form and possibly the data stride
+ * size in compressed/uncompressed form
+ */
 class DataContainer{
 	typedef DataContainer                   self_type;
 	typedef io::BasicBuffer                 buffer_type;
@@ -25,21 +28,27 @@ public:
 	~DataContainer();
 
 	/**<
-	 *
-	 * @param value
+	 * Set the primitive (or higher-order primitive) type for
+	 * the objects in this container.
+	 * @param value Data primitive type
 	 */
 	inline void setType(const tachyon::core::TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
 
 	/**<
-	 *
-	 * @param value
+	 * Set the stride size of this container to some value.
+	 * The value -1 is reserved for the case when the controller
+	 * flag for mixed strides is set to FALSE. Valid numbers are
+	 * [0,..inf)
+	 * @param value Stride size
 	 */
 	inline void setStrideSize(const S32 value){ this->header.stride = value; }
 
 	/**<
-	 *
-	 * @param value
-	 * @return
+	 * Check if the stride size of this container matches the
+	 * supplied stride size. Always returns FALSE if the container
+	 * has mixed stride sizes
+	 * @param value Stride size to compare against
+	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
 	inline const bool checkStrideSize(const U32& value) const{
 		if(this->header.hasMixedStride() == false)
@@ -49,9 +58,10 @@ public:
 	}
 
 	/**<
-	 *
+	 * Triggers the necessary switches to set this container
+	 * as having mixed strides
 	 */
-	inline void setMixedStrides(void){
+	inline void triggerMixedStride(void){
 		this->header.stride = -1;
 		this->header.controller.mixedStride = true;
 	}
@@ -59,21 +69,18 @@ public:
 	// Operators
 	inline void operator++(void){ ++this->n_entries; }
 	inline void addStride(const U32 value){ this->buffer_strides_uncompressed += (U32)value; }
+	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const U32& size(void) const{ return(this->n_entries); }
 
 	template <class T>
 	inline void operator+=(const T& value){
-		//assert(this->header.controller.type == 0);
 		this->buffer_data_uncompressed += (T)value;
 		++this->n_additions;
 	}
 
-	inline const U32& size(void) const{ return(this->n_entries); }
-
 	void reset(void);
 	void resize(const U32 size);
-
-	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
 
 
 	/**<
@@ -98,8 +105,9 @@ public:
 	bool checkCRC(int target = 0);
 
 	/**<
-	 *
-	 * @return
+	 * Checks if the current data is uniform given the provided
+	 * stride size
+	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
 	bool checkUniformity(void);
 
@@ -112,10 +120,17 @@ public:
 	void reformat(void);
 
 	/**<
-	 *
+	 * This function is caled during import to shrink each
+	 * stride size element to the smallest possible primitive
+	 * type to describe it without losing precision.
 	 */
 	void reformatStride(void);
 
+	/**<
+	 * Utility function that calculates the space this
+	 * object would take on disk if written out
+	 * @return Total size in bytes
+	 */
 	inline const U32 getObjectSize(void) const{
 		U32 total_size = 0;
 		total_size += header.getObjectSize();

@@ -212,6 +212,10 @@ public:
 	BYTE l_filter_bitvector;
 };
 
+/**<
+ * Base structure describing the fixed sized componets
+ * of the data block
+ */
 struct DataBlockHeader : public DataBlockHeaderBase{
 private:
 	typedef DataBlockHeader           self_type;
@@ -236,30 +240,63 @@ public:
 	void reset(void);
 
 	// Allocate offset vectors
-	void allocateInfoDiskOffsets(const U32& size){
+	inline void allocateInfoDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->info_offsets;
 		this->info_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateFormatDiskOffsets(const U32& size){
+	inline void allocateFormatDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
 		this->format_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateFilterDiskOffsets(const U32& size){
+	inline void allocateFilterDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->filter_offsets;
 		this->filter_offsets = new offset_minimal_type[size];
 	}
 
-	void allocateDiskOffsets(const U32& info, const U32& format, const U32& filter){
+	inline void allocateDiskOffsets(const U32& info, const U32& format, const U32& filter){
 		this->allocateInfoDiskOffsets(info);
 		this->allocateFormatDiskOffsets(format);
 		this->allocateFilterDiskOffsets(filter);
 	}
 
+	// During import we need to intialize and
+	// resize these these pointers to fit the
+	// data we want to store
+	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
+
+	const U32 getObjectSize(void) const{
+		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
+		total_size += 2*sizeof(U32)*this->n_info_streams;
+		total_size += 2*sizeof(U32)*this->n_format_streams;
+		total_size += 2*sizeof(U32)*this->n_filter_streams;
+
+		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
+		for(U32 i = 0; i < this->n_info_patterns; ++i)
+			total_size += this->info_bit_vectors[i].getBaseSize();
+
+		total_size += this->n_info_patterns*info_bitvector_width;
+
+		BYTE format_bitvector_width = ceil((float)this->n_format_streams/8);
+		for(U32 i = 0; i < this->n_format_patterns; ++i)
+			total_size += this->format_bit_vectors[i].getBaseSize();
+
+		total_size += this->n_format_patterns*format_bitvector_width;
+
+		BYTE filter_bitvector_width = ceil((float)this->n_filter_streams/8);
+		for(U32 i = 0; i < this->n_filter_patterns; ++i)
+			total_size += this->filter_bit_vectors[i].getBaseSize();
+
+		total_size += this->n_filter_patterns*filter_bitvector_width;
+
+		return total_size;
+	}
+
+private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const DataBlockHeaderBase* const base = reinterpret_cast<const DataBlockHeaderBase* const>(&entry);
 		stream << *base;
@@ -349,38 +386,6 @@ public:
 		}
 
 		return(stream);
-	}
-
-	// During import we need to intialize and
-	// resize these these pointers to fit the
-	// data we want to store
-	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
-
-	const U32 getObjectSize(void) const{
-		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
-		total_size += 2*sizeof(U32)*this->n_info_streams;
-		total_size += 2*sizeof(U32)*this->n_format_streams;
-		total_size += 2*sizeof(U32)*this->n_filter_streams;
-
-		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
-		for(U32 i = 0; i < this->n_info_patterns; ++i)
-			total_size += this->info_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_info_patterns*info_bitvector_width;
-
-		BYTE format_bitvector_width = ceil((float)this->n_format_streams/8);
-		for(U32 i = 0; i < this->n_format_patterns; ++i)
-			total_size += this->format_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_format_patterns*format_bitvector_width;
-
-		BYTE filter_bitvector_width = ceil((float)this->n_filter_streams/8);
-		for(U32 i = 0; i < this->n_filter_patterns; ++i)
-			total_size += this->filter_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_filter_patterns*filter_bitvector_width;
-
-		return total_size;
 	}
 
 private:

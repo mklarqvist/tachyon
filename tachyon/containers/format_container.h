@@ -10,7 +10,7 @@ namespace tachyon{
 namespace containers{
 
 /**<
- * Primary class for FORMAT data
+ * Primary class for FORMAT data in Tachyon
  */
 template <class return_type>
 class FormatContainer{

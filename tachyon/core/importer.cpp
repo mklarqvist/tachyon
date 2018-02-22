@@ -345,7 +345,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		++target_container;
 		if(!target_container.checkStrideSize(entry.infoID[i].l_stride))
-			target_container.setMixedStrides();
+			target_container.triggerMixedStride();
 
 		target_container.addStride(entry.infoID[i].l_stride);
 
@@ -407,7 +407,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		++target_container;
 		if(!target_container.checkStrideSize(entry.formatID[i].l_stride))
-			target_container.setMixedStrides();
+			target_container.triggerMixedStride();
 
 		target_container.addStride(entry.formatID[i].l_stride);
 

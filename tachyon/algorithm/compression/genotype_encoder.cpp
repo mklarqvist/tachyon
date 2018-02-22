@@ -41,7 +41,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	if(line.body->n_allele == 2){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
 		if(!support.checkStrideSize(1))
-			support.setMixedStrides();
+			support.triggerMixedStride();
 
 		support.addStride(1);
 		meta_base.controller.gt_rle           = true;
@@ -105,7 +105,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		// RLE is cheaper
 		if(cost.word_width*cost.n_runs < costBCFStyle){
 			if(!support.checkStrideSize(2))
-				support.setMixedStrides();
+				support.triggerMixedStride();
 
 			support.addStride(2);
 			//std::cerr << line.body->POS+1 << "\t1\t0" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << cost.n_runs*cost.word_width << std::endl;
@@ -146,7 +146,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		// BCF style is cheaper
 		else {
 			if(!support.checkStrideSize(3))
-				support.setMixedStrides();
+				support.triggerMixedStride();
 
 			support.addStride(3);
 			support += (U32)this->n_samples*2;

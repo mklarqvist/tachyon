@@ -12,7 +12,7 @@ namespace tachyon{
 namespace containers{
 
 /**
- * Primary Tachyon object: stores containers of data and
+ * Primary Tachyon block object: stores containers of data and
  * provides encapsulated and abstracted access to its
  * contents.
  */
@@ -145,6 +145,7 @@ private:
 	 */
 	void updateContainer(container_type& container, bool reformat = true);
 
+private:
 	// Write everything
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.index_entry;

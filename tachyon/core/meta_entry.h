@@ -9,12 +9,6 @@
 #include "meta_hot.h"
 
 namespace tachyon{
-
-// Forward declaration for friendship
-namespace containers{
-	class MetaContainer;
-}
-
 namespace core{
 
 /**< Envelope record for meta hot-cold split
@@ -25,11 +19,12 @@ namespace core{
  */
 struct MetaEntry{
 private:
-	typedef MetaHot hot_entry;
-	typedef MetaCold cold_entry;
-	typedef containers::DataContainer container_type;
-	typedef TachyonHeader header_type;
-	typedef io::BasicBuffer buffer_type;
+	typedef MetaHot                           hot_entry;
+	typedef MetaCold                          cold_entry;
+	typedef containers::DataContainer         container_type;
+	typedef containers::core::DataBlockHeader datablock_header_type;
+	typedef TachyonHeader                     header_type;
+	typedef io::BasicBuffer                   buffer_type;
 
 public:
 	MetaEntry();
@@ -55,15 +50,15 @@ public:
 	void toVCFString(buffer_type& dest, const header_type& header) const;
 
 	// Check if a field is set
-	inline const bool check_info_field(const containers::core::DataBlockHeader& block, const U32 info_identifier) const{
+	inline const bool check_info_field(const datablock_header_type& block, const U32 info_identifier) const{
 		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
 	}
 
-	inline const bool check_format_field(const containers::core::DataBlockHeader& block, const U32 format_identifier) const{
+	inline const bool check_format_field(const datablock_header_type& block, const U32 format_identifier) const{
 		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
 	}
 
-	inline const bool check_filter_field(const containers::core::DataBlockHeader& block, const U32 filter_identifier) const{
+	inline const bool check_filter_field(const datablock_header_type& block, const U32 filter_identifier) const{
 		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
 	}
 
@@ -94,10 +89,11 @@ public:
 			switch(position){
 			case(0): return(this->hot.ref_alt.getRefAlleleLiteral());
 			case(1): return(this->hot.ref_alt.getAltAlleleLiteral());
-			default: std::cerr << "Illegal allele in biallelic!" << std::endl; exit(1);
+			default: std::cerr << utility::timestamp("ERROR") << "Illegal allele in biallelic!" << std::endl;
+			         exit(1);
 			}
 		} else {
-			std::cerr << "cannot get this" << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Variant is not biallelic!" << std::endl;
 			exit(1);
 		}
 	}
@@ -114,8 +110,6 @@ private:
 	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
 
 public:
-	friend containers::MetaContainer;
-
 	bool       loaded_cold;       // Boolean triggered if cold meta object was overloaded
 	S32        info_pattern_id;   // Info pattern ID
 	S32        filter_pattern_id; // Filter pattern ID
