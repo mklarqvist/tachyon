@@ -312,8 +312,14 @@ public:
 		if(manager.PPA.size() == 0)
 			return true;
 
+		U32 n_samples = manager.n_samples;
+		if(n_samples < 100){
+			n_samples = 100;
+			manager.PPA.resize(n_samples*sizeof(U32));
+		}
+
 		this->buffer.reset();
-		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
+		this->buffer.resize(n_samples*sizeof(U32) + 65536);
 
 		U32 crc          = crc32(0, NULL, 0);
 		manager.crc      = crc32(crc, (Bytef*)manager.PPA.data(), manager.PPA.size());
@@ -418,7 +424,12 @@ public:
 
 	const bool decode(permutation_type& manager){
 		this->buffer.reset();
-		this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
+		U32 n_samples = manager.n_samples;
+		if(n_samples < 100){
+			n_samples = 100;
+			manager.PPA.resize(n_samples*sizeof(U32));
+		}
+		this->buffer.resize(n_samples*sizeof(U32) + 65536);
 		size_t ret = ZSTD_decompress(this->buffer.data(),
 			    					 this->buffer.capacity(),
 									 manager.PPA.data(),

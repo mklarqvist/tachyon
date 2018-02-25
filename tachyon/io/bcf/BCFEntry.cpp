@@ -41,7 +41,7 @@ BCFEntry::BCFEntry(const self_type& other):
 	ref_alt(other.ref_alt),
 	isGood(other.isGood),
 	data(new char[other.l_capacity]),
-	body(reinterpret_cast<body_type*>(this->data)),
+	body(nullptr),
 	alleles(new string_type[100]),
 	ID(nullptr),
 	hasGenotypes(other.hasGenotypes),
@@ -60,12 +60,19 @@ BCFEntry::BCFEntry(const self_type& other):
 	formatID(new BCFKeyTuple[256])
 {
 	memcpy(this->data, other.data, other.l_data);
+	this->body = reinterpret_cast<body_type*>(this->data);
+
 	for(U32 i = 0; i < 256; ++i){
 		this->filterID[i] = other.filterID[i];
 		this->formatID[i] = other.formatID[i];
 		this->infoID[i]   = other.infoID[i];
 	}
-	// have to call parse2 again
+
+	U32 internal_pos = sizeof(body_type);
+	this->__parseID(internal_pos);
+	this->__parseRefAlt(internal_pos);
+	this->SetRefAlt();
+
 }
 
 BCFEntry::BCFEntry(self_type&& other) noexcept :
