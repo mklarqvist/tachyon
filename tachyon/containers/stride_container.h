@@ -13,6 +13,7 @@ namespace containers{
 template <class return_primitive = U32>
 class StrideContainer{
 private:
+	typedef StrideContainer   self_type;
     typedef std::size_t       size_type;
     typedef return_primitive  value_type;
     typedef value_type&       reference;
@@ -25,17 +26,48 @@ private:
 public:
     StrideContainer() :
     	isUniform_(false),
+		n_capacity(1000),
 		n_entries(0),
-		__entries(nullptr)
+		__entries(new value_type[this->capacity()])
 	{
     }
 
+    StrideContainer(const size_type start_capacity) :
+       	isUniform_(false),
+   		n_capacity(start_capacity),
+   		n_entries(0),
+   		__entries(new value_type[this->capacity()])
+	{
+	}
+
+    StrideContainer(const value_type uniform_value, const size_type n_entries) :
+		isUniform_(true),
+		n_capacity(n_entries),
+		n_entries(n_entries),
+		__entries(new value_type[this->capacity()])
+	{
+    	for(size_type i = 0; i < this->size(); ++i)
+    		this->__entries[i] = uniform_value;
+	}
+
     StrideContainer(const data_container_type& container) :
     	isUniform_(false),
+		n_capacity(0),
 		n_entries(0),
 		__entries(nullptr)
     {
     	this->__setup(container);
+    }
+
+    StrideContainer(const self_type& other) :
+    	isUniform_(other.isUniform_),
+		n_capacity(other.n_capacity),
+		n_entries(other.n_entries),
+		__entries(new value_type[this->size()])
+    {
+    	// Do not invoke memcpy as these two objects may have different primitive types
+    	for(size_type i = 0; i < this->size(); ++i)
+    		this->__entries[i] = other.__entries[i];
     }
 
     ~StrideContainer(void){
@@ -91,6 +123,7 @@ public:
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
+    inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__entries[0]); }
@@ -100,24 +133,55 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
+    /**<
+     * Overloaded += operator for incrementally adding values
+     * @param value Target value to be added
+     */
+    template <class T>
+    inline void operator+=(const T& value){
+    	if(this->size() + 1 == this->capacity())
+    		this->resize();
+
+    	this->__entries[this->n_entries] = value;
+    }
+
+    template <class T>
+    inline void add(const T& value){ *this += value; }
+
+    void resize(const size_type new_capacity){
+    	if(new_capacity < this->capacity()){
+    		this->n_entries = new_capacity;
+    		return;
+    	}
+
+    	pointer old = this->__entries;
+    	this->__entries = new value_type[new_capacity];
+    	memcpy(this->data(), old, this->size()*sizeof(value_type));
+    	delete [] old;
+    	this->n_capacity =  new_capacity;
+    }
+
+    void resize(void){ this->resize(this->capacity()*2); }
+
 private:
     void __setup(const data_container_type& container){
     	switch(container.header_stride.controller.type){
-		case(tachyon::core::YON_TYPE_8B):  (this->__allocate<BYTE>(container)); break;
-		case(tachyon::core::YON_TYPE_16B): (this->__allocate<U16>(container));  break;
-		case(tachyon::core::YON_TYPE_32B): (this->__allocate<U32>(container));  break;
-		case(tachyon::core::YON_TYPE_64B): (this->__allocate<U64>(container));  break;
+		case(tachyon::core::YON_TYPE_8B):  this->__allocate<BYTE>(container); break;
+		case(tachyon::core::YON_TYPE_16B): this->__allocate<U16>(container);  break;
+		case(tachyon::core::YON_TYPE_32B): this->__allocate<U32>(container);  break;
+		case(tachyon::core::YON_TYPE_64B): this->__allocate<U64>(container);  break;
 		default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive!" << std::endl; exit(1);
 		}
     }
 
     template <class intrinsic_type>
     void __allocate(const data_container_type& container){
-    	assert(container.buffer_strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
-    	this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
+    	assert(container.buffer_strides_uncompressed.size() % sizeof(value_type) == 0);
+    	this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(value_type);
     	this->__entries = new value_type[this->size()];
+    	this->n_capacity = this->size();
 
-    	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.buffer_strides_uncompressed.data());
+    	const value_type* const strides = reinterpret_cast<const value_type* const>(container.buffer_strides_uncompressed.data());
 
     	for(size_type i = 0; i < this->size(); ++i)
     		this->__entries[i] = strides[i];
@@ -126,8 +190,15 @@ private:
     		this->isUniform_ = true;
     }
 
+    // Todo:
+    const bool determineUniformity(void);
+    const int findSmallestPrimitive(void);
+    // 1) run find smallest primitive
+    // 2) invoke stride container ctor with (larger_stride_container)
+
 private:
     bool       isUniform_;
+    size_type  n_capacity;
     size_type  n_entries;
     pointer    __entries;
 };

@@ -4,14 +4,12 @@ namespace tachyon{
 namespace containers{
 
 InfoContainer<std::string>::InfoContainer() :
-n_entries(0),
 	__containers(nullptr)
 {
 
 }
 
 InfoContainer<std::string>::InfoContainer(const data_container_type& container) :
-n_entries(0),
 	__containers(nullptr)
 {
 if(container.header.hasMixedStride())
@@ -21,7 +19,6 @@ else
 }
 
 InfoContainer<std::string>::InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches) :
-n_entries(0),
 	__containers(nullptr)
 {
 if(data_container.header.hasMixedStride())

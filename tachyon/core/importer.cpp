@@ -138,6 +138,9 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.minPosition = reader.front().body->POS;
 		this->block.index_entry.maxPosition = reader.back().body->POS;
 		this->block.index_entry.controller.hasGTPermuted = this->permute;
+		// if there is 0 or 1 samples then GT data is never permuted
+		if(header.getSampleNumber() <= 1)
+			this->block.index_entry.controller.hasGTPermuted = false;
 
 		// Permute or not?
 		if(this->GT_available_){
@@ -274,7 +277,7 @@ bool Importer::add(bcf_entry_type& entry){
 	meta.ref_alt  = entry.ref_alt;
 	meta.controller.simple_snv = entry.isSimple();
 
-	// GT encoding
+	// GT encoding if available
 	if(entry.hasGenotypes){
 		meta.controller.gt_available = true;
 		if(!this->encoder.Encode(entry,
@@ -311,7 +314,7 @@ bool Importer::add(bcf_entry_type& entry){
 	// Update number of entries in block
 	++this->index_entry.n_variants;
 
-	//meta.n_objects = n_runs;
+	// Push meta
 	this->block.meta_hot_container.buffer_data_uncompressed += meta;
 
 	return true;
@@ -342,7 +345,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			else if(entry.infoID[i].primitive_type == 3) target_container.setType(core::YON_TYPE_32B);
 			else if(entry.infoID[i].primitive_type == 5) target_container.setType(core::YON_TYPE_FLOAT);
 			else if(entry.infoID[i].primitive_type == 7) target_container.setType(core::YON_TYPE_CHAR);
-			if(entry.infoID[i].primitive_type != 5) target_container.header.controller.signedness = 1;
+			if(entry.infoID[i].primitive_type != 5)      target_container.header.controller.signedness = 1;
 		}
 
 		++target_container;
@@ -385,7 +388,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U32 mapID = this->format_fields.setGet(entry.formatID[i].mapID);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
-		if(entry.hasGenotypes)
+		if(entry.hasGenotypes == true && i == 0)
 			continue;
 
 		// Hash INFO values

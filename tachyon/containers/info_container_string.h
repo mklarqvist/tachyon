@@ -12,7 +12,7 @@ namespace containers{
  * InfoContainer for strings
  */
 template <>
-class InfoContainer<std::string>{
+class InfoContainer<std::string> : public InfoContainerInterface{
 private:
     typedef InfoContainer        self_type;
     typedef std::string          value_type;
@@ -100,7 +100,6 @@ private:
 	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size);
 
 private:
-    size_t  n_entries;
     pointer __containers;
 };
 

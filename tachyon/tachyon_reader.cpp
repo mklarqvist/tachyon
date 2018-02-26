@@ -76,7 +76,7 @@ bool TachyonReader::open(void){
 	return(this->stream.good());
 }
 
-bool TachyonReader::get_next_block(){
+bool TachyonReader::nextBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
@@ -93,7 +93,7 @@ bool TachyonReader::get_next_block(){
 
 	// Attempts to read a YON block with the provided
 	// settings
-	if(!this->block.read(stream, this->settings))
+	if(!this->block.read(this->stream, this->settings))
 		return false;
 
 	// Internally decompress available data
@@ -102,6 +102,41 @@ bool TachyonReader::get_next_block(){
 
 	// All passed
 	return true;
+}
+
+TachyonReader::block_entry_type TachyonReader::getBlock(){
+	// If the stream is faulty then return
+	if(!this->stream.good()){
+		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
+		return block_entry_type();
+	}
+
+	// If the current position is the EOF then
+	// exit the function
+	if((U64)this->stream.tellg() == this->footer.offset_end_of_data)
+		return block_entry_type();
+
+
+	block_entry_type block;
+	const size_t position = this->stream.tellg();
+
+	// Attempts to read a YON block with the provided
+	// settings
+	if(!block.read(this->stream, this->settings)){
+		this->stream.seekg(position);
+		return block;
+	}
+
+	// Internally decompress available data
+	if(!this->codec_manager.decompress(this->block)){
+		this->stream.seekg(position);
+		return block;
+	}
+
+	this->stream.seekg(position);
+
+	// All passed
+	return block;
 }
 
 const int TachyonReader::has_format_field(const std::string& field_name) const{
@@ -132,7 +167,6 @@ const int TachyonReader::has_info_field(const std::string& field_name) const{
 				break;
 			}
 		}
-		//std::cerr << "target stream is: " << target << std::endl;
 		return(target);
 	}
 	return(-2);

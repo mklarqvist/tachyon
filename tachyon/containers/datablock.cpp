@@ -302,7 +302,8 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 
 bool DataBlock::write(std::ofstream& stream,
                    import_stats_type& stats,
-                   import_stats_type& stats_uncompressed){
+                   import_stats_type& stats_uncompressed)
+{
 	U64 last_pos = stream.tellp();
 	stream << this->index_entry;
 	stats.total_header_cost += (U64)stream.tellp() - last_pos;

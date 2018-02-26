@@ -8,8 +8,21 @@
 namespace tachyon{
 namespace containers{
 
+class InfoContainerInterface{
+private:
+    typedef InfoContainerInterface self_type;
+
+public:
+    InfoContainerInterface() : n_entries(0){}
+    InfoContainerInterface(const size_t n_entries) : n_entries(n_entries){}
+    virtual ~InfoContainerInterface(){}
+
+protected:
+	size_t  n_entries;
+};
+
 template <class return_type>
-class InfoContainer{
+class InfoContainer : public InfoContainerInterface{
 private:
     typedef InfoContainer                   self_type;
     typedef PrimitiveContainer<return_type> value_type;
@@ -104,7 +117,6 @@ private:
 	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size);
 
 private:
-    size_t  n_entries;
     pointer __containers;
 };
 
@@ -116,7 +128,6 @@ template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& data_container,
                                           const meta_container_type& meta_container,
                                             const std::vector<bool>& pattern_matches) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(data_container.buffer_data_uncompressed.size() == 0)
@@ -172,7 +183,6 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 
 template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& container) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(container.buffer_data_uncompressed.size() == 0)

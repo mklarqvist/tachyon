@@ -116,11 +116,12 @@ int view(int argc, char** argv){
 	U32 n_blocks = 0;
 	//U64 square_division = 0;
 	//std::vector<tachyon::core::TiTvObject> global_titv(reader.header.getSampleNumber());
-	while(reader.get_next_block()){
+	while(reader.nextBlock()){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
-		n_variants += reader.iterate_genotypes();
+		//n_variants += reader.iterate_genotypes();
+		reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);

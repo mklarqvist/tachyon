@@ -94,41 +94,43 @@ public:
 
 private:
     /**<
-     *
-     * @param container  Data container
-     * @param n_samples  Number of samples
-     * @param func       Function pointer to element accessor of stride data
+     * Setup this container such that the container only has knowledge
+     * of the given information
+     * @param container Input raw data container
+     * @param n_samples Number of samples
      */
     template <class actual_primitive>
     void __setup(const data_container_type& container, const U64& n_samples);
 
-    /**<
-     *
-     * @param data_container
-     * @param meta_container
-     * @param pattern_matches
-     * @param n_samples
-     * @param func
-     */
+   /**<
+    * Setup this container such that it is balanced given the input
+    * meta information
+    * @param data_container  Input raw data container
+    * @param meta_container  Processed meta container
+    * @param pattern_matches Pattern matches given a particular FORMAT field ID
+    * @param n_samples       Number of samples
+    */
     template <class actual_primitive>
 	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples);
 
     /**<
-     *
-     * @param data_container
-     * @param meta_container
-     * @param pattern_matches
-     * @param n_samples
-     * @param stride_size
+     * Setup this container such that it is balanced given the input
+     * meta information and the data stride size is uniform
+     * @param data_container  Input raw data container
+     * @param meta_container  Processed meta container
+     * @param pattern_matches Pattern matches given a particular FORMAT field ID
+     * @param n_samples       Number of samples
+     * @param stride_size     Fixed-width (uniform) data stride size
      */
     template <class actual_primitive>
     	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples, const U32 stride_size);
 
     /**<
-     *
-     * @param container   Data container
+     * Setup this container such that the container only has knowledge
+     * of the given information. The data stride size is fixed-width
+     * @param container   Input raw data container
      * @param n_samples   Number of samples
-     * @param stride_size Fixed stride size
+     * @param stride_size Fixed-width (uniform) data stride size
      */
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);

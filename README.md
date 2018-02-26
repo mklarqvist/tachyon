@@ -8,22 +8,51 @@
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-Tachyon is an open source software library for storing and querying variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium in large-scale cohorts.
-
-The Tachyon specification has complete backward-compatibility with `VCF`/`BCF` and is many 10s- to 100s-fold smaller compared to `BCF`. The library supports additional functionality like field-specific and granular encryption (symmetric, assymetric, and eventually homomorphic).
+Tachyon is an open source software library for storing and querying sequencing/sequence variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium and identity-by-state in large-scale cohorts.
 
 ### Author
 Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)  
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
-### Notice
-Tachyon is under active development and the specification and/or the API interfaces may change at any time! Commits may break functionality!  
-THERE IS NO API STABILITY PROMISE WHATSOEVER!  
-Documentation is currently sparse.
+## Notice!
+Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
+Commits may break functionality!  
+**THERE IS NO STABILITY PROMISE WHATSOEVER!**  
 
-### Installation instructions
-Building requires [zstd][zstd] and [openssl][openssl]
+# Introduction
+
+## Why a new framework?
+There are a large number of field-specific file formats that have reached near-universal standard such as FASTA/FASTQ, SAM/BAM/uBAM/CRAM, VCF/BCF/gVCF. They all have unique file-specifications and different native toolsets interacting with them in addition to the multitude of tools developed for answering specific scientific questions. We have developed a format-agnostic framework encapsulating all previous standard formats in a unified database-like system constructed from generalized data-agnostic containers. The primary incentive of this project is to empower the research community with the tools required to query and interact with sequencing data.
+
+---
+
+## Guiding principles
+* **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
+* **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts user experience front and center. Tachyon follows best practices for reducing cognitive load: it offers consistent & simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
+* **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
+* **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness making Tachyon suitable for advanced research.
+
+---
+
+## Highlights of Tachyon
+* **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
+* **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
+* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms
+* **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than standard formats
+* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented database management system with several layers of domain-specific heuristics providing  
+* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal effort
+
+---
+
+# Getting started
+## Dependencies
+You will need the following dependencies:
+* [zstd][zstd]: A compression library developed at Facebook
+* [openssl][openssl]: An open-source library for encryption/decryption
+
+## Building from source
+Assuming the dependencies are installed then building is trivial:
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon/build
@@ -61,7 +90,7 @@ reader.open(my_input_file);
  *  The `FormatContainer` class stores the data for each variant 
  *  for each individual as container[variant][sample][data]
  */
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     // Meta container
     containers::MetaContainer meta(reader.block);
     // FORMAT container with float return type primitive
@@ -101,7 +130,7 @@ reader.open(my_input_file);
  * variant sites in the file with empty objects if no target data is present
  * at that site.
  */
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     // Meta container
     containers::MetaContainer meta(reader.block);
     // Variant-balanced
@@ -135,7 +164,7 @@ reader.open(my_input_file);
 /**<
  * The `InfoContainer` class has to be templated as std::string if the underlying data is of type `char`
  */
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     // Meta container
     containers::MetaContainer meta(reader.block);
     containers::InfoContainer<std::string>* meinfo_container = reader.get_balanced_info_container<std::string>("MEINFO", meta);
@@ -158,7 +187,7 @@ tachyon::TachyonReader reader;
 reader.getSettings().loadInfo("CSQ");
 reader.open(my_input_file);
 
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     containers::MetaContainer meta(reader.block);
     containers::InfoContainer<std::string>* csq_data = reader.get_balanced_info_container<U32>("std::string", meta);
     if(it2 != nullptr){
@@ -178,6 +207,8 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
 }
 ```
 
+---
+
 ### Genotype containers / objects
 More advanced example using genotype summary statistics
 ```c++
@@ -194,7 +225,7 @@ tachyon::TachyonReader reader;
 reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     containers::GenotypeContainer gt(reader.block);
     math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
     containers::GenotypeSum gt_summary; // Genotype summary statistics
@@ -241,7 +272,7 @@ tachyon::TachyonReader reader;
 reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     containers::GenotypeContainer gt(reader.block);
     for(U32 i = 0; i < gt.size(); ++i){
         // All of these functions are in relative terms very expensive!
@@ -261,6 +292,8 @@ while(reader.get_next_block()){ // As long as there are YON blocks available
     }
 }
 ```
+
+---
 
 ### Math objects
 ```c++
@@ -284,7 +317,7 @@ reader.open(my_input_file);
 tachyon::math::SquareMatrix<double> square(reader.header.getSampleNumber());
 tachyon::math::SquareMatrix<double> square_temporary(reader.header.getSampleNumber());
 U64 n_alleles = 0;
-while(reader.get_next_block()){ // As long as there are YON blocks available
+while(reader.nextBlock()){ // As long as there are YON blocks available
     containers::GenotypeContainer gt(reader.block);
     // Compare genotypes pairwise for each M in the current YON block
     for(U32 i = 0; i < gt.size(); ++i)

@@ -24,7 +24,7 @@ namespace core{
                  OFFSET
 */
 struct DataContainerHeader{
-	typedef DataContainerHeader self_type;
+	typedef DataContainerHeader           self_type;
 	typedef DataContainerHeaderController controller_type;
 
 	DataContainerHeader() :
@@ -170,9 +170,15 @@ struct DataContainerHeader{
 
 	//
 	inline const S32& getStride(void) const{ return(this->stride); }
+
 	inline const bool isUniform(void) const{ return(this->controller.uniform); }
-	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
 	inline const bool isSigned(void) const{ return(this->controller.signedness); }
+	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
+
+	inline void setUniform(const bool yes){ this->controller.uniform = yes; }
+	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
+	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
+
 	inline const tachyon::core::TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->controller.type)); }
 	inline const tachyon::core::TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(tachyon::core::TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
@@ -203,7 +209,7 @@ public:
 
 */
 struct DataContainerHeaderStride{
-	typedef DataContainerHeaderStride self_type;
+	typedef DataContainerHeaderStride     self_type;
 	typedef DataContainerHeaderController controller_type;
 
 	DataContainerHeaderStride() :

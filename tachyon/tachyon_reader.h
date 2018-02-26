@@ -235,27 +235,47 @@ public:
 	 * Get the next YON block in-order
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool get_next_block();
+	bool nextBlock(void);
+
+	/**<
+	 * Get the current YON block in-order as a copy
+	 * @return Returns a YON block. The container has a size of 0 upon fail/empty
+	 */
+	block_entry_type getBlock(void);
+
 
 	/**<
 	 * Seeks to a specific YON block without loading anything.
 	 * This allows the user to seek to a specific block and
 	 * change the settings (i.e. what fields to load) and
 	 * then invoke nextBlock() for example.
-	 * @param position
+	 * @param blockID
 	 * @return
 	 */
-	bool seek_to_block(const U32& position);
+	bool seek_to_block(const U32& blockID);
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
 
+	U64 iterate_all_info(std::ostream& stream = std::cout){
+		//containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.index_entry.n_info_streams];
+		//for(U32 i = 0; i < 1; ++i){
+		//	std::cerr << this->block.index_entry.info_offsets[i].key << std::endl;
+		//}
+		//delete [] its;
+		return(0);
+	}
+
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
-		containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
+		//for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i)
+		//	std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
+		//containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
+		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("DP", meta);
+		containers::FormatContainer<U32>* it2 = this->get_balanced_format_container<U32>("GQ", meta);
 
-		//
+		/*
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
 			std::cerr << i << ": " << this->header.mapTable[block.index_entry.info_offsets[i].key] << "->" << this->header.getEntry(this->header.mapTable[block.index_entry.info_offsets[i].key]).ID << std::endl;
 		}
@@ -272,18 +292,26 @@ public:
 
 		delete it2;
 		return 0;
+		 */
+		//delete it2;
+		//return(0);
 
 		if(it2 != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
 			//math::SummaryStatistics ss = math::summary_statistics(*it4);
 			//std::cerr << ss.mean << "+-" << ss.getSigmaSquared() << " (" << ss.min << "-" << ss.max << ") n = " << ss.n_total << std::endl;
 
+			std::cerr << it2->size() << std::endl;
+
 			for(size_t i = 0; i < it2->size(); ++i){
-				if(it2->at(i).size() == 0) continue;
+				if(it2->size() == 0) continue;
 				else {
 					meta.at(i).toVCFString(std::cout, this->header);
 					std::cout << "\t";
-					utility::to_vcf_string(std::cout, (*it2)[i]);
+					//std::cout << it2->at(i).size() << std::endl;
+					for(U32 j = 0; j < it2->at(i).size(); ++j){
+					utility::to_vcf_string(std::cout, (*it2)[i][j]);
+					}
 					//std::vector<std::string> ret = utility::split((*it2)[i],'|');
 					//for(U32 k = 0; k < ret.size(); ++k)
 					//std::cerr << ret[6] << "\n";

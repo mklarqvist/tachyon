@@ -7,6 +7,7 @@
 #include "../io/basic_buffer.h"
 #include "core/datacontainer_header.h"
 #include "core/datacontainer_header_controller.h"
+#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{
