@@ -20,14 +20,14 @@ Tachyon is under active development and the specification and/or the API interfa
 Commits may break functionality!  
 **THERE IS NO STABILITY PROMISE WHATSOEVER!**  
 
-# Introduction
+## Introduction
 
-## Why a new framework?
+### Why a new framework?
 There are a large number of field-specific file formats that have reached near-universal standard such as FASTA/FASTQ, SAM/BAM/uBAM/CRAM, VCF/BCF/gVCF. They all have unique file-specifications and different native toolsets interacting with them in addition to the multitude of tools developed for answering specific scientific questions. We have developed a format-agnostic framework encapsulating all previous standard formats in a unified database-like system constructed from generalized data-agnostic containers. The primary incentive of this project is to empower the research community with the tools required to query and interact with sequencing data.
 
 ---
 
-## Guiding principles
+### Guiding principles
 * **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
 * **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts user experience front and center. Tachyon follows best practices for reducing cognitive load: it offers consistent & simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
 * **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
@@ -35,7 +35,7 @@ There are a large number of field-specific file formats that have reached near-u
 
 ---
 
-## Highlights of Tachyon
+### Highlights of Tachyon
 * **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
 * **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
 * **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms
@@ -45,13 +45,13 @@ There are a large number of field-specific file formats that have reached near-u
 
 ---
 
-# Getting started
-## Dependencies
+## Getting started
+### Dependencies
 You will need the following dependencies:
 * [zstd][zstd]: A compression library developed at Facebook
 * [openssl][openssl]: An open-source library for encryption/decryption
 
-## Building from source
+### Building from source
 Assuming the dependencies are installed then building is trivial:
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
