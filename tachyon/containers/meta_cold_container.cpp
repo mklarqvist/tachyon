@@ -5,7 +5,7 @@ namespace containers{
 
 MetaColdContainer::MetaColdContainer() : n_entries(0), __entries(nullptr){}
 
-MetaColdContainer::MetaColdContainer(const DataBlock& block) :
+MetaColdContainer::MetaColdContainer(const VariantBlock& block) :
 	n_entries(0),
 	__entries(nullptr)
 {

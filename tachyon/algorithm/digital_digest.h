@@ -4,6 +4,9 @@
 #include <cstring>
 #include <openssl/sha.h>
 
+#include "../io/basic_buffer.h"
+#include "../containers/datacontainer.h"
+
 namespace tachyon{
 namespace core{
 

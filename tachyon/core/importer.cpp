@@ -335,7 +335,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(entry.infoID[i].l_stride);
-			target_container.header_stride.controller.type = core::YON_TYPE_32B;
+			target_container.header_stride.controller.type       = core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
@@ -395,7 +395,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(entry.formatID[i].l_stride);
-			target_container.header_stride.controller.type = core::YON_TYPE_32B;
+			target_container.header_stride.controller.type       = core::YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
@@ -431,7 +431,6 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container += entry.getFloat(internal_pos);
-
 			}
 		}
 		// Chars

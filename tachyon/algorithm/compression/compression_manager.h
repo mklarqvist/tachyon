@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 #define ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 
-#include "../../containers/datablock.h"
+#include "../../containers/variantblock.h"
 #include "compression_container.h"
 
 namespace tachyon{
@@ -12,7 +12,7 @@ private:
 	typedef CompressionManager        self_type;
 	typedef UncompressedCodec         no_codec_type;
 	typedef ZSTDCodec                 zstd_codec_type;
-	typedef containers::DataBlock     block_type;
+	typedef containers::VariantBlock     block_type;
 	typedef containers::DataContainer container_type;
 
 public:

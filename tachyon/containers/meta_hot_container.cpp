@@ -5,7 +5,7 @@ namespace containers{
 
 MetaHotContainer::MetaHotContainer() : n_entries(0), __entries(nullptr){}
 
-MetaHotContainer::MetaHotContainer(const DataBlock& block) :
+MetaHotContainer::MetaHotContainer(const VariantBlock& block) :
 	n_entries(block.meta_hot_container.buffer_data_uncompressed.size() / sizeof(value_type)),
 	__entries(new value_type[this->n_entries])
 {

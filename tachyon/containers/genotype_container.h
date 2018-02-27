@@ -1,10 +1,10 @@
 #ifndef CONTAINERS_GENOTYPE_CONTAINER_H_
 #define CONTAINERS_GENOTYPE_CONTAINER_H_
 
-#include "datablock.h"
 #include "genotype_container_diploid_rle.h"
 #include "genotype_container_diploid_simple.h"
 #include "meta_container.h"
+#include "variantblock.h"
 
 namespace tachyon{
 namespace containers{
@@ -32,7 +32,7 @@ private:
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
 
 public:
-    GenotypeContainer(const DataBlock& block);
+    GenotypeContainer(const VariantBlock& block);
     ~GenotypeContainer();
 
     class iterator{

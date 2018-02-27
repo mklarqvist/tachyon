@@ -2,7 +2,7 @@
 #define CONTAINERS_META_HOT_CONTAINER_H_
 
 #include "../core/meta_hot.h"
-#include "datablock.h"
+#include "variantblock.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,7 +19,7 @@ private:
 
 public:
     MetaHotContainer();
-    MetaHotContainer(const DataBlock& block);
+    MetaHotContainer(const VariantBlock& block);
     MetaHotContainer(const DataContainer& container);
     ~MetaHotContainer(void);
 

@@ -8,7 +8,6 @@
 
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/timer.h"
-#include "containers/datablock.h"
 #include "containers/abstract_integer_container.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
@@ -20,6 +19,7 @@
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
 #include "containers/checksum_container.h"
+#include "containers/variantblock.h"
 #include "core/genotype_object.h"
 #include "core/header/tachyon_header.h"
 #include "core/footer/footer.h"
@@ -34,7 +34,7 @@ namespace tachyon{
 
 class TachyonReader{
 	typedef TachyonReader                       self_type;
-	typedef containers::DataBlock               block_entry_type;
+	typedef containers::VariantBlock               block_entry_type;
 	typedef io::BasicBuffer                     buffer_type;
 	typedef core::TachyonHeader                 header_type;
 	typedef core::Footer                        footer_type;
@@ -273,6 +273,8 @@ public:
 		//	std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
 		//containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
 		//containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("DP", meta);
+
+		containers::FormatContainer<U32>* it = this->get_balanced_format_container<U32>("DP", meta);
 		containers::FormatContainer<U32>* it2 = this->get_balanced_format_container<U32>("GQ", meta);
 
 		/*
@@ -296,7 +298,7 @@ public:
 		//delete it2;
 		//return(0);
 
-		if(it2 != nullptr){
+		if(it2 != nullptr && it != nullptr){
 			//std::cerr << "balanced format = " << it4->size() << std::endl;
 			//math::SummaryStatistics ss = math::summary_statistics(*it4);
 			//std::cerr << ss.mean << "+-" << ss.getSigmaSquared() << " (" << ss.min << "-" << ss.max << ") n = " << ss.n_total << std::endl;
@@ -311,6 +313,11 @@ public:
 					//std::cout << it2->at(i).size() << std::endl;
 					for(U32 j = 0; j < it2->at(i).size(); ++j){
 					utility::to_vcf_string(std::cout, (*it2)[i][j]);
+					}
+
+					std::cout.put('\t');
+					for(U32 j = 0; j < it->at(i).size(); ++j){
+					utility::to_vcf_string(std::cout, (*it)[i][j]);
 					}
 					//std::vector<std::string> ret = utility::split((*it2)[i],'|');
 					//for(U32 k = 0; k < ret.size(); ++k)

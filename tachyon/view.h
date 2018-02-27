@@ -120,8 +120,8 @@ int view(int argc, char** argv){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
-		//n_variants += reader.iterate_genotypes();
-		reader.iterate_all_info();
+		n_variants += reader.iterate_genotypes();
+		//reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);

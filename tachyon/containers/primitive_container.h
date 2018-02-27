@@ -2,7 +2,7 @@
 #define CONTAINER_PRIMITIVECONTAINER_H_
 
 #include "../math/summary_statistics.h"
-#include "datablock.h"
+#include "variantblock.h"
 
 namespace tachyon{
 namespace containers{

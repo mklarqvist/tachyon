@@ -176,12 +176,12 @@ private:
 
     template <class intrinsic_type>
     void __allocate(const data_container_type& container){
-    	assert(container.buffer_strides_uncompressed.size() % sizeof(value_type) == 0);
-    	this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(value_type);
-    	this->__entries = new value_type[this->size()];
+    	assert(container.buffer_strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
+    	this->n_entries  = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
+    	this->__entries  = new value_type[this->size()];
     	this->n_capacity = this->size();
 
-    	const value_type* const strides = reinterpret_cast<const value_type* const>(container.buffer_strides_uncompressed.data());
+    	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.buffer_strides_uncompressed.data());
 
     	for(size_type i = 0; i < this->size(); ++i)
     		this->__entries[i] = strides[i];

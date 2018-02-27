@@ -1,6 +1,7 @@
 #ifndef CONTAINERS_GENOTYPE_CONTAINER_INTERFACE_H_
 #define CONTAINERS_GENOTYPE_CONTAINER_INTERFACE_H_
 
+#include "../algorithm/permutation/permutation_manager.h"
 #include "../core/genotype_object.h"
 #include "../core/genotype_summary.h"
 #include "../core/ts_tv_object.h"

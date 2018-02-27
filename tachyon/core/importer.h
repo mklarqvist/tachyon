@@ -9,7 +9,7 @@
 #include "../io/bcf/BCFReader.h"
 #include "ImportWriter.h"
 #include "ImporterStats.h"
-#include "../containers/datablock.h"
+#include "../containers/variantblock.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
 
@@ -32,7 +32,7 @@ private:
 	typedef containers::DataContainer       stream_container;
 	typedef containers::HashContainer       hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
-	typedef containers::DataBlock           block_type;
+	typedef containers::VariantBlock        block_type;
 	typedef support::ImporterStats          import_stats_type;
 	typedef core::MetaHot                   meta_type;
 

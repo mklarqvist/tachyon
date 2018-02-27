@@ -23,7 +23,7 @@ Commits may break functionality!
 ## Introduction
 
 ### Why a new framework?
-There are a large number of field-specific file formats that have reached near-universal standard such as FASTA/FASTQ, SAM/BAM/uBAM/CRAM, VCF/BCF/gVCF. They all have unique file-specifications and different native toolsets interacting with them in addition to the multitude of tools developed for answering specific scientific questions. We have developed a format-agnostic framework encapsulating all previous standard formats in a unified database-like system constructed from generalized data-agnostic containers. The primary incentive of this project is to empower the research community with the tools required to query and interact with sequencing data.
+There are a large number of field-specific file formats that have reached near-universal standard such as FASTA/FASTQ, SAM/BAM/uBAM/CRAM, VCF/BCF/gVCF. They all have unique file-specifications and different native toolsets interacting with them in addition to the multitude of tools developed for answering specific scientific questions. Tachyon was developed as a format-agnostic framework encapsulating all these previous standard formats in a unified database-like system constructed from generalized data-agnostic containers. The primary incentive of this project is to empower the research community with the tools required to query and interact with sequencing data.
 
 ---
 
@@ -41,7 +41,8 @@ There are a large number of field-specific file formats that have reached near-u
 * **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms
 * **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than standard formats
 * **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented database management system with several layers of domain-specific heuristics providing  
-* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal effort
+* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
+* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the file-formats we are supplanting. This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools
 
 ---
 

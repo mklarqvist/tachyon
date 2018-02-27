@@ -16,8 +16,8 @@ namespace containers{
  * provides encapsulated and abstracted access to its
  * contents.
  */
-class DataBlock{
-	typedef DataBlock                                self_type;
+class VariantBlock{
+	typedef VariantBlock                             self_type;
 	typedef DataContainer                            container_type;
 	typedef algorithm::PermutationManager            permutation_type;
 	typedef containers::core::DataBlockHeader        index_entry_type;
@@ -30,9 +30,9 @@ class DataBlock{
 	typedef support::ImporterStats                   import_stats_type;
 
 public:
-	DataBlock();
-	DataBlock(const U32 n_info_fields, const U32 n_format_fields);
-	~DataBlock();
+	VariantBlock();
+	VariantBlock(const U32 n_info_fields, const U32 n_format_fields);
+	~VariantBlock();
 
 	/**< @brief Resize base container buffer streams
 	 * Internal use only

@@ -1,11 +1,12 @@
+#include "variantblock.h"
+
 #include "../support/helpers.h"
-#include "datablock.h"
 #include "../support/type_definitions.h"
 
 namespace tachyon{
 namespace containers{
 
-DataBlock::DataBlock() :
+VariantBlock::VariantBlock() :
 	info_containers(new container_type[200]),
 	format_containers(new container_type[200])
 {
@@ -28,12 +29,12 @@ DataBlock::DataBlock() :
 	this->gt_support_data_container.setStrideSize(1);
 }
 
-DataBlock::~DataBlock(){
+VariantBlock::~VariantBlock(){
 	delete [] this->info_containers;
 	delete [] this->format_containers;
 }
 
-void DataBlock::clear(void){
+void VariantBlock::clear(void){
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -70,7 +71,7 @@ void DataBlock::clear(void){
 	this->gt_support_data_container.setStrideSize(1);
 }
 
-void DataBlock::resize(const U32 s){
+void VariantBlock::resize(const U32 s){
 	if(s == 0) return;
 	this->meta_hot_container.resize(s);
 	this->meta_cold_container.resize(s);
@@ -86,7 +87,7 @@ void DataBlock::resize(const U32 s){
 	}
 }
 
-void DataBlock::updateBaseContainers(void){
+void VariantBlock::updateBaseContainers(void){
 	this->updateContainer(this->gt_rle_container);
 	this->updateContainer(this->gt_simple_container);
 	this->updateContainer(this->gt_support_data_container);
@@ -97,10 +98,13 @@ void DataBlock::updateBaseContainers(void){
 	this->updateContainer(this->meta_info_map_ids  , false);
 }
 
-void DataBlock::updateOffsets(void){
+void VariantBlock::updateOffsets(void){
 	U32 cum_size = this->index_entry.getObjectSize();
-	this->index_entry.offset_ppa.offset = cum_size;
-	cum_size += this->ppa_manager.getObjectSize();
+
+	if(this->index_entry.controller.hasGT && this->index_entry.controller.hasGTPermuted){
+		this->index_entry.offset_ppa.offset = cum_size;
+		cum_size += this->ppa_manager.getObjectSize();
+	}
 
 	this->index_entry.offset_hot_meta.offset = cum_size;
 	cum_size += this->meta_hot_container.getObjectSize();
@@ -145,7 +149,7 @@ void DataBlock::updateOffsets(void){
 	this->index_entry.offset_end_of_block = cum_size;
 }
 
-void DataBlock::DataBlock::updateContainer(container_type* container, const U32& length){
+void VariantBlock::VariantBlock::updateContainer(container_type* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
@@ -169,7 +173,7 @@ void DataBlock::DataBlock::updateContainer(container_type* container, const U32&
 	}
 }
 
-void DataBlock::updateContainer(container_type& container, bool reformat){
+void VariantBlock::updateContainer(container_type& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 &&
 	   container.header.controller.type != tachyon::core::YON_TYPE_BOOLEAN)
 		return;
@@ -192,7 +196,7 @@ void DataBlock::updateContainer(container_type& container, bool reformat){
 	}
 }
 
-bool DataBlock::read(std::ifstream& stream, settings_type& settings){
+bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
 
 	const U64 start_offset = (U64)stream.tellg();
@@ -300,7 +304,7 @@ bool DataBlock::read(std::ifstream& stream, settings_type& settings){
 	return(true);
 }
 
-bool DataBlock::write(std::ofstream& stream,
+bool VariantBlock::write(std::ofstream& stream,
                    import_stats_type& stats,
                    import_stats_type& stats_uncompressed)
 {
@@ -309,7 +313,7 @@ bool DataBlock::write(std::ofstream& stream,
 	stats.total_header_cost += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
-	if(this->index_entry.controller.hasGTPermuted){
+	if(this->index_entry.controller.hasGTPermuted && this->index_entry.controller.hasGT){
 		stream << this->ppa_manager;
 		stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
 		stats_uncompressed.total_ppa_cost += this->ppa_manager.u_length;

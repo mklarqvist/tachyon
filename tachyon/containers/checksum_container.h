@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_CHECKSUM_CONTAINER_H_
 #define CONTAINERS_CHECKSUM_CONTAINER_H_
 
-#include "datablock.h"
 #include "../algorithm/digital_digest.h"
+#include "variantblock.h"
 
 namespace tachyon{
 namespace containers{
@@ -17,7 +17,7 @@ private:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
-    typedef containers::DataBlock    block_type;
+    typedef containers::VariantBlock    block_type;
 
 public:
 	ChecksumContainer(void);

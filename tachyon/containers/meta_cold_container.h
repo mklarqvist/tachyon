@@ -2,7 +2,7 @@
 #define CONTAINERS_META_COLD_CONTAINER_H_
 
 #include "../core/meta_cold.h"
-#include "datablock.h"
+#include "variantblock.h"
 
 namespace tachyon{
 namespace containers{
@@ -18,7 +18,7 @@ private:
 
 public:
     MetaColdContainer();
-    MetaColdContainer(const DataBlock& block);
+    MetaColdContainer(const VariantBlock& block);
     MetaColdContainer(const DataContainer& container);
     ~MetaColdContainer(void);
 

@@ -3,7 +3,7 @@
 namespace tachyon{
 namespace containers{
 
-MetaContainer::MetaContainer(const DataBlock& block) :
+MetaContainer::MetaContainer(const VariantBlock& block) :
 	n_entries(block.meta_hot_container.buffer_data_uncompressed.size() / sizeof(hot_type)),
 	__entries(nullptr)
 {
@@ -17,7 +17,7 @@ MetaContainer::~MetaContainer(void){
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
-void MetaContainer::__ctor_setup(const DataBlock& block){
+void MetaContainer::__ctor_setup(const VariantBlock& block){
 	// 1
 	// cast hot_entries and determine n_entries
 	assert(block.meta_hot_container.buffer_data_uncompressed.size() % sizeof(hot_type) == 0);
