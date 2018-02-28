@@ -7,11 +7,10 @@
 
 #include "../../support/enums.h"
 #include "../../support/type_definitions.h"
-#include "datacontainer_header_controller.h"
+#include "../components/datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
-namespace core{
 
 /*
  Stream header data structure
@@ -158,12 +157,12 @@ struct DataContainerHeader{
 	const BYTE getPrimitiveWidth(void) const{
 		// We do not care about signedness here
 		switch(this->controller.type){
-		case(tachyon::core::YON_TYPE_8B): return(sizeof(BYTE));
-		case(tachyon::core::YON_TYPE_16B): return(sizeof(U16));
-		case(tachyon::core::YON_TYPE_32B): return(sizeof(U16));
-		case(tachyon::core::YON_TYPE_64B): return(sizeof(U16));
-		case(tachyon::core::YON_TYPE_FLOAT): return(sizeof(U16));
-		case(tachyon::core::YON_TYPE_DOUBLE): return(sizeof(U16));
+		case(YON_TYPE_8B):     return(sizeof(BYTE));
+		case(YON_TYPE_16B):    return(sizeof(U16));
+		case(YON_TYPE_32B):    return(sizeof(U16));
+		case(YON_TYPE_64B):    return(sizeof(U16));
+		case(YON_TYPE_FLOAT):  return(sizeof(U16));
+		case(YON_TYPE_DOUBLE): return(sizeof(U16));
 		}
 		return 0;
 	}
@@ -179,8 +178,8 @@ struct DataContainerHeader{
 	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
 	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
 
-	inline const tachyon::core::TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->controller.type)); }
-	inline const tachyon::core::TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(tachyon::core::TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline const TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline const TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Checksum
 	inline const U32& getChecksum(void) const{ return(this->crc); }
@@ -234,7 +233,6 @@ struct DataContainerHeaderStride{
 		}
 	}
 
-	/* noexcept needed to enable optimizations in containers */
 	DataContainerHeaderStride(self_type&& other) noexcept :
 		controller(other.controller),
 		cLength(other.cLength),
@@ -313,10 +311,7 @@ struct DataContainerHeaderStride{
 	}
 
 	const U32 getObjectSize(void) const{
-		U32 total_size = 2*sizeof(U16) + 3*sizeof(U32);
-		if(this->n_extra > 0)
-			total_size += this->n_extra;
-
+		U32 total_size = 2*sizeof(U16) + 3*sizeof(U32) + this->n_extra;
 		return total_size;
 	}
 
@@ -329,7 +324,6 @@ public:
 	char* extra;                // extra length is encoder specific
 };
 
-}
 }
 }
 

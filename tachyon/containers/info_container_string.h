@@ -91,6 +91,8 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
+    inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position){ return(stream << this->at(position)); }
+
 private:
     // For mixed strides
     void __setup(const data_container_type& container);

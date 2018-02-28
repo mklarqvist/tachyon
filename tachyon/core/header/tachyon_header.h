@@ -34,12 +34,15 @@ public:
 
 	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }
 	inline const sample_type& getSample(const U32& position) const{ return(this->samples[position]); }
-	inline const map_entry_type& getEntry(const U32& position) const{ return(this->entries[position]); }
 
 	const bool getContig(const std::string& p, contig_type*& target) const;
 	const bool getSample(const std::string& p, sample_type*& target) const;
-	const bool getEntry(const std::string& p, map_entry_type*& target) const;
-	const map_entry_type* getEntry(const std::string& p) const;
+	const bool getInfoField(const std::string& p, map_entry_type*& target) const;
+	const bool getFormatField(const std::string& p, map_entry_type*& target) const;
+	const bool getFilterField(const std::string& p, map_entry_type*& target) const;
+	const map_entry_type* getInfoField(const std::string& p) const;
+	const map_entry_type* getFormatField(const std::string& p) const;
+	const map_entry_type* getFilterField(const std::string& p) const;
 
 	inline const U64& getSampleNumber(void) const{ return(this->header_magic.n_samples); }
 	inline U64& getSampleNumber(void){ return(this->header_magic.n_samples); }
@@ -52,19 +55,26 @@ public:
 	 * @param vcf_header Target input VCF header
 	 */
 	void operator=(const vcf_header_type& vcf_header){
-		this->header_magic.n_contigs      = vcf_header.contigs.size();
-		this->header_magic.n_samples      = vcf_header.sampleNames.size();
-		this->header_magic.n_declarations = vcf_header.map.size();
+		this->header_magic.n_contigs       = vcf_header.contigs.size();
+		this->header_magic.n_samples       = vcf_header.sampleNames.size();
+		this->header_magic.n_info_values   = vcf_header.info_map.size();
+		this->header_magic.n_format_values = vcf_header.format_map.size();
+		this->header_magic.n_filter_values = vcf_header.filter_map.size();
 
-		for(U32 i = 0; i < vcf_header.literal_lines.size(); ++i)
-			this->literals += vcf_header.literal_lines[i];
+		if(vcf_header.literal_lines.size()){
+			this->literals += vcf_header.literal_lines[0];
+			for(U32 i = 1; i < vcf_header.literal_lines.size(); ++i)
+				this->literals += "\n" + vcf_header.literal_lines[i];
+		}
 
 		this->header_magic.l_literals     = this->literals.size();
 
 		// Cleanup previous
 		delete [] this->contigs;
 		delete [] this->samples;
-		delete [] this->entries;
+		delete [] this->info_fields;
+		delete [] this->filter_fields;
+		delete [] this->format_fields;
 
 		this->contigs = new contig_type[this->header_magic.getNumberContigs()];
 		for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i)
@@ -74,11 +84,24 @@ public:
 		for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)
 			this->samples[i] = vcf_header.sampleNames[i];
 
-		this->entries = new map_entry_type[this->header_magic.n_declarations];
-		for(U32 i = 0; i < this->header_magic.n_declarations; ++i)
-			this->entries[i] = vcf_header.map[i];
+		this->info_fields = new map_entry_type[this->header_magic.n_info_values];
+		for(U32 i = 0; i < this->header_magic.n_info_values; ++i){
+			this->info_fields[i] = vcf_header.info_map[i];
+			this->info_fields[i].IDX = i;
+		}
 
-		this->buildMapTable();
+		this->format_fields = new map_entry_type[this->header_magic.n_format_values];
+		for(U32 i = 0; i < this->header_magic.n_format_values; ++i){
+			this->format_fields[i] = vcf_header.format_map[i];
+			this->format_fields[i].IDX = i;
+		}
+
+		this->filter_fields = new map_entry_type[this->header_magic.n_filter_values];
+		for(U32 i = 0; i < this->header_magic.n_filter_values; ++i){
+			this->filter_fields[i] = vcf_header.filter_map[i];
+			this->filter_fields[i].IDX = i;
+		}
+
 		this->buildHashTables();
 	}
 
@@ -91,8 +114,14 @@ public:
 		for(U32 i = 0; i < this->header_magic.n_samples; ++i)
 			stream << this->samples[i];
 
-		for(U32 i = 0; i < this->header_magic.n_declarations; ++i)
-			stream << this->entries[i];
+		for(U32 i = 0; i < this->header_magic.n_info_values; ++i)
+			stream << this->info_fields[i];
+
+		for(U32 i = 0; i < this->header_magic.n_format_values; ++i)
+			stream << this->format_fields[i];
+
+		for(U32 i = 0; i < this->header_magic.n_filter_values; ++i)
+			stream << this->filter_fields[i];
 
 		stream.write(&this->literals[0], this->literals.size());
 		return(stream);
@@ -100,7 +129,7 @@ public:
 
 	const bool has_format_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
-		if(this->getEntry(field_name, match))
+		if(this->getFormatField(field_name, match))
 			return true;
 
 		return false;
@@ -108,7 +137,7 @@ public:
 
 	const bool has_info_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
-		if(this->getEntry(field_name, match))
+		if(this->getInfoField(field_name, match))
 			return true;
 
 		return false;
@@ -116,14 +145,13 @@ public:
 
 	const bool has_filter_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
-		if(this->getEntry(field_name, match))
+		if(this->getFilterField(field_name, match))
 			return true;
 
 		return(false);
 	}
 
 private:
-	bool buildMapTable(void);
 	bool buildHashTables(void);
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
@@ -137,14 +165,21 @@ private:
 		for(U32 i = 0; i < entry.header_magic.n_samples; ++i)
 			stream >> entry.samples[i];
 
-		entry.entries = new map_entry_type[entry.header_magic.n_declarations];
-		for(U32 i = 0; i < entry.header_magic.n_declarations; ++i)
-			stream >> entry.entries[i];
+		entry.info_fields = new map_entry_type[entry.header_magic.n_info_values];
+		for(U32 i = 0; i < entry.header_magic.n_info_values; ++i)
+			stream >> entry.info_fields[i];
+
+		entry.format_fields = new map_entry_type[entry.header_magic.n_format_values];
+		for(U32 i = 0; i < entry.header_magic.n_format_values; ++i)
+			stream >> entry.format_fields[i];
+
+		entry.filter_fields = new map_entry_type[entry.header_magic.n_filter_values];
+		for(U32 i = 0; i < entry.header_magic.n_filter_values; ++i)
+			stream >> entry.filter_fields[i];
 
 		entry.literals.resize(entry.header_magic.l_literals);
 		stream.read(&entry.literals[0], entry.header_magic.l_literals);
 
-		entry.buildMapTable();
 		entry.buildHashTables();
 
 		return(stream);
@@ -155,13 +190,16 @@ public:
 	std::string      literals;
 	contig_type*     contigs;
 	sample_type*     samples;
-	map_entry_type*  entries;
-	U32*             mapTable;
+	map_entry_type*  info_fields;
+	map_entry_type*  format_fields;
+	map_entry_type*  filter_fields;
 
 	// Constructed during run-time
 	hash_table_type* htable_contigs; // hash table for contig names
 	hash_table_type* htable_samples; // hash table for sample names
-	hash_table_type* htable_entries; // hash map from name to identifier
+	hash_table_type* htable_info_fields; // hash map from name to identifier
+	hash_table_type* htable_format_fields; // hash map from name to identifier
+	hash_table_type* htable_filter_fields; // hash map from name to identifier
 };
 
 }

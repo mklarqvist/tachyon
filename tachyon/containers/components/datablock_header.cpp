@@ -1,11 +1,11 @@
+#include "../components/datablock_header.h"
+
 #include <cmath>
 #include <cassert>
 
-#include "datablock_header.h"
 
 namespace tachyon{
 namespace containers{
-namespace core{
 
 DataBlockHeaderBase::DataBlockHeaderBase() :
 	offset_end_of_block(0),
@@ -126,6 +126,5 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target,
 	return true;
 }
 
-}
 }
 }

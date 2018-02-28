@@ -19,7 +19,6 @@ namespace vcf{
 class VCFHeader {
 	typedef VCFHeader                         self_type;
 	typedef hash::HashTable<std::string, S32> hash_table_type;
-	typedef hash::HashTable<S32, U32>         hash_table_map_type;
 	typedef core::HeaderContig                contig_type;
 	typedef io::BasicBuffer                   buffer_type;
 	typedef VCFHeaderLine                     header_line_type;
@@ -54,8 +53,6 @@ public:
 	bool parse(reader_type& stream);
 	bool parse(const char* const data, const U32& length);
 
-	inline const map_entry_type& operator[](const U32& p) const{ return(this->map[p]); }
-
 private:
 	// These functions are unsafe as they require contigHashTable to be
 	// set prior to calling
@@ -80,31 +77,6 @@ private:
 	bool parseHeaderLines(const char* const data, U32& offset);
 	bool parseSampleLine(const char* const data, U32& offset, const U32& length);
 
-private:
-	// Output only
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		const U32 n_contigs     = entry.contigs.size();
-		const U32 n_samples     = entry.sampleNames.size();
-		const U32 n_meta_fields = entry.map.size();
-
-		// Contigs
-		stream.write(reinterpret_cast<const char*>(&n_contigs),sizeof(U32));
-		for(U32 i = 0; i < n_contigs; ++i)
-			stream << entry.contigs[i];
-
-		// Sample names
-		stream.write(reinterpret_cast<const char*>(&n_samples),sizeof(U32));
-		for(U32 i = 0; i < n_samples; ++i)
-			stream << entry.sampleNames[i];
-
-		// Declarations
-		stream.write(reinterpret_cast<const char*>(&n_meta_fields),sizeof(U32));
-		for(U32 i = 0; i < n_meta_fields; ++i)
-			stream << entry.map[i];
-
-		return(stream);
-	}
-
 public:
 	VCF_ERROR_TYPE error_bit;               // parse error bit
 	U64 samples;                            // number of samples
@@ -120,13 +92,17 @@ public:
 	std::vector<std::string> literal_lines; // vcf line literals
 	// These entries are read from disk as
 	// U32 l_name; BYTE type; char[l_name]
-	std::vector<map_entry_type> map;
+	//std::vector<map_entry_type> map;
+	std::vector<map_entry_type> info_map;
+	std::vector<map_entry_type> format_map;
+	std::vector<map_entry_type> filter_map;
 	// Constructed during run-time
-	U32* mapTable; // map from IDX to local id for O(1) lookup
+	U32* info_remap; // map from IDX to local id for O(1) lookup
+	U32* format_remap;
+	U32* filter_remap;
 
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names
-	hash_table_map_type* map_lookup;       // hash map from name to identifier
 };
 
 }

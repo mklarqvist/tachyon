@@ -30,9 +30,9 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 	// This is requirement for stride data
 	if(support.n_entries == 0){
-		support.header.controller.type              = core::YON_TYPE_32B;
+		support.header.controller.type              = YON_TYPE_32B;
 		support.header.controller.signedness        = 0;
-		support.header_stride.controller.type       = core::YON_TYPE_32B;
+		support.header_stride.controller.type       = YON_TYPE_32B;
 		support.header_stride.controller.signedness = 0;
 	}
 

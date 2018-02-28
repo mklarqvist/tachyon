@@ -25,20 +25,20 @@ GenotypeContainer::GenotypeContainer(const VariantBlock& block) :
 
 	getNativeFuncDef getTarget = nullptr;
 	switch(block.gt_support_data_container.header_stride.controller.type){
-	case(tachyon::core::YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
-	case(tachyon::core::YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
-	case(tachyon::core::YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
-	case(tachyon::core::YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
+	case(YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
+	case(YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
+	case(YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
+	case(YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
 	default: std::cerr << "illegal type" << std::endl; return;
 	}
 
 	// data (0: rle, 1: simple), strides (n_objects)
 	getNativeFuncDef getObjects = nullptr;
 	switch(block.gt_support_data_container.header.controller.type){
-	case(tachyon::core::YON_TYPE_8B):  getObjects = &self_type::getNative<BYTE>; break;
-	case(tachyon::core::YON_TYPE_16B): getObjects = &self_type::getNative<U16>; break;
-	case(tachyon::core::YON_TYPE_32B): getObjects = &self_type::getNative<U32>; break;
-	case(tachyon::core::YON_TYPE_64B): getObjects = &self_type::getNative<U64>; break;
+	case(YON_TYPE_8B):  getObjects = &self_type::getNative<BYTE>; break;
+	case(YON_TYPE_16B): getObjects = &self_type::getNative<U16>; break;
+	case(YON_TYPE_32B): getObjects = &self_type::getNative<U32>; break;
+	case(YON_TYPE_64B): getObjects = &self_type::getNative<U64>; break;
 	default: std::cerr << "illegal type" << std::endl; return;
 	}
 

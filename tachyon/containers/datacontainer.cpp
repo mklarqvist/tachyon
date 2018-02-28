@@ -130,13 +130,13 @@ bool DataContainer::checkUniformity(void){
 
 	BYTE word_width = sizeof(char);
 	switch(this->header.controller.type){
-	case tachyon::core::YON_TYPE_32B:    stride_update *= sizeof(S32);    word_width = sizeof(S32);    break;
-	case tachyon::core::YON_TYPE_DOUBLE: stride_update *= sizeof(double); word_width = sizeof(double); break;
-	case tachyon::core::YON_TYPE_FLOAT:  stride_update *= sizeof(float);  word_width = sizeof(float);  break;
-	case tachyon::core::YON_TYPE_8B:     stride_update *= sizeof(char);   word_width = sizeof(char);   break;
-	case tachyon::core::YON_TYPE_16B:    stride_update *= sizeof(U16);    word_width = sizeof(U16);    break;
-	case tachyon::core::YON_TYPE_64B:    stride_update *= sizeof(U64);    word_width = sizeof(U64);    break;
-	case tachyon::core::YON_TYPE_CHAR:   stride_update *= sizeof(char);   word_width = sizeof(char);   break;
+	case YON_TYPE_32B:    stride_update *= sizeof(S32);    word_width = sizeof(S32);    break;
+	case YON_TYPE_DOUBLE: stride_update *= sizeof(double); word_width = sizeof(double); break;
+	case YON_TYPE_FLOAT:  stride_update *= sizeof(float);  word_width = sizeof(float);  break;
+	case YON_TYPE_8B:     stride_update *= sizeof(char);   word_width = sizeof(char);   break;
+	case YON_TYPE_16B:    stride_update *= sizeof(U16);    word_width = sizeof(U16);    break;
+	case YON_TYPE_64B:    stride_update *= sizeof(U64);    word_width = sizeof(U64);    break;
+	case YON_TYPE_CHAR:   stride_update *= sizeof(char);   word_width = sizeof(char);   break;
 	default: return false; break;
 	}
 
@@ -158,7 +158,7 @@ bool DataContainer::checkUniformity(void){
 	this->header.cLength                   = stride_size * word_width;
 	this->header.controller.uniform        = true;
 	this->header.controller.mixedStride    = false;
-	this->header.controller.encoder        = tachyon::core::YON_ENCODE_NONE;
+	this->header.controller.encoder        = YON_ENCODE_NONE;
 	return(true);
 }
 
@@ -167,7 +167,7 @@ void DataContainer::reformat(){
 		return;
 
 	// Recode integer types only
-	if(!(this->header.controller.type == tachyon::core::YON_TYPE_32B && this->header.controller.signedness == 1)){
+	if(!(this->header.controller.type == YON_TYPE_32B && this->header.controller.signedness == 1)){
 		//std::cerr << utility::timestamp("DEBUG") << "Not reformatting because: " << this->header.getPrimitiveType() << "," << this->header.isSigned() << std::endl;
 		return;
 	}
@@ -221,25 +221,25 @@ void DataContainer::reformat(){
 		this->header.controller.signedness = 0;
 
 		if(byte_width == 1){
-			this->header.controller.type = tachyon::core::YON_TYPE_8B;
+			this->header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (BYTE)dat[j];
 
 		} else if(byte_width == 2){
-			this->header.controller.type = tachyon::core::YON_TYPE_16B;
+			this->header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U16)dat[j];
 
 		} else if(byte_width == 4){
-			this->header.controller.type = tachyon::core::YON_TYPE_32B;
+			this->header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U32)dat[j];
 
 		} else if(byte_width == 8){
-			this->header.controller.type = tachyon::core::YON_TYPE_64B;
+			this->header.controller.type = YON_TYPE_64B;
 
 			for(U32 j = 0; j < this->n_additions; ++j)
 				this->buffer_data += (U64)dat[j];
@@ -254,7 +254,7 @@ void DataContainer::reformat(){
 		this->header.controller.signedness = 1;
 
 		if(byte_width == 1){
-			this->header.controller.type = tachyon::core::YON_TYPE_8B;
+			this->header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
@@ -263,7 +263,7 @@ void DataContainer::reformat(){
 			}
 
 		} else if(byte_width == 2){
-			this->header.controller.type = tachyon::core::YON_TYPE_16B;
+			this->header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S16)dat[j];
@@ -273,7 +273,7 @@ void DataContainer::reformat(){
 			}
 
 		} else if(byte_width == 4){
-			this->header.controller.type = tachyon::core::YON_TYPE_32B;
+			this->header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S32)dat[j];
@@ -302,7 +302,7 @@ void DataContainer::reformatStride(){
 		return;
 
 	// Recode integer types
-	if(!(this->header_stride.controller.type == tachyon::core::YON_TYPE_32B &&
+	if(!(this->header_stride.controller.type == YON_TYPE_32B &&
 	   this->header_stride.controller.signedness == 0)){
 		std::cerr << utility::timestamp("ERROR") << "Illegal to have non-U32 values at this point: " << this->header_stride.controller.type << ":" << this->header_stride.controller.signedness << std::endl;
 		exit(1);
@@ -329,7 +329,7 @@ void DataContainer::reformatStride(){
 	this->buffer_strides.resize(this->buffer_strides_uncompressed.size());
 
 	if(byte_width == 1){
-		this->header_stride.controller.type = tachyon::core::YON_TYPE_8B;
+		this->header_stride.controller.type = YON_TYPE_8B;
 
 		for(U32 j = 0; j < this->n_entries; ++j){
 			//assert((BYTE)dat[j] == dat[j]);
@@ -337,7 +337,7 @@ void DataContainer::reformatStride(){
 		}
 
 	} else if(byte_width == 2){
-		this->header_stride.controller.type = tachyon::core::YON_TYPE_16B;
+		this->header_stride.controller.type = YON_TYPE_16B;
 
 		for(U32 j = 0; j < this->n_entries; ++j){
 			//assert((U16)dat[j] == dat[j]);
@@ -345,7 +345,7 @@ void DataContainer::reformatStride(){
 		}
 
 	} else if(byte_width == 4){
-		this->header_stride.controller.type = tachyon::core::YON_TYPE_32B;
+		this->header_stride.controller.type = YON_TYPE_32B;
 
 		for(U32 j = 0; j < this->n_entries; ++j){
 			//assert((U32)dat[j] == dat[j]);
@@ -353,7 +353,7 @@ void DataContainer::reformatStride(){
 		}
 
 	} else if(byte_width == 8){
-		this->header_stride.controller.type = tachyon::core::YON_TYPE_64B;
+		this->header_stride.controller.type = YON_TYPE_64B;
 
 		for(U32 j = 0; j < this->n_entries; ++j){
 			//assert((U64)dat[j] == dat[j]);
@@ -371,5 +371,17 @@ void DataContainer::reformatStride(){
 	this->buffer_strides.reset();
 }
 
+const U32 DataContainer::getObjectSize(void) const{
+	U32 total_size = 0;
+	total_size += header.getObjectSize();
+	if(this->header.controller.mixedStride)
+		total_size += header_stride.getObjectSize();
+
+	total_size += this->buffer_data.size();
+	if(this->header.controller.mixedStride)
+		total_size += this->buffer_strides.size();
+
+	return(total_size);
+}
 }
 }

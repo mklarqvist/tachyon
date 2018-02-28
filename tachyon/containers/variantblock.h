@@ -4,7 +4,7 @@
 #include "../algorithm/permutation/permutation_manager.h"
 #include "../io/vcf/VCFHeader.h"
 #include "../core/ImporterStats.h"
-#include "core/datablock_header.h"
+#include "components/datablock_header.h"
 #include "datablock_settings.h"
 #include "datacontainer.h"
 
@@ -17,17 +17,17 @@ namespace containers{
  * contents.
  */
 class VariantBlock{
-	typedef VariantBlock                             self_type;
-	typedef DataContainer                            container_type;
-	typedef algorithm::PermutationManager            permutation_type;
-	typedef containers::core::DataBlockHeader        index_entry_type;
-	typedef HashContainer                            hash_container_type;
-	typedef HashVectorContainer                      hash_vector_container_type;
-	typedef containers::core::DataBlockOffsets       offset_type;
-	typedef containers::core::DataBlockOffsetsHeader offset_minimal_type;
-	typedef io::BasicBuffer                          buffer_type;
-	typedef core::DataBlockSettings                  settings_type;
-	typedef support::ImporterStats                   import_stats_type;
+	typedef VariantBlock                   self_type;
+	typedef DataContainer                  container_type;
+	typedef algorithm::PermutationManager  permutation_type;
+	typedef DataBlockHeader                index_entry_type;
+	typedef HashContainer                  hash_container_type;
+	typedef HashVectorContainer            hash_vector_container_type;
+	typedef DataBlockOffsets               offset_type;
+	typedef DataBlockOffsetsHeader         offset_minimal_type;
+	typedef io::BasicBuffer                buffer_type;
+	typedef core::DataBlockSettings        settings_type;
+	typedef support::ImporterStats         import_stats_type;
 
 public:
 	VariantBlock();
@@ -68,13 +68,13 @@ public:
 	 * function for either all INFO or FORMAT containers
 	 * @param target Enum target for groups of containers
 	 */
-	inline void updateContainerSet(containers::core::DataBlockHeader::INDEX_BLOCK_TARGET target){
+	inline void updateContainerSet(DataBlockHeader::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
-		case(containers::core::DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_INFO)   :
 			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
 			break;
-		case(containers::core::DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
 			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);

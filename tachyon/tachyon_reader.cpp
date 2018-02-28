@@ -141,7 +141,7 @@ TachyonReader::block_entry_type TachyonReader::getBlock(){
 
 const int TachyonReader::has_format_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
-	if(this->header.getEntry(field_name, match)){
+	if(this->header.getFormatField(field_name, match)){
 		U32 target = -1;
 		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
 			//std::cerr << i << '/' << this->block.index_entry.n_format_streams << '\t' << this->block.index_entry.format_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.format_offsets[i].key].ID << std::endl;
@@ -158,7 +158,7 @@ const int TachyonReader::has_format_field(const std::string& field_name) const{
 
 const int TachyonReader::has_info_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
-	if(this->header.getEntry(field_name, match)){
+	if(this->header.getInfoField(field_name, match)){
 		U32 target = -1;
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
 			//std::cerr << i << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << std::endl;
@@ -174,7 +174,7 @@ const int TachyonReader::has_info_field(const std::string& field_name) const{
 
 const int TachyonReader::has_filter_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
-	if(this->header.getEntry(field_name, match)){
+	if(this->header.getFilterField(field_name, match)){
 		U32 target = -1;
 		for(U32 i = 0; i < this->block.index_entry.n_filter_streams; ++i){
 			if(this->block.index_entry.filter_offsets[i].key == match->IDX){

@@ -6,14 +6,13 @@
 
 #include "../hash_container.h"
 #include "../../io/basic_buffer.h"
-#include "datacontainer_header.h"
-#include "datacontainer_header_controller.h"
-#include "datablock_bitvector.h"
-#include "datablock_offsets.h"
+#include "../components/datablock_bitvector.h"
+#include "../components/datablock_offsets.h"
+#include "../components/datacontainer_header.h"
+#include "../components/datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
-namespace core{
 
 #define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 2*sizeof(U32)*9 + 6*sizeof(U16)
 
@@ -408,7 +407,6 @@ public:
 	// Todo: compress offsets and bit vectors
 };
 
-}
 }
 }
 

@@ -47,6 +47,8 @@ int view(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
+		{"noHeader",		no_argument, 0,  'H' },
+		{"onlyHeader",		no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
 		{"dropInfo",	no_argument, 0,  'I' },
 		{"silent",		no_argument, 0,  's' },
@@ -58,8 +60,10 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	bool dropFormat = false;
 	bool dropInfo   = false;
+	bool headerOnly = false;
+	bool showHeader = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:GIs?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:GIshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -78,6 +82,12 @@ int view(int argc, char** argv){
 			break;
 		case 's':
 			SILENT = 1;
+			break;
+		case 'h':
+			headerOnly = true;
+			break;
+		case 'H':
+			showHeader = false;
 			break;
 
 		default:
@@ -107,6 +117,12 @@ int view(int argc, char** argv){
 		return 1;
 	}
 
+	if(headerOnly){
+		std::cerr << reader.header.literals.size() << std::endl;
+		std::cout << reader.header.literals << std::endl;
+		return(0);
+	}
+
 	U64 n_variants = 0;
 	tachyon::algorithm::Timer timer;
 	timer.Start();
@@ -120,7 +136,7 @@ int view(int argc, char** argv){
 		//reader.toVCFStringFast();
 		//reader.toVCFString();
 		//n_variants += reader.iterateMeta();
-		n_variants += reader.iterate_genotypes();
+		n_variants += reader.iterate_all_info();
 		//reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
@@ -128,6 +144,7 @@ int view(int argc, char** argv){
 		++n_blocks;
 		//if(n_blocks == 50) break;
 	}
+	std::cerr << "done" << std::endl;
 
 	/*
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTG\tTC\tTT\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\t\n";

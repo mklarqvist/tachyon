@@ -6,6 +6,7 @@
 #include "meta_cold.h"
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
+#include "../algorithm/timer.h"
 
 namespace tachyon {
 
@@ -21,7 +22,6 @@ Importer::Importer(std::string inputFile,
 	checkpoint_bases(checkpoint_bases),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
-	reader(inputFile),
 	writer(),
 	header(nullptr)
 {
@@ -83,7 +83,7 @@ bool Importer::BuildBCF(void){
 	core::TachyonHeader header(*this->header);
 	header.write(this->writer.stream);
 	this->GT_available_ = header.has_format_field("GT");
-	const core::HeaderMapEntry* gt_entry = header.getEntry("GT");
+	const core::HeaderMapEntry* gt_entry = header.getFormatField("GT");
 	if(gt_entry != nullptr){
 		assert(gt_entry->ID == "GT");
 		reader.map_gt_id = gt_entry->IDX;
@@ -100,11 +100,11 @@ bool Importer::BuildBCF(void){
 
 	// Digest controller
 	containers::ChecksumContainer checksums;
-	if(checksums.allocate(this->header->map.size()) == false){
+	if(checksums.allocate(this->header->info_map.size() + this->header->format_map.size() + this->header->filter_map.size()) == false){
 		std::cerr << "failed to allocate" << std::endl;
 		return false;
 	}
-	//tachyon::core::DigitalDigestPair* digests = new tachyon::core::DigitalDigestPair[this->header->map.size()];
+	//tachyon::DigitalDigestPair* digests = new tachyon::DigitalDigestPair[this->header->map.size()];
 
 	// Start import
 	U32 previousFirst    = 0;
@@ -117,7 +117,7 @@ bool Importer::BuildBCF(void){
 
 	// Begin import
 	// Get BCF entries
-	bcf_entry_type t;
+	algorithm::Timer timer; timer.Start();
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
@@ -133,7 +133,6 @@ bool Importer::BuildBCF(void){
 			}
 		}
 #endif
-		std::cerr << utility::timestamp("DEBUG") << "n_variants: " << reader.size() << '\t' << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
 		this->block.index_entry.contigID    = reader.front().body->CHROM;
 		this->block.index_entry.minPosition = reader.front().body->POS;
 		this->block.index_entry.maxPosition = reader.back().body->POS;
@@ -142,20 +141,18 @@ bool Importer::BuildBCF(void){
 		if(header.getSampleNumber() <= 1)
 			this->block.index_entry.controller.hasGTPermuted = false;
 
-		// Permute or not?
-		if(this->GT_available_){
-			if(this->block.index_entry.controller.hasGTPermuted){
-				if(!this->permutator.build(reader)){
-					std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
-					return false;
-				}
+		// Permute GT if GT is available and the appropriate flag is triggered
+		if(this->GT_available_  && this->block.index_entry.controller.hasGTPermuted){
+			if(!this->permutator.build(reader)){
+				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
+				return false;
 			}
 		}
 
 		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
 			if(!this->add(reader[i])){
-				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to parse BCF body..." << std::endl;
+				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
 				return false;
 			}
 		}
@@ -176,12 +173,12 @@ bool Importer::BuildBCF(void){
 		this->block.index_entry.n_format_streams = this->format_fields.size();
 		this->block.index_entry.n_variants       = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.index_entry.constructBitVector(containers::core::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(containers::core::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.index_entry.constructBitVector(containers::core::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
-		this->block.updateContainerSet(containers::core::DataBlockHeader::INDEX_INFO);
-		this->block.updateContainerSet(containers::core::DataBlockHeader::INDEX_FORMAT);
+		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_INFO);
+		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_FORMAT);
 
 		// Perform compression using standard parameters
 		if(!this->compression_manager.compress(this->block)){
@@ -190,10 +187,10 @@ bool Importer::BuildBCF(void){
 		}
 
 		// Digests
-		if(checksums.update(this->block, this->header->mapTable) == false){
-			std::cerr << utility::timestamp("ERROR","CHECKSUM") << "Failed to update!" << std::endl;
-			return false;
-		}
+		//if(checksums.update(this->block, this->header->mapTable) == false){
+		//	std::cerr << utility::timestamp("ERROR","CHECKSUM") << "Failed to update!" << std::endl;
+		//	return false;
+		//}
 
 		// Todo: abstraction
 		// Perform writing and update index
@@ -209,6 +206,15 @@ bool Importer::BuildBCF(void){
 		current_index_entry.reset();
 		++this->writer.n_blocks_written;
 		this->writer.n_variants_written += reader.size();
+
+		if(!SILENT){
+			std::cerr << utility::timestamp("PROGRESS") <<
+			std::setfill(' ') << std::setw(10) << this->writer.n_variants_written << ' ' <<
+			std::setfill(' ') << std::setw(5) << reader.size() << '\t' <<
+			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << "\t" <<
+			std::setfill(' ') << std::setw(8) << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
+			timer.ElapsedString() << std::endl;
+		}
 
 		// Reset and update
 		this->resetHashes();
@@ -248,7 +254,9 @@ bool Importer::BuildBCF(void){
 	//this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
 	//this->writer.WriteFinal(data_ends);
 
-	std::cout
+	if(!SILENT){
+		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << std::endl;
+		std::cerr
 	    << "Header:    " << utility::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
 		<< "GT:        " << utility::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
 		<< "PPA:       " << utility::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'
@@ -259,6 +267,7 @@ bool Importer::BuildBCF(void){
 		<< "Index:     " << utility::toPrettyDiskString(index_ends - footer.offset_end_of_data) << '\n'
 		<< "Checksums: " << utility::toPrettyDiskString(digests_ends - index_ends) << '\n'
 		<< "Total:     " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
+	}
 
 	// All done
 	return(true);
@@ -323,28 +332,32 @@ bool Importer::add(bcf_entry_type& entry){
 bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
-		assert(this->header->map.at(entry.filterID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER));
-		this->filter_fields.setGet(entry.filterID[i].mapID);
+		this->filter_fields.setGet(this->header->filter_remap[entry.filterID[i].mapID]);
 	}
 
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
-		assert(this->header->map.at(entry.infoID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO));
-		const U32 mapID = this->info_fields.setGet(entry.infoID[i].mapID);
+		const U32 mapID = this->info_fields.setGet(this->header->info_remap[entry.infoID[i].mapID]);
+		//if(entry.infoPointer == 1)
+		//	std::cerr << utility::timestamp("DEBUG") << mapID << "\t" << entry.infoID[i].mapID << '\t' << header->map[entry.infoID[i].mapID].ID << std::endl;
 
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(entry.infoID[i].l_stride);
-			target_container.header_stride.controller.type       = core::YON_TYPE_32B;
+			target_container.header_stride.controller.type       = YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(entry.infoID[i].primitive_type == 0)      target_container.setType(core::YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 1) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 2) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 3) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 5) target_container.setType(core::YON_TYPE_FLOAT);
-			else if(entry.infoID[i].primitive_type == 7) target_container.setType(core::YON_TYPE_CHAR);
+			if(entry.infoID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
+			else if(entry.infoID[i].primitive_type == 1) target_container.setType(YON_TYPE_32B);
+			else if(entry.infoID[i].primitive_type == 2) target_container.setType(YON_TYPE_32B);
+			else if(entry.infoID[i].primitive_type == 3) target_container.setType(YON_TYPE_32B);
+			else if(entry.infoID[i].primitive_type == 5) target_container.setType(YON_TYPE_FLOAT);
+			else if(entry.infoID[i].primitive_type == 7) target_container.setType(YON_TYPE_CHAR);
+			else {
+				std::cerr << "not possible" << std::endl;
+				exit(1);
+			}
 			if(entry.infoID[i].primitive_type != 5)      target_container.header.controller.signedness = 1;
 		}
 
@@ -383,9 +396,8 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 	for(U32 i = 0; i < entry.formatPointer; ++i){
 		assert(entry.formatID[i].mapID != -1);
-		assert(this->header->map.at(entry.formatID[i].mapID).isSet(tachyon::core::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT));
 
-		const U32 mapID = this->format_fields.setGet(entry.formatID[i].mapID);
+		const U32 mapID = this->format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
 		if(entry.hasGenotypes == true && i == 0)
@@ -395,21 +407,21 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].n_entries == 0){
 			target_container.setStrideSize(entry.formatID[i].l_stride);
-			target_container.header_stride.controller.type       = core::YON_TYPE_32B;
+			target_container.header_stride.controller.type       = YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
-			if(entry.formatID[i].primitive_type == 0)      target_container.setType(core::YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 1) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 2) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 3) target_container.setType(core::YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 5) target_container.setType(core::YON_TYPE_FLOAT);
-			else if(entry.formatID[i].primitive_type == 7) target_container.setType(core::YON_TYPE_CHAR);
+			if(entry.formatID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
+			else if(entry.formatID[i].primitive_type == 1) target_container.setType(YON_TYPE_32B);
+			else if(entry.formatID[i].primitive_type == 2) target_container.setType(YON_TYPE_32B);
+			else if(entry.formatID[i].primitive_type == 3) target_container.setType(YON_TYPE_32B);
+			else if(entry.formatID[i].primitive_type == 5) target_container.setType(YON_TYPE_FLOAT);
+			else if(entry.formatID[i].primitive_type == 7) target_container.setType(YON_TYPE_CHAR);
 			else {
 				std::cerr << "not possible" << std::endl;
 				exit(1);
 			}
-			if(entry.formatID[i].primitive_type != 5) target_container.header.controller.signedness = 1;
+			if(entry.formatID[i].primitive_type != 5)      target_container.header.controller.signedness = 1;
 		}
 
 		++target_container;
@@ -458,7 +470,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		} else {
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.filterPointer; ++i)
-				ret_pattern.push_back(entry.filterID[i].mapID);
+				ret_pattern.push_back(this->header->filter_remap[entry.filterID[i].mapID]);
 
 			mapID = this->filter_patterns.size();
 			assert(mapID < 65536);
@@ -494,7 +506,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		} else {
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.infoPointer; ++i)
-				ret_pattern.push_back(entry.infoID[i].mapID);
+				ret_pattern.push_back(this->header->info_remap[entry.infoID[i].mapID]);
 
 			mapID = this->info_patterns.size();
 			assert(mapID < 65536);
@@ -529,7 +541,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		} else {
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.formatPointer; ++i)
-				ret_pattern.push_back(entry.formatID[i].mapID);
+				ret_pattern.push_back(this->header->format_remap[entry.formatID[i].mapID]);
 
 			mapID = this->format_patterns.size();
 			assert(mapID < 65536);

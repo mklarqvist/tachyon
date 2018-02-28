@@ -36,16 +36,17 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::string& string);
 
 // Primitive container declarations
 // Unsigned values does not have missing values
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<BYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U32>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<U64>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<SBYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<S16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<S32>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<BYTE>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U16>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U32>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U64>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<SBYTE>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S16>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S32>& container);
 // Special case
-std::ostream& to_vcf_string_char(std::ostream& stream, containers::PrimitiveContainer<char>& container);
-std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<float>& container);
+std::ostream& to_vcf_string_char(std::ostream& stream, const containers::PrimitiveContainer<char>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<float>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<double>& container);
 
 //std::ostream& to_vcf_string(std::ostream& stream, containers::PrimitiveContainer<double>& container);
 

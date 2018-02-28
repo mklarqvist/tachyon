@@ -20,7 +20,9 @@ public:
 		controller(0),
 		n_samples(0),
 		n_contigs(0),
-		n_declarations(0),
+		n_info_values(0),
+		n_format_values(0),
+		n_filter_values(0),
 		l_literals(0),
 		l_header(0),
 		l_header_uncompressed(0)
@@ -37,7 +39,9 @@ public:
 		controller(other.controller),
 		n_samples(other.n_samples),
 		n_contigs(other.n_contigs),
-		n_declarations(other.n_declarations),
+		n_info_values(other.n_info_values),
+		n_format_values(other.n_format_values),
+		n_filter_values(other.n_filter_values),
 		l_literals(other.l_literals),
 		l_header(other.l_header),
 		l_header_uncompressed(other.l_header_uncompressed)
@@ -79,7 +83,9 @@ private:
 		stream.write(reinterpret_cast<const char*>(&header.controller), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&header.n_samples),  sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&header.n_contigs),  sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.n_declarations),  sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_info_values),  sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_format_values),  sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_filter_values),  sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&header.l_literals),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&header.l_header),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&header.l_header_uncompressed), sizeof(U32));
@@ -94,7 +100,9 @@ private:
 		stream.read(reinterpret_cast<char*>(&header.controller),    sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&header.n_samples),     sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&header.n_contigs),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&header.n_declarations),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_info_values),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_format_values),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_filter_values),     sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&header.l_literals),      sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&header.l_header),      sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&header.l_header_uncompressed), sizeof(U32));
@@ -109,7 +117,9 @@ public:
 	U16  controller;            // controller
 	U64  n_samples;             // number of samples
 	U32  n_contigs;             // number of contigs
-	U32  n_declarations;        // number of map entries
+	U32  n_info_values;        // number of map entries
+	U32  n_format_values;
+	U32  n_filter_values;
 	U32  l_literals;            // literals length
 	U32  l_header;              // compressed length
 	U32  l_header_uncompressed; // uncompressed length

@@ -3,7 +3,6 @@
 
 namespace tachyon{
 namespace containers{
-namespace core{
 
 // Size of entries in these records are
 // inferred from the number of INFO/FORMAT/FILTER
@@ -127,7 +126,6 @@ public:
 	BYTE*      bit_bytes;
 };
 
-}
 }
 }
 

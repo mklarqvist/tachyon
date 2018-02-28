@@ -9,7 +9,6 @@
 
 namespace tachyon{
 namespace containers{
-namespace core{
 
 enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
 	                    YON_ENCRYPTION_AES_128,
@@ -54,7 +53,6 @@ public:
 		encryption: 2; // Encryption type
 };
 
-}
 }
 }
 

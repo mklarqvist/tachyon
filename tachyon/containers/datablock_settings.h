@@ -1,7 +1,7 @@
 #ifndef CORE_BLOCKENTRYSETTINGS_H_
 #define CORE_BLOCKENTRYSETTINGS_H_
 
-#include "core/datablock_offsets.h"
+#include "components/datablock_offsets.h"
 
 namespace tachyon{
 namespace containers{
@@ -11,8 +11,8 @@ namespace core{
  * Supportive structure for Block
  */
 struct SettingsMap{
-	typedef SettingsMap self_type;
-	typedef containers::core::DataBlockOffsetsHeader offset_minimal_type;
+	typedef SettingsMap            self_type;
+	typedef DataBlockOffsetsHeader offset_minimal_type;
 
 	SettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
 	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}

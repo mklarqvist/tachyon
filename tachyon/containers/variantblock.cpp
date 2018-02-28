@@ -11,18 +11,18 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_format_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_format_map_ids.header.controller.signedness = 1;
-	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_filter_map_ids.header.controller.signedness = 1;
-	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_info_map_ids.header.controller.signedness = 1;
-	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);
+	this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
 	this->gt_support_data_container.header.controller.signedness = true;
-	this->meta_hot_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -54,17 +54,17 @@ void VariantBlock::clear(void){
 
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
-	this->meta_format_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_format_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_format_map_ids.header.controller.signedness = 1;
-	this->meta_filter_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_filter_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_filter_map_ids.header.controller.signedness = 1;
-	this->meta_info_map_ids.setType(tachyon::core::YON_TYPE_32B);
+	this->meta_info_map_ids.setType(tachyon::YON_TYPE_32B);
 	this->meta_info_map_ids.header.controller.signedness = 1;
-	this->gt_rle_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->gt_simple_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(tachyon::core::YON_TYPE_32B);
-	this->meta_hot_container.setType(tachyon::core::YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(tachyon::core::YON_TYPE_STRUCT);
+	this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
+	this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
+	this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->meta_info_map_ids.setStrideSize(1);
 	this->meta_filter_map_ids.setStrideSize(1);
 	this->meta_format_map_ids.setStrideSize(1);
@@ -118,7 +118,6 @@ void VariantBlock::updateOffsets(void){
 	this->index_entry.offset_gt_simple.offset = cum_size;
 	cum_size += this->gt_simple_container.getObjectSize();
 
-
 	this->index_entry.offset_gt_helper.offset = cum_size;
 	cum_size += this->gt_support_data_container.getObjectSize();
 
@@ -130,7 +129,6 @@ void VariantBlock::updateOffsets(void){
 
 	this->index_entry.offset_meta_format_id.offset = cum_size;
 	cum_size += this->meta_format_map_ids.getObjectSize();
-
 
 	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 		this->index_entry.info_offsets[i].offset = cum_size;
@@ -154,13 +152,13 @@ void VariantBlock::VariantBlock::updateContainer(container_type* container, cons
 		// If the data container has entries in it but has
 		// no actual data then it is a BOOLEAN
 		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.size() == 0){
-			container[i].header.controller.type = tachyon::core::YON_TYPE_BOOLEAN;
+			container[i].header.controller.type = tachyon::YON_TYPE_BOOLEAN;
 			container[i].header.controller.uniform = true;
 			container[i].header.stride  = 0;
 			container[i].header.uLength = 0;
 			container[i].header.cLength = 0;
 			container[i].header.controller.mixedStride = false;
-			container[i].header.controller.encoder = tachyon::core::YON_ENCODE_NONE;
+			container[i].header.controller.encoder = tachyon::YON_ENCODE_NONE;
 			container[i].n_entries      = 0;
 			container[i].n_additions    = 0;
 			container[i].header.controller.signedness = 0;
@@ -175,11 +173,11 @@ void VariantBlock::VariantBlock::updateContainer(container_type* container, cons
 
 void VariantBlock::updateContainer(container_type& container, bool reformat){
 	if(container.buffer_data_uncompressed.size() == 0 &&
-	   container.header.controller.type != tachyon::core::YON_TYPE_BOOLEAN)
+	   container.header.controller.type != tachyon::YON_TYPE_BOOLEAN)
 		return;
 
 	// Check if stream is uniform in content
-	if(container.header.controller.type != tachyon::core::YON_TYPE_STRUCT){
+	if(container.header.controller.type != tachyon::YON_TYPE_STRUCT){
 		container.checkUniformity();
 		// Reformat stream to use as small word size as possible
 		if(reformat) container.reformat();
@@ -205,7 +203,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 
 	if(settings.importPPA){
-		if(this->index_entry.controller.hasGTPermuted){
+		if(this->index_entry.controller.hasGTPermuted && this->index_entry.controller.hasGT){
 			stream.seekg(start_offset + this->index_entry.offset_ppa.offset);
 			stream >> this->ppa_manager;
 		}
@@ -244,7 +242,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	// Load all info
-	if(settings.importInfoAll){
+	if(settings.importInfoAll && this->index_entry.n_info_streams > 0){
 		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
 			stream >> this->info_containers[i];
@@ -290,7 +288,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	} // end case load_info_ID
 
-	if(settings.importFormatAll){
+	if(settings.importFormatAll && this->index_entry.n_format_streams){
 		stream.seekg(start_offset + this->index_entry.format_offsets[0].offset);
 		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
 			stream >> this->format_containers[i];
@@ -300,13 +298,12 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
-
 	return(true);
 }
 
 bool VariantBlock::write(std::ofstream& stream,
-                   import_stats_type& stats,
-                   import_stats_type& stats_uncompressed)
+                     import_stats_type& stats,
+                     import_stats_type& stats_uncompressed)
 {
 	U64 last_pos = stream.tellp();
 	stream << this->index_entry;

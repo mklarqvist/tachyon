@@ -5,8 +5,8 @@
 
 #include "../support/enums.h"
 #include "../io/basic_buffer.h"
-#include "core/datacontainer_header.h"
-#include "core/datacontainer_header_controller.h"
+#include "components/datacontainer_header.h"
+#include "components/datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
@@ -17,10 +17,10 @@ namespace containers{
  * size in compressed/uncompressed form
  */
 class DataContainer{
-	typedef DataContainer                   self_type;
-	typedef io::BasicBuffer                 buffer_type;
-	typedef core::DataContainerHeader       header_type;
-	typedef core::DataContainerHeaderStride header_stride_type;
+	typedef DataContainer             self_type;
+	typedef io::BasicBuffer           buffer_type;
+	typedef DataContainerHeader       header_type;
+	typedef DataContainerHeaderStride header_stride_type;
 
 public:
 	DataContainer();
@@ -32,7 +32,7 @@ public:
 	 * the objects in this container.
 	 * @param value Data primitive type
 	 */
-	inline void setType(const tachyon::core::TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
+	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
 
 	/**<
 	 * Set the stride size of this container to some value.
@@ -131,21 +131,10 @@ public:
 	 * object would take on disk if written out
 	 * @return Total size in bytes
 	 */
-	inline const U32 getObjectSize(void) const{
-		U32 total_size = 0;
-		total_size += header.getObjectSize();
-		if(this->header.controller.mixedStride)
-			total_size += header_stride.getObjectSize();
+	const U32 getObjectSize(void) const;
 
-		total_size += this->buffer_data.size();
-		if(this->header.controller.mixedStride)
-			total_size += this->buffer_strides.size();
-
-		return(total_size);
-	}
-
-	inline const tachyon::core::TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->header.controller.type)); }
-	inline const tachyon::core::TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(tachyon::core::TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
+	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.controller.type)); }
+	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
@@ -168,6 +157,7 @@ private:
 		entry.buffer_data.resize(entry.header.uLength);
 		stream.read(entry.buffer_data.buffer, entry.header.cLength);
 		entry.buffer_data.n_chars = entry.header.cLength;
+
 		if(entry.header.controller.mixedStride){
 			entry.buffer_strides.resize(entry.header_stride.uLength);
 			stream.read(entry.buffer_strides.buffer, entry.header_stride.cLength);

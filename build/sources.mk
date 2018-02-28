@@ -26,7 +26,7 @@ SUBDIRS := \
 tachyon/algorithm/compression \
 tachyon/algorithm/permutation \
 tachyon/containers \
-tachyon/containers/core \
+tachyon/containers/components \
 tachyon/core \
 tachyon/core/header \
 tachyon/io \

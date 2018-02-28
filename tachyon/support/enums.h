@@ -2,7 +2,6 @@
 #define SUPPORT_ENUMS_H_
 
 namespace tachyon{
-namespace core{
 
 enum TACHYON_CORE_TYPE{
 	YON_TYPE_8B,
@@ -21,7 +20,6 @@ enum TACHYON_CORE_COMPRESSION{
 	YON_ENCODE_ZSTD
 };
 
-}
 }
 
 

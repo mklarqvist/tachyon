@@ -11,7 +11,7 @@ namespace tachyon{
 namespace algorithm{
 
 /**< Lower bounds threshold in fold-change for compression to be kept */
-#define MIN_COMPRESSION_FOLD 1.05
+#define MIN_COMPRESSION_FOLD 1.1
 
 /**
  * Permute bits from a byte-stream of U32 into target
@@ -147,7 +147,7 @@ public:
 	inline const bool encodeStrides(stream_type& stream){ return true; }
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != core::YON_ENCODE_NONE){
+		if(stream.header.controller.encoder != YON_ENCODE_NONE){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
@@ -164,7 +164,7 @@ public:
 			return false;
 		}
 
-		if(stream.header_stride.controller.encoder != core::YON_ENCODE_NONE){
+		if(stream.header_stride.controller.encoder != YON_ENCODE_NONE){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
@@ -202,9 +202,9 @@ public:
 	const bool encode(stream_type& stream){
 		stream.generateCRC();
 
-		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.size() < 50){
+		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.size() < 100){
 			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
-			stream.header.controller.encoder = core::YON_ENCODE_NONE;
+			stream.header.controller.encoder = YON_ENCODE_NONE;
 			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
 			stream.header.cLength            = stream.buffer_data_uncompressed.size();
 
@@ -229,7 +229,7 @@ public:
 		const float fold = (float)stream.buffer_data_uncompressed.size() / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
-			stream.header.controller.encoder = core::YON_ENCODE_NONE;
+			stream.header.controller.encoder = YON_ENCODE_NONE;
 			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
 			stream.header.cLength            = stream.buffer_data_uncompressed.size();
 
@@ -242,7 +242,7 @@ public:
 
 		memcpy(stream.buffer_data.data(), this->buffer.data(), ret);
 		stream.header.cLength            = ret;
-		stream.header.controller.encoder = core::YON_ENCODE_ZSTD;
+		stream.header.controller.encoder = YON_ENCODE_ZSTD;
 		stream.buffer_data.n_chars       = ret;
 		stream.header.n_extra            = 1;
 		stream.header.extra              = new char[sizeof(BYTE)];
@@ -259,9 +259,9 @@ public:
 	 * @return
 	 */
 	const bool encodeStrides(stream_type& stream){
-		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.size() < 50){
+		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.size() < 100){
 			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
-			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
+			stream.header_stride.controller.encoder = YON_ENCODE_NONE;
 			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
 
@@ -284,7 +284,7 @@ public:
 		const float fold = (float)stream.buffer_strides_uncompressed.size()/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
-			stream.header_stride.controller.encoder = core::YON_ENCODE_NONE;
+			stream.header_stride.controller.encoder = YON_ENCODE_NONE;
 			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
 			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
 			return true;
@@ -294,7 +294,7 @@ public:
 
 		memcpy(stream.buffer_strides.data(), this->buffer.data(), ret);
 		stream.header_stride.cLength            = ret;
-		stream.header_stride.controller.encoder = core::YON_ENCODE_ZSTD;
+		stream.header_stride.controller.encoder = YON_ENCODE_ZSTD;
 		stream.buffer_strides.n_chars           = ret;
 		stream.header_stride.n_extra            = 1;
 		stream.header_stride.extra              = new char[sizeof(BYTE)];
@@ -370,11 +370,10 @@ public:
 	}
 
 	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != core::YON_ENCODE_ZSTD){
+		if(stream.header.controller.encoder != YON_ENCODE_ZSTD){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
-
 		stream.buffer_data_uncompressed.resize(stream.header.uLength + 16536);
 		int ret = ZSTD_decompress(stream.buffer_data_uncompressed.data(),
 								  stream.buffer_data_uncompressed.capacity(),
@@ -398,13 +397,13 @@ public:
 		if(!stream.header.controller.mixedStride)
 			return false;
 
-		if(stream.header_stride.controller.encoder != core::YON_ENCODE_ZSTD){
+		if(stream.header_stride.controller.encoder != YON_ENCODE_ZSTD){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
 
-		if(stream.header_stride.controller.encoder != core::YON_ENCODE_ZSTD)
+		if(stream.header_stride.controller.encoder != YON_ENCODE_ZSTD)
 			return true;
 
 		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);

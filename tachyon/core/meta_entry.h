@@ -3,7 +3,7 @@
 
 #include <limits>
 
-#include "../containers/core/datablock_header.h"
+#include "../containers/components/datablock_header.h"
 #include "header/tachyon_header.h"
 #include "meta_cold.h"
 #include "meta_hot.h"
@@ -19,12 +19,12 @@ namespace core{
  */
 struct MetaEntry{
 private:
-	typedef MetaHot                           hot_entry;
-	typedef MetaCold                          cold_entry;
-	typedef containers::DataContainer         container_type;
-	typedef containers::core::DataBlockHeader datablock_header_type;
-	typedef TachyonHeader                     header_type;
-	typedef io::BasicBuffer                   buffer_type;
+	typedef MetaHot                     hot_entry;
+	typedef MetaCold                    cold_entry;
+	typedef containers::DataContainer   container_type;
+	typedef containers::DataBlockHeader datablock_header_type;
+	typedef TachyonHeader               header_type;
+	typedef io::BasicBuffer             buffer_type;
 
 public:
 	MetaEntry();

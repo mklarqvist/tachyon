@@ -35,8 +35,8 @@ public:
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.encode(block.meta_format_map_ids);
 
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
-			if(block.info_containers[i].header.controller.type == core::YON_TYPE_FLOAT ||
-			   block.info_containers[i].header.controller.type == core::YON_TYPE_DOUBLE){
+			if(block.info_containers[i].header.controller.type == YON_TYPE_FLOAT ||
+			   block.info_containers[i].header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 			}
@@ -45,8 +45,8 @@ public:
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
-			if(block.format_containers[i].header.controller.type == core::YON_TYPE_FLOAT ||
-			   block.format_containers[i].header.controller.type == core::YON_TYPE_DOUBLE){
+			if(block.format_containers[i].header.controller.type == YON_TYPE_FLOAT ||
+			   block.format_containers[i].header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 			}
@@ -65,54 +65,63 @@ public:
 		}
 
 		if(block.meta_hot_container.getSizeCompressed()){
+			//std::cerr << "decompress hot: " << block.meta_hot_container.buffer_data.size() << std::endl;
 			if(!this->decompress(block.meta_hot_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.meta_cold_container.getSizeCompressed()){
+			//std::cerr << "decompress cold" << std::endl;
 			if(!this->decompress(block.meta_cold_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.gt_rle_container.getSizeCompressed()){
+			//std::cerr << "decompress gt rle" << std::endl;
 			if(!this->decompress(block.gt_rle_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.gt_simple_container.getSizeCompressed()){
+			//std::cerr << "decompress gt simple" << std::endl;
 			if(!this->decompress(block.gt_simple_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.gt_support_data_container.getSizeCompressed()){
+			//std::cerr << "decompress gt support" << std::endl;
 			if(!this->decompress(block.gt_support_data_container)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.meta_info_map_ids.getSizeCompressed()){
+			//std::cerr << "decompress info map ids" << std::endl;
 			if(!this->decompress(block.meta_info_map_ids)){
 				std::cerr << "failed to meta_info_map_ids!" << std::endl;
 			}
 		}
 
 		if(block.meta_filter_map_ids.getSizeCompressed()){
+			//std::cerr << "decompress filter map ids" << std::endl;
 			if(!this->decompress(block.meta_filter_map_ids)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		if(block.meta_format_map_ids.getSizeCompressed()){
+			//std::cerr << "decompress format map ids" << std::endl;
 			if(!this->decompress(block.meta_format_map_ids)){
 				std::cerr << "failed to decompress!" << std::endl;
 			}
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+			//std::cerr << "decompress: " << i << "/" << block.index_entry.n_info_streams << std::endl;
 			if(block.info_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.info_containers[i])){
 					std::cerr << "failed to decompress!" << std::endl;
@@ -121,6 +130,7 @@ public:
 		}
 
 		for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
+			//std::cerr << "decompress: " << i << "/" << block.index_entry.n_format_streams << std::endl;
 			if(block.format_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.format_containers[i])){
 					std::cerr << "failed to decompress!" << std::endl;
@@ -128,6 +138,7 @@ public:
 			}
 		}
 
+		//std::cerr << "returning from decompressing" << std::endl;
 		return true;
 	}
 
@@ -136,9 +147,9 @@ public:
 	}
 
 	bool decompress(container_type& container){
-		if(container.header.controller.encoder == core::YON_ENCODE_ZSTD){
+		if(container.header.controller.encoder == YON_ENCODE_ZSTD){
 			if(!this->zstd_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
-		} else if(container.header.controller.encoder == core::YON_ENCODE_NONE){
+		} else if(container.header.controller.encoder == YON_ENCODE_NONE){
 			if(!this->no_codec.decode(container)){ std::cerr << "failed" << std::endl; return false; }
 		} else {
 			std::cerr << "ILLEGAL CODEC" << std::endl;
@@ -146,9 +157,9 @@ public:
 		}
 
 		if(container.header.controller.mixedStride){
-			if(container.header_stride.controller.encoder == core::YON_ENCODE_ZSTD){
+			if(container.header_stride.controller.encoder == YON_ENCODE_ZSTD){
 				this->zstd_codec.decodeStrides(container);
-			} else if (container.header_stride.controller.encoder == core::YON_ENCODE_NONE){
+			} else if (container.header_stride.controller.encoder == YON_ENCODE_NONE){
 				this->no_codec.decodeStrides(container);
 			}
 		}

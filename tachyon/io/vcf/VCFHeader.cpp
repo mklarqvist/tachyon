@@ -7,18 +7,20 @@ VCFHeader::VCFHeader() :
 	error_bit(VCF_PASS),
 	samples(0),
 	version(0),
-	mapTable(nullptr),
+	info_remap(nullptr),
+	format_remap(nullptr),
+	filter_remap(nullptr),
 	contigsHashTable(nullptr),
-	sampleHashTable(nullptr),
-	map_lookup(nullptr)
+	sampleHashTable(nullptr)
 {
 }
 
 VCFHeader::~VCFHeader(){
 	delete this->contigsHashTable;
 	delete this->sampleHashTable;
-	delete this->map_lookup;
-	delete [] this->mapTable;
+	delete [] this->info_remap;
+	delete [] this->format_remap;
+	delete [] this->filter_remap;
 }
 
 bool VCFHeader::parse(reader_type& stream){
@@ -64,67 +66,77 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		return false;
 
 	/**<
-	 * Store IDX values from BCF in a vector
+	 * Store IDX values from BCF in vectors
 	 */
-	std::vector<map_entry_type> temp_map;
 	for(U32 i = 0 ; i < this->lines.size(); ++i){
 		if(this->lines[i].isIndexable == false)
 			continue;
 
-		// Todo: fix
 		S32 idx = -1;
 		for(U32 j = 0; j < this->lines[i].pairs.size(); ++j){
-			//std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
+			std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
 			if(this->lines[i].pairs[j].KEY == "IDX")
 				idx = atoi(&this->lines[i].pairs[j].VALUE[0]);
 		}
-		//std::cerr << "IDX in: " << idx << std::endl;
 		assert(idx != -1);
 
-		temp_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
-		switch((int)this->lines[i].type){
-		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO):   temp_map.back().isInfo   = true; break;
-		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER): temp_map.back().isFilter = true; break;
-		case(vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT): temp_map.back().isFormat = true; break;
+		// Push IDX into correct vector family
+		if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO){
+			this->info_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+		} else if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER){
+			this->filter_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+		} else if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT){
+			this->format_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+		} else {
+			std::cerr << "illegal format" << std::endl;
+			exit(1);
 		}
 	}
 
 	// Sort data
-	std::sort(temp_map.begin(), temp_map.end());
-	this->map.push_back(temp_map[0]);
-	for(U32 i = 1; i < temp_map.size(); ++i){
-		if(temp_map[i].IDX == this->map.back().IDX){
-			this->map.back().isFilter += temp_map[i].isFilter;
-			this->map.back().isFormat += temp_map[i].isFormat;
-			this->map.back().isInfo   += temp_map[i].isInfo;
-			continue;
-		}
-		this->map.push_back(temp_map[i]);
-		//std::cerr << "sorted: " << i << "->" << temp_map[i].IDX << std::endl;
+	std::sort(this->info_map.begin(),   this->info_map.end());
+	std::sort(this->filter_map.begin(), this->filter_map.end());
+	std::sort(this->format_map.begin(), this->format_map.end());
+
+	//
+	for(U32 i = 0; i < this->info_map.size(); ++i){
+		std::cerr << "INFO: " << this->info_map[i].ID << ", " << this->info_map[i].IDX << std::endl;
 	}
 
-	const S32 largest_idx = this->map.back().IDX;
-	//std::cerr << "largest:" << largest_idx << std::endl;
-	this->mapTable = new U32[largest_idx + 1];
-	memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
-	S32 localID = 0;
-	mapTable[this->map[0].IDX] = 0;
-	for(U32 i = 1; i < this->map.size(); ++i){
-		if(this->map[i - 1].IDX == this->map[i].IDX){
-			mapTable[this->map[i].IDX] = mapTable[this->map[i-1].IDX];
-			//std::cerr << i << "->" << mapTable[this->map[i].IDX] << std::endl;
-			continue;
-		}
-		mapTable[this->map[i].IDX] = localID++;
-		//std::cerr << i << "->" << mapTable[this->map[i].IDX] << std::endl;
+	for(U32 i = 0; i < this->format_map.size(); ++i){
+		std::cerr << "FORMAT: " << this->format_map[i].ID << ", " << this->format_map[i].IDX << std::endl;
 	}
 
-	if(this->map.size()*2 < 1024)
-		this->map_lookup = new hash_table_map_type(1024);
-	else this->map_lookup = new hash_table_map_type(this->map.size()*2);
+	for(U32 i = 0; i < this->filter_map.size(); ++i){
+		std::cerr << "FILTER: " << this->filter_map[i].ID << ", " << this->filter_map[i].IDX << std::endl;
+	}
 
-	for(U32 i = 0 ; i < this->lines.size(); ++i){
-		//this->map_lookup->SetItem(&i, this->map[i]);
+	std::cerr << "Largest: " << this->info_map.back().IDX << ", " << this->format_map.back().IDX << ", " << this->filter_map.back().IDX << std::endl;
+	if(this->info_map.size()){
+		const S32 largest_idx = this->info_map.back().IDX;
+		this->info_remap = new U32[largest_idx + 1];
+		U32 new_idx = 0;
+		for(U32 i = 0; i < this->info_map.size(); ++i){
+			this->info_remap[this->info_map[i].IDX] = new_idx++;
+		}
+	}
+
+	if(this->format_map.size()){
+		const S32 largest_idx = this->format_map.back().IDX;
+		this->format_remap = new U32[largest_idx + 1];
+		U32 new_idx = 0;
+		for(U32 i = 0; i < this->format_map.size(); ++i){
+			this->format_remap[this->format_map[i].IDX] = new_idx++;
+		}
+	}
+
+	if(this->filter_map.size()){
+		const S32 largest_idx = this->filter_map.back().IDX;
+		this->filter_remap = new U32[largest_idx + 1];
+		U32 new_idx = 0;
+		for(U32 i = 0; i < this->filter_map.size(); ++i){
+			this->info_remap[this->filter_map[i].IDX] = new_idx++;
+		}
 	}
 
 	return true;

@@ -18,7 +18,7 @@ RM := rm
 -include tachyon/io/subdir.mk
 -include tachyon/core/header/subdir.mk
 -include tachyon/core/subdir.mk
--include tachyon/containers/core/subdir.mk
+-include tachyon/containers/components/subdir.mk
 -include tachyon/containers/subdir.mk
 -include tachyon/algorithm/permutation/subdir.mk
 -include tachyon/algorithm/compression/subdir.mk

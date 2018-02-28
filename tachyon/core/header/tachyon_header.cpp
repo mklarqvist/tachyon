@@ -6,21 +6,27 @@ namespace core{
 TachyonHeader::TachyonHeader(void) :
 	contigs(nullptr),
 	samples(nullptr),
-	entries(nullptr),
-	mapTable(nullptr),
+	info_fields(nullptr),
+	format_fields(nullptr),
+	filter_fields(nullptr),
 	htable_contigs(nullptr),
 	htable_samples(nullptr),
-	htable_entries(nullptr)
+	htable_info_fields(nullptr),
+	htable_format_fields(nullptr),
+	htable_filter_fields(nullptr)
 {}
 
 TachyonHeader::TachyonHeader(const vcf_header_type& vcf_header) :
 	contigs(nullptr),
 	samples(nullptr),
-	entries(nullptr),
-	mapTable(nullptr),
+	info_fields(nullptr),
+	format_fields(nullptr),
+	filter_fields(nullptr),
 	htable_contigs(nullptr),
 	htable_samples(nullptr),
-	htable_entries(nullptr)
+	htable_info_fields(nullptr),
+	htable_format_fields(nullptr),
+	htable_filter_fields(nullptr)
 {
 	// Invoke copy operator
 	*this = vcf_header;
@@ -29,11 +35,14 @@ TachyonHeader::TachyonHeader(const vcf_header_type& vcf_header) :
 TachyonHeader::~TachyonHeader(){
 	delete [] this->contigs;
 	delete [] this->samples;
-	delete [] this->entries;
-	delete [] this->mapTable;
+	delete [] this->info_fields;
+	delete [] this->format_fields;
+	delete [] this->filter_fields;
 	delete this->htable_contigs;
 	delete this->htable_samples;
-	delete this->htable_entries;
+	delete this->htable_info_fields;
+	delete this->htable_format_fields;
+	delete this->htable_filter_fields;
 }
 
 const bool TachyonHeader::getContig(const std::string& p, contig_type*& target) const{
@@ -56,46 +65,61 @@ const bool TachyonHeader::getSample(const std::string& p, sample_type*& target) 
 	return false;
 }
 
-const bool TachyonHeader::getEntry(const std::string& p, map_entry_type*& target) const{
-	if(this->htable_entries == nullptr) return false;
+const bool TachyonHeader::getInfoField(const std::string& p, map_entry_type*& target) const{
+	if(this->htable_info_fields== nullptr) return false;
 	S32* ret = nullptr;
-	if(this->htable_entries->GetItem(&p[0], &p, ret, p.size())){
-		target = &this->entries[*ret];
+	if(this->htable_info_fields->GetItem(&p[0], &p, ret, p.size())){
+		target = &this->info_fields[*ret];
 		return true;
 	}
 	return false;
 }
 
-const core::HeaderMapEntry* TachyonHeader::getEntry(const std::string& p) const{
-	if(this->htable_entries == nullptr) return nullptr;
+const bool TachyonHeader::getFormatField(const std::string& p, map_entry_type*& target) const{
+	if(this->htable_format_fields == nullptr) return false;
 	S32* ret = nullptr;
-	if(this->htable_entries->GetItem(&p[0], &p, ret, p.size()))
-		return(&this->entries[*ret]);
+	if(this->htable_format_fields->GetItem(&p[0], &p, ret, p.size())){
+		target = &this->format_fields[*ret];
+		return true;
+	}
+	return false;
+}
+
+const bool TachyonHeader::getFilterField(const std::string& p, map_entry_type*& target) const{
+	if(this->htable_filter_fields == nullptr) return false;
+	S32* ret = nullptr;
+	if(this->htable_filter_fields->GetItem(&p[0], &p, ret, p.size())){
+		target = &this->filter_fields[*ret];
+		return true;
+	}
+	return false;
+}
+
+const core::HeaderMapEntry* TachyonHeader::getInfoField(const std::string& p) const{
+	if(this->htable_info_fields == nullptr) return nullptr;
+	S32* ret = nullptr;
+	if(this->htable_info_fields->GetItem(&p[0], &p, ret, p.size()))
+		return(&this->info_fields[*ret]);
 
 	return nullptr;
 }
 
-bool TachyonHeader::buildMapTable(void){
-	if(this->header_magic.n_declarations == 0)
-		return false;
+const core::HeaderMapEntry* TachyonHeader::getFormatField(const std::string& p) const{
+	if(this->htable_format_fields == nullptr) return nullptr;
+	S32* ret = nullptr;
+	if(this->htable_format_fields->GetItem(&p[0], &p, ret, p.size()))
+		return(&this->format_fields[*ret]);
 
-	delete [] this->mapTable;
+	return nullptr;
+}
 
-	S32 largest_idx = -1;
-	for(U32 i = 0; i < this->header_magic.n_declarations; ++i){
-		if(this->entries[i].IDX > largest_idx)
-			largest_idx = this->entries[i].IDX;
-	}
+const core::HeaderMapEntry* TachyonHeader::getFilterField(const std::string& p) const{
+	if(this->htable_filter_fields == nullptr) return nullptr;
+	S32* ret = nullptr;
+	if(this->htable_filter_fields->GetItem(&p[0], &p, ret, p.size()))
+		return(&this->filter_fields[*ret]);
 
-	this->mapTable = new U32[largest_idx + 1];
-	memset(this->mapTable, 0, sizeof(U32)*(largest_idx+1));
-	S32 localID = 0;
-	for(U32 i = 0; i < this->header_magic.n_declarations; ++i){
-		this->mapTable[this->entries[i].IDX] = localID++;
-		//std::cerr << i << "->" << this->mapTable[i] << std::endl;
-	}
-
-	return true;
+	return nullptr;
 }
 
 bool TachyonHeader::buildHashTables(void){
@@ -121,14 +145,36 @@ bool TachyonHeader::buildHashTables(void){
 		}
 	}
 
-	if(this->header_magic.n_declarations){
-		if(this->header_magic.n_declarations*2 < 5012){
-			this->htable_entries = new hash_table_type(5012);
+	if(this->header_magic.n_info_values){
+		if(this->header_magic.n_info_values*2 < 5012){
+			this->htable_info_fields = new hash_table_type(5012);
 		} else
-			this->htable_entries = new hash_table_type(this->header_magic.n_declarations*2);
+			this->htable_info_fields = new hash_table_type(this->header_magic.n_info_values*2);
 
-		for(S32 i = 0; i < this->header_magic.n_declarations; ++i){
-			this->htable_entries->SetItem(&this->entries[i].ID[0], &this->entries[i].ID, i, this->entries[i].ID.size());
+		for(S32 i = 0; i < this->header_magic.n_info_values; ++i){
+			this->htable_info_fields->SetItem(&this->info_fields[i].ID[0], &this->info_fields[i].ID, i, this->info_fields[i].ID.size());
+		}
+	}
+
+	if(this->header_magic.n_format_values){
+		if(this->header_magic.n_format_values*2 < 5012){
+			this->htable_format_fields = new hash_table_type(5012);
+		} else
+			this->htable_format_fields = new hash_table_type(this->header_magic.n_format_values*2);
+
+		for(S32 i = 0; i < this->header_magic.n_format_values; ++i){
+			this->htable_format_fields->SetItem(&this->format_fields[i].ID[0], &this->format_fields[i].ID, i, this->format_fields[i].ID.size());
+		}
+	}
+
+	if(this->header_magic.n_filter_values){
+		if(this->header_magic.n_filter_values*2 < 5012){
+			this->htable_filter_fields = new hash_table_type(5012);
+		} else
+			this->htable_filter_fields = new hash_table_type(this->header_magic.n_filter_values*2);
+
+		for(S32 i = 0; i < this->header_magic.n_filter_values; ++i){
+			this->htable_filter_fields->SetItem(&this->filter_fields[i].ID[0], &this->filter_fields[i].ID, i, this->filter_fields[i].ID.size());
 		}
 	}
 

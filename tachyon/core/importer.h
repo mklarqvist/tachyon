@@ -19,7 +19,6 @@ class Importer {
 private:
 	typedef Importer                        self_type;
 	typedef ImportWriter                    writer_type;
-	typedef io::BasicReader                 reader_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef vcf::VCFHeader                  header_type;
 	typedef index::IndexEntry               index_entry_type;
@@ -62,7 +61,6 @@ private:
 	// Read/write fields
 	std::string inputFile;   // input file name
 	std::string outputPrefix;// output file prefix
-	reader_type reader;      // reader
 	writer_type writer;      // writer
 
 	index_entry_type  index_entry;  // Header index
