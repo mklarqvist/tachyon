@@ -223,20 +223,26 @@ void DataContainer::reformat(){
 		if(byte_width == 1){
 			this->header.controller.type = YON_TYPE_8B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j){
+				//assert(dat[j] == (BYTE)dat[j]);
 				this->buffer_data += (BYTE)dat[j];
+			}
 
 		} else if(byte_width == 2){
 			this->header.controller.type = YON_TYPE_16B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j){
+				//assert(dat[j] == (U16)dat[j]);
 				this->buffer_data += (U16)dat[j];
+			}
 
 		} else if(byte_width == 4){
 			this->header.controller.type = YON_TYPE_32B;
 
-			for(U32 j = 0; j < this->n_additions; ++j)
+			for(U32 j = 0; j < this->n_additions; ++j){
+				//assert(dat[j] == (U32)dat[j]);
 				this->buffer_data += (U32)dat[j];
+			}
 
 		} else if(byte_width == 8){
 			this->header.controller.type = YON_TYPE_64B;
@@ -245,11 +251,11 @@ void DataContainer::reformat(){
 				this->buffer_data += (U64)dat[j];
 
 		} else {
-			std::cerr << utility::timestamp("ERROR") << "Illegal primitvie type!" << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type!" << std::endl;
 			exit(1);
 		}
 	}
-	// Is negative
+	// Is negative or has missing
 	else {
 		this->header.controller.signedness = 1;
 
@@ -257,6 +263,7 @@ void DataContainer::reformat(){
 			this->header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->n_additions; ++j){
+				//assert(dat[j] == (SBYTE)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
 				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
 				else this->buffer_data += (SBYTE)dat[j];
@@ -267,6 +274,7 @@ void DataContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S16)dat[j];
+				//assert(dat[j] == (S16)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (U16)0x8000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
 				else this->buffer_data += (S16)dat[j];
@@ -277,13 +285,14 @@ void DataContainer::reformat(){
 
 			for(U32 j = 0; j < this->n_additions; ++j){
 				//this->buffer_data += (S32)dat[j];
+				//assert(dat[j] == (S32)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (U32)0x80000000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
 				else this->buffer_data += (S32)dat[j];
 			}
 
 		} else {
-			std::cerr << utility::timestamp("ERROR") << "Illegal primitvie type!" << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type!" << std::endl;
 			exit(1);
 		}
 	}

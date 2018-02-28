@@ -83,10 +83,10 @@ bool Importer::BuildBCF(void){
 	core::TachyonHeader header(*this->header);
 	header.write(this->writer.stream);
 	this->GT_available_ = header.has_format_field("GT");
-	const core::HeaderMapEntry* gt_entry = header.getFormatField("GT");
-	if(gt_entry != nullptr){
-		assert(gt_entry->ID == "GT");
-		reader.map_gt_id = gt_entry->IDX;
+	for(U32 i = 0; i < this->header->format_map.size(); ++i){
+		if(this->header->format_map[i].ID == "GT"){
+			reader.map_gt_id = this->header->format_map[i].IDX;
+		}
 	}
 
 	this->block.index_entry.controller.hasGT = this->GT_available_;
@@ -400,6 +400,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U32 mapID = this->format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
+		// First value is always genotypes if there is any
 		if(entry.hasGenotypes == true && i == 0)
 			continue;
 

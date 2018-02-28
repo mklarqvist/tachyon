@@ -73,20 +73,46 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 			continue;
 
 		S32 idx = -1;
+		std::string type;
 		for(U32 j = 0; j < this->lines[i].pairs.size(); ++j){
 			std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
 			if(this->lines[i].pairs[j].KEY == "IDX")
 				idx = atoi(&this->lines[i].pairs[j].VALUE[0]);
+
+			if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO ||
+				this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT){
+
+				if(this->lines[i].pairs[j].KEY == "Type")
+					type = this->lines[i].pairs[j].VALUE;
+			}
 		}
 		assert(idx != -1);
+		std::cerr << type << std::endl;
 
 		// Push IDX into correct vector family
 		if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO){
-			this->info_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+			// Valid INFO = Integer, Float, Flag, Character, and String
+			S32 primitive_type = -1;
+			if(type == "Integer") primitive_type = 0;
+			else if(type == "Float") primitive_type = 1;
+			else if(type == "Flag") primitive_type = 2;
+			else if(type == "Character") primitive_type = 3;
+			else if(type == "String") primitive_type = 4;
+			assert(primitive_type != -1);
+
+			this->info_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx, primitive_type));
 		} else if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FILTER){
 			this->filter_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
 		} else if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT){
-			this->format_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx));
+			// Valid FORMAT = Integer, Float, Character, and String
+			S32 primitive_type = -1;
+			if(type == "Integer") primitive_type = 0;
+			else if(type == "Float") primitive_type = 1;
+			else if(type == "Character") primitive_type = 3;
+			else if(type == "String") primitive_type = 4;
+			assert(primitive_type != -1);
+
+			this->format_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx, primitive_type));
 		} else {
 			std::cerr << "illegal format" << std::endl;
 			exit(1);

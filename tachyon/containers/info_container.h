@@ -24,6 +24,7 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const =0;
+    virtual const bool emptyPosition(const U32& position) const =0;
 
 protected:
     TACHYON_CORE_TYPE primitive_type;
@@ -108,6 +109,7 @@ public:
 
     // Type-specific
     std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ utility::to_vcf_string(stream, this->at(position)); return(stream); }
+    const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:
     // For mixed strides
@@ -131,6 +133,13 @@ private:
 
 // IMPLEMENTATION -------------------------------------------------------------
 
+
+template <class return_type>
+InfoContainer<return_type>::InfoContainer(void) :
+	__containers(nullptr)
+{
+
+}
 
 template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& data_container,

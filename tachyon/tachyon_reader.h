@@ -259,12 +259,68 @@ public:
 
 
 	U64 iterate_all_info(std::ostream& stream = std::cout){
+		containers::MetaContainer meta(this->block);
+		// Store as double pointers to avoid memory collisions because
+		// infocontainers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.index_entry.n_info_streams];
+		U32 n_set = 0;
+		std::vector<std::string> local_fields;
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			std::cerr << i << "/" << this->block.index_entry.n_info_streams << ": " << this->block.index_entry.info_offsets[i].key << "@" << this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID << std::endl;
-			//this->header.info_fields[this->block.index_entry.info_offsets[i].key].
-			//its[i] = new containers::InfoContainerInterface;
+			//std::cerr << i << "/" << this->block.index_entry.n_info_streams << ": " << this->block.index_entry.info_offsets[i].key << "@" << this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID << std::endl;
+			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+			if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				its[n_set++] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
+				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
+                      this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				its[n_set++] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
+				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				its[n_set++] = new containers::InfoContainer<double>(this->block.info_containers[i], meta, matches);
+				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+			} else {
+				//std::cerr << "unknown type: " << (int)this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() << std::endl;
+				its[n_set++] = new containers::InfoContainer<U32>();
+				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+				//continue;
+			}
 		}
+
+		for(U32 p = 0; p < meta.size(); ++p){
+			meta.at(p).toVCFString(std::cout, this->header);
+			std::cout << "PASS\t";
+
+			const U32& n_keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
+			const U32* keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].keys;
+
+			// First
+			if(this->header.info_fields[this->block.index_entry.info_offsets[keys[0]].key].primitive_type == 2){
+				//std::cerr << "skipping" << std::endl;
+				std::cout << local_fields[keys[0]];
+				continue;
+			}
+			if(its[keys[0]]->emptyPosition(p)) continue;
+			std::cout << local_fields[keys[0]] << "=";
+			its[keys[0]]->to_vcf_string(std::cout, p);
+
+			for(U32 i = 1; i < n_keys; ++i){
+				//std::cerr << keys[i] << " and " << this->block.index_entry.info_offsets[keys[i]].key << std::endl;
+				if(this->header.info_fields[this->block.index_entry.info_offsets[keys[i]].key].primitive_type == 2){
+					//std::cerr << "skipping" << std::endl;
+					std::cout << ";" << local_fields[keys[i]];
+					//exit(1);
+					continue;
+				}
+				if(its[keys[i]]->emptyPosition(p)) continue;
+				std::cout << ";" << local_fields[keys[i]] << "=";
+				its[keys[i]]->to_vcf_string(std::cout, p);
+			}
+			std::cout << '\n';
+		}
+
+		for(U32 i = 0; i < n_set; ++i)
+			delete its[i];
+
 		delete [] its;
 		return(0);
 	}
