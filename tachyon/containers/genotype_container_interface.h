@@ -13,17 +13,17 @@ namespace containers{
 
 class GenotypeContainerInterface{
 private:
-    typedef GenotypeContainerInterface       self_type;
-    typedef std::size_t                      size_type;
+    typedef GenotypeContainerInterface     self_type;
+    typedef std::size_t                    size_type;
 
 protected:
-    typedef tachyon::core::MetaEntry         meta_type;
-    typedef tachyon::core::MetaHotController hot_controller_type;
-    typedef tachyon::core::GTObject          gt_object;
-    typedef GenotypeSum                      gt_summary;
-    typedef math::SquareMatrix<double>       square_matrix_type;
-    typedef algorithm::PermutationManager    permutation_type;
-    typedef tachyon::core::TsTvObject        ts_tv_object_type;
+    typedef tachyon::core::MetaEntry                meta_type;
+    typedef tachyon::core::MetaHotController        hot_controller_type;
+    typedef tachyon::core::GTObject                 gt_object;
+    typedef GenotypeSum                    gt_summary;
+    typedef math::SquareMatrix<double>     square_matrix_type;
+    typedef algorithm::PermutationManager  permutation_type;
+    typedef tachyon::core::TsTvObject               ts_tv_object_type;
 
     // Function pointers
 	typedef float (self_type::*matrix_comparator)(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB);

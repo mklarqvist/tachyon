@@ -288,7 +288,18 @@ public:
 
 		for(U32 p = 0; p < meta.size(); ++p){
 			meta.at(p).toVCFString(std::cout, this->header);
-			std::cout << "PASS\t";
+			//std::cout << "PASS\t";
+
+			const U32& n_filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
+			const U32* filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].keys;
+			if(n_filter_keys){
+				std::cout << this->header.filter_fields[filter_keys[0]].ID;
+				for(U32 i = 1; i < n_filter_keys; ++i){
+					std::cout << ';' << this->header.filter_fields[filter_keys[i]].ID;
+				}
+				std::cout.put('\t');
+			} else
+				std::cout << ".\t";
 
 			const U32& n_keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
 			const U32* keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].keys;
