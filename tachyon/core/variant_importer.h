@@ -1,5 +1,5 @@
-#ifndef CORE_IMPORTER_H_
-#define CORE_IMPORTER_H_
+#ifndef CORE_VARIANT_IMPORTER_H_
+#define CORE_VARIANT_IMPORTER_H_
 
 #include "../algorithm/compression/compression_manager.h"
 #include "../algorithm/compression/genotype_encoder.h"
@@ -15,9 +15,9 @@
 
 namespace tachyon {
 
-class Importer {
+class VariantImporter {
 private:
-	typedef Importer                        self_type;
+	typedef VariantImporter                 self_type;
 	typedef ImportWriter                    writer_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef vcf::VCFHeader                  header_type;
@@ -36,8 +36,8 @@ private:
 	typedef core::MetaHot                   meta_type;
 
 public:
-	Importer(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
-	~Importer();
+	VariantImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
+	~VariantImporter();
 	bool Build();
 
 	inline void setPermute(const bool yes){ this->permute = yes; }
@@ -85,4 +85,4 @@ private:
 
 } /* namespace Tachyon */
 
-#endif /* CORE_IMPORTER_H_ */
+#endif /* CORE_VARIANT_IMPORTER_H_ */

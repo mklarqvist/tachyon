@@ -12,7 +12,7 @@ private:
 	typedef CompressionManager        self_type;
 	typedef UncompressedCodec         no_codec_type;
 	typedef ZSTDCodec                 zstd_codec_type;
-	typedef containers::VariantBlock     block_type;
+	typedef containers::VariantBlock  block_type;
 	typedef containers::DataContainer container_type;
 
 public:

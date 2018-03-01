@@ -1,18 +1,17 @@
 #include <fstream>
 
-#include "importer.h"
-
 #include "../algorithm/digital_digest.h"
 #include "meta_cold.h"
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
 #include "../algorithm/timer.h"
+#include "variant_importer.h"
 
 namespace tachyon {
 
 #define IMPORT_ASSERT 1
 
-Importer::Importer(std::string inputFile,
+VariantImporter::VariantImporter(std::string inputFile,
 		           std::string outputPrefix,
                      const U32 checkpoint_n_snps,
                   const double checkpoint_bases) :
@@ -27,9 +26,9 @@ Importer::Importer(std::string inputFile,
 {
 }
 
-Importer::~Importer(){ }
+VariantImporter::~VariantImporter(){ }
 
-void Importer::resetHashes(void){
+void VariantImporter::resetHashes(void){
 	this->info_fields.clear();
 	this->info_patterns.clear();
 	this->format_fields.clear();
@@ -38,7 +37,7 @@ void Importer::resetHashes(void){
 	this->filter_patterns.clear();
 }
 
-bool Importer::Build(){
+bool VariantImporter::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
 	if(!temp.good()){
 		std::cerr << utility::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->inputFile << ")..." << std::endl;
@@ -60,7 +59,7 @@ bool Importer::Build(){
 	return true;
 }
 
-bool Importer::BuildBCF(void){
+bool VariantImporter::BuildBCF(void){
 	bcf_reader_type reader;
 	if(!reader.open(this->inputFile)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
@@ -190,6 +189,9 @@ bool Importer::BuildBCF(void){
 		// Perform writing and update index
 		this->block.updateOffsets();
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
+		std::cerr << this->block.index_entry.n_info_streams << "," << this->block.index_entry.n_format_streams << "," << this->block.index_entry.n_filter_streams << std::endl;
+		std::cerr << this->block.index_entry.n_info_patterns << "," << this->block.index_entry.n_format_patterns << "," << this->block.index_entry.n_filter_patterns << std::endl;
+
 		this->block.write(this->writer.stream, this->import_compressed_stats, this->import_uncompressed_stats);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
 		current_index_entry.contigID        = reader.front().body->CHROM;
@@ -265,7 +267,7 @@ bool Importer::BuildBCF(void){
 	return(true);
 }
 
-bool Importer::add(bcf_entry_type& entry){
+bool VariantImporter::add(bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
@@ -321,7 +323,7 @@ bool Importer::add(bcf_entry_type& entry){
 	return true;
 }
 
-bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
+bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
 		this->filter_fields.setGet(this->header->filter_remap[entry.filterID[i].mapID]);

@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "core/importer.h"
+#include "core/variant_importer.h"
 #include "utility.h"
 
 void import_usage(void){
@@ -120,7 +120,7 @@ int import(int argc, char** argv){
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
-	tachyon::Importer importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
+	tachyon::VariantImporter importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
 	importer.setPermute(permute);
 
 	if(!importer.Build())

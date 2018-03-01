@@ -144,7 +144,6 @@ int view(int argc, char** argv){
 		++n_blocks;
 		//if(n_blocks == 50) break;
 	}
-	std::cerr << "done" << std::endl;
 
 	/*
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTG\tTC\tTT\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\t\n";

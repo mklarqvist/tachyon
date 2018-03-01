@@ -345,7 +345,7 @@ private:
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream >> entry.info_offsets[i];
 
-		entry.format_offsets = new offset_minimal_type[entry.n_info_streams];
+		entry.format_offsets = new offset_minimal_type[entry.n_format_streams];
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream >> entry.format_offsets[i];
 

@@ -16,11 +16,12 @@ GenotypeEncoder::GenotypeEncoder(const U64 samples) :
 GenotypeEncoder::~GenotypeEncoder(){}
 
 bool GenotypeEncoder::Encode(const bcf_type& line,
-		                           meta_type& meta_base,
-							  container_type& runs,
-							  container_type& simple,
-							  container_type& support,
-							 const U32* const ppa){
+		                          meta_type& meta_base,
+							 container_type& runs,
+							 container_type& simple,
+                             container_type& support,
+                           const U32* const  ppa)
+{
 	if(line.body->n_allele + 1 >= 32768){
 		std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 					 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
