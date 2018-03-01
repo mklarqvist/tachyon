@@ -3,11 +3,16 @@
 namespace tachyon{
 namespace containers{
 
+FormatContainer<std::string>::FormatContainer() :
+	__containers(nullptr)
+{
+
+}
+
 FormatContainer<std::string>::FormatContainer(const data_container_type& data_container,
                                               const meta_container_type& meta_container,
                                                 const std::vector<bool>& pattern_matches,
                                                               const U64  n_samples) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(data_container.buffer_data_uncompressed.size() == 0)
@@ -21,7 +26,6 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& data_co
 }
 
 FormatContainer<std::string>::FormatContainer(const data_container_type& container, const U64 n_samples) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(container.buffer_data_uncompressed.size() == 0)

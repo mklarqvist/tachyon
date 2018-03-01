@@ -16,7 +16,7 @@ namespace containers{
  * of the specification
  */
 template <>
-class FormatContainer<std::string>{
+class FormatContainer<std::string>  : public FormatContainerInterface{
 private:
     typedef FormatContainer       self_type;
     typedef PrimitiveGroupContainer<std::string> value_type;
@@ -131,7 +131,6 @@ private:
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
 
 private:
-    size_t  n_entries;
     pointer __containers;
 };
 

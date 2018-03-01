@@ -3,6 +3,7 @@
 
 #include "../algorithm/digital_digest.h"
 #include "variantblock.h"
+#include "../core/header/tachyon_header.h"
 
 namespace tachyon{
 namespace containers{
@@ -17,7 +18,8 @@ private:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
-    typedef containers::VariantBlock    block_type;
+    typedef containers::VariantBlock block_type;
+    typedef tachyon::core::TachyonHeader header_type;
 
 public:
 	ChecksumContainer(void);
@@ -109,10 +111,10 @@ public:
      * Updates all target digital digest records in the container given
      * the input data block
      * @param block    Input data block container
-     * @param mapTable Supportive map functionality
+     * @param header   Header
      * @return         Returns TRUE upon success or FALSE otherwise
      */
-	bool update(const block_type& block, const U32* const mapTable);
+	bool update(const block_type& block, const header_type& header);
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){

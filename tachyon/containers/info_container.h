@@ -292,7 +292,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	if(this->n_entries == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 	stride_container_type strides(data_container);
 
 	U32 current_offset = 0;

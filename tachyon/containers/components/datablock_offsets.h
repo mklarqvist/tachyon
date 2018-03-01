@@ -10,26 +10,26 @@ namespace containers{
 struct DataBlockOffsetsHeader{
 	typedef DataBlockOffsetsHeader self_type;
 
-	DataBlockOffsetsHeader() : key(0), offset(0){}
+	DataBlockOffsetsHeader() : global_key(0), offset(0){}
 
 	void clear(void){
-		this->key = 0;
+		this->global_key = 0;
 		this->offset = 0;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.key),    sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.global_key),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
 		return stream;
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.key),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.global_key),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.offset), sizeof(U32));
 		return stream;
 	}
 
-	U32 key;
+	U32 global_key;
 	U32 offset;
 };
 

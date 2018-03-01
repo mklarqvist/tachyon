@@ -388,23 +388,23 @@ private:
 	}
 
 private:
+	/**<
+	 *
+	 * @param target
+	 * @param offset
+	 * @param values
+	 * @param patterns
+	 * @return
+	 */
 	bool __constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
-	// Virtual offsets into various
-	// INFO/FORMAT/FILTER streams
-	//
-	// This mean local key is implicit
-	// GLOBAL KEY | OFFSET
-	// These contain the local map to a stream ID
-	// e.g. 15 -> 0, 18 -> 1, 8 -> 2 etc.
 	offset_minimal_type* info_offsets;
 	offset_minimal_type* format_offsets;
 	offset_minimal_type* filter_offsets;
 	bit_vector*          info_bit_vectors;
 	bit_vector*          format_bit_vectors;
 	bit_vector*          filter_bit_vectors;
-	// Todo: compress offsets and bit vectors
 };
 
 }

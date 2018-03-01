@@ -142,16 +142,7 @@ TachyonReader::block_entry_type TachyonReader::getBlock(){
 const int TachyonReader::has_format_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getFormatField(field_name, match)){
-		U32 target = -1;
-		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
-			//std::cerr << i << '/' << this->block.index_entry.n_format_streams << '\t' << this->block.index_entry.format_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.format_offsets[i].key].ID << std::endl;
-			if(this->block.index_entry.format_offsets[i].key == match->IDX){
-				target = i;
-				break;
-			}
-		}
-		//std::cerr << "target stream is: " << target << std::endl;
-		return(target);
+		return(match->IDX);
 	}
 	return(-2);
 }
@@ -159,15 +150,7 @@ const int TachyonReader::has_format_field(const std::string& field_name) const{
 const int TachyonReader::has_info_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getInfoField(field_name, match)){
-		U32 target = -1;
-		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//std::cerr << i << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.index_entry.info_offsets[i].key << '\t' << this->header.entries[this->block.index_entry.info_offsets[i].key].ID << std::endl;
-			if(this->block.index_entry.info_offsets[i].key == match->IDX){
-				target = i;
-				break;
-			}
-		}
-		return(target);
+		return(match->IDX);
 	}
 	return(-2);
 }
@@ -175,45 +158,62 @@ const int TachyonReader::has_info_field(const std::string& field_name) const{
 const int TachyonReader::has_filter_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getFilterField(field_name, match)){
-		U32 target = -1;
-		for(U32 i = 0; i < this->block.index_entry.n_filter_streams; ++i){
-			if(this->block.index_entry.filter_offsets[i].key == match->IDX){
-				target = i;
-				break;
-			}
-		}
-		return(target);
+		return(match->IDX);
 	}
 	return(-2);
 }
 
 const std::vector<bool> TachyonReader::get_info_field_pattern_matches(const std::string& field_name) const{
-	int local_info_field_id = this->has_info_field(field_name);
+	int global_info_value = this->has_info_field(field_name);
 	std::vector<bool> ret;
-	if(local_info_field_id >= 0){
+	if(global_info_value >= 0){
 		// Collect all matches
 		// Place in array
 		// 0 = false, 1 = true
+		S32 local_key = -1;
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+			if(this->block.index_entry.info_offsets[i].global_key == global_info_value){
+				local_key = i;
+			}
+		}
+
+		if(local_key == -1){
+			std::cerr << "could not find local" << std::endl;
+			return ret;
+		}
+
 		ret.resize(this->block.index_entry.n_info_patterns, false);
 		for(U32 i = 0; i < this->block.index_entry.n_info_patterns; ++i){
 			//std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
-			ret[i] = this->block.index_entry.info_bit_vectors[i][local_info_field_id];
+			ret[i] = this->block.index_entry.info_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);
 }
 
 const std::vector<bool> TachyonReader::get_format_field_pattern_matches(const std::string& field_name) const{
-	int local_format_field_id = this->has_format_field(field_name);
+	int global_format_value = this->has_format_field(field_name);
 	std::vector<bool> ret;
-	if(local_format_field_id >= 0){
+	if(global_format_value >= 0){
+		S32 local_key = -1;
+		for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i){
+			if(this->block.index_entry.format_offsets[i].global_key == global_format_value){
+				local_key = i;
+			}
+		}
+
+		if(local_key == -1){
+			std::cerr << "could not find local" << std::endl;
+			return ret;
+		}
+
 		// Collect all matches
 		// Place in array
 		// 0 = false, 1 = true
 		ret.resize(this->block.index_entry.n_format_patterns, false);
 		for(U32 i = 0; i < this->block.index_entry.n_format_patterns; ++i){
 			//std::cerr << i << '\t' << this->block.index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
-			ret[i] = this->block.index_entry.format_bit_vectors[i][local_format_field_id];
+			ret[i] = this->block.index_entry.format_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);

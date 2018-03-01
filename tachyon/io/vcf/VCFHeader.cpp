@@ -75,7 +75,7 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		S32 idx = -1;
 		std::string type;
 		for(U32 j = 0; j < this->lines[i].pairs.size(); ++j){
-			std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
+			//std::cerr << j << ':' << this->lines[i].pairs[j].KEY << "=" << this->lines[i].pairs[j].VALUE << std::endl;
 			if(this->lines[i].pairs[j].KEY == "IDX")
 				idx = atoi(&this->lines[i].pairs[j].VALUE[0]);
 
@@ -87,17 +87,17 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 			}
 		}
 		assert(idx != -1);
-		std::cerr << type << std::endl;
+		//std::cerr << type << std::endl;
 
 		// Push IDX into correct vector family
 		if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_INFO){
 			// Valid INFO = Integer, Float, Flag, Character, and String
 			S32 primitive_type = -1;
-			if(type == "Integer") primitive_type = 0;
-			else if(type == "Float") primitive_type = 1;
-			else if(type == "Flag") primitive_type = 2;
+			if(type == "Integer")        primitive_type = 0;
+			else if(type == "Float")     primitive_type = 1;
+			else if(type == "Flag")      primitive_type = 2;
 			else if(type == "Character") primitive_type = 3;
-			else if(type == "String") primitive_type = 4;
+			else if(type == "String")    primitive_type = 4;
 			assert(primitive_type != -1);
 
 			this->info_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx, primitive_type));
@@ -106,10 +106,10 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 		} else if(this->lines[i].type == vcf::TACHYON_VCF_HEADER_LINE_TYPE::YON_VCF_HEADER_FORMAT){
 			// Valid FORMAT = Integer, Float, Character, and String
 			S32 primitive_type = -1;
-			if(type == "Integer") primitive_type = 0;
-			else if(type == "Float") primitive_type = 1;
+			if(type == "Integer")        primitive_type = 0;
+			else if(type == "Float")     primitive_type = 1;
 			else if(type == "Character") primitive_type = 3;
-			else if(type == "String") primitive_type = 4;
+			else if(type == "String")    primitive_type = 4;
 			assert(primitive_type != -1);
 
 			this->format_map.push_back(map_entry_type(this->lines[i].pairs[0].VALUE, idx, primitive_type));
@@ -124,32 +124,19 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 	std::sort(this->filter_map.begin(), this->filter_map.end());
 	std::sort(this->format_map.begin(), this->format_map.end());
 
-	//
-	for(U32 i = 0; i < this->info_map.size(); ++i){
-		std::cerr << "INFO: " << this->info_map[i].ID << ", " << this->info_map[i].IDX << std::endl;
-	}
-
-	for(U32 i = 0; i < this->format_map.size(); ++i){
-		std::cerr << "FORMAT: " << this->format_map[i].ID << ", " << this->format_map[i].IDX << std::endl;
-	}
-
-	for(U32 i = 0; i < this->filter_map.size(); ++i){
-		std::cerr << "FILTER: " << this->filter_map[i].ID << ", " << this->filter_map[i].IDX << std::endl;
-	}
-
-	std::cerr << "Largest: " << this->info_map.back().IDX << ", " << this->format_map.back().IDX << ", " << this->filter_map.back().IDX << std::endl;
 	if(this->info_map.size()){
 		const S32 largest_idx = this->info_map.back().IDX;
-		this->info_remap = new U32[largest_idx + 1];
+		this->info_remap = new S32[largest_idx + 1];
 		U32 new_idx = 0;
 		for(U32 i = 0; i < this->info_map.size(); ++i){
-			this->info_remap[this->info_map[i].IDX] = new_idx++;
+			this->info_remap[this->info_map[i].IDX] = new_idx;
+			++new_idx;
 		}
 	}
 
 	if(this->format_map.size()){
 		const S32 largest_idx = this->format_map.back().IDX;
-		this->format_remap = new U32[largest_idx + 1];
+		this->format_remap = new S32[largest_idx + 1];
 		U32 new_idx = 0;
 		for(U32 i = 0; i < this->format_map.size(); ++i){
 			this->format_remap[this->format_map[i].IDX] = new_idx++;
@@ -158,10 +145,10 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 
 	if(this->filter_map.size()){
 		const S32 largest_idx = this->filter_map.back().IDX;
-		this->filter_remap = new U32[largest_idx + 1];
+		this->filter_remap = new S32[largest_idx + 1];
 		U32 new_idx = 0;
 		for(U32 i = 0; i < this->filter_map.size(); ++i){
-			this->info_remap[this->filter_map[i].IDX] = new_idx++;
+			this->filter_remap[this->filter_map[i].IDX] = new_idx++;
 		}
 	}
 

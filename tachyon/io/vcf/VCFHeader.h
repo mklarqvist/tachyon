@@ -97,9 +97,9 @@ public:
 	std::vector<map_entry_type> format_map;
 	std::vector<map_entry_type> filter_map;
 	// Constructed during run-time
-	U32* info_remap; // map from IDX to local id for O(1) lookup
-	U32* format_remap;
-	U32* filter_remap;
+	S32* info_remap; // map from IDX to local id for O(1) lookup
+	S32* format_remap;
+	S32* filter_remap;
 
 	hash_table_type* contigsHashTable;     // hash table for contig names
 	hash_table_type* sampleHashTable;      // hash table for sample names

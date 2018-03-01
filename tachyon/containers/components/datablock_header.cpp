@@ -93,7 +93,7 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target,
 {
 	if(values.size() == 0) return false;
 	BYTE bitvector_width = ceil((float)values.size()/8);
-	if(values.size() == 1) bitvector_width = 1;
+	if(bitvector_width == 0) bitvector_width = 1;
 
 	// Create new bit-vectors
 	delete [] target;
@@ -114,13 +114,14 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target,
 			}
 
 			// Flip bit at local key position
-			target[i].bit_bytes[local_key/8] ^= 1 << (local_key % 8);
+			target[i].bit_bytes[local_key/8] |= 1 << (local_key % 8);
 
 			// Store local key in key-chain
-			target[i].keys[j] = local_key;
+			target[i].local_keys[j] = local_key;
 
 			// Store absolute key
-			offset[local_key].key = patterns[i][j];
+			//assert(offset[local_key].key == patterns[i][j] || offset[local_key].key == 0);
+			offset[local_key].global_key = patterns[i][j];
 		}
 	}
 	return true;

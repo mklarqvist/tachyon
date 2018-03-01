@@ -40,8 +40,9 @@ public:
     bool GetItem(const void* key_address, const T* key, K*& entry, U32 length = sizeof(T));
     void clear();
 
-    inline const U32& capacity(void) const{return this->__size;}
-    inline const U32& size(void) const{return this->__occupied;}
+    inline const U32& capacity(void) const{return(this->__size);}
+    inline const U32& size(void) const{return(this->__occupied);}
+    inline const bool empty(void) const{return(this->__occupied == 0);}
 
     inline Entry& operator[](const U32 position){return *this->__entries[position];}
     inline const Entry& operator[](const U32 position) const{return *this->__entries[position];}
@@ -51,15 +52,14 @@ public:
     inline const Entry* pat(const U32 position) const{return this->__entries[position];}
 
 protected:
-    bool __set(U64& index, const U64& hash2, const T* key, const K& value);
-    bool __get(U64& index, const U64& hash2, const T* key, K*& entry);
+    bool __set(U64& index, const U64& hash2, const T* const key, const K& value);
+    bool __get(U64& index, const U64& hash2, const T* const key, K*& entry);
 
 private:
     U64 __occupied;
     U64 __limit;
     U64 __size;
     U32 __retries;
-
     Entry** __entries;
 };
 
@@ -88,40 +88,31 @@ HashTable<T, K>::HashTable(const U64 arraySize, const U32 n_reprobes) :
 }
 
 template <class T, class K>
-bool HashTable<T, K>::__set(U64& index, const U64& hash2, const T* key, const K& value){
+bool HashTable<T, K>::__set(U64& index, const U64& hash2, const T* const key, const K& value){
 	U16 RETRIES_COUNTER = 0;
 	for(U32 i = 0;;++i){
 		if(RETRIES_COUNTER > this->__retries){
-
-//			for(U32 i = 0; i < this->__size; ++i)
-//				if(this->__entries[idx] != NULL) std::cout << i << "\t" << this->__entries[idx]->key << std::endl;
-
 			std::cout << "Failed to insert key: " << key << "(" << value << ") after maximum number of reprobes: " << this->__retries << "/" << this->__occupied << std::endl;
-			//exit(1);
 			return false;
 		}
 
 		index = (index + i*hash2) % this->__size; //double hashing reprobing
-//		std::cout << "set\t\t" << *__key << "\t" << idx << std::endl;
 
 		if(this->__entries[index] != nullptr){
-			const T probedKey = this->__entries[index]->key;
-			if (probedKey != *key){ // If the current position is occupied by other key
-					RETRIES_COUNTER++;
-					continue;
-			} else break; // If key already exist then simply return
+			if(this->__entries[index]->key != *key){
+				++RETRIES_COUNTER;
+				continue;
+			} else
+				break;
 
 			if(this->__occupied >= this->__limit){ // If we have occupied maximum number of positions in table
 				std::cout << "Failed to insert key: " << key << " because the table is full." << std::endl;
 				exit(1);
 			}
 		}
-		//std::cout << "new entry" << std::endl;
-		this->__entries[index] = new Entry;
-		//std::cout << "inserting stuff" << std::endl;
-
-		// Insert into new position
-		this->__entries[index]->key = *key;
+		// Inset
+		this->__entries[index]        = new Entry;
+		this->__entries[index]->key   = *key;
 		this->__entries[index]->value = value;
 		this->__occupied++;
 		break;
@@ -130,30 +121,24 @@ bool HashTable<T, K>::__set(U64& index, const U64& hash2, const T* key, const K&
 }
 
 template <class T, class K>
-bool HashTable<T, K>::__get(U64& index, const U64& hash2, const T* key, K*& entry){
+bool HashTable<T, K>::__get(U64& index, const U64& hash2, const T* const key, K*& entry){
 	U16 RETRIES_COUNTER = 0;
 
 	for(U32 i = 0;;++i){
-		if(RETRIES_COUNTER > this->__retries){ //Table is full! Just continue;
+		if(RETRIES_COUNTER > this->__retries){ // Guaranteed not be in the table
 			return false;
 		}
 		index = (index + i*hash2) % this->__size; //double hashing reprobing
-//		std::cout << "retrieve\t" << *key << "\t" << index << "\t" << this->__size << std::endl;
 
 		if(this->__entries[index] != nullptr){
-//			std::cout << "not null: testing" << std::endl;
-			const T probedKey = this->__entries[index]->key;
-			if(probedKey != *key){ // If the current position is occupied by other key
-				RETRIES_COUNTER++;
-//				std::cout << "retrying beacuse" << probedKey << "\t" << key << std::endl;
+			if(this->__entries[index]->key != *key){ // If the current position is occupied by other key
+				++RETRIES_COUNTER;
 				continue;
 			} else { // Correct key
-//				std::cout << "memory location " << &this->__entries[index]->value << std::endl;
 				entry = &this->__entries[index]->value;
 				return true;
 			}
 		} else {
-//			std::cout << "not found" << std::endl;
 			return false; // If we have found a null pointer we know the data does not exist
 		}
 	}

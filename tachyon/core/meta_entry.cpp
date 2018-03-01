@@ -61,7 +61,9 @@ void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const
 			dest.write(this->cold.alleles[j].allele, this->cold.alleles[j].l_allele);
 		}
 		if(std::isnan(this->cold.QUAL)) dest << "\t.\t";
-		else dest << '\t' << this->cold.QUAL << '\t';
+		else {
+			dest << '\t' << this->cold.QUAL << '\t';
+		}
 	}
 }
 

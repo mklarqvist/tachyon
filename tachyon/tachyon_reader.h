@@ -263,73 +263,79 @@ public:
 		// Store as double pointers to avoid memory collisions because
 		// infocontainers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.index_entry.n_info_streams];
-		U32 n_set = 0;
-		std::vector<std::string> local_fields;
+
+		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
+		//	std::cerr << i << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.info_containers[i].getSizeUncompressed() << "," << this->block.info_containers[i].getSizeCompressed() << std::endl;
+		//}
+
+		std::vector<std::string> global_fields;
 		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-			//std::cerr << i << "/" << this->block.index_entry.n_info_streams << ": " << this->block.index_entry.info_offsets[i].key << "@" << this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID << std::endl;
-			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
-			if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
-				its[n_set++] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
-				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
-			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-                      this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
-				its[n_set++] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
-				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
-			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
-				its[n_set++] = new containers::InfoContainer<double>(this->block.info_containers[i], meta, matches);
-				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+			std::cerr << i << "/" << this->block.index_entry.n_info_streams << ": " << this->block.index_entry.info_offsets[i].global_key << "@" << this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID << std::endl;
+			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID);
+			if(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
+				global_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID);
+			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
+                      this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
+				global_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID);
+			} else if(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
+				global_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID);
 			} else {
 				//std::cerr << "unknown type: " << (int)this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() << std::endl;
-				its[n_set++] = new containers::InfoContainer<U32>();
-				local_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].key].ID);
+				its[i] = new containers::InfoContainer<U32>();
+				global_fields.push_back(this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID);
 				//continue;
 			}
 		}
 
 		for(U32 p = 0; p < meta.size(); ++p){
 			meta.at(p).toVCFString(std::cout, this->header);
-			//std::cout << "PASS\t";
 
-			const U32& n_filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
-			const U32* filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].keys;
-			if(n_filter_keys){
-				std::cout << this->header.filter_fields[filter_keys[0]].ID;
-				for(U32 i = 1; i < n_filter_keys; ++i){
-					std::cout << ';' << this->header.filter_fields[filter_keys[i]].ID;
-				}
-				std::cout.put('\t');
+			if(this->block.index_entry.n_filter_streams){
+				const U32& n_filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
+				const U32* filter_keys = this->block.index_entry.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
+				if(n_filter_keys){
+					// Local key -> global key
+					std::cout << this->header.filter_fields[this->block.index_entry.filter_offsets[filter_keys[0]].global_key].ID;
+					for(U32 i = 1; i < n_filter_keys; ++i){
+						std::cout << ';' << this->header.filter_fields[this->block.index_entry.filter_offsets[filter_keys[i]].global_key].ID;
+					}
+					std::cout.put('\t');
+				} else
+					std::cout << ".\t";
 			} else
 				std::cout << ".\t";
 
-			const U32& n_keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
-			const U32* keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].keys;
+			if(this->block.index_entry.n_info_streams){
+				const U32& n_keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
+				const U32* keys = this->block.index_entry.info_bit_vectors[meta.at(p).info_pattern_id].local_keys;
 
-			// First
-			if(this->header.info_fields[this->block.index_entry.info_offsets[keys[0]].key].primitive_type == 2){
-				//std::cerr << "skipping" << std::endl;
-				std::cout << local_fields[keys[0]];
-				continue;
-			}
-			if(its[keys[0]]->emptyPosition(p)) continue;
-			std::cout << local_fields[keys[0]] << "=";
-			its[keys[0]]->to_vcf_string(std::cout, p);
-
-			for(U32 i = 1; i < n_keys; ++i){
-				//std::cerr << keys[i] << " and " << this->block.index_entry.info_offsets[keys[i]].key << std::endl;
-				if(this->header.info_fields[this->block.index_entry.info_offsets[keys[i]].key].primitive_type == 2){
-					//std::cerr << "skipping" << std::endl;
-					std::cout << ";" << local_fields[keys[i]];
-					//exit(1);
+				// First
+				if(this->header.info_fields[this->block.index_entry.info_offsets[keys[0]].global_key].primitive_type == 2){
+					std::cout << global_fields[keys[0]];
 					continue;
 				}
-				if(its[keys[i]]->emptyPosition(p)) continue;
-				std::cout << ";" << local_fields[keys[i]] << "=";
-				its[keys[i]]->to_vcf_string(std::cout, p);
-			}
-			std::cout << '\n';
+				if(its[keys[0]]->emptyPosition(p)) continue;
+				std::cout << global_fields[keys[0]] << "=";
+				its[keys[0]]->to_vcf_string(std::cout, p);
+
+				for(U32 i = 1; i < n_keys; ++i){
+					if(this->header.info_fields[this->block.index_entry.info_offsets[keys[i]].global_key].primitive_type == 2){
+						std::cout << ";" << global_fields[keys[i]];
+						continue;
+					}
+					if(its[keys[i]]->emptyPosition(p)) continue;
+					std::cout << ";" << global_fields[keys[i]] << "=";
+					its[keys[i]]->to_vcf_string(std::cout, p);
+				}
+				std::cout << '\n';
+			} else
+				std::cout << ".\n";
 		}
 
-		for(U32 i = 0; i < n_set; ++i)
+		for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i)
 			delete its[i];
 
 		delete [] its;

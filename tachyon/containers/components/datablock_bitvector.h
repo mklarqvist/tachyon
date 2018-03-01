@@ -17,9 +17,9 @@ struct DataBlockBitvector{
     typedef const value_type*  const_pointer;
 
 public:
-	DataBlockBitvector() : n_keys(0), keys(nullptr), bit_bytes(nullptr){}
+	DataBlockBitvector() : n_keys(0), local_keys(nullptr), bit_bytes(nullptr){}
 	~DataBlockBitvector(){
-		delete [] this->keys;
+		delete [] this->local_keys;
 		delete [] this->bit_bytes;
 	}
 
@@ -60,9 +60,9 @@ public:
 	inline void update(const BYTE& value, const U32& pos){ this->bit_bytes[pos] = value; }
 
 	inline void allocate(const U32& n_keys, const U32& n_bytes){
-		delete [] this->keys;
+		delete [] this->local_keys;
 		delete [] this->bit_bytes;
-		this->keys = new U32[n_keys];
+		this->local_keys = new U32[n_keys];
 		this->bit_bytes = new BYTE[n_bytes];
 		memset(this->bit_bytes, 0, n_bytes);
 		this->n_keys = n_keys;
@@ -75,14 +75,14 @@ public:
 	}
 
     // Element access
-    inline reference key_at(const size_type& position){ return(this->keys[position]); }
-    inline const_reference key_at(const size_type& position) const{ return(this->keys[position]); }
-    inline pointer key_data(void){ return(this->keys); }
-    inline const_pointer key_data(void) const{ return(this->keys); }
-    inline reference key_front(void){ return(this->keys[0]); }
-    inline const_reference key_front(void) const{ return(this->keys[0]); }
-    inline reference key_back(void){ return(this->keys[this->n_keys - 1]); }
-    inline const_reference key_back(void) const{ return(this->keys[this->n_keys - 1]); }
+    inline reference key_at(const size_type& position){ return(this->local_keys[position]); }
+    inline const_reference key_at(const size_type& position) const{ return(this->local_keys[position]); }
+    inline pointer key_data(void){ return(this->local_keys); }
+    inline const_pointer key_data(void) const{ return(this->local_keys); }
+    inline reference key_front(void){ return(this->local_keys[0]); }
+    inline const_reference key_front(void) const{ return(this->local_keys[0]); }
+    inline reference key_back(void){ return(this->local_keys[this->n_keys - 1]); }
+    inline const_reference key_back(void) const{ return(this->local_keys[this->n_keys - 1]); }
 
     // Bit access
     inline const bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
@@ -92,12 +92,12 @@ public:
     inline const value_type& size(void) const{ return(this->n_keys); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->keys[0]); }
-    inline iterator end()  { return iterator(&this->keys[this->n_keys - 1]); }
-    inline const_iterator begin()  const{ return const_iterator(&this->keys[0]); }
-    inline const_iterator end()    const{ return const_iterator(&this->keys[this->n_keys - 1]); }
-    inline const_iterator cbegin() const{ return const_iterator(&this->keys[0]); }
-    inline const_iterator cend()   const{ return const_iterator(&this->keys[this->n_keys - 1]); }
+    inline iterator begin(){ return iterator(&this->local_keys[0]); }
+    inline iterator end()  { return iterator(&this->local_keys[this->n_keys - 1]); }
+    inline const_iterator begin()  const{ return const_iterator(&this->local_keys[0]); }
+    inline const_iterator end()    const{ return const_iterator(&this->local_keys[this->n_keys]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->local_keys[0]); }
+    inline const_iterator cend()   const{ return const_iterator(&this->local_keys[this->n_keys]); }
 
 	// Utility
 	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
@@ -106,23 +106,23 @@ private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
 		for(U32 i = 0; i < entry.n_keys; ++i)
-			stream.write(reinterpret_cast<const char*>(&entry.keys[i]), sizeof(U32));
+			stream.write(reinterpret_cast<const char*>(&entry.local_keys[i]), sizeof(U32));
 
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.n_keys), sizeof(U32));
-		entry.keys = new U32[entry.n_keys];
+		entry.local_keys = new U32[entry.n_keys];
 		for(U32 i = 0; i < entry.n_keys; ++i)
-			stream.read(reinterpret_cast<char*>(&entry.keys[i]), sizeof(U32));
+			stream.read(reinterpret_cast<char*>(&entry.local_keys[i]), sizeof(U32));
 
 		return(stream);
 	}
 
 public:
 	value_type n_keys;
-	pointer    keys;
+	pointer    local_keys;
 	BYTE*      bit_bytes;
 };
 

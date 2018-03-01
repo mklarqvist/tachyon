@@ -260,7 +260,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
 				// If there is a match
 				// Push back field into map
-				if(this->index_entry.info_offsets[j].key == settings.info_ID_list[i]){
+				if(this->index_entry.info_offsets[j].global_key == settings.info_ID_list[i]){
 					settings.load_info_ID_loaded.push_back(
 							core::SettingsMap(
 									iterator_index++,                   // iterator value

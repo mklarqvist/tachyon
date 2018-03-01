@@ -20,7 +20,7 @@ void programMessage(const bool separator = true){
               << SSLeay_version(SSLEAY_VERSION) << "; "
               << "ZSTD-" << ZSTD_versionString() << std::endl;
 	std::cerr << "Contact: Marcus D. R. Klarqvist <mk819@cam.ac.uk>" << std::endl;
-	std::cerr << "Documentation: https://github.com/mklarqvist/Tachyon" << std::endl;
+	std::cerr << "Documentation: https://github.com/mklarqvist/tachyon" << std::endl;
 	std::cerr << "License: MIT" << std::endl;
 	if(separator) std::cerr << "----------" << std::endl;
 }

@@ -9,11 +9,33 @@
 namespace tachyon{
 namespace containers{
 
+class FormatContainerInterface{
+private:
+    typedef FormatContainerInterface self_type;
+    typedef std::size_t              size_type;
+
+public:
+    FormatContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0){}
+    FormatContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries){}
+    virtual ~FormatContainerInterface(){}
+
+    // Capacity
+	inline const bool empty(void) const{ return(this->n_entries == 0); }
+	inline const size_type& size(void) const{ return(this->n_entries); }
+
+    //virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U32 sample_number) const =0;
+    //virtual const bool emptyPosition(const U32& position) const =0;
+
+protected:
+    TACHYON_CORE_TYPE primitive_type;
+	size_t  n_entries;
+};
+
 /**<
  * Primary class for FORMAT data in Tachyon
  */
 template <class return_type>
-class FormatContainer{
+class FormatContainer : public FormatContainerInterface{
 private:
     typedef FormatContainer                 self_type;
     typedef PrimitiveGroupContainer<return_type> value_type;
@@ -136,7 +158,6 @@ private:
 	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
 
 private:
-    size_t  n_entries;
     pointer __containers;
 };
 
@@ -145,11 +166,17 @@ private:
 
 
 template <class return_type>
+FormatContainer<return_type>::FormatContainer() :
+	__containers(nullptr)
+{
+
+}
+
+template <class return_type>
 FormatContainer<return_type>::FormatContainer(const data_container_type& data_container,
                                               const meta_container_type& meta_container,
                                                 const std::vector<bool>& pattern_matches,
                                                               const U64  n_samples) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(data_container.buffer_data_uncompressed.size() == 0)
@@ -204,7 +231,6 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 
 template <class return_type>
 FormatContainer<return_type>::FormatContainer(const data_container_type& container, const U64 n_samples) :
-	n_entries(0),
 	__containers(nullptr)
 {
 	if(container.buffer_data_uncompressed.size() == 0)

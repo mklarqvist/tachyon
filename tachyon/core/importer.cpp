@@ -160,12 +160,6 @@ bool Importer::BuildBCF(void){
 		// Stats
 		n_variants_read += reader.size();
 
-		//if(this->GT_available_ && this->header->samples)
-		//	assert(this->block.gt_support_data_container.n_entries == reader.size());
-		//assert(this->block.meta_info_map_ids.n_entries   == reader.size());
-		//assert(this->block.meta_filter_map_ids.n_entries == reader.size());
-		//assert(this->block.meta_format_map_ids.n_entries == reader.size());
-
 		// Update head meta
 		this->block.index_entry.controller.hasGT = this->GT_available_;
 		this->block.index_entry.n_info_streams   = this->info_fields.size();
@@ -236,8 +230,6 @@ bool Importer::BuildBCF(void){
 	// Write index
 	this->writer.WriteIndex();
 	const U64 index_ends = this->writer.stream.tellp();
-
-
 
 	// Finalize SHA-512 digests
 	// Write digests
@@ -338,11 +330,9 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
 		const U32 mapID = this->info_fields.setGet(this->header->info_remap[entry.infoID[i].mapID]);
-		//if(entry.infoPointer == 1)
-		//	std::cerr << utility::timestamp("DEBUG") << mapID << "\t" << entry.infoID[i].mapID << '\t' << header->map[entry.infoID[i].mapID].ID << std::endl;
 
 		stream_container& target_container = this->block.info_containers[mapID];
-		if(this->block.info_containers[mapID].n_entries == 0){
+		if(this->block.info_containers[mapID].size() == 0){
 			target_container.setStrideSize(entry.infoID[i].l_stride);
 			target_container.header_stride.controller.type       = YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
@@ -406,7 +396,7 @@ bool Importer::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Hash INFO values
 		stream_container& target_container = this->block.format_containers[mapID];
-		if(this->block.format_containers[mapID].n_entries == 0){
+		if(this->block.format_containers[mapID].size() == 0){
 			target_container.setStrideSize(entry.formatID[i].l_stride);
 			target_container.header_stride.controller.type       = YON_TYPE_32B;
 			target_container.header_stride.controller.signedness = 0;
