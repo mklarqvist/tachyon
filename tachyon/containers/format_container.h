@@ -306,7 +306,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 	stride_container_type strides(container);
 
 	U32 current_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->size(); ++i){
 		//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
 		new( &this->__containers[i] ) value_type( container, current_offset, n_samples, strides[i] );
 		current_offset += strides[i] * sizeof(actual_primitive) * n_samples;
@@ -326,7 +326,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 
 		U32 current_offset = 0;
 		U32 strides_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// There are no INFO fields
 			if(meta_container[i].getInfoPatternID() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -357,7 +357,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// There are no INFO fields
 			if(meta_container[i].getInfoPatternID() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -376,7 +376,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	}
 	// Case 2: if data is not uniform
 	else {
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
@@ -404,7 +404,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 	U32 current_offset = 0;
 	// Case 1: data is uniform -> give all samples the same value
 	if(container.header.isUniform()){
-		for(U32 i = 0; i < this->n_entries; ++i)
+		for(U32 i = 0; i < this->size(); ++i)
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 
 	}

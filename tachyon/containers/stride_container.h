@@ -125,7 +125,7 @@ public:
 private:
     /**<
      * Constructor invokes this function to in turn invoke
-     * the correct `__alocate` funciton given the intrinsic
+     * the correct `__allocate` funciton given the intrinsic
      * primitive
      * @param container Input data container
      */

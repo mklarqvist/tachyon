@@ -14,8 +14,9 @@ namespace bcf {
 #define BCF_HASH_SEED 452930477
 
 const BYTE BCF_UNPACK_TOMAHAWK[3] = {2, 0, 1};
-#define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TOMAHAWK[(A >> 1)]
+#define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TOMAHAWK[((A) >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
+enum YON_BCF_PRIMITIVE_TYPES{BCF_FLAG = 0, BCF_BYTE = 1, BCF_U16 = 2, BCF_U32 = 3, BCF_FLOAT = 5, BCF_CHAR = 7};
 
 #pragma pack(push, 1)
 struct __attribute__((packed, aligned(1))) BCFAtomicBase{
@@ -70,13 +71,31 @@ struct BCFKeyTuple{
 	U32  l_offset;
 };
 
-struct BCFEntry{
-	typedef BCFEntry self_type;
-	typedef io::BasicBuffer buffer_type;
-	typedef BCFEntryBody body_type;
-	typedef BCFTypeString string_type;
-	typedef BCFAtomicBase base_type;
+struct BCFGenotypeSupport{
+private:
+	typedef BCFGenotypeSupport self_type;
 
+public:
+	BCFGenotypeSupport() : hasGenotypes(false), hasMissing(false), hasEOV(false), ploidy(0){}
+
+
+public:
+	bool hasGenotypes;
+	bool hasMissing;
+	bool hasEOV;
+	U32  ploidy;
+};
+
+struct BCFEntry{
+private:
+	typedef BCFEntry           self_type;
+	typedef io::BasicBuffer    buffer_type;
+	typedef BCFEntryBody       body_type;
+	typedef BCFTypeString      string_type;
+	typedef BCFAtomicBase      base_type;
+	typedef BCFGenotypeSupport gt_support_type;
+
+public:
 	BCFEntry(void);  // ctor
 	BCFEntry(const self_type& other);  // copy ctor
 	BCFEntry(self_type&& other) noexcept;
@@ -88,13 +107,13 @@ struct BCFEntry{
 	void add(const char* const data, const U32 length);
 
 	inline void reset(void){
-		this->l_data = 0;
-		this->isGood = false;
-		this->infoPointer = 0;
+		this->l_data        = 0;
+		this->isGood        = false;
+		this->infoPointer   = 0;
 		this->formatPointer = 0;
 		this->filterPointer = 0;
-		this->n_filter = 0;
-		this->filter_start = 0;
+		this->n_filter      = 0;
+		this->filter_start  = 0;
 	}
 
 	inline const U32& size(void) const{ return(this->l_data); }
@@ -115,63 +134,84 @@ struct BCFEntry{
 	bool parse(const U64 n_samples);
 
 	void SetRefAlt(void);
+
+	// Todo: fix
 	double getMissingness(const U64& samples) const;
+
+	//
+	bool assessGenotypes(const U64 n_samples){
+		if(this->hasGenotypes == false)
+			return false;
+
+		const BYTE ploidy = this->formatID[0].l_stride;
+		// Todo: other primitives
+		U64 current_sample = 0;
+		const char* const internal_data = &this->data[this->formatID[0].l_offset];
+		U32 internal_data_offset = 0;
+		this->gt_support.ploidy = ploidy;
+		this->gt_support.hasGenotypes = true;
+
+		if(this->formatID[0].primitive_type == YON_BCF_PRIMITIVE_TYPES::BCF_BYTE){
+			for(U32 i = 0; i < n_samples*ploidy; i+=ploidy, ++current_sample){
+				// retrieve ploidy primitives
+				for(U32 p = 0; p < ploidy; ++p){
+					const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&internal_data[internal_data_offset]);
+					const BYTE& uref = *reinterpret_cast<const BYTE* const>(ref);
+					if(uref == 0x80){
+						//std::cerr << "is missing" << std::endl;
+						this->gt_support.hasMissing = true;
+					} else if(uref == 0x81){
+						//std::cerr << "is vector eof" << std::endl;
+						this->gt_support.hasEOV = true;
+					}
+					internal_data_offset += sizeof(BYTE);
+				}
+			}
+		}
+		return true;
+	}
+
 	inline const bool& good(void) const{ return(this->isGood); }
-
-	// BCF retriever functions
-	inline const SBYTE& getSBYTE(U32& pos){ return(*reinterpret_cast<const SBYTE* const>(&this->data[pos++])); }
-
-	inline const S16& getS16(U32& pos){
-		const S16& t = *reinterpret_cast<const S16* const>(&this->data[pos]);
-		pos += sizeof(S16);
-		return(t);
-	}
-
-	inline const S32& getS32(U32& pos){
-		const S32& t = *reinterpret_cast<const S32* const>(&this->data[pos]);
-		pos += sizeof(S32);
-		return(t);
-	}
 
 	inline const S32 getInteger(const BYTE& key, U32& pos){
 		S32 value = 0;
 		if(key == 1){
-			const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&this->data[pos++]);
-			const BYTE*  const uref = reinterpret_cast<const BYTE* const>(ref);
-			if(*uref == 0x80){
+			const SBYTE& ref  = *reinterpret_cast<const SBYTE* const>(&this->data[pos++]);
+			const BYTE&  uref = *reinterpret_cast<const BYTE* const>(&ref);
+			if(uref == 0x80){
 				//std::cerr << "is missing" << std::endl;
 				return(value = 0x80000000);
-			} else if(*uref == 0x81){
+			} else if(uref == 0x81){
 				return(value = 0x80000001);
 				//std::cerr << "is vector eof" << std::endl;
 			}
-			return(value = *ref);
+			return(value = ref);
 		} else if(key == 2){
-			const S16*  const ref  = reinterpret_cast<const S16* const>(&this->data[pos]);
-			const U16*  const uref = reinterpret_cast<const U16* const>(ref);
+			const S16& ref  = *reinterpret_cast<const S16* const>(&this->data[pos]);
+			const U16& uref = *reinterpret_cast<const U16* const>(&ref);
 			pos+=sizeof(S16);
 
-			if(*uref == 0x8000){
+			if(uref == 0x8000){
 				//std::cerr << "is missing s16" << std::endl;
 				return(value = 0x80000000);
-			} else if(*uref == 0x8001){
+			} else if(uref == 0x8001){
 				//std::cerr << "is vector eof" << std::endl;
 				return(value = 0x80000001);
 			}
-			return(value = *ref);
+			return(value = ref);
 		} else if(key == 3){
-			const S32* const ref  = reinterpret_cast<const S32* const>(&this->data[pos]);
-			const U32* const uref = reinterpret_cast<const U32* const>(ref);
+			const S32& ref  = *reinterpret_cast<const S32* const>(&this->data[pos]);
+			const U32& uref = *reinterpret_cast<const U32* const>(&ref);
 			pos+=sizeof(S32);
 
-			if(*uref == 0x80000000){
+			if(uref == 0x80000000){
 				//std::cerr << "is missing" << std::endl;
 				return(value = 0x80000000);
-			} else if(*uref == 0x80000001){
+			} else if(uref == 0x80000001){
 				//std::cerr << "is vector eof" << std::endl;
 				return(value = 0x80000001);
 			}
-			return(value = *ref);
+			return(value = ref);
 		} else if(key == 0){
 			return 0;
 		} else {
@@ -181,13 +221,14 @@ struct BCFEntry{
 	}
 
 	inline const float getFloat(U32& pos){
-		const float val = *reinterpret_cast<const float* const>(&this->data[pos]);
+		const float& val = *reinterpret_cast<const float* const>(&this->data[pos]);
 		pos += sizeof(float);
 		return val;
 	}
 
 	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
 
+	// Hash field identifiers
 	inline const U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }
 	inline const U64 hashInfo(void){ return(this->__hashTarget(this->infoID, this->infoPointer)); }
 	inline const U64 hashFormat(void){ return(this->__hashTarget(this->formatID, this->formatPointer)); }
@@ -198,6 +239,12 @@ struct BCFEntry{
 	bool nextFormat(S32& value, U32& length, BYTE& value_type, U32& position);
 
 private:
+	/**<
+	 * Calculates the 64-bit hash value for the target FORMAT/FILTER/INFO fields
+	 * @param tuples    Input target of BCFTuples
+	 * @param n_entries Number of BCFTuples in input
+	 * @return          Returns a 64-bit hash value
+	 */
 	const U64 __hashTarget(const BCFKeyTuple* tuples, const U16& n_entries){
 		XXH64_state_t* const state = XXH64_createState();
 		if (state==NULL) abort();
@@ -239,6 +286,7 @@ public:
 	U16 filterPointer;
 	U16 infoPointer;
 	U16 formatPointer;
+	gt_support_type gt_support;
 
 	// FILTER
 	BCFKeyTuple* filterID;

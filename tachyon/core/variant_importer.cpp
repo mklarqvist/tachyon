@@ -189,8 +189,6 @@ bool VariantImporter::BuildBCF(void){
 		// Perform writing and update index
 		this->block.updateOffsets();
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
-		std::cerr << this->block.index_entry.n_info_streams << "," << this->block.index_entry.n_format_streams << "," << this->block.index_entry.n_filter_streams << std::endl;
-		std::cerr << this->block.index_entry.n_info_patterns << "," << this->block.index_entry.n_format_patterns << "," << this->block.index_entry.n_filter_patterns << std::endl;
 
 		this->block.write(this->writer.stream, this->import_compressed_stats, this->import_uncompressed_stats);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();

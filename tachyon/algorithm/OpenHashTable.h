@@ -27,7 +27,7 @@ public:
 template <class T, class K>
 class HashTable{
 public:
-    typedef OpenHashEntry<T, K> Entry;
+    typedef OpenHashEntry<T, K> value_type;
 
 	HashTable(const U64 arraySize);
 	HashTable(const U64 arraySize, const U32 n_reprobes);
@@ -44,23 +44,23 @@ public:
     inline const U32& size(void) const{return(this->__occupied);}
     inline const bool empty(void) const{return(this->__occupied == 0);}
 
-    inline Entry& operator[](const U32 position){return *this->__entries[position];}
-    inline const Entry& operator[](const U32 position) const{return *this->__entries[position];}
-    inline Entry& at(const U32 position){return *this->__entries[position];}
-    inline const Entry& at(const U32 position) const{return *this->__entries[position];}
-    inline Entry* pat(const U32 position){return this->__entries[position];}
-    inline const Entry* pat(const U32 position) const{return this->__entries[position];}
+    inline value_type& operator[](const U32 position){return(*this->__entries[position]);}
+    inline const value_type& operator[](const U32 position) const{return(*this->__entries[position]);}
+    inline value_type& at(const U32 position){return(*this->__entries[position]);}
+    inline const value_type& at(const U32 position) const{return(*this->__entries[position]);}
+    inline value_type* pat(const U32 position){return(this->__entries[position]);}
+    inline const value_type* pat(const U32 position) const{return(this->__entries[position]);}
 
 protected:
     bool __set(U64& index, const U64& hash2, const T* const key, const K& value);
-    bool __get(U64& index, const U64& hash2, const T* const key, K*& entry);
+    bool __get(U64& index, const U64& hash2, const T* const key, K*& value_type);
 
 private:
     U64 __occupied;
     U64 __limit;
     U64 __size;
     U32 __retries;
-    Entry** __entries;
+    value_type** __entries;
 };
 
 template <class T, class K>
@@ -68,7 +68,7 @@ HashTable<T, K>::HashTable(const U64 arraySize) :
 	__occupied(0),
 	__size(arraySize),
 	__retries(50),
-	__entries(new Entry*[arraySize])
+	__entries(new value_type*[arraySize])
 {
 	this->__limit = (U32)((double)arraySize*(1/0.7));
 	for(U32 i = 0; i < this->__size; ++i) // Init all to NULL
@@ -80,7 +80,7 @@ HashTable<T, K>::HashTable(const U64 arraySize, const U32 n_reprobes) :
 	__occupied(0),
 	__size(arraySize),
 	__retries(n_reprobes),
-	__entries(new Entry*[arraySize])
+	__entries(new value_type*[arraySize])
 {
 	this->__limit = (U32)((double)arraySize*(1/0.7));
 	for(U32 i = 0; i < this->__size; ++i) // Init all to NULL
@@ -111,7 +111,7 @@ bool HashTable<T, K>::__set(U64& index, const U64& hash2, const T* const key, co
 			}
 		}
 		// Inset
-		this->__entries[index]        = new Entry;
+		this->__entries[index]        = new value_type;
 		this->__entries[index]->key   = *key;
 		this->__entries[index]->value = value;
 		this->__occupied++;

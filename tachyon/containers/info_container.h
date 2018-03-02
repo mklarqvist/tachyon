@@ -255,7 +255,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 
 template <class return_type>
 InfoContainer<return_type>::~InfoContainer(){
-	for(std::size_t i = 0; i < this->n_entries; ++i)
+	for(std::size_t i = 0; i < this->size(); ++i)
 		((this->__containers + i)->~PrimitiveContainer)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
@@ -267,14 +267,14 @@ void InfoContainer<return_type>::__setup(const data_container_type& container){
 	if(container.buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->n_entries == 0)
+	if(this->size() == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 	stride_container_type strides(container);
 
 	U32 current_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->size(); ++i){
 		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 		new( &this->__containers[i] ) value_type( container, current_offset, strides[i] );
 		current_offset += strides[i] * sizeof(actual_primitive);
@@ -289,7 +289,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
                                                    const std::vector<bool>& pattern_matches)
 {
 	this->n_entries = meta_container.size();
-	if(this->n_entries == 0)
+	if(this->size() == 0)
 		return;
 
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
@@ -297,7 +297,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	U32 current_offset = 0;
 	U32 stride_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->size(); ++i){
 		// There are no INFO fields
 		if(meta_container[i].getInfoPatternID() == -1){
 			new( &this->__containers[i] ) value_type( );
@@ -321,13 +321,13 @@ template <class actual_primitive>
 void InfoContainer<return_type>::__setup(const data_container_type& container, const U32 stride_size){
 	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
 
-	if(this->n_entries == 0)
+	if(this->size() == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
 	U32 current_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	for(U32 i = 0; i < this->size(); ++i){
 		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 		new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
 		current_offset += stride_size * sizeof(actual_primitive);
@@ -343,15 +343,15 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
                                                                  const U32  stride_size)
 {
 	this->n_entries = meta_container.size();
-	if(this->n_entries == 0)
+	if(this->size() == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.isUniform()){
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// There are no INFO fields
 			if(meta_container[i].getInfoPatternID() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -367,7 +367,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	}
 	// Case 2: if data is not uniform
 	else {
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].getInfoPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );

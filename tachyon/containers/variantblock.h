@@ -86,8 +86,7 @@ public:
 	 * container offsets and checks/builds
 	 * 1) If the byte stream is uniform
 	 * 2) Generates CRC checksums for both data and strides
-	 * 3) Reformat (change used word-size) for strides and data; if possible
-	 *
+	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
 	void updateBaseContainers(void);
 

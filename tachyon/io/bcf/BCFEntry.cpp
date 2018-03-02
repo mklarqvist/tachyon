@@ -374,10 +374,6 @@ bool BCFEntry::parse(const U64 n_samples){
 			exit(1);
 		}
 
-		if(i == 0){
-			this->ploidy = 2;
-		}
-
 		this->formatID[i].l_stride       = info_length;
 		this->formatID[i].primitive_type = format_primitive_type;
 		this->formatID[i].l_offset       = internal_pos;

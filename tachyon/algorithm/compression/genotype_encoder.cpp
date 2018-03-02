@@ -39,7 +39,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 	// Assess cost and encode
 	rle_helper_type cost;
-	if(line.body->n_allele == 2){ // Case diploid and biallelic
+	if(line.body->n_allele == 2 && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
 		if(!support.checkStrideSize(1))
 			support.triggerMixedStride();
@@ -49,7 +49,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.gt_anyMissing    = cost.hasMissing;
 		meta_base.controller.biallelic        = true;
-		meta_base.controller.gt_anyNA         = cost.anyNA;
+		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
 		meta_base.controller.gt_phase         = cost.phased;
 		meta_base.controller.diploid          = true;
 		meta_base.controller.mixed_ploidy     = false;
@@ -82,29 +82,26 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		return true;
 	}
-	else { // Case diploid n-allelic
+	else if(line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false) { // Case diploid n-allelic
 		cost = this->assessDiploidRLEnAllelic(line, ppa);
 
 		meta_base.controller.biallelic        = false;
 		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
 		meta_base.controller.gt_anyMissing    = cost.hasMissing;
 		meta_base.controller.biallelic        = false;
-		meta_base.controller.gt_anyNA         = cost.anyNA;
+		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
 		meta_base.controller.gt_phase         = cost.phased;
 		meta_base.controller.diploid          = true;
 		meta_base.controller.mixed_ploidy     = false;
 
-		//std::cerr << (int)cost.word_width << '\t' << cost.n_runs << '\t' << cost.word_width*cost.n_runs << '\t' << costBCFStyle << '\t' << costBCFStyle/double(cost.word_width*cost.n_runs) << std::endl;
-
 		// BCF-style cost
-		const BYTE ploidy = 2;
-		U32 costBCFStyle = ploidy*this->n_samples;
+		U32 costBCFStyle = this->n_samples; // cost for BCF-style encoding
 		if(line.body->n_allele + 1 < 8)          costBCFStyle *= sizeof(SBYTE);
 		else if(line.body->n_allele + 1 < 128)   costBCFStyle *= sizeof(S16);
 		else if(line.body->n_allele + 1 < 32768) costBCFStyle *= sizeof(S32);
 
 		// RLE is cheaper
-		if(cost.word_width*cost.n_runs < costBCFStyle){
+		if(cost.word_width * cost.n_runs < costBCFStyle){
 			if(!support.checkStrideSize(2))
 				support.triggerMixedStride();
 
@@ -146,11 +143,12 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		}
 		// BCF style is cheaper
 		else {
+			std::cerr << "BCF-style cheaper" << std::endl;
 			if(!support.checkStrideSize(3))
 				support.triggerMixedStride();
 
 			support.addStride(3);
-			support += (U32)this->n_samples*2;
+			support += (U32)this->n_samples*line.gt_support.ploidy;
 			++support;
 			//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
 
@@ -158,7 +156,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			meta_base.controller.gt_primtive_type = 0;
 			++simple;
 
-			U64 n_runs = this->n_samples*2;
+			U64 n_runs = this->n_samples*line.gt_support.ploidy;
 			if(line.body->n_allele + 1 < 8)          this->EncodeDiploidBCF<BYTE>(line, simple, n_runs, ppa);
 			else if(line.body->n_allele + 1 < 128)   this->EncodeDiploidBCF<U16> (line, simple, n_runs, ppa);
 			else if(line.body->n_allele + 1 < 32768) this->EncodeDiploidBCF<U32> (line, simple, n_runs, ppa);
@@ -174,10 +172,45 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			return true;
 		}
 	}
+	// temp
+	else {
+		if(!support.checkStrideSize(3))
+			support.triggerMixedStride();
+
+		support.addStride(3);
+		support += (U32)this->n_samples*line.gt_support.ploidy;
+		++support;
+		//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
+
+		meta_base.controller.biallelic        = false;
+		meta_base.controller.gt_mixed_phasing = true;
+		meta_base.controller.gt_anyMissing    = true;
+		meta_base.controller.biallelic        = line.body->n_allele == 2;
+		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
+		meta_base.controller.gt_phase         = 0;
+		meta_base.controller.diploid          = true;
+		meta_base.controller.mixed_ploidy     = false;
+		++simple;
+
+		U64 n_runs = this->n_samples*line.gt_support.ploidy;
+		if(line.body->n_allele + 1 < 8)          this->EncodeBCFStyle<BYTE>(line, simple, n_runs);
+		else if(line.body->n_allele + 1 < 128)   this->EncodeBCFStyle<U16> (line, simple, n_runs);
+		else if(line.body->n_allele + 1 < 32768) this->EncodeBCFStyle<U32> (line, simple, n_runs);
+		else {
+			std::cerr << utility::timestamp("ERROR", "ENCODER") <<
+						 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
+						 "Format is limited to 32768..." << std::endl;
+			return false;
+		}
+
+		// Reset and recycle helper
+		//this->helper.reset();
+		return true;
+	}
 	return false;
 }
 
-const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa){
+const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa) const{
 	// Assess RLE cost
 	const BYTE ploidy = 2;
 	U32 internal_buffer_offset = line.formatID[0].l_offset;
@@ -296,7 +329,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 	return(rle_helper_type(word_width, chosen_runs, firstPhase, mixedPhase, anyMissing, anyNA));
 }
 
-const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa){
+const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa) const{
 	const BYTE ploidy        = 2;
 	U32 internal_pos_rle     = line.formatID[0].l_offset;
 	const SBYTE& pre_allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle++]);

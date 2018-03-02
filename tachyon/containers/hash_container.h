@@ -69,8 +69,8 @@ private:
 };
 
 class HashVectorContainer{
-	typedef HashVectorContainer self_type;
-	typedef hash::HashTable<U64, U32> hash_table;
+	typedef HashVectorContainer             self_type;
+	typedef hash::HashTable<U64, U32>       hash_table;
 	typedef std::vector< std::vector<U32> > id_vector;
 
 public:
@@ -126,7 +126,7 @@ public:
 	}
 
 private:
-	id_vector data;
+	id_vector  data;
 	hash_table htable;
 };
 

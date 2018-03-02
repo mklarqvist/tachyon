@@ -110,8 +110,10 @@ bool BCFReader::nextVariant(reference entry){
 	}
 
 	if(this->entries[this->n_entries].body->n_fmt > 0 && this->map_gt_id != -1){
-		if(this->entries[this->n_entries].formatID[0].mapID == this->map_gt_id)
+		if(this->entries[this->n_entries].formatID[0].mapID == this->map_gt_id){
 			this->entries[this->n_entries].hasGenotypes = true;
+			entry.assessGenotypes(this->header.samples);
+		}
 	}
 
 	return true;

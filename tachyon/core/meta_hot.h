@@ -30,6 +30,7 @@ struct MetaHotController{
 		gt_anyMissing(0),
 		gt_phase(0),
 		gt_anyNA(0),
+		gt_antEOV(0),
 		gt_mixed_phasing(0),
 		biallelic(0),
 		simple_snv(0),
@@ -63,6 +64,7 @@ struct MetaHotController{
 	U16 gt_anyMissing:    1, // any missing
         gt_phase:         1, // all phased
 		gt_anyNA:         1, // any NA
+		gt_antEOV:        1, // any EOV values
         gt_mixed_phasing: 1, // has mixed phasing
         biallelic:        1, // is biallelic
         simple_snv:       1, // is simple SNV->SNV
@@ -71,7 +73,7 @@ struct MetaHotController{
 		diploid:          1, // is diploid
 		mixed_ploidy:     1, // has mixed ploidy (e.g. X chromosome or CNV)
         gt_available:     1, // if there is any GT data
-		unused:           4; // reserved
+		unused:           3; // reserved
 };
 
 /**
