@@ -127,6 +127,9 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 {
 	const BYTE ploidy = line.gt_support.ploidy;
 	U32 bcf_gt_pos = line.formatID[0].l_offset;
+	const BCF_GT_TYPE missing_value = (BCF_GT_TYPE)1 << (sizeof(BCF_GT_TYPE)*8 - 1);
+	const BCF_GT_TYPE EOV_value     = missing_value + 1;
+
 
 	// Pack genotypes as
 	// allele | phasing
@@ -134,13 +137,9 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy, ++j){
 		for(U32 p = 0; p < ploidy; ++p){
 			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&line.data[bcf_gt_pos]);
-			if((allele >> 1) == 0){
-				//std::cerr << "is missing" << std::endl;
-				simple += (YON_STORE_TYPE)0;
-			} else if(allele == (1 << (sizeof(BCF_GT_TYPE)*8 - 1)) + 1 ){
-				//std::cerr << "is vector eof" << std::endl;
-				simple += (YON_STORE_TYPE)1;
-			} else {
+			if((allele >> 1) == 0) simple += (YON_STORE_TYPE)0;
+			else if(allele == EOV_value ) simple += (YON_STORE_TYPE)1;
+			else {
 				// Add 1 because 1 is reserved for EOV
 				const YON_STORE_TYPE val = ((allele >> 1) + 1) << 1 | (allele & 1);
 				simple += val;

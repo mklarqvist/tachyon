@@ -151,6 +151,25 @@ public:
 		return(false);
 	}
 
+	std::ostream& writeHeaderString(std::ostream& stream, const bool showFormat = true) const{
+		stream << this->literals;
+		if(this->literals.size()) stream.put('\n');
+		if(showFormat){
+			stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+			if(this->header_magic.n_samples){
+				stream.put('\t');
+				stream << this->samples[0].name;
+				for(U32 i = 1; i < this->header_magic.n_samples; ++i){
+					stream << "\t" << this->samples[i].name;
+				}
+			}
+		} else {
+			stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+		}
+		stream.put('\n');
+		return(stream);
+	}
+
 private:
 	bool buildHashTables(void);
 

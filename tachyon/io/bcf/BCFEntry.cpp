@@ -415,24 +415,6 @@ bool BCFEntry::parse(const U64 n_samples){
 	return true;
 }
 
-double BCFEntry::getMissingness(const U64& samples) const{
-	if(this->good() == false)
-		return(1);
-
-	if(this->body->n_fmt == 0)
-		return 0;
-
-	U32 internal_pos = this->formatID[0].l_offset;
-	U64 n_missing = 0;
-	for(U32 i = 0; i < samples; ++i){
-		const SBYTE& fmt_type_value1 = *reinterpret_cast<SBYTE*>(&this->data[internal_pos++]);
-		const SBYTE& fmt_type_value2 = *reinterpret_cast<SBYTE*>(&this->data[internal_pos++]);
-
-		if((fmt_type_value1 >> 1) == 0 || (fmt_type_value2 >> 1) == 0) ++n_missing;
-	}
-	return((double)n_missing/samples);
-}
-
 void BCFEntry::SetRefAlt(void){
 	this->ref_alt = 0;
 	// Set mock ref-alt if not simple

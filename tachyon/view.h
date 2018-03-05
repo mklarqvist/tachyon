@@ -123,6 +123,10 @@ int view(int argc, char** argv){
 		return(0);
 	}
 
+	if(showHeader){
+		reader.header.writeHeaderString(std::cout, false);
+	}
+
 	U64 n_variants = 0;
 	tachyon::algorithm::Timer timer;
 	timer.Start();

@@ -76,14 +76,18 @@ private:
 	typedef BCFGenotypeSupport self_type;
 
 public:
-	BCFGenotypeSupport() : hasGenotypes(false), hasMissing(false), hasEOV(false), ploidy(0){}
+	BCFGenotypeSupport() : hasGenotypes(false), hasMissing(false), hasEOV(false), mixedPhasing(false), ploidy(0), phase(0), n_missing(0), n_eov(0){}
 
 
 public:
 	bool hasGenotypes;
 	bool hasMissing;
 	bool hasEOV;
+	bool mixedPhasing;
 	U32  ploidy;
+	BYTE phase;
+	U32  n_missing;
+	U32  n_eov;
 };
 
 struct BCFEntry{
@@ -135,9 +139,6 @@ public:
 
 	void SetRefAlt(void);
 
-	// Todo: fix
-	double getMissingness(const U64& samples) const;
-
 	//
 	bool assessGenotypes(const U64 n_samples){
 		if(this->hasGenotypes == false)
@@ -151,8 +152,27 @@ public:
 		this->gt_support.ploidy = ploidy;
 		this->gt_support.hasGenotypes = true;
 
+		BYTE first_phase = 0;
+
 		if(this->formatID[0].primitive_type == YON_BCF_PRIMITIVE_TYPES::BCF_BYTE){
-			for(U32 i = 0; i < n_samples*ploidy; i+=ploidy, ++current_sample){
+			for(U32 p = 0; p < ploidy; ++p){
+				const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&internal_data[internal_data_offset]);
+				const BYTE& uref = *reinterpret_cast<const BYTE* const>(ref);
+				if(uref == 0x80){
+					//std::cerr << "is missing" << std::endl;
+					this->gt_support.hasMissing = true;
+					++this->gt_support.n_missing;
+				} else if(uref == 0x81){
+					//std::cerr << "is vector eof" << std::endl;
+					this->gt_support.hasEOV = true;
+					++this->gt_support.n_eov;
+				}
+				if(p + 1 == ploidy) first_phase = uref & 1;
+				internal_data_offset += sizeof(BYTE);
+			}
+			++current_sample;
+
+			for(U32 i = ploidy; i < n_samples*ploidy; i+=ploidy, ++current_sample){
 				// retrieve ploidy primitives
 				for(U32 p = 0; p < ploidy; ++p){
 					const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&internal_data[internal_data_offset]);
@@ -160,9 +180,18 @@ public:
 					if(uref == 0x80){
 						//std::cerr << "is missing" << std::endl;
 						this->gt_support.hasMissing = true;
+						++this->gt_support.n_missing;
 					} else if(uref == 0x81){
 						//std::cerr << "is vector eof" << std::endl;
 						this->gt_support.hasEOV = true;
+						++this->gt_support.n_eov;
+					}
+					if(p + 1 == ploidy){
+						if(first_phase != (uref & 1)){
+							std::cerr << "triggering mixed phase" << std::endl;
+							this->gt_support.mixedPhasing = true;
+							this->gt_support.phase = 0;
+						}
 					}
 					internal_data_offset += sizeof(BYTE);
 				}
