@@ -1,6 +1,8 @@
 #ifndef CORE_HEADER_HEADER_MAGIC_H_
 #define CORE_HEADER_HEADER_MAGIC_H_
 
+#include <ostream>
+#include <istream>
 #include <cstring>
 
 #include "../../support/MagicConstants.h"
@@ -13,51 +15,14 @@ public:
 	typedef HeaderMagic self_type;
 
 public:
-	HeaderMagic() :
-		major_version(tachyon::constants::TACHYON_VERSION_MAJOR),
-		minor_version(tachyon::constants::TACHYON_VERSION_MINOR),
-		release_version(tachyon::constants::TACHYON_VERSION_RELEASE),
-		controller(0),
-		n_samples(0),
-		n_contigs(0),
-		n_info_values(0),
-		n_format_values(0),
-		n_filter_values(0),
-		l_literals(0),
-		l_header(0),
-		l_header_uncompressed(0)
-	{
-		memcpy(&this->magic_string[0],
-               &tachyon::constants::FILE_HEADER[0],
-                tachyon::constants::FILE_HEADER_LENGTH);
-	}
-
-	HeaderMagic(const self_type& other) :
-		major_version(other.major_version),
-		minor_version(other.minor_version),
-		release_version(other.release_version),
-		controller(other.controller),
-		n_samples(other.n_samples),
-		n_contigs(other.n_contigs),
-		n_info_values(other.n_info_values),
-		n_format_values(other.n_format_values),
-		n_filter_values(other.n_filter_values),
-		l_literals(other.l_literals),
-		l_header(other.l_header),
-		l_header_uncompressed(other.l_header_uncompressed)
-	{
-		memcpy(&this->magic_string[0],
-			   &other.magic_string[0],
-				tachyon::constants::FILE_HEADER_LENGTH);
-	}
-
+	HeaderMagic();
+	HeaderMagic(const self_type& other);
 	~HeaderMagic() = default;
 
 	inline const U64& getNumberSamples(void) const{ return(this->n_samples); }
 	inline U64& getNumberSamples(void){ return(this->n_samples); }
 	inline const U32& getNumberContigs(void) const{ return(this->n_contigs); }
 	inline U32& getNumberContigs(void){ return(this->n_contigs); }
-
 	inline const U16& getController(void) const{ return(this->controller); }
 	inline U16& getController(void){ return(this->controller); }
 
@@ -77,34 +42,34 @@ public:
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& header){
 		stream.write(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
-		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MAJOR), sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MINOR), sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MINOR),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_RELEASE), sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&header.controller), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&header.n_samples),  sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&header.n_contigs),  sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.n_info_values),  sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.n_format_values),  sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.n_filter_values),  sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.l_literals),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&header.l_header),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.controller),      sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&header.n_samples),       sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&header.n_contigs),       sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_info_values),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_format_values), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.n_filter_values), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.l_literals),      sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&header.l_header),        sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&header.l_header_uncompressed), sizeof(U32));
 		return stream;
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& header){
 		stream.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
-		stream.read(reinterpret_cast<char*>(&header.major_version), sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&header.minor_version), sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&header.major_version),   sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&header.minor_version),   sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&header.release_version), sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&header.controller),    sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&header.n_samples),     sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&header.n_contigs),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&header.n_info_values),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&header.n_format_values),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&header.n_filter_values),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.controller),      sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&header.n_samples),       sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&header.n_contigs),       sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_info_values),   sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_format_values), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.n_filter_values), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&header.l_literals),      sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&header.l_header),      sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&header.l_header),        sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&header.l_header_uncompressed), sizeof(U32));
 		return(stream);
 	}
@@ -117,9 +82,9 @@ public:
 	U16  controller;            // controller
 	U64  n_samples;             // number of samples
 	U32  n_contigs;             // number of contigs
-	U32  n_info_values;        // number of map entries
-	U32  n_format_values;
-	U32  n_filter_values;
+	U32  n_info_values;         // number of unique info fields
+	U32  n_format_values;       // number of unique format fields
+	U32  n_filter_values;       // number of unique filter fields
 	U32  l_literals;            // literals length
 	U32  l_header;              // compressed length
 	U32  l_header_uncompressed; // uncompressed length

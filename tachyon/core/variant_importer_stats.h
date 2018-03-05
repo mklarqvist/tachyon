@@ -1,13 +1,13 @@
-#ifndef CORE_IMPORTERSTATS_H_
-#define CORE_IMPORTERSTATS_H_
+#ifndef CORE_VARIANT_IMPORTER_STATS_H_
+#define CORE_VARIANT_IMPORTER_STATS_H_
 
 namespace tachyon{
 namespace support{
 
-struct ImporterStats{
-	typedef ImporterStats self_type;
+struct VariantImporterStats{
+	typedef VariantImporterStats self_type;
 
-	ImporterStats() :
+	VariantImporterStats() :
 		total_header_cost(0),
 		total_gt_cost(0),
 		total_ppa_cost(0),
@@ -43,4 +43,4 @@ struct ImporterStats{
 
 
 
-#endif /* CORE_IMPORTERSTATS_H_ */
+#endif /* CORE_VARIANT_IMPORTER_STATS_H_ */

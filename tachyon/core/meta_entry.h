@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "../containers/components/datablock_header.h"
-#include "header/tachyon_header.h"
+#include "header/variant_header.h"
 #include "meta_cold.h"
 #include "meta_hot.h"
 
@@ -23,7 +23,7 @@ private:
 	typedef MetaCold                    cold_entry;
 	typedef containers::DataContainer   container_type;
 	typedef containers::DataBlockHeader datablock_header_type;
-	typedef TachyonHeader               header_type;
+	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 
 public:

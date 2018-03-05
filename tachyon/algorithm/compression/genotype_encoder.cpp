@@ -37,6 +37,14 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		support.header_stride.controller.signedness = 0;
 	}
 
+	meta_base.controller.biallelic        = line.body->n_allele == 2;
+	meta_base.controller.diploid          = line.gt_support.ploidy == 2;
+	meta_base.controller.gt_mixed_phasing = line.gt_support.mixedPhasing;
+	meta_base.controller.gt_anyMissing    = line.gt_support.hasMissing;
+	meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
+	meta_base.controller.gt_phase         = line.gt_support.phase;
+	meta_base.controller.mixed_ploidy     = line.gt_support.hasEOV;
+
 	// Assess cost and encode
 	rle_helper_type cost;
 	if(line.body->n_allele == 2 && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
@@ -45,14 +53,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			support.triggerMixedStride();
 
 		support.addStride(1);
-		meta_base.controller.gt_rle           = true;
-		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.gt_anyMissing    = cost.hasMissing;
-		meta_base.controller.biallelic        = true;
-		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
-		meta_base.controller.gt_phase         = cost.phased;
-		meta_base.controller.diploid          = true;
-		meta_base.controller.mixed_ploidy     = false;
+		meta_base.controller.gt_rle = true;
 
 		++runs;
 		support += (U32)cost.n_runs;
@@ -82,17 +83,8 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		return true;
 	}
-	else if(line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false) { // Case diploid n-allelic
+	else if(line.gt_support.ploidy == 2) { // Case diploid n-allelic OR have EOV values
 		cost = this->assessDiploidRLEnAllelic(line, ppa);
-
-		meta_base.controller.biallelic        = false;
-		meta_base.controller.gt_mixed_phasing = cost.mixedPhasing;
-		meta_base.controller.gt_anyMissing    = cost.hasMissing;
-		meta_base.controller.biallelic        = false;
-		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
-		meta_base.controller.gt_phase         = cost.phased;
-		meta_base.controller.diploid          = true;
-		meta_base.controller.mixed_ploidy     = false;
 
 		// BCF-style cost
 		U32 costBCFStyle = this->n_samples; // cost for BCF-style encoding
@@ -106,14 +98,11 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 				support.triggerMixedStride();
 
 			support.addStride(2);
-			//std::cerr << line.body->POS+1 << "\t1\t0" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << cost.n_runs*cost.word_width << std::endl;
 
 			meta_base.controller.gt_rle = true;
 			++simple;
 			support += (U32)cost.n_runs;
 			++support;
-
-			//std::cerr << utility::timestamp("DEBUG") << "Cost: " << cost.word_width*cost.n_runs << " @ " << cost.n_runs << '\t' << (int)cost.word_width << std::endl;
 
 			switch(cost.word_width){
 			case 1:
@@ -136,9 +125,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 				std::cerr << utility::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
 				return false;
 			}
-
-			// Reset and recycle helper
-			//this->helper.reset();
 			return true;
 		}
 		// BCF style is cheaper
@@ -148,18 +134,23 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 				support.triggerMixedStride();
 
 			support.addStride(3);
-			support += (U32)this->n_samples*line.gt_support.ploidy;
+			support += (U32)this->n_samples;
 			++support;
-			//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
-
-			meta_base.controller.gt_rle = false;
-			meta_base.controller.gt_primtive_type = 0;
 			++simple;
 
-			U64 n_runs = this->n_samples*line.gt_support.ploidy;
-			if(line.body->n_allele + 1 < 8)          this->EncodeDiploidBCF<BYTE>(line, simple, n_runs, ppa);
-			else if(line.body->n_allele + 1 < 128)   this->EncodeDiploidBCF<U16> (line, simple, n_runs, ppa);
-			else if(line.body->n_allele + 1 < 32768) this->EncodeDiploidBCF<U32> (line, simple, n_runs, ppa);
+			U64 n_runs = this->n_samples;
+			if(line.body->n_allele + 1 < 8){
+				meta_base.controller.gt_primtive_type = core::YON_GT_BYTE;
+				this->EncodeDiploidBCF<BYTE>(line, simple, n_runs, ppa);
+			}
+			else if(line.body->n_allele + 1 < 128){
+				meta_base.controller.gt_primtive_type = core::YON_GT_U16;
+				this->EncodeDiploidBCF<U16> (line, simple, n_runs, ppa);
+			}
+			else if(line.body->n_allele + 1 < 32768){
+				meta_base.controller.gt_primtive_type = core::YON_GT_U32;
+				this->EncodeDiploidBCF<U32> (line, simple, n_runs, ppa);
+			}
 			else {
 				std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 							 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "
@@ -174,13 +165,12 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	}
 	// temp
 	else {
-		if(!support.checkStrideSize(3))
+		if(!support.checkStrideSize(4))
 			support.triggerMixedStride();
 
-		support.addStride(3);
-		support += (U32)this->n_samples*line.gt_support.ploidy;
+		support.addStride(4);
+		support += (BYTE)line.gt_support.ploidy;
 		++support;
-		//std::cerr << line.body->POS+1 << "\t1\t1" << '\t' << (int)cost.word_width << '\t' << cost.n_runs << '\t' << (int)cost.hasMissing << '\t' << (int)cost.mixedPhasing << '\t' << costBCFStyle << std::endl;
 
 		meta_base.controller.biallelic        = false;
 		meta_base.controller.gt_mixed_phasing = true;
@@ -202,9 +192,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 						 "Format is limited to 32768..." << std::endl;
 			return false;
 		}
-
-		// Reset and recycle helper
-		//this->helper.reset();
 		return true;
 	}
 	return false;
@@ -214,15 +201,11 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 	U32 internal_buffer_offset = line.formatID[0].l_offset;
 	const BYTE ploidy = 2;
 
-	//\///////////////////
-	// Step 2
-	//
-	// Calculate cost / given a data type
-	//\///////////////////
+	// Setup
 	U32 n_runs_byte = 0; U32 run_length_byte = 1;
 	U32 n_runs_u16  = 0; U32 run_length_u16  = 1;
 	U32 n_runs_u32  = 0; U32 run_length_u32  = 1;
-	U32 n_runs_u64  = 0; U32 run_length_u64  = 1;
+	U64 n_runs_u64  = 0; U64 run_length_u64  = 1;
 
 	// First ref
 	const SBYTE& allele1_2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_buffer_offset + ploidy*sizeof(SBYTE)*ppa[0]]);
@@ -277,7 +260,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 	if(n_runs_u32*sizeof(U32) < smallest_cost){ smallest_cost = n_runs_u32*sizeof(U32); word_width = sizeof(U32); chosen_runs = n_runs_u32; }
 	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = sizeof(U64); chosen_runs = n_runs_u64; }
 
-	return(rle_helper_type(word_width, chosen_runs, line.gt_support.phase, line.gt_support.mixedPhasing, line.gt_support.hasMissing, line.gt_support.hasEOV));
+	return(rle_helper_type(word_width, chosen_runs));
 }
 
 const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa) const{
@@ -285,7 +268,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	U32 internal_pos_rle = line.formatID[0].l_offset;
 
 	// Assess RLE cost
-	const BYTE shift     = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + 1));
+	const BYTE shift     = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1));
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
 	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
 	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, line.gt_support.mixedPhasing);
@@ -294,10 +277,10 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	// Values set to signed integers as values can underflow if
 	// the do not fit in the word size
 	// Ploidy*shift_size bits for alleles and 1 bit for phase information
-	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
-	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
-	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
-	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
+	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
+	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
+	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
+	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
 	if(BYTE_limit <= 0) BYTE_limit = std::numeric_limits<S32>::max();
 	if(U16_limit <= 0)  U16_limit  = std::numeric_limits<S32>::max();
 	if(U32_limit <= 0)  U32_limit  = std::numeric_limits<S64>::max();
@@ -305,7 +288,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	U32 n_runs_byte = 0; U32 run_length_byte = 1;
 	U32 n_runs_u16  = 0; U32 run_length_u16  = 1;
 	U32 n_runs_u32  = 0; U32 run_length_u32  = 1;
-	U32 n_runs_u64  = 0; U32 run_length_u64  = 1;
+	U64 n_runs_u64  = 0; U64 run_length_u64  = 1;
 
 	U32 j = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
@@ -348,7 +331,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	if(n_runs_u32*sizeof(U32) < smallest_cost){ smallest_cost = n_runs_u32*sizeof(U32); word_width = sizeof(U32); chosen_runs = n_runs_u32; }
 	if(n_runs_u64*sizeof(U64) < smallest_cost){ smallest_cost = n_runs_u64*sizeof(U64); word_width = sizeof(U64); chosen_runs = n_runs_u64; }
 
-	return(rle_helper_type(word_width, chosen_runs, line.gt_support.phase, line.gt_support.mixedPhasing, line.gt_support.hasMissing, line.gt_support.hasEOV));
+	return(rle_helper_type(word_width, chosen_runs));
 }
 
 }

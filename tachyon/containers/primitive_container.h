@@ -162,9 +162,12 @@ void PrimitiveContainer<return_type>::__setupSigned(const DataContainer& contain
 	}
 	else {
 		for(U32 i = 0; i < this->n_entries; ++i){
+			// If the data is missing
 			if(data[i] == std::numeric_limits<native_primitive>::min()){
 				this->__entries[i] = std::numeric_limits<return_type>::min();
-			} else if(data[i] == std::numeric_limits<native_primitive>::min() + 1){
+			}
+			// If the data is EOV
+			else if(data[i] == std::numeric_limits<native_primitive>::min() + 1){
 				this->__entries[i] = std::numeric_limits<return_type>::min() + 1;
 			}
 			else

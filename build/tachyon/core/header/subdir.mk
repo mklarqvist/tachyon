@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../tachyon/core/header/tachyon_header.cpp 
+../tachyon/core/header/header_magic.cpp \
+../tachyon/core/header/variant_header.cpp 
 
 OBJS += \
-./tachyon/core/header/tachyon_header.o 
+./tachyon/core/header/header_magic.o \
+./tachyon/core/header/variant_header.o 
 
 CPP_DEPS += \
-./tachyon/core/header/tachyon_header.d 
+./tachyon/core/header/header_magic.d \
+./tachyon/core/header/variant_header.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

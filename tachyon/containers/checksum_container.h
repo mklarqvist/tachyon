@@ -2,8 +2,8 @@
 #define CONTAINERS_CHECKSUM_CONTAINER_H_
 
 #include "../algorithm/digital_digest.h"
+#include "../core/header/variant_header.h"
 #include "variantblock.h"
-#include "../core/header/tachyon_header.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,7 +19,7 @@ private:
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
     typedef containers::VariantBlock block_type;
-    typedef tachyon::core::TachyonHeader header_type;
+    typedef tachyon::core::VariantHeader header_type;
 
 public:
 	ChecksumContainer(void);

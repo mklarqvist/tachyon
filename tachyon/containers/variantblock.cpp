@@ -35,13 +35,13 @@ VariantBlock::~VariantBlock(){
 }
 
 void VariantBlock::clear(void){
-	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i)
+	for(U32 i = 0; i < this->header.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
-	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i)
+	for(U32 i = 0; i < this->header.n_format_streams; ++i)
 		this->format_containers[i].reset();
 
-	this->index_entry.reset();
+	this->header.reset();
 	this->meta_info_map_ids.reset();
 	this->meta_filter_map_ids.reset();
 	this->meta_format_map_ids.reset();
@@ -99,44 +99,44 @@ void VariantBlock::updateBaseContainers(void){
 }
 
 void VariantBlock::updateOffsets(void){
-	U32 cum_size = this->index_entry.getObjectSize();
+	U32 cum_size = this->header.getObjectSize();
 
-	if(this->index_entry.controller.hasGT && this->index_entry.controller.hasGTPermuted){
-		this->index_entry.offset_ppa.offset = cum_size;
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
+		this->header.offset_ppa.offset = cum_size;
 		cum_size += this->ppa_manager.getObjectSize();
 	}
 
-	this->index_entry.offset_hot_meta.offset = cum_size;
+	this->header.offset_hot_meta.offset = cum_size;
 	cum_size += this->meta_hot_container.getObjectSize();
 
-	this->index_entry.offset_cold_meta.offset = cum_size;
+	this->header.offset_cold_meta.offset = cum_size;
 	cum_size += this->meta_cold_container.getObjectSize();
 
-	this->index_entry.offset_gt_rle.offset = cum_size;
+	this->header.offset_gt_rle.offset = cum_size;
 	cum_size += this->gt_rle_container.getObjectSize();
 
-	this->index_entry.offset_gt_simple.offset = cum_size;
+	this->header.offset_gt_simple.offset = cum_size;
 	cum_size += this->gt_simple_container.getObjectSize();
 
-	this->index_entry.offset_gt_helper.offset = cum_size;
+	this->header.offset_gt_helper.offset = cum_size;
 	cum_size += this->gt_support_data_container.getObjectSize();
 
-	this->index_entry.offset_meta_info_id.offset = cum_size;
+	this->header.offset_meta_info_id.offset = cum_size;
 	cum_size += this->meta_info_map_ids.getObjectSize();
 
-	this->index_entry.offset_meta_filter_id.offset = cum_size;
+	this->header.offset_meta_filter_id.offset = cum_size;
 	cum_size += this->meta_filter_map_ids.getObjectSize();
 
-	this->index_entry.offset_meta_format_id.offset = cum_size;
+	this->header.offset_meta_format_id.offset = cum_size;
 	cum_size += this->meta_format_map_ids.getObjectSize();
 
-	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
-		this->index_entry.info_offsets[i].offset = cum_size;
+	for(U32 i = 0; i < this->header.n_info_streams; ++i){
+		this->header.info_offsets[i].offset = cum_size;
 		cum_size += this->info_containers[i].getObjectSize();
 	}
 
-	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
-		this->index_entry.format_offsets[i].offset = cum_size;
+	for(U32 i = 0; i < this->header.n_format_streams; ++i){
+		this->header.format_offsets[i].offset = cum_size;
 		cum_size += this->format_containers[i].getObjectSize();
 	}
 
@@ -144,7 +144,7 @@ void VariantBlock::updateOffsets(void){
 	cum_size += sizeof(U64);
 
 	// Update final size
-	this->index_entry.offset_end_of_block = cum_size;
+	this->header.offset_end_of_block = cum_size;
 }
 
 void VariantBlock::VariantBlock::updateContainer(container_type* container, const U32& length){
@@ -198,52 +198,52 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
 
 	const U64 start_offset = (U64)stream.tellg();
-	stream >> this->index_entry;
-	const U64 end_of_block = start_offset + this->index_entry.offset_end_of_block;
+	stream >> this->header;
+	const U64 end_of_block = start_offset + this->header.offset_end_of_block;
 
 	if(settings.importPPA){
-		if(this->index_entry.controller.hasGTPermuted && this->index_entry.controller.hasGT){
-			stream.seekg(start_offset + this->index_entry.offset_ppa.offset);
+		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
+			stream.seekg(start_offset + this->header.offset_ppa.offset);
 			stream >> this->ppa_manager;
 		}
 	}
 
 	if(settings.importMetaHot){
-		stream.seekg(start_offset + this->index_entry.offset_hot_meta.offset);
+		stream.seekg(start_offset + this->header.offset_hot_meta.offset);
 		stream >> this->meta_hot_container;
 	}
 
 	if(settings.importMetaCold){
-		stream.seekg(start_offset + this->index_entry.offset_cold_meta.offset);
+		stream.seekg(start_offset + this->header.offset_cold_meta.offset);
 		stream >> this->meta_cold_container;
 	}
 
 	if(settings.importGT){
-		stream.seekg(start_offset + this->index_entry.offset_gt_rle.offset);
+		stream.seekg(start_offset + this->header.offset_gt_rle.offset);
 		stream >> this->gt_rle_container;
 	}
 
 	if(settings.importGTSimple){
-		stream.seekg(start_offset + this->index_entry.offset_gt_simple.offset);
+		stream.seekg(start_offset + this->header.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
 	}
 
 	if(settings.importGTSimple || settings.importGT){
-		stream.seekg(start_offset + this->index_entry.offset_gt_helper.offset);
+		stream.seekg(start_offset + this->header.offset_gt_helper.offset);
 		stream >> this->gt_support_data_container;
 	}
 
 	if(settings.importMetaHot || settings.importMetaCold){
-		stream.seekg(start_offset + this->index_entry.offset_meta_info_id.offset);
+		stream.seekg(start_offset + this->header.offset_meta_info_id.offset);
 		stream >> this->meta_info_map_ids;
 		stream >> this->meta_filter_map_ids;
 		stream >> this->meta_format_map_ids;
 	}
 
 	// Load all info
-	if(settings.importInfoAll && this->index_entry.n_info_streams > 0){
-		stream.seekg(start_offset + this->index_entry.info_offsets[0].offset);
-		for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+	if(settings.importInfoAll && this->header.n_info_streams > 0){
+		stream.seekg(start_offset + this->header.info_offsets[0].offset);
+		for(U32 i = 0; i < this->header.n_info_streams; ++i){
 			stream >> this->info_containers[i];
 			//std::cerr << "loaded: " << this->index_entry.info_offsets[i].global_key << '\t' << this->info_containers[i].header.cLength << std::endl;
 		}
@@ -255,15 +255,15 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		U32 iterator_index = 0;
 		for(U32 i = 0; i < settings.info_ID_list.size(); ++i){
 			// Cycle over all available streams in this block
-			for(U32 j = 0; j < this->index_entry.n_info_streams; ++j){
+			for(U32 j = 0; j < this->header.n_info_streams; ++j){
 				// If there is a match
 				// Push back field into map
-				if(this->index_entry.info_offsets[j].global_key == settings.info_ID_list[i]){
+				if(this->header.info_offsets[j].global_key == settings.info_ID_list[i]){
 					settings.load_info_ID_loaded.push_back(
 							core::SettingsMap(
 									iterator_index++,                   // iterator value
 									j,                                  // local index id
-									&this->index_entry.info_offsets[j]) // offset
+									&this->header.info_offsets[j]) // offset
 									);
 					break;
 				}
@@ -286,9 +286,9 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	} // end case load_info_ID
 
-	if(settings.importFormatAll && this->index_entry.n_format_streams){
-		stream.seekg(start_offset + this->index_entry.format_offsets[0].offset);
-		for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+	if(settings.importFormatAll && this->header.n_format_streams){
+		stream.seekg(start_offset + this->header.format_offsets[0].offset);
+		for(U32 i = 0; i < this->header.n_format_streams; ++i){
 			stream >> this->format_containers[i];
 			//std::cerr << "loaded: " << this->index_entry.format_offsets[i].global_key << '\t' << this->format_containers[i].header.cLength << std::endl;
 		}
@@ -306,11 +306,11 @@ bool VariantBlock::write(std::ofstream& stream,
                      import_stats_type& stats_uncompressed)
 {
 	U64 last_pos = stream.tellp();
-	stream << this->index_entry;
+	stream << this->header;
 	stats.total_header_cost += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
-	if(this->index_entry.controller.hasGTPermuted && this->index_entry.controller.hasGT){
+	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 		stream << this->ppa_manager;
 		stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
 		stats_uncompressed.total_ppa_cost += this->ppa_manager.u_length;
@@ -342,7 +342,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.size();
 	last_pos = stream.tellp();
 
-	for(U32 i = 0; i < this->index_entry.n_info_streams; ++i){
+	for(U32 i = 0; i < this->header.n_info_streams; ++i){
 		stream << this->info_containers[i];
 		stats_uncompressed.total_info_cost += this->info_containers[i].buffer_data_uncompressed.size();
 	}
@@ -350,7 +350,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats.total_info_cost += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
-	for(U32 i = 0; i < this->index_entry.n_format_streams; ++i){
+	for(U32 i = 0; i < this->header.n_format_streams; ++i){
 		stream << this->format_containers[i];
 		stats_uncompressed.total_format_cost += this->format_containers[i].buffer_data_uncompressed.size();
 	}

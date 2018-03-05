@@ -17,9 +17,9 @@ namespace core{
  * This class describes data mandatory data in the
  * Tachyon header
  */
-class TachyonHeader{
+class VariantHeader{
 private:
-	typedef TachyonHeader                     self_type;
+	typedef VariantHeader                     self_type;
 	typedef HeaderMagic                       magic_type;
 	typedef core::HeaderContig                contig_type;
 	typedef core::HeaderMapEntry              map_entry_type;
@@ -28,9 +28,9 @@ private:
 	typedef vcf::VCFHeader                    vcf_header_type;
 
 public:
-	explicit TachyonHeader(void);
-	TachyonHeader(const vcf_header_type& vcf_header);
-	~TachyonHeader();
+	explicit VariantHeader(void);
+	VariantHeader(const vcf_header_type& vcf_header);
+	~VariantHeader();
 
 	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }
 	inline const sample_type& getSample(const U32& position) const{ return(this->samples[position]); }
@@ -87,19 +87,19 @@ public:
 		this->info_fields = new map_entry_type[this->header_magic.n_info_values];
 		for(U32 i = 0; i < this->header_magic.n_info_values; ++i){
 			this->info_fields[i] = vcf_header.info_map[i];
-			this->info_fields[i].IDX = i;
+			this->info_fields[i].IDX = i; // update idx to local
 		}
 
 		this->format_fields = new map_entry_type[this->header_magic.n_format_values];
 		for(U32 i = 0; i < this->header_magic.n_format_values; ++i){
 			this->format_fields[i] = vcf_header.format_map[i];
-			this->format_fields[i].IDX = i;
+			this->format_fields[i].IDX = i; // update idx to local
 		}
 
 		this->filter_fields = new map_entry_type[this->header_magic.n_filter_values];
 		for(U32 i = 0; i < this->header_magic.n_filter_values; ++i){
 			this->filter_fields[i] = vcf_header.filter_map[i];
-			this->filter_fields[i].IDX = i;
+			this->filter_fields[i].IDX = i; // update idx to local
 		}
 
 		this->buildHashTables();

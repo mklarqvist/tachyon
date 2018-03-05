@@ -1,9 +1,9 @@
-#include "tachyon_header.h"
+#include "variant_header.h"
 
 namespace tachyon{
 namespace core{
 
-TachyonHeader::TachyonHeader(void) :
+VariantHeader::VariantHeader(void) :
 	contigs(nullptr),
 	samples(nullptr),
 	info_fields(nullptr),
@@ -16,7 +16,7 @@ TachyonHeader::TachyonHeader(void) :
 	htable_filter_fields(nullptr)
 {}
 
-TachyonHeader::TachyonHeader(const vcf_header_type& vcf_header) :
+VariantHeader::VariantHeader(const vcf_header_type& vcf_header) :
 	contigs(nullptr),
 	samples(nullptr),
 	info_fields(nullptr),
@@ -32,7 +32,7 @@ TachyonHeader::TachyonHeader(const vcf_header_type& vcf_header) :
 	*this = vcf_header;
 }
 
-TachyonHeader::~TachyonHeader(){
+VariantHeader::~VariantHeader(){
 	delete [] this->contigs;
 	delete [] this->samples;
 	delete [] this->info_fields;
@@ -45,7 +45,7 @@ TachyonHeader::~TachyonHeader(){
 	delete this->htable_filter_fields;
 }
 
-const bool TachyonHeader::getContig(const std::string& p, contig_type*& target) const{
+const bool VariantHeader::getContig(const std::string& p, contig_type*& target) const{
 	if(this->htable_contigs == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_contigs->GetItem(&p[0], &p, ret, p.size())){
@@ -55,7 +55,7 @@ const bool TachyonHeader::getContig(const std::string& p, contig_type*& target) 
 	return false;
 }
 
-const bool TachyonHeader::getSample(const std::string& p, sample_type*& target) const{
+const bool VariantHeader::getSample(const std::string& p, sample_type*& target) const{
 	if(this->htable_samples == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_samples->GetItem(&p[0], &p, ret, p.size())){
@@ -65,7 +65,7 @@ const bool TachyonHeader::getSample(const std::string& p, sample_type*& target) 
 	return false;
 }
 
-const bool TachyonHeader::getInfoField(const std::string& p, map_entry_type*& target) const{
+const bool VariantHeader::getInfoField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_info_fields== nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_info_fields->GetItem(&p[0], &p, ret, p.size())){
@@ -75,7 +75,7 @@ const bool TachyonHeader::getInfoField(const std::string& p, map_entry_type*& ta
 	return false;
 }
 
-const bool TachyonHeader::getFormatField(const std::string& p, map_entry_type*& target) const{
+const bool VariantHeader::getFormatField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_format_fields == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_format_fields->GetItem(&p[0], &p, ret, p.size())){
@@ -85,7 +85,7 @@ const bool TachyonHeader::getFormatField(const std::string& p, map_entry_type*& 
 	return false;
 }
 
-const bool TachyonHeader::getFilterField(const std::string& p, map_entry_type*& target) const{
+const bool VariantHeader::getFilterField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_filter_fields == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_filter_fields->GetItem(&p[0], &p, ret, p.size())){
@@ -95,7 +95,7 @@ const bool TachyonHeader::getFilterField(const std::string& p, map_entry_type*& 
 	return false;
 }
 
-const core::HeaderMapEntry* TachyonHeader::getInfoField(const std::string& p) const{
+const core::HeaderMapEntry* VariantHeader::getInfoField(const std::string& p) const{
 	if(this->htable_info_fields == nullptr) return nullptr;
 	S32* ret = nullptr;
 	if(this->htable_info_fields->GetItem(&p[0], &p, ret, p.size()))
@@ -104,7 +104,7 @@ const core::HeaderMapEntry* TachyonHeader::getInfoField(const std::string& p) co
 	return nullptr;
 }
 
-const core::HeaderMapEntry* TachyonHeader::getFormatField(const std::string& p) const{
+const core::HeaderMapEntry* VariantHeader::getFormatField(const std::string& p) const{
 	if(this->htable_format_fields == nullptr) return nullptr;
 	S32* ret = nullptr;
 	if(this->htable_format_fields->GetItem(&p[0], &p, ret, p.size()))
@@ -113,7 +113,7 @@ const core::HeaderMapEntry* TachyonHeader::getFormatField(const std::string& p) 
 	return nullptr;
 }
 
-const core::HeaderMapEntry* TachyonHeader::getFilterField(const std::string& p) const{
+const core::HeaderMapEntry* VariantHeader::getFilterField(const std::string& p) const{
 	if(this->htable_filter_fields == nullptr) return nullptr;
 	S32* ret = nullptr;
 	if(this->htable_filter_fields->GetItem(&p[0], &p, ret, p.size()))
@@ -122,7 +122,7 @@ const core::HeaderMapEntry* TachyonHeader::getFilterField(const std::string& p) 
 	return nullptr;
 }
 
-bool TachyonHeader::buildHashTables(void){
+bool VariantHeader::buildHashTables(void){
 	if(this->header_magic.n_contigs){
 		if(this->header_magic.n_contigs*2 < 5012){
 			this->htable_contigs = new hash_table_type(5012);

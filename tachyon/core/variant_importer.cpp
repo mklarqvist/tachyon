@@ -6,6 +6,7 @@
 #include "../containers/checksum_container.h"
 #include "../algorithm/timer.h"
 #include "variant_importer.h"
+#include "variant_importer_container_stats.h"
 
 namespace tachyon {
 
@@ -79,7 +80,7 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
-	core::TachyonHeader header(*this->header);
+	core::VariantHeader header(*this->header);
 	header.write(this->writer.stream);
 	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
@@ -88,7 +89,7 @@ bool VariantImporter::BuildBCF(void){
 		}
 	}
 
-	this->block.index_entry.controller.hasGT = this->GT_available_;
+	this->block.header.controller.hasGT = this->GT_available_;
 
 	// Resize containers
 	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
@@ -132,16 +133,16 @@ bool VariantImporter::BuildBCF(void){
 			}
 		}
 #endif
-		this->block.index_entry.contigID    = reader.front().body->CHROM;
-		this->block.index_entry.minPosition = reader.front().body->POS;
-		this->block.index_entry.maxPosition = reader.back().body->POS;
-		this->block.index_entry.controller.hasGTPermuted = this->permute;
+		this->block.header.contigID    = reader.front().body->CHROM;
+		this->block.header.minPosition = reader.front().body->POS;
+		this->block.header.maxPosition = reader.back().body->POS;
+		this->block.header.controller.hasGTPermuted = this->permute;
 		// if there is 0 or 1 samples then GT data is never permuted
 		if(header.getSampleNumber() <= 1)
-			this->block.index_entry.controller.hasGTPermuted = false;
+			this->block.header.controller.hasGTPermuted = false;
 
 		// Permute GT if GT is available and the appropriate flag is triggered
-		if(this->GT_available_  && this->block.index_entry.controller.hasGTPermuted){
+		if(this->GT_available_  && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
@@ -160,15 +161,15 @@ bool VariantImporter::BuildBCF(void){
 		n_variants_read += reader.size();
 
 		// Update head meta
-		this->block.index_entry.controller.hasGT = this->GT_available_;
-		this->block.index_entry.n_info_streams   = this->info_fields.size();
-		this->block.index_entry.n_filter_streams = this->filter_fields.size();
-		this->block.index_entry.n_format_streams = this->format_fields.size();
-		this->block.index_entry.n_variants       = reader.size();
+		this->block.header.controller.hasGT = this->GT_available_;
+		this->block.header.n_info_streams   = this->info_fields.size();
+		this->block.header.n_filter_streams = this->filter_fields.size();
+		this->block.header.n_format_streams = this->format_fields.size();
+		this->block.header.n_variants       = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.index_entry.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
 		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_INFO);
 		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_FORMAT);

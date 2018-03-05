@@ -65,32 +65,16 @@ private:
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
-				phased(0),
-				mixedPhasing(1),
-				hasMissing(1),
-				anyNA(0),
 				word_width(1),
 				n_runs(0)
 		{}
 		__RLEAssessHelper(const BYTE& word_width,
-				          const U64& n_runs,
-						  const bool& phase,
-						  const bool& mixedPhasing,
-						  const bool& hasMissing,
-						  const bool& anyNA) :
-			phased(phase),
-			mixedPhasing(mixedPhasing),
-			hasMissing(hasMissing),
-			anyNA(anyNA),
+				          const U64& n_runs) :
 			word_width(word_width),
 			n_runs(n_runs)
 		{}
 		~__RLEAssessHelper(){}
 
-		bool phased;
-		bool mixedPhasing;
-		bool hasMissing;
-		bool anyNA;
 		BYTE word_width;
 		U64 n_runs;
 
@@ -199,14 +183,14 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = helper.hasMissing    ? 2 : 1;
-	const BYTE add      = helper.mixedPhasing  ? 1 : 0;
+	const BYTE shift    = line.gt_support.hasMissing    ? 2 : 1;
+	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
 
 	// temp
 	//const U64 runs_start_pos = runs.buffer_data_uncompressed.pointer;
 
 	// Run limits
-	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*(1 + helper.hasMissing) + helper.mixedPhasing)) - 1;
+	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*(1 + line.gt_support.hasMissing) + line.gt_support.mixedPhasing)) - 1;
 
 	// Genotype maps
 	// Map to 0,1,4,5
@@ -278,11 +262,9 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = ceil(log2(line.body->n_allele + helper.hasMissing + 1)); // Bits occupied per allele
-	const BYTE add      = helper.mixedPhasing  ? 1 : 0;
-	// Run limits
+	const BYTE shift    = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1)); // Bits occupied per allele
+	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*shift + add)) - 1;
-	//std::cerr << (U32)run_limit << '\t' << sizeof(YON_RLE_TYPE) << std::endl;
 
 	// First
 	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]]);
@@ -329,7 +311,6 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	// Reset and update
 	sumLength += length;
 	assert(sumLength == this->n_samples);
-	//std::cerr << helper.n_runs << '\t' << n_runs << std::endl;
 	assert(helper.n_runs == n_runs);
 
 	runs.n_additions += n_runs;

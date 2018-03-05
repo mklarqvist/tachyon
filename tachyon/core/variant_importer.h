@@ -8,10 +8,10 @@
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
 #include "ImportWriter.h"
-#include "ImporterStats.h"
 #include "../containers/variantblock.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
+#include "variant_importer_stats.h"
 
 namespace tachyon {
 
@@ -32,7 +32,7 @@ private:
 	typedef containers::HashContainer       hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
-	typedef support::ImporterStats          import_stats_type;
+	typedef support::VariantImporterStats          import_stats_type;
 	typedef core::MetaHot                   meta_type;
 
 public:

@@ -2,8 +2,8 @@
 #define CORE_BLOCKENTRY_H_
 
 #include "../algorithm/permutation/permutation_manager.h"
+#include "../core/variant_importer_stats.h"
 #include "../io/vcf/VCFHeader.h"
-#include "../core/ImporterStats.h"
 #include "components/datablock_header.h"
 #include "datablock_settings.h"
 #include "datacontainer.h"
@@ -20,14 +20,14 @@ class VariantBlock{
 	typedef VariantBlock                   self_type;
 	typedef DataContainer                  container_type;
 	typedef algorithm::PermutationManager  permutation_type;
-	typedef DataBlockHeader                index_entry_type;
+	typedef DataBlockHeader                header_type;
 	typedef HashContainer                  hash_container_type;
 	typedef HashVectorContainer            hash_vector_container_type;
 	typedef DataBlockOffsets               offset_type;
 	typedef DataBlockOffsetsHeader         offset_minimal_type;
 	typedef io::BasicBuffer                buffer_type;
 	typedef core::DataBlockSettings        settings_type;
-	typedef support::ImporterStats         import_stats_type;
+	typedef support::VariantImporterStats         import_stats_type;
 
 public:
 	VariantBlock();
@@ -47,7 +47,7 @@ public:
 	 */
 	void clear(void);
 
-	inline const U32& size(void) const{ return(this->index_entry.n_variants); }
+	inline const U32& size(void) const{ return(this->header.n_variants); }
 
 	/**<
 	 * Wrapper function for INFO, FORMAT, and FILTER disk
@@ -60,7 +60,7 @@ public:
 	 * @param n_filter_fields Number of FILTER fields in this block
 	 */
 	inline void allocateDiskOffsets(const U32& n_info_fields, const U32& n_format_fields, const U32& n_filter_fields){
-		this->index_entry.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
+		this->header.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
 	}
 
 	/**<
@@ -72,10 +72,10 @@ public:
 		// Determine target
 		switch(target){
 		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(this->info_containers, this->index_entry.n_info_streams));
+			return(this->updateContainer(this->info_containers, this->header.n_info_streams));
 			break;
 		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(this->format_containers, this->index_entry.n_format_streams));
+			return(this->updateContainer(this->format_containers, this->header.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
@@ -147,9 +147,9 @@ private:
 private:
 	// Write everything
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream << entry.index_entry;
+		stream << entry.header;
 
-		if(entry.index_entry.controller.hasGTPermuted)
+		if(entry.header.controller.hasGTPermuted)
 			stream << entry.ppa_manager;
 
 		stream << entry.meta_hot_container;
@@ -161,11 +161,11 @@ private:
 		stream << entry.meta_filter_map_ids;
 		stream << entry.meta_format_map_ids;
 
-		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < entry.header.n_info_streams; ++i)
 			stream << entry.info_containers[i];
 
 
-		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
+		for(U32 i = 0; i < entry.header.n_format_streams; ++i)
 			stream << entry.format_containers[i];
 
 		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
@@ -175,19 +175,19 @@ private:
 
 	// Read everything
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream >> entry.index_entry;
+		stream >> entry.header;
 
-		if(entry.index_entry.controller.hasGTPermuted) stream >> entry.ppa_manager;
+		if(entry.header.controller.hasGTPermuted) stream >> entry.ppa_manager;
 		stream >> entry.meta_hot_container;
 		stream >> entry.meta_cold_container;
 		stream >> entry.gt_rle_container;
 		stream >> entry.gt_simple_container;
 
-		for(U32 i = 0; i < entry.index_entry.n_info_streams; ++i)
+		for(U32 i = 0; i < entry.header.n_info_streams; ++i)
 			stream >> entry.info_containers[i];
 
 
-		for(U32 i = 0; i < entry.index_entry.n_format_streams; ++i)
+		for(U32 i = 0; i < entry.header.n_format_streams; ++i)
 			stream >> entry.format_containers[i];
 
 		U64 eof_marker;
@@ -198,7 +198,7 @@ private:
 	}
 
 public:
-	index_entry_type  index_entry;
+	header_type       header;
 	permutation_type  ppa_manager;
 	container_type    meta_hot_container;
 	container_type    meta_info_map_ids;

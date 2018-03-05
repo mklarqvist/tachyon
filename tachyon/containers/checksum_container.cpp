@@ -61,27 +61,27 @@ void ChecksumContainer::finalize(void){
 }
 
 bool ChecksumContainer::update(const block_type& block, const header_type& header){
-	for(U32 i = 0; i < block.index_entry.n_info_streams; ++i){
+	for(U32 i = 0; i < block.header.n_info_streams; ++i){
 		//assert(mapTable[block.index_entry.info_offsets[i].key] < this->size());
-		if(!(*this)[block.index_entry.info_offsets[i].global_key].uncompressed.update(block.info_containers[i].buffer_data_uncompressed, block.info_containers[i].buffer_strides_uncompressed, block.info_containers[i].header.hasMixedStride())){
+		if(!(*this)[block.header.info_offsets[i].global_key].uncompressed.update(block.info_containers[i].buffer_data_uncompressed, block.info_containers[i].buffer_strides_uncompressed, block.info_containers[i].header.hasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 			return false;
 		}
 
-		assert(block.index_entry.info_offsets[i].global_key < this->size());
-		if(!(*this)[block.index_entry.info_offsets[i].global_key].compressed.update(block.info_containers[i].buffer_data, block.info_containers[i].buffer_strides, block.info_containers[i].header.hasMixedStride())){
+		assert(block.header.info_offsets[i].global_key < this->size());
+		if(!(*this)[block.header.info_offsets[i].global_key].compressed.update(block.info_containers[i].buffer_data, block.info_containers[i].buffer_strides, block.info_containers[i].header.hasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 			return false;
 		}
 	}
 
-	for(U32 i = 0; i < block.index_entry.n_format_streams; ++i){
-		if(!(*this)[block.index_entry.format_offsets[i].global_key].uncompressed.update(block.format_containers[i].buffer_data_uncompressed, block.format_containers[i].buffer_strides_uncompressed, block.format_containers[i].header.hasMixedStride())){
+	for(U32 i = 0; i < block.header.n_format_streams; ++i){
+		if(!(*this)[block.header.format_offsets[i].global_key].uncompressed.update(block.format_containers[i].buffer_data_uncompressed, block.format_containers[i].buffer_strides_uncompressed, block.format_containers[i].header.hasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 			return false;
 		}
 
-		if(!(*this)[block.index_entry.format_offsets[i].global_key].compressed.update(block.format_containers[i].buffer_data, block.format_containers[i].buffer_strides, block.format_containers[i].header.hasMixedStride())){
+		if(!(*this)[block.header.format_offsets[i].global_key].compressed.update(block.format_containers[i].buffer_data, block.format_containers[i].buffer_strides, block.format_containers[i].header.hasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 			return false;
 		}
