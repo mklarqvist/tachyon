@@ -6,7 +6,6 @@
 #include "../containers/checksum_container.h"
 #include "../algorithm/timer.h"
 #include "variant_importer.h"
-#include "variant_importer_container_stats.h"
 
 namespace tachyon {
 
@@ -191,7 +190,7 @@ bool VariantImporter::BuildBCF(void){
 		this->block.updateOffsets();
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
 
-		this->block.write(this->writer.stream, this->import_compressed_stats, this->import_uncompressed_stats);
+		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
 		current_index_entry.contigID        = reader.front().body->CHROM;
 		current_index_entry.minPosition     = reader.front().body->POS;
@@ -243,23 +242,28 @@ bool VariantImporter::BuildBCF(void){
 	this->writer.stream << footer;
 	this->writer.stream.flush();
 
-	// Place markers
-	//this->writer.stream.write(reinterpret_cast<const char* const>(&digests_start), sizeof(U64));
-	//this->writer.WriteFinal(data_ends);
-
 	if(!SILENT){
-		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << std::endl;
-		std::cerr
-	    << "Header:    " << utility::toPrettyDiskString(this->import_compressed_stats.total_header_cost) << '\n'
-		<< "GT:        " << utility::toPrettyDiskString(this->import_compressed_stats.total_gt_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_gt_cost) << '\n'
-		<< "PPA:       " << utility::toPrettyDiskString(this->import_compressed_stats.total_ppa_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_ppa_cost) << '\n'
-		<< "Meta:      " << utility::toPrettyDiskString(this->import_compressed_stats.total_meta_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_meta_cost) << '\n'
-		<< "INFO:      " << utility::toPrettyDiskString(this->import_compressed_stats.total_info_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_info_cost) << '\n'
-		<< "FORMAT:    " << utility::toPrettyDiskString(this->import_compressed_stats.total_format_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_format_cost) << '\n'
-		<< "IDs:       " << utility::toPrettyDiskString(this->import_compressed_stats.total_special_cost) << '\t' << utility::toPrettyDiskString(this->import_uncompressed_stats.total_special_cost) << '\n'
-		<< "Index:     " << utility::toPrettyDiskString(index_ends - footer.offset_end_of_data) << '\n'
-		<< "Checksums: " << utility::toPrettyDiskString(digests_ends - index_ends) << '\n'
-		<< "Total:     " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
+		std::cerr << "Header:    " << utility::ToPrettyString(this->stats_basic[0].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[0].cost_uncompressed) << '\t' << (double)this->stats_basic[0].cost_uncompressed/this->stats_basic[0].cost_compressed << "-fold" << std::endl;
+		std::cerr << "PPA:       " << utility::ToPrettyString(this->stats_basic[1].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[1].cost_uncompressed) << '\t' << (double)this->stats_basic[1].cost_uncompressed/this->stats_basic[1].cost_compressed << "-fold" << std::endl;
+		std::cerr << "Meta hot:  " << utility::ToPrettyString(this->stats_basic[2].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[2].cost_uncompressed) << '\t' << (double)this->stats_basic[2].cost_uncompressed/this->stats_basic[2].cost_compressed << "-fold" << std::endl;
+		std::cerr << "Meta cold: " << utility::ToPrettyString(this->stats_basic[3].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[3].cost_uncompressed) << '\t' << (double)this->stats_basic[3].cost_uncompressed/this->stats_basic[3].cost_compressed << "-fold" << std::endl;
+		std::cerr << "GT RLE:    " << utility::ToPrettyString(this->stats_basic[4].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[4].cost_uncompressed) << '\t' << (double)this->stats_basic[4].cost_uncompressed/this->stats_basic[4].cost_compressed << "-fold" << std::endl;
+		std::cerr << "GT Packed: " << utility::ToPrettyString(this->stats_basic[5].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[5].cost_uncompressed) << '\t' << (double)this->stats_basic[5].cost_uncompressed/this->stats_basic[5].cost_compressed << "-fold" << std::endl;
+		std::cerr << "GT Support:" << utility::ToPrettyString(this->stats_basic[6].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[6].cost_uncompressed) << '\t' << (double)this->stats_basic[6].cost_uncompressed/this->stats_basic[6].cost_compressed << "-fold" << std::endl;
+		std::cerr << "Meta IDs:  " << utility::ToPrettyString(this->stats_basic[7].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[7].cost_uncompressed) << '\t' << (double)this->stats_basic[7].cost_uncompressed/this->stats_basic[7].cost_compressed << "-fold" << std::endl;
+		std::cerr << "INFO:      " << utility::ToPrettyString(this->stats_basic[8].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[8].cost_uncompressed) << '\t' << (double)this->stats_basic[8].cost_uncompressed/this->stats_basic[8].cost_compressed << "-fold" << std::endl;
+		std::cerr << "FORMAT:    " << utility::ToPrettyString(this->stats_basic[9].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[9].cost_uncompressed) << '\t' << (double)this->stats_basic[9].cost_uncompressed/this->stats_basic[9].cost_compressed << "-fold" << std::endl;
+		std::cerr << "Checksums: " << utility::ToPrettyString(digests_ends - index_ends) << std::endl;
+
+		for(U32 i = 0; i < header.header_magic.n_info_values; ++i){
+			std::cerr << header.info_fields[i].ID << "\t" << utility::ToPrettyString(this->stats_info[i].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_info[i].cost_uncompressed) << '\t' << (double)this->stats_info[i].cost_uncompressed/this->stats_info[i].cost_compressed << "-fold" << std::endl;
+		}
+
+		for(U32 i = 0; i < header.header_magic.n_format_values; ++i){
+			std::cerr << header.format_fields[i].ID << '\t' << utility::ToPrettyString(this->stats_format[i].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_format[i].cost_uncompressed) << '\t' << (double)this->stats_format[i].cost_uncompressed/this->stats_format[i].cost_compressed << "-fold" << std::endl;
+		}
+
+		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 	}
 
 	// All done

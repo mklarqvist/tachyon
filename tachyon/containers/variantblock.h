@@ -2,7 +2,7 @@
 #define CORE_BLOCKENTRY_H_
 
 #include "../algorithm/permutation/permutation_manager.h"
-#include "../core/variant_importer_stats.h"
+#include "../core/variant_importer_container_stats.h"
 #include "../io/vcf/VCFHeader.h"
 #include "components/datablock_header.h"
 #include "datablock_settings.h"
@@ -27,7 +27,7 @@ class VariantBlock{
 	typedef DataBlockOffsetsHeader         offset_minimal_type;
 	typedef io::BasicBuffer                buffer_type;
 	typedef core::DataBlockSettings        settings_type;
-	typedef support::VariantImporterStats         import_stats_type;
+	typedef support::VariantImporterContainerStats  import_stats_type;
 
 public:
 	VariantBlock();
@@ -112,12 +112,13 @@ public:
 
 	/**<
 	 * Standard way of writing out a YON block.
-	 * @param stream              Target output stream
-	 * @param stats               Statistics object for tracking compression levels
-	 * @param stats_uncompressed  Statistics ojbect for tracking the uncompressed sizes of data
-	 * @return                    Returns TRUE upon success or FALSE otherwise
+	 * @param stream       Target output stream
+	 * @param stats_basic  Tracking for basic containers
+	 * @param stats_info   Tracking for INFO containers
+	 * @param stats_format Tracking for FORMAT containers
+	 * @return             Returns TRUE upon success or FALSE otherwise
 	 */
-	bool write(std::ofstream& stream, import_stats_type& stats, import_stats_type& stats_uncompressed);
+	bool write(std::ofstream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
 
 private:
 	/**< @brief Update base container header data and evaluate output byte streams
@@ -144,59 +145,6 @@ private:
 	 */
 	void updateContainer(container_type& container, bool reformat = true);
 
-private:
-	// Write everything
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream << entry.header;
-
-		if(entry.header.controller.hasGTPermuted)
-			stream << entry.ppa_manager;
-
-		stream << entry.meta_hot_container;
-		stream << entry.meta_cold_container;
-		stream << entry.gt_rle_container;
-		stream << entry.gt_simple_container;
-		stream << entry.gt_support_data_container;
-		stream << entry.meta_info_map_ids;
-		stream << entry.meta_filter_map_ids;
-		stream << entry.meta_format_map_ids;
-
-		for(U32 i = 0; i < entry.header.n_info_streams; ++i)
-			stream << entry.info_containers[i];
-
-
-		for(U32 i = 0; i < entry.header.n_format_streams; ++i)
-			stream << entry.format_containers[i];
-
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
-
-		return(stream);
-	}
-
-	// Read everything
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream >> entry.header;
-
-		if(entry.header.controller.hasGTPermuted) stream >> entry.ppa_manager;
-		stream >> entry.meta_hot_container;
-		stream >> entry.meta_cold_container;
-		stream >> entry.gt_rle_container;
-		stream >> entry.gt_simple_container;
-
-		for(U32 i = 0; i < entry.header.n_info_streams; ++i)
-			stream >> entry.info_containers[i];
-
-
-		for(U32 i = 0; i < entry.header.n_format_streams; ++i)
-			stream >> entry.format_containers[i];
-
-		U64 eof_marker;
-		stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
-		assert(eof_marker == constants::TACHYON_BLOCK_EOF);
-
-		return(stream);
-	}
-
 public:
 	header_type       header;
 	permutation_type  ppa_manager;
@@ -205,7 +153,7 @@ public:
 	container_type    meta_format_map_ids;
 	container_type    meta_filter_map_ids;
 	container_type    meta_cold_container;
-	container_type    gt_support_data_container; // data (0: rle, 1: simple), strides (n_objects)
+	container_type    gt_support_data_container; // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
 	container_type    gt_rle_container;
 	container_type    gt_simple_container;
 	container_type*   info_containers;

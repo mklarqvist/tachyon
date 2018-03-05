@@ -165,6 +165,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	}
 	// temp
 	else {
+		std::cerr << "other bcf style" << std::endl;
 		if(!support.checkStrideSize(4))
 			support.triggerMixedStride();
 

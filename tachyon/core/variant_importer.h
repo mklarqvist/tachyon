@@ -11,7 +11,7 @@
 #include "../containers/variantblock.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
-#include "variant_importer_stats.h"
+#include "variant_importer_container_stats.h"
 
 namespace tachyon {
 
@@ -32,7 +32,7 @@ private:
 	typedef containers::HashContainer       hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
-	typedef support::VariantImporterStats          import_stats_type;
+	typedef support::VariantImporterContainerStats          import_stats_type;
 	typedef core::MetaHot                   meta_type;
 
 public:
@@ -55,17 +55,18 @@ private:
 	double checkpoint_bases;    // number of bases until checkpointing
 
 	// Stats
-	import_stats_type import_uncompressed_stats;
-	import_stats_type import_compressed_stats;
+	import_stats_type stats_basic;
+	import_stats_type stats_info;
+	import_stats_type stats_format;
 
 	// Read/write fields
 	std::string inputFile;   // input file name
 	std::string outputPrefix;// output file prefix
 	writer_type writer;      // writer
 
-	index_entry_type  index_entry;  // Header index
-	radix_sorter_type permutator;
-	header_type*      header;     // header
+	index_entry_type  index_entry; // streaming index entry
+	radix_sorter_type permutator;  // GT permuter
+	header_type*      header;      // header
 	gt_encoder_type   encoder;     // RLE packer
 
 	compression_manager_type compression_manager;
@@ -74,9 +75,9 @@ private:
 	block_type block;
 
 	// Use during import only
-	hash_container_type info_fields;
-	hash_container_type format_fields;
-	hash_container_type filter_fields;
+	hash_container_type        info_fields;
+	hash_container_type        format_fields;
+	hash_container_type        filter_fields;
 	hash_vector_container_type info_patterns;
 	hash_vector_container_type format_patterns;
 	hash_vector_container_type filter_patterns;

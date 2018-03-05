@@ -112,23 +112,35 @@ void VariantBlock::updateOffsets(void){
 	this->header.offset_cold_meta.offset = cum_size;
 	cum_size += this->meta_cold_container.getObjectSize();
 
-	this->header.offset_gt_rle.offset = cum_size;
-	cum_size += this->gt_rle_container.getObjectSize();
+	if(this->gt_rle_container.buffer_data_uncompressed.size()){
+		this->header.offset_gt_rle.offset = cum_size;
+		cum_size += this->gt_rle_container.getObjectSize();
+	}
 
-	this->header.offset_gt_simple.offset = cum_size;
-	cum_size += this->gt_simple_container.getObjectSize();
+	if(this->gt_simple_container.buffer_data_uncompressed.size()){
+		this->header.offset_gt_simple.offset = cum_size;
+		cum_size += this->gt_simple_container.getObjectSize();
+	}
 
-	this->header.offset_gt_helper.offset = cum_size;
-	cum_size += this->gt_support_data_container.getObjectSize();
+	if(this->gt_support_data_container.buffer_data_uncompressed.size()){
+		this->header.offset_gt_helper.offset = cum_size;
+		cum_size += this->gt_support_data_container.getObjectSize();
+	}
 
-	this->header.offset_meta_info_id.offset = cum_size;
-	cum_size += this->meta_info_map_ids.getObjectSize();
+	if(this->meta_info_map_ids.buffer_data_uncompressed.size()){
+		this->header.offset_meta_info_id.offset = cum_size;
+		cum_size += this->meta_info_map_ids.getObjectSize();
+	}
 
-	this->header.offset_meta_filter_id.offset = cum_size;
-	cum_size += this->meta_filter_map_ids.getObjectSize();
+	if(this->meta_filter_map_ids.buffer_data_uncompressed.size()){
+		this->header.offset_meta_filter_id.offset = cum_size;
+		cum_size += this->meta_filter_map_ids.getObjectSize();
+	}
 
-	this->header.offset_meta_format_id.offset = cum_size;
-	cum_size += this->meta_format_map_ids.getObjectSize();
+	if(this->meta_format_map_ids.buffer_data_uncompressed.size()){
+		this->header.offset_meta_format_id.offset = cum_size;
+		cum_size += this->meta_format_map_ids.getObjectSize();
+	}
 
 	for(U32 i = 0; i < this->header.n_info_streams; ++i){
 		this->header.info_offsets[i].offset = cum_size;
@@ -218,22 +230,22 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->meta_cold_container;
 	}
 
-	if(settings.importGT){
+	if(settings.importGT && this->header.offset_gt_rle.offset != -1){
 		stream.seekg(start_offset + this->header.offset_gt_rle.offset);
 		stream >> this->gt_rle_container;
 	}
 
-	if(settings.importGTSimple){
+	if(settings.importGTSimple && this->header.offset_gt_simple.offset != -1){
 		stream.seekg(start_offset + this->header.offset_gt_simple.offset);
 		stream >> this->gt_simple_container;
 	}
 
-	if(settings.importGTSimple || settings.importGT){
+	if((settings.importGTSimple || settings.importGT) && this->header.offset_gt_helper.offset != -1){
 		stream.seekg(start_offset + this->header.offset_gt_helper.offset);
 		stream >> this->gt_support_data_container;
 	}
 
-	if(settings.importMetaHot || settings.importMetaCold){
+	if((settings.importMetaHot || settings.importMetaCold) && this->header.offset_meta_info_id.offset != -1){
 		stream.seekg(start_offset + this->header.offset_meta_info_id.offset);
 		stream >> this->meta_info_map_ids;
 		stream >> this->meta_filter_map_ids;
@@ -302,60 +314,132 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 }
 
 bool VariantBlock::write(std::ofstream& stream,
-                     import_stats_type& stats,
-                     import_stats_type& stats_uncompressed)
+                         import_stats_type& stats_basic,
+                         import_stats_type& stats_info,
+                         import_stats_type& stats_format)
 {
 	U64 last_pos = stream.tellp();
 	stream << this->header;
-	stats.total_header_cost += (U64)stream.tellp() - last_pos;
+	stats_basic[0].cost_uncompressed += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
+
+	// 0: header
+	// 1: PPA
+	// 2: meta hot
+	// 3: meta cold
+	// 4: gt rle
+	// 5: gt simple
+	// 6: gt support
+	// 7: meta ids
+	// 8: info
+	// 9: format
 
 	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 		stream << this->ppa_manager;
-		stats.total_ppa_cost += (U64)stream.tellp() - last_pos;
-		stats_uncompressed.total_ppa_cost += this->ppa_manager.u_length;
+		stats_basic[1].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[1].cost_uncompressed += this->ppa_manager.getObjectSize();
 		last_pos = stream.tellp();
 	}
 
 	stream << this->meta_hot_container;
+	stats_basic[2].cost_compressed   += (U64)stream.tellp() - last_pos;
+	stats_basic[2].cost_uncompressed += this->meta_hot_container.getObjectSize();
+	stats_basic[2].cost_uncompressed += (S32)this->meta_hot_container.header.uLength - this->meta_hot_container.header.cLength;
+	stats_basic[2].cost_uncompressed += (S32)this->meta_hot_container.header_stride.uLength - this->meta_hot_container.header_stride.cLength;
+	last_pos = stream.tellp();
+
 	stream << this->meta_cold_container;
-	stats.total_meta_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_meta_cost += this->meta_hot_container.buffer_data_uncompressed.size();
-	stats_uncompressed.total_meta_cost += this->meta_cold_container.buffer_data_uncompressed.size();
+	stats_basic[3].cost_compressed   += (U64)stream.tellp() - last_pos;
+	stats_basic[3].cost_uncompressed += this->meta_cold_container.getObjectSize();
+	stats_basic[3].cost_uncompressed += (S32)this->meta_cold_container.header.uLength - this->meta_cold_container.header.cLength;
+	stats_basic[3].cost_uncompressed += (S32)this->meta_cold_container.header_stride.uLength - this->meta_cold_container.header_stride.cLength;
 	last_pos = stream.tellp();
 
-	stream << this->gt_rle_container;
-	stream << this->gt_simple_container;
-	stream << this->gt_support_data_container;
-	stats.total_gt_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_gt_cost += this->gt_rle_container.buffer_data_uncompressed.size();
-	stats_uncompressed.total_gt_cost += this->gt_simple_container.buffer_data_uncompressed.size();
-	stats_uncompressed.total_gt_cost += this->gt_support_data_container.buffer_data_uncompressed.size();
-	last_pos = stream.tellp();
+	if(this->gt_rle_container.getSizeUncompressed()){
+		stream << this->gt_rle_container;
+		stats_basic[4].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[4].cost_uncompressed += this->gt_rle_container.getObjectSize();
+		stats_basic[4].cost_uncompressed += (S32)this->gt_rle_container.header.uLength - this->gt_rle_container.header.cLength;
+		stats_basic[4].cost_uncompressed += (S32)this->gt_rle_container.header_stride.uLength - this->gt_rle_container.header_stride.cLength;
+		last_pos = stream.tellp();
+	}
 
-	stream << this->meta_info_map_ids;
-	stream << this->meta_filter_map_ids;
-	stream << this->meta_format_map_ids;
-	stats.total_special_cost += (U64)stream.tellp() - last_pos;
-	stats_uncompressed.total_special_cost += this->meta_info_map_ids.buffer_data_uncompressed.size();
-	stats_uncompressed.total_special_cost += this->meta_filter_map_ids.buffer_data_uncompressed.size();
-	stats_uncompressed.total_special_cost += this->meta_format_map_ids.buffer_data_uncompressed.size();
-	last_pos = stream.tellp();
+	if(this->gt_simple_container.getSizeUncompressed()){
+		stream << this->gt_simple_container;
+		stats_basic[5].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[5].cost_uncompressed += this->gt_simple_container.getObjectSize();
+		stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.uLength - this->gt_simple_container.header.cLength;
+		stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header_stride.uLength - this->gt_simple_container.header_stride.cLength;
+		last_pos = stream.tellp();
+	}
+
+	if(this->gt_support_data_container.getSizeUncompressed()){
+		stream << this->gt_support_data_container;
+		stats_basic[6].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[6].cost_uncompressed += this->gt_support_data_container.getObjectSize();
+		stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header.uLength - this->gt_support_data_container.header.cLength;
+		stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header_stride.uLength - this->gt_support_data_container.header_stride.cLength;
+		last_pos = stream.tellp();
+	}
+
+	if(this->meta_info_map_ids.getSizeUncompressed()){
+		stream << this->meta_info_map_ids;
+		stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[7].cost_uncompressed += this->meta_info_map_ids.getObjectSize();
+		stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header.uLength - this->meta_info_map_ids.header.cLength;
+		stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header_stride.uLength - this->meta_info_map_ids.header_stride.cLength;
+
+		last_pos = stream.tellp();
+	}
+
+	if(this->meta_filter_map_ids.getSizeUncompressed()){
+		stream << this->meta_filter_map_ids;
+		stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[7].cost_uncompressed += this->meta_filter_map_ids.getObjectSize();
+		stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header.uLength - this->meta_filter_map_ids.header.cLength;
+		stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header_stride.uLength - this->meta_filter_map_ids.header_stride.cLength;
+
+		last_pos = stream.tellp();
+	}
+
+	if(this->meta_format_map_ids.getSizeUncompressed()){
+		stream << this->meta_format_map_ids;
+		stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
+		stats_basic[7].cost_uncompressed += this->meta_format_map_ids.getObjectSize();
+		stats_basic[7].cost_uncompressed += (S32)this->meta_format_map_ids.header.uLength - this->meta_format_map_ids.header.cLength;
+		stats_basic[7].cost_uncompressed += (S32)this->meta_format_map_ids.header_stride.uLength - this->meta_format_map_ids.header_stride.cLength;
+
+		last_pos = stream.tellp();
+	}
 
 	for(U32 i = 0; i < this->header.n_info_streams; ++i){
 		stream << this->info_containers[i];
-		stats_uncompressed.total_info_cost += this->info_containers[i].buffer_data_uncompressed.size();
+		stats_info[this->header.info_offsets[i].global_key].cost_uncompressed += this->info_containers[i].header.uLength;
+		stats_info[this->header.info_offsets[i].global_key].cost_uncompressed += (S32)this->info_containers[i].header.uLength - this->info_containers[i].header.cLength;
+		stats_info[this->header.info_offsets[i].global_key].cost_uncompressed += (S32)this->info_containers[i].header_stride.uLength - this->info_containers[i].header_stride.cLength;
+		stats_info[this->header.info_offsets[i].global_key].cost_compressed   += this->info_containers[i].header.cLength;
+		stats_basic[8].cost_uncompressed += this->info_containers[i].getObjectSize();
+		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header.uLength - this->info_containers[i].header.cLength;
+		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header_stride.uLength - this->info_containers[i].header_stride.cLength;
+
 	}
 
-	stats.total_info_cost += (U64)stream.tellp() - last_pos;
+	stats_basic[8].cost_compressed += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
 	for(U32 i = 0; i < this->header.n_format_streams; ++i){
 		stream << this->format_containers[i];
-		stats_uncompressed.total_format_cost += this->format_containers[i].buffer_data_uncompressed.size();
+		stats_format[this->header.format_offsets[i].global_key].cost_uncompressed += this->format_containers[i].header.uLength;
+		stats_format[this->header.format_offsets[i].global_key].cost_uncompressed += (S32)this->format_containers[i].header.uLength - this->format_containers[i].header.cLength;
+		stats_format[this->header.format_offsets[i].global_key].cost_uncompressed += (S32)this->format_containers[i].header_stride.uLength - this->format_containers[i].header_stride.cLength;
+		stats_format[this->header.format_offsets[i].global_key].cost_compressed   += this->format_containers[i].header.cLength;
+		stats_basic[9].cost_uncompressed += this->format_containers[i].getObjectSize();
+		stats_basic[9].cost_uncompressed += (S32)this->format_containers[i].header.uLength - this->format_containers[i].header.cLength;
+		stats_basic[9].cost_uncompressed += (S32)this->format_containers[i].header_stride.uLength - this->format_containers[i].header_stride.cLength;
+
 	}
 
-	stats.total_format_cost += (U64)stream.tellp() - last_pos;
+	stats_basic[9].cost_compressed += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
 	stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));

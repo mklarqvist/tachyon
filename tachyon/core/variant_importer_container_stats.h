@@ -6,6 +6,7 @@ namespace support{
 
 struct VariantImporterStatsObject{
 	VariantImporterStatsObject(void) : cost_uncompressed(0), cost_compressed(0){}
+	~VariantImporterStatsObject(){}
 
 	U64 cost_uncompressed;
 	U64 cost_compressed;
@@ -24,10 +25,11 @@ private:
 public:
     VariantImporterContainerStats() :
     	n_entries_(0),
-		n_capacity_(0),
-		entries_(nullptr)
+		n_capacity_(50),
+		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-
+    	for(U32 i = 0; i < this->capacity(); ++i)
+    		new( &this->entries_[i] ) value_type( );
     }
 
     VariantImporterContainerStats(const size_type start_capacity) :
@@ -35,7 +37,8 @@ public:
 		n_capacity_(start_capacity),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-
+    	for(U32 i = 0; i < this->capacity(); ++i)
+			new( &this->entries_[i] ) value_type( );
     }
 
     ~VariantImporterContainerStats(){
@@ -105,9 +108,32 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
 
 	//
-	void resize(const size_type new_size);
-	void resize(void);
-	void operator+=(const_reference entry);
+	inline self_type& operator+=(const const_reference entry){
+		if(this->size() + 1 == this->n_capacity_)
+			this->resize();
+
+
+		this->entries_[this->n_entries_++] = entry;
+		return(*this);
+	}
+	inline self_type& add(const const_reference entry){ return(*this += entry); }
+
+	void resize(void){
+		pointer temp = this->entries_;
+
+		this->n_capacity_ *= 2;
+		this->entries_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+
+		// Lift over values from old addresses
+		for(U32 i = 0; i < this->size(); ++i)
+			new( &this->entries_[i] ) value_type( temp[i] );
+
+
+		for(std::size_t i = 0; i < this->size(); ++i)
+			(temp + i)->~VariantImporterStatsObject();
+
+		::operator delete[](static_cast<void*>(temp));
+	}
 
 private:
 	size_type n_entries_;
