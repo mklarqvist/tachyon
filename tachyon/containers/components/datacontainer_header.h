@@ -276,6 +276,8 @@ struct DataContainerHeaderStride{
 
 	inline void reset(void){
 		this->controller.clear();
+		this->controller.type = YON_TYPE_32B;
+		this->controller.signedness = false;
 		this->cLength = 0;
 		this->uLength = 0;
 		this->crc     = 0;

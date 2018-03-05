@@ -24,6 +24,7 @@ DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 
 #include "core/variant_importer.h"
+#include "core/read_importer.h"
 #include "utility.h"
 
 void import_usage(void){
@@ -32,7 +33,7 @@ void import_usage(void){
 	"Brief:  Convert VCF/BCF -> YON/\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <in.bcf> -o <output.yon>\n\n"
 	"Options:\n"
-	"  -i FILE  input Tomahawk (required)\n"
+	"  -i FILE  input BCF file (required)\n"
 	"  -o FILE  output file prefix (required)\n"
 	"  -c INT   Import checkpoint size in number of variants\n"
 	"  -C FLOAT Import checkpoint size in bases\n"
@@ -57,6 +58,7 @@ int import(int argc, char** argv){
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
 
+		{"fastq",		no_argument, 0,  'f' },
 		{"checkpoint-variants",		optional_argument, 0,  'c' },
 		{"checkpoint-bases",		optional_argument, 0,  'C' },
 		{"permute",		no_argument, 0,  'p' },
@@ -71,8 +73,9 @@ int import(int argc, char** argv){
 	S32 checkpoint_n_variants = 500;
 	double checkpoint_bp_window = 30e3;
 	bool permute = true;
+	bool isFASTQ = false;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:C:spP?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:c:C:spPf?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -82,6 +85,9 @@ int import(int argc, char** argv){
 			break;
 		case 'o':
 			output = std::string(optarg);
+			break;
+		case 'f':
+			isFASTQ = true;
 			break;
 		case 'c':
 			checkpoint_n_variants = atoi(optarg);
@@ -120,12 +126,19 @@ int import(int argc, char** argv){
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
-	tachyon::VariantImporter importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
-	importer.setPermute(permute);
+	if(isFASTQ){
+		tachyon::ReadImporter importer;
+		if(!importer.open("/home/mklarqvist/Downloads/test.fastq")){
+			std::cerr << "bad" << std::endl;
+			return(1);
+		}
+	} else {
+		tachyon::VariantImporter importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
+		importer.setPermute(permute);
 
-	if(!importer.Build())
-		return 1;
-	//importer.BuildCompressionDictionaries();
+		if(!importer.Build())
+			return 1;
+	}
 
 	return 0;
 }

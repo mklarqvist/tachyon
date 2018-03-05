@@ -3,7 +3,7 @@
 namespace tachyon{
 namespace containers{
 
-GenotypeContainer::GenotypeContainer(const VariantBlock& block) :
+GenotypeContainer::GenotypeContainer(const block_type& block) :
 	n_entries(0),
 	__meta_container(block),
 	__iterators(nullptr)

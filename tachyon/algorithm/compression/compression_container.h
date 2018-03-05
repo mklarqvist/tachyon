@@ -109,6 +109,83 @@ inline const U32 unpermuteIntBits(char* data,
 	return size;
 }
 
+inline const U32 permuteByteBits(const char* const  data,
+                                        const U32  size,
+                                             char* destination)
+{
+	if(size == 0) return 0;
+	U32 internal_size = size + (8 - size % 8); // Balance bytes
+	assert(internal_size % 8 == 0);
+
+	BYTE* dest = reinterpret_cast<BYTE*>(destination);
+	memset(dest, 0, internal_size); // Set all bytes to 0
+	const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	BYTE* target[8]; // Bucket pointers
+	const U32 partition_size = internal_size / 8; // Partition size
+	assert(partition_size != 0);
+
+	// Assign a pointer to each bucket
+	for(U32 i = 0; i < 8; ++i)
+		target[7-i] = &dest[partition_size*i];
+
+	U32 k = 0; U32 p = 0;
+	// Foreach U32
+	// Update position K for each element
+	// When K reaches position 7 then reset to 0
+	for(U32 i = 0; i < internal_size; ++i, ++k){
+		if(k == 8){ k = 0; ++p; }
+
+		// Foreach bit in U32
+		// Update bucket B at byte position P with bit J at position K
+		for(U32 bucket = 0; bucket < 8; ++bucket)
+			target[bucket][p] |= ((d[i] & (1 << bucket)) >> bucket) << k;
+	}
+
+	return internal_size;
+}
+
+inline const U32 unpermuteByteBits(char* data,
+                             const U32  size,
+                                  char* destination)
+{
+	if(size == 0) return 0;
+	//U32 internal_size = size + (32-size%32); // Balance bytes
+	//assert(internal_size % 32 == 0);
+
+	BYTE* temp = reinterpret_cast<BYTE*>(data); // Recast destination as U32
+	BYTE* dest = reinterpret_cast<BYTE*>(destination); // Recast destination as U32
+	memset(destination, 0, size); // Set all bytes to 0
+	//const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	BYTE* target[8]; // Bucket pointers
+	const U32 partition_size = size / 8; // Partition size
+
+	// Assign a pointer to each bucket
+	for(U32 i = 0; i < 8; ++i)
+		target[7-i] = &temp[partition_size*i];
+
+	/*
+	for(U32 i = 0; i < size; ++i){
+		std::cerr << (int)data[i] << ' ';
+	}
+	std::cerr << std::endl;
+	*/
+
+	U32 k = 0; U32 p = 0;
+	// Foreach U32
+	// Update position K for each element
+	// When K reaches position 7 then reset to 0
+	for(U32 i = 0; i < size; ++i, ++k){
+		if(k == 8){ k = 0; ++p; }
+
+		for(U32 j = 0; j < 8; ++j){
+			dest[i] |= ((target[j][p] & (1 << k)) >> k) << j;
+		}
+	}
+
+	//std::cerr << "out: " << internal_size << "/" << size/sizeof(U32) << std::endl;
+	return size;
+}
+
 class CompressionContainer{
 private:
 	typedef CompressionContainer self_type;
@@ -221,6 +298,9 @@ public:
 								   stream.buffer_data_uncompressed.size(),
 								   this->compression_level_data);
 
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << stream.getSizeUncompressed() << " and output: " << ret << " -> " << (float)stream.getSizeUncompressed()/ret << "-fold"  << std::endl;
+
+
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 			exit(1);
@@ -238,8 +318,7 @@ public:
 			else return true;
 		}
 
-		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << stream.buffer_data.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_data.n_chars/ret << "-fold"  << std::endl;
-
+		stream.buffer_data.resize(ret + 65536);
 		memcpy(stream.buffer_data.data(), this->buffer.data(), ret);
 		stream.header.cLength            = ret;
 		stream.header.controller.encoder = YON_ENCODE_ZSTD;
@@ -292,6 +371,7 @@ public:
 
 		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
 
+		stream.buffer_data.resize(ret + 65536);
 		memcpy(stream.buffer_strides.data(), this->buffer.data(), ret);
 		stream.header_stride.cLength            = ret;
 		stream.header_stride.controller.encoder = YON_ENCODE_ZSTD;

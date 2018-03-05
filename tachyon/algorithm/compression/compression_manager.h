@@ -159,7 +159,7 @@ public:
 		return true;
 	}
 
-private:
+public:
 	no_codec_type   no_codec;
 	zstd_codec_type zstd_codec;
 };

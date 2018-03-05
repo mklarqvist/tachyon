@@ -339,7 +339,7 @@ public:
 			delete its[i];
 
 		delete [] its;
-		return(0);
+		return(meta.size());
 	}
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){

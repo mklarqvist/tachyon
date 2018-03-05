@@ -107,18 +107,18 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 
 	U32 internal_pos = entry.formatID[0].l_offset;
 	U32 k = 0;
-	BYTE* debug = new BYTE[2*this->n_samples];
+	//BYTE* debug = new BYTE[2*this->n_samples];
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		if(*reinterpret_cast<const BYTE* const>(&fmt_type_value1) == 0x80 || *reinterpret_cast<const BYTE* const>(&fmt_type_value2) == 0x80){
-			std::cerr << "has missing|eov in radix" << std::endl;
-			return false;
-		}
+		//if(*reinterpret_cast<const BYTE* const>(&fmt_type_value1) == 0x80 || *reinterpret_cast<const BYTE* const>(&fmt_type_value2) == 0x80){
+		//	std::cerr << "has missing|eov in radix" << std::endl;
+		//	return false;
+		//}
 		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_array[k] = packed;
-		debug[i] = fmt_type_value1;
-		debug[i+1] = fmt_type_value2;
+		//debug[i] = fmt_type_value1;
+		//debug[i+1] = fmt_type_value2;
 	}
 
 	// Build PPA
@@ -140,14 +140,14 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 		case 8:  target_ID = 6; break;
 		case 9:  target_ID = 7; break;
 		case 10: target_ID = 8; break;
-		default: std::cerr << "illegal in radix" << std::endl; std::cerr << std::bitset<8>(debug[2*j]) << " " << std::bitset<8>(debug[2*j+1]) << std::endl; exit(1);
+		default: std::cerr << "illegal in radix" << std::endl; exit(1);
 		}
 
 		// Update bin i at position i with ppa[j]
 		this->bins[target_ID][this->p_i[target_ID]] = (*this->manager)[j];
 		++this->p_i[target_ID];
 	} // end loop over individuals at position i
-	delete [] debug;
+	//delete [] debug;
 
 	// Update PPA data
 	// Copy data in sorted order
