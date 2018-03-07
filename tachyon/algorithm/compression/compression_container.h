@@ -220,7 +220,14 @@ public:
 	UncompressedCodec(){}
 	~UncompressedCodec(){ this->buffer.deleteAll(); }
 	inline const bool encode(permutation_type& manager){ return true; }
-	inline const bool encode(stream_type& stream){ return true; }
+	inline const bool encode(stream_type& stream){
+		stream.buffer_data.resize(stream.buffer_data_uncompressed.size() + 65536);
+		memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
+		stream.header.controller.encoder = YON_ENCODE_NONE;
+		stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
+		stream.header.cLength            = stream.buffer_data_uncompressed.size();
+		return true;
+	}
 	inline const bool encodeStrides(stream_type& stream){ return true; }
 
 	const bool decode(stream_type& stream){
