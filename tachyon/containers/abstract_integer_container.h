@@ -162,7 +162,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const data_
 	if(container.header.controller.mixedStride){
 		nextStrideFunction func = nullptr;
 
-		switch(container.header_stride.controller.type){
+		switch(container.getStridePrimitiveType()){
 		case(YON_TYPE_8B):  func = &self_type::__getNextStride<BYTE>; this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(BYTE); break;
 		case(YON_TYPE_16B): func = &self_type::__getNextStride<U16>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U16);  break;
 		case(YON_TYPE_32B): func = &self_type::__getNextStride<U32>;  this->n_entries = container.buffer_strides_uncompressed.size() / sizeof(U32);  break;
@@ -172,7 +172,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const data_
 
 		// Assuming there is stride data
 		if(container.header.controller.signedness){
-			switch(container.header.controller.type){
+			switch(container.getDataPrimitiveType()){
 			case(YON_TYPE_8B):  (this->__setup<SBYTE>(container, func)); break;
 			case(YON_TYPE_16B): (this->__setup<S16>(container, func));  break;
 			case(YON_TYPE_32B): (this->__setup<S32>(container, func));  break;
@@ -180,7 +180,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const data_
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		} else {
-			switch(container.header.controller.type){
+			switch(container.getDataPrimitiveType()){
 			case(YON_TYPE_8B):  (this->__setup<BYTE>(container, func)); break;
 			case(YON_TYPE_16B): (this->__setup<U16>(container, func));  break;
 			case(YON_TYPE_32B): (this->__setup<U32>(container, func));  break;
@@ -190,7 +190,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const data_
 		}
 	} else {
 		if(container.header.controller.signedness){
-			switch(container.header.controller.type){
+			switch(container.getDataPrimitiveType()){
 			case(YON_TYPE_8B):  (this->__setup<SBYTE>(container, container.header.stride)); break;
 			case(YON_TYPE_16B): (this->__setup<S16>(container, container.header.stride));   break;
 			case(YON_TYPE_32B): (this->__setup<S32>(container, container.header.stride));   break;
@@ -198,7 +198,7 @@ AbstractIntegerContainer<return_primitive>::AbstractIntegerContainer(const data_
 			default: std::cerr << "Disallowed" << std::endl; return;
 			}
 		} else {
-			switch(container.header.controller.type){
+			switch(container.getDataPrimitiveType()){
 			case(YON_TYPE_8B):  (this->__setup<BYTE>(container, container.header.stride)); break;
 			case(YON_TYPE_16B): (this->__setup<U16>(container, container.header.stride));  break;
 			case(YON_TYPE_32B): (this->__setup<U32>(container, container.header.stride));  break;

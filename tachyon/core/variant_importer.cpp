@@ -256,11 +256,19 @@ bool VariantImporter::BuildBCF(void){
 		std::cerr << "Checksums: " << utility::ToPrettyString(digests_ends - index_ends) << std::endl;
 
 		for(U32 i = 0; i < header.header_magic.n_info_values; ++i){
-			std::cerr << header.info_fields[i].ID << "\t" << utility::ToPrettyString(this->stats_info[i].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_info[i].cost_uncompressed) << '\t' << (double)this->stats_info[i].cost_uncompressed/this->stats_info[i].cost_compressed << "-fold" << std::endl;
+			const U64 cost = this->stats_info[i].cost_uncompressed;
+			if(cost)
+				std::cerr << std::setw(14) << header.info_fields[i].ID << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_info[i].cost_compressed) << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_info[i].cost_uncompressed) << '\t' << std::setw(14) << (double)this->stats_info[i].cost_uncompressed/this->stats_info[i].cost_compressed << "-fold" << std::endl;
+			else
+				std::cerr << std::setw(14) << header.info_fields[i].ID << '\t' << "unused" << std::endl;
 		}
 
 		for(U32 i = 0; i < header.header_magic.n_format_values; ++i){
-			std::cerr << header.format_fields[i].ID << '\t' << utility::ToPrettyString(this->stats_format[i].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_format[i].cost_uncompressed) << '\t' << (double)this->stats_format[i].cost_uncompressed/this->stats_format[i].cost_compressed << "-fold" << std::endl;
+			const U64 cost = this->stats_format[i].cost_uncompressed;
+			if(cost)
+				std::cerr << std::setw(14) << header.format_fields[i].ID << '\t' << std::setw(14) << utility::ToPrettyString(this->stats_format[i].cost_compressed) << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_format[i].cost_uncompressed) << '\t' << std::setw(14) << (double)this->stats_format[i].cost_uncompressed/this->stats_format[i].cost_compressed << "-fold" << std::endl;
+			else
+				std::cerr << std::setw(14) << header.format_fields[i].ID << '\t' << "unused" << std::endl;
 		}
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
@@ -395,7 +403,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U32 mapID = this->format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
-		// First value is always genotypes if there is any
+		// First value is always genotypes if there are any
 		if(entry.hasGenotypes == true && i == 0)
 			continue;
 

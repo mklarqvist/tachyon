@@ -8,46 +8,11 @@
 #include "../algorithm/OpenHashTable.h"
 #include "../algorithm/compression/compression_container.h"
 #include "../algorithm/timer.h"
-#include "../algorithm/compression/libzpaq.h"
-// Handle errors in libzpaq and elsewhere
-void libzpaq::error(const char* msg) {
-  if (strstr(msg, "ut of memory")) throw std::bad_alloc();
-  throw std::runtime_error(msg);
-}
 #include "../containers/datacontainer.h"
 #include "../core/header/read_header.h"
 #include "../core/footer/read_footer.h"
 
 namespace tachyon {
-
-class In: public libzpaq::Reader {
-public:
-	In(io::BasicBuffer& buffer) : iterator_pos(0), buffer(buffer){}
-	~In(){ }
-	inline int get() {
-		if(this->iterator_pos + 1 == this->buffer.size()) return(-1); // eof
-		assert(this->buffer[this->iterator_pos] != -1);
-		return(this->buffer[this->iterator_pos++]);
-	}  // returns byte 0..255 or -1 at EOF
-
-	void reset(void){
-		this->buffer.reset();
-		this->iterator_pos = 0;
-	}
-
-	size_t           iterator_pos;
-	io::BasicBuffer& buffer;
- };
-
- class Out: public libzpaq::Writer {
- public:
-	 Out(io::BasicBuffer& buffer) : buffer(buffer){}
-	 ~Out(){ }
-	inline void put(int c) { this->buffer += (BYTE)c; }  // writes 1 byte 0..255
-	void reset(void){ this->buffer.reset(); }
-
-	io::BasicBuffer& buffer;
- };
 
 class ReadSorter{
 public:
@@ -213,9 +178,6 @@ public:
 		if(container.header.controller.uniform == true)
 			return;
 
-
-		//std::cerr << "delta encode: "  << std::endl;
-
 		// At this point all integers are S32
 		const S32* const dat  = reinterpret_cast<const S32* const>(container.buffer_data_uncompressed.buffer);
 
@@ -303,12 +265,15 @@ public:
 		U64 cost_bases = 0; U64 cost_bases_raw = 0;
 		U64 cost_names = 0; U64 cost_names_raw = 0;
 
-		In in(block.basesContainer.buffer_data_uncompressed);
-		Out out(block.basesContainer.buffer_data);
-		In in_qual(block.qualContainer.buffer_data_uncompressed);
-		Out out_qual(block.qualContainer.buffer_data);
+		//In in(block.basesContainer.buffer_data_uncompressed);
+		//Out out(block.basesContainer.buffer_data);
+		//In in_qual(block.qualContainer.buffer_data_uncompressed);
+		//Out out_qual(block.qualContainer.buffer_data);
 
 		algorithm::Timer timer; timer.Start();
+		const U32 block_size = 50000;
+
+		std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << "Reads" << ' ' << std::setw(14) << "Input" << ' ' << std::setw(14) << "Output" << ' ' << std::setw(9+5) << "Compression" << ' ' << "Time" << std::endl;
 
 		while(getline(std::cin, line)){
 			if(count % 4 == 1){
@@ -392,16 +357,30 @@ public:
 				}
 				++read; ++read_local;
 
-				if(read % 10000 == 0 && read != 0){
+				if(read % block_size == 0 && read != 0){
 					for(U32 i = 0; i < 8; ++i)
 						cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
 
 					block.updateContainers();
-					libzpaq::compress(&in, &out, "x0.3ci1m");
-					libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
+					//std::cerr.write(block.basesContainer.buffer_data_uncompressed.data(), block.basesContainer.buffer_data_uncompressed.size());
+					//std::cerr.put('\n');
+					compression_manager.zpaq_codec.compress(block.basesContainer);
+					//std::cerr << block.basesContainer.buffer_data_uncompressed.size() << "->" << block.basesContainer.buffer_data.size() << std::endl;
+					//compression_manager.zpaq_codec.decompress(block.basesContainer);
+					//std::cerr << block.basesContainer.buffer_data.size() << "->" << block.basesContainer.buffer_data_uncompressed.size() << std::endl;
+					//std::cerr.write(block.basesContainer.buffer_data_uncompressed.data(), block.basesContainer.buffer_data_uncompressed.size());
+					//std::cerr.put('\n');
+
+
+
+					compression_manager.zpaq_codec.compress(block.qualContainer);
+					//libzpaq::compress(&in, &out, "x0.3ci1m");
+					//libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
 					compression_manager.zstd_codec.setCompressionLevel(6);
-					for(U32 i = 0; i < 8; ++i)
-						compression_manager.zstd_codec.encode(block.nameContainer[i]);
+					for(U32 i = 0; i < 8; ++i){
+						if(i == 1) compression_manager.zpaq_codec.compress(block.nameContainer[i]);
+						else compression_manager.zstd_codec.compress(block.nameContainer[i]);
+					}
 
 					//tester.write(out.buffer.data(), out.buffer.size());
 					//tester.write(out_qual.buffer.data(), out_qual.buffer.size());
@@ -418,13 +397,13 @@ public:
 					cost_qual_raw += block.qualContainer.buffer_data_uncompressed.size();
 					const U64 total_cost = cost_bases + cost_qual + cost_names;
 					const U64 total_cost_raw = cost_bases_raw + cost_qual_raw + cost_names_raw;
-					std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(14) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
+					std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(9) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
 					block.reset();
-					in.reset(); out.reset();
-					in_qual.reset(); out_qual.reset();
+					//in.reset(); out.reset();
+					//in_qual.reset(); out_qual.reset();
 
 					++footer.n_blocks;
-					footer.n_reads += 10000;
+					footer.n_reads += block_size;
 					tester.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 					read_local = 0;
 				}
@@ -433,19 +412,26 @@ public:
 		}
 
 		if(read_local){
+			for(U32 i = 0; i < 8; ++i)
+				cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
+
 			block.updateContainers();
-			libzpaq::compress(&in, &out, "x0.3ci1m");
-			libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
+			compression_manager.zpaq_codec.compress(block.basesContainer);
+			compression_manager.zpaq_codec.compress(block.qualContainer);
+			//libzpaq::compress(&in, &out, "x0.3ci1m");
+			//libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
 			compression_manager.zstd_codec.setCompressionLevel(6);
 			for(U32 i = 0; i < 8; ++i)
-				compression_manager.zstd_codec.encode(block.nameContainer[i]);
+				compression_manager.zstd_codec.compress(block.nameContainer[i]);
 
-			tester.write(out.buffer.data(), out.buffer.size());
-			tester.write(out_qual.buffer.data(), out_qual.buffer.size());
+			//tester.write(out.buffer.data(), out.buffer.size());
+			//tester.write(out_qual.buffer.data(), out_qual.buffer.size());
+			tester << block.basesContainer;
+			tester << block.qualContainer;
 			for(U32 i = 0; i < 8; ++i){
+				//std::cerr << i << ": " << block.nameContainer[i].getSizeUncompressed() << "->" << block.nameContainer[i].getSizeCompressed() << std::endl;
 				tester << block.nameContainer[i];
 				cost_names += block.nameContainer[i].getObjectSize();
-				cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
 			}
 			cost_bases += block.basesContainer.getObjectSize();
 			cost_bases_raw += block.basesContainer.buffer_data_uncompressed.size();
@@ -453,10 +439,10 @@ public:
 			cost_qual_raw += block.qualContainer.buffer_data_uncompressed.size();
 			const U64 total_cost = cost_bases + cost_qual + cost_names;
 			const U64 total_cost_raw = cost_bases_raw + cost_qual_raw + cost_names_raw;
-			std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(14) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
+			std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(9) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
 			block.reset();
-			in.reset(); out.reset();
-			in_qual.reset(); out_qual.reset();
+			//in.reset(); out.reset();
+			//in_qual.reset(); out_qual.reset();
 
 			++footer.n_blocks;
 			footer.n_reads += read_local;
@@ -471,7 +457,6 @@ public:
 		std::cerr << utility::timestamp("LOG", "FINAL") << "Quality: " << cost_qual_raw << "\t" << cost_qual << '\t' << (float)cost_qual_raw/cost_qual << "-fold (" << (float)cost_qual/cost_qual_raw << ")" << std::endl;
 		tester.flush();
 		tester.close();
-
 		return true;
 	}
 

@@ -151,7 +151,6 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 		return;
 
 	if(data_container.header.hasMixedStride()){
-
 		if(data_container.header.isSigned()){
 			switch(data_container.header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches));  break;
@@ -204,6 +203,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 {
 	if(container.buffer_data_uncompressed.size() == 0)
 		return;
+
 
 	if(container.header.hasMixedStride()){
 		if(container.header.isSigned()){

@@ -270,7 +270,7 @@ public:
 
 		std::vector<std::string> global_fields;
 		for(U32 i = 0; i < this->block.header.n_info_streams; ++i){
-			//std::cerr << i << "/" << this->block.index_entry.n_info_streams << ": " << this->block.index_entry.info_offsets[i].global_key << "@" << this->header.info_fields[this->block.index_entry.info_offsets[i].global_key].ID << std::endl;
+			//std::cerr << i << "/" << this->block.header.n_info_streams << ": " << this->block.header.info_offsets[i].global_key << "@" << this->header.info_fields[this->block.header.info_offsets[i].global_key].ID << std::endl;
 			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
 			if(this->header.info_fields[this->block.header.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
 				its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);

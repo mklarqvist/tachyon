@@ -35,6 +35,7 @@ See libzpaq.h for additional documentation.
 #include <string>
 #include <vector>
 #include <stdio.h>
+#include <stdexcept>
 
 #define unix 1
 
@@ -7739,6 +7740,12 @@ void compressBlock(StringBuffer* in, Writer* out, const char* method_,
 #endif
   co.endBlock();
 }
+
+  // Handle errors in libzpaq and elsewhere
+  void error(const char* msg) {
+    if (strstr(msg, "ut of memory")) throw std::bad_alloc();
+    throw std::runtime_error(msg);
+  }
 
 }  // end namespace libzpaq
 

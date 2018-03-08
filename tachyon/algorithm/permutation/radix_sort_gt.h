@@ -41,9 +41,9 @@ public:
 	U64           n_samples; // total number of entries in file
 	U32           position;  // number of entries parsed
 	U32           p_i[9];    // number of entries in bin i
-	BYTE*         GT_array;// packed genotype array
-	U32**         bins;    // bin i
-	manager_type* manager; // permutation manager
+	BYTE*         GT_array;  // packed genotype array
+	U32**         bins;      // bin i
+	manager_type* manager;   // permutation manager
 };
 
 } /* namespace Algorithm */

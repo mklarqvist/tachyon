@@ -214,12 +214,12 @@ StrideContainer<return_primitive>::~StrideContainer(void){
 
 template <class return_primitive>
 void StrideContainer<return_primitive>::__setup(const data_container_type& container){
-	switch(container.header_stride.controller.type){
+	switch(container.getStridePrimitiveType()){
 	case(YON_TYPE_8B):  this->__allocate<BYTE>(container); break;
 	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
 	case(YON_TYPE_32B): this->__allocate<U32>(container);  break;
 	case(YON_TYPE_64B): this->__allocate<U64>(container);  break;
-	default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive!" << std::endl; exit(1);
+	default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive: " << (int)container.header_stride.controller.type << std::endl; exit(1);
 	}
 }
 

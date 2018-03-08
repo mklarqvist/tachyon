@@ -37,13 +37,13 @@ void import_usage(void){
 	"  -o FILE  output file prefix (required)\n"
 	"  -c INT   Import checkpoint size in number of variants\n"
 	"  -C FLOAT Import checkpoint size in bases\n"
+	"  -p/-P    Permute/Do not permute diploid genotypes\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
 int import(int argc, char** argv){
 	if(argc <= 2){
-		programMessage();
-		programHelpDetailed();
+		import_usage();
 		return(1);
 	}
 

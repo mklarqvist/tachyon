@@ -17,7 +17,8 @@ PermutationManager::PermutationManager(const U32 n_samples) :
 	crc(0),
 	PPA(sizeof(U32)*n_samples)
 {}
-PermutationManager::~PermutationManager(){ this->PPA.deleteAll(); }
+
+PermutationManager::~PermutationManager(){ }
 
 void PermutationManager::setSamples(const U32 n_samples){
 	this->n_samples = n_samples;

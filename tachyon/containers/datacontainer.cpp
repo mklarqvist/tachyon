@@ -26,12 +26,7 @@ DataContainer::DataContainer(const U32 start_size) :
 	buffer_strides_uncompressed(start_size)
 {}
 
-DataContainer::~DataContainer(){
-	this->buffer_data.deleteAll();
-	this->buffer_strides.deleteAll();
-	this->buffer_data_uncompressed.deleteAll();
-	this->buffer_strides_uncompressed.deleteAll();
-}
+DataContainer::~DataContainer(){ }
 
 void DataContainer::reset(void){
 	this->n_entries   = 0;

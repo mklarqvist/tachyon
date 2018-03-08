@@ -843,11 +843,12 @@ Use at your own risk.
 
 namespace libzpaq {
 
+#include "../../support/type_definitions.h"
 // 1, 2, 4, 8 byte unsigned integers
-typedef uint8_t U8;
-typedef uint16_t U16;
-typedef uint32_t U32;
-typedef uint64_t U64;
+typedef BYTE U8;
+//typedef uint16_t U16;
+//typedef uint32_t U32;
+//typedef uint64_t U64;
 
 // Tables for parsing ZPAQL source code
 extern const char* compname[256];    // list of ZPAQL component types
@@ -966,7 +967,7 @@ public:
     if ((len0&511)==0) process();
   }
   double size() const {return len0/8+len1*536870912.0;} // size in bytes
-  uint64_t usize() const {return len0/8+(U64(len1)<<29);} //size in bytes
+  uint64_t usize() const {return len0/8+((U64)len1<<29);} //size in bytes
   const char* result();  // get hash and reset
   SHA256() {init();}
 private:

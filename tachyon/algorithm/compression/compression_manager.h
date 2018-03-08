@@ -12,6 +12,7 @@ private:
 	typedef CompressionManager        self_type;
 	typedef UncompressedCodec         no_codec_type;
 	typedef ZSTDCodec                 zstd_codec_type;
+	typedef ZPAQContainer             zpaq_codec_type;
 	typedef containers::VariantBlock  variant_block_type;
 	typedef containers::DataContainer container_type;
 
@@ -22,26 +23,33 @@ public:
 	bool compress(variant_block_type& block){
 		zstd_codec.setCompressionLevel(20);
 		zstd_codec.setCompressionLevelData(3);
-		if(block.header.controller.hasGTPermuted) zstd_codec.encode(block.ppa_manager);
+		if(block.header.controller.hasGTPermuted) zstd_codec.compress(block.ppa_manager);
 
 		zstd_codec.setCompressionLevel(20);
-		if(block.meta_hot_container.n_entries)        zstd_codec.encode(block.meta_hot_container);
-		if(block.gt_rle_container.n_entries)          zstd_codec.encode(block.gt_rle_container);
-		if(block.gt_simple_container.n_entries)       zstd_codec.encode(block.gt_simple_container);
-		if(block.gt_support_data_container.n_entries) zstd_codec.encode(block.gt_support_data_container);
-		if(block.meta_cold_container.n_entries)       zstd_codec.encode(block.meta_cold_container);
-		if(block.meta_info_map_ids.n_entries)         zstd_codec.encode(block.meta_info_map_ids);
-		if(block.meta_filter_map_ids.n_entries)       zstd_codec.encode(block.meta_filter_map_ids);
-		if(block.meta_format_map_ids.n_entries)       zstd_codec.encode(block.meta_format_map_ids);
+		if(block.meta_hot_container.n_entries)        zstd_codec.compress(block.meta_hot_container);
+		if(block.gt_rle_container.n_entries)          zpaq_codec.compress(block.gt_rle_container, "3");
+		if(block.gt_simple_container.n_entries)       zpaq_codec.compress(block.gt_simple_container, "3");
+		if(block.gt_support_data_container.n_entries) zstd_codec.compress(block.gt_support_data_container);
+		if(block.meta_cold_container.n_entries)       zstd_codec.compress(block.meta_cold_container);
+		if(block.meta_info_map_ids.n_entries)         zstd_codec.compress(block.meta_info_map_ids);
+		if(block.meta_filter_map_ids.n_entries)       zstd_codec.compress(block.meta_filter_map_ids);
+		if(block.meta_format_map_ids.n_entries)       zstd_codec.compress(block.meta_format_map_ids);
 
 		for(U32 i = 0; i < block.header.n_info_streams; ++i){
 			if(block.info_containers[i].header.controller.type == YON_TYPE_FLOAT ||
 			   block.info_containers[i].header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
+				//zpaq_codec.compress(block.info_containers[i]);
+				//zstd_codec.compress(block.info_containers[i]);
 			}
-			else zstd_codec.setCompressionLevel(20);
-			zstd_codec.encode(block.info_containers[i]);
+			else {
+				zstd_codec.setCompressionLevel(20);
+				//zpaq_codec.compress(block.info_containers[i]);
+				//zstd_codec.compress(block.info_containers[i]);
+			}
+			zstd_codec.compress(block.info_containers[i]);
+			//zpaq_codec.compress(block.info_containers[i], "4");
 		}
 
 		for(U32 i = 0; i < block.header.n_format_streams; ++i){
@@ -49,9 +57,15 @@ public:
 			   block.format_containers[i].header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
+				//zpaq_codec.compress(block.format_containers[i]);
+				//zstd_codec.compress(block.format_containers[i]);
 			}
-			else zstd_codec.setCompressionLevel(20);
-			zstd_codec.encode(block.format_containers[i]);
+			else {
+				zstd_codec.setCompressionLevel(20);
+				//zstd_codec.compress(block.format_containers[i]);
+				//zpaq_codec.compress(block.format_containers[i]);
+			}
+			zstd_codec.compress(block.format_containers[i]);
 		}
 
 		return true;
@@ -131,7 +145,7 @@ public:
 	}
 
 	bool decompress(algorithm::PermutationManager& permutation_manager){
-		return(this->zstd_codec.decode(permutation_manager));
+		return(this->zstd_codec.decompress(permutation_manager));
 	}
 
 	/**<
@@ -141,9 +155,9 @@ public:
 	 */
 	bool decompress(container_type& container){
 		if(container.header.controller.encoder == YON_ENCODE_ZSTD){
-			if(!this->zstd_codec.decode(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress!" << std::endl; return false; }
+			if(!this->zstd_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress!" << std::endl; return false; }
 		} else if(container.header.controller.encoder == YON_ENCODE_NONE){
-			if(!this->no_codec.decode(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress!" << std::endl; return false; }
+			if(!this->no_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress!" << std::endl; return false; }
 		} else {
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
@@ -151,9 +165,9 @@ public:
 
 		if(container.header.controller.mixedStride){
 			if(container.header_stride.controller.encoder == YON_ENCODE_ZSTD){
-				this->zstd_codec.decodeStrides(container);
+				this->zstd_codec.decompressStrides(container);
 			} else if (container.header_stride.controller.encoder == YON_ENCODE_NONE){
-				this->no_codec.decodeStrides(container);
+				this->no_codec.decompressStrides(container);
 			}
 		}
 		return true;
@@ -162,6 +176,7 @@ public:
 public:
 	no_codec_type   no_codec;
 	zstd_codec_type zstd_codec;
+	zpaq_codec_type zpaq_codec;
 };
 
 }

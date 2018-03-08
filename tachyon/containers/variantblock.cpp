@@ -421,7 +421,6 @@ bool VariantBlock::write(std::ofstream& stream,
 		stats_basic[8].cost_uncompressed += this->info_containers[i].getObjectSize();
 		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header.uLength - this->info_containers[i].header.cLength;
 		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header_stride.uLength - this->info_containers[i].header_stride.cLength;
-
 	}
 
 	stats_basic[8].cost_compressed += (U64)stream.tellp() - last_pos;

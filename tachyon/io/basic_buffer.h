@@ -21,12 +21,15 @@ private:
     typedef std::size_t       size_type;
 
 public:
-	BasicBuffer() : n_chars(0), width(0), buffer(nullptr){}
-	BasicBuffer(const U64 size) : n_chars(0), width(size), buffer(new char[size]){}
-	BasicBuffer(char* target, const size_t length) : n_chars(length), width(length), buffer(target){}
-	BasicBuffer(const U64 size, char* target) : n_chars(0), width(size), buffer(target){}
-	BasicBuffer(const self_type& other) : n_chars(0), width(other.width), buffer(new char[other.width]){}
-	virtual ~BasicBuffer(){}
+	BasicBuffer() : owns_data_(true), n_chars(0), width(0), buffer(nullptr){}
+	BasicBuffer(const U64 size) : owns_data_(true), n_chars(0), width(size), buffer(new char[size]){}
+	BasicBuffer(char* target, const size_t length) : owns_data_(false), n_chars(length), width(length), buffer(target){}
+	BasicBuffer(const U64 size, char* target) : owns_data_(false), n_chars(0), width(size), buffer(target){}
+	BasicBuffer(const self_type& other) : owns_data_(other.owns_data_), n_chars(0), width(other.width), buffer(new char[other.width]){}
+	virtual ~BasicBuffer(){
+		if(this->owns_data_)
+			delete [] this->buffer;
+	}
 
 	class iterator{
 	private:
@@ -78,8 +81,6 @@ public:
 
 		this->buffer = new char[size];
 	}
-
-	inline void deleteAll(void){ delete [] this->buffer; } // manual cleaup
 
 	inline void set(const size_t size, char* target){
 		this->n_chars = 0;
@@ -309,6 +310,7 @@ private:
 	}
 
 public:
+	bool    owns_data_;
 	U64     n_chars;
 	U64     width;
 	pointer buffer;

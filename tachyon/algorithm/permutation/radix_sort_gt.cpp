@@ -111,10 +111,6 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
-		//if(*reinterpret_cast<const BYTE* const>(&fmt_type_value1) == 0x80 || *reinterpret_cast<const BYTE* const>(&fmt_type_value2) == 0x80){
-		//	std::cerr << "has missing|eov in radix" << std::endl;
-		//	return false;
-		//}
 		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_array[k] = packed;
 		//debug[i] = fmt_type_value1;

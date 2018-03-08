@@ -32,7 +32,7 @@ private:
 	typedef containers::HashContainer       hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
-	typedef support::VariantImporterContainerStats          import_stats_type;
+	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaHot                   meta_type;
 
 public:

@@ -6,6 +6,7 @@
 #include "zstd_errors.h"
 #include "../../third_party/zlib/zconf.h"
 #include "../../third_party/zlib/zlib.h"
+#include "zpaq_wrapper.h"
 
 namespace tachyon{
 namespace algorithm{
@@ -190,18 +191,18 @@ class CompressionContainer{
 private:
 	typedef CompressionContainer self_type;
 protected:
-	typedef containers::DataContainer stream_type;
-	typedef io::BasicBuffer buffer_type;
+	typedef containers::DataContainer     container_type;
+	typedef io::BasicBuffer               buffer_type;
 	typedef algorithm::PermutationManager permutation_type;
 
 public:
 	CompressionContainer(){}
-	virtual ~CompressionContainer(){ this->buffer.deleteAll(); }
-	virtual const bool encode(permutation_type& manager) =0;
-	virtual const bool encode(stream_type& stream) =0;
-	virtual const bool encodeStrides(stream_type& stream) =0;
-	virtual const bool decode(stream_type& stream) =0;
-	virtual const bool decodeStrides(stream_type& stream) =0;
+	virtual ~CompressionContainer(){ }
+	virtual const bool compress(permutation_type& manager) =0;
+	virtual const bool compress(container_type& container) =0;
+	virtual const bool compressStrides(container_type& container) =0;
+	virtual const bool decompress(container_type& container) =0;
+	virtual const bool decompressStrides(container_type& container) =0;
 
 protected:
 	buffer_type buffer;
@@ -212,51 +213,51 @@ private:
 	typedef UncompressedCodec             self_type;
 
 protected:
-	typedef containers::DataContainer     stream_type;
+	typedef containers::DataContainer     container_type;
 	typedef io::BasicBuffer               buffer_type;
 	typedef algorithm::PermutationManager permutation_type;
 
 public:
 	UncompressedCodec(){}
-	~UncompressedCodec(){ this->buffer.deleteAll(); }
-	inline const bool encode(permutation_type& manager){ return true; }
-	inline const bool encode(stream_type& stream){
-		stream.buffer_data.resize(stream.buffer_data_uncompressed.size() + 65536);
-		memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
-		stream.header.controller.encoder = YON_ENCODE_NONE;
-		stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
-		stream.header.cLength            = stream.buffer_data_uncompressed.size();
+	~UncompressedCodec(){ }
+	inline const bool compress(permutation_type& manager){ return true; }
+	inline const bool compress(container_type& container){
+		container.buffer_data.resize(container.buffer_data_uncompressed.size() + 65536);
+		memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+		container.header.controller.encoder = YON_ENCODE_NONE;
+		container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+		container.header.cLength            = container.buffer_data_uncompressed.size();
 		return true;
 	}
-	inline const bool encodeStrides(stream_type& stream){ return true; }
+	inline const bool compressStrides(container_type& container){ return true; }
 
-	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != YON_ENCODE_NONE){
+	const bool decompress(container_type& container){
+		if(container.header.controller.encoder != YON_ENCODE_NONE){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
-		stream.buffer_data_uncompressed.resize(stream.buffer_data.n_chars + 16536);
-		memcpy(stream.buffer_data_uncompressed.buffer, stream.buffer_data.buffer, stream.buffer_data.n_chars);
-		stream.buffer_data_uncompressed.n_chars = stream.buffer_data.n_chars;
-		assert(stream.checkCRC(0));
+		container.buffer_data_uncompressed.resize(container.buffer_data.n_chars + 16536);
+		memcpy(container.buffer_data_uncompressed.buffer, container.buffer_data.buffer, container.buffer_data.n_chars);
+		container.buffer_data_uncompressed.n_chars = container.buffer_data.n_chars;
+		assert(container.checkCRC(0));
 		return true;
 	}
 
-	const bool decodeStrides(stream_type& stream){
-		if(!stream.header.controller.mixedStride){
+	const bool decompressStrides(container_type& container){
+		if(!container.header.controller.mixedStride){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
 			return false;
 		}
 
-		if(stream.header_stride.controller.encoder != YON_ENCODE_NONE){
+		if(container.header_stride.controller.encoder != YON_ENCODE_NONE){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
-		stream.buffer_strides_uncompressed.resize(stream.buffer_strides.n_chars + 16536);
-		memcpy(stream.buffer_strides_uncompressed.buffer, stream.buffer_strides.buffer, stream.buffer_strides.n_chars);
-		stream.buffer_strides_uncompressed.n_chars = stream.buffer_strides.n_chars;
-		assert(stream.checkCRC(1));
+		container.buffer_strides_uncompressed.resize(container.buffer_strides.n_chars + 16536);
+		memcpy(container.buffer_strides_uncompressed.buffer, container.buffer_strides.buffer, container.buffer_strides.n_chars);
+		container.buffer_strides_uncompressed.n_chars = container.buffer_strides.n_chars;
+		assert(container.checkCRC(1));
 		return true;
 	}
 
@@ -283,29 +284,29 @@ public:
 	 * @param stream
 	 * @return
 	 */
-	const bool encode(stream_type& stream){
-		stream.generateCRC();
+	const bool compress(container_type& container){
+		container.generateCRC();
 
-		if(stream.header.controller.uniform || stream.buffer_data_uncompressed.size() < 100){
-			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
-			stream.header.controller.encoder = YON_ENCODE_NONE;
-			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
-			stream.header.cLength            = stream.buffer_data_uncompressed.size();
+		if(container.header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
 
-			if(stream.header.controller.mixedStride == true)
-				return(this->encodeStrides(stream));
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container));
 			else return true;
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_data_uncompressed.size() + 65536);
+		this->buffer.resize(container.buffer_data_uncompressed.size() + 65536);
 		size_t ret = ZSTD_compress(this->buffer.data(),
 								   this->buffer.capacity(),
-								   stream.buffer_data_uncompressed.data(),
-								   stream.buffer_data_uncompressed.size(),
+								   container.buffer_data_uncompressed.data(),
+								   container.buffer_data_uncompressed.size(),
 								   this->compression_level_data);
 
-		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << stream.getSizeUncompressed() << " and output: " << ret << " -> " << (float)stream.getSizeUncompressed()/ret << "-fold"  << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << container.getSizeUncompressed() << " and output: " << ret << " -> " << (float)container.getSizeUncompressed()/ret << "-fold"  << std::endl;
 
 
 		if(ZSTD_isError(ret)){
@@ -313,29 +314,29 @@ public:
 			exit(1);
 		}
 
-		const float fold = (float)stream.buffer_data_uncompressed.size() / ret;
+		const float fold = (float)container.buffer_data_uncompressed.size() / ret;
 		if(fold < MIN_COMPRESSION_FOLD){
-			memcpy(stream.buffer_data.data(), stream.buffer_data_uncompressed.data(), stream.buffer_data_uncompressed.size());
-			stream.header.controller.encoder = YON_ENCODE_NONE;
-			stream.buffer_data.n_chars       = stream.buffer_data_uncompressed.size();
-			stream.header.cLength            = stream.buffer_data_uncompressed.size();
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
 
-			if(stream.header.controller.mixedStride == true)
-				return(this->encodeStrides(stream));
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container));
 			else return true;
 		}
 
-		stream.buffer_data.resize(ret + 65536);
-		memcpy(stream.buffer_data.data(), this->buffer.data(), ret);
-		stream.header.cLength            = ret;
-		stream.header.controller.encoder = YON_ENCODE_ZSTD;
-		stream.buffer_data.n_chars       = ret;
-		stream.header.n_extra            = 1;
-		stream.header.extra              = new char[sizeof(BYTE)];
-		stream.header.extra[0]           = (BYTE)this->compression_level_data;
+		container.buffer_data.resize(ret + 65536);
+		memcpy(container.buffer_data.data(), this->buffer.data(), ret);
+		container.header.cLength            = ret;
+		container.header.controller.encoder = YON_ENCODE_ZSTD;
+		container.buffer_data.n_chars       = ret;
+		container.header.n_extra            = 1;
+		container.header.extra              = new char[sizeof(BYTE)];
+		container.header.extra[0]           = (BYTE)this->compression_level_data;
 
-		if(stream.header.controller.mixedStride == true)
-			return(this->encodeStrides(stream));
+		if(container.header.controller.mixedStride == true)
+			return(this->compressStrides(container));
 		else return true;
 	}
 
@@ -344,22 +345,22 @@ public:
 	 * @param stream
 	 * @return
 	 */
-	const bool encodeStrides(stream_type& stream){
-		if(stream.header_stride.controller.uniform || stream.buffer_strides_uncompressed.size() < 100){
-			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
-			stream.header_stride.controller.encoder = YON_ENCODE_NONE;
-			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
-			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
+	const bool compressStrides(container_type& container){
+		if(container.header_stride.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
 
 			return true;
 		}
 
 		this->buffer.reset();
-		this->buffer.resize(stream.buffer_strides_uncompressed.size() + 65536);
+		this->buffer.resize(container.buffer_strides_uncompressed.size() + 65536);
 		size_t ret = ZSTD_compress(this->buffer.data(),
                                    this->buffer.capacity(),
-								   stream.buffer_strides_uncompressed.data(),
-								   stream.buffer_strides_uncompressed.size(),
+								   container.buffer_strides_uncompressed.data(),
+								   container.buffer_strides_uncompressed.size(),
 								   this->compression_level_data);
 
 		if(ZSTD_isError(ret)){
@@ -367,25 +368,25 @@ public:
 			exit(1);
 		}
 
-		const float fold = (float)stream.buffer_strides_uncompressed.size()/ret;
+		const float fold = (float)container.buffer_strides_uncompressed.size()/ret;
 		if(fold < MIN_COMPRESSION_FOLD){
-			memcpy(stream.buffer_strides.data(), stream.buffer_strides_uncompressed.data(), stream.buffer_strides_uncompressed.size());
-			stream.header_stride.controller.encoder = YON_ENCODE_NONE;
-			stream.buffer_strides.n_chars           = stream.buffer_strides_uncompressed.size();
-			stream.header_stride.cLength            = stream.buffer_strides_uncompressed.size();
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
 			return true;
 		}
 
-		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << stream.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)stream.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << container.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)container.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
 
-		stream.buffer_data.resize(ret + 65536);
-		memcpy(stream.buffer_strides.data(), this->buffer.data(), ret);
-		stream.header_stride.cLength            = ret;
-		stream.header_stride.controller.encoder = YON_ENCODE_ZSTD;
-		stream.buffer_strides.n_chars           = ret;
-		stream.header_stride.n_extra            = 1;
-		stream.header_stride.extra              = new char[sizeof(BYTE)];
-		stream.header_stride.extra[0]           = (BYTE)this->compression_level_data;
+		container.buffer_data.resize(ret + 65536);
+		memcpy(container.buffer_strides.data(), this->buffer.data(), ret);
+		container.header_stride.cLength            = ret;
+		container.header_stride.controller.encoder = YON_ENCODE_ZSTD;
+		container.buffer_strides.n_chars           = ret;
+		container.header_stride.n_extra            = 1;
+		container.header_stride.extra              = new char[sizeof(BYTE)];
+		container.header_stride.extra[0]           = (BYTE)this->compression_level_data;
 
 		return true;
 	}
@@ -395,7 +396,7 @@ public:
 	 * @param manager
 	 * @return
 	 */
-	const bool encode(permutation_type& manager){
+	const bool compress(permutation_type& manager){
 		if(manager.PPA.size() == 0)
 			return true;
 
@@ -456,16 +457,16 @@ public:
 		return true;
 	}
 
-	const bool decode(stream_type& stream){
-		if(stream.header.controller.encoder != YON_ENCODE_ZSTD){
+	const bool decompress(container_type& container){
+		if(container.header.controller.encoder != YON_ENCODE_ZSTD){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
-		stream.buffer_data_uncompressed.resize(stream.header.uLength + 16536);
-		int ret = ZSTD_decompress(stream.buffer_data_uncompressed.data(),
-								  stream.buffer_data_uncompressed.capacity(),
-								  stream.buffer_data.data(),
-								  stream.buffer_data.size());
+		container.buffer_data_uncompressed.resize(container.header.uLength + 16536);
+		int ret = ZSTD_decompress(container.buffer_data_uncompressed.data(),
+								  container.buffer_data_uncompressed.capacity(),
+								  container.buffer_data.data(),
+								  container.buffer_data.size());
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
@@ -473,42 +474,42 @@ public:
 		}
 
 		assert(ret >= 0);
-		stream.buffer_data_uncompressed.n_chars = ret;
-		assert((U32)ret == stream.header.uLength);
-		assert(stream.checkCRC(0));
+		container.buffer_data_uncompressed.n_chars = ret;
+		assert((U32)ret == container.header.uLength);
+		assert(container.checkCRC(0));
 
 		return true;
 	}
 
-	const bool decodeStrides(stream_type& stream){
-		if(!stream.header.controller.mixedStride)
+	const bool decompressStrides(container_type& container){
+		if(!container.header.controller.mixedStride)
 			return false;
 
-		if(stream.header_stride.controller.encoder != YON_ENCODE_ZSTD){
+		if(container.header_stride.controller.encoder != YON_ENCODE_ZSTD){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
 		}
 
 
-		if(stream.header_stride.controller.encoder != YON_ENCODE_ZSTD)
+		if(container.header_stride.controller.encoder != YON_ENCODE_ZSTD)
 			return true;
 
-		stream.buffer_strides_uncompressed.resize(stream.header_stride.uLength + 16536);
-		int ret_stride = ZSTD_decompress(stream.buffer_strides_uncompressed.data(),
-										 stream.buffer_strides_uncompressed.capacity(),
-										 stream.buffer_strides.data(),
-										 stream.buffer_strides.size());
+		container.buffer_strides_uncompressed.resize(container.header_stride.uLength + 16536);
+		int ret_stride = ZSTD_decompress(container.buffer_strides_uncompressed.data(),
+										 container.buffer_strides_uncompressed.capacity(),
+										 container.buffer_strides.data(),
+										 container.buffer_strides.size());
 
 		assert(ret_stride >= 0);
-		stream.buffer_strides_uncompressed.n_chars = ret_stride;
-		assert((U32)ret_stride == stream.header_stride.uLength);
-		//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (stream.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
-		assert(stream.checkCRC(1));
+		container.buffer_strides_uncompressed.n_chars = ret_stride;
+		assert((U32)ret_stride == container.header_stride.uLength);
+		//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (container.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
+		assert(container.checkCRC(1));
 
 		return true;
 	}
 
-	const bool decode(permutation_type& manager){
+	const bool decompress(permutation_type& manager){
 		this->buffer.reset();
 		U32 n_samples = manager.n_samples;
 		if(n_samples < 100){
@@ -545,6 +546,217 @@ public:
 private:
 	int compression_level_data;
 	int compression_level_strides;
+};
+
+// ZPAQ
+class ZPAQContainer : public CompressionContainer{
+private:
+	typedef ZPAQContainer self_type;
+
+public:
+	ZPAQContainer() :
+		compression_level_data(3),
+		compression_level_strides(3)
+	{
+	}
+
+	virtual ~ZPAQContainer(){ }
+
+	const bool compress(permutation_type& manager){ return false; }
+
+	const bool compress(container_type& container, const std::string& command){
+		container.generateCRC();
+
+		if(container.header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
+
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container, command));
+			else return true;
+		}
+
+
+		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
+		ZpaqWrapperOut out(container.buffer_data);
+		out.buffer.resize(in.buffer.size() + 65536);
+		libzpaq::compress(&in, &out, &command[0]);
+
+		const float fold = (float)container.buffer_data_uncompressed.size() / out.buffer.size();
+		if(fold < MIN_COMPRESSION_FOLD){
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container, command));
+			else return true;
+		}
+
+		container.header.cLength            = out.buffer.size();
+		container.header.controller.encoder = YON_ENCODE_ZPAQ;
+		container.header.n_extra            = command.size();
+		container.header.extra              = new char[sizeof(BYTE)*command.size()];
+		memcpy(container.header.extra, &command[0], command.size());
+		if(container.header.controller.mixedStride == true)
+			return(this->compressStrides(container, command));
+		else return true;
+	}
+	const bool compress(container_type& container){
+		container.generateCRC();
+
+		if(container.header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
+
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container));
+			else return true;
+			//return true;
+		}
+
+
+		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
+		ZpaqWrapperOut out(container.buffer_data);
+		out.buffer.resize(in.buffer.size() + 65536);
+		libzpaq::compress(&in, &out, "x0.3ci1");
+
+		const float fold = (float)container.buffer_data_uncompressed.size() / out.buffer.size();
+		if(fold < MIN_COMPRESSION_FOLD){
+			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
+			container.header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+			container.header.cLength            = container.buffer_data_uncompressed.size();
+
+			if(container.header.controller.mixedStride == true)
+				return(this->compressStrides(container));
+			else return true;
+		}
+
+		container.header.cLength            = out.buffer.size();
+		container.header.controller.encoder = YON_ENCODE_ZPAQ;
+		container.header.n_extra            = 8;
+		container.header.extra              = new char[sizeof(BYTE)*8];
+		memcpy(container.header.extra, "x0.3ci1", 8);
+		//std::cerr << container.buffer_data_uncompressed.size() << "->" << container.buffer_data.size() << ": " << std::endl;
+		if(container.header.controller.mixedStride == true)
+			return(this->compressStrides(container));
+		else return true;
+	}
+
+	const bool compressStrides(container_type& container, const std::string& command){
+		if(container.header_stride.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
+
+			return true;
+		}
+
+		container.buffer_data.reset();
+		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
+		ZpaqWrapperOut out(container.buffer_data);
+		out.buffer.resize(in.buffer.size() + 65536);
+		libzpaq::compress(&in, &out, &command[0]);
+
+		const float fold = (float)container.buffer_strides_uncompressed.size()/out.buffer.size();
+		if(fold < MIN_COMPRESSION_FOLD){
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
+			return true;
+		}
+
+		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << container.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)container.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
+
+		container.header_stride.cLength            = out.buffer.size();
+		container.header_stride.controller.encoder = YON_ENCODE_ZPAQ;
+		container.header_stride.n_extra            = command.size();
+		container.header_stride.extra              = new char[sizeof(BYTE)*command.size()];
+		memcpy(container.header_stride.extra, &command[0], command.size());
+
+		return true;
+	}
+
+	const bool compressStrides(container_type& container){
+		if(container.header_stride.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
+
+			return true;
+		}
+
+		container.buffer_data.reset();
+		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
+		ZpaqWrapperOut out(container.buffer_data);
+		out.buffer.resize(in.buffer.size() + 65536);
+		libzpaq::compress(&in, &out, "x0.3ci1");
+
+		const float fold = (float)container.buffer_strides_uncompressed.size()/out.buffer.size();
+		if(fold < MIN_COMPRESSION_FOLD){
+			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
+			container.header_stride.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.header_stride.cLength            = container.buffer_strides_uncompressed.size();
+			return true;
+		}
+
+		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << container.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)container.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
+
+		container.header_stride.cLength            = out.buffer.size();
+		container.header_stride.controller.encoder = YON_ENCODE_ZPAQ;
+		container.header_stride.n_extra            = 8;
+		container.header_stride.extra              = new char[sizeof(BYTE)*8];
+		memcpy(container.header_stride.extra, "x0.3ci1", 8);
+
+		return true;
+	}
+	const bool decompress(container_type& container){
+		if(container.header.controller.encoder != YON_ENCODE_ZPAQ){
+			return true;
+		}
+
+		container.buffer_data_uncompressed.reset();
+		ZpaqWrapperIn in(container.buffer_data);
+		ZpaqWrapperOut out(container.buffer_data_uncompressed);
+		libzpaq::decompress(&in, &out);
+		assert(out.buffer.size() == container.header.uLength);
+		assert(container.checkCRC(0));
+
+		if(container.header.hasMixedStride())
+			return(this->decompressStrides(container));
+
+		return true;
+	}
+	const bool decompressStrides(container_type& container){
+		if(container.header_stride.controller.encoder != YON_ENCODE_ZPAQ){
+			return true;
+		}
+		std::cerr << "at strides" << std::endl;
+
+		container.buffer_strides_uncompressed.reset();
+		ZpaqWrapperIn in(container.buffer_strides);
+		ZpaqWrapperOut out(container.buffer_strides_uncompressed);
+		libzpaq::decompress(&in, &out);
+		assert(out.buffer.size() == container.header_stride.uLength);
+		assert(container.checkCRC(1));
+
+		return true;
+	}
+
+protected:
+	int compression_level_data;
+	int compression_level_strides;
+	std::string compression_level_data_string;
+	std::string compression_level_strides_string;
 };
 
 }

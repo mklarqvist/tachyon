@@ -16,7 +16,7 @@ TGZFController::TGZFController(const char* data, const U32 length) : compression
 
 TGZFController::TGZFController(const U32 largest_block_size) : compression_level(Z_DEFAULT_COMPRESSION), bit_window(constants::GZIP_WINDOW_BITS), buffer(largest_block_size){}
 
-TGZFController::~TGZFController(){ this->buffer.deleteAll(); }
+TGZFController::~TGZFController(){ }
 
 void TGZFController::Clear(){ this->buffer.reset(); }
 

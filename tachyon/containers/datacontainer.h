@@ -73,15 +73,54 @@ public:
 	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
 	inline const U32& size(void) const{ return(this->n_entries); }
 
+	/**<
+	 *
+	 * @param value
+	 */
 	template <class T>
 	inline void operator+=(const T& value){
+		//if(this->header.controller.encoder == 0 && this->n_entries == 0)
+		//	this->header.setType(value);
+
+		/*
+		// Make checks
+		if(this->header.controller.checkTypeMatch(value))
+		*/
+
 		this->buffer_data_uncompressed += (T)value;
 		++this->n_additions;
 	}
 
+	/**<
+	 *
+	 * @param string
+	 */
+	inline void operator+=(const std::string& string){
+		if(string.size() == 0)
+			return;
+
+		++this->n_entries;
+		this->buffer_data_uncompressed.Add(&string[0], string.size());
+		this->n_additions += string.size();
+	}
+
+	/**
+	 *
+	 * @param vector
+	 */
+	template <class T>
+	inline void operator+=(const std::vector<T>& vector){
+		if(vector.size() == 0)
+			return;
+
+		++this->n_entries;
+		for(U32 i = 0; i < vector.size(); ++i)
+			this->buffer_data_uncompressed += vector[i];
+		this->n_additions += vector.size();
+	}
+
 	void reset(void);
 	void resize(const U32 size);
-
 
 	/**<
 	 * Generates a CRC32 checksum of the uncompressed

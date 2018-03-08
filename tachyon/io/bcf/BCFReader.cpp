@@ -27,9 +27,6 @@ BCFReader::BCFReader(const std::string& file_name) :
 {}
 
 BCFReader::~BCFReader(){
-	this->buffer.deleteAll();
-	this->header_buffer.deleteAll();
-
 	if(this->entries != nullptr){
 		for(std::size_t i = 0; i < this->n_entries; ++i)
 			((this->entries + i)->~BCFEntry());
