@@ -211,43 +211,6 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
 ---
 
 ### Genotype containers / objects
-More advanced example using genotype summary statistics
-```c++
-/**<
-* Tachyon: https://github.com/mklarqvist/tachyon 
-* In this example we will use the genotype summary statistics
-* to calculate strand-specific bias of an alelle using a Fisher's 
-* 2x2 exact test. This is a complete example!
-*/
-#include <tachyon/tachyon_reader.h>
-
-std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
-reader.getSettings().loadGenotypes(true);
-reader.open(my_input_file);
-
-while(reader.nextBlock()){ // As long as there are YON blocks available
-    containers::GenotypeContainer gt(reader.block);
-    math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
-    containers::GenotypeSum gt_summary; // Genotype summary statistics
-    for(U32 i = 0; i < gt.size(); ++i){ // Foreach variant
-        // If there's > 5 alleles continue
-        if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
-        // Calculate summary statistics
-        gt[i].getSummary(gt_summary);
-
-        // Calculate total number of alt-alleles (allele 1, where 0 is ref)
-        const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
-        const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
-        if(p < 1e-3){ // If P < 0.001 report it
-            gt[i].getMeta().toVCFString(std::cout, reader.header, reader.block.index_entry.contigID, reader.block.index_entry.minPosition);
-            std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
-        }
-        gt_summary.clear(); // Recycle summary object
-    }
-}
-```
-
 ```c++
 /**<
 * Tachyon: https://github.com/mklarqvist/tachyon 
@@ -293,6 +256,51 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
     }
 }
 ```
+
+More advanced example using genotype summary statistics
+```c++
+/**<
+* Tachyon: https://github.com/mklarqvist/tachyon 
+* In this example we will use the genotype summary statistics
+* to calculate strand-specific bias of an alelle using a Fisher's 
+* 2x2 exact test. This is a complete example!
+*/
+#include <tachyon/tachyon_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::TachyonReader reader;
+reader.getSettings().loadGenotypes(true);
+reader.open(my_input_file);
+
+while(reader.nextBlock()){ // As long as there are YON blocks available
+    containers::GenotypeContainer gt(reader.block);
+    math::Fisher fisher(); // Math class for Fisher's exact test and Chi-squared
+    containers::GenotypeSum gt_summary; // Genotype summary statistics
+    for(U32 i = 0; i < gt.size(); ++i){ // Foreach variant
+        // If there's > 5 alleles continue
+        if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
+        // Calculate summary statistics
+        gt[i].getSummary(gt_summary);
+
+        // Calculate total number of alt-alleles (allele 1, where 0 is ref)
+        const U64 total = gt_summary.getAlleleA(1) + gt_summary.getAlleleB(1);
+        const double p = fisher.fisherTest(gt_summary.getAlleleA(1), total, gt_summary.getAlleleB(1), total); // P-value for allele-bias
+        if(p < 1e-3){ // If P < 0.001 report it
+            gt[i].getMeta().toVCFString(std::cout, reader.header, reader.block.index_entry.contigID, reader.block.index_entry.minPosition);
+            std::cout << '\t' << gt_summary << '\t' << p << '\t' << ((gt_summary.getAlleleA(1) == 0 || gt_summary.getAlleleB(1) == 0) ? 1 : 0) << '\n';
+        }
+        gt_summary.clear(); // Recycle summary object
+    }
+}
+```
+This will generate a tab-delimited output table (first three rows shown here)
+| Sample | Transversions | Transitions | TsTV    | AA     | AT   | AG    | AC   | TA   | TG     | TC   | TT    | GA    | GT   | GG      | GC   | CA   | CT    | CG   | CC      |
+|--------|---------------|-------------|---------|--------|------|-------|------|------|--------|------|-------|-------|------|---------|------|------|-------|------|---------|
+| 0      | 30385         | 68543       | 2.25582 | 649609 | 3183 | 17281 | 3849 | 3109 | 629125 | 4055 | 17041 | 17267 | 4009 | 1061887 | 4237 | 3897 | 16954 | 4046 | 1052277 |
+| 1      | 30744         | 68996       | 2.24421 | 649463 | 3231 | 17349 | 3885 | 3092 | 628986 | 4026 | 17192 | 17509 | 4065 | 1061550 | 4282 | 4037 | 16946 | 4126 | 1052089 |
+| 2      | 31003         | 70163       | 2.2631  | 649048 | 3282 | 17682 | 3894 | 3075 | 628845 | 4099 | 17265 | 17826 | 4160 | 1060990 | 4412 | 4013 | 17390 | 4068 | 1051703 |
+An example plot in `R`
+![screenshot](examples/yon_tstv_1kgp3.jpeg)
 
 ---
 
