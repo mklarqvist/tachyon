@@ -175,11 +175,11 @@ public:
 
     // Iterator
     inline iterator begin(){ return iterator(&this->alleles[0]); }
-    inline iterator end(){ return iterator(&this->alleles[this->n_allele - 1]); }
+    inline iterator end(){ return iterator(&this->alleles[this->n_allele]); }
     inline const_iterator begin() const{ return const_iterator(&this->alleles[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->alleles[this->n_allele - 1]); }
+    inline const_iterator end() const{ return const_iterator(&this->alleles[this->n_allele]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->alleles[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_allele - 1]); }
+    inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_allele]); }
 
 public:
 	/**< Byte length of this record. Is required in downstream iterators */
@@ -192,7 +192,7 @@ public:
 	U16 n_allele;
 	/**< Variant name (ID). Length is bytes
 	 * and actual char* data
-	 * Names are limited to 16 bits
+	 * Names are limited to 2^16 characters
 	 */
 	U16 n_ID;
 	char* ID;

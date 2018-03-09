@@ -126,7 +126,6 @@ TachyonReader::block_entry_type TachyonReader::getBlock(){
 		this->stream.seekg(position);
 		return block;
 	}
-	std::cerr << "read ok" << std::endl;
 
 	// Internally decompress available data
 	if(!this->codec_manager.decompress(this->block)){

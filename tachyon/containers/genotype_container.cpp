@@ -1,4 +1,5 @@
 #include "genotype_container.h"
+#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -21,15 +22,6 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	if(block.gt_support_data_container.buffer_data_uncompressed.size() == 0){
 		std::cerr << utility::timestamp("ERROR","GT") << "Has no genotype support data!" << std::endl;
 		exit(1);
-	}
-
-	getNativeFuncDef getTarget = nullptr;
-	switch(block.gt_support_data_container.getStridePrimitiveType()){
-	case(YON_TYPE_8B):  getTarget = &self_type::getNative<BYTE>; break;
-	case(YON_TYPE_16B): getTarget = &self_type::getNative<U16>; break;
-	case(YON_TYPE_32B): getTarget = &self_type::getNative<U32>; break;
-	case(YON_TYPE_64B): getTarget = &self_type::getNative<U64>; break;
-	default: std::cerr << "illegal type" << std::endl; return;
 	}
 
 	// data (0: rle, 1: simple), strides (n_objects)
@@ -86,11 +78,12 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	if(block.gt_support_data_container.header.hasMixedStride()){
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
+		StrideContainer<U32> strides(block.gt_support_data_container);
+
 		for(U32 i = 0; i < this->n_entries; ++i){
 			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
-			const U32 target    = (this->*getTarget)(block.gt_support_data_container.buffer_strides_uncompressed, i);
 
-			if(target == 1){
+			if(strides[i] == 1){
 				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
 				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
@@ -101,7 +94,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
 
 				current_offset_rle += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else if(target == 2){
+			} else if(strides[i] == 2){
 				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
 				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)

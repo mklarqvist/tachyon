@@ -27,8 +27,8 @@ public:
 
 		zstd_codec.setCompressionLevel(20);
 		if(block.meta_hot_container.n_entries)        zstd_codec.compress(block.meta_hot_container);
-		if(block.gt_rle_container.n_entries)          zpaq_codec.compress(block.gt_rle_container, "3");
-		if(block.gt_simple_container.n_entries)       zpaq_codec.compress(block.gt_simple_container, "3");
+		if(block.gt_rle_container.n_entries)          zstd_codec.compress(block.gt_rle_container);
+		if(block.gt_simple_container.n_entries)       zstd_codec.compress(block.gt_simple_container);
 		if(block.gt_support_data_container.n_entries) zstd_codec.compress(block.gt_support_data_container);
 		if(block.meta_cold_container.n_entries)       zstd_codec.compress(block.meta_cold_container);
 		if(block.meta_info_map_ids.n_entries)         zstd_codec.compress(block.meta_info_map_ids);
@@ -158,6 +158,8 @@ public:
 			if(!this->zstd_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress!" << std::endl; return false; }
 		} else if(container.header.controller.encoder == YON_ENCODE_NONE){
 			if(!this->no_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress!" << std::endl; return false; }
+		} else if(container.header.controller.encoder == YON_ENCODE_ZPAQ){
+			if(!this->zpaq_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress!" << std::endl; return false; }
 		} else {
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
@@ -168,6 +170,11 @@ public:
 				this->zstd_codec.decompressStrides(container);
 			} else if (container.header_stride.controller.encoder == YON_ENCODE_NONE){
 				this->no_codec.decompressStrides(container);
+			} else if (container.header_stride.controller.encoder == YON_ENCODE_ZPAQ){
+				this->zpaq_codec.decompressStrides(container);
+			} else {
+				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
+				return false;
 			}
 		}
 		return true;

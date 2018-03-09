@@ -110,6 +110,7 @@ int view(int argc, char** argv){
 	tachyon::TachyonReader reader;
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
+	//reader.getSettings().loadAll(true);
 	reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
@@ -135,13 +136,12 @@ int view(int argc, char** argv){
 	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
 	U32 n_blocks = 0;
 	//U64 square_division = 0;
-	//std::vector<tachyon::core::TiTvObject> global_titv(reader.header.getSampleNumber());
+	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		//reader.toVCFStringFast();
-		//reader.toVCFString();
-		//n_variants += reader.iterateMeta();
-		n_variants += reader.iterate_all_info();
-		//reader.iterate_all_info();
+		//n_variants += reader.countVariants();
+		n_variants += reader.getTiTVRatios(std::cout, global_titv);
+		//n_variants += reader.iterate_all_info();
+		//n_variants += reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
@@ -149,12 +149,12 @@ int view(int argc, char** argv){
 		//if(n_blocks == 50) break;
 	}
 
-	/*
+
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTG\tTC\tTT\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\t\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
 		std::cout << i << '\t' << global_titv[i] << '\n';
 	}
-	*/
+
 
 	//square /= square_division;
 	std::cerr << "Blocks: " << n_blocks << std::endl;

@@ -21,6 +21,7 @@ enum TACHYON_GT_TYPE{
 	YON_GT_RLE_DIPLOID_BIALLELIC,
 	YON_GT_RLE_DIPLOID_NALLELIC,
 	YON_GT_BCF_DIPLOID,
+	YON_GT_BCF_STYLE,
 	YON_GT_KEEP_ALL = 10000 // special case
 };
 
@@ -170,10 +171,10 @@ public:
 
 	const BYTE getPrimitiveWidth(void) const{
 		switch(this->controller.gt_primtive_type){
-		case(YON_TYPE_8B):  return(1);
-		case(YON_TYPE_16B): return(2);
-		case(YON_TYPE_32B): return(4);
-		case(YON_TYPE_64B): return(8);
+		case(YON_GT_BYTE):  return(1);
+		case(YON_GT_U16): return(2);
+		case(YON_GT_U32): return(4);
+		case(YON_GT_U64): return(8);
 		}
 		return(0);
 	}

@@ -4,7 +4,6 @@
 #include "libzpaq.h"
 #include "../../io/basic_buffer.h"
 
-
 namespace tachyon{
 namespace algorithm{
 
@@ -13,9 +12,8 @@ public:
 	ZpaqWrapperIn(io::BasicBuffer& buffer) : iterator_pos(0), buffer(buffer){}
 	~ZpaqWrapperIn(){ }
 	inline int get() {
-		//std::cerr << (int)this->buffer[this->iterator_pos] << ' ';
+		//std::cerr << this->iterator_pos << "/" << this->buffer.size() << ":" << (int)this->buffer[this->iterator_pos] << ' ';
 		if(this->iterator_pos + 1 == this->buffer.size()) return(-1); // eof
-		//assert(this->buffer[this->iterator_pos] != -1);
 		return(*reinterpret_cast<const BYTE* const>(&this->buffer[this->iterator_pos++]));
 	}  // returns byte 0..255 or -1 at EOF
 
@@ -30,17 +28,16 @@ public:
 
  class ZpaqWrapperOut: public libzpaq::Writer {
  public:
-	 ZpaqWrapperOut(io::BasicBuffer& buffer) : buffer(buffer){}
-	 ~ZpaqWrapperOut(){ }
+	ZpaqWrapperOut(io::BasicBuffer& buffer) : buffer(buffer){}
+	~ZpaqWrapperOut(){ }
 	inline void put(int c) { this->buffer += (BYTE)c; }  // writes 1 byte 0..255
+	void write(const char* buf, int n){  this->buffer.Add(buf, n); }
 	void reset(void){ this->buffer.reset(); }
 
 	io::BasicBuffer& buffer;
- };
+};
 
 }
 }
-
-
 
 #endif /* ALGORITHM_COMPRESSION_ZPAQ_WRAPPER_H_ */

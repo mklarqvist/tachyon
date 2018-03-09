@@ -380,15 +380,23 @@ public:
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TsTvObject>& global){
 		containers::GenotypeContainer gt(this->block);
+
 		std::vector<tachyon::core::TsTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
 		for(U32 i = 0; i < objects.size(); ++i){
+			//std::cerr << this->block.ppa_manager[i] << std::endl;
 			global[this->block.ppa_manager[i]] += objects[i];
 			//stream << i << '\t' << objects[i] << '\n';
 		}
+
 		return(gt.size());
+	}
+
+	U64 countVariants(std::ostream& stream = std::cout){
+		containers::MetaContainer meta(this->block);
+		return(meta.size());
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){

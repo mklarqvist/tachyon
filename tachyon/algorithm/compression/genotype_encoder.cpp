@@ -37,7 +37,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		support.header_stride.controller.signedness = 0;
 	}
 
-	meta_base.controller.biallelic        = line.body->n_allele == 2;
+	meta_base.controller.biallelic        = line.body->n_allele    == 2;
 	meta_base.controller.diploid          = line.gt_support.ploidy == 2;
 	meta_base.controller.gt_mixed_phasing = line.gt_support.mixedPhasing;
 	meta_base.controller.gt_anyMissing    = line.gt_support.hasMissing;
@@ -47,7 +47,8 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 	// Assess cost and encode
 	rle_helper_type cost;
-	if(line.body->n_allele == 2 && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
+	//std::cerr << meta_base.controller.biallelic << "," << line.gt_support.ploidy << "," << line.gt_support.hasEOV << std::endl;
+	if(meta_base.controller.biallelic && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
 		if(!support.checkStrideSize(1))
 			support.triggerMixedStride();
@@ -170,20 +171,12 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			support.triggerMixedStride();
 
 		support.addStride(4);
-		support += (BYTE)line.gt_support.ploidy;
+		support += (U32)this->n_samples*line.gt_support.ploidy;
 		++support;
-
-		meta_base.controller.biallelic        = false;
-		meta_base.controller.gt_mixed_phasing = true;
-		meta_base.controller.gt_anyMissing    = true;
-		meta_base.controller.biallelic        = line.body->n_allele == 2;
-		meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
-		meta_base.controller.gt_phase         = 0;
-		meta_base.controller.diploid          = true;
-		meta_base.controller.mixed_ploidy     = false;
 		++simple;
 
 		U64 n_runs = this->n_samples*line.gt_support.ploidy;
+
 		if(line.body->n_allele + 1 < 8)          this->EncodeBCFStyle<BYTE>(line, simple, n_runs);
 		else if(line.body->n_allele + 1 < 128)   this->EncodeBCFStyle<U16> (line, simple, n_runs);
 		else if(line.body->n_allele + 1 < 32768) this->EncodeBCFStyle<U32> (line, simple, n_runs);

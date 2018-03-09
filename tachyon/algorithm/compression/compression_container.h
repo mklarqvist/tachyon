@@ -582,7 +582,7 @@ public:
 		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
 		ZpaqWrapperOut out(container.buffer_data);
 		out.buffer.resize(in.buffer.size() + 65536);
-		libzpaq::compress(&in, &out, &command[0]);
+		libzpaq::compress(&in, &out, &command[0], "1", NULL, false);
 
 		const float fold = (float)container.buffer_data_uncompressed.size() / out.buffer.size();
 		if(fold < MIN_COMPRESSION_FOLD){
@@ -604,6 +604,7 @@ public:
 			return(this->compressStrides(container, command));
 		else return true;
 	}
+
 	const bool compress(container_type& container){
 		container.generateCRC();
 
@@ -623,7 +624,7 @@ public:
 		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
 		ZpaqWrapperOut out(container.buffer_data);
 		out.buffer.resize(in.buffer.size() + 65536);
-		libzpaq::compress(&in, &out, "x0.3ci1");
+		libzpaq::compress(&in, &out, "x0.3ci1", "1", NULL, false);
 
 		const float fold = (float)container.buffer_data_uncompressed.size() / out.buffer.size();
 		if(fold < MIN_COMPRESSION_FOLD){
@@ -662,7 +663,7 @@ public:
 		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
 		ZpaqWrapperOut out(container.buffer_data);
 		out.buffer.resize(in.buffer.size() + 65536);
-		libzpaq::compress(&in, &out, &command[0]);
+		libzpaq::compress(&in, &out, &command[0], "2", NULL, false);
 
 		const float fold = (float)container.buffer_strides_uncompressed.size()/out.buffer.size();
 		if(fold < MIN_COMPRESSION_FOLD){
@@ -698,7 +699,7 @@ public:
 		ZpaqWrapperIn  in(container.buffer_data_uncompressed);
 		ZpaqWrapperOut out(container.buffer_data);
 		out.buffer.resize(in.buffer.size() + 65536);
-		libzpaq::compress(&in, &out, "x0.3ci1");
+		libzpaq::compress(&in, &out, "x0.3ci1", "2", NULL, false);
 
 		const float fold = (float)container.buffer_strides_uncompressed.size()/out.buffer.size();
 		if(fold < MIN_COMPRESSION_FOLD){
@@ -725,14 +726,12 @@ public:
 		}
 
 		container.buffer_data_uncompressed.reset();
+		container.buffer_data_uncompressed.resize(container.header.uLength + 65536);
 		ZpaqWrapperIn in(container.buffer_data);
 		ZpaqWrapperOut out(container.buffer_data_uncompressed);
 		libzpaq::decompress(&in, &out);
 		assert(out.buffer.size() == container.header.uLength);
 		assert(container.checkCRC(0));
-
-		if(container.header.hasMixedStride())
-			return(this->decompressStrides(container));
 
 		return true;
 	}
@@ -743,6 +742,7 @@ public:
 		std::cerr << "at strides" << std::endl;
 
 		container.buffer_strides_uncompressed.reset();
+		container.buffer_strides_uncompressed.resize(container.header_stride.uLength + 65536);
 		ZpaqWrapperIn in(container.buffer_strides);
 		ZpaqWrapperOut out(container.buffer_strides_uncompressed);
 		libzpaq::decompress(&in, &out);

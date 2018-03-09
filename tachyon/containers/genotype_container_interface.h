@@ -40,7 +40,7 @@ public:
 		__data(new char[n_bytes]),
 		__meta(&meta)
     {
-    		memcpy(this->__data, data, n_bytes);
+    	memcpy(this->__data, data, n_bytes);
     }
 
     virtual ~GenotypeContainerInterface(){ delete [] this->__data; }

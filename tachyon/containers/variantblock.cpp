@@ -323,17 +323,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[0].cost_uncompressed += (U64)stream.tellp() - last_pos;
 	last_pos = stream.tellp();
 
-	// 0: header
-	// 1: PPA
-	// 2: meta hot
-	// 3: meta cold
-	// 4: gt rle
-	// 5: gt simple
-	// 6: gt support
-	// 7: meta ids
-	// 8: info
-	// 9: format
-
 	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 		stream << this->ppa_manager;
 		stats_basic[1].cost_compressed   += (U64)stream.tellp() - last_pos;

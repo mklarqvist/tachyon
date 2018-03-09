@@ -35,7 +35,11 @@ public:
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
-		const U16* c = reinterpret_cast<const U16* const>(&controller);
+		const U16 c = controller.hasGT |
+                      controller.hasGTPermuted << 1 |
+                      controller.anyEncrypted  << 2 |
+                      controller.unused        << 3;
+
 		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
 		return(stream);
 	}

@@ -135,13 +135,14 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.contigID    = reader.front().body->CHROM;
 		this->block.header.minPosition = reader.front().body->POS;
 		this->block.header.maxPosition = reader.back().body->POS;
+		this->block.header.controller.hasGT = this->GT_available_;
 		this->block.header.controller.hasGTPermuted = this->permute;
 		// if there is 0 or 1 samples then GT data is never permuted
 		if(header.getSampleNumber() <= 1)
 			this->block.header.controller.hasGTPermuted = false;
 
 		// Permute GT if GT is available and the appropriate flag is triggered
-		if(this->GT_available_  && this->block.header.controller.hasGTPermuted){
+		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;

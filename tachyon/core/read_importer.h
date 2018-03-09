@@ -245,9 +245,6 @@ public:
 		//	std::cerr << "failed to open: " << file << std::endl;
 		//}
 
-		//hash::HashTable<U64, U64> mers3(5024);
-		//hash::HashTable<U64, U64> mers4(5024);
-
 		std::string line;
 		U64 count = 0;
 
@@ -362,32 +359,16 @@ public:
 						cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
 
 					block.updateContainers();
-					//std::cerr.write(block.basesContainer.buffer_data_uncompressed.data(), block.basesContainer.buffer_data_uncompressed.size());
-					//std::cerr.put('\n');
 					compression_manager.zpaq_codec.compress(block.basesContainer);
-					//std::cerr << block.basesContainer.buffer_data_uncompressed.size() << "->" << block.basesContainer.buffer_data.size() << std::endl;
-					//compression_manager.zpaq_codec.decompress(block.basesContainer);
-					//std::cerr << block.basesContainer.buffer_data.size() << "->" << block.basesContainer.buffer_data_uncompressed.size() << std::endl;
-					//std::cerr.write(block.basesContainer.buffer_data_uncompressed.data(), block.basesContainer.buffer_data_uncompressed.size());
-					//std::cerr.put('\n');
-
-
-
 					compression_manager.zpaq_codec.compress(block.qualContainer);
-					//libzpaq::compress(&in, &out, "x0.3ci1m");
-					//libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
 					compression_manager.zstd_codec.setCompressionLevel(6);
 					for(U32 i = 0; i < 8; ++i){
 						if(i == 1) compression_manager.zpaq_codec.compress(block.nameContainer[i]);
 						else compression_manager.zstd_codec.compress(block.nameContainer[i]);
 					}
-
-					//tester.write(out.buffer.data(), out.buffer.size());
-					//tester.write(out_qual.buffer.data(), out_qual.buffer.size());
 					tester << block.basesContainer;
 					tester << block.qualContainer;
 					for(U32 i = 0; i < 8; ++i){
-						//std::cerr << i << ": " << block.nameContainer[i].getSizeUncompressed() << "->" << block.nameContainer[i].getSizeCompressed() << std::endl;
 						tester << block.nameContainer[i];
 						cost_names += block.nameContainer[i].getObjectSize();
 					}
@@ -399,8 +380,6 @@ public:
 					const U64 total_cost_raw = cost_bases_raw + cost_qual_raw + cost_names_raw;
 					std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(9) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
 					block.reset();
-					//in.reset(); out.reset();
-					//in_qual.reset(); out_qual.reset();
 
 					++footer.n_blocks;
 					footer.n_reads += block_size;
@@ -418,18 +397,13 @@ public:
 			block.updateContainers();
 			compression_manager.zpaq_codec.compress(block.basesContainer);
 			compression_manager.zpaq_codec.compress(block.qualContainer);
-			//libzpaq::compress(&in, &out, "x0.3ci1m");
-			//libzpaq::compress(&in_qual, &out_qual, "x0.3ci1m");
 			compression_manager.zstd_codec.setCompressionLevel(6);
 			for(U32 i = 0; i < 8; ++i)
 				compression_manager.zstd_codec.compress(block.nameContainer[i]);
 
-			//tester.write(out.buffer.data(), out.buffer.size());
-			//tester.write(out_qual.buffer.data(), out_qual.buffer.size());
 			tester << block.basesContainer;
 			tester << block.qualContainer;
 			for(U32 i = 0; i < 8; ++i){
-				//std::cerr << i << ": " << block.nameContainer[i].getSizeUncompressed() << "->" << block.nameContainer[i].getSizeCompressed() << std::endl;
 				tester << block.nameContainer[i];
 				cost_names += block.nameContainer[i].getObjectSize();
 			}
@@ -441,8 +415,6 @@ public:
 			const U64 total_cost_raw = cost_bases_raw + cost_qual_raw + cost_names_raw;
 			std::cerr << utility::timestamp("PROGRESS") << std::setw(14) << utility::ToPrettyString(read) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost_raw) << ' ' << std::setw(14) << utility::toPrettyDiskString(total_cost) << ' ' << std::setw(9) << (double)total_cost_raw/total_cost << "-fold" << ' ' << timer.ElapsedString() << std::endl;
 			block.reset();
-			//in.reset(); out.reset();
-			//in_qual.reset(); out_qual.reset();
 
 			++footer.n_blocks;
 			footer.n_reads += read_local;
