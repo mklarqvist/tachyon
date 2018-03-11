@@ -1,8 +1,6 @@
 #ifndef CORE_BLOCKENTRYSETTINGS_H_
 #define CORE_BLOCKENTRYSETTINGS_H_
 
-#include "components/datablock_offsets.h"
-
 namespace tachyon{
 namespace containers{
 namespace core{
@@ -11,11 +9,11 @@ namespace core{
  * Supportive structure for Block
  */
 struct SettingsMap{
-	typedef SettingsMap            self_type;
-	typedef DataBlockOffsetsHeader offset_minimal_type;
+	typedef SettingsMap         self_type;
+	typedef DataContainerHeader header_type;
 
 	SettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
-	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const offset_minimal_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
+	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const header_type* offset) : iterator_index(iterator_index), target_stream_local(target_stream_disk), offset(offset){}
 	~SettingsMap(){}
 
 	SettingsMap(const SettingsMap& other) : iterator_index(other.iterator_index), target_stream_local(other.target_stream_local), offset(other.offset){}
@@ -36,12 +34,12 @@ struct SettingsMap{
 		return *this;
 	}
 
-	inline bool operator<(const self_type& other) const{ return(this->offset->offset < other.offset->offset); }
+	inline bool operator<(const self_type& other) const{ return(this->offset->data_header.offset < other.offset->data_header.offset); }
 	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
 	U32 iterator_index;
 	S32 target_stream_local;
-	const offset_minimal_type* offset;
+	const header_type* offset;
 };
 
 /**<

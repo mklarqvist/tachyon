@@ -7,14 +7,13 @@
 #include "../hash_container.h"
 #include "../../io/basic_buffer.h"
 #include "../components/datablock_bitvector.h"
-#include "../components/datablock_offsets.h"
 #include "../components/datacontainer_header.h"
 #include "../components/datacontainer_header_controller.h"
 
 namespace tachyon{
 namespace containers{
 
-#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 2*sizeof(U32)*9 + 6*sizeof(U16)
+#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 6*sizeof(U16)
 
 /** @brief Controller flags for an IndexBlockEntry
  * This structure is for internal use only and describes
@@ -68,14 +67,11 @@ public:
 struct DataBlockHeaderBase{
 	typedef DataBlockHeaderBase          self_type;
 	typedef DataBlockHeaderController    controller_type;
-	typedef DataBlockOffsets             offset_type;
-	typedef DataBlockOffsetsHeader       offset_minimal_type;
+	typedef DataContainerHeader          header_type;
 
 public:
 	DataBlockHeaderBase();
 	virtual ~DataBlockHeaderBase();
-
-
 
 	inline const U32& size(void) const{ return(this->n_variants); }
 	inline const S32& getContigID(void) const{ return(this->contigID); }
@@ -85,19 +81,10 @@ public:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.contigID),    sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),  sizeof(U32));
-		stream << entry.offset_ppa;
-		stream << entry.offset_hot_meta;
-		stream << entry.offset_cold_meta;
-		stream << entry.offset_gt_rle;
-		stream << entry.offset_gt_simple;
-		stream << entry.offset_gt_helper;
-		stream << entry.offset_meta_info_id;
-		stream << entry.offset_meta_format_id;
-		stream << entry.offset_meta_filter_id;
+		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
@@ -111,19 +98,10 @@ public:
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
 		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.contigID),    sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),  sizeof(U32));
-		stream >> entry.offset_ppa;
-		stream >> entry.offset_hot_meta;
-		stream >> entry.offset_cold_meta;
-		stream >> entry.offset_gt_rle;
-		stream >> entry.offset_gt_simple;
-		stream >> entry.offset_gt_helper;
-		stream >> entry.offset_meta_info_id;
-		stream >> entry.offset_meta_format_id;
-		stream >> entry.offset_meta_filter_id;
+		stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_info_streams),    sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_format_streams),  sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams),  sizeof(U16));
@@ -141,19 +119,10 @@ public:
 	void reset(void){
 		this->offset_end_of_block = 0;
 		this->controller.clear();
-		this->contigID = -1;
-		this->minPosition = 0;
-		this->maxPosition = 0;
-		this->n_variants = 0;
-		this->offset_ppa.clear();
-		this->offset_hot_meta.clear();
-		this->offset_cold_meta.clear();
-		this->offset_gt_rle.clear();
-		this->offset_gt_simple.clear();
-		this->offset_gt_helper.clear();
-		this->offset_meta_filter_id.clear();
-		this->offset_meta_format_id.clear();
-		this->offset_meta_info_id.clear();
+		this->contigID           = -1;
+		this->minPosition        = 0;
+		this->maxPosition        = 0;
+		this->n_variants         = 0;
 		this->n_info_streams     = 0;
 		this->n_info_patterns    = 0;
 		this->n_format_streams   = 0;
@@ -163,6 +132,11 @@ public:
 		this->l_info_bitvector   = 0;
 		this->l_format_bitvector = 0;
 		this->l_filter_bitvector = 0;
+	}
+
+	const U32 getObjectSize(void) const{
+		U32 size = INDEX_BLOCK_ENTRY_BASE_SIZE;
+		return(size);
 	}
 
 public:
@@ -178,22 +152,6 @@ public:
 	S64 minPosition;    // minimum coordinate in this block
 	S64 maxPosition;    // maximum coordinate in this block
 	U32 n_variants;     // number of variants in this block
-
-	// Virtual offsets to the start of various
-	// basic fields:
-	// PPA, META, META_COMPLEX, GT_RLE, GT_SIMPLE
-	// Only GT_SIMPLE is redundant as all other values
-	// are stored in the offset array
-	offset_minimal_type offset_ppa;
-	offset_minimal_type offset_hot_meta;
-	offset_minimal_type offset_cold_meta;
-	offset_minimal_type offset_gt_rle;
-	offset_minimal_type offset_gt_simple;
-	offset_minimal_type offset_gt_helper;
-	offset_minimal_type offset_meta_info_id;
-	offset_minimal_type offset_meta_format_id;
-	offset_minimal_type offset_meta_filter_id;
-
 
 	// Number of INFO/FORMAT/FILTER streams
 	// in this block
@@ -216,7 +174,7 @@ public:
 };
 
 /**<
- * Base structure describing the fixed sized componets
+ * Base structure describing the fixed sized components
  * of the data block
  */
 struct DataBlockHeader : public DataBlockHeaderBase{
@@ -230,8 +188,6 @@ private:
 	typedef std::vector< id_vector >  pattern_vector;
 	typedef containers::HashContainer hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
-	typedef DataBlockOffsets          offset_type;
-	typedef DataBlockOffsetsHeader    offset_minimal_type;
 
 public:
 	// Internal use only
@@ -246,19 +202,19 @@ public:
 	inline void allocateInfoDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->info_offsets;
-		this->info_offsets = new offset_minimal_type[size];
+		this->info_offsets = new header_type[size];
 	}
 
 	inline void allocateFormatDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->format_offsets;
-		this->format_offsets = new offset_minimal_type[size];
+		this->format_offsets = new header_type[size];
 	}
 
 	inline void allocateFilterDiskOffsets(const U32& size){
 		if(size == 0) return;
 		delete [] this->filter_offsets;
-		this->filter_offsets = new offset_minimal_type[size];
+		this->filter_offsets = new header_type[size];
 	}
 
 	inline void allocateDiskOffsets(const U32& info, const U32& format, const U32& filter){
@@ -273,10 +229,28 @@ public:
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 	const U32 getObjectSize(void) const{
-		U32 total_size = INDEX_BLOCK_ENTRY_BASE_SIZE;
-		total_size += 2*sizeof(U32)*this->n_info_streams;
-		total_size += 2*sizeof(U32)*this->n_format_streams;
-		total_size += 2*sizeof(U32)*this->n_filter_streams;
+		U32 total_size = base_type::getObjectSize();
+		total_size += offset_ppa.getObjectSize();
+		total_size += offset_hot_meta.getObjectSize();
+		total_size += offset_cold_meta.getObjectSize();
+		total_size += offset_gt_rle.getObjectSize();
+		total_size += offset_gt_simple.getObjectSize();
+		total_size += offset_gt_helper.getObjectSize();
+		total_size += offset_meta_info_id.getObjectSize();
+		total_size += offset_meta_format_id.getObjectSize();
+		total_size += offset_meta_filter_id.getObjectSize();
+
+		for(U32 i = 0; i < this->n_info_streams; ++i){
+			total_size += this->info_offsets[i].getObjectSize();
+		}
+
+		for(U32 i = 0; i < this->n_format_streams; ++i){
+			total_size += this->format_offsets[i].getObjectSize();
+		}
+
+		for(U32 i = 0; i < this->n_filter_streams; ++i){
+			total_size += this->filter_offsets[i].getObjectSize();
+		}
 
 		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
 		for(U32 i = 0; i < this->n_info_patterns; ++i)
@@ -303,6 +277,15 @@ private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		const DataBlockHeaderBase* const base = reinterpret_cast<const DataBlockHeaderBase* const>(&entry);
 		stream << *base;
+		stream << entry.offset_ppa;
+		stream << entry.offset_hot_meta;
+		stream << entry.offset_cold_meta;
+		stream << entry.offset_gt_rle;
+		stream << entry.offset_gt_simple;
+		stream << entry.offset_gt_helper;
+		stream << entry.offset_meta_info_id;
+		stream << entry.offset_meta_format_id;
+		stream << entry.offset_meta_filter_id;
 
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream << entry.info_offsets[i];
@@ -344,16 +327,25 @@ private:
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		DataBlockHeaderBase* base = reinterpret_cast<DataBlockHeaderBase*>(&entry);
 		stream >> *base;
+		stream >> entry.offset_ppa;
+		stream >> entry.offset_hot_meta;
+		stream >> entry.offset_cold_meta;
+		stream >> entry.offset_gt_rle;
+		stream >> entry.offset_gt_simple;
+		stream >> entry.offset_gt_helper;
+		stream >> entry.offset_meta_info_id;
+		stream >> entry.offset_meta_format_id;
+		stream >> entry.offset_meta_filter_id;
 
-		entry.info_offsets = new offset_minimal_type[entry.n_info_streams];
+		entry.info_offsets = new header_type[entry.n_info_streams];
 		for(U32 i = 0; i < entry.n_info_streams; ++i)
 			stream >> entry.info_offsets[i];
 
-		entry.format_offsets = new offset_minimal_type[entry.n_format_streams];
+		entry.format_offsets = new header_type[entry.n_format_streams];
 		for(U32 i = 0; i < entry.n_format_streams; ++i)
 			stream >> entry.format_offsets[i];
 
-		entry.filter_offsets = new offset_minimal_type[entry.n_filter_streams];
+		entry.filter_offsets = new header_type[entry.n_filter_streams];
 		for(U32 i = 0; i < entry.n_filter_streams; ++i)
 			stream >> entry.filter_offsets[i];
 
@@ -400,15 +392,26 @@ private:
 	 * @param patterns
 	 * @return
 	 */
-	bool __constructBitVector(bit_vector*& target, offset_minimal_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
+	bool __constructBitVector(bit_vector*& target, header_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
-	offset_minimal_type* info_offsets;
-	offset_minimal_type* format_offsets;
-	offset_minimal_type* filter_offsets;
-	bit_vector*          info_bit_vectors;
-	bit_vector*          format_bit_vectors;
-	bit_vector*          filter_bit_vectors;
+	// Headers of the various containers
+	header_type offset_ppa;
+	header_type offset_hot_meta;
+	header_type offset_cold_meta;
+	header_type offset_gt_rle;
+	header_type offset_gt_simple;
+	header_type offset_gt_helper;
+	header_type offset_meta_info_id;
+	header_type offset_meta_format_id;
+	header_type offset_meta_filter_id;
+
+	header_type* info_offsets;
+	header_type* format_offsets;
+	header_type* filter_offsets;
+	bit_vector*  info_bit_vectors;
+	bit_vector*  format_bit_vectors;
+	bit_vector*  filter_bit_vectors;
 };
 
 }

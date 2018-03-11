@@ -35,12 +35,12 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	}
 
 	// Meta data is uniform
-	if(block.gt_support_data_container.header.isUniform()){
+	if(block.gt_support_data_container.header.data_header.isUniform()){
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
-		const U32 target = block.gt_support_data_container.header.stride;
+		const U32 target = block.gt_support_data_container.header.data_header.stride;
 		const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, 0);
-		assert(block.gt_support_data_container.header.stride > 0);
+		assert(block.gt_support_data_container.header.data_header.stride > 0);
 
 		for(U32 i = 0; i < this->n_entries; ++i){
 			if(target == 1){
@@ -75,7 +75,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 
 	// Start non-uniform (standard ctor)
 
-	if(block.gt_support_data_container.header.hasMixedStride()){
+	if(block.gt_support_data_container.header.data_header.hasMixedStride()){
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
 		StrideContainer<U32> strides(block.gt_support_data_container);
@@ -117,7 +117,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	else { // No mixed stride
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
-		const U32 target = block.gt_support_data_container.header.stride;
+		const U32 target = block.gt_support_data_container.header.data_header.stride;
 
 		for(U32 i = 0; i < this->n_entries; ++i){
 			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);

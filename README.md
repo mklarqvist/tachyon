@@ -293,7 +293,8 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
     }
 }
 ```
-This will generate a tab-delimited output table (first three rows shown here)  
+This will generate a tab-delimited output table (first three rows shown here) 
+ 
 | Sample | Transversions | Transitions | TsTV    | AA     | AT   | AG    | AC   | TA   | TG     | TC   | TT    | GA    | GT   | GG      | GC   | CA   | CT    | CG   | CC      |  
 |--------|---------------|-------------|---------|--------|------|-------|------|------|--------|------|-------|-------|------|---------|------|------|-------|------|---------|  
 | 0      | 30385         | 68543       | 2.25582 | 649609 | 3183 | 17281 | 3849 | 3109 | 629125 | 4055 | 17041 | 17267 | 4009 | 1061887 | 4237 | 3897 | 16954 | 4046 | 1052277 |  

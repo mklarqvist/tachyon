@@ -20,7 +20,6 @@ class DataContainer{
 	typedef DataContainer             self_type;
 	typedef io::BasicBuffer           buffer_type;
 	typedef DataContainerHeader       header_type;
-	typedef DataContainerHeaderStride header_stride_type;
 
 public:
 	DataContainer();
@@ -32,7 +31,7 @@ public:
 	 * the objects in this container.
 	 * @param value Data primitive type
 	 */
-	inline void setType(const TACHYON_CORE_TYPE value){ this->header.controller.type = value; }
+	inline void setType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
 
 	/**<
 	 * Set the stride size of this container to some value.
@@ -41,7 +40,7 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void setStrideSize(const S32 value){ this->header.stride = value; }
+	inline void setStrideSize(const S32 value){ this->header.data_header.stride = value; }
 
 	/**<
 	 * Check if the stride size of this container matches the
@@ -51,10 +50,10 @@ public:
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
 	inline const bool checkStrideSize(const U32& value) const{
-		if(this->header.hasMixedStride() == false)
+		if(this->header.data_header.hasMixedStride() == false)
 			return false;
 
-		return(this->header.stride == value);
+		return(this->header.data_header.stride == value);
 	}
 
 	/**<
@@ -62,8 +61,8 @@ public:
 	 * as having mixed strides
 	 */
 	inline void triggerMixedStride(void){
-		this->header.stride = -1;
-		this->header.controller.mixedStride = true;
+		this->header.data_header.stride = -1;
+		this->header.data_header.controller.mixedStride = true;
 	}
 
 	// Operators
@@ -172,42 +171,41 @@ public:
 	 */
 	const U32 getObjectSize(void) const;
 
-	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.controller.type)); }
-	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header_stride.controller.type)); }
+	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
+	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream << entry.header;
-		if(entry.header.controller.mixedStride)
-			stream << entry.header_stride;
+		//stream << entry.header;
+		//if(entry.header.controller.mixedStride)
+		//	stream << entry.header_stride;
 
 		stream << entry.buffer_data;
-		if(entry.header.controller.mixedStride)
+		if(entry.header.data_header.hasMixedStride())
 			stream << entry.buffer_strides;
 
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream >> entry.header;
-		if(entry.header.controller.mixedStride)
-			stream >> entry.header_stride;
+		//stream >> entry.header;
+		//if(entry.header.controller.mixedStride)
+		//	stream >> entry.header_stride;
 
-		entry.buffer_data.resize(entry.header.uLength);
-		stream.read(entry.buffer_data.buffer, entry.header.cLength);
-		entry.buffer_data.n_chars = entry.header.cLength;
+		entry.buffer_data.resize(entry.header.data_header.uLength);
+		stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
+		entry.buffer_data.n_chars = entry.header.data_header.cLength;
 
-		if(entry.header.controller.mixedStride){
-			entry.buffer_strides.resize(entry.header_stride.uLength);
-			stream.read(entry.buffer_strides.buffer, entry.header_stride.cLength);
-			entry.buffer_strides.n_chars = entry.header_stride.cLength;
+		if(entry.header.data_header.hasMixedStride()){
+			entry.buffer_strides.resize(entry.header.stride_header.uLength);
+			stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
+			entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
 		}
 		return(stream);
 	}
 
 public:
-	header_type        header;
-	header_stride_type header_stride;
+	header_type header;
 
 	// Not written - used internally only during import
 	U32 n_entries;   // number of container entries

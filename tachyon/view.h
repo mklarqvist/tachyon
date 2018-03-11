@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 
 #include "utility.h"
-#include "tachyon_reader.h"
+#include "variant_reader.h"
 
 void view_usage(void){
 
@@ -107,7 +107,7 @@ int view(int argc, char** argv){
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 
-	tachyon::TachyonReader reader;
+	tachyon::VariantReader reader;
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
 	//reader.getSettings().loadAll(true);

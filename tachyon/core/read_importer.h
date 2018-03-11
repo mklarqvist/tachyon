@@ -139,30 +139,30 @@ public:
 		container.reformat();
 
 		// Set uncompressed length
-		container.header.uLength = container.buffer_data_uncompressed.size();
+		container.header.data_header.uLength = container.buffer_data_uncompressed.size();
 
 		// If we have mixed striding
-		if(container.header.hasMixedStride()){
+		if(container.header.data_header.hasMixedStride()){
 			// Reformat stream to use as small word size as possible
 			container.reformatStride();
-			container.header_stride.uLength = container.buffer_strides_uncompressed.size();
+			container.header.stride_header.uLength = container.buffer_strides_uncompressed.size();
 		}
 	}
 
 	void reset(void){
 		qualContainer.reset();
 		qualContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_32B);
-		qualContainer.header.controller.signedness = true;
+		qualContainer.header.data_header.controller.signedness = true;
 
 		basesContainer.reset();
 		basesContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_32B);
-		basesContainer.header.controller.signedness = true;
+		basesContainer.header.data_header.controller.signedness = true;
 
 		for(U32 i = 0; i < 8; ++i){
 			//std::cerr << nameContainer[i].getSizeUncompressed() << std::endl;
 			nameContainer[i].reset();
 			nameContainer[i].setType(TACHYON_CORE_TYPE::YON_TYPE_32B);
-			nameContainer[i].header.controller.signedness = true;
+			nameContainer[i].header.data_header.controller.signedness = true;
 		}
 	}
 
@@ -171,11 +171,11 @@ public:
 			return;
 
 		// Recode integer types only
-		if(!(container.header.controller.type == YON_TYPE_32B && container.header.controller.signedness == 1)){
+		if(!(container.header.data_header.controller.type == YON_TYPE_32B && container.header.data_header.controller.signedness == 1)){
 			return;
 		}
 
-		if(container.header.controller.uniform == true)
+		if(container.header.data_header.controller.uniform == true)
 			return;
 
 		// At this point all integers are S32
@@ -199,11 +199,11 @@ public:
 				// Data pointers are updated in case there is no reformatting
 				// see StreamContainer::reformat()
 				container.buffer_data_uncompressed.n_chars = sizeof(S32);
-				container.header.uLength                   = sizeof(S32);
-				container.header.cLength                   = sizeof(S32);
-				container.header.controller.uniform        = true;
-				container.header.controller.mixedStride    = false;
-				container.header.controller.encoder        = YON_ENCODE_NONE;
+				container.header.data_header.uLength                   = sizeof(S32);
+				container.header.data_header.cLength                   = sizeof(S32);
+				container.header.data_header.controller.uniform        = true;
+				container.header.data_header.controller.mixedStride    = false;
+				container.header.data_header.controller.encoder        = YON_ENCODE_NONE;
 
 
 				return;

@@ -167,9 +167,6 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.n_format_streams = this->format_fields.size();
 		this->block.header.n_variants       = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		this->block.updateBaseContainers();
 		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_INFO);
 		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_FORMAT);
@@ -189,6 +186,10 @@ bool VariantImporter::BuildBCF(void){
 		// Todo: abstraction
 		// Perform writing and update index
 		this->block.updateOffsets();
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
+
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
 
 		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
@@ -348,8 +349,8 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.info_containers[mapID];
 		if(this->block.info_containers[mapID].size() == 0){
 			target_container.setStrideSize(entry.infoID[i].l_stride);
-			target_container.header_stride.controller.type       = YON_TYPE_32B;
-			target_container.header_stride.controller.signedness = 0;
+			target_container.header.stride_header.controller.type       = YON_TYPE_32B;
+			target_container.header.stride_header.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
 			if(entry.infoID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
@@ -362,7 +363,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 				std::cerr << "not possible" << std::endl;
 				exit(1);
 			}
-			if(entry.infoID[i].primitive_type != 5)      target_container.header.controller.signedness = 1;
+			if(entry.infoID[i].primitive_type != 5)      target_container.header.data_header.controller.signedness = 1;
 		}
 
 		++target_container;
@@ -412,8 +413,8 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		stream_container& target_container = this->block.format_containers[mapID];
 		if(this->block.format_containers[mapID].size() == 0){
 			target_container.setStrideSize(entry.formatID[i].l_stride);
-			target_container.header_stride.controller.type       = YON_TYPE_32B;
-			target_container.header_stride.controller.signedness = 0;
+			target_container.header.stride_header.controller.type       = YON_TYPE_32B;
+			target_container.header.stride_header.controller.signedness = 0;
 			// Set all integer types to U32
 			// Change to smaller type later if required
 			if(entry.formatID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
@@ -426,7 +427,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 				std::cerr << "not possible" << std::endl;
 				exit(1);
 			}
-			if(entry.formatID[i].primitive_type != 5)      target_container.header.controller.signedness = 1;
+			if(entry.formatID[i].primitive_type != 5)      target_container.header.data_header.controller.signedness = 1;
 		}
 
 		++target_container;

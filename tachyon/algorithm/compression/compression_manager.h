@@ -36,8 +36,8 @@ public:
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.compress(block.meta_format_map_ids);
 
 		for(U32 i = 0; i < block.header.n_info_streams; ++i){
-			if(block.info_containers[i].header.controller.type == YON_TYPE_FLOAT ||
-			   block.info_containers[i].header.controller.type == YON_TYPE_DOUBLE){
+			if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
+			   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 				//zpaq_codec.compress(block.info_containers[i]);
@@ -53,8 +53,8 @@ public:
 		}
 
 		for(U32 i = 0; i < block.header.n_format_streams; ++i){
-			if(block.format_containers[i].header.controller.type == YON_TYPE_FLOAT ||
-			   block.format_containers[i].header.controller.type == YON_TYPE_DOUBLE){
+			if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
+			   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
 				zstd_codec.setCompressionLevelStrides(20);
 				//zpaq_codec.compress(block.format_containers[i]);
@@ -154,23 +154,23 @@ public:
 	 * @return          Returns TRUE upon success or FALSE otherwise
 	 */
 	bool decompress(container_type& container){
-		if(container.header.controller.encoder == YON_ENCODE_ZSTD){
+		if(container.header.data_header.controller.encoder == YON_ENCODE_ZSTD){
 			if(!this->zstd_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress!" << std::endl; return false; }
-		} else if(container.header.controller.encoder == YON_ENCODE_NONE){
+		} else if(container.header.data_header.controller.encoder == YON_ENCODE_NONE){
 			if(!this->no_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress!" << std::endl; return false; }
-		} else if(container.header.controller.encoder == YON_ENCODE_ZPAQ){
+		} else if(container.header.data_header.controller.encoder == YON_ENCODE_ZPAQ){
 			if(!this->zpaq_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress!" << std::endl; return false; }
 		} else {
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
 		}
 
-		if(container.header.controller.mixedStride){
-			if(container.header_stride.controller.encoder == YON_ENCODE_ZSTD){
+		if(container.header.data_header.controller.mixedStride){
+			if(container.header.stride_header.controller.encoder == YON_ENCODE_ZSTD){
 				this->zstd_codec.decompressStrides(container);
-			} else if (container.header_stride.controller.encoder == YON_ENCODE_NONE){
+			} else if (container.header.stride_header.controller.encoder == YON_ENCODE_NONE){
 				this->no_codec.decompressStrides(container);
-			} else if (container.header_stride.controller.encoder == YON_ENCODE_ZPAQ){
+			} else if (container.header.stride_header.controller.encoder == YON_ENCODE_ZPAQ){
 				this->zpaq_codec.decompressStrides(container);
 			} else {
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;

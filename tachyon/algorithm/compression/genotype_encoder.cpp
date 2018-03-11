@@ -31,10 +31,10 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 	// This is requirement for stride data
 	if(support.n_entries == 0){
-		support.header.controller.type              = YON_TYPE_32B;
-		support.header.controller.signedness        = 0;
-		support.header_stride.controller.type       = YON_TYPE_32B;
-		support.header_stride.controller.signedness = 0;
+		support.header.data_header.controller.type         = YON_TYPE_32B;
+		support.header.data_header.controller.signedness   = 0;
+		support.header.stride_header.controller.type       = YON_TYPE_32B;
+		support.header.stride_header.controller.signedness = 0;
 	}
 
 	meta_base.controller.biallelic        = line.body->n_allele    == 2;
@@ -263,18 +263,15 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 
 	// Assess RLE cost
 	const BYTE shift     = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1));
-	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[0] + 1]);
-	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, line.gt_support.mixedPhasing);
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
 	// the do not fit in the word size
 	// Ploidy*shift_size bits for alleles and 1 bit for phase information
-	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
-	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
-	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
-	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift + line.gt_support.mixedPhasing + line.gt_support.hasEOV)) - 1;
+	S32 BYTE_limit = pow(2, 8*sizeof(BYTE) - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
+	S32  U16_limit = pow(2, 8*sizeof(U16)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
+	S64  U32_limit = pow(2, 8*sizeof(U32)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
+	U64  U64_limit = pow(2, 8*sizeof(U64)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
 	if(BYTE_limit <= 0) BYTE_limit = std::numeric_limits<S32>::max();
 	if(U16_limit <= 0)  U16_limit  = std::numeric_limits<S32>::max();
 	if(U32_limit <= 0)  U32_limit  = std::numeric_limits<S64>::max();
@@ -284,10 +281,20 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	U32 n_runs_u32  = 0; U32 run_length_u32  = 1;
 	U64 n_runs_u64  = 0; U64 run_length_u64  = 1;
 
+	// Setup first
+	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(BYTE)*ppa[0]]);
+	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(BYTE)*ppa[0] + 1]);
+	if(allele1 == 0x81) allele1 = 1;
+	if(allele2 == 0x81) allele2 = 1;
+	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, line.gt_support.mixedPhasing);
+
+
 	U32 j = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
-		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(SBYTE)*ppa[j] + 1]);
+		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(BYTE)*ppa[j]]);
+		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&line.data[internal_pos_rle + ploidy*sizeof(BYTE)*ppa[j] + 1]);
+		if(allele1 == 0x81) allele1 = 1;
+		if(allele2 == 0x81) allele2 = 1;
 		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, line.gt_support.mixedPhasing);
 
 		if(ref != internal){

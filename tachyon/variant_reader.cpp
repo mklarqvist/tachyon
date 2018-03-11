@@ -1,20 +1,20 @@
-#include "tachyon_reader.h"
+#include "variant_reader.h"
 
 namespace tachyon{
 
-TachyonReader::TachyonReader() :
+VariantReader::VariantReader() :
 	filesize(0)
 {}
 
-TachyonReader::TachyonReader(const std::string& filename) :
+VariantReader::VariantReader(const std::string& filename) :
 	input_file(filename),
 	filesize(0)
 {}
 
 // Dtor
-TachyonReader::~TachyonReader(){}
+VariantReader::~VariantReader(){}
 
-bool TachyonReader::open(void){
+bool VariantReader::open(void){
 	if(this->input_file.size() == 0){
 		std::cerr << utility::timestamp("ERROR") << "No input file specified!" << std::endl;
 		return false;
@@ -76,7 +76,7 @@ bool TachyonReader::open(void){
 	return(this->stream.good());
 }
 
-bool TachyonReader::nextBlock(){
+bool VariantReader::nextBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
@@ -104,7 +104,7 @@ bool TachyonReader::nextBlock(){
 	return true;
 }
 
-TachyonReader::block_entry_type TachyonReader::getBlock(){
+VariantReader::block_entry_type VariantReader::getBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
@@ -139,7 +139,7 @@ TachyonReader::block_entry_type TachyonReader::getBlock(){
 	return block;
 }
 
-const int TachyonReader::has_format_field(const std::string& field_name) const{
+const int VariantReader::has_format_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getFormatField(field_name, match)){
 		return(match->IDX);
@@ -147,7 +147,7 @@ const int TachyonReader::has_format_field(const std::string& field_name) const{
 	return(-2);
 }
 
-const int TachyonReader::has_info_field(const std::string& field_name) const{
+const int VariantReader::has_info_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getInfoField(field_name, match)){
 		return(match->IDX);
@@ -155,7 +155,7 @@ const int TachyonReader::has_info_field(const std::string& field_name) const{
 	return(-2);
 }
 
-const int TachyonReader::has_filter_field(const std::string& field_name) const{
+const int VariantReader::has_filter_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->header.getFilterField(field_name, match)){
 		return(match->IDX);
@@ -163,7 +163,7 @@ const int TachyonReader::has_filter_field(const std::string& field_name) const{
 	return(-2);
 }
 
-const std::vector<bool> TachyonReader::get_info_field_pattern_matches(const std::string& field_name) const{
+const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std::string& field_name) const{
 	int global_info_value = this->has_info_field(field_name);
 	std::vector<bool> ret;
 	if(global_info_value >= 0){
@@ -172,7 +172,7 @@ const std::vector<bool> TachyonReader::get_info_field_pattern_matches(const std:
 		// 0 = false, 1 = true
 		S32 local_key = -1;
 		for(U32 i = 0; i < this->block.header.n_info_streams; ++i){
-			if(this->block.header.info_offsets[i].global_key == global_info_value){
+			if(this->block.header.info_offsets[i].data_header.global_key == global_info_value){
 				local_key = i;
 			}
 		}
@@ -191,13 +191,13 @@ const std::vector<bool> TachyonReader::get_info_field_pattern_matches(const std:
 	return(ret);
 }
 
-const std::vector<bool> TachyonReader::get_format_field_pattern_matches(const std::string& field_name) const{
+const std::vector<bool> VariantReader::get_format_field_pattern_matches(const std::string& field_name) const{
 	int global_format_value = this->has_format_field(field_name);
 	std::vector<bool> ret;
 	if(global_format_value >= 0){
 		S32 local_key = -1;
 		for(U32 i = 0; i < this->block.header.n_format_streams; ++i){
-			if(this->block.header.format_offsets[i].global_key == global_format_value){
+			if(this->block.header.format_offsets[i].data_header.global_key == global_format_value){
 				local_key = i;
 			}
 		}

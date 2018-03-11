@@ -23,8 +23,6 @@ class VariantBlock{
 	typedef DataBlockHeader                header_type;
 	typedef HashContainer                  hash_container_type;
 	typedef HashVectorContainer            hash_vector_container_type;
-	typedef DataBlockOffsets               offset_type;
-	typedef DataBlockOffsetsHeader         offset_minimal_type;
 	typedef io::BasicBuffer                buffer_type;
 	typedef core::DataBlockSettings        settings_type;
 	typedef support::VariantImporterContainerStats  import_stats_type;
@@ -148,6 +146,8 @@ private:
 public:
 	header_type       header;
 	permutation_type  ppa_manager;
+	container_type    meta_chromosome_container;
+	container_type    meta_position_container;
 	container_type    meta_hot_container;
 	container_type    meta_info_map_ids;
 	container_type    meta_format_map_ids;

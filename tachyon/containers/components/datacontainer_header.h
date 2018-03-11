@@ -12,146 +12,103 @@
 namespace tachyon{
 namespace containers{
 
-/*
- Stream header data structure
- +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+----+
- |   2   |   2   |       4       |        4      |       4       |       4       | X ~
- +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
- ^       ^       ^               ^               ^               ^               ^
- |       |       |               |               |               |               |
- CNT     STRIDE  |               COMP LENGTH     UNCOMP LENGTH   CRC             POSSIBLE COMPRESSION PARAMETERS
-                 OFFSET
-*/
-struct DataContainerHeader{
-	typedef DataContainerHeader           self_type;
+#define YON_DATA_HEADER_SIZE sizeof(U16)+sizeof(S32)+4*sizeof(U32)+sizeof(S32)
+
+struct DataContainerHeaderObject{
+	typedef DataContainerHeaderObject     self_type;
 	typedef DataContainerHeaderController controller_type;
 
-	DataContainerHeader() :
+	DataContainerHeaderObject() :
 		stride(-1),
 		offset(0),
 		cLength(0),
 		uLength(0),
 		crc(0),
-		n_extra(0),
-		extra(nullptr)
+		global_key(-1)
 	{}
 
-	DataContainerHeader(const DataContainerHeader& other) :
+	DataContainerHeaderObject(const DataContainerHeaderObject& other) :
 		controller(other.controller),
 		stride(other.stride),
 		offset(other.offset),
 		cLength(other.cLength),
 		uLength(other.uLength),
 		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(nullptr)
+		global_key(other.global_key)
 	{
-		if(other.extra != nullptr){
-			this->extra = new char[n_extra];
-			memcpy(this->extra, other.extra, other.n_extra);
-		}
 	}
 
 	/* noexcept needed to enable optimizations in containers */
-	DataContainerHeader(DataContainerHeader&& other) noexcept :
+	DataContainerHeaderObject(DataContainerHeaderObject&& other) noexcept :
 		controller(other.controller),
 		stride(other.stride),
 		offset(other.offset),
 		cLength(other.cLength),
 		uLength(other.uLength),
 		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(other.extra)
+		global_key(other.global_key)
 	{
-		other.extra = nullptr;
+
 	}
 
 	 // copy assignment
-	DataContainerHeader& operator=(const DataContainerHeader& other){
+	DataContainerHeaderObject& operator=(const DataContainerHeaderObject& other){
 		this->controller = other.controller;
 		this->stride     = other.stride;
 		this->offset     = other.offset;
 		this->cLength    = other.cLength;
 		this->uLength    = other.uLength;
 		this->crc        = other.crc;
-
-		if(other.n_extra > 0){
-			char* tmp = new char[other.n_extra];
-			memcpy(tmp, other.extra, other.n_extra);
-			delete[] this->extra;
-			this->extra   = tmp;
-			this->n_extra = other.n_extra;
-		} else this->extra = nullptr;
+		this->global_key = other.global_key;
 		return *this;
 	}
 
 
 	/** Move assignment operator */
-	DataContainerHeader& operator=(DataContainerHeader&& other) noexcept{
+	DataContainerHeaderObject& operator=(DataContainerHeaderObject&& other) noexcept{
 		this->controller = other.controller;
 		this->stride     = other.stride;
 		this->offset     = other.offset;
 		this->cLength    = other.cLength;
 		this->uLength    = other.uLength;
 		this->crc        = other.crc;
-		this->n_extra    = other.n_extra;
-		delete [] this->extra;
-		this->extra      = other.extra;
-		other.extra      = nullptr;
+		this->global_key = other.global_key;
 		return *this;
 	}
 
-	~DataContainerHeader(){ delete [] this->extra; }
+	~DataContainerHeaderObject(){ }
 
 	inline void reset(void){
 		this->controller.clear();
-		this->stride   = -1;
-		this->offset   = 0;
-		this->cLength  = 0;
-		this->uLength  = 0;
-		this->crc      = 0;
-		this->n_extra  = 0;
-		delete [] this->extra;
-		this->extra    = nullptr;
+		this->stride     = -1;
+		this->offset     = 0;
+		this->cLength    = 0;
+		this->uLength    = 0;
+		this->crc        = 0;
+		this->global_key = -1;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.stride), sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&entry.offset), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.cLength),sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.uLength),sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.crc),    sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_extra),sizeof(U16));
-		if(entry.n_extra > 0){
-			stream.write(entry.extra, entry.n_extra);
-		}
-
+		stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.crc),       sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(S32));
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.stride),  sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&entry.offset),  sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_extra), sizeof(U16));
-		if(entry.n_extra > 0){
-			delete [] entry.extra;
-			entry.extra = new char[entry.n_extra];
-			stream.read(entry.extra, entry.n_extra);
-		}
+		stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.crc),        sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(S32));
+
 		return(stream);
-	}
-
-	const U32 getObjectSize(void) const{
-		U32 total_size = 2*sizeof(U16) + sizeof(S32) + sizeof(U32)*4;
-		if(this->n_extra > 0)
-			total_size += this->n_extra;
-
-		return total_size;
 	}
 
 	const SBYTE getPrimitiveWidth(void) const{
@@ -203,6 +160,10 @@ struct DataContainerHeader{
 	inline const U32& getChecksum(void) const{ return(this->crc); }
 	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
 
+	const U32 getObjectSize(void) const{
+		return(sizeof(U16)+sizeof(S32)+4*sizeof(U32)+sizeof(S32));
+	}
+
 public:
 	controller_type controller; // controller bits
 	S32 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
@@ -210,138 +171,51 @@ public:
 	U32 cLength;                // compressed length
 	U32 uLength;                // uncompressed length
 	U32 crc;                    // crc32 checksum
-	U16 n_extra;                // number of extra bytes used by encoder
-	char* extra;                // extra length is encoder specific
+	S32 global_key;             // global key
 };
 
-/*
- If stride is mixed then use this
- secondary structure
- +---+---+---+---+---+---+---+---+---+---+---+
- |   2   |       4       |       4       | X ~
- +---+---+---+---+---+---+---+---+---+---+---+
- ^       ^               ^               ^
- |       |               |               |
- CNT     COMP LENGTH     UNCOMP LENGTH   POSSIBLE COMPRESSION PARAMETERS
+struct DataContainerHeader{
+private:
+	typedef DataContainerHeader       self_type;
+	typedef DataContainerHeaderObject header_type;
 
-*/
-struct DataContainerHeaderStride{
-	typedef DataContainerHeaderStride     self_type;
-	typedef DataContainerHeaderController controller_type;
+public:
+	DataContainerHeader(){}
+	~DataContainerHeader(){}
 
-	DataContainerHeaderStride() :
-		cLength(0),
-		uLength(0),
-		crc(0),
-		n_extra(0),
-		extra(nullptr)
-	{}
-
-	DataContainerHeaderStride(const self_type& other) :
-		controller(other.controller),
-		cLength(other.cLength),
-		uLength(other.uLength),
-		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(nullptr)
-	{
-		if(other.extra != nullptr){
-			this->extra = new char[n_extra];
-			memcpy(this->extra, other.extra, other.n_extra);
-		}
+	void reset(void){
+		this->data_header.reset();
+		this->stride_header.reset();
 	}
 
-	DataContainerHeaderStride(self_type&& other) noexcept :
-		controller(other.controller),
-		cLength(other.cLength),
-		uLength(other.uLength),
-		crc(other.crc),
-		n_extra(other.n_extra),
-		extra(other.extra)
-	{
-		other.extra = nullptr;
-	}
+	const U32 getObjectSize() const{
+		U32 total = YON_DATA_HEADER_SIZE;
+		if(this->data_header.hasMixedStride())
+			total += YON_DATA_HEADER_SIZE;
 
-	self_type& operator=(const self_type& other){
-		self_type tmp(other); // re-use copy-constructor
-		*this = std::move(tmp);                 // re-use move-assignment
-		return *this;
-	}
-
-	/** Move assignment operator */
-	self_type& operator=(self_type&& other) noexcept{
-		// prevent self-move
-		if(this!=&other){
-			this->controller = other.controller;
-			this->cLength    = other.cLength;
-			this->uLength    = other.uLength;
-			this->crc        = other.crc;
-			this->n_extra    = other.n_extra;
-
-			if(other.extra != nullptr){
-				delete [] this->extra;
-				this->extra  = other.extra;
-				other.extra  = nullptr;
-			}
-
-		}
-		return *this;
-	}
-
-	~DataContainerHeaderStride(){
-		delete [] this->extra;
-	}
-
-	inline void reset(void){
-		this->controller.clear();
-		this->controller.type = YON_TYPE_32B;
-		this->controller.signedness = false;
-		this->cLength = 0;
-		this->uLength = 0;
-		this->crc     = 0;
-		this->n_extra = 0;
-		delete [] this->extra;
-		this->extra   = nullptr;
+		return total;
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.cLength), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.uLength), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.crc),     sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_extra), sizeof(U16));
-		if(entry.n_extra > 0)
-			stream.write(entry.extra, entry.n_extra);
+		stream << entry.data_header;
+		if(entry.data_header.hasMixedStride())
+			stream << entry.stride_header;
 
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.cLength), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.uLength), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.crc),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_extra), sizeof(U16));
-		if(entry.n_extra > 0){
-			delete [] entry.extra;
-			entry.extra = new char[entry.n_extra];
-			stream.read(entry.extra, entry.n_extra);
-		}
+		stream >> entry.data_header;
+		if(entry.data_header.hasMixedStride())
+			stream >> entry.stride_header;
+
 		return(stream);
 	}
 
-	const U32 getObjectSize(void) const{
-		U32 total_size = 2*sizeof(U16) + 3*sizeof(U32) + this->n_extra;
-		return total_size;
-	}
 
 public:
-	controller_type controller; // controller bits
-	U32 cLength;                // compressed length
-	U32 uLength;                // uncompressed length
-	U32 crc;                    // crc32 checksum
-	U16 n_extra;                // number of extra bytes used by encoder
-	char* extra;                // extra length is encoder specific
+	header_type data_header;
+	header_type stride_header;
 };
 
 }

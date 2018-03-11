@@ -61,7 +61,7 @@ void MetaContainer::__ctor_setup(const VariantBlock& block){
 	if(block.meta_filter_map_ids.buffer_data_uncompressed.size()){
 		assert(block.meta_filter_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
 		const S32* const filter_ids = reinterpret_cast<const S32* const>(block.meta_filter_map_ids.buffer_data_uncompressed.data());
-		if(block.meta_filter_map_ids.header.isUniform()){
+		if(block.meta_filter_map_ids.header.data_header.isUniform()){
 			assert(block.meta_filter_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
 			//n_filter_ids = this->size();
 			for(U32 i = 0; i < this->size(); ++i)
@@ -78,7 +78,7 @@ void MetaContainer::__ctor_setup(const VariantBlock& block){
 	if(block.meta_info_map_ids.buffer_data_uncompressed.size()){
 		assert(block.meta_info_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
 		const S32* const info_ids = reinterpret_cast<const S32* const>(block.meta_info_map_ids.buffer_data_uncompressed.data());
-		if(block.meta_info_map_ids.header.isUniform()){
+		if(block.meta_info_map_ids.header.data_header.isUniform()){
 			assert(block.meta_info_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
 			//n_info_ids = this->size();
 			for(U32 i = 0; i < this->size(); ++i)
@@ -96,7 +96,7 @@ void MetaContainer::__ctor_setup(const VariantBlock& block){
 	if(block.meta_format_map_ids.buffer_data_uncompressed.size()){
 		assert(block.meta_format_map_ids.buffer_data_uncompressed.size() % sizeof(U32) == 0);
 		const S32* const format_ids = reinterpret_cast<const S32* const>(block.meta_format_map_ids.buffer_data_uncompressed.data());
-		if(block.meta_format_map_ids.header.isUniform()){
+		if(block.meta_format_map_ids.header.data_header.isUniform()){
 			assert(block.meta_format_map_ids.buffer_data_uncompressed.size() == sizeof(U32));
 			//n_format_ids = this->size();
 			for(U32 i = 0; i < this->size(); ++i)

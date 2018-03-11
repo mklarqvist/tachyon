@@ -5,15 +5,15 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../tachyon/main.cpp \
-../tachyon/tachyon_reader.cpp 
+../tachyon/variant_reader.cpp 
 
 OBJS += \
 ./tachyon/main.o \
-./tachyon/tachyon_reader.o 
+./tachyon/variant_reader.o 
 
 CPP_DEPS += \
 ./tachyon/main.d \
-./tachyon/tachyon_reader.d 
+./tachyon/variant_reader.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

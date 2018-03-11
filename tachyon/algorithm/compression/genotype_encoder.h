@@ -264,19 +264,38 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	YON_RLE_TYPE RLE    = 0;
 	const BYTE shift    = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1)); // Bits occupied per allele
 	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
-	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*shift + add)) - 1;
+	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE)  - (ploidy*shift + line.gt_support.mixedPhasing)) - 1;
 
-	// First
-	const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[0]+sizeof(SBYTE)]);
+	// Setup first run
+	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(BYTE)*ppa[0]]);
+	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(BYTE)*ppa[0]+sizeof(SBYTE)]);
+	if(allele1 == 0x81){
+		allele1 = 1;
+		//std::cerr << "eov" << std::endl;
+	}
+	if(allele2 == 0x81){
+		allele2 = 1;
+		//std::cerr << "eov" << std::endl;
+	}
+
 	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
 
 	U32 j = 1;
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy, ++j){
-		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
+		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(BYTE)*ppa[j]]);
+		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&line.data[bcf_gt_pos + ploidy*sizeof(BYTE)*ppa[j]+sizeof(SBYTE)]);
+		if(allele1 == 0x81){
+			allele1 = 1;
+			//std::cerr << "eov" << std::endl;
+		}
+		if(allele2 == 0x81){
+			allele2 = 1;
+			//std::cerr << "eov" << std::endl;
+		}
+
 		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+
 
 		if(packed != packed_internal || length == run_limit){
 			// Prepare RLE

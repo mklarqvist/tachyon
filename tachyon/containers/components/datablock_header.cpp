@@ -46,6 +46,15 @@ DataBlockHeader::~DataBlockHeader(){
 
 void DataBlockHeader::reset(void){
 	this->DataBlockHeaderBase::reset();
+	this->offset_ppa.reset();
+	this->offset_hot_meta.reset();
+	this->offset_cold_meta.reset();
+	this->offset_gt_rle.reset();
+	this->offset_gt_simple.reset();
+	this->offset_gt_helper.reset();
+	this->offset_meta_filter_id.reset();
+	this->offset_meta_format_id.reset();
+	this->offset_meta_info_id.reset();
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
@@ -87,7 +96,7 @@ bool DataBlockHeader::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 }
 
 bool DataBlockHeader::__constructBitVector(bit_vector*& target,
-                                  offset_minimal_type*  offset,
+                                          header_type*  offset,
                                   hash_container_type&  values,
                            hash_vector_container_type& patterns)
 {
@@ -121,7 +130,7 @@ bool DataBlockHeader::__constructBitVector(bit_vector*& target,
 
 			// Store absolute key
 			//assert(offset[local_key].key == patterns[i][j] || offset[local_key].key == 0);
-			offset[local_key].global_key = patterns[i][j];
+			offset[local_key].data_header.global_key = patterns[i][j];
 		}
 	}
 	return true;

@@ -150,48 +150,48 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 	if(data_container.buffer_data_uncompressed.size() == 0)
 		return;
 
-	if(data_container.header.hasMixedStride()){
-		if(data_container.header.isSigned()){
-			switch(data_container.header.getPrimitiveType()){
+	if(data_container.header.data_header.hasMixedStride()){
+		if(data_container.header.data_header.isSigned()){
+			switch(data_container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
-			default: std::cerr << "Disallowed type: " << (int)data_container.header.controller.type << std::endl; return;
+			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(data_container.header.getPrimitiveType()){
+			switch(data_container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
-			default: std::cerr << "Disallowed type: " << (int)data_container.header.controller.type << std::endl; return;
+			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
 	} else {
-		if(data_container.header.isSigned()){
-			switch(data_container.header.getPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			default: std::cerr << "Disallowed type: " << (int)data_container.header.controller.type << std::endl; return;
+		if(data_container.header.data_header.isSigned()){
+			switch(data_container.header.data_header.getPrimitiveType()){
+			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(data_container.header.getPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.stride));  break;
-			default: std::cerr << "Disallowed type: " << (int)data_container.header.controller.type << std::endl; return;
+			switch(data_container.header.data_header.getPrimitiveType()){
+			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
 	}
@@ -205,48 +205,48 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 		return;
 
 
-	if(container.header.hasMixedStride()){
-		if(container.header.isSigned()){
-			switch(container.header.getPrimitiveType()){
+	if(container.header.data_header.hasMixedStride()){
+		if(container.header.data_header.isSigned()){
+			switch(container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container));  break;
 			case(YON_TYPE_16B):    (this->__setup<S16>(container));    break;
 			case(YON_TYPE_32B):    (this->__setup<S32>(container));    break;
 			case(YON_TYPE_64B):    (this->__setup<S64>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
-			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(container.header.getPrimitiveType()){
+			switch(container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setup<BYTE>(container));   break;
 			case(YON_TYPE_16B):    (this->__setup<U16>(container));    break;
 			case(YON_TYPE_32B):    (this->__setup<U32>(container));    break;
 			case(YON_TYPE_64B):    (this->__setup<U64>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
-			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		}
 	} else {
-		if(container.header.isSigned()){
-			switch(container.header.getPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, container.header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setup<S16>(container, container.header.stride));    break;
-			case(YON_TYPE_32B):    (this->__setup<S32>(container, container.header.stride));    break;
-			case(YON_TYPE_64B):    (this->__setup<S64>(container, container.header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride)); break;
-			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
+		if(container.header.data_header.isSigned()){
+			switch(container.header.data_header.getPrimitiveType()){
+			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setup<S16>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->__setup<S32>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_64B):    (this->__setup<S64>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
-			switch(container.header.getPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<BYTE>(container, container.header.stride));   break;
-			case(YON_TYPE_16B):    (this->__setup<U16>(container, container.header.stride));    break;
-			case(YON_TYPE_32B):    (this->__setup<U32>(container, container.header.stride));    break;
-			case(YON_TYPE_64B):    (this->__setup<U64>(container, container.header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.stride)); break;
-			default: std::cerr << "Disallowed type: " << (int)container.header.controller.type << std::endl; return;
+			switch(container.header.data_header.getPrimitiveType()){
+			case(YON_TYPE_8B):     (this->__setup<BYTE>(container, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->__setup<U16>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->__setup<U32>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_64B):    (this->__setup<U64>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 
 			}
 		}
@@ -350,7 +350,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
-	if(data_container.header.isUniform()){
+	if(data_container.header.data_header.isUniform()){
 		for(U32 i = 0; i < this->size(); ++i){
 			// There are no INFO fields
 			if(meta_container[i].getInfoPatternID() == -1){

@@ -219,7 +219,7 @@ void StrideContainer<return_primitive>::__setup(const data_container_type& conta
 	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
 	case(YON_TYPE_32B): this->__allocate<U32>(container);  break;
 	case(YON_TYPE_64B): this->__allocate<U64>(container);  break;
-	default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive: " << (int)container.header_stride.controller.type << std::endl; exit(1);
+	default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive: " << (int)container.header.stride_header.controller.type << std::endl; exit(1);
 	}
 }
 
@@ -236,7 +236,7 @@ void StrideContainer<return_primitive>::__allocate(const data_container_type& co
 	for(size_type i = 0; i < this->size(); ++i)
 		this->__entries[i] = strides[i];
 
-	if(container.header_stride.controller.uniform)
+	if(container.header.stride_header.controller.uniform)
 		this->isUniform_ = true;
 }
 

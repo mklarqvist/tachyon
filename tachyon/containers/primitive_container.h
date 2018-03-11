@@ -114,8 +114,8 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
-	if(container.header.controller.signedness){
-		switch(container.header.controller.type){
+	if(container.header.data_header.controller.signedness){
+		switch(container.header.data_header.controller.type){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, offset));  break;
 		case(YON_TYPE_CHAR):   (this->__setupSigned<char>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
@@ -126,7 +126,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
-		switch(container.header.controller.type){
+		switch(container.header.data_header.controller.type){
 		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;

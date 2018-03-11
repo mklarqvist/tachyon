@@ -32,8 +32,8 @@
 
 namespace tachyon{
 
-class TachyonReader{
-	typedef TachyonReader                       self_type;
+class VariantReader{
+	typedef VariantReader                       self_type;
 	typedef containers::VariantBlock               block_entry_type;
 	typedef io::BasicBuffer                     buffer_type;
 	typedef core::VariantHeader                 header_type;
@@ -44,9 +44,9 @@ class TachyonReader{
 	typedef containers::ChecksumContainer       checksum_type;
 
 public:
-	TachyonReader();
-	TachyonReader(const std::string& filename);
-	~TachyonReader();
+	VariantReader();
+	VariantReader(const std::string& filename);
+	~VariantReader();
 
 	/**<
 	 * Retrieve current settings records. Settings object is used
@@ -270,22 +270,22 @@ public:
 
 		std::vector<std::string> global_fields;
 		for(U32 i = 0; i < this->block.header.n_info_streams; ++i){
-			//std::cerr << i << "/" << this->block.header.n_info_streams << ": " << this->block.header.info_offsets[i].global_key << "@" << this->header.info_fields[this->block.header.info_offsets[i].global_key].ID << std::endl;
-			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
-			if(this->header.info_fields[this->block.header.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+			//std::cerr << i << "/" << this->block.header.n_info_streams << ": " << this->block.header.info_offsets[i].data_header.global_key << "@" << this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID << std::endl;
+			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID);
+			if(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
 				its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
-			} else if(this->header.info_fields[this->block.header.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-                      this->header.info_fields[this->block.header.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID);
+			} else if(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
+                      this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
 				its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
-			} else if(this->header.info_fields[this->block.header.info_offsets[i].global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID);
+			} else if(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
 				its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
+				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID);
 			} else {
 				//std::cerr << "unknown type: " << (int)this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() << std::endl;
 				its[i] = new containers::InfoContainer<U32>();
-				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].global_key].ID);
+				global_fields.push_back(this->header.info_fields[this->block.header.info_offsets[i].data_header.global_key].ID);
 				//continue;
 			}
 		}
@@ -298,9 +298,9 @@ public:
 				const U32* filter_keys = this->block.header.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
 				if(n_filter_keys){
 					// Local key -> global key
-					std::cout << this->header.filter_fields[this->block.header.filter_offsets[filter_keys[0]].global_key].ID;
+					std::cout << this->header.filter_fields[this->block.header.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 					for(U32 i = 1; i < n_filter_keys; ++i){
-						std::cout << ';' << this->header.filter_fields[this->block.header.filter_offsets[filter_keys[i]].global_key].ID;
+						std::cout << ';' << this->header.filter_fields[this->block.header.filter_offsets[filter_keys[i]].data_header.global_key].ID;
 					}
 					std::cout.put('\t');
 				} else
@@ -313,7 +313,7 @@ public:
 				const U32* keys = this->block.header.info_bit_vectors[meta.at(p).info_pattern_id].local_keys;
 
 				// First
-				if(this->header.info_fields[this->block.header.info_offsets[keys[0]].global_key].primitive_type == 2){
+				if(this->header.info_fields[this->block.header.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
 					std::cout << global_fields[keys[0]];
 					continue;
 				}
@@ -322,7 +322,7 @@ public:
 				its[keys[0]]->to_vcf_string(std::cout, p);
 
 				for(U32 i = 1; i < n_keys; ++i){
-					if(this->header.info_fields[this->block.header.info_offsets[keys[i]].global_key].primitive_type == 2){
+					if(this->header.info_fields[this->block.header.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
 						std::cout << ";" << global_fields[keys[i]];
 						continue;
 					}
