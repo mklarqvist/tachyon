@@ -176,10 +176,6 @@ public:
 
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		//stream << entry.header;
-		//if(entry.header.controller.mixedStride)
-		//	stream << entry.header_stride;
-
 		stream << entry.buffer_data;
 		if(entry.header.data_header.hasMixedStride())
 			stream << entry.buffer_strides;
@@ -188,10 +184,6 @@ private:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		//stream >> entry.header;
-		//if(entry.header.controller.mixedStride)
-		//	stream >> entry.header_stride;
-
 		entry.buffer_data.resize(entry.header.data_header.uLength);
 		stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
 		entry.buffer_data.n_chars = entry.header.data_header.cLength;

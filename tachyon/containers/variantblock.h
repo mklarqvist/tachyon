@@ -21,11 +21,13 @@ class VariantBlock{
 	typedef DataContainer                  container_type;
 	typedef algorithm::PermutationManager  permutation_type;
 	typedef DataBlockHeader                header_type;
+	typedef DataBlockFooter                footer_type;
 	typedef HashContainer                  hash_container_type;
 	typedef HashVectorContainer            hash_vector_container_type;
 	typedef io::BasicBuffer                buffer_type;
 	typedef core::DataBlockSettings        settings_type;
 	typedef support::VariantImporterContainerStats  import_stats_type;
+	typedef DataContainerHeader            offset_type;
 
 public:
 	VariantBlock();
@@ -58,7 +60,7 @@ public:
 	 * @param n_filter_fields Number of FILTER fields in this block
 	 */
 	inline void allocateDiskOffsets(const U32& n_info_fields, const U32& n_format_fields, const U32& n_filter_fields){
-		this->header.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
+		this->footer.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
 	}
 
 	/**<
@@ -66,14 +68,14 @@ public:
 	 * function for either all INFO or FORMAT containers
 	 * @param target Enum target for groups of containers
 	 */
-	inline void updateContainerSet(DataBlockHeader::INDEX_BLOCK_TARGET target){
+	inline void updateContainerSet(DataBlockFooter::INDEX_BLOCK_TARGET target){
 		// Determine target
 		switch(target){
-		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(this->info_containers, this->header.n_info_streams));
+		case(DataBlockFooter::INDEX_BLOCK_TARGET::INDEX_INFO)   :
+			return(this->updateContainer(this->info_containers, this->footer.n_info_streams));
 			break;
-		case(DataBlockHeader::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(this->format_containers, this->header.n_format_streams));
+		case(DataBlockFooter::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+			return(this->updateContainer(this->format_containers, this->footer.n_format_streams));
 			break;
 		default: std::cerr << "unknown target type" << std::endl; exit(1);
 		}
@@ -87,17 +89,6 @@ public:
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
 	void updateBaseContainers(void);
-
-	/**< @brief Updates the local (relative to block start) virtual file offsets
-	 *  Internal use only (import): This functions updates
-	 *  relative (virtual) file offsets into the byte stream
-	 *  where a target container/object begins. This update
-	 *  allows random access by having the block-header only
-	 *
-	 *  Each digital object must have an associated getDiskSize()
-	 *  function that returns its byte length.
-	 */
-	void updateOffsets(void);
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading data from disk. Data
@@ -143,8 +134,24 @@ private:
 	 */
 	void updateContainer(container_type& container, bool reformat = true);
 
+	const U64 __determineCompressedSize(void) const;
+
+	inline void __updateHeader(offset_type& offset, const container_type& container){
+		const U32 global_key = offset.data_header.global_key;
+		offset = container.header;
+		offset.data_header.global_key = global_key;
+	}
+
+	inline void __updateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
+		const U32 global_key = offset.data_header.global_key;
+		offset = container.header;
+		offset.data_header.global_key = global_key;
+		offset.data_header.offset = virtual_offset;
+	}
+
 public:
 	header_type       header;
+	footer_type       footer;
 	permutation_type  ppa_manager;
 	container_type    meta_chromosome_container;
 	container_type    meta_position_container;

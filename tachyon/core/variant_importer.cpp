@@ -162,14 +162,14 @@ bool VariantImporter::BuildBCF(void){
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
-		this->block.header.n_info_streams   = this->info_fields.size();
-		this->block.header.n_filter_streams = this->filter_fields.size();
-		this->block.header.n_format_streams = this->format_fields.size();
+		this->block.footer.n_info_streams   = this->info_fields.size();
+		this->block.footer.n_filter_streams = this->filter_fields.size();
+		this->block.footer.n_format_streams = this->format_fields.size();
 		this->block.header.n_variants       = reader.size();
 		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
 		this->block.updateBaseContainers();
-		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_INFO);
-		this->block.updateContainerSet(containers::DataBlockHeader::INDEX_FORMAT);
+		this->block.updateContainerSet(containers::DataBlockFooter::INDEX_INFO);
+		this->block.updateContainerSet(containers::DataBlockFooter::INDEX_FORMAT);
 
 		// Perform compression using standard parameters
 		if(!this->compression_manager.compress(this->block)){
@@ -185,10 +185,9 @@ bool VariantImporter::BuildBCF(void){
 
 		// Todo: abstraction
 		// Perform writing and update index
-		this->block.updateOffsets();
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.header.constructBitVector(containers::DataBlockHeader::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
 

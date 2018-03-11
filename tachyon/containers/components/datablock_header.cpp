@@ -7,12 +7,17 @@
 namespace tachyon{
 namespace containers{
 
-DataBlockHeaderBase::DataBlockHeaderBase() :
-	offset_end_of_block(0),
+DataBlockHeader::DataBlockHeader() :
+	l_offset_footer(0),
 	contigID(-1),
 	minPosition(0),
 	maxPosition(0),
-	n_variants(0),
+	n_variants(0)
+{}
+
+DataBlockHeader::~DataBlockHeader(){}
+
+DataBlockFooter::DataBlockFooter():
 	n_info_streams(0),
 	n_format_streams(0),
 	n_filter_streams(0),
@@ -21,12 +26,7 @@ DataBlockHeaderBase::DataBlockHeaderBase() :
 	n_filter_patterns(0),
 	l_info_bitvector(0),
 	l_format_bitvector(0),
-	l_filter_bitvector(0)
-{}
-
-DataBlockHeaderBase::~DataBlockHeaderBase(){}
-
-DataBlockHeader::DataBlockHeader():
+	l_filter_bitvector(0),
 	info_offsets(nullptr),
 	format_offsets(nullptr),
 	filter_offsets(nullptr),
@@ -35,7 +35,7 @@ DataBlockHeader::DataBlockHeader():
 	filter_bit_vectors(nullptr)
 {}
 
-DataBlockHeader::~DataBlockHeader(){
+DataBlockFooter::~DataBlockFooter(){
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
 	delete [] this->filter_offsets;
@@ -44,8 +44,7 @@ DataBlockHeader::~DataBlockHeader(){
 	delete [] this->filter_bit_vectors;
 }
 
-void DataBlockHeader::reset(void){
-	this->DataBlockHeaderBase::reset();
+void DataBlockFooter::reset(void){
 	this->offset_ppa.reset();
 	this->offset_hot_meta.reset();
 	this->offset_cold_meta.reset();
@@ -69,9 +68,19 @@ void DataBlockHeader::reset(void){
 	this->info_bit_vectors = nullptr;
 	this->format_bit_vectors = nullptr;
 	this->filter_bit_vectors = nullptr;
+
+	this->n_info_streams     = 0;
+	this->n_info_patterns    = 0;
+	this->n_format_streams   = 0;
+	this->n_format_patterns  = 0;
+	this->n_filter_streams   = 0;
+	this->n_filter_patterns  = 0;
+	this->l_info_bitvector   = 0;
+	this->l_format_bitvector = 0;
+	this->l_filter_bitvector = 0;
 }
 
-bool DataBlockHeader::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
+bool DataBlockFooter::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
 	if(values.size() == 0)
 		return false;
 
@@ -95,7 +104,7 @@ bool DataBlockHeader::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_
 	return false;
 }
 
-bool DataBlockHeader::__constructBitVector(bit_vector*& target,
+bool DataBlockFooter::__constructBitVector(bit_vector*& target,
                                           header_type*  offset,
                                   hash_container_type&  values,
                            hash_vector_container_type& patterns)

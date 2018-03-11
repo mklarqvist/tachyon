@@ -35,7 +35,7 @@ public:
 		if(block.meta_filter_map_ids.n_entries)       zstd_codec.compress(block.meta_filter_map_ids);
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.compress(block.meta_format_map_ids);
 
-		for(U32 i = 0; i < block.header.n_info_streams; ++i){
+		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
 			if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 			   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
@@ -52,7 +52,7 @@ public:
 			//zpaq_codec.compress(block.info_containers[i], "4");
 		}
 
-		for(U32 i = 0; i < block.header.n_format_streams; ++i){
+		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
 			if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 			   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 				zstd_codec.setCompressionLevelData(3);
@@ -126,7 +126,7 @@ public:
 			}
 		}
 
-		for(U32 i = 0; i < block.header.n_info_streams; ++i){
+		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
 			if(block.info_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.info_containers[i])){
 					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress INFO " << i << std::endl;
@@ -134,7 +134,7 @@ public:
 			}
 		}
 
-		for(U32 i = 0; i < block.header.n_format_streams; ++i){
+		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
 			if(block.format_containers[i].getSizeCompressed()){
 				if(!this->decompress(block.format_containers[i])){
 					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress FORMAT " << i << std::endl;

@@ -375,13 +375,8 @@ void DataContainer::reformatStride(){
 }
 
 const U32 DataContainer::getObjectSize(void) const{
-	U32 total_size = 0;
-	//total_size += header.getObjectSize();
-	//if(this->header.data_header.controller.mixedStride)
-	//	total_size += header_stride.getObjectSize();
-
-	total_size += this->buffer_data.size();
-	if(this->header.data_header.controller.mixedStride)
+	U32 total_size = this->buffer_data.size();
+	if(this->header.data_header.hasMixedStride())
 		total_size += this->buffer_strides.size();
 
 	return(total_size);

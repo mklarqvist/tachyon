@@ -22,7 +22,7 @@ private:
 	typedef MetaHot                     hot_entry;
 	typedef MetaCold                    cold_entry;
 	typedef containers::DataContainer   container_type;
-	typedef containers::DataBlockHeader datablock_header_type;
+	typedef containers::DataBlockFooter datablock_footer_type;
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 
@@ -50,15 +50,15 @@ public:
 	void toVCFString(buffer_type& dest, const header_type& header) const;
 
 	// Check if a field is set
-	inline const bool check_info_field(const datablock_header_type& block, const U32 info_identifier) const{
+	inline const bool check_info_field(const datablock_footer_type& block, const U32 info_identifier) const{
 		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
 	}
 
-	inline const bool check_format_field(const datablock_header_type& block, const U32 format_identifier) const{
+	inline const bool check_format_field(const datablock_footer_type& block, const U32 format_identifier) const{
 		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
 	}
 
-	inline const bool check_filter_field(const datablock_header_type& block, const U32 filter_identifier) const{
+	inline const bool check_filter_field(const datablock_footer_type& block, const U32 filter_identifier) const{
 		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
 	}
 

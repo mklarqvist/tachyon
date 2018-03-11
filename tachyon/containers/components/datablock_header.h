@@ -13,8 +13,6 @@
 namespace tachyon{
 namespace containers{
 
-#define INDEX_BLOCK_ENTRY_BASE_SIZE sizeof(U32) + sizeof(U16) + sizeof(S32) + 2*sizeof(U64) + sizeof(U32) + 6*sizeof(U16)
-
 /** @brief Controller flags for an IndexBlockEntry
  * This structure is for internal use only and describes
  * various internal states as flags.
@@ -64,14 +62,15 @@ public:
  * 3) Number of containers and ID patterns
  * 4) Controller flags
  */
-struct DataBlockHeaderBase{
-	typedef DataBlockHeaderBase          self_type;
+struct DataBlockHeader{
+private:
+	typedef DataBlockHeader              self_type;
 	typedef DataBlockHeaderController    controller_type;
 	typedef DataContainerHeader          header_type;
 
 public:
-	DataBlockHeaderBase();
-	virtual ~DataBlockHeaderBase();
+	DataBlockHeader();
+	~DataBlockHeader();
 
 	inline const U32& size(void) const{ return(this->n_variants); }
 	inline const S32& getContigID(void) const{ return(this->contigID); }
@@ -79,123 +78,66 @@ public:
 	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.offset_end_of_block), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns),   sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
-		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
 
 		return(stream);
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.offset_end_of_block), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(U32));
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_info_streams),    sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_format_streams),  sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams),  sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_info_patterns),   sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
-		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
-
-		entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
-		entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
-		entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
 
 		return(stream);
 	}
 
 	void reset(void){
-		this->offset_end_of_block = 0;
+		this->l_offset_footer = 0;
 		this->controller.clear();
 		this->contigID           = -1;
 		this->minPosition        = 0;
 		this->maxPosition        = 0;
 		this->n_variants         = 0;
-		this->n_info_streams     = 0;
-		this->n_info_patterns    = 0;
-		this->n_format_streams   = 0;
-		this->n_format_patterns  = 0;
-		this->n_filter_streams   = 0;
-		this->n_filter_patterns  = 0;
-		this->l_info_bitvector   = 0;
-		this->l_format_bitvector = 0;
-		this->l_filter_bitvector = 0;
-	}
-
-	const U32 getObjectSize(void) const{
-		U32 size = INDEX_BLOCK_ENTRY_BASE_SIZE;
-		return(size);
 	}
 
 public:
 	// allows jumping to the next block when streaming
 	// over the file and not using the index
 	// EOF marker is at this position - sizeof(EOF marker)
-	U32 offset_end_of_block;
-	// Controller bit flags
+	U32 l_offset_footer;
 	controller_type controller;
-
-	// Genomic information
 	S32 contigID;       // contig identifier
 	S64 minPosition;    // minimum coordinate in this block
 	S64 maxPosition;    // maximum coordinate in this block
 	U32 n_variants;     // number of variants in this block
-
-	// Number of INFO/FORMAT/FILTER streams
-	// in this block
-	//
-	// Bit vectors + the stream keys = the vector of identifiers
-	U16 n_info_streams;
-	U16 n_format_streams;
-	U16 n_filter_streams;
-
-	// How many patterns is there?
-	U16 n_info_patterns;
-	U16 n_format_patterns;
-	U16 n_filter_patterns;
-
-	// Not written or read from disk
-	// Used internally only
-	BYTE l_info_bitvector;
-	BYTE l_format_bitvector;
-	BYTE l_filter_bitvector;
 };
 
-/**<
- * Base structure describing the fixed sized components
- * of the data block
- */
-struct DataBlockHeader : public DataBlockHeaderBase{
+struct DataBlockFooter{
 private:
-	typedef DataBlockHeader           self_type;
-	typedef DataBlockHeaderBase       base_type;
-	typedef DataBlockHeaderController controller_type;
+	typedef DataBlockFooter           self_type;
 	typedef DataBlockBitvector        bit_vector;
 	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
 	typedef containers::HashContainer hash_container_type;
 	typedef containers::HashVectorContainer hash_vector_container_type;
+	typedef DataContainerHeader       header_type;
 
 public:
 	// Internal use only
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
-	DataBlockHeader();
-	~DataBlockHeader();
+	DataBlockFooter();
+	~DataBlockFooter();
 	void reset(void);
 
 	// Allocate offset vectors
@@ -223,60 +165,20 @@ public:
 		this->allocateFilterDiskOffsets(filter);
 	}
 
-	// During import we need to intialize and
+	// During import we need to initialise and
 	// resize these these pointers to fit the
 	// data we want to store
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
-	const U32 getObjectSize(void) const{
-		U32 total_size = base_type::getObjectSize();
-		total_size += offset_ppa.getObjectSize();
-		total_size += offset_hot_meta.getObjectSize();
-		total_size += offset_cold_meta.getObjectSize();
-		total_size += offset_gt_rle.getObjectSize();
-		total_size += offset_gt_simple.getObjectSize();
-		total_size += offset_gt_helper.getObjectSize();
-		total_size += offset_meta_info_id.getObjectSize();
-		total_size += offset_meta_format_id.getObjectSize();
-		total_size += offset_meta_filter_id.getObjectSize();
-
-		for(U32 i = 0; i < this->n_info_streams; ++i){
-			total_size += this->info_offsets[i].getObjectSize();
-		}
-
-		for(U32 i = 0; i < this->n_format_streams; ++i){
-			total_size += this->format_offsets[i].getObjectSize();
-		}
-
-		for(U32 i = 0; i < this->n_filter_streams; ++i){
-			total_size += this->filter_offsets[i].getObjectSize();
-		}
-
-		BYTE info_bitvector_width = ceil((float)this->n_info_streams/8);
-		for(U32 i = 0; i < this->n_info_patterns; ++i)
-			total_size += this->info_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_info_patterns*info_bitvector_width;
-
-		BYTE format_bitvector_width = ceil((float)this->n_format_streams/8);
-		for(U32 i = 0; i < this->n_format_patterns; ++i)
-			total_size += this->format_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_format_patterns*format_bitvector_width;
-
-		BYTE filter_bitvector_width = ceil((float)this->n_filter_streams/8);
-		for(U32 i = 0; i < this->n_filter_patterns; ++i)
-			total_size += this->filter_bit_vectors[i].getBaseSize();
-
-		total_size += this->n_filter_patterns*filter_bitvector_width;
-
-		return total_size;
-	}
-
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		const DataBlockHeaderBase* const base = reinterpret_cast<const DataBlockHeaderBase* const>(&entry);
-		stream << *base;
+		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns),   sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
+
 		stream << entry.offset_ppa;
 		stream << entry.offset_hot_meta;
 		stream << entry.offset_cold_meta;
@@ -325,8 +227,17 @@ private:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		DataBlockHeaderBase* base = reinterpret_cast<DataBlockHeaderBase*>(&entry);
-		stream >> *base;
+		stream.read(reinterpret_cast<char*>(&entry.n_info_streams),    sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_format_streams),  sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_filter_streams),  sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_info_patterns),   sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_format_patterns), sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&entry.n_filter_patterns), sizeof(U16));
+
+		entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
+		entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
+		entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
+
 		stream >> entry.offset_ppa;
 		stream >> entry.offset_hot_meta;
 		stream >> entry.offset_cold_meta;
@@ -395,20 +306,34 @@ private:
 	bool __constructBitVector(bit_vector*& target, header_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
 
 public:
-	// Headers of the various containers
-	header_type offset_ppa;
-	header_type offset_hot_meta;
-	header_type offset_cold_meta;
-	header_type offset_gt_rle;
-	header_type offset_gt_simple;
-	header_type offset_gt_helper;
-	header_type offset_meta_info_id;
-	header_type offset_meta_format_id;
-	header_type offset_meta_filter_id;
+	U16 n_info_streams;
+	U16 n_format_streams;
+	U16 n_filter_streams;
+	U16 n_info_patterns;
+	U16 n_format_patterns;
+	U16 n_filter_patterns;
 
+	// Not written or read from disk
+	// Used internally only
+	BYTE l_info_bitvector;
+	BYTE l_format_bitvector;
+	BYTE l_filter_bitvector;
+
+	// Headers of the various containers
+	header_type  offset_ppa;
+	header_type  offset_hot_meta;
+	header_type  offset_cold_meta;
+	header_type  offset_gt_rle;
+	header_type  offset_gt_simple;
+	header_type  offset_gt_helper;
+	header_type  offset_meta_info_id;
+	header_type  offset_meta_format_id;
+	header_type  offset_meta_filter_id;
 	header_type* info_offsets;
 	header_type* format_offsets;
 	header_type* filter_offsets;
+
+	// Bit vectors
 	bit_vector*  info_bit_vectors;
 	bit_vector*  format_bit_vectors;
 	bit_vector*  filter_bit_vectors;

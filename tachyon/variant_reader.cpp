@@ -171,8 +171,8 @@ const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std:
 		// Place in array
 		// 0 = false, 1 = true
 		S32 local_key = -1;
-		for(U32 i = 0; i < this->block.header.n_info_streams; ++i){
-			if(this->block.header.info_offsets[i].data_header.global_key == global_info_value){
+		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+			if(this->block.footer.info_offsets[i].data_header.global_key == global_info_value){
 				local_key = i;
 			}
 		}
@@ -182,10 +182,10 @@ const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std:
 			return ret;
 		}
 
-		ret.resize(this->block.header.n_info_patterns, false);
-		for(U32 i = 0; i < this->block.header.n_info_patterns; ++i){
+		ret.resize(this->block.footer.n_info_patterns, false);
+		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
 			//std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
-			ret[i] = this->block.header.info_bit_vectors[i][local_key];
+			ret[i] = this->block.footer.info_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);
@@ -196,8 +196,8 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 	std::vector<bool> ret;
 	if(global_format_value >= 0){
 		S32 local_key = -1;
-		for(U32 i = 0; i < this->block.header.n_format_streams; ++i){
-			if(this->block.header.format_offsets[i].data_header.global_key == global_format_value){
+		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
+			if(this->block.footer.format_offsets[i].data_header.global_key == global_format_value){
 				local_key = i;
 			}
 		}
@@ -210,10 +210,10 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 		// Collect all matches
 		// Place in array
 		// 0 = false, 1 = true
-		ret.resize(this->block.header.n_format_patterns, false);
-		for(U32 i = 0; i < this->block.header.n_format_patterns; ++i){
+		ret.resize(this->block.footer.n_format_patterns, false);
+		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){
 			//std::cerr << i << '\t' << this->block.index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
-			ret[i] = this->block.header.format_bit_vectors[i][local_key];
+			ret[i] = this->block.footer.format_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);
