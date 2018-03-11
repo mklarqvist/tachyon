@@ -103,6 +103,14 @@ public:
 	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
 private:
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += entry.n_keys;
+		for(U32 i = 0; i < entry.n_keys; ++i)
+			buffer += entry.local_keys[i];
+
+		return(buffer);
+	}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
 		for(U32 i = 0; i < entry.n_keys; ++i)

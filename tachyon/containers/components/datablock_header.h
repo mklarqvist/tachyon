@@ -170,6 +170,60 @@ public:
 	// data we want to store
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += entry.n_info_streams;
+		buffer += entry.n_format_streams;
+		buffer += entry.n_filter_streams;
+		buffer += entry.n_info_patterns;
+		buffer += entry.n_format_patterns;
+		buffer += entry.n_filter_patterns;
+
+		buffer += entry.offset_ppa;
+		buffer += entry.offset_hot_meta;
+		buffer += entry.offset_cold_meta;
+		buffer += entry.offset_gt_rle;
+		buffer += entry.offset_gt_simple;
+		buffer += entry.offset_gt_helper;
+		buffer += entry.offset_meta_info_id;
+		buffer += entry.offset_meta_format_id;
+		buffer += entry.offset_meta_filter_id;
+
+		for(U32 i = 0; i < entry.n_info_streams; ++i)
+			buffer += entry.info_offsets[i];
+
+		for(U32 i = 0; i < entry.n_format_streams; ++i)
+			buffer += entry.format_offsets[i];
+
+		for(U32 i = 0; i < entry.n_filter_streams; ++i)
+			buffer += entry.filter_offsets[i];
+
+		if(entry.n_info_patterns > 0){
+			const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
+			for(U32 i = 0; i < entry.n_info_patterns; ++i){
+				buffer += entry.info_bit_vectors[i];
+				buffer.Add((const char* const)&entry.info_bit_vectors[i].bit_bytes[0], info_bitvector_width);
+			}
+		}
+
+		if(entry.n_format_patterns > 0){
+			const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
+			for(U32 i = 0; i < entry.n_format_patterns; ++i){
+				buffer += entry.format_bit_vectors[i];
+				buffer.Add((const char* const)&entry.format_bit_vectors[i].bit_bytes[0], format_bitvector_width);
+			}
+		}
+
+		if(entry.n_filter_patterns > 0){
+			const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
+			for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+				buffer += entry.filter_bit_vectors[i];
+				buffer.Add((const char* const)&entry.filter_bit_vectors[i].bit_bytes[0], filter_bitvector_width);
+			}
+		}
+
+		return(buffer);
+	}
+
 private:
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));

@@ -33,6 +33,12 @@ public:
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 	inline bool isEncrypted(void) const{ return(this->encryption > 0); }
 
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer,const self_type& controller){
+		const U16* c = reinterpret_cast<const U16* const>(&controller);
+		buffer += *c;
+		return(buffer);
+	}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
 		stream.write(reinterpret_cast<const char*>(c), sizeof(U16));

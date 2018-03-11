@@ -12,8 +12,6 @@
 namespace tachyon{
 namespace containers{
 
-#define YON_DATA_HEADER_SIZE sizeof(U16)+sizeof(S32)+4*sizeof(U32)+sizeof(S32)
-
 struct DataContainerHeaderObject{
 	typedef DataContainerHeaderObject     self_type;
 	typedef DataContainerHeaderController controller_type;
@@ -88,6 +86,17 @@ struct DataContainerHeaderObject{
 		this->global_key = -1;
 	}
 
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += entry.controller;
+		buffer += entry.stride;
+		buffer += entry.offset;
+		buffer += entry.cLength;
+		buffer += entry.uLength;
+		buffer += entry.crc;
+		buffer += entry.global_key;
+		return(buffer);
+	}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(S32));
@@ -160,10 +169,6 @@ struct DataContainerHeaderObject{
 	inline const U32& getChecksum(void) const{ return(this->crc); }
 	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
 
-	const U32 getObjectSize(void) const{
-		return(sizeof(U16)+sizeof(S32)+4*sizeof(U32)+sizeof(S32));
-	}
-
 public:
 	controller_type controller; // controller bits
 	S32 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
@@ -188,12 +193,12 @@ public:
 		this->stride_header.reset();
 	}
 
-	const U32 getObjectSize() const{
-		U32 total = YON_DATA_HEADER_SIZE;
-		if(this->data_header.hasMixedStride())
-			total += YON_DATA_HEADER_SIZE;
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += entry.data_header;
+		if(entry.data_header.hasMixedStride())
+			buffer += entry.stride_header;
 
-		return total;
+		return(buffer);
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){

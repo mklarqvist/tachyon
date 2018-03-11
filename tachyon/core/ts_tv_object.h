@@ -46,12 +46,15 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
+		U64 n_total_variants = 0;
 		out << entry.n_transversions << '\t' << entry.n_transitions << '\t' << entry.getTiTVRatio() << '\t';
 		for(U32 i = 0; i < 4; ++i){
 			for(U32 j = 0; j < 4; ++j){
 				out << entry.base_conversions[i][j] << '\t';
+				if(i != j) n_total_variants += entry.base_conversions[i][j];
 			}
 		}
+		out << n_total_variants;
 		return(out);
 	}
 

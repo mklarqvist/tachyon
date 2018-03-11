@@ -117,6 +117,7 @@ bool VariantImporter::BuildBCF(void){
 	// Begin import
 	// Get BCF entries
 	algorithm::Timer timer; timer.Start();
+	U32 without = 0, with = 0;
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
@@ -190,6 +191,17 @@ bool VariantImporter::BuildBCF(void){
 		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
+
+		// temp
+		// Fake container
+		containers::DataContainer fake;
+		fake.resize(10000);
+		fake.buffer_data_uncompressed += this->block.footer;
+		this->compression_manager.zstd_codec.compress(fake);
+		without += fake.buffer_data_uncompressed.size();
+		with += fake.buffer_data.size();
+		std::cerr << fake.buffer_data_uncompressed.size() << "->" << fake.buffer_data.size() << std::endl;
+
 
 		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
@@ -274,6 +286,7 @@ bool VariantImporter::BuildBCF(void){
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 	}
+	std::cerr << without << "->" << with << "/" << (float)without/with << "-fold" << std::endl;
 
 	// All done
 	return(true);
