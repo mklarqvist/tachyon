@@ -52,6 +52,7 @@ BCFEntry::BCFEntry(const self_type& other):
 	filterPointer(other.filterPointer),
 	infoPointer(other.infoPointer),
 	formatPointer(other.formatPointer),
+	gt_support(other.gt_support),
 	// FILTER
 	filterID(new BCFKeyTuple[256]),
 	// INFO
@@ -93,6 +94,7 @@ BCFEntry::BCFEntry(self_type&& other) noexcept :
 	filterPointer(other.filterPointer),
 	infoPointer(other.infoPointer),
 	formatPointer(other.formatPointer),
+	gt_support(other.gt_support),
 	// FILTER
 	filterID(other.filterID),
 	// INFO
@@ -150,6 +152,7 @@ BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
 	infoID = other.infoID;
 	// FORMAT
 	formatID = other.formatID;
+	gt_support = other.gt_support;
 
 	other.data     = nullptr;
 	other.alleles  = nullptr;

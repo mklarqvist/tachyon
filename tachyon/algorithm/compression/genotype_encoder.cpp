@@ -168,7 +168,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	}
 	// temp
 	else {
-		std::cerr << "other bcf style" << std::endl;
+		std::cerr << "other bcf style: n_alleles: " << line.body->n_allele << ",ploidy: " << line.gt_support.ploidy << std::endl;
 		if(!block.gt_support_data_container.checkStrideSize(4))
 			block.gt_support_data_container.triggerMixedStride();
 
