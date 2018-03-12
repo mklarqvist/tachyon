@@ -386,7 +386,6 @@ public:
 		container.header.stride_header.cLength            = ret;
 		container.header.stride_header.controller.encoder = YON_ENCODE_ZSTD;
 		container.buffer_strides.n_chars                  = ret;
-		container.header.stride_header.uLength            = container.buffer_strides_uncompressed.size();
 
 		return true;
 	}
@@ -564,7 +563,7 @@ public:
 
 	const bool compress(permutation_type& manager){ return false; }
 
-	const bool compress(container_type& container, const std::string& command){
+	const bool compress(container_type& container, const std::string& command, const bool compress_strides = true){
 		container.generateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
@@ -573,9 +572,11 @@ public:
 			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
 			container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 
-			if(container.header.data_header.controller.mixedStride == true)
-				return(this->compressStrides(container, command));
-			else return true;
+			if(compress_strides){
+				if(container.header.data_header.controller.mixedStride == true)
+					return(this->compressStrides(container, command));
+				else return true;
+			} else return true;
 		}
 
 
@@ -590,19 +591,27 @@ public:
 			container.header.data_header.controller.encoder = YON_ENCODE_NONE;
 			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
 			container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
-			if(container.header.data_header.controller.mixedStride == true)
-				return(this->compressStrides(container, command));
-			else return true;
+			if(compress_strides){
+				if(container.header.data_header.controller.mixedStride == true)
+					return(this->compressStrides(container, command));
+				else return true;
+			} else return true;
 		}
 
 		container.header.data_header.cLength            = out.buffer.size();
 		container.header.data_header.controller.encoder = YON_ENCODE_ZPAQ;
-		if(container.header.data_header.controller.mixedStride == true)
-			return(this->compressStrides(container, command));
-		else return true;
+		if(compress_strides){
+			if(container.header.data_header.controller.mixedStride == true)
+				return(this->compressStrides(container, command));
+			else return true;
+		} else return true;
 	}
 
 	const bool compress(container_type& container){
+		return(this->compress(container, true));
+	}
+
+	const bool compress(container_type& container, const bool compress_strides){
 		container.generateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
@@ -611,9 +620,11 @@ public:
 			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
 			container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 
-			if(container.header.data_header.controller.mixedStride == true)
-				return(this->compressStrides(container));
-			else return true;
+			if(compress_strides){
+				if(container.header.data_header.controller.mixedStride == true)
+					return(this->compressStrides(container));
+				else return true;
+			} else return true;
 			//return true;
 		}
 
@@ -630,24 +641,27 @@ public:
 			container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
 			container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 
-			if(container.header.data_header.controller.mixedStride == true)
-				return(this->compressStrides(container));
-			else return true;
+			if(compress_strides){
+				if(container.header.data_header.controller.mixedStride == true)
+					return(this->compressStrides(container));
+				else return true;
+			} else return true;
 		}
 
 		container.header.data_header.cLength            = out.buffer.size();
 		container.header.data_header.controller.encoder = YON_ENCODE_ZPAQ;
-		//std::cerr << container.buffer_data_uncompressed.size() << "->" << container.buffer_data.size() << ": " << std::endl;
-		if(container.header.data_header.controller.mixedStride == true)
-			return(this->compressStrides(container));
-		else return true;
+		if(compress_strides){
+			if(container.header.data_header.controller.mixedStride == true)
+				return(this->compressStrides(container));
+			else return true;
+		} else return true;
 	}
 
 	const bool compressStrides(container_type& container, const std::string& command){
 		if(container.header.stride_header.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
 			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 			container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
-			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.buffer_strides.n_chars                  = container.buffer_strides_uncompressed.size();
 			container.header.stride_header.cLength            = container.buffer_strides_uncompressed.size();
 
 			return true;
@@ -663,7 +677,7 @@ public:
 		if(fold < MIN_COMPRESSION_FOLD){
 			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 			container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
-			container.buffer_strides.n_chars           = container.buffer_strides_uncompressed.size();
+			container.buffer_strides.n_chars                  = container.buffer_strides_uncompressed.size();
 			container.header.stride_header.cLength            = container.buffer_strides_uncompressed.size();
 			return true;
 		}

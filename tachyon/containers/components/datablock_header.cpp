@@ -47,6 +47,9 @@ DataBlockFooter::~DataBlockFooter(){
 void DataBlockFooter::reset(void){
 	this->offset_ppa.reset();
 	this->offset_hot_meta.reset();
+	this->offset_meta_contig.reset();
+	this->offset_meta_position.reset();
+	this->offset_meta_refalt.reset();
 	this->offset_cold_meta.reset();
 	this->offset_gt_rle.reset();
 	this->offset_gt_simple.reset();
@@ -54,6 +57,8 @@ void DataBlockFooter::reset(void){
 	this->offset_meta_filter_id.reset();
 	this->offset_meta_format_id.reset();
 	this->offset_meta_info_id.reset();
+	this->offset_meta_quality.reset();
+	this->offset_meta_alleles.reset();
 
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;

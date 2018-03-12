@@ -188,7 +188,7 @@ public:
 					}
 					if(p + 1 == ploidy){
 						if(first_phase != (uref & 1)){
-							std::cerr << "triggering mixed phase" << std::endl;
+							//std::cerr << "triggering mixed phase" << std::endl;
 							this->gt_support.mixedPhasing = true;
 							this->gt_support.phase = 0;
 						}

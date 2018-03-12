@@ -5,7 +5,7 @@
 #include <bitset>
 #include <cassert>
 
-#include "../../containers/datacontainer.h"
+#include "../../containers/variantblock.h"
 #include "../../core/meta_hot.h"
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/genotype_summary.h"
@@ -62,6 +62,7 @@ private:
 	typedef core::MetaHot                meta_type;
 	typedef containers::GenotypesSummary helper_type;
 	typedef containers::DataContainer    container_type;
+	typedef containers::VariantBlock     block_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
@@ -84,7 +85,7 @@ public:
 	GenotypeEncoder();
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
-	bool Encode(const bcf_type& line, meta_type& meta_base, container_type& runs, container_type& simple, container_type& support, const U32* const ppa);
+	bool Encode(const bcf_type& line, meta_type& meta_base, block_type& block, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 
 private:

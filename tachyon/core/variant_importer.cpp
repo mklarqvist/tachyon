@@ -194,14 +194,11 @@ bool VariantImporter::BuildBCF(void){
 
 		// temp
 		// Fake container
-		containers::DataContainer fake;
-		fake.resize(10000);
-		fake.buffer_data_uncompressed += this->block.footer;
-		this->compression_manager.zstd_codec.compress(fake);
-		without += fake.buffer_data_uncompressed.size();
-		with += fake.buffer_data.size();
-		std::cerr << fake.buffer_data_uncompressed.size() << "->" << fake.buffer_data.size() << std::endl;
-
+		//containers::DataContainer fake;
+		//fake.resize(10000);
+		//fake.buffer_data_uncompressed += this->block.footer;
+		this->block.footer_support.buffer_data_uncompressed += this->block.footer;
+		this->compression_manager.zstd_codec.compress(this->block.footer_support);
 
 		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
@@ -286,7 +283,6 @@ bool VariantImporter::BuildBCF(void){
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 	}
-	std::cerr << without << "->" << with << "/" << (float)without/with << "-fold" << std::endl;
 
 	// All done
 	return(true);
@@ -302,6 +298,10 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	meta_type meta;
 	meta.position = entry.body->POS;
 	meta.contigID = entry.body->CHROM;
+	this->block.meta_positions_container += (S32)entry.body->POS - this->index_entry.minPosition;
+	this->block.meta_contig_container    += (S32)entry.body->CHROM;
+	++this->block.meta_positions_container;
+	++this->block.meta_contig_container;
 	meta.ref_alt  = entry.ref_alt;
 	meta.controller.simple_snv = entry.isSimple();
 
@@ -310,9 +310,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		meta.controller.gt_available = true;
 		if(!this->encoder.Encode(entry,
 								 meta,
-								 this->block.gt_rle_container,
-								 this->block.gt_simple_container,
-								 this->block.gt_support_data_container,
+								 this->block,
 								 this->permutator.manager->get()))
 		{
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
@@ -333,6 +331,49 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
 		return false;
 	}
+
+	if(meta.isSimpleSNV()){
+		this->block.meta_refalt_container += (BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref);
+		++this->block.meta_refalt_container;
+		this->block.meta_controller_container += meta.controller;
+		++this->block.meta_controller_container;
+	}
+	// add complex
+	else {
+		if(this->block.meta_alleles_container.size() == 0){
+			this->block.meta_alleles_container.setStrideSize(entry.body->n_allele);
+			this->block.meta_alleles_container.header.stride_header.controller.type       = YON_TYPE_32B;
+			this->block.meta_alleles_container.header.stride_header.controller.signedness = 0;
+		}
+
+		if(!this->block.meta_alleles_container.checkStrideSize(entry.body->n_allele))
+			this->block.meta_alleles_container.triggerMixedStride();
+
+		this->block.meta_alleles_container.addStride(entry.l_ID);
+		++this->block.meta_alleles_container;
+
+		for(U32 i = 0; i < entry.body->n_allele; ++i){
+			// Write out allele
+			this->block.meta_alleles_container += (U16)entry.alleles[i].length;
+			this->block.meta_alleles_container.buffer_data_uncompressed.Add(entry.alleles[i].data, entry.alleles[i].length);
+		}
+	}
+
+	this->block.meta_quality_container += (float)test.QUAL;
+	++this->block.meta_quality_container;
+
+	if(this->block.meta_names_container.size() == 0){
+		this->block.meta_names_container.setStrideSize(entry.l_ID);
+		this->block.meta_names_container.header.stride_header.controller.type       = YON_TYPE_32B;
+		this->block.meta_names_container.header.stride_header.controller.signedness = 0;
+	}
+
+	if(!this->block.meta_names_container.checkStrideSize(entry.l_ID))
+		this->block.meta_names_container.triggerMixedStride();
+
+	this->block.meta_names_container.addStride(entry.l_ID);
+	this->block.meta_names_container.buffer_data_uncompressed.Add(entry.ID, entry.l_ID);
+	++this->block.meta_names_container;
 
 	++this->block.meta_cold_container.n_entries;
 	++this->block.meta_cold_container.n_additions;

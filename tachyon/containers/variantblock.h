@@ -134,6 +134,8 @@ private:
 	 */
 	void updateContainer(container_type& container, bool reformat = true);
 
+	void deltaEncode(container_type& container);
+
 	const U64 __determineCompressedSize(void) const;
 
 	inline void __updateHeader(offset_type& offset, const container_type& container){
@@ -153,15 +155,24 @@ public:
 	header_type       header;
 	footer_type       footer;
 	permutation_type  ppa_manager;
-	container_type    meta_chromosome_container;
-	container_type    meta_position_container;
+	container_type    meta_contig_container;
+	container_type    meta_positions_container;
+	container_type    meta_refalt_container;
+	container_type    meta_controller_container;
+	container_type    meta_quality_container;
+	container_type    meta_names_container;
 	container_type    meta_hot_container;
+	container_type    meta_alleles_container;
 	container_type    meta_info_map_ids;
 	container_type    meta_format_map_ids;
 	container_type    meta_filter_map_ids;
 	container_type    meta_cold_container;
 	container_type    gt_support_data_container; // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
 	container_type    gt_rle_container;
+	container_type    gt_rle8_container;
+	container_type    gt_rle16_container;
+	container_type    gt_rle32_container;
+	container_type    gt_rle64_container;
 	container_type    gt_simple_container;
 	container_type*   info_containers;
 	container_type*   format_containers;
@@ -171,6 +182,7 @@ public:
 	size_t n_capacity_info_;
 	size_t n_capacity_format_;
 	U64    disk_offset_;       // utility primitive to support the construction of iterators over blocks
+	container_type footer_support; // used internally only
 };
 
 }

@@ -26,6 +26,8 @@ enum TACHYON_GT_TYPE{
 };
 
 struct MetaHotController{
+	typedef MetaHotController self_type;
+
 	// Ctor
 	explicit MetaHotController(void) :
 		gt_anyMissing(0),
@@ -45,6 +47,12 @@ struct MetaHotController{
 
 	// Dtor
 	~MetaHotController(){}
+
+	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += (U16)*reinterpret_cast<const U16* const>(&entry);
+		return(buffer);
+
+	}
 
 	/**< Controller field. Describes
 	 * 1) If any of the genotypes have missing values
