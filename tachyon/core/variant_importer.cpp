@@ -341,7 +341,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		return false;
 	}
 
-	if(meta.isSimpleSNV()){
+	if(meta.isSimpleSNV() || (entry.ref_alt & 15) == 5){
 		this->block.meta_refalt_container += (BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref);
 		++this->block.meta_refalt_container;
 		this->block.meta_controller_container += meta.controller;

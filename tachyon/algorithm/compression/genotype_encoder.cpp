@@ -132,7 +132,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		}
 		// BCF style is cheaper
 		else {
-			std::cerr << "BCF-style cheaper" << std::endl;
+			//std::cerr << "BCF-style cheaper" << std::endl;
 			if(!block.gt_support_data_container.checkStrideSize(3))
 				block.gt_support_data_container.triggerMixedStride();
 

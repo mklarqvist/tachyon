@@ -420,10 +420,17 @@ bool BCFEntry::parse(const U64 n_samples){
 
 void BCFEntry::SetRefAlt(void){
 	this->ref_alt = 0;
+	// <NON_REF>
+	if(this->alleles[0].length == 9 && strncmp(this->alleles[0].data, "<NON_REF>", 9) == 0){
+		this->ref_alt ^= constants::REF_ALT_NON_REF << 4;
+	}
+
+	if(this->alleles[1].length == 9 && strncmp(this->alleles[1].data, "<NON_REF>", 9) == 0){
+		this->ref_alt ^= constants::REF_ALT_NON_REF << 0;
+	}
+
 	// Set mock ref-alt if not simple
 	if(this->alleles[0].length != 1 || this->alleles[1].length != 1){
-		this->ref_alt ^= constants::REF_ALT_N << 4;
-		this->ref_alt ^= constants::REF_ALT_N;
 		return;
 	}
 
@@ -434,6 +441,8 @@ void BCFEntry::SetRefAlt(void){
 	case 'C': this->ref_alt ^= constants::REF_ALT_C << 4; break;
 	default:
 		std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
+		std::cerr << this->alleles[1].data << std::endl;
+			std::cerr << this->alleles[0].data << std::endl;
 		exit(1);
 	}
 

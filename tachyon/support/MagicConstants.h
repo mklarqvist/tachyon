@@ -47,12 +47,13 @@ const BYTE ALLELE_SELF_MAP[6] = {0, 1, 0, 0, 4, 5};
 
 /*------   Hot meta biallelic packing   ------*/
 // Encoding for bases
-const char* const REF_ALT_LOOKUP = "ATGCN";
+const char* const REF_ALT_LOOKUP = "ATGCNX";
 const BYTE REF_ALT_A = 0;
 const BYTE REF_ALT_T = 1;
 const BYTE REF_ALT_G = 2;
 const BYTE REF_ALT_C = 3;
 const BYTE REF_ALT_N = 4;
+const BYTE REF_ALT_NON_REF = 5;
 
 //                                     A  T  G  C  N
 const BYTE TRANSITION_MAP_BASE_A[5] = {0, 0, 1, 0, 0}; // A->G
