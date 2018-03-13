@@ -11,7 +11,8 @@ BCFReader::BCFReader() :
 		n_entries(0),
 		n_capacity(0),
 		n_carry_over(0),
-		entries(nullptr)
+		entries(nullptr),
+		b_data_read(0)
 {}
 
 BCFReader::BCFReader(const std::string& file_name) :
@@ -23,7 +24,8 @@ BCFReader::BCFReader(const std::string& file_name) :
 		n_entries(0),
 		n_capacity(0),
 		n_carry_over(0),
-		entries(nullptr)
+		entries(nullptr),
+		b_data_read(0)
 {}
 
 BCFReader::~BCFReader(){
@@ -60,6 +62,7 @@ bool BCFReader::nextBlock(void){
 	this->buffer.reset();
 	this->current_pointer = 0;
 	this->state = bcf_reader_state::BCF_OK;
+	this->b_data_read += this->bgzf_controller.buffer.size();
 
 	return true;
 }

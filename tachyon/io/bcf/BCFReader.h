@@ -154,6 +154,7 @@ public:
 	size_type            n_capacity;
 	size_type            n_carry_over;
 	pointer              entries;
+	U64                  b_data_read;
 };
 
 }

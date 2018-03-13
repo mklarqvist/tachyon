@@ -502,8 +502,14 @@ bool VariantBlock::write(std::ofstream& stream,
 
 	stats_basic[4].cost_compressed   += (U64)stream.tellp() - last_pos;
 	//stats_basic[4].cost_uncompressed += this->gt_rle_container.getObjectSize();
-	stats_basic[4].cost_uncompressed += (S32)this->gt_rle_container.header.data_header.uLength;
-	stats_basic[4].cost_uncompressed += (S32)this->gt_rle_container.header.stride_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle8_container.header.data_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle8_container.header.stride_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle16_container.header.data_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle16_container.header.stride_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle32_container.header.data_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle32_container.header.stride_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle64_container.header.data_header.uLength;
+	stats_basic[4].cost_uncompressed += (S32)this->gt_rle64_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
 	this->__updateHeader(this->footer.offset_gt_simple, this->gt_simple_container, stream.tellp() - start_pos);
@@ -586,6 +592,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	stream.write(reinterpret_cast<const char*>(&return_offset), sizeof(U32));
 	// Write EOB
 	stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
+	stats_basic[0].cost_uncompressed += (U64)stream.tellp() - last_pos;
 
 	return(true);
 }
