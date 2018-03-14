@@ -43,7 +43,7 @@ void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const
 	dest << this->hot.position + 1 << '\t';
 
 	// If we have cold meta
-	if(this->hasLoadedColdMeta()){
+	if(this->loaded_cold){
 		if(this->cold.n_ID == 0) dest.put('.');
 		else dest.write(this->cold.ID, this->cold.n_ID);
 		dest << '\t';
@@ -82,7 +82,7 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header) const{
 	dest += '\t';
 
 	// If we have cold meta
-	if(this->hasLoadedColdMeta()){
+	if(this->loaded_cold){
 		if(this->cold.n_ID == 0) dest += '.';
 		else dest.Add(this->cold.ID, this->cold.n_ID);
 		dest += '\t';

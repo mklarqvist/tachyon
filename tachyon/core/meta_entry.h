@@ -27,6 +27,7 @@ private:
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;
+	typedef MetaHotController           controller_type;
 
 public:
 	MetaEntry();
@@ -65,27 +66,46 @@ public:
 	}
 
 	// Boolean checks
-	inline const bool isBiallelic(void) const{ return(this->hot.isBiallelic()); }
-	inline const bool isSimpleSNV(void) const{ return(this->hot.isSimpleSNV()); }
-	inline const bool isRLE(void) const{ return(this->hot.isRLE()); }
-	inline const bool isDiploid(void) const{ return(this->hot.isDiploid()); }
-	inline const bool isMixedPloidy(void) const{ return(this->hot.isMixedPloidy()); }
-	inline const bool isAnyGTMissing(void) const{ return(this->hot.isAnyGTMissing()); }
-	inline const bool isAnyGTSpecial(void) const{ return(this->hot.isAnyGTSpecial()); }
-	inline const bool getControllerPhase(void) const{ return(this->hot.getControllerPhase()); }
-	inline const bool isGTMixedPhasing(void) const{ return(this->hot.isGTMixedPhasing()); }
-	inline const bool hasGenotypes(void) const{ return(this->hot.hasGT()); }
+	// Supportive boolean functions
+	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
+	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
+	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
+	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
+	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
+	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
+	inline const bool isAnyGTSpecial(void) const{ return(this->controller.gt_anyNA); }
+	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
+	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
+
+	const TACHYON_GT_TYPE getGenotypeType(void) const{
+		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && !this->controller.gt_anyNA) return YON_GT_RLE_DIPLOID_BIALLELIC;
+		else if(this->controller.gt_rle && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
+		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_BCF_DIPLOID;
+		else return YON_GT_UNKNOWN;
+	}
+
+	const BYTE getPrimitiveWidth(void) const{
+		switch(this->controller.gt_primtive_type){
+		case(YON_GT_BYTE):  return(1);
+		case(YON_GT_U16): return(2);
+		case(YON_GT_U32): return(4);
+		case(YON_GT_U64): return(8);
+		}
+		return(0);
+	}
 
 	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(this->hot.getGenotypeType()); }
 	inline const BYTE getGTPrimitiveWidth(void) const{ return(this->hot.getPrimitiveWidth()); }
 
-	inline const float getQuality(void) const{ return(this->cold.QUAL); }
-	inline const std::string getName(void) const{ return(this->cold.getName()); }
-	inline const U16& getNumberAlleles(void) const{ return(this->cold.getNumberAlleles()); }
-	inline const U32 getContigID(void) const{ return(this->hot.contigID); }
-	inline const U64 getPosition(void) const{ return(this->hot.position); }
+	inline const float& getQuality(void) const{ return(this->quality); }
+	inline const std::string& getName(void) const{ return(this->name); }
+	inline const U16& getNumberAlleles(void) const{ return(this->n_alleles); }
+	inline const U32 getContigID(void) const{ return(this->contigID); }
+	inline const U64 getPosition(void) const{ return(this->position); }
 
 	inline const char getBiallelicAlleleLiteral(const U32 position) const{
+		/*
 		if(this->isBiallelic()){
 			assert(position == 0 || position == 1);
 			switch(position){
@@ -98,6 +118,8 @@ public:
 			std::cerr << utility::timestamp("ERROR") << "Variant is not biallelic!" << std::endl;
 			exit(1);
 		}
+		*/
+		return('A');
 	}
 
 	// Set and get for patterns
@@ -108,24 +130,22 @@ public:
 	inline const S32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
 	inline const S32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
 
-private:
-	inline const bool& hasLoadedColdMeta(void) const{ return(this->loaded_cold); }
-
 public:
 	bool       loaded_cold;       // Boolean triggered if cold meta object was overloaded
-	S32        info_pattern_id;   // Info pattern ID
-	S32        filter_pattern_id; // Filter pattern ID
-	S32        format_pattern_id; // Format pattern ID
 	hot_entry  hot;               // Hot meta object
 	cold_entry cold;              // Cold meta object - can be empty
 
-	BYTE refalt;
-	U16 controller;
-	U32 n_alleles;
+	// Markup: populate from streams
+	//BYTE  refalt;
+	controller_type controller;
+	U32   n_alleles;
+	S32   info_pattern_id;   // Info pattern ID
+	S32   filter_pattern_id; // Filter pattern ID
+	S32   format_pattern_id; // Format pattern ID
 	float quality;
-	U64 contigID;
-	U64 position;
-	std::string name;
+	U64   contigID;
+	U64   position;
+	std::string  name;
 	allele_type* alleles;
 };
 

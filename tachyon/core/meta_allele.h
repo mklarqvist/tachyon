@@ -51,7 +51,7 @@ public:
 		other.allele = nullptr;
 	}
 
-	MetaAllele& operator=(const self_type& other){
+	self_type& operator=(const self_type& other){
 		this->l_allele = other.l_allele;
 		delete [] this->allele;
 		this->allele = new char[other.l_allele];
