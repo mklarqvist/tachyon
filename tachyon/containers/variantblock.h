@@ -20,8 +20,8 @@ class VariantBlock{
 	typedef VariantBlock                   self_type;
 	typedef DataContainer                  container_type;
 	typedef algorithm::PermutationManager  permutation_type;
-	typedef DataBlockHeader                header_type;
-	typedef DataBlockFooter                footer_type;
+	typedef DataBlockHeader                block_header_type;
+	typedef DataBlockFooter                block_footer_type;
 	typedef HashContainer                  hash_container_type;
 	typedef HashVectorContainer            hash_vector_container_type;
 	typedef io::BasicBuffer                buffer_type;
@@ -49,6 +49,50 @@ public:
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
+	/**<
+	 * Finalize this block before writing to disk
+	 * @param info_values
+	 * @param info_patterns
+	 * @param filter_values
+	 * @param filter_patterns
+	 * @param format_values
+	 * @param format_patterns
+	 * @return
+	 */
+	bool finalize(hash_container_type& info_values, hash_vector_container_type& info_patterns, hash_container_type& filter_values, hash_vector_container_type& filter_patterns, hash_container_type& format_values, hash_vector_container_type& format_patterns){
+		this->footer.n_info_streams   = info_values.size();
+		this->footer.n_filter_streams = filter_values.size();
+		this->footer.n_format_streams = format_values.size();
+		this->allocateDiskOffsets(info_values.size(), format_values.size(), filter_values.size());
+		this->updateBaseContainers();
+		this->updateContainerSet(containers::DataBlockFooter::INDEX_INFO);
+		this->updateContainerSet(containers::DataBlockFooter::INDEX_FORMAT);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   info_values,   info_patterns);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, filter_values, filter_patterns);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, format_values, format_patterns);
+		return true;
+	}
+
+	/**< @brief Reads one or more separate digital objects from disk
+	 * Primary function for reading data from disk. Data
+	 * read in this way is not checked for integrity here.
+	 * @param stream   Input stream
+	 * @param settings Settings record describing reading parameters
+	 * @return         Returns FALSE if there was a problem, TRUE otherwise
+	 */
+	bool read(std::ifstream& stream, settings_type& settings);
+
+	/**<
+	 * Standard way of writing out a YON block.
+	 * @param stream       Target output stream
+	 * @param stats_basic  Tracking for basic containers
+	 * @param stats_info   Tracking for INFO containers
+	 * @param stats_format Tracking for FORMAT containers
+	 * @return             Returns TRUE upon success or FALSE otherwise
+	 */
+	bool write(std::ofstream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+
+private:
 	/**<
 	 * Wrapper function for INFO, FORMAT, and FILTER disk
 	 * offsets. Internally generates virtual disk offsets
@@ -90,26 +134,6 @@ public:
 	 */
 	void updateBaseContainers(void);
 
-	/**< @brief Reads one or more separate digital objects from disk
-	 * Primary function for reading data from disk. Data
-	 * read in this way is not checked for integrity here.
-	 * @param stream   Input stream
-	 * @param settings Settings record describing reading parameters
-	 * @return         Returns FALSE if there was a problem, TRUE otherwise
-	 */
-	bool read(std::ifstream& stream, settings_type& settings);
-
-	/**<
-	 * Standard way of writing out a YON block.
-	 * @param stream       Target output stream
-	 * @param stats_basic  Tracking for basic containers
-	 * @param stats_info   Tracking for INFO containers
-	 * @param stats_format Tracking for FORMAT containers
-	 * @return             Returns TRUE upon success or FALSE otherwise
-	 */
-	bool write(std::ofstream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
-
-private:
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
 	 * container offsets and checks/builds
@@ -152,8 +176,8 @@ private:
 	}
 
 public:
-	header_type       header;
-	footer_type       footer;
+	block_header_type header;
+	block_footer_type footer;
 	permutation_type  ppa_manager;
 	container_type    meta_contig_container;
 	container_type    meta_positions_container;

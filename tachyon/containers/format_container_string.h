@@ -29,7 +29,7 @@ private:
     typedef io::BasicBuffer       buffer_type;
     typedef DataContainer         data_container_type;
     typedef MetaContainer         meta_container_type;
-    typedef StrideContainer<U32>  stride_container_type;
+    typedef IntegerContainer<U32>  stride_container_type;
 
 public:
     FormatContainer();

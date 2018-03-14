@@ -14,12 +14,14 @@ namespace containers{
 
 DataContainer::DataContainer() :
 	n_entries(0),
-	n_additions(0)
+	n_additions(0),
+	n_strides(0)
 {}
 
 DataContainer::DataContainer(const U32 start_size) :
 	n_entries(0),
 	n_additions(0),
+	n_strides(0),
 	buffer_data(start_size),
 	buffer_strides(start_size),
 	buffer_data_uncompressed(start_size),
@@ -31,6 +33,7 @@ DataContainer::~DataContainer(){ }
 void DataContainer::reset(void){
 	this->n_entries   = 0;
 	this->n_additions = 0;
+	this->n_strides   = 0;
 	this->buffer_data.reset();
 	this->buffer_data_uncompressed.reset();
 	this->buffer_strides.reset();
@@ -145,14 +148,12 @@ bool DataContainer::checkUniformity(void){
 
 	this->n_entries   = 1;
 	this->n_additions = 1;
-	// Data pointers are updated in case there is no reformatting
-	// see StreamContainer::reformat()
-	this->buffer_data_uncompressed.n_chars = stride_size * word_width;
-	this->header.data_header.uLength                   = stride_size * word_width;
-	this->header.data_header.cLength                   = stride_size * word_width;
-	this->header.data_header.controller.uniform        = true;
-	this->header.data_header.controller.mixedStride    = false;
-	this->header.data_header.controller.encoder        = YON_ENCODE_NONE;
+	this->buffer_data_uncompressed.n_chars          = stride_size * word_width;
+	this->header.data_header.uLength                = stride_size * word_width;
+	this->header.data_header.cLength                = stride_size * word_width;
+	this->header.data_header.controller.uniform     = true;
+	this->header.data_header.controller.mixedStride = false;
+	this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
 	return(true);
 }
 
@@ -293,7 +294,7 @@ void DataContainer::reformat(){
 
 	memcpy(this->buffer_data_uncompressed.buffer, this->buffer_data.buffer, this->buffer_data.size());
 	this->buffer_data_uncompressed.n_chars = this->buffer_data.size();
-	this->header.data_header.uLength = this->buffer_data_uncompressed.size();
+	this->header.data_header.uLength       = this->buffer_data_uncompressed.size();
 	this->buffer_data.reset();
 }
 
@@ -370,7 +371,7 @@ void DataContainer::reformatStride(){
 	//std::cerr << "recode shrink strides: " << this->buffer_strides.size() << '\t' << buffer.size() << std::endl;
 	memcpy(this->buffer_strides_uncompressed.data(), this->buffer_strides.data(), this->buffer_strides.size());
 	this->buffer_strides_uncompressed.n_chars = this->buffer_strides.size();
-	this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
+	this->header.stride_header.uLength        = this->buffer_strides_uncompressed.size();
 	this->buffer_strides.reset();
 }
 
@@ -381,5 +382,6 @@ const U32 DataContainer::getObjectSize(void) const{
 
 	return(total_size);
 }
+
 }
 }

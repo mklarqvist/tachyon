@@ -1,21 +1,23 @@
-#ifndef CONTAINERS_STRIDE_CONTAINER_H_
-#define CONTAINERS_STRIDE_CONTAINER_H_
+#ifndef CONTAINERS_INTEGER_CONTAINER_H_
+#define CONTAINERS_INTEGER_CONTAINER_H_
+
+#include <cassert>
 
 #include "datacontainer.h"
 
 namespace tachyon{
 namespace containers{
 
-#define YON_STRIDE_CONTAINER_DEFAULT_START_SIZE 1000
+#define YON_INTEGER_CONTAINER_DEFAULT_START_SIZE 1000
 
 /**<
- * Primary container to handle stride data from data containers
+ * Primary container to handle integer data from data containers
  * This class should be considered for internal use only
  */
 template <class return_primitive = U32>
-class StrideContainer{
+class IntegerContainer{
 private:
-	typedef StrideContainer   self_type;
+	typedef IntegerContainer   self_type;
     typedef std::size_t       size_type;
     typedef return_primitive  value_type;
     typedef value_type&       reference;
@@ -26,12 +28,12 @@ private:
     typedef DataContainer     data_container_type;
 
 public:
-    StrideContainer();
-    StrideContainer(const size_type start_capacity);
-    StrideContainer(const value_type uniform_value, const size_type n_entries);
-    StrideContainer(const data_container_type& container);
-    StrideContainer(const self_type& other);
-    ~StrideContainer(void);
+    IntegerContainer();
+    IntegerContainer(const size_type start_capacity);
+    IntegerContainer(const value_type uniform_value, const size_type n_entries);
+    IntegerContainer(const data_container_type& container);
+    IntegerContainer(const self_type& other);
+    ~IntegerContainer(void);
 
     class iterator{
     private:
@@ -157,16 +159,16 @@ private:
 
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer() :
+IntegerContainer<return_primitive>::IntegerContainer() :
 	isUniform_(false),
-	n_capacity(YON_STRIDE_CONTAINER_DEFAULT_START_SIZE),
+	n_capacity(YON_INTEGER_CONTAINER_DEFAULT_START_SIZE),
 	n_entries(0),
 	__entries(new value_type[this->capacity()])
 {
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer(const size_type start_capacity) :
+IntegerContainer<return_primitive>::IntegerContainer(const size_type start_capacity) :
 	isUniform_(false),
 	n_capacity(start_capacity),
 	n_entries(0),
@@ -175,7 +177,7 @@ StrideContainer<return_primitive>::StrideContainer(const size_type start_capacit
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer(const value_type uniform_value, const size_type n_entries) :
+IntegerContainer<return_primitive>::IntegerContainer(const value_type uniform_value, const size_type n_entries) :
 	isUniform_(true),
 	n_capacity(n_entries),
 	n_entries(n_entries),
@@ -186,7 +188,7 @@ StrideContainer<return_primitive>::StrideContainer(const value_type uniform_valu
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer(const data_container_type& container) :
+IntegerContainer<return_primitive>::IntegerContainer(const data_container_type& container) :
 	isUniform_(false),
 	n_capacity(0),
 	n_entries(0),
@@ -196,7 +198,7 @@ StrideContainer<return_primitive>::StrideContainer(const data_container_type& co
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer(const self_type& other) :
+IntegerContainer<return_primitive>::IntegerContainer(const self_type& other) :
 	isUniform_(other.isUniform_),
 	n_capacity(other.n_capacity),
 	n_entries(other.n_entries),
@@ -208,12 +210,12 @@ StrideContainer<return_primitive>::StrideContainer(const self_type& other) :
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::~StrideContainer(void){
+IntegerContainer<return_primitive>::~IntegerContainer(void){
 	delete [] this->__entries;
 }
 
 template <class return_primitive>
-void StrideContainer<return_primitive>::__setup(const data_container_type& container){
+void IntegerContainer<return_primitive>::__setup(const data_container_type& container){
 	switch(container.getStridePrimitiveType()){
 	case(YON_TYPE_8B):  this->__allocate<BYTE>(container); break;
 	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
@@ -225,7 +227,7 @@ void StrideContainer<return_primitive>::__setup(const data_container_type& conta
 
 template <class return_primitive>
 template <class intrinsic_type>
-void StrideContainer<return_primitive>::__allocate(const data_container_type& container){
+void IntegerContainer<return_primitive>::__allocate(const data_container_type& container){
 	assert(container.buffer_strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
 	this->n_entries  = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
 	this->__entries  = new value_type[this->size()];
@@ -245,4 +247,4 @@ void StrideContainer<return_primitive>::__allocate(const data_container_type& co
 
 
 
-#endif /* CONTAINERS_STRIDE_CONTAINER_H_ */
+#endif /* CONTAINERS_INTEGER_CONTAINER_H_ */

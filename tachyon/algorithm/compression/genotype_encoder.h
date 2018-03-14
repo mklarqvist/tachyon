@@ -122,12 +122,12 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy, ++j){
 		for(U32 p = 0; p < ploidy; ++p){
 			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&line.data[bcf_gt_pos]);
-			if((allele >> 1) == 0) simple += (YON_STORE_TYPE)0;
-			else if(allele == EOV_value ) simple += (YON_STORE_TYPE)1;
+			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0);
+			else if(allele == EOV_value ) simple.AddLiteral((YON_STORE_TYPE)1);
 			else {
 				// Add 1 because 1 is reserved for EOV
 				const YON_STORE_TYPE val = ((allele >> 1) + 1) << 1 | (allele & 1);
-				simple += val;
+				simple.AddLiteral(val);
 			}
 			bcf_gt_pos += sizeof(BCF_GT_TYPE);
 		}
@@ -164,7 +164,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
 		const YON_RLE_TYPE packed = ((allele2 >> 1) << (shift_size + 1)) |
 				                    ((allele1 >> 1) << 1) |
 									 (allele2 &  1);
-		simple += packed;
+		simple.AddLiteral(packed);
 	}
 
 	n_runs = this->n_samples;
@@ -219,7 +219,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 			assert((RLE >> (ploidy*shift + add)) == length);
 
 			// Push RLE to buffer
-			runs += RLE;
+			runs.AddLiteral(RLE);
 
 			// Reset and update
 			sumLength += length;
@@ -237,7 +237,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	assert((RLE >> (ploidy*shift + add)) == length);
 
 	// Push RLE to buffer
-	runs += RLE;
+	runs.AddLiteral(RLE);
 	++n_runs;
 
 	// Reset and update
@@ -307,7 +307,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 			assert(length != 0);
 
 			// Push RLE to buffer
-			runs += RLE;
+			runs.AddLiteral(RLE);
 
 			// Reset and update
 			sumLength += length;
@@ -325,7 +325,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	assert(length != 0);
 
 	// Push RLE to buffer
-	runs += RLE;
+	runs.AddLiteral(RLE);
 	++n_runs;
 
 	// Reset and update

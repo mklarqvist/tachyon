@@ -54,6 +54,8 @@ struct MetaHotController{
 
 	}
 
+	inline const U16 toValue(void) const{ return((U16)*reinterpret_cast<const U16* const>(this)); }
+
 	/**< Controller field. Describes
 	 * 1) If any of the genotypes have missing values
 	 * 2) If all the genotypes are phased or not

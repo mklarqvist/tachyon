@@ -140,7 +140,6 @@ struct DataContainerHeaderObject{
 	//
 	inline const S32& getStride(void) const{ return(this->stride); }
 
-	inline const bool good(void) const{ return(this->controller.type != -1); }
 	inline const bool isUniform(void) const{ return(this->controller.uniform); }
 	inline const bool isSigned(void) const{ return(this->controller.signedness); }
 	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
@@ -153,17 +152,7 @@ struct DataContainerHeaderObject{
 	inline const TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Set types
-	inline void setType(const BYTE& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_8B; }
-	inline void setType(const U16& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_16B; }
-	inline void setType(const U32& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_32B; }
-	inline void setType(const U64& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_64B; }
-	inline void setType(const SBYTE& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_8B; }
-	inline void setType(const S16& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_16B; }
-	inline void setType(const S32& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_32B; }
-	inline void setType(const S64& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_64B; }
-	inline void setType(const float& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_FLOAT; }
-	inline void setType(const double& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_DOUBLE; }
-	inline void setType(const bool& value){ this->controller.type = TACHYON_CORE_TYPE::YON_TYPE_BOOLEAN; }
+	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
 
 	// Checksum
 	inline const U32& getChecksum(void) const{ return(this->crc); }

@@ -256,6 +256,7 @@ public:
 	}
 
 	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
+	inline const char* const getCharPointer(U32& pos){ return(reinterpret_cast<const char* const>(&this->data[pos])); }
 
 	// Hash field identifiers
 	inline const U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }

@@ -117,7 +117,6 @@ bool VariantImporter::BuildBCF(void){
 	// Begin import
 	// Get BCF entries
 	algorithm::Timer timer; timer.Start();
-	U32 without = 0, with = 0;
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
@@ -136,7 +135,7 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.contigID    = reader.front().body->CHROM;
 		this->block.header.minPosition = reader.front().body->POS;
 		this->block.header.maxPosition = reader.back().body->POS;
-		this->block.header.controller.hasGT = this->GT_available_;
+		this->block.header.controller.hasGT         = this->GT_available_;
 		this->block.header.controller.hasGTPermuted = this->permute;
 		// if there is 0 or 1 samples then GT data is never permuted
 		if(header.getSampleNumber() <= 1)
@@ -163,14 +162,11 @@ bool VariantImporter::BuildBCF(void){
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
-		this->block.footer.n_info_streams   = this->info_fields.size();
-		this->block.footer.n_filter_streams = this->filter_fields.size();
-		this->block.footer.n_format_streams = this->format_fields.size();
 		this->block.header.n_variants       = reader.size();
-		this->block.allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->block.updateBaseContainers();
-		this->block.updateContainerSet(containers::DataBlockFooter::INDEX_INFO);
-		this->block.updateContainerSet(containers::DataBlockFooter::INDEX_FORMAT);
+		this->block.finalize(this->info_fields,   this->info_patterns,
+                             this->filter_fields, this->filter_patterns,
+                             this->format_fields, this->format_patterns);
+
 
 		// Perform compression using standard parameters
 		if(!this->compression_manager.compress(this->block)){
@@ -186,19 +182,10 @@ bool VariantImporter::BuildBCF(void){
 
 		// Todo: abstraction
 		// Perform writing and update index
-		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->block.footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
-
-		// temp
-		// Fake container
-		//containers::DataContainer fake;
-		//fake.resize(10000);
-		//fake.buffer_data_uncompressed += this->block.footer;
-		this->block.footer_support.buffer_data_uncompressed += this->block.footer;
-		this->compression_manager.zstd_codec.compress(this->block.footer_support);
+		//this->block.footer_support.buffer_data_uncompressed += this->block.footer;
+		//this->compression_manager.zstd_codec.compress(this->block.footer_support);
 
 		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
@@ -290,7 +277,6 @@ bool VariantImporter::BuildBCF(void){
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: " << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "YON: " << utility::toPrettyDiskString(total_uncompressed) << "\t" << utility::toPrettyDiskString(total_compressed) << std::endl;
-
 	}
 
 	// All done
@@ -307,10 +293,11 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	meta_type meta;
 	meta.position = entry.body->POS;
 	meta.contigID = entry.body->CHROM;
-	this->block.meta_positions_container += (S32)entry.body->POS - this->index_entry.minPosition;
-	this->block.meta_contig_container    += (S32)entry.body->CHROM;
+	this->block.meta_positions_container.Add((U32)entry.body->POS - this->index_entry.minPosition);
+	this->block.meta_contig_container.Add(entry.body->CHROM);
 	++this->block.meta_positions_container;
 	++this->block.meta_contig_container;
+
 	meta.ref_alt  = entry.ref_alt;
 	meta.controller.simple_snv = entry.isSimple();
 
@@ -334,66 +321,34 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		return false;
 	}
 
-	// Complex meta data
-	core::MetaCold test;
-	if(!test.write(entry, this->block.meta_cold_container)){
-		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to write complex meta!" << std::endl;
-		return false;
-	}
+	this->block.meta_controller_container.Add(meta.controller.toValue()); // has been overloaded
+	++this->block.meta_controller_container;
 
 	if(meta.isSimpleSNV() || (entry.ref_alt & 15) == 5){
-		this->block.meta_refalt_container += (BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref);
+		this->block.meta_refalt_container.Add((BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref));
 		++this->block.meta_refalt_container;
-		this->block.meta_controller_container += meta.controller;
-		++this->block.meta_controller_container;
 	}
 	// add complex
 	else {
-		if(this->block.meta_alleles_container.size() == 0){
-			this->block.meta_alleles_container.setStrideSize(entry.body->n_allele);
-			this->block.meta_alleles_container.header.stride_header.controller.type       = YON_TYPE_32B;
-			this->block.meta_alleles_container.header.stride_header.controller.signedness = 0;
-		}
-
-		if(!this->block.meta_alleles_container.checkStrideSize(entry.body->n_allele))
-			this->block.meta_alleles_container.triggerMixedStride();
-
-		this->block.meta_alleles_container.addStride(entry.l_ID);
-		++this->block.meta_alleles_container;
-
+		// Special encoding
 		for(U32 i = 0; i < entry.body->n_allele; ++i){
 			// Write out allele
-			this->block.meta_alleles_container += (U16)entry.alleles[i].length;
-			this->block.meta_alleles_container.buffer_data_uncompressed.Add(entry.alleles[i].data, entry.alleles[i].length);
+			this->block.meta_alleles_container.AddLiteral((U16)entry.alleles[i].length);
+			this->block.meta_alleles_container.AddLiteral(entry.alleles[i].data, entry.alleles[i].length);
 		}
+		this->block.meta_alleles_container.addStride(entry.body->n_allele);
+		++this->block.meta_alleles_container;
 	}
 
-	this->block.meta_quality_container += (float)test.QUAL;
+	this->block.meta_quality_container.Add(entry.body->QUAL);
 	++this->block.meta_quality_container;
 
-	if(this->block.meta_names_container.size() == 0){
-		this->block.meta_names_container.setStrideSize(entry.l_ID);
-		this->block.meta_names_container.header.stride_header.controller.type       = YON_TYPE_32B;
-		this->block.meta_names_container.header.stride_header.controller.signedness = 0;
-	}
-
-	if(!this->block.meta_names_container.checkStrideSize(entry.l_ID))
-		this->block.meta_names_container.triggerMixedStride();
-
 	this->block.meta_names_container.addStride(entry.l_ID);
-	this->block.meta_names_container.buffer_data_uncompressed.Add(entry.ID, entry.l_ID);
+	this->block.meta_names_container.AddCharacter(entry.ID, entry.l_ID);
 	++this->block.meta_names_container;
-
-	++this->block.meta_cold_container.n_entries;
-	++this->block.meta_cold_container.n_additions;
-	++this->block.meta_hot_container.n_entries;
-	++this->block.meta_hot_container.n_additions;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;
-
-	// Push meta
-	this->block.meta_hot_container.buffer_data_uncompressed += meta;
 
 	return true;
 }
@@ -407,58 +362,35 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
 		const U32 mapID = this->info_fields.setGet(this->header->info_remap[entry.infoID[i].mapID]);
-
 		stream_container& target_container = this->block.info_containers[mapID];
-		if(this->block.info_containers[mapID].size() == 0){
-			target_container.setStrideSize(entry.infoID[i].l_stride);
-			target_container.header.stride_header.controller.type       = YON_TYPE_32B;
-			target_container.header.stride_header.controller.signedness = 0;
-			// Set all integer types to U32
-			// Change to smaller type later if required
-			if(entry.infoID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 1) target_container.setType(YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 2) target_container.setType(YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 3) target_container.setType(YON_TYPE_32B);
-			else if(entry.infoID[i].primitive_type == 5) target_container.setType(YON_TYPE_FLOAT);
-			else if(entry.infoID[i].primitive_type == 7) target_container.setType(YON_TYPE_CHAR);
-			else {
-				std::cerr << "not possible" << std::endl;
-				exit(1);
-			}
-			if(entry.infoID[i].primitive_type != 5)      target_container.header.data_header.controller.signedness = 1;
-		}
-
-		++target_container;
-		if(!target_container.checkStrideSize(entry.infoID[i].l_stride))
-			target_container.triggerMixedStride();
-
-		target_container.addStride(entry.infoID[i].l_stride);
 
 		// Flags and integers
 		// These are BCF value types
 		U32 internal_pos = entry.infoID[i].l_offset;
 		if(entry.infoID[i].primitive_type <= 3){
 			for(U32 j = 0; j < entry.infoID[i].l_stride; ++j){
-				target_container += entry.getInteger(entry.infoID[i].primitive_type, internal_pos);
+				target_container.Add(entry.getInteger(entry.infoID[i].primitive_type, internal_pos));
 			}
 		}
 		// Floats
 		else if(entry.infoID[i].primitive_type == 5){
 			for(U32 j = 0; j < entry.infoID[i].l_stride; ++j){
-				target_container += entry.getFloat(internal_pos);
+				target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
 		else if(entry.infoID[i].primitive_type == 7){
-			for(U32 j = 0; j < entry.infoID[i].l_stride; ++j){
-				target_container += entry.getChar(internal_pos);
-			}
+			target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.infoID[i].l_stride);
+			internal_pos += entry.infoID[i].l_stride;
 		}
 		// Illegal: parsing error
 		else {
 			std::cerr << "impossible in info: " << (int)entry.infoID[i].primitive_type << std::endl;
 			exit(1);
 		}
+
+		++target_container;
+		target_container.addStride(entry.infoID[i].l_stride);
 	}
 
 	for(U32 i = 0; i < entry.formatPointer; ++i){
@@ -473,51 +405,28 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Hash INFO values
 		stream_container& target_container = this->block.format_containers[mapID];
-		if(this->block.format_containers[mapID].size() == 0){
-			target_container.setStrideSize(entry.formatID[i].l_stride);
-			target_container.header.stride_header.controller.type       = YON_TYPE_32B;
-			target_container.header.stride_header.controller.signedness = 0;
-			// Set all integer types to U32
-			// Change to smaller type later if required
-			if(entry.formatID[i].primitive_type == 0)      target_container.setType(YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 1) target_container.setType(YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 2) target_container.setType(YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 3) target_container.setType(YON_TYPE_32B);
-			else if(entry.formatID[i].primitive_type == 5) target_container.setType(YON_TYPE_FLOAT);
-			else if(entry.formatID[i].primitive_type == 7) target_container.setType(YON_TYPE_CHAR);
-			else {
-				std::cerr << "not possible" << std::endl;
-				exit(1);
-			}
-			if(entry.formatID[i].primitive_type != 5)      target_container.header.data_header.controller.signedness = 1;
-		}
-
-		++target_container;
-		if(!target_container.checkStrideSize(entry.formatID[i].l_stride))
-			target_container.triggerMixedStride();
-
-		target_container.addStride(entry.formatID[i].l_stride);
 
 		// Flags and integers
 		// These are BCF value types
 		if(entry.formatID[i].primitive_type <= 3){
 			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
-					target_container += entry.getInteger(entry.formatID[i].primitive_type, internal_pos);
+					target_container.Add(entry.getInteger(entry.formatID[i].primitive_type, internal_pos));
 			}
 		}
 		// Floats
 		else if(entry.formatID[i].primitive_type == 5){
 			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
-					target_container += entry.getFloat(internal_pos);
+					target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
 		else if(entry.formatID[i].primitive_type == 7){
 			for(U32 s = 0; s < this->header->samples; ++s){
-				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
-					target_container += entry.getChar(internal_pos);
+				//for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
+				target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.formatID[i].l_stride);
+				internal_pos += entry.formatID[i].l_stride;
 			}
 		}
 		// Illegal: parsing error
@@ -526,6 +435,9 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			std::cerr << utility::timestamp("LOG") << entry.formatID[i].mapID << '\t' << entry.formatID[i].l_stride << '\t' << (int)entry.formatID[i].primitive_type << '\t' << internal_pos << '/' << entry.l_data << std::endl;
 			exit(1);
 		}
+
+		++target_container;
+		target_container.addStride(entry.formatID[i].l_stride);
 	}
 
 	if(entry.filterPointer){
@@ -533,9 +445,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U64 hash_filter_vector = entry.hashFilter();
 
 		U32 mapID = 0;
-		if(this->filter_patterns.getRaw(hash_filter_vector, mapID)){
-
-		} else {
+		if(!this->filter_patterns.getRaw(hash_filter_vector, mapID)){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.filterPointer; ++i)
 				ret_pattern.push_back(this->header->filter_remap[entry.filterID[i].mapID]);
@@ -555,23 +465,19 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 
 		// Store this map in the meta
-		this->block.meta_filter_map_ids += (S32)mapID;
+		this->block.meta_filter_map_ids.Add((S32)mapID);
 		++this->block.meta_filter_map_ids;
 	} else {
-		this->block.meta_filter_map_ids += -1;
+		this->block.meta_filter_map_ids.Add((S32)-1);
 		++this->block.meta_filter_map_ids;
 	}
 
 	if(entry.infoPointer){
 		U32 mapID = 0;
 		// Hash INFO pattern
-
 		const U64 hash_info_vector = entry.hashInfo();
-		//const U64 hash_info_vector = 0;
 
-		if(this->info_patterns.getRaw(hash_info_vector, mapID)){
-
-		} else {
+		if(!this->info_patterns.getRaw(hash_info_vector, mapID)){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.infoPointer; ++i)
 				ret_pattern.push_back(this->header->info_remap[entry.infoID[i].mapID]);
@@ -592,10 +498,10 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Store this map in the meta
 		//meta.INFO_map_ID = mapID;
-		this->block.meta_info_map_ids += (S32)mapID;
+		this->block.meta_info_map_ids.Add((S32)mapID);
 		++this->block.meta_info_map_ids;
 	} else {
-		this->block.meta_info_map_ids += -1;
+		this->block.meta_info_map_ids.Add((S32)-1);
 		++this->block.meta_info_map_ids;
 	}
 
@@ -604,9 +510,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FORMAT pattern
 		const U64 hash_format_vector = entry.hashFormat();
 
-		if(this->format_patterns.getRaw(hash_format_vector, mapID)){
-
-		} else {
+		if(!this->format_patterns.getRaw(hash_format_vector, mapID)){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.formatPointer; ++i)
 				ret_pattern.push_back(this->header->format_remap[entry.formatID[i].mapID]);
@@ -627,10 +531,10 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Store this map in the meta
 		//meta.FORMAT_map_ID = mapID;
-		this->block.meta_format_map_ids += (S32)mapID;
+		this->block.meta_format_map_ids.Add((S32)mapID);
 		++this->block.meta_format_map_ids;
 	} else {
-		this->block.meta_format_map_ids += -1;
+		this->block.meta_format_map_ids.Add((S32)-1);
 		++this->block.meta_format_map_ids;
 	}
 

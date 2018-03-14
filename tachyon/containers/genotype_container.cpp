@@ -1,5 +1,6 @@
 #include "genotype_container.h"
-#include "stride_container.h"
+
+#include "integer_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -78,7 +79,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	if(block.gt_support_data_container.header.data_header.hasMixedStride()){
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
-		StrideContainer<U32> strides(block.gt_support_data_container);
+		IntegerContainer<U32> strides(block.gt_support_data_container);
 
 		for(U32 i = 0; i < this->n_entries; ++i){
 			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);

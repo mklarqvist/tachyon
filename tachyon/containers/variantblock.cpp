@@ -2,6 +2,7 @@
 
 #include "../support/helpers.h"
 #include "../support/type_definitions.h"
+#include "../algorithm/compression/compression_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -11,33 +12,10 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	this->meta_quality_container.setType(tachyon::YON_TYPE_FLOAT);
-	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
-	this->meta_refalt_container.header.data_header.controller.signedness = 0;
-	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
-	this->meta_controller_container.header.data_header.controller.signedness = 0;
-	this->meta_contig_container.setType(tachyon::YON_TYPE_32B);
-	this->meta_contig_container.header.data_header.controller.signedness = 1;
-	this->meta_positions_container.setType(tachyon::YON_TYPE_32B);
-	this->meta_positions_container.header.data_header.controller.signedness = 1;
-	this->meta_format_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_format_map_ids.header.data_header.controller.signedness = 1;
-	this->meta_filter_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_filter_map_ids.header.data_header.controller.signedness = 1;
-	this->meta_info_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_info_map_ids.header.data_header.controller.signedness = 1;
-	this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
+	//this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
-	this->gt_support_data_container.header.data_header.controller.signedness = true;
-	this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->meta_info_map_ids.setStrideSize(1);
-	this->meta_filter_map_ids.setStrideSize(1);
-	this->meta_format_map_ids.setStrideSize(1);
-	this->gt_support_data_container.setStrideSize(1);
-	this->meta_names_container.setType(tachyon::YON_TYPE_CHAR);
-
+	//this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
+	//this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
@@ -86,32 +64,11 @@ void VariantBlock::clear(void){
 
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
-	this->meta_quality_container.setType(tachyon::YON_TYPE_FLOAT);
-	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
-	this->meta_refalt_container.header.data_header.controller.signedness = 0;
-	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
-	this->meta_controller_container.header.data_header.controller.signedness = 0;
-	this->meta_contig_container.setType(tachyon::YON_TYPE_32B);
-	this->meta_contig_container.header.data_header.controller.signedness = 1;
-	this->meta_positions_container.setType(tachyon::YON_TYPE_32B);
-	this->meta_positions_container.header.data_header.controller.signedness = 1;
-	this->meta_format_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_format_map_ids.header.data_header.controller.signedness = 1;
-	this->meta_filter_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_filter_map_ids.header.data_header.controller.signedness = 1;
-	this->meta_info_map_ids.setType(tachyon::YON_TYPE_32B);
-	this->meta_info_map_ids.header.data_header.controller.signedness = 1;
 	this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
 	this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->meta_info_map_ids.setStrideSize(1);
-	this->meta_filter_map_ids.setStrideSize(1);
-	this->meta_format_map_ids.setStrideSize(1);
-	this->gt_support_data_container.setStrideSize(1);
-	this->meta_names_container.setType(tachyon::YON_TYPE_CHAR);
-
 	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
@@ -275,7 +232,19 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	stream >> this->header;
 	const U64 start_offset = (U64)stream.tellg();
 	stream.seekg(stream.tellg() + this->header.l_offset_footer);
+	/*
+	U32 footer_uLength = 0;
+	U32 footer_cLength = 0;
+	stream.read((char*)&footer_uLength, sizeof(U32));
+	stream.read((char*)&footer_cLength, sizeof(U32));
+	this->footer_support.buffer_data.resize(footer_cLength + 65536);
+	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
+	algorithm::ZSTDCodec zstd_codec;
+	zstd_codec.decompress(this->footer_support);
+	*/
 	stream >> this->footer;
+	//std::cerr << "footer ulength" << std::endl;
+
 	U32 l_return = 0;
 	stream.read((char*)&l_return, sizeof(U32));
 	U64 eof_marker;
@@ -395,7 +364,6 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->ppa_manager.getObjectSize();
 
-	//total += this->meta_hot_container.getObjectSize();
 	total += this->meta_contig_container.getObjectSize();
 	total += this->meta_positions_container.getObjectSize();
 	total += this->meta_refalt_container.getObjectSize();
@@ -403,14 +371,10 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 	total += this->meta_quality_container.getObjectSize();
 	total += this->meta_names_container.getObjectSize();
 	total += this->meta_alleles_container.getObjectSize();
-	//total += this->meta_cold_container.getObjectSize();
-
-	//total += this->gt_rle_container.getObjectSize();
 	total += this->gt_rle8_container.getObjectSize();
 	total += this->gt_rle16_container.getObjectSize();
 	total += this->gt_rle32_container.getObjectSize();
 	total += this->gt_rle64_container.getObjectSize();
-
 	total += this->gt_simple_container.getObjectSize();
 	total += this->gt_support_data_container.getObjectSize();
 	total += this->meta_info_map_ids.getObjectSize();
@@ -585,8 +549,15 @@ bool VariantBlock::write(std::ofstream& stream,
 	// writing footer
 	assert(this->header.l_offset_footer == stream.tellp() - start_pos);
 	// Compress and write footer
-	//stream << this->footer;
+	/*
+	const U32 footer_uLength = this->footer_support.buffer_data_uncompressed.size();
+	stream.write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
+	const U32 footer_cLength = this->footer_support.buffer_data.size();
+	stream.write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
+
 	stream << this->footer_support.buffer_data;
+	*/
+	stream << this->footer;
 	const U32 return_offset = stream.tellp() - last_pos;
 	// Write negative offset to start of offsets
 	stream.write(reinterpret_cast<const char*>(&return_offset), sizeof(U32));

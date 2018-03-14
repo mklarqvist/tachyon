@@ -89,7 +89,7 @@ public:
 		container.buffer_data_uncompressed.reset();
 		for(U32 j = 0; j < this->n_rows; ++j){
 			for(U32 i = 0; i < this->l_reads; ++i){
-				container += (SBYTE)this->data[this->positions[j]][i];
+				container.Add((SBYTE)this->data[this->positions[j]][i]);
 			}
 		}
 		std::cerr << container.buffer_data_uncompressed.size() << std::endl;
@@ -277,16 +277,13 @@ public:
 				//std::cerr << line << std::endl;
 				if(block.basesContainer.n_additions == 0){
 					block.basesContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
-					block.basesContainer.setStrideSize(line.size());
 				}
 
 				for(U32 i = 0; i < line.size(); ++i){
-					block.basesContainer += line[i];
+					block.basesContainer.AddCharacter(line[i]);
 				}
 				++block.basesContainer;
-
-				if(!block.basesContainer.checkStrideSize(line.size()))
-					block.basesContainer.triggerMixedStride();
+				block.basesContainer.addStride(line.size());
 			}
 
 			if(count % 4 == 0){
@@ -300,17 +297,13 @@ public:
 				//std::cerr << "string: " << first[0] << std::endl;
 				if(block.nameContainer[0].n_additions == 0){
 					block.nameContainer[0].setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
-					block.nameContainer[0].setStrideSize(first[0].size());
 				}
 				block.nameContainer[0].buffer_data_uncompressed.Add(&first[0][0], first[0].size());
-				if(!block.nameContainer[0].checkStrideSize(first[0].size()))
-					block.nameContainer[0].triggerMixedStride();
-
 				block.nameContainer[0].addStride(first[0].size());
 				++block.nameContainer[0];
 
 				//std::cerr << "int: " << first[1] << std::endl;
-				block.nameContainer[1] += atoi(&first[1][0]);
+				block.nameContainer[1].Add(atoi(&first[1][0]));
 				++block.nameContainer[1];
 
 
@@ -318,7 +311,7 @@ public:
 				std::vector<std::string> end = utility::split(parts[1], '/');
 				//std::cerr << end[0] << std::endl;
 				//std::cerr << "int: " << end[1] << std::endl;
-				block.nameContainer[2] += atoi(&end[1][0]);
+				block.nameContainer[2].Add(atoi(&end[1][0]));
 				++block.nameContainer[2];
 
 				// split end part
@@ -326,18 +319,14 @@ public:
 				//std::cerr << "string: " << final[0] << std::endl;
 				if(block.nameContainer[3].n_additions == 0){
 					block.nameContainer[3].setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
-					block.nameContainer[3].setStrideSize(final[0].size());
 				}
 				block.nameContainer[3].buffer_data_uncompressed.Add(&final[0][0], final[0].size());
-				if(!block.nameContainer[3].checkStrideSize(final[0].size()))
-					block.nameContainer[3].triggerMixedStride();
-
 				block.nameContainer[3].addStride(final[0].size());
 				++block.nameContainer[3];
 
 				U32 target_container = 4;
 				for(U32 i = 1; i < final.size(); ++i){
-					block.nameContainer[target_container] += atoi(&final[i][0]);
+					block.nameContainer[target_container].Add(atoi(&final[i][0]));
 					++block.nameContainer[target_container++];
 				}
 			}
@@ -345,11 +334,10 @@ public:
 			if(count % 4 == 3){
 				if(block.qualContainer.n_additions == 0){
 					block.qualContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_8B);
-					block.qualContainer.setStrideSize(line.size());
 				}
 
 				for(U32 i = 0; i < line.size(); ++i){
-					block.qualContainer += (BYTE)(line[i] - 33);
+					block.qualContainer.Add((BYTE)(line[i] - 33));
 					++block.qualContainer;
 				}
 				++read; ++read_local;
@@ -359,11 +347,11 @@ public:
 						cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
 
 					block.updateContainers();
-					compression_manager.zpaq_codec.compress(block.basesContainer);
-					compression_manager.zpaq_codec.compress(block.qualContainer);
+					compression_manager.zpaq_codec.compress(block.basesContainer, false);
+					compression_manager.zpaq_codec.compress(block.qualContainer, false);
 					compression_manager.zstd_codec.setCompressionLevel(6);
 					for(U32 i = 0; i < 8; ++i){
-						if(i == 1) compression_manager.zpaq_codec.compress(block.nameContainer[i]);
+						if(i == 1) compression_manager.zpaq_codec.compress(block.nameContainer[i], false);
 						else compression_manager.zstd_codec.compress(block.nameContainer[i]);
 					}
 					tester << block.basesContainer;
@@ -395,8 +383,8 @@ public:
 				cost_names_raw += block.nameContainer[i].buffer_data_uncompressed.size();
 
 			block.updateContainers();
-			compression_manager.zpaq_codec.compress(block.basesContainer);
-			compression_manager.zpaq_codec.compress(block.qualContainer);
+			compression_manager.zpaq_codec.compress(block.basesContainer, false);
+			compression_manager.zpaq_codec.compress(block.qualContainer, false);
 			compression_manager.zstd_codec.setCompressionLevel(6);
 			for(U32 i = 0; i < 8; ++i)
 				compression_manager.zstd_codec.compress(block.nameContainer[i]);

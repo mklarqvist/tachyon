@@ -2,9 +2,9 @@
 #define CONTAINERS_FORMAT_CONTAINER_H_
 
 #include "datacontainer.h"
+#include "integer_container.h"
 #include "primitive_group_container.h"
 #include "meta_container.h"
-#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -48,7 +48,7 @@ private:
     typedef io::BasicBuffer                 buffer_type;
     typedef DataContainer                   data_container_type;
     typedef MetaContainer                   meta_container_type;
-    typedef StrideContainer<U32>            stride_container_type;
+    typedef IntegerContainer<U32>            stride_container_type;
 
 public:
     FormatContainer();

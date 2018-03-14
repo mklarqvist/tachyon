@@ -177,9 +177,7 @@ public:
 		buffer += entry.n_info_patterns;
 		buffer += entry.n_format_patterns;
 		buffer += entry.n_filter_patterns;
-
 		buffer += entry.offset_ppa;
-		//buffer += entry.offset_hot_meta;
 		buffer += entry.offset_meta_contig;
 		buffer += entry.offset_meta_position;
 		buffer += entry.offset_meta_refalt;
@@ -187,13 +185,10 @@ public:
 		buffer += entry.offset_meta_quality;
 		buffer += entry.offset_meta_names;
 		buffer += entry.offset_meta_alleles;
-		//buffer += entry.offset_cold_meta;
-		//buffer += entry.offset_gt_rle;
 		buffer += entry.offset_gt_8b;
 		buffer += entry.offset_gt_16b;
 		buffer += entry.offset_gt_32b;
 		buffer += entry.offset_gt_64b;
-
 		buffer += entry.offset_gt_simple;
 		buffer += entry.offset_gt_helper;
 		buffer += entry.offset_meta_info_id;
@@ -244,16 +239,13 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns),   sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
-
 		stream << entry.n_info_streams;
 		stream << entry.n_format_streams;
 		stream << entry.n_filter_streams;
 		stream << entry.n_info_patterns;
 		stream << entry.n_format_patterns;
 		stream << entry.n_filter_patterns;
-
 		stream << entry.offset_ppa;
-		//stream << entry.offset_hot_meta;
 		stream << entry.offset_meta_contig;
 		stream << entry.offset_meta_position;
 		stream << entry.offset_meta_refalt;
@@ -261,8 +253,6 @@ private:
 		stream << entry.offset_meta_quality;
 		stream << entry.offset_meta_names;
 		stream << entry.offset_meta_alleles;
-		//stream << entry.offset_cold_meta;
-		//stream << entry.offset_gt_rle;
 		stream << entry.offset_gt_8b;
 		stream << entry.offset_gt_16b;
 		stream << entry.offset_gt_32b;
@@ -328,9 +318,7 @@ private:
 		stream >> entry.n_info_patterns;
 		stream >> entry.n_format_patterns;
 		stream >> entry.n_filter_patterns;
-
 		stream >> entry.offset_ppa;
-		//stream >> entry.offset_hot_meta;
 		stream >> entry.offset_meta_contig;
 		stream >> entry.offset_meta_position;
 		stream >> entry.offset_meta_refalt;
@@ -338,13 +326,10 @@ private:
 		stream >> entry.offset_meta_quality;
 		stream >> entry.offset_meta_names;
 		stream >> entry.offset_meta_alleles;
-		//stream >> entry.offset_cold_meta;
-		//stream >> entry.offset_gt_rle;
 		stream >> entry.offset_gt_8b;
 		stream >> entry.offset_gt_16b;
 		stream >> entry.offset_gt_32b;
 		stream >> entry.offset_gt_64b;
-
 		stream >> entry.offset_gt_simple;
 		stream >> entry.offset_gt_helper;
 		stream >> entry.offset_meta_info_id;
@@ -434,12 +419,10 @@ public:
 	header_type  offset_meta_alleles;
 	header_type  offset_cold_meta;
 	header_type  offset_gt_rle;
-
 	header_type  offset_gt_8b;
 	header_type  offset_gt_16b;
 	header_type  offset_gt_32b;
 	header_type  offset_gt_64b;
-
 	header_type  offset_gt_simple;
 	header_type  offset_gt_helper;
 	header_type  offset_meta_info_id;

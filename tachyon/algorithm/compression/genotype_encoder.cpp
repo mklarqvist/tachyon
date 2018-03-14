@@ -27,14 +27,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		return false;
 	}
 
-	// This is requirement for stride data
-	if(block.gt_support_data_container.n_entries == 0){
-		block.gt_support_data_container.header.data_header.controller.type         = YON_TYPE_32B;
-		block.gt_support_data_container.header.data_header.controller.signedness   = 0;
-		block.gt_support_data_container.header.stride_header.controller.type       = YON_TYPE_32B;
-		block.gt_support_data_container.header.stride_header.controller.signedness = 0;
-	}
-
 	meta_base.controller.biallelic        = line.body->n_allele    == 2;
 	meta_base.controller.diploid          = line.gt_support.ploidy == 2;
 	meta_base.controller.gt_mixed_phasing = line.gt_support.mixedPhasing;
@@ -48,14 +40,11 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	//std::cerr << meta_base.controller.biallelic << "," << line.gt_support.ploidy << "," << line.gt_support.hasEOV << std::endl;
 	if(meta_base.controller.biallelic && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
-		if(!block.gt_support_data_container.checkStrideSize(1))
-			block.gt_support_data_container.triggerMixedStride();
-
-		block.gt_support_data_container.addStride(1);
 		meta_base.controller.gt_rle = true;
 
 		//++block.gt_rle_container;
-		block.gt_support_data_container += (U32)cost.n_runs;
+		block.gt_support_data_container.addStride(1);
+		block.gt_support_data_container.Add(cost.n_runs);
 		++block.gt_support_data_container;
 
 		switch(cost.word_width){
@@ -97,14 +86,11 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		// RLE is cheaper
 		if(cost.word_width * cost.n_runs < costBCFStyle){
-			if(!block.gt_support_data_container.checkStrideSize(2))
-				block.gt_support_data_container.triggerMixedStride();
-
 			block.gt_support_data_container.addStride(2);
 
 			meta_base.controller.gt_rle = true;
 			++block.gt_simple_container;
-			block.gt_support_data_container += (U32)cost.n_runs;
+			block.gt_support_data_container.Add(cost.n_runs);
 			++block.gt_support_data_container;
 
 			switch(cost.word_width){
@@ -133,11 +119,8 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		// BCF style is cheaper
 		else {
 			//std::cerr << "BCF-style cheaper" << std::endl;
-			if(!block.gt_support_data_container.checkStrideSize(3))
-				block.gt_support_data_container.triggerMixedStride();
-
 			block.gt_support_data_container.addStride(3);
-			block.gt_support_data_container += (U32)this->n_samples;
+			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
 			++block.gt_simple_container;
 
@@ -169,11 +152,8 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	// temp
 	else {
 		std::cerr << "other bcf style: n_alleles: " << line.body->n_allele << ",ploidy: " << line.gt_support.ploidy << std::endl;
-		if(!block.gt_support_data_container.checkStrideSize(4))
-			block.gt_support_data_container.triggerMixedStride();
-
 		block.gt_support_data_container.addStride(4);
-		block.gt_support_data_container += (U32)this->n_samples*line.gt_support.ploidy;
+		block.gt_support_data_container.Add((U32)this->n_samples*line.gt_support.ploidy);
 		++block.gt_support_data_container;
 		++block.gt_simple_container;
 

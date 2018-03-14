@@ -33,6 +33,9 @@ public:
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 	inline bool isEncrypted(void) const{ return(this->encryption > 0); }
 
+	inline const bool compareType(const BYTE& type) const{ return(this->type == type); }
+	inline const bool compareTypeSign(const BYTE& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
+
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer,const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
 		buffer += *c;
