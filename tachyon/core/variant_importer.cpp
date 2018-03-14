@@ -111,10 +111,9 @@ bool VariantImporter::BuildBCF(void){
 	if(!SILENT){
 		std::cerr << utility::timestamp("PROGRESS") <<
 		std::setfill(' ') << std::setw(10) << "Variants" << ' ' <<
-		"Contig:from->to" << "\t" <<
 		std::setfill(' ') << std::setw(10) << "Written" << '\t' <<
 		std::setfill(' ') << std::setw(8) << "Completion" << ' ' <<
-		"Elapsed" << std::endl;
+		"Elapsed " << "Contig:from->to" << std::endl;
 	}
 
 	while(true){
@@ -199,10 +198,10 @@ bool VariantImporter::BuildBCF(void){
 		if(!SILENT){
 			std::cerr << utility::timestamp("PROGRESS") <<
 			std::setfill(' ') << std::setw(10) << this->writer.n_variants_written << ' ' <<
-			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << "\t" <<
 			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(writer.stream.tellp()) << '\t' <<
 			std::setfill(' ') << std::setw(8) << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
-			timer.ElapsedString() << std::endl;
+			timer.ElapsedString() << ' ' <<
+			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
 		}
 
 		// Reset and update

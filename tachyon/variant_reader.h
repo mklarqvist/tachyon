@@ -8,7 +8,6 @@
 
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/timer.h"
-#include "containers/abstract_integer_container.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
 #include "containers/genotype_container.h"
@@ -27,7 +26,6 @@
 #include "math/square_matrix.h"
 #include "math/basic_vector_math.h"
 #include "utility/support_vcf.h"
-#include "iterator/IteratorIntegerReference.h"
 #include "index/index.h"
 
 namespace tachyon{
