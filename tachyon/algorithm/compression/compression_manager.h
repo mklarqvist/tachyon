@@ -2,7 +2,9 @@
 #define ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 
 #include "../../containers/variantblock.h"
-#include "compression_container.h"
+#include "uncompressed_codec.h"
+#include "zstd_codec.h"
+#include "zpaq_codec.h"
 
 namespace tachyon{
 namespace algorithm{
@@ -26,43 +28,41 @@ public:
 		if(block.header.controller.hasGTPermuted) zstd_codec.compress(block.ppa_manager);
 
 		zstd_codec.setCompressionLevel(20);
-		//if(block.meta_hot_container.n_entries)        zstd_codec.compress(block.meta_hot_container);
 		if(block.meta_contig_container.n_entries)     zstd_codec.compress(block.meta_contig_container);
 		if(block.meta_positions_container.n_entries)  zstd_codec.compress(block.meta_positions_container);
 		if(block.meta_refalt_container.n_entries)     zstd_codec.compress(block.meta_refalt_container);
 		if(block.meta_controller_container.n_entries) zstd_codec.compress(block.meta_controller_container);
 		if(block.meta_quality_container.n_entries)    zstd_codec.compress(block.meta_quality_container);
 		if(block.meta_names_container.n_entries){
-			zpaq_codec.compress(block.meta_names_container, false);
-			zstd_codec.compressStrides(block.meta_names_container);
+			//zpaq_codec.compress(block.meta_names_container, false);
+			zstd_codec.compress(block.meta_names_container);
 		}
-		//if(block.gt_rle_container.n_entries)          zstd_codec.compress(block.gt_rle_container);
+
 		const std::string zpaq_cmd = "4";
 		if(block.gt_rle8_container.n_entries){
-			zpaq_codec.compress(block.gt_rle8_container, zpaq_cmd, false);
-			zstd_codec.compressStrides(block.gt_rle8_container);
+			zstd_codec.compress(block.gt_rle8_container);
+			//zstd_codec.compressStrides(block.gt_rle8_container);
 		}
 		if(block.gt_rle16_container.n_entries){
-			zpaq_codec.compress(block.gt_rle16_container, zpaq_cmd, false);
-			zstd_codec.compressStrides(block.gt_rle16_container);
+			zstd_codec.compress(block.gt_rle16_container);
+			//zstd_codec.compressStrides(block.gt_rle16_container);
 		}
 		if(block.gt_rle32_container.n_entries){
-			zpaq_codec.compress(block.gt_rle32_container, zpaq_cmd, false);
-			zstd_codec.compressStrides(block.gt_rle32_container);
+			zstd_codec.compress(block.gt_rle32_container);
+			//zstd_codec.compressStrides(block.gt_rle32_container);
 		}
 		if(block.gt_rle64_container.n_entries){
-			zpaq_codec.compress(block.gt_rle64_container, zpaq_cmd, false);
-			zstd_codec.compressStrides(block.gt_rle64_container);
+			zstd_codec.compress(block.gt_rle64_container);
+			//zstd_codec.compressStrides(block.gt_rle64_container);
 		}
 
 		if(block.meta_alleles_container.n_entries){
-			zpaq_codec.compress(block.meta_alleles_container, false);
-			zstd_codec.compressStrides(block.meta_alleles_container);
+			zstd_codec.compress(block.meta_alleles_container);
+			//zstd_codec.compressStrides(block.meta_alleles_container);
 		}
 
 		if(block.gt_simple_container.n_entries)       zstd_codec.compress(block.gt_simple_container);
 		if(block.gt_support_data_container.n_entries) zstd_codec.compress(block.gt_support_data_container);
-		//if(block.meta_cold_container.n_entries)       zstd_codec.compress(block.meta_cold_container);
 		if(block.meta_info_map_ids.n_entries)         zstd_codec.compress(block.meta_info_map_ids);
 		if(block.meta_filter_map_ids.n_entries)       zstd_codec.compress(block.meta_filter_map_ids);
 		if(block.meta_format_map_ids.n_entries)       zstd_codec.compress(block.meta_format_map_ids);
@@ -74,20 +74,17 @@ public:
 				zstd_codec.setCompressionLevelStrides(20);
 				//zpaq_codec.compress(block.info_containers[i]);
 				//zstd_codec.compress(block.info_containers[i]);
-				zstd_codec.compress(block.info_containers[i]);
-			}
-			else if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_CHAR){
-				zpaq_codec.compress(block.info_containers[i], false);
-				zstd_codec.compressStrides(block.info_containers[i]);
+				//zstd_codec.compress(block.info_containers[i]);
 			}
 			else {
 				zstd_codec.setCompressionLevel(20);
-				zstd_codec.compress(block.info_containers[i]);
+				//zstd_codec.compress(block.info_containers[i]);
 				//zpaq_codec.compress(block.info_containers[i]);
 				//zstd_codec.compress(block.info_containers[i]);
 			}
 			//zstd_codec.compress(block.info_containers[i]);
 			//zpaq_codec.compress(block.info_containers[i], "4");
+			zstd_codec.compress(block.info_containers[i]);
 		}
 
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
@@ -116,69 +113,31 @@ public:
 			}
 		}
 
-		if(block.meta_hot_container.getSizeCompressed()){
-			if(!this->decompress(block.meta_hot_container)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta hot!" << std::endl;
-			}
-		}
+		if(block.meta_contig_container.getSizeCompressed())     this->decompress(block.meta_contig_container);
+		if(block.meta_positions_container.getSizeCompressed())  this->decompress(block.meta_positions_container);
+		if(block.meta_refalt_container.getSizeCompressed())     this->decompress(block.meta_refalt_container);
+		if(block.meta_controller_container.getSizeCompressed()) this->decompress(block.meta_controller_container);
+		if(block.meta_quality_container.getSizeCompressed())    this->decompress(block.meta_quality_container);
+		if(block.gt_simple_container.getSizeCompressed())       this->decompress(block.gt_simple_container);
+		if(block.gt_support_data_container.getSizeCompressed()) this->decompress(block.gt_support_data_container);
+		if(block.meta_info_map_ids.getSizeCompressed())         this->decompress(block.meta_info_map_ids);
+		if(block.meta_filter_map_ids.getSizeCompressed())       this->decompress(block.meta_filter_map_ids);
+		if(block.meta_format_map_ids.getSizeCompressed())       this->decompress(block.meta_format_map_ids);
+		if(block.gt_rle8_container.getSizeCompressed())         this->decompress(block.gt_rle8_container);
+		if(block.gt_rle16_container.getSizeCompressed())        this->decompress(block.gt_rle16_container);
+		if(block.gt_rle32_container.getSizeCompressed())        this->decompress(block.gt_rle32_container);
+		if(block.gt_rle64_container.getSizeCompressed())        this->decompress(block.gt_rle64_container);
 
-		if(block.meta_cold_container.getSizeCompressed()){
-			if(!this->decompress(block.meta_cold_container)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta cold!" << std::endl;
-			}
-		}
-
-		if(block.gt_rle_container.getSizeCompressed()){
-			if(!this->decompress(block.gt_rle_container)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT RLE!" << std::endl;
-			}
-		}
-
-		if(block.gt_simple_container.getSizeCompressed()){
-			if(!this->decompress(block.gt_simple_container)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT other!" << std::endl;
-			}
-		}
-
-		if(block.gt_support_data_container.getSizeCompressed()){
-			if(!this->decompress(block.gt_support_data_container)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT support!" << std::endl;
-			}
-		}
-
-		if(block.meta_info_map_ids.getSizeCompressed()){
-			if(!this->decompress(block.meta_info_map_ids)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to meta INFO ids!" << std::endl;
-			}
-		}
-
-		if(block.meta_filter_map_ids.getSizeCompressed()){
-			if(!this->decompress(block.meta_filter_map_ids)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta FILTER ids!" << std::endl;
-			}
-		}
-
-		if(block.meta_format_map_ids.getSizeCompressed()){
-			if(!this->decompress(block.meta_format_map_ids)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta FORMAT ids!" << std::endl;
-			}
+		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+			if(block.format_containers[i].getSizeCompressed())
+				this->decompress(block.format_containers[i]);
 		}
 
 		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
-			if(block.info_containers[i].getSizeCompressed()){
-				if(!this->decompress(block.info_containers[i])){
-					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress INFO " << i << std::endl;
-				}
-			}
+			if(block.info_containers[i].getSizeCompressed())
+				this->decompress(block.info_containers[i]);
 		}
 
-		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
-			if(block.format_containers[i].getSizeCompressed()){
-				if(!this->decompress(block.format_containers[i])){
-					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress FORMAT " << i << std::endl;
-				}
-			}
-		}
 		return true;
 	}
 

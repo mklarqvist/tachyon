@@ -23,7 +23,9 @@ MetaCold::MetaCold(char* in) :
 	U32 cumpos = sizeof(U32) + sizeof(float) + 2*sizeof(U16) + this->n_ID;
 	for(U32 i = 0; i < this->n_allele; ++i){
 		this->alleles[i](&in[cumpos]);
-		cumpos += this->alleles[i].objectSize();
+		//cumpos += this->alleles[i].objectSize();
+		std::cerr << "not yet" << std::endl;
+		exit(1);
 	}
 }
 
@@ -81,7 +83,9 @@ void MetaCold::operator()(char* in){
 	U32 cumpos = sizeof(U32) + sizeof(float) + 2*sizeof(U16) + this->n_ID;
 	for(U32 i = 0; i < this->n_allele; ++i){
 		this->alleles[i](&in[cumpos]);
-		cumpos += this->alleles[i].objectSize();
+		//cumpos += this->alleles[i].objectSize();
+		std::cerr << "not yet" << std::endl;
+		exit(1);
 	}
 }
 

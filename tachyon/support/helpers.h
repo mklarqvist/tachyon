@@ -18,9 +18,9 @@ namespace utility{
 int isBigEndian(void);
 
 std::vector<std::string> &split(std::string &s, char delim, std::vector<std::string> &elems);
-std::vector<std::string> split(std::string &s, char delim);
+std::vector<std::string> split(std::string &s, char delim, const bool keepEmpty = false);
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
-std::vector<std::string> split(const std::string &s, char delim);
+std::vector<std::string> split(const std::string &s, char delim, const bool keepEmpty = false);
 std::vector<std::string> splitLastOf(const std::string& s, const char delim, const bool includeLast = false);
 
 std::string timestamp(const std::string type);

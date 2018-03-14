@@ -4,7 +4,7 @@ namespace tachyon{
 namespace containers{
 
 MetaContainer::MetaContainer(const VariantBlock& block) :
-	n_entries(block.meta_hot_container.buffer_data_uncompressed.size() / sizeof(hot_type)),
+	n_entries(0 / sizeof(hot_type)),
 	__entries(nullptr)
 {
 	this->__ctor_setup(block);
@@ -18,9 +18,10 @@ MetaContainer::~MetaContainer(void){
 }
 
 void MetaContainer::__ctor_setup(const VariantBlock& block){
+	/*
 	// 1
 	// cast hot_entries and determine n_entries
-	assert(block.meta_hot_container.buffer_data_uncompressed.size() % sizeof(hot_type) == 0);
+	//assert(block.meta_hot_container.buffer_data_uncompressed.size() % sizeof(hot_type) == 0);
 	const hot_type* const hot_entries = reinterpret_cast<const hot_type* const>(block.meta_hot_container.buffer_data_uncompressed.buffer);
 
 	// allocate memory
@@ -113,6 +114,7 @@ void MetaContainer::__ctor_setup(const VariantBlock& block){
 
 	//assert(n_filter_ids == n_format_ids);
 	//assert(n_format_ids == n_info_ids);
+	 */
 }
 
 }

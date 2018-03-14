@@ -19,10 +19,11 @@ private:
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;
     typedef std::ptrdiff_t    difference_type;
+    typedef DataContainer     container_type;
 
 public:
     PrimitiveContainer();
-    PrimitiveContainer(const DataContainer& container, const U32& offset, const U32 n_entries);
+    PrimitiveContainer(const container_type& container, const U32& offset, const U32 n_entries);
     ~PrimitiveContainer(void);
 
     class iterator{
@@ -85,10 +86,10 @@ public:
 
 private:
     template <class native_primitive>
-    void __setup(const DataContainer& container, const U32& offset);
+    void __setup(const container_type& container, const U32& offset);
 
     template <class native_primitive>
-    void __setupSigned(const DataContainer& container, const U32& offset);
+    void __setupSigned(const container_type& container, const U32& offset);
 
 private:
     size_t  n_entries;
@@ -108,14 +109,14 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 }
 
 template <class return_type>
-PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& container,
+PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container,
                                                               const U32& offset,
                                                               const U32  n_entries) :
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
-	if(container.header.data_header.controller.signedness){
-		switch(container.header.data_header.controller.type){
+	if(container.header.data_header.isSigned()){
+		switch(container.header.data_header.getPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, offset));  break;
 		case(YON_TYPE_CHAR):   (this->__setupSigned<char>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
@@ -126,7 +127,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const DataContainer& contain
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
-		switch(container.header.data_header.controller.type){
+		switch(container.header.data_header.getPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
@@ -145,23 +146,23 @@ PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::__setup(const DataContainer& container, const U32& offset){
+void PrimitiveContainer<return_type>::__setup(const container_type& container, const U32& offset){
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
 
-	for(U32 i = 0; i < this->n_entries; ++i)
+	for(U32 i = 0; i < this->size(); ++i)
 		this->__entries[i] = data[i];
 }
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::__setupSigned(const DataContainer& container, const U32& offset){
+void PrimitiveContainer<return_type>::__setupSigned(const container_type& container, const U32& offset){
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
 
 	if(sizeof(native_primitive) == sizeof(return_type)){
 		return(this->__setup<native_primitive>(container, offset));
 	}
 	else {
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(U32 i = 0; i < this->size(); ++i){
 			// If the data is missing in the native format
 			if(data[i] == std::numeric_limits<native_primitive>::min()){
 				this->__entries[i] = std::numeric_limits<return_type>::min();

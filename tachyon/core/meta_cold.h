@@ -5,77 +5,10 @@
 
 #include "../io/bcf/BCFEntry.h"
 #include "../containers/datacontainer.h"
+#include "meta_allele.h"
 
 namespace tachyon{
 namespace core{
-
-/** ColdMetaAllele:
- *  @brief Contains parts of the cold component of the hot-cold split of a variant site meta information
- *  This is a supportive structure. It keeps allele information
- *  as a typed string. This data structure is always cast
- *  directly from pre-loaded byte streams.
- */
-struct ColdMetaAllele{
-private:
-	typedef ColdMetaAllele self_type;
-	typedef io::BasicBuffer buffer_type;
-
-public:
-	ColdMetaAllele() :
-		l_allele(0),
-		allele(nullptr)
-	{}
-
-	~ColdMetaAllele(void){
-		delete [] this->allele;
-	}
-
-	ColdMetaAllele(const self_type& other) :
-		l_allele(other.l_allele),
-		allele(new char[other.l_allele])
-	{
-		memcpy(this->allele, other.allele, other.l_allele);
-	}
-
-	ColdMetaAllele(ColdMetaAllele&& other) :
-		l_allele(other.l_allele),
-		allele(other.allele)
-	{
-		other.allele = nullptr;
-	}
-
-	ColdMetaAllele& operator=(const self_type& other){
-		this->l_allele = other.l_allele;
-		delete [] this->allele;
-		this->allele = new char[other.l_allele];
-		memcpy(this->allele, other.allele, other.l_allele);
-		return *this;
-	}
-
-	void operator()(char* in){
-		this->l_allele = *reinterpret_cast<U16*>(in);
-		delete [] this->allele;
-		this->allele   =  new char[this->l_allele];
-		memcpy(this->allele, &in[sizeof(U16)], this->l_allele);
-	}
-
-	inline const U32 objectSize(void) const{ return(this->l_allele + sizeof(U16)); }
-	inline const U16& size(void) const{ return(this->l_allele); }
-	inline const std::string toString(void) const{ return(std::string(this->allele, this->l_allele)); }
-
-private:
-	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
-		// Write out allele
-		buffer += (U16)entry.l_allele;
-		buffer.Add(entry.allele, entry.l_allele);
-
-		return(buffer);
-	}
-
-public:
-	U16   l_allele; /**< Byte length of allele data */
-	char* allele;   /**< Char array of allele */
-};
 
 // Do NOT reinterpret_cast this struct as an array
 // as offsets needs to be interpreted
@@ -84,7 +17,7 @@ private:
 	typedef MetaCold self_type;
 	typedef bcf::BCFEntry bcf_type;
 	typedef containers::DataContainer stream_container;
-	typedef ColdMetaAllele allele_type;
+	typedef MetaAllele allele_type;
 
     typedef std::size_t       size_type;
     typedef allele_type       value_type;

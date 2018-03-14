@@ -239,12 +239,7 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.n_info_patterns),   sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
-		stream << entry.n_info_streams;
-		stream << entry.n_format_streams;
-		stream << entry.n_filter_streams;
-		stream << entry.n_info_patterns;
-		stream << entry.n_format_patterns;
-		stream << entry.n_filter_patterns;
+
 		stream << entry.offset_ppa;
 		stream << entry.offset_meta_contig;
 		stream << entry.offset_meta_position;
@@ -312,12 +307,6 @@ private:
 		entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
 		entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
 
-		stream >> entry.n_info_streams;
-		stream >> entry.n_format_streams;
-		stream >> entry.n_filter_streams;
-		stream >> entry.n_info_patterns;
-		stream >> entry.n_format_patterns;
-		stream >> entry.n_filter_patterns;
 		stream >> entry.offset_ppa;
 		stream >> entry.offset_meta_contig;
 		stream >> entry.offset_meta_position;
@@ -409,7 +398,6 @@ public:
 
 	// Headers of the various containers
 	header_type  offset_ppa;
-	header_type  offset_hot_meta;
 	header_type  offset_meta_contig;
 	header_type  offset_meta_position;
 	header_type  offset_meta_refalt;
@@ -417,8 +405,6 @@ public:
 	header_type  offset_meta_quality;
 	header_type  offset_meta_names;
 	header_type  offset_meta_alleles;
-	header_type  offset_cold_meta;
-	header_type  offset_gt_rle;
 	header_type  offset_gt_8b;
 	header_type  offset_gt_16b;
 	header_type  offset_gt_32b;

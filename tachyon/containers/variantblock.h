@@ -243,14 +243,11 @@ public:
 	container_type    meta_controller_container;
 	container_type    meta_quality_container;
 	container_type    meta_names_container;
-	container_type    meta_hot_container;
 	container_type    meta_alleles_container;
 	container_type    meta_info_map_ids;
 	container_type    meta_format_map_ids;
 	container_type    meta_filter_map_ids;
-	container_type    meta_cold_container;
 	container_type    gt_support_data_container; // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
-	container_type    gt_rle_container;
 	container_type    gt_rle8_container;
 	container_type    gt_rle16_container;
 	container_type    gt_rle32_container;

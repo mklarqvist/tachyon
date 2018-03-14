@@ -1,6 +1,6 @@
 #include "genotype_container.h"
 
-#include "integer_container.h"
+#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -10,6 +10,8 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	__meta_container(block),
 	__iterators(nullptr)
 {
+	std::cerr << "reconstruction" << std::endl;
+	exit(1);
 	this->n_entries   = this->__meta_container.size();
 	this->__iterators = static_cast<pointer>(::operator new[](this->size() * sizeof(value_type)));
 
@@ -17,7 +19,8 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 		return;
 
 	// Aliases
-	const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data();
+	//const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data();
+	const char* const data_rle = nullptr;
 	const char* const data_simple = block.gt_simple_container.buffer_data_uncompressed.data();
 
 	if(block.gt_support_data_container.buffer_data_uncompressed.size() == 0){
@@ -79,7 +82,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	if(block.gt_support_data_container.header.data_header.hasMixedStride()){
 		U32 current_offset_rle    = 0;
 		U32 current_offset_simple = 0;
-		IntegerContainer<U32> strides(block.gt_support_data_container);
+		StrideContainer<U32> strides(block.gt_support_data_container);
 
 		for(U32 i = 0; i < this->n_entries; ++i){
 			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
@@ -112,7 +115,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 			}
 		}
 
-		assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
+		//assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 	}
 	else { // No mixed stride
@@ -151,7 +154,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 			}
 		}
 
-		assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
+		//assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
 		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
 	}
 }

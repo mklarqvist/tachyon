@@ -12,10 +12,7 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	//this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
-	//this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
-	//this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
@@ -48,10 +45,7 @@ void VariantBlock::clear(void){
 	this->meta_info_map_ids.reset();
 	this->meta_filter_map_ids.reset();
 	this->meta_format_map_ids.reset();
-	this->meta_hot_container.reset();
-	this->meta_cold_container.reset();
 	this->gt_support_data_container.reset();
-	this->gt_rle_container.reset();
 	this->gt_simple_container.reset();
 	this->ppa_manager.reset();
 	this->meta_names_container.reset();
@@ -64,11 +58,8 @@ void VariantBlock::clear(void){
 
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
-	this->gt_rle_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
-	this->meta_hot_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->meta_cold_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
 	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
@@ -93,9 +84,6 @@ void VariantBlock::resize(const U32 s){
 	this->meta_positions_container.resize(s);
 	this->meta_refalt_container.resize(s);
 	this->meta_controller_container.resize(s);
-	this->meta_hot_container.resize(s);
-	this->meta_cold_container.resize(s);
-	this->gt_rle_container.resize(s);
 	this->gt_simple_container.resize(s);
 	this->meta_info_map_ids.resize(s);
 	this->meta_filter_map_ids.resize(s);
@@ -120,11 +108,8 @@ void VariantBlock::updateBaseContainers(void){
 	this->updateContainer(this->meta_controller_container);
 	this->updateContainer(this->meta_quality_container);
 	this->updateContainer(this->meta_names_container);
-	//this->updateContainer(this->gt_rle_container);
-	//this->updateContainer(this->gt_simple_container);
+	this->updateContainer(this->gt_simple_container);
 	this->updateContainer(this->gt_support_data_container);
-	//this->updateContainer(this->meta_hot_container);
-	//this->updateContainer(this->meta_cold_container);
 	this->updateContainer(this->meta_alleles_container);
 	this->updateContainer(this->meta_filter_map_ids);
 	this->updateContainer(this->meta_format_map_ids);
@@ -267,36 +252,61 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	if(settings.importMetaHot){
-		stream.seekg(start_offset + this->footer.offset_hot_meta.data_header.offset);
-		this->meta_hot_container.header = this->footer.offset_hot_meta;
-		stream >> this->meta_hot_container;
+		stream.seekg(start_offset + this->footer.offset_meta_contig.data_header.offset);
+
+		this->meta_contig_container.header = this->footer.offset_meta_contig;
+		stream >> this->meta_contig_container;
+
+		this->meta_positions_container.header = this->footer.offset_meta_position;
+		stream >> this->meta_positions_container;
+
+		this->meta_refalt_container.header = this->footer.offset_meta_refalt;
+		stream >> this->meta_refalt_container;
+
+		this->meta_controller_container.header = this->footer.offset_meta_controllers;
+		stream >> this->meta_controller_container;
 	}
 
 	if(settings.importMetaCold){
-		stream.seekg(start_offset + this->footer.offset_cold_meta.data_header.offset);
-		this->meta_cold_container.header = this->footer.offset_cold_meta;
-		stream >> this->meta_cold_container;
+		stream.seekg(start_offset + this->footer.offset_meta_quality.data_header.offset);
+		this->meta_quality_container.header = this->footer.offset_meta_quality;
+		stream >> this->meta_quality_container;
+
+		this->meta_names_container.header = this->footer.offset_meta_names;
+		stream >> this->meta_names_container;
+
+		this->meta_alleles_container.header = this->footer.offset_meta_alleles;
+		stream >> this->meta_alleles_container;
 	}
 
-	if(settings.importGT && this->footer.offset_gt_rle.data_header.offset != -1){
-		stream.seekg(start_offset + this->footer.offset_gt_rle.data_header.offset);
-		this->gt_rle_container.header = this->footer.offset_gt_rle;
-		stream >> this->gt_rle_container;
+	if(settings.importGT){
+		stream.seekg(start_offset + this->footer.offset_gt_8b.data_header.offset);
+		this->gt_rle8_container.header = this->footer.offset_gt_8b;
+		stream >> this->gt_rle8_container;
+
+		this->gt_rle16_container.header = this->footer.offset_gt_16b;
+		stream >> this->gt_rle16_container;
+
+		this->gt_rle32_container.header = this->footer.offset_gt_32b;
+		stream >> this->gt_rle32_container;
+
+		this->gt_rle64_container.header = this->footer.offset_gt_64b;
+		stream >> this->gt_rle64_container;
 	}
 
-	if(settings.importGTSimple && this->footer.offset_gt_simple.data_header.offset != -1){
+	if(settings.importGTSimple){
 		stream.seekg(start_offset + this->footer.offset_gt_simple.data_header.offset);
 		this->gt_simple_container.header = this->footer.offset_gt_simple;
 		stream >> this->gt_simple_container;
 	}
 
-	if((settings.importGTSimple || settings.importGT) && this->footer.offset_gt_helper.data_header.offset != -1){
+	if(settings.importGTSimple || settings.importGT){
 		stream.seekg(start_offset + this->footer.offset_gt_helper.data_header.offset);
 		this->gt_support_data_container.header = this->footer.offset_gt_helper;
 		stream >> this->gt_support_data_container;
 	}
 
-	if((settings.importMetaHot || settings.importMetaCold) && this->footer.offset_meta_info_id.data_header.offset != -1){
+	if((settings.importMetaHot || settings.importMetaCold)){
 		stream.seekg(start_offset + this->footer.offset_meta_info_id.data_header.offset);
 		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
 		stream >> this->meta_info_map_ids;
@@ -387,6 +397,7 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 	total += this->meta_info_map_ids.getObjectSize();
 	total += this->meta_filter_map_ids.getObjectSize();
 	total += this->meta_format_map_ids.getObjectSize();
+
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].getObjectSize();
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].getObjectSize();
 
@@ -413,8 +424,6 @@ bool VariantBlock::write(std::ofstream& stream,
 		last_pos = stream.tellp();
 	}
 
-	//this->__updateHeader(this->footer.offset_hot_meta, this->meta_hot_container, stream.tellp() - start_pos);
-	//stream << this->meta_hot_container;
 	this->__updateHeader(this->footer.offset_meta_contig, this->meta_contig_container, stream.tellp() - start_pos);
 	stream << this->meta_contig_container;
 	this->__updateHeader(this->footer.offset_meta_position, this->meta_positions_container, stream.tellp() - start_pos);
@@ -424,44 +433,31 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_meta_controllers, this->meta_controller_container, stream.tellp() - start_pos);
 	stream << this->meta_controller_container;
 
-
 	stats_basic[2].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[2].cost_uncompressed += this->meta_hot_container.getObjectSize();
 	stats_basic[2].cost_uncompressed += (S32)this->meta_contig_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_contig_container.header.stride_header.uLength;
-
 	stats_basic[2].cost_uncompressed += (S32)this->meta_positions_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_positions_container.header.stride_header.uLength;
-
 	stats_basic[2].cost_uncompressed += (S32)this->meta_refalt_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_refalt_container.header.stride_header.uLength;
-
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.stride_header.uLength;
-
 	last_pos = stream.tellp();
-
-	//this->__updateHeader(this->footer.offset_cold_meta, this->meta_cold_container, stream.tellp() - start_pos);
-	//stream << this->meta_cold_container;
 
 	this->__updateHeader(this->footer.offset_meta_quality, this->meta_quality_container, stream.tellp() - start_pos);
 	stream << this->meta_quality_container;
 	this->__updateHeader(this->footer.offset_meta_names, this->meta_names_container, stream.tellp() - start_pos);
 	stream << this->meta_names_container;
+	this->__updateHeader(this->footer.offset_meta_alleles, this->meta_alleles_container, stream.tellp() - start_pos);
 	stream << this->meta_alleles_container;
 
-
 	stats_basic[3].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[3].cost_uncompressed += this->meta_cold_container.getObjectSize();
 	stats_basic[3].cost_uncompressed += (S32)this->meta_quality_container.header.data_header.uLength;
 	stats_basic[3].cost_uncompressed += (S32)this->meta_quality_container.header.stride_header.uLength;
 	stats_basic[3].cost_uncompressed += (S32)this->meta_names_container.header.data_header.uLength;
 	stats_basic[3].cost_uncompressed += (S32)this->meta_names_container.header.stride_header.uLength;
-
 	last_pos = stream.tellp();
 
-	//this->__updateHeader(this->footer.offset_gt_rle, this->gt_rle_container, stream.tellp() - start_pos);
-	//stream << this->gt_rle_container;
 	this->__updateHeader(this->footer.offset_gt_8b, this->gt_rle8_container, stream.tellp() - start_pos);
 	stream << this->gt_rle8_container;
 	this->__updateHeader(this->footer.offset_gt_16b, this->gt_rle16_container, stream.tellp() - start_pos);
@@ -472,7 +468,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	stream << this->gt_rle64_container;
 
 	stats_basic[4].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[4].cost_uncompressed += this->gt_rle_container.getObjectSize();
 	stats_basic[4].cost_uncompressed += (S32)this->gt_rle8_container.header.data_header.uLength;
 	stats_basic[4].cost_uncompressed += (S32)this->gt_rle8_container.header.stride_header.uLength;
 	stats_basic[4].cost_uncompressed += (S32)this->gt_rle16_container.header.data_header.uLength;
@@ -486,7 +481,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_gt_simple, this->gt_simple_container, stream.tellp() - start_pos);
 	stream << this->gt_simple_container;
 	stats_basic[5].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[5].cost_uncompressed += this->gt_simple_container.getObjectSize();
 	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.data_header.uLength;
 	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
@@ -494,7 +488,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_gt_helper, this->gt_support_data_container, stream.tellp() - start_pos);
 	stream << this->gt_support_data_container;
 	stats_basic[6].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[6].cost_uncompressed += this->gt_support_data_container.getObjectSize();
 	stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header.data_header.uLength;
 	stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
@@ -502,7 +495,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_meta_info_id, this->meta_info_map_ids, stream.tellp() - start_pos);
 	stream << this->meta_info_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[7].cost_uncompressed += this->meta_info_map_ids.getObjectSize();
 	stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header.data_header.uLength - this->meta_info_map_ids.header.data_header.cLength;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header.stride_header.uLength - this->meta_info_map_ids.header.stride_header.cLength;
 	last_pos = stream.tellp();
@@ -510,7 +502,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_meta_filter_id, this->meta_filter_map_ids, stream.tellp() - start_pos);
 	stream << this->meta_filter_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[7].cost_uncompressed += this->meta_filter_map_ids.getObjectSize();
 	stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header.data_header.uLength;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header.stride_header.uLength;
 	last_pos = stream.tellp();
@@ -518,7 +509,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	this->__updateHeader(this->footer.offset_meta_format_id, this->meta_format_map_ids, stream.tellp() - start_pos);
 	stream << this->meta_format_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
-	//stats_basic[7].cost_uncompressed += this->meta_format_map_ids.getObjectSize();
 	stats_basic[7].cost_uncompressed += (S32)this->meta_format_map_ids.header.data_header.uLength;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_format_map_ids.header.stride_header.uLength;
 	last_pos = stream.tellp();
@@ -527,10 +517,7 @@ bool VariantBlock::write(std::ofstream& stream,
 		this->__updateHeader(this->footer.info_offsets[i], this->info_containers[i], stream.tellp() - start_pos);
 		stream << this->info_containers[i];
 		stats_info[this->footer.info_offsets[i].data_header.global_key].cost_uncompressed += this->info_containers[i].header.data_header.uLength;
-		//stats_info[this->footer.info_offsets[i].data_header.global_key].cost_uncompressed += (S32)this->info_containers[i].header.data_header.uLength - this->info_containers[i].header.data_header.cLength;
-		//stats_info[this->footer.info_offsets[i].data_header.global_key].cost_uncompressed += (S32)this->info_containers[i].header.stride_header.uLength - this->info_containers[i].header.stride_header.cLength;
 		stats_info[this->footer.info_offsets[i].data_header.global_key].cost_compressed   += this->info_containers[i].header.data_header.cLength;
-		//stats_basic[8].cost_uncompressed += this->info_containers[i].getObjectSize();
 		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header.data_header.uLength;
 		stats_basic[8].cost_uncompressed += (S32)this->info_containers[i].header.stride_header.uLength;
 	}
@@ -542,10 +529,7 @@ bool VariantBlock::write(std::ofstream& stream,
 		this->__updateHeader(this->footer.format_offsets[i], this->format_containers[i], stream.tellp() - start_pos);
 		stream << this->format_containers[i];
 		stats_format[this->footer.format_offsets[i].data_header.global_key].cost_uncompressed += this->format_containers[i].header.data_header.uLength;
-		//stats_format[this->footer.format_offsets[i].data_header.global_key].cost_uncompressed += (S32)this->format_containers[i].header.data_header.uLength - this->format_containers[i].header.data_header.cLength;
-		//stats_format[this->footer.format_offsets[i].data_header.global_key].cost_uncompressed += (S32)this->format_containers[i].header.stride_header.uLength - this->format_containers[i].header.stride_header.cLength;
 		stats_format[this->footer.format_offsets[i].data_header.global_key].cost_compressed   += this->format_containers[i].header.data_header.cLength;
-		//stats_basic[9].cost_uncompressed += this->format_containers[i].getObjectSize();
 		stats_basic[9].cost_uncompressed += (S32)this->format_containers[i].header.data_header.uLength;
 		stats_basic[9].cost_uncompressed += (S32)this->format_containers[i].header.stride_header.uLength;
 	}

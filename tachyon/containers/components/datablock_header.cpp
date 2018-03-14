@@ -46,12 +46,9 @@ DataBlockFooter::~DataBlockFooter(){
 
 void DataBlockFooter::reset(void){
 	this->offset_ppa.reset();
-	this->offset_hot_meta.reset();
 	this->offset_meta_contig.reset();
 	this->offset_meta_position.reset();
 	this->offset_meta_refalt.reset();
-	this->offset_cold_meta.reset();
-	this->offset_gt_rle.reset();
 	this->offset_gt_simple.reset();
 	this->offset_gt_helper.reset();
 	this->offset_meta_filter_id.reset();
@@ -143,7 +140,6 @@ bool DataBlockFooter::__constructBitVector(bit_vector*& target,
 			target[i].local_keys[j] = local_key;
 
 			// Store absolute key
-			//assert(offset[local_key].key == patterns[i][j] || offset[local_key].key == 0);
 			offset[local_key].data_header.global_key = patterns[i][j];
 		}
 	}

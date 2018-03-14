@@ -5,6 +5,7 @@
 
 #include "../containers/components/datablock_header.h"
 #include "header/variant_header.h"
+#include "meta_allele.h"
 #include "meta_cold.h"
 #include "meta_hot.h"
 
@@ -25,6 +26,7 @@ private:
 	typedef containers::DataBlockFooter datablock_footer_type;
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
+	typedef MetaAllele                  allele_type;
 
 public:
 	MetaEntry();
@@ -116,6 +118,15 @@ public:
 	S32        format_pattern_id; // Format pattern ID
 	hot_entry  hot;               // Hot meta object
 	cold_entry cold;              // Cold meta object - can be empty
+
+	BYTE refalt;
+	U16 controller;
+	U32 n_alleles;
+	float quality;
+	U64 contigID;
+	U64 position;
+	std::string name;
+	allele_type* alleles;
 };
 
 }

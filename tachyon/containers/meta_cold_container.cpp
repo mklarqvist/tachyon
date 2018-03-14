@@ -9,7 +9,8 @@ MetaColdContainer::MetaColdContainer(const VariantBlock& block) :
 	n_entries(0),
 	__entries(nullptr)
 {
-	this->__ctor_setup(block.meta_cold_container);
+	std::cerr << "reconsutrction" << std::endl;
+	//this->__ctor_setup(block.meta_cold_container);
 }
 
 MetaColdContainer::MetaColdContainer(const DataContainer& container) :

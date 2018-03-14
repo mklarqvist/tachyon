@@ -17,35 +17,35 @@ int isBigEndian(){
 	return val.c[0] == 1;
 }
 
-std::vector<std::string> &split(std::string& s, char delim, std::vector<std::string>& elems) {
+std::vector<std::string> &split(std::string& s, char delim, std::vector<std::string>& elems, const bool keepEmpty) {
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, delim)) {
-    	if (!item.empty())
+    	if(!item.empty() || (item.empty() && keepEmpty))
     		elems.push_back(item);
     }
     return elems;
 }
 
-std::vector<std::string> split(std::string& s, char delim) {
+std::vector<std::string> split(std::string& s, char delim, const bool keepEmpty) {
 	std::vector<std::string> elems;
-	split(s, delim, elems);
+	split(s, delim, elems, keepEmpty);
 	return elems;
 }
 
-std::vector<std::string> &split(const std::string& s, char delim, std::vector<std::string>& elems) {
+std::vector<std::string> &split(const std::string& s, char delim, std::vector<std::string>& elems, const bool keepEmpty) {
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, delim)) {
-    	if (!item.empty())
+    	if(!item.empty() || (item.empty() && keepEmpty))
     		elems.push_back(item);
     }
     return elems;
 }
 
-std::vector<std::string> split(const std::string& s, char delim) {
+std::vector<std::string> split(const std::string& s, char delim, const bool keepEmpty) {
 	std::vector<std::string> elems;
-	split(s, delim, elems);
+	split(s, delim, elems, keepEmpty);
 	return elems;
 }
 

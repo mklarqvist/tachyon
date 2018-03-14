@@ -8,33 +8,41 @@ namespace tachyon{
 namespace algorithm{
 
 class ZpaqWrapperIn: public libzpaq::Reader {
+private:
+	typedef io::BasicBuffer buffer_type;
+
 public:
-	ZpaqWrapperIn(io::BasicBuffer& buffer) : iterator_pos(0), buffer(buffer){}
+	ZpaqWrapperIn(buffer_type& buffer) : iterator_pos(0), buffer(buffer){}
 	~ZpaqWrapperIn(){ }
-	inline int get() {
-		//std::cerr << this->iterator_pos << "/" << this->buffer.size() << ":" << (int)this->buffer[this->iterator_pos] << ' ';
+	inline int get(){
 		if(this->iterator_pos + 1 == this->buffer.size()) return(-1); // eof
-		return(*reinterpret_cast<const BYTE* const>(&this->buffer[this->iterator_pos++]));
+		return((BYTE)this->buffer[this->iterator_pos++]);
+		getchar();
 	}  // returns byte 0..255 or -1 at EOF
 
-	void reset(void){
+	inline void reset(void){
 		this->buffer.reset();
 		this->iterator_pos = 0;
 	}
 
-	size_t           iterator_pos;
-	io::BasicBuffer& buffer;
+public:
+	size_t       iterator_pos;
+	buffer_type& buffer;
  };
 
  class ZpaqWrapperOut: public libzpaq::Writer {
- public:
-	ZpaqWrapperOut(io::BasicBuffer& buffer) : buffer(buffer){}
-	~ZpaqWrapperOut(){ }
-	inline void put(int c) { this->buffer += (BYTE)c; }  // writes 1 byte 0..255
-	void write(const char* buf, int n){  this->buffer.Add(buf, n); }
-	void reset(void){ this->buffer.reset(); }
+ private:
+ 	typedef io::BasicBuffer buffer_type;
 
-	io::BasicBuffer& buffer;
+ public:
+	ZpaqWrapperOut(buffer_type& buffer) : buffer(buffer){}
+	~ZpaqWrapperOut(){ }
+	inline void put(int c){ this->buffer += (BYTE)c; }  // writes 1 byte 0..255
+	//inline void write(const char* buf, int n){ this->buffer.Add(buf, n); }
+	inline void reset(void){ this->buffer.reset(); }
+
+ public:
+	buffer_type& buffer;
 };
 
 }
