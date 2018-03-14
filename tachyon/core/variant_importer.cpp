@@ -28,15 +28,6 @@ VariantImporter::VariantImporter(std::string inputFile,
 
 VariantImporter::~VariantImporter(){ }
 
-void VariantImporter::resetHashes(void){
-	this->info_fields.clear();
-	this->info_patterns.clear();
-	this->format_fields.clear();
-	this->format_patterns.clear();
-	this->filter_fields.clear();
-	this->filter_patterns.clear();
-}
-
 bool VariantImporter::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
 	if(!temp.good()){
@@ -117,6 +108,15 @@ bool VariantImporter::BuildBCF(void){
 	// Begin import
 	// Get BCF entries
 	algorithm::Timer timer; timer.Start();
+	if(!SILENT){
+		std::cerr << utility::timestamp("PROGRESS") <<
+		std::setfill(' ') << std::setw(10) << "Variants" << ' ' <<
+		"Contig:from->to" << "\t" <<
+		std::setfill(' ') << std::setw(10) << "Written" << '\t' <<
+		std::setfill(' ') << std::setw(8) << "Completion" << ' ' <<
+		"Elapsed" << std::endl;
+	}
+
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
@@ -163,9 +163,7 @@ bool VariantImporter::BuildBCF(void){
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
 		this->block.header.n_variants       = reader.size();
-		this->block.finalize(this->info_fields,   this->info_patterns,
-                             this->filter_fields, this->filter_patterns,
-                             this->format_fields, this->format_patterns);
+		this->block.finalize();
 
 
 		// Perform compression using standard parameters
@@ -208,7 +206,6 @@ bool VariantImporter::BuildBCF(void){
 		}
 
 		// Reset and update
-		this->resetHashes();
 		this->block.clear();
 		this->permutator.reset();
 		this->writer.stream.flush();
@@ -276,7 +273,7 @@ bool VariantImporter::BuildBCF(void){
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: " << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
-		std::cerr << utility::timestamp("PROGRESS") << "YON: " << utility::toPrettyDiskString(total_uncompressed) << "\t" << utility::toPrettyDiskString(total_compressed) << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "YON: " << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
 	}
 
 	// All done
@@ -324,7 +321,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	this->block.meta_controller_container.Add(meta.controller.toValue()); // has been overloaded
 	++this->block.meta_controller_container;
 
-	if(meta.isSimpleSNV() || (entry.ref_alt & 15) == 5){
+	if(meta.isSimpleSNV() || (entry.ref_alt & 15) == 5){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
 		this->block.meta_refalt_container.Add((BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref));
 		++this->block.meta_refalt_container;
 	}
@@ -356,12 +353,13 @@ bool VariantImporter::add(bcf_entry_type& entry){
 bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
-		this->filter_fields.setGet(this->header->filter_remap[entry.filterID[i].mapID]);
+		this->block.AddFieldFILTER(this->header->filter_remap[entry.filterID[i].mapID]);
 	}
 
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
-		const U32 mapID = this->info_fields.setGet(this->header->info_remap[entry.infoID[i].mapID]);
+		const U32 mapID = this->block.AddFieldINFO(this->header->info_remap[entry.infoID[i].mapID]);
+
 		stream_container& target_container = this->block.info_containers[mapID];
 
 		// Flags and integers
@@ -396,7 +394,8 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.formatPointer; ++i){
 		assert(entry.formatID[i].mapID != -1);
 
-		const U32 mapID = this->format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
+		//const U32 mapID = this->block.format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
+		const U32 mapID = this->block.AddFieldFORMAT(this->header->format_remap[entry.formatID[i].mapID]);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
 		// First value is always genotypes if there are any
@@ -445,23 +444,14 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		const U64 hash_filter_vector = entry.hashFilter();
 
 		U32 mapID = 0;
-		if(!this->filter_patterns.getRaw(hash_filter_vector, mapID)){
+		if(this->block.checkPatternsFILTER(hash_filter_vector) == false){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.filterPointer; ++i)
 				ret_pattern.push_back(this->header->filter_remap[entry.filterID[i].mapID]);
 
-			mapID = this->filter_patterns.size();
+			mapID = this->block.filter_patterns.size();
 			assert(mapID < 65536);
-			if(!this->filter_patterns.set(ret_pattern, hash_filter_vector)){
-				std::cerr << "failed to insert filter: " << ret_pattern.size() << " and " << hash_filter_vector << std::endl;
-				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-				for(size_t i = 0; i < ret_pattern.size(); ++i){
-					std::cerr << ret_pattern[i] << std::endl;
-				}
-				exit(1);
-			}
+			this->block.addPatternFILTER(ret_pattern, hash_filter_vector);
 		}
 
 		// Store this map in the meta
@@ -477,23 +467,14 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash INFO pattern
 		const U64 hash_info_vector = entry.hashInfo();
 
-		if(!this->info_patterns.getRaw(hash_info_vector, mapID)){
+		if(this->block.checkPatternsINFO(hash_info_vector) == false){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.infoPointer; ++i)
 				ret_pattern.push_back(this->header->info_remap[entry.infoID[i].mapID]);
 
-			mapID = this->info_patterns.size();
+			mapID = this->block.info_patterns.size();
 			assert(mapID < 65536);
-			if(!this->info_patterns.set(ret_pattern, hash_info_vector)){
-				std::cerr << "failed to insert info: " << ret_pattern.size() << " and " << hash_info_vector << std::endl;
-				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-				for(size_t i = 0; i < ret_pattern.size(); ++i){
-					std::cerr << ret_pattern[i] << std::endl;
-				}
-				exit(1);
-			}
+			this->block.addPatternINFO(ret_pattern, hash_info_vector);
 		}
 
 		// Store this map in the meta
@@ -510,23 +491,14 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FORMAT pattern
 		const U64 hash_format_vector = entry.hashFormat();
 
-		if(!this->format_patterns.getRaw(hash_format_vector, mapID)){
+		if(this->block.checkPatternsFORMAT(hash_format_vector) == false){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.formatPointer; ++i)
 				ret_pattern.push_back(this->header->format_remap[entry.formatID[i].mapID]);
 
-			mapID = this->format_patterns.size();
+			mapID = this->block.format_patterns.size();
 			assert(mapID < 65536);
-			if(!this->format_patterns.set(ret_pattern, hash_format_vector)){
-				std::cerr << "failed to insert format: " << ret_pattern.size() << " and " << hash_format_vector << std::endl;
-				std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-				for(size_t i = 0; i < ret_pattern.size(); ++i){
-					std::cerr << ret_pattern[i] << std::endl;
-				}
-				exit(1);
-			}
+			this->block.addPatternFORMAT(ret_pattern, hash_format_vector);
 		}
 
 		// Store this map in the meta

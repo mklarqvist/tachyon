@@ -1,7 +1,7 @@
 #ifndef CORE_STREAMCONTAINER_H_
 #define CORE_STREAMCONTAINER_H_
 
-#include <bitset>
+#include <cassert>
 
 #include "../support/enums.h"
 #include "../io/basic_buffer.h"
@@ -274,22 +274,21 @@ public:
 	}
 
 	inline bool AddCharacter(const char* const string, const U32 l_string){
-		if(l_string == 0)
-			return true;
-
 		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_CHAR);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: string" << std::endl;
 		}
 
-
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
-			std::cerr << "Illegal primitive type match char!" << std::endl;
+			std::cerr << "Illegal primitive type match string!" << std::endl;
 			exit(1);
 			return false;
 		}
+
+		if(l_string == 0)
+			return true;
 
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->n_additions += l_string;

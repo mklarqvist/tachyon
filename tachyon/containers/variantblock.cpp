@@ -76,6 +76,13 @@ void VariantBlock::clear(void){
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
 
 	this->footer_support.reset();
+
+	this->info_fields.clear();
+	this->info_patterns.clear();
+	this->format_fields.clear();
+	this->format_patterns.clear();
+	this->filter_fields.clear();
+	this->filter_patterns.clear();
 }
 
 void VariantBlock::resize(const U32 s){

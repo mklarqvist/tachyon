@@ -77,7 +77,7 @@ public:
 	HashVectorContainer() : htable(65536, 250){}
 	~HashVectorContainer(){}
 
-	inline bool get(const U64& value, std::vector<U32>& ret){
+	inline const bool get(const U64& value, std::vector<U32>& ret) const{
 		U32* ret2 = nullptr;
 		if(this->htable.GetItem(&value, ret2, sizeof(U64))){
 			ret = this->data[*ret2];
@@ -86,7 +86,7 @@ public:
 		return false;
 	}
 
-	inline bool getRaw(const U64& value, U32& ret){
+	inline const bool getRaw(const U64& value, U32& ret) const{
 		U32* ret2 = nullptr;
 		if(this->htable.GetItem(&value, ret2, sizeof(U64))){
 			ret = *ret2;

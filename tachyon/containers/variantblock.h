@@ -17,17 +17,17 @@ namespace containers{
  * contents.
  */
 class VariantBlock{
-	typedef VariantBlock                   self_type;
-	typedef DataContainer                  container_type;
-	typedef algorithm::PermutationManager  permutation_type;
-	typedef DataBlockHeader                block_header_type;
-	typedef DataBlockFooter                block_footer_type;
-	typedef HashContainer                  hash_container_type;
-	typedef HashVectorContainer            hash_vector_container_type;
-	typedef io::BasicBuffer                buffer_type;
-	typedef core::DataBlockSettings        settings_type;
+	typedef VariantBlock                    self_type;
+	typedef DataContainer                   container_type;
+	typedef algorithm::PermutationManager   permutation_type;
+	typedef DataBlockHeader                 block_header_type;
+	typedef DataBlockFooter                 block_footer_type;
+	typedef HashContainer                   hash_container_type;
+	typedef HashVectorContainer             hash_vector_container_type;
+	typedef io::BasicBuffer                 buffer_type;
+	typedef core::DataBlockSettings         settings_type;
 	typedef support::VariantImporterContainerStats  import_stats_type;
-	typedef DataContainerHeader            offset_type;
+	typedef DataContainerHeader             offset_type;
 
 public:
 	VariantBlock();
@@ -49,6 +49,64 @@ public:
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
+	inline U32 AddFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
+	inline U32 AddFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
+	inline U32 AddFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
+
+	inline const bool checkPatternsINFO(const U64& hash_pattern) const{
+		U32 mapID = 0;
+		return(this->info_patterns.getRaw(hash_pattern, mapID));
+	}
+
+	inline const bool checkPatternsFORMAT(const U64& hash_pattern) const{
+		U32 mapID = 0;
+		return(this->format_patterns.getRaw(hash_pattern, mapID));
+	}
+
+	inline const bool checkPatternsFILTER(const U64& hash_pattern) const{
+		U32 mapID = 0;
+		return(this->filter_patterns.getRaw(hash_pattern, mapID));
+	}
+
+	inline void addPatternINFO(const std::vector<U32>& pattern, const U64& hash_pattern){
+		if(!this->info_patterns.set(pattern, hash_pattern)){
+			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
+			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
+
+
+			for(size_t i = 0; i < pattern.size(); ++i){
+				std::cerr << pattern[i] << std::endl;
+			}
+			exit(1);
+		}
+	}
+
+	inline void addPatternFORMAT(const std::vector<U32>& pattern, const U64& hash_pattern){
+		if(!this->format_patterns.set(pattern, hash_pattern)){
+			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
+			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
+
+
+			for(size_t i = 0; i < pattern.size(); ++i){
+				std::cerr << pattern[i] << std::endl;
+			}
+			exit(1);
+		}
+	}
+
+	inline void addPatternFILTER(const std::vector<U32>& pattern, const U64& hash_pattern){
+		if(!this->filter_patterns.set(pattern, hash_pattern)){
+			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
+			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
+
+
+			for(size_t i = 0; i < pattern.size(); ++i){
+				std::cerr << pattern[i] << std::endl;
+			}
+			exit(1);
+		}
+	}
+
 	/**<
 	 * Finalize this block before writing to disk
 	 * @param info_values
@@ -59,17 +117,17 @@ public:
 	 * @param format_patterns
 	 * @return
 	 */
-	bool finalize(hash_container_type& info_values, hash_vector_container_type& info_patterns, hash_container_type& filter_values, hash_vector_container_type& filter_patterns, hash_container_type& format_values, hash_vector_container_type& format_patterns){
-		this->footer.n_info_streams   = info_values.size();
-		this->footer.n_filter_streams = filter_values.size();
-		this->footer.n_format_streams = format_values.size();
-		this->allocateDiskOffsets(info_values.size(), format_values.size(), filter_values.size());
+	inline bool finalize(void){
+		this->footer.n_info_streams   = this->info_fields.size();
+		this->footer.n_filter_streams = this->filter_fields.size();
+		this->footer.n_format_streams = this->format_fields.size();
+		this->allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
 		this->updateBaseContainers();
 		this->updateContainerSet(containers::DataBlockFooter::INDEX_INFO);
 		this->updateContainerSet(containers::DataBlockFooter::INDEX_FORMAT);
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   info_values,   info_patterns);
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, filter_values, filter_patterns);
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, format_values, format_patterns);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 		return true;
 	}
 
@@ -201,11 +259,19 @@ public:
 	container_type*   info_containers;
 	container_type*   format_containers;
 
+	// Use during construction
+	hash_container_type        info_fields;
+	hash_container_type        format_fields;
+	hash_container_type        filter_fields;
+	hash_vector_container_type info_patterns;
+	hash_vector_container_type format_patterns;
+	hash_vector_container_type filter_patterns;
+
 public:
 	// Utility
-	size_t n_capacity_info_;
-	size_t n_capacity_format_;
-	U64    disk_offset_;       // utility primitive to support the construction of iterators over blocks
+	//size_t n_capacity_info_;
+	//size_t n_capacity_format_;
+	//U64    disk_offset_;       // utility primitive to support the construction of iterators over blocks
 	container_type footer_support; // used internally only
 };
 

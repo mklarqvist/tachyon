@@ -29,7 +29,7 @@ There are a large number of field-specific file formats that have reached near-u
 
 ### Guiding principles
 * **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
-* **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts user experience front and center. Tachyon follows best practices for reducing cognitive load: it offers consistent & simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
+* **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts emphasis on user experience. Tachyon follows best practices for reducing cognitive load: it offers consistent and simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
 * **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
 * **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness making Tachyon suitable for advanced research.
 
@@ -80,10 +80,10 @@ tachyon view -i <input.yon>
  * the FORMAT field GL into the iterable template class
  * `FormatContainer`. This is a complete example!
  */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadFormat("GL");
 reader.open(my_input_file);
 
@@ -117,10 +117,10 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
  * the INFO field SVLEN into the iterable template class
  * `InfoContainer`. This is a complete example!
  */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadInfo("SVLEN");
 reader.open(my_input_file);
 
@@ -155,10 +155,10 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
  * the INFO field MEINFO into the iterable template class
  * `InfoContainer`. This is a complete example!
  */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadInfo("MEINFO");
 reader.open(my_input_file);
 
@@ -181,10 +181,10 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
  * the VEP-generated CSQ string and tokenize it using
  * built-in utility functions
  */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadInfo("CSQ");
 reader.open(my_input_file);
 
@@ -229,10 +229,10 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
 *
 * This is a complete example!
 */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
@@ -265,10 +265,10 @@ More advanced example using genotype summary statistics
 * to calculate strand-specific bias of an alelle using a Fisher's 
 * 2x2 exact test. This is a complete example!
 */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 
@@ -293,6 +293,39 @@ while(reader.nextBlock()){ // As long as there are YON blocks available
     }
 }
 ```
+
+Calculating Ts/Tv ratio and other summary statistics
+```c++
+/**<
+* Tachyon: https://github.com/mklarqvist/tachyon 
+* In we will calculate the transition-to-transversion ratio and other
+* summary statistics. This is a complete example!
+*/
+#include <tachyon/variant_reader.h>
+
+std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
+tachyon::VariantReader reader;
+reader.getSettings().loadGenotypes(true);
+reader.open(my_input_file);
+
+std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber()); // Global summary object
+while(reader.nextBlock()){ // As long as there are YON blocks available
+    containers::GenotypeContainer gt(this->block);
+    std::vector<tachyon::core::TsTvObject> objects(this->header.getSampleNumber()); // Local summary objects
+    for(U32 i = 0; i < gt.size(); ++i)
+        gt[i].getTsTv(objects); // Update summary statistics for each variant site
+
+    for(U32 i = 0; i < objects.size(); ++i)
+        global[this->block.ppa_manager[i]] += objects[i]; // Update global object with unpermuted sample order
+}
+
+// Dump data to standard out
+std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTG\tTC\tTT\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\totalVariantsn";
+for(U32 i = 0; i < global_titv.size(); ++i)
+    std::cout << reader.header.samples[i].name << '\t' << global_titv[i] << '\n';
+
+```
+
 This will generate a tab-delimited output table (first three rows shown here) 
  
 | Sample | Transversions | Transitions | TsTV    | AA     | AT   | AG    | AC   | TA   | TG     | TC   | TT    | GA    | GT   | GG      | GC   | CA   | CT    | CG   | CC      |  
@@ -315,10 +348,10 @@ An example plot in `R`
 *
 * This is a complete example!
 */
-#include <tachyon/tachyon_reader.h>
+#include <tachyon/variant_reader.h>
 
 std::string my_input_file = "somefile.yon"; // Change me to an actual file that exists on your filesystem
-tachyon::TachyonReader reader;
+tachyon::VariantReader reader;
 reader.getSettings().loadGenotypes(true);
 reader.open(my_input_file);
 

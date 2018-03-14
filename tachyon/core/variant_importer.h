@@ -46,7 +46,6 @@ private:
 	bool BuildBCF();  // import a BCF file
 	bool add(bcf_entry_type& line); // Import a BCF line
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
-	void resetHashes(void);
 
 private:
 	bool GT_available_;
@@ -74,13 +73,6 @@ private:
 	// Data container
 	block_type block;
 
-	// Use during import only
-	hash_container_type        info_fields;
-	hash_container_type        format_fields;
-	hash_container_type        filter_fields;
-	hash_vector_container_type info_patterns;
-	hash_vector_container_type format_patterns;
-	hash_vector_container_type filter_patterns;
 };
 
 

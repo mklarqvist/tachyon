@@ -36,8 +36,8 @@ public:
     // Basic operations
     bool SetItem(const T* key, const K& value, U32 length = sizeof(T));
     bool SetItem(const void* key_address, const T* key, const K& value, U32 length = sizeof(T));
-    bool GetItem(const T* key, K*& entry, U32 length = sizeof(T));
-    bool GetItem(const void* key_address, const T* key, K*& entry, U32 length = sizeof(T));
+    bool GetItem(const T* key, K*& entry, U32 length = sizeof(T)) const;
+    bool GetItem(const void* key_address, const T* key, K*& entry, U32 length = sizeof(T)) const;
     void clear();
 
     inline const U32& capacity(void) const{return(this->__size);}
@@ -53,7 +53,7 @@ public:
 
 protected:
     bool __set(U64& index, const U64& hash2, const T* const key, const K& value);
-    bool __get(U64& index, const U64& hash2, const T* const key, K*& value_type);
+    bool __get(U64& index, const U64& hash2, const T* const key, K*& value_type) const;
 
 private:
     U64 __occupied;
@@ -121,7 +121,7 @@ bool HashTable<T, K>::__set(U64& index, const U64& hash2, const T* const key, co
 }
 
 template <class T, class K>
-bool HashTable<T, K>::__get(U64& index, const U64& hash2, const T* const key, K*& entry){
+bool HashTable<T, K>::__get(U64& index, const U64& hash2, const T* const key, K*& entry) const{
 	U16 RETRIES_COUNTER = 0;
 
 	for(U32 i = 0;;++i){
@@ -160,14 +160,14 @@ inline bool HashTable<T, K>::SetItem(const void* key_adress, const T* key, const
 }
 
 template <class T, class K>
-inline bool HashTable<T, K>::GetItem(const T* key, K*& entry, U32 length){
+inline bool HashTable<T, K>::GetItem(const T* key, K*& entry, U32 length) const{
 	U64 idx = XXH64(key, length, 0);
 	const U64 hash2 = XXH64(key, length, HASH_CONSTANT1);
 	return(this->__get(idx, hash2, key, entry));
 }
 
 template <class T, class K>
-inline bool HashTable<T, K>::GetItem(const void* key_address, const T* key, K*& entry, U32 length){
+inline bool HashTable<T, K>::GetItem(const void* key_address, const T* key, K*& entry, U32 length) const{
 	U64 idx = XXH64(key_address, length, 0);
 	const U64 hash2 = XXH64(key_address, length, HASH_CONSTANT1);
 	return(this->__get(idx, hash2, key, entry));

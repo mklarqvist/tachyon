@@ -44,7 +44,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		//++block.gt_rle_container;
 		block.gt_support_data_container.addStride(1);
-		block.gt_support_data_container.Add(cost.n_runs);
+		block.gt_support_data_container.Add((U32)cost.n_runs);
 		++block.gt_support_data_container;
 
 		switch(cost.word_width){
@@ -90,7 +90,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 			meta_base.controller.gt_rle = true;
 			++block.gt_simple_container;
-			block.gt_support_data_container.Add(cost.n_runs);
+			block.gt_support_data_container.Add((U32)cost.n_runs);
 			++block.gt_support_data_container;
 
 			switch(cost.word_width){

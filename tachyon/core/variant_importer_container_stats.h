@@ -25,7 +25,7 @@ private:
 public:
     VariantImporterContainerStats() :
     	n_entries_(0),
-		n_capacity_(50),
+		n_capacity_(200),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
     	for(U32 i = 0; i < this->capacity(); ++i)

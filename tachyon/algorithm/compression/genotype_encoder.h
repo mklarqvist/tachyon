@@ -122,9 +122,9 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy, ++j){
 		for(U32 p = 0; p < ploidy; ++p){
 			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&line.data[bcf_gt_pos]);
-			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0);
-			else if(allele == EOV_value ) simple.AddLiteral((YON_STORE_TYPE)1);
-			else {
+			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0); // missing
+			else if(allele == EOV_value ) simple.AddLiteral((YON_STORE_TYPE)1); // eov
+			else { // otherwise
 				// Add 1 because 1 is reserved for EOV
 				const YON_STORE_TYPE val = ((allele >> 1) + 1) << 1 | (allele & 1);
 				simple.AddLiteral(val);
