@@ -269,7 +269,10 @@ public:
 	container_type    gt_rle16_container;
 	container_type    gt_rle32_container;
 	container_type    gt_rle64_container;
-	container_type    gt_simple_container;
+	container_type    gt_simple8_container;
+	container_type    gt_simple16_container;
+	container_type    gt_simple32_container;
+	container_type    gt_simple64_container;
 	container_type*   info_containers;
 	container_type*   format_containers;
 

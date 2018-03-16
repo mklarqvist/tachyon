@@ -52,9 +52,7 @@ struct DataBlockSettings{
 	DataBlockSettings() :
 		importPPA(false),
 		importGT(false),
-		importGTSimple(false),
-		importMetaHot(false),
-		importMetaCold(false),
+		importMeta(false),
 		importInfoAll(false),
 		importFormatAll(false),
 		constructOccTable(false)
@@ -63,22 +61,14 @@ struct DataBlockSettings{
 	self_type& loadAll(const bool set = true){
 		this->importPPA = set;
 		this->importGT = set;
-		this->importGTSimple = set;
-		this->importMetaCold = set;
-		this->importMetaHot = set;
+		this->importMeta = set;
 		this->importInfoAll = set;
 		this->importFormatAll = set;
 		return(*this);
 	}
 
 	self_type& loadMeta(const bool set = true){
-		this->importMetaHot = set;
-		this->importMetaCold = set;
-		return(*this);
-	}
-
-	self_type& loadMetaHot(const bool set = true){
-		this->importMetaHot = true;
+		this->importMeta = set;
 		return(*this);
 	}
 
@@ -101,14 +91,12 @@ struct DataBlockSettings{
 	self_type& loadGenotypes(const bool set = true){
 		this->loadMeta(true);
 		this->importGT = true;
-		this->importGTSimple = true;
 		return(*this);
 	}
 
 	self_type& loadFORMAT(const bool set = true){
 		this->importPPA = set;
 		this->importGT = set;
-		this->importGTSimple = set;
 		this->importFormatAll = set;
 		return(*this);
 	}
@@ -128,9 +116,7 @@ struct DataBlockSettings{
 public:
 	bool importPPA;
 	bool importGT;
-	bool importGTSimple;
-	bool importMetaHot;
-	bool importMetaCold;
+	bool importMeta;
 	bool importInfoAll;
 	bool importFormatAll;
 	bool constructOccTable;

@@ -29,22 +29,6 @@ public:
 	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset);
 	~MetaEntry();
 
-	/**<
-	 * Translates MetaEntry record into a VCF string
-	 * for output to the target ostream
-	 * @param dest
-	 * @param header
-	 */
-	void toVCFString(std::ostream& dest, const header_type& header) const;
-
-	/**<
-	 * Translated MetaEntry record into a VCF string
-	 * for output to the target buffer
-	 * @param dest
-	 * @param header
-	 */
-	void toVCFString(buffer_type& dest, const header_type& header) const;
-
 	// Check if a field is set
 	inline const bool check_info_field(const datablock_footer_type& block, const U32 info_identifier) const{
 		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
@@ -71,11 +55,8 @@ public:
 	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
 	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
 
-	const TACHYON_GT_TYPE getGenotypeType(void) const{
-		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && !this->controller.gt_anyNA) return YON_GT_RLE_DIPLOID_BIALLELIC;
-		else if(this->controller.gt_rle && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
-		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_BCF_DIPLOID;
-		else return YON_GT_UNKNOWN;
+	inline const TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{
+		return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type));
 	}
 
 	const BYTE getPrimitiveWidth(void) const{
@@ -88,7 +69,16 @@ public:
 		return(0);
 	}
 
-	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC); }
+	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{
+		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && this->controller.mixed_ploidy == false)
+			return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC);
+		else if(this->controller.gt_rle && this->controller.diploid)
+			return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_NALLELIC);
+		else if(this->controller.diploid)
+			return(TACHYON_GT_TYPE::YON_GT_BCF_DIPLOID);
+		else
+			return(TACHYON_GT_TYPE::YON_GT_BCF_STYLE);
+	}
 	inline const BYTE getGTPrimitiveWidth(void) const{ return(1); }
 
 	inline const float& getQuality(void) const{ return(this->quality); }

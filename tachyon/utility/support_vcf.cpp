@@ -219,6 +219,30 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
 	return(stream);
 }
 
+std::ostream& to_vcf_string(std::ostream& stream, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
+	stream.write(&header.getContig(meta_entry.contigID).name[0], header.getContig(meta_entry.contigID).name.size()) << '\t';
+	stream << meta_entry.position + 1 << '\t';
+
+	if(meta_entry.name.size() == 0) stream.put('.');
+	else stream.write(&meta_entry.name[0], meta_entry.name.size());
+	stream.put('\t');
+	if(meta_entry.n_alleles){
+		stream.write(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
+		//stream << meta_entry.alleles[0].l_allele;
+		stream.put('\t');
+		stream.write(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
+		for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+			stream.put(',');
+			stream.write(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
+		}
+	} else stream << ".\t.\t";
+
+	if(std::isnan(meta_entry.quality)) stream << "\t.\t";
+	else {
+		stream << '\t' << meta_entry.quality << '\t';
+	}
+	return(stream);
+}
 
 }
 }

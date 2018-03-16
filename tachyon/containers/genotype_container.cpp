@@ -1,5 +1,5 @@
 #include "genotype_container.h"
-
+#include "primitive_container.h"
 #include "stride_container.h"
 
 namespace tachyon{
@@ -10,153 +10,85 @@ GenotypeContainer::GenotypeContainer(const block_type& block) :
 	__meta_container(block),
 	__iterators(nullptr)
 {
-	std::cerr << "reconstruction" << std::endl;
-	exit(1);
-	this->n_entries   = this->__meta_container.size();
+	// Todo: if anything is uniform
+	// Support
+	MetaContainer meta(block); // meta information
+	StrideContainer<U32> target(block.gt_support_data_container); // target container family
+	PrimitiveContainer<U32> lengths(block.gt_support_data_container); // n_runs / objects size
+
+	U32 offset_rle8 = 0;  const char* const rle8 = block.gt_rle8_container.buffer_data.data();
+	U32 offset_rle16 = 0; const char* const rle16 = block.gt_rle16_container.buffer_data.data();
+	U32 offset_rle32 = 0; const char* const rle32 = block.gt_rle32_container.buffer_data.data();
+	U32 offset_rle64 = 0; const char* const rle64 = block.gt_rle64_container.buffer_data.data();
+	U32 offset_simple8 = 0;  const char* const simple8 = block.gt_simple8_container.buffer_data.data();
+	U32 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data.data();
+	U32 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data.data();
+	U32 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data.data();
+
+	// Count number of fields with GT data
+	U32 n_has_gt = 0;
+	for(U32 i = 0; i < meta.size(); ++i)
+		n_has_gt += meta[i].hasGT();
+
+	this->n_entries   = n_has_gt;
 	this->__iterators = static_cast<pointer>(::operator new[](this->size() * sizeof(value_type)));
 
-	if(this->n_entries == 0)
-		return;
+	U32 gt_offset = 0;
+	for(U32 i = 0; i < meta.size(); ++i){
+		if(meta[i].hasGT()){
+			if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC){
+				if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &rle8[offset_rle8], lengths[gt_offset], this->__meta_container[i] );
+					offset_rle8 += lengths[gt_offset]*sizeof(BYTE);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &rle16[offset_rle16], lengths[gt_offset], this->__meta_container[i] );
+					offset_rle16 += lengths[gt_offset]*sizeof(U16);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &rle32[offset_rle32], lengths[gt_offset], this->__meta_container[i] );
+					offset_rle32 += lengths[gt_offset]*sizeof(U16);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &rle64[offset_rle64], lengths[gt_offset], this->__meta_container[i] );
+					offset_rle64 += lengths[gt_offset]*sizeof(U16);
+				} else {
+					std::cerr << "unknwn type" << std::endl;
+					exit(1);
+				}
 
-	// Aliases
-	//const char* const data_rle    = block.gt_rle_container.buffer_data_uncompressed.data();
-	const char* const data_rle = nullptr;
-	const char* const data_simple = block.gt_simple_container.buffer_data_uncompressed.data();
-
-	if(block.gt_support_data_container.buffer_data_uncompressed.size() == 0){
-		std::cerr << utility::timestamp("ERROR","GT") << "Has no genotype support data!" << std::endl;
-		exit(1);
-	}
-
-	// data (0: rle, 1: simple), strides (n_objects)
-	getNativeFuncDef getObjects = nullptr;
-	switch(block.gt_support_data_container.getDataPrimitiveType()){
-	case(YON_TYPE_8B):  getObjects = &self_type::getNative<BYTE>; break;
-	case(YON_TYPE_16B): getObjects = &self_type::getNative<U16>; break;
-	case(YON_TYPE_32B): getObjects = &self_type::getNative<U32>; break;
-	case(YON_TYPE_64B): getObjects = &self_type::getNative<U64>; break;
-	default: std::cerr << "illegal type" << std::endl; return;
-	}
-
-	// Meta data is uniform
-	if(block.gt_support_data_container.header.data_header.isUniform()){
-		U32 current_offset_rle    = 0;
-		U32 current_offset_simple = 0;
-		const U32 target = block.gt_support_data_container.header.data_header.stride;
-		const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, 0);
-		assert(block.gt_support_data_container.header.data_header.stride > 0);
-
-		for(U32 i = 0; i < this->n_entries; ++i){
-			if(target == 1){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-
-				current_offset_rle += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else if(target == 2){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-
-				current_offset_simple += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
+			} else if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_NALLELIC) {
+				if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &simple16[offset_simple16], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple16 += lengths[gt_offset]*sizeof(U16);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple32 += lengths[gt_offset]*sizeof(U16);
+				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple64 += lengths[gt_offset]*sizeof(U16);
+				} else {
+					std::cerr << "unknwn type" << std::endl;
+					exit(1);
+				}
 			} else {
-				std::cerr << utility::timestamp("ERROR") << "Illegal GT specification!" << std::endl;
+				std::cerr << "not implemented" << std::endl;
 				exit(1);
 			}
+			++gt_offset;
+		} else {
+			new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( );
 		}
-		return;
 	}
 
-	// Start non-uniform (standard ctor)
-
-	if(block.gt_support_data_container.header.data_header.hasMixedStride()){
-		U32 current_offset_rle    = 0;
-		U32 current_offset_simple = 0;
-		StrideContainer<U32> strides(block.gt_support_data_container);
-
-		for(U32 i = 0; i < this->n_entries; ++i){
-			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
-
-			if(strides[i] == 1){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-
-				current_offset_rle += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else if(strides[i] == 2){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-
-				current_offset_simple += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else {
-				std::cerr << utility::timestamp("ERROR") << "Illegal GT specification!" << std::endl;
-				exit(1);
-			}
-		}
-
-		//assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
-		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
-	}
-	else { // No mixed stride
-		U32 current_offset_rle    = 0;
-		U32 current_offset_simple = 0;
-		const U32 target = block.gt_support_data_container.header.data_header.stride;
-
-		for(U32 i = 0; i < this->n_entries; ++i){
-			const U32 n_objects = (this->*getObjects)(block.gt_support_data_container.buffer_data_uncompressed, i);
-
-			if(target == 1){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &data_rle[current_offset_rle], n_objects, this->__meta_container[i] );
-
-				current_offset_rle += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else if(target == 2){
-				if(this->__meta_container[i].getGTPrimitiveWidth() == 1)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 2)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 4)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-				else if(this->__meta_container[i].getGTPrimitiveWidth() == 8)
-					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &data_simple[current_offset_simple], n_objects, this->__meta_container[i] );
-
-				current_offset_simple += n_objects * this->__meta_container[i].getGTPrimitiveWidth();
-			} else {
-				std::cerr << utility::timestamp("ERROR") << "Illegal GT specification!" << std::endl;
-				exit(1);
-			}
-		}
-
-		//assert(current_offset_rle == block.gt_rle_container.buffer_data_uncompressed.size());
-		assert(current_offset_simple == block.gt_simple_container.buffer_data_uncompressed.size());
-	}
+	assert(offset_rle8 == block.gt_rle8_container.getSizeUncompressed());
+	assert(offset_rle16 == block.gt_rle16_container.getSizeUncompressed());
+	assert(offset_rle32 == block.gt_rle32_container.getSizeUncompressed());
+	assert(offset_rle64 == block.gt_rle64_container.getSizeUncompressed());
+	assert(offset_simple8 == block.gt_simple8_container.getSizeUncompressed());
+	assert(offset_simple16 == block.gt_simple16_container.getSizeUncompressed());
+	assert(offset_simple32 == block.gt_simple32_container.getSizeUncompressed());
+	assert(offset_simple64 == block.gt_simple64_container.getSizeUncompressed());
 }
 
 GenotypeContainer::~GenotypeContainer(){

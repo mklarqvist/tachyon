@@ -61,7 +61,10 @@ public:
 			//zstd_codec.compressStrides(block.meta_alleles_container);
 		}
 
-		if(block.gt_simple_container.n_entries)       zstd_codec.compress(block.gt_simple_container);
+		if(block.gt_simple8_container.n_entries)      zstd_codec.compress(block.gt_simple8_container);
+		if(block.gt_simple16_container.n_entries)     zstd_codec.compress(block.gt_simple16_container);
+		if(block.gt_simple32_container.n_entries)     zstd_codec.compress(block.gt_simple32_container);
+		if(block.gt_simple64_container.n_entries)     zstd_codec.compress(block.gt_simple64_container);
 		if(block.gt_support_data_container.n_entries) zstd_codec.compress(block.gt_support_data_container);
 		if(block.meta_info_map_ids.n_entries)         zstd_codec.compress(block.meta_info_map_ids);
 		if(block.meta_filter_map_ids.n_entries)       zstd_codec.compress(block.meta_filter_map_ids);
@@ -119,7 +122,6 @@ public:
 		if(block.meta_alleles_container.getSizeCompressed())    this->decompress(block.meta_alleles_container);
 		if(block.meta_controller_container.getSizeCompressed()) this->decompress(block.meta_controller_container);
 		if(block.meta_quality_container.getSizeCompressed())    this->decompress(block.meta_quality_container);
-		if(block.gt_simple_container.getSizeCompressed())       this->decompress(block.gt_simple_container);
 		if(block.gt_support_data_container.getSizeCompressed()) this->decompress(block.gt_support_data_container);
 		if(block.meta_info_map_ids.getSizeCompressed())         this->decompress(block.meta_info_map_ids);
 		if(block.meta_names_container.getSizeCompressed())      this->decompress(block.meta_names_container);
@@ -129,6 +131,10 @@ public:
 		if(block.gt_rle16_container.getSizeCompressed())        this->decompress(block.gt_rle16_container);
 		if(block.gt_rle32_container.getSizeCompressed())        this->decompress(block.gt_rle32_container);
 		if(block.gt_rle64_container.getSizeCompressed())        this->decompress(block.gt_rle64_container);
+		if(block.gt_simple8_container.getSizeCompressed())      this->decompress(block.gt_simple8_container);
+		if(block.gt_simple16_container.getSizeCompressed())     this->decompress(block.gt_simple16_container);
+		if(block.gt_simple32_container.getSizeCompressed())     this->decompress(block.gt_simple32_container);
+		if(block.gt_simple64_container.getSizeCompressed())     this->decompress(block.gt_simple64_container);
 
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
 			if(block.format_containers[i].getSizeCompressed())

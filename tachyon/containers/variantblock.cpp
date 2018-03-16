@@ -12,7 +12,6 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200])
 {
 	// Base container streams are always of type TYPE_STRUCT
-	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
 	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
 	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
@@ -44,7 +43,6 @@ void VariantBlock::clear(void){
 	this->meta_filter_map_ids.reset();
 	this->meta_format_map_ids.reset();
 	this->gt_support_data_container.reset();
-	this->gt_simple_container.reset();
 	this->ppa_manager.reset();
 	this->meta_names_container.reset();
 	this->meta_alleles_container.reset();
@@ -54,9 +52,13 @@ void VariantBlock::clear(void){
 	this->gt_rle32_container.reset();
 	this->gt_rle64_container.reset();
 
+	this->gt_simple8_container.reset();
+	this->gt_simple16_container.reset();
+	this->gt_simple32_container.reset();
+	this->gt_simple64_container.reset();
+
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
-	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
 	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
 	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
@@ -79,7 +81,10 @@ void VariantBlock::resize(const U32 s){
 	this->meta_positions_container.resize(s);
 	this->meta_refalt_container.resize(s);
 	this->meta_controller_container.resize(s);
-	this->gt_simple_container.resize(s);
+	this->gt_simple8_container.resize(s);
+	this->gt_simple16_container.resize(s);
+	this->gt_simple32_container.resize(s);
+	this->gt_simple64_container.resize(s);
 	this->meta_info_map_ids.resize(s);
 	this->meta_filter_map_ids.resize(s);
 	this->meta_format_map_ids.resize(s);
@@ -103,7 +108,10 @@ void VariantBlock::updateBaseContainers(void){
 	this->updateContainer(this->meta_controller_container, false);
 	this->updateContainer(this->meta_quality_container);
 	this->updateContainer(this->meta_names_container);
-	this->updateContainer(this->gt_simple_container);
+	this->updateContainer(this->gt_simple8_container);
+	this->updateContainer(this->gt_simple16_container);
+	this->updateContainer(this->gt_simple32_container);
+	this->updateContainer(this->gt_simple64_container);
 	this->updateContainer(this->gt_support_data_container);
 	this->updateContainer(this->meta_alleles_container);
 	this->updateContainer(this->meta_filter_map_ids);
@@ -245,7 +253,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	}
 
-	if(settings.importMetaHot){
+	if(settings.importMeta){
 		stream.seekg(start_offset + this->footer.offset_meta_contig.data_header.offset);
 
 		this->meta_contig_container.header = this->footer.offset_meta_contig;
@@ -259,9 +267,8 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 		this->meta_controller_container.header = this->footer.offset_meta_controllers;
 		stream >> this->meta_controller_container;
-	}
 
-	if(settings.importMetaCold){
+
 		stream.seekg(start_offset + this->footer.offset_meta_quality.data_header.offset);
 		this->meta_quality_container.header = this->footer.offset_meta_quality;
 		stream >> this->meta_quality_container;
@@ -286,21 +293,23 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 		this->gt_rle64_container.header = this->footer.offset_gt_64b;
 		stream >> this->gt_rle64_container;
-	}
 
-	if(settings.importGTSimple){
-		stream.seekg(start_offset + this->footer.offset_gt_simple.data_header.offset);
-		this->gt_simple_container.header = this->footer.offset_gt_simple;
-		stream >> this->gt_simple_container;
-	}
+		stream.seekg(start_offset + this->footer.offset_gt_simple8.data_header.offset);
+		this->gt_simple8_container.header  = this->footer.offset_gt_simple8;
+		stream >> this->gt_simple8_container;
+		this->gt_simple16_container.header = this->footer.offset_gt_simple16;
+		stream >> this->gt_simple16_container;
+		this->gt_simple32_container.header = this->footer.offset_gt_simple32;
+		stream >> this->gt_simple32_container;
+		this->gt_simple64_container.header = this->footer.offset_gt_simple64;
+		stream >> this->gt_simple64_container;
 
-	if(settings.importGTSimple || settings.importGT){
 		stream.seekg(start_offset + this->footer.offset_gt_helper.data_header.offset);
 		this->gt_support_data_container.header = this->footer.offset_gt_helper;
 		stream >> this->gt_support_data_container;
 	}
 
-	if((settings.importMetaHot || settings.importMetaCold)){
+	if((settings.importMeta)){
 		stream.seekg(start_offset + this->footer.offset_meta_info_id.data_header.offset);
 		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
 		stream >> this->meta_info_map_ids;
@@ -386,7 +395,10 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 	total += this->gt_rle16_container.getObjectSize();
 	total += this->gt_rle32_container.getObjectSize();
 	total += this->gt_rle64_container.getObjectSize();
-	total += this->gt_simple_container.getObjectSize();
+	total += this->gt_simple8_container.getObjectSize();
+	total += this->gt_simple16_container.getObjectSize();
+	total += this->gt_simple32_container.getObjectSize();
+	total += this->gt_simple64_container.getObjectSize();
 	total += this->gt_support_data_container.getObjectSize();
 	total += this->meta_info_map_ids.getObjectSize();
 	total += this->meta_filter_map_ids.getObjectSize();
@@ -472,11 +484,24 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[4].cost_uncompressed += (S32)this->gt_rle64_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_gt_simple, this->gt_simple_container, (U64)stream.tellp() - start_pos);
-	stream << this->gt_simple_container;
+	this->__updateHeader(this->footer.offset_gt_simple8, this->gt_simple8_container, (U64)stream.tellp() - start_pos);
+	stream << this->gt_simple8_container;
+	this->__updateHeader(this->footer.offset_gt_simple16, this->gt_simple16_container, (U64)stream.tellp() - start_pos);
+	stream << this->gt_simple16_container;
+	this->__updateHeader(this->footer.offset_gt_simple32, this->gt_simple32_container, (U64)stream.tellp() - start_pos);
+	stream << this->gt_simple32_container;
+	this->__updateHeader(this->footer.offset_gt_simple64, this->gt_simple64_container, (U64)stream.tellp() - start_pos);
+	stream << this->gt_simple64_container;
+
 	stats_basic[5].cost_compressed   += (U64)stream.tellp() - last_pos;
-	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.data_header.uLength;
-	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.stride_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple8_container.header.data_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple8_container.header.stride_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple16_container.header.data_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple16_container.header.stride_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple32_container.header.data_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple32_container.header.stride_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple64_container.header.data_header.uLength;
+	stats_basic[5].cost_uncompressed += (S32)this->gt_simple64_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
 	this->__updateHeader(this->footer.offset_gt_helper, this->gt_support_data_container, (U64)stream.tellp() - start_pos);

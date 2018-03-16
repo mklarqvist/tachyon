@@ -258,12 +258,8 @@ public:
 		containers::MetaContainer meta(this->block);
 
 		// Store as double pointers to avoid memory collisions because
-		// infocontainers have different class members
+		// info containers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.footer.n_info_streams];
-
-		//for(U32 i = 0; i < this->block.index_entry.n_info_streams; ++i){
-		//	std::cerr << i << '/' << this->block.index_entry.n_info_streams << '\t' << this->block.info_containers[i].getSizeUncompressed() << "," << this->block.info_containers[i].getSizeCompressed() << std::endl;
-		//}
 
 		std::vector<std::string> global_fields;
 		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
@@ -280,15 +276,13 @@ public:
 				its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
 				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
 			} else {
-				//std::cerr << "unknown type: " << (int)this->header.info_fields[this->block.index_entry.info_offsets[i].key].getType() << std::endl;
 				its[i] = new containers::InfoContainer<U32>();
 				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
-				//continue;
 			}
 		}
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			meta.at(p).toVCFString(std::cout, this->header);
+			utility::to_vcf_string(std::cout, meta[p], this->header);
 
 			if(this->block.footer.n_filter_streams){
 				const U32& n_filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
@@ -341,20 +335,22 @@ public:
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		//std::cerr << "before meta: " << this->block.size() << std::endl;
-		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block);
+
+		//containers::MetaContainer meta(this->block);
 		//for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i)
 		//	std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
 		//containers::InfoContainer<std::string>* it2 = this->get_balanced_info_container<std::string>("CSQ",meta);
+		/*
 		containers::InfoContainer<U32>* it2 = this->get_balanced_info_container<U32>("DP", meta);
 		if(it2 != nullptr){
 			std::cerr << it2->size() << std::endl;
 		}
 		delete it2;
-
+		*/
+		return(gt.size());
 		//std::cerr << meta.size() << std::endl;
-		return(meta.size());
-
-
+		//return(meta.size());
 	}
 
 	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){

@@ -189,7 +189,10 @@ public:
 		buffer += entry.offset_gt_16b;
 		buffer += entry.offset_gt_32b;
 		buffer += entry.offset_gt_64b;
-		buffer += entry.offset_gt_simple;
+		buffer += entry.offset_gt_simple8;
+		buffer += entry.offset_gt_simple16;
+		buffer += entry.offset_gt_simple32;
+		buffer += entry.offset_gt_simple64;
 		buffer += entry.offset_gt_helper;
 		buffer += entry.offset_meta_info_id;
 		buffer += entry.offset_meta_format_id;
@@ -252,7 +255,10 @@ private:
 		stream << entry.offset_gt_16b;
 		stream << entry.offset_gt_32b;
 		stream << entry.offset_gt_64b;
-		stream << entry.offset_gt_simple;
+		stream << entry.offset_gt_simple8;
+		stream << entry.offset_gt_simple16;
+		stream << entry.offset_gt_simple32;
+		stream << entry.offset_gt_simple64;
 		stream << entry.offset_gt_helper;
 		stream << entry.offset_meta_info_id;
 		stream << entry.offset_meta_format_id;
@@ -319,7 +325,10 @@ private:
 		stream >> entry.offset_gt_16b;
 		stream >> entry.offset_gt_32b;
 		stream >> entry.offset_gt_64b;
-		stream >> entry.offset_gt_simple;
+		stream >> entry.offset_gt_simple8;
+		stream >> entry.offset_gt_simple16;
+		stream >> entry.offset_gt_simple32;
+		stream >> entry.offset_gt_simple64;
 		stream >> entry.offset_gt_helper;
 		stream >> entry.offset_meta_info_id;
 		stream >> entry.offset_meta_format_id;
@@ -409,7 +418,10 @@ public:
 	header_type  offset_gt_16b;
 	header_type  offset_gt_32b;
 	header_type  offset_gt_64b;
-	header_type  offset_gt_simple;
+	header_type  offset_gt_simple8;
+	header_type  offset_gt_simple16;
+	header_type  offset_gt_simple32;
+	header_type  offset_gt_simple64;
 	header_type  offset_gt_helper;
 	header_type  offset_meta_info_id;
 	header_type  offset_meta_format_id;

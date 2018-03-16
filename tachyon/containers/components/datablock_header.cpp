@@ -49,7 +49,10 @@ void DataBlockFooter::reset(void){
 	this->offset_meta_contig.reset();
 	this->offset_meta_position.reset();
 	this->offset_meta_refalt.reset();
-	this->offset_gt_simple.reset();
+	this->offset_gt_simple8.reset();
+	this->offset_gt_simple16.reset();
+	this->offset_gt_simple32.reset();
+	this->offset_gt_simple64.reset();
 	this->offset_gt_helper.reset();
 	this->offset_meta_filter_id.reset();
 	this->offset_meta_format_id.reset();

@@ -31,14 +31,14 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	meta_base.controller.diploid          = line.gt_support.ploidy == 2;
 	meta_base.controller.gt_mixed_phasing = line.gt_support.mixedPhasing;
 	meta_base.controller.gt_anyMissing    = line.gt_support.hasMissing;
-	meta_base.controller.gt_anyNA         = line.gt_support.hasEOV;
+	meta_base.controller.gt_anyNA         = line.gt_support.hasMissing;
 	meta_base.controller.gt_phase         = line.gt_support.phase;
 	meta_base.controller.mixed_ploidy     = line.gt_support.hasEOV;
 
 	// Assess cost and encode
 	rle_helper_type cost;
 	//std::cerr << meta_base.controller.biallelic << "," << line.gt_support.ploidy << "," << line.gt_support.hasEOV << std::endl;
-	if(meta_base.controller.biallelic && line.gt_support.ploidy == 2 && line.gt_support.hasEOV == false){ // Case diploid and biallelic
+	if(meta_base.controller.biallelic && meta_base.controller.diploid && meta_base.controller.mixed_ploidy == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
 		meta_base.controller.gt_rle = true;
 
@@ -75,7 +75,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		return true;
 	}
-	else if(line.gt_support.ploidy == 2) { // Case diploid n-allelic OR have EOV values
+	else if(meta_base.controller.diploid) { // Case diploid n-allelic OR have EOV values
 		cost = this->assessDiploidRLEnAllelic(line, ppa);
 
 		// BCF-style cost
@@ -89,26 +89,29 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			block.gt_support_data_container.addStride(2);
 
 			meta_base.controller.gt_rle = true;
-			++block.gt_simple_container;
 			block.gt_support_data_container.Add((U32)cost.n_runs);
 			++block.gt_support_data_container;
 
 			switch(cost.word_width){
 			case 1:
-				this->EncodeDiploidRLEnAllelic<BYTE>(line, block.gt_simple_container, ppa, cost);
+				this->EncodeDiploidRLEnAllelic<BYTE>(line, block.gt_simple8_container, ppa, cost);
 				meta_base.controller.gt_primtive_type = core::YON_GT_BYTE;
+				++block.gt_simple8_container;
 				break;
 			case 2:
-				this->EncodeDiploidRLEnAllelic<U16>(line, block.gt_simple_container, ppa, cost);
+				this->EncodeDiploidRLEnAllelic<U16>(line, block.gt_simple16_container, ppa, cost);
 				meta_base.controller.gt_primtive_type = core::YON_GT_U16;
+				++block.gt_simple16_container;
 				break;
 			case 4:
-				this->EncodeDiploidRLEnAllelic<U32>(line, block.gt_simple_container, ppa, cost);
+				this->EncodeDiploidRLEnAllelic<U32>(line, block.gt_simple32_container, ppa, cost);
 				meta_base.controller.gt_primtive_type = core::YON_GT_U32;
+				++block.gt_simple32_container;
 				break;
 			case 8:
-				this->EncodeDiploidRLEnAllelic<U64>(line, block.gt_simple_container, ppa, cost);
+				this->EncodeDiploidRLEnAllelic<U64>(line, block.gt_simple64_container, ppa, cost);
 				meta_base.controller.gt_primtive_type = core::YON_GT_U64;
+				++block.gt_simple64_container;
 				break;
 			default:
 				std::cerr << utility::timestamp("ERROR","ENCODER") << "Illegal word width (" << (int)cost.word_width << ")... " << std::endl;
@@ -122,20 +125,22 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 			block.gt_support_data_container.addStride(3);
 			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
-			++block.gt_simple_container;
 
 			U64 n_runs = this->n_samples;
 			if(line.body->n_allele + 1 < 8){
 				meta_base.controller.gt_primtive_type = core::YON_GT_BYTE;
-				this->EncodeDiploidBCF<BYTE>(line, block.gt_simple_container, n_runs, ppa);
+				this->EncodeDiploidBCF<BYTE>(line, block.gt_simple8_container, n_runs, ppa);
+				++block.gt_simple8_container;
 			}
 			else if(line.body->n_allele + 1 < 128){
 				meta_base.controller.gt_primtive_type = core::YON_GT_U16;
-				this->EncodeDiploidBCF<U16> (line, block.gt_simple_container, n_runs, ppa);
+				this->EncodeDiploidBCF<U16> (line, block.gt_simple16_container, n_runs, ppa);
+				++block.gt_simple16_container;
 			}
 			else if(line.body->n_allele + 1 < 32768){
 				meta_base.controller.gt_primtive_type = core::YON_GT_U32;
-				this->EncodeDiploidBCF<U32> (line, block.gt_simple_container, n_runs, ppa);
+				this->EncodeDiploidBCF<U32> (line, block.gt_simple64_container, n_runs, ppa);
+				++block.gt_simple64_container;
 			}
 			else {
 				std::cerr << utility::timestamp("ERROR", "ENCODER") <<
@@ -155,13 +160,13 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		block.gt_support_data_container.addStride(4);
 		block.gt_support_data_container.Add((U32)this->n_samples*line.gt_support.ploidy);
 		++block.gt_support_data_container;
-		++block.gt_simple_container;
+		++block.gt_simple8_container;
 
 		U64 n_runs = this->n_samples*line.gt_support.ploidy;
 
-		if(line.body->n_allele + 1 < 8)          this->EncodeBCFStyle<BYTE>(line, block.gt_simple_container, n_runs);
-		else if(line.body->n_allele + 1 < 128)   this->EncodeBCFStyle<U16> (line, block.gt_simple_container, n_runs);
-		else if(line.body->n_allele + 1 < 32768) this->EncodeBCFStyle<U32> (line, block.gt_simple_container, n_runs);
+		if(line.body->n_allele + 1 < 8)          this->EncodeBCFStyle<BYTE>(line, block.gt_simple8_container, n_runs);
+		else if(line.body->n_allele + 1 < 128)   this->EncodeBCFStyle<U16> (line, block.gt_simple8_container, n_runs);
+		else if(line.body->n_allele + 1 < 32768) this->EncodeBCFStyle<U32> (line, block.gt_simple8_container, n_runs);
 		else {
 			std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 						 "Illegal number of alleles (" << line.body->n_allele + 1 << "). "

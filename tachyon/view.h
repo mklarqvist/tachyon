@@ -140,7 +140,8 @@ int view(int argc, char** argv){
 	while(reader.nextBlock()){
 		//n_variants += reader.countVariants();
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		n_variants += reader.iterate_all_info();
+		//n_variants += reader.iterate_all_info();
+		reader.iterate_genotypes(std::cout);
 		//n_variants += reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		//std::cerr << n_blocks << '\t' << 597 << std::endl;
