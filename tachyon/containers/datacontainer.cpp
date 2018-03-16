@@ -148,6 +148,7 @@ bool DataContainer::checkUniformity(void){
 
 	this->n_entries   = 1;
 	this->n_additions = 1;
+	this->n_strides   = 0;
 	this->buffer_data_uncompressed.n_chars          = stride_size * word_width;
 	this->header.data_header.uLength                = stride_size * word_width;
 	this->header.data_header.cLength                = stride_size * word_width;
@@ -302,7 +303,7 @@ void DataContainer::reformatStride(){
 	if(this->buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->header.data_header.controller.mixedStride == false)
+	if(this->header.data_header.hasMixedStride() == false)
 		return;
 
 	// Recode integer types
@@ -315,10 +316,10 @@ void DataContainer::reformatStride(){
 	// At this point all integers are U32
 	const U32* const dat = reinterpret_cast<const U32* const>(this->buffer_strides_uncompressed.data());
 	assert(this->buffer_strides_uncompressed.size() % sizeof(U32) == 0);
-	assert(this->buffer_strides_uncompressed.size() / sizeof(U32) == this->n_entries);
+	assert(this->buffer_strides_uncompressed.size() / sizeof(U32) == this->n_strides);
 
 	U32 max = 1;
-	for(U32 j = 0; j < this->n_entries; ++j){
+	for(U32 j = 0; j < this->n_strides; ++j){
 		if(dat[j] > max)
 			max = dat[j];
 	}
@@ -335,7 +336,7 @@ void DataContainer::reformatStride(){
 	if(byte_width == 1){
 		this->header.stride_header.controller.type = YON_TYPE_8B;
 
-		for(U32 j = 0; j < this->n_entries; ++j){
+		for(U32 j = 0; j < this->n_strides; ++j){
 			//assert((BYTE)dat[j] == dat[j]);
 			this->buffer_strides += (BYTE)dat[j];
 		}
@@ -343,7 +344,7 @@ void DataContainer::reformatStride(){
 	} else if(byte_width == 2){
 		this->header.stride_header.controller.type = YON_TYPE_16B;
 
-		for(U32 j = 0; j < this->n_entries; ++j){
+		for(U32 j = 0; j < this->n_strides; ++j){
 			//assert((U16)dat[j] == dat[j]);
 			this->buffer_strides += (U16)dat[j];
 		}
@@ -351,7 +352,7 @@ void DataContainer::reformatStride(){
 	} else if(byte_width == 4){
 		this->header.stride_header.controller.type = YON_TYPE_32B;
 
-		for(U32 j = 0; j < this->n_entries; ++j){
+		for(U32 j = 0; j < this->n_strides; ++j){
 			//assert((U32)dat[j] == dat[j]);
 			this->buffer_strides += (U32)dat[j];
 		}
@@ -359,7 +360,7 @@ void DataContainer::reformatStride(){
 	} else if(byte_width == 8){
 		this->header.stride_header.controller.type = YON_TYPE_64B;
 
-		for(U32 j = 0; j < this->n_entries; ++j){
+		for(U32 j = 0; j < this->n_strides; ++j){
 			//assert((U64)dat[j] == dat[j]);
 			this->buffer_strides += (U64)dat[j];
 		}

@@ -10,6 +10,7 @@ MetaContainer::MetaContainer(const block_type& block) :
 	__entries(static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type))))
 {
 	this->__ctor_setup(block);
+	this->correctRelativePositions(block.header);
 }
 
 MetaContainer::~MetaContainer(void){
@@ -94,17 +95,17 @@ void MetaContainer::__ctor_setup(const block_type& block){
 			// If data is <non_ref> or not
 			if((refalt[refalt_position] & 15) != 5){
 				const char ref = constants::REF_ALT_LOOKUP[refalt[refalt_position] & 15];
-				new( &this->__entries[i].alleles[0] ) value_type::allele_type( ref );
+				new( &this->__entries[i].alleles[1] ) value_type::allele_type( ref );
 			} else {
-				new( &this->__entries[i].alleles[0] ) value_type::allele_type( "<NON_REF>" );
+				new( &this->__entries[i].alleles[1] ) value_type::allele_type( "<NON_REF>" );
 			}
 
 			// If data is <non_ref> or not
 			if(((refalt[refalt_position] >> 4) & 15) != 5){
 				const char alt = constants::REF_ALT_LOOKUP[(refalt[refalt_position] >> 4) & 15];
-				new( &this->__entries[i].alleles[1] ) value_type::allele_type( alt );
+				new( &this->__entries[i].alleles[0] ) value_type::allele_type( alt );
 			} else {
-				new( &this->__entries[i].alleles[1] ) value_type::allele_type( "<NON_REF>" );
+				new( &this->__entries[i].alleles[0] ) value_type::allele_type( "<NON_REF>" );
 			}
 			++refalt_position;
 		}

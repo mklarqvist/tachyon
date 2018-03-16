@@ -8,6 +8,7 @@
 #include "../containers/datacontainer.h"
 #include "meta_allele.h"
 #include "meta_hot.h"
+#include "../io/bcf/BCFEntry.h"
 
 namespace tachyon{
 namespace core{
@@ -20,9 +21,12 @@ public:
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;
 	typedef MetaHotController           controller_type;
+	typedef bcf::BCFEntry               bcf_entry_type;
 
 public:
 	MetaEntry();
+	MetaEntry(const bcf_entry_type& bcf_entry);
+	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset);
 	~MetaEntry();
 
 	/**<

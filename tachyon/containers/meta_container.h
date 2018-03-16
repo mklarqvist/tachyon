@@ -17,6 +17,7 @@ private:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef VariantBlock             block_type;
+    typedef DataBlockHeader          block_header_type;
 
 public:
 	MetaContainer(const block_type& block);
@@ -79,6 +80,14 @@ public:
     inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
+
+    // special
+    bool correctRelativePositions(const block_header_type& header){
+    	for(U32 i = 0; i < this->size(); ++i){
+    		this->at(i).position += header.minPosition;
+    	}
+    	return true;
+    }
 
 private:
     void __ctor_setup(const block_type& block);

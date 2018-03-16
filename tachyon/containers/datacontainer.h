@@ -287,9 +287,6 @@ public:
 			return false;
 		}
 
-		if(l_string == 0)
-			return true;
-
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->n_additions += l_string;
 		//++this->n_entries;

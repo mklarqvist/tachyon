@@ -14,8 +14,51 @@ MetaEntry::MetaEntry() :
 	alleles(nullptr)
 {}
 
+MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry) :
+	n_alleles(bcf_entry.body->n_allele),
+	info_pattern_id(-1),
+	filter_pattern_id(-1),
+	format_pattern_id(-1),
+	quality(bcf_entry.body->QUAL),
+	contigID(bcf_entry.body->CHROM),
+	position(bcf_entry.body->POS),
+	name(bcf_entry.ID, bcf_entry.l_ID),
+	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
+{
+	if(this->n_alleles == 2) this->controller.biallelic = true;
+	this->controller.simple_snv = bcf_entry.isSimple();
+	if(this->isSimpleSNV() || this->isReferenceNONREF())
+		this->controller.simple_snv = true;
+
+	for(U32 i = 0; i < this->n_alleles; ++i){
+		new( &this->alleles[i] ) allele_type( );
+		this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+	}
+}
+
+MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset) :
+	n_alleles(bcf_entry.body->n_allele),
+	info_pattern_id(-1),
+	filter_pattern_id(-1),
+	format_pattern_id(-1),
+	quality(bcf_entry.body->QUAL),
+	contigID(bcf_entry.body->CHROM),
+	position(bcf_entry.body->POS - position_offset),
+	name(bcf_entry.ID, bcf_entry.l_ID),
+	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
+{
+	if(this->n_alleles == 2) this->controller.biallelic = true;
+	this->controller.simple_snv = bcf_entry.isSimple();
+	if(this->isSimpleSNV() || this->isReferenceNONREF())
+		this->controller.simple_snv = true;
+
+	for(U32 i = 0; i < this->n_alleles; ++i){
+		new( &this->alleles[i] ) allele_type( );
+		this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+	}
+}
+
 MetaEntry::~MetaEntry(){
-	//delete [] this->alleles;
 	for(std::size_t i = 0; i < this->n_alleles; ++i)
 		(this->alleles + i)->~MetaAllele();
 
@@ -23,39 +66,31 @@ MetaEntry::~MetaEntry(){
 };
 
 void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const{
-	exit(1);
-	/*
-	dest.write(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size()) << '\t';
-	dest << this->hot.position + 1 << '\t';
+	dest.write(&header.getContig(this->contigID).name[0], header.getContig(this->contigID).name.size()) << '\t';
+	dest << this->position + 1 << '\t';
 
-	// If we have cold meta
-	if(this->loaded_cold){
-		if(this->cold.n_ID == 0) dest.put('.');
-		else dest.write(this->cold.ID, this->cold.n_ID);
-		dest << '\t';
-		if(this->hot.controller.biallelic && this->hot.controller.simple_snv){
-			dest << this->hot.ref_alt.getRef() << '\t' << this->hot.ref_alt.getAlt();
+	if(this->name.size() == 0) dest.put('.');
+	else dest.write(&this->name[0], this->name.size());
+	dest.put('\t');
+	if(this->n_alleles){
+		dest.write(this->alleles[0].allele, this->alleles[0].l_allele);
+		//dest << this->alleles[0].l_allele;
+		dest.put('\t');
+		dest.write(this->alleles[1].allele, this->alleles[1].l_allele);
+		for(U32 i = 2; i < this->n_alleles; ++i){
+			dest.put(',');
+			dest.write(this->alleles[i].allele, this->alleles[i].l_allele);
 		}
-		else {
-			dest.write(this->cold.alleles[0].allele, this->cold.alleles[0].l_allele);
-			dest << '\t';
-			U16 j = 1;
-			for(; j < this->cold.n_allele - 1; ++j){
-				dest.write(this->cold.alleles[j].allele, this->cold.alleles[j].l_allele);
-				dest.put(',');
-			}
-			dest.write(this->cold.alleles[j].allele, this->cold.alleles[j].l_allele);
-		}
-		if(std::isnan(this->cold.QUAL)) dest << "\t.\t";
-		else {
-			dest << '\t' << this->cold.QUAL << '\t';
-		}
+	} else dest << ".\t.\t";
+
+	if(std::isnan(this->quality)) dest << "\t.\t";
+	else {
+		dest << '\t' << this->quality << '\t';
 	}
-	*/
 }
 
 void MetaEntry::toVCFString(buffer_type& dest, const header_type& header) const{
-	exit(1);
+	return;
 
 	/*
 	dest.Add(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size());

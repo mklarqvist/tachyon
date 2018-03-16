@@ -55,19 +55,25 @@ public:
 	inline U32 AddFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
 	inline U32 AddFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
 
-	inline const bool checkPatternsINFO(const U64& hash_pattern) const{
+	inline const S32 getPatternsINFO(const U64& hash_pattern) const{
 		U32 mapID = 0;
-		return(this->info_patterns.getRaw(hash_pattern, mapID));
+		if(this->info_patterns.getRaw(hash_pattern, mapID))
+			return(mapID);
+		else return(-1);
 	}
 
-	inline const bool checkPatternsFORMAT(const U64& hash_pattern) const{
+	inline const S32 getPatternsFORMAT(const U64& hash_pattern) const{
 		U32 mapID = 0;
-		return(this->format_patterns.getRaw(hash_pattern, mapID));
+		if(this->format_patterns.getRaw(hash_pattern, mapID))
+			return(mapID);
+		else return(-1);
 	}
 
-	inline const bool checkPatternsFILTER(const U64& hash_pattern) const{
+	inline const S32 getPatternsFILTER(const U64& hash_pattern) const{
 		U32 mapID = 0;
-		return(this->filter_patterns.getRaw(hash_pattern, mapID));
+		if(this->filter_patterns.getRaw(hash_pattern, mapID))
+			return(mapID);
+		else return(-1);
 	}
 
 	inline void addPatternINFO(const std::vector<U32>& pattern, const U64& hash_pattern){

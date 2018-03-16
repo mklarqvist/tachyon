@@ -22,9 +22,9 @@ InfoContainer<std::string>::InfoContainer(const data_container_type& data_contai
 	__containers(nullptr)
 {
 if(data_container.header.data_header.hasMixedStride())
-		this->__setupBalanced(data_container, meta_container, pattern_matches);
-	else
-		this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
+	this->__setupBalanced(data_container, meta_container, pattern_matches);
+else
+	this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
 }
 
 InfoContainer<std::string>::~InfoContainer(void){
@@ -66,6 +66,7 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 
 	U32 current_offset = 0;
 	U32 stride_offset = 0;
+
 	for(U32 i = 0; i < this->size(); ++i){
 		// Meta entry has no INFO
 		if(meta_container[i].getInfoPatternID() == -1){

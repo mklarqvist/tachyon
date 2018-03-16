@@ -188,6 +188,7 @@ void VariantBlock::updateContainer(container_type& container, bool reformat){
 		container.header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
 		container.n_entries      = 0;
 		container.n_additions    = 0;
+		container.n_strides      = 0;
 		container.header.data_header.controller.signedness = 0;
 		return;
 	}
@@ -410,20 +411,20 @@ bool VariantBlock::write(std::ofstream& stream,
 	last_pos = stream.tellp();
 
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		this->footer.offset_ppa.data_header.offset = stream.tellp() - start_pos;
+		this->footer.offset_ppa.data_header.offset = (U64)stream.tellp() - start_pos;
 		stream << this->ppa_manager;
 		stats_basic[1].cost_compressed   += (U64)stream.tellp() - last_pos;
 		stats_basic[1].cost_uncompressed += this->ppa_manager.getObjectSize();
 		last_pos = stream.tellp();
 	}
 
-	this->__updateHeader(this->footer.offset_meta_contig, this->meta_contig_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_contig, this->meta_contig_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_contig_container;
-	this->__updateHeader(this->footer.offset_meta_position, this->meta_positions_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_position, this->meta_positions_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_positions_container;
-	this->__updateHeader(this->footer.offset_meta_refalt, this->meta_refalt_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_refalt, this->meta_refalt_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_refalt_container;
-	this->__updateHeader(this->footer.offset_meta_controllers, this->meta_controller_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_controllers, this->meta_controller_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_controller_container;
 
 	stats_basic[2].cost_compressed   += (U64)stream.tellp() - last_pos;
@@ -437,11 +438,11 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_meta_quality, this->meta_quality_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_quality, this->meta_quality_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_quality_container;
-	this->__updateHeader(this->footer.offset_meta_names, this->meta_names_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_names, this->meta_names_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_names_container;
-	this->__updateHeader(this->footer.offset_meta_alleles, this->meta_alleles_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_alleles, this->meta_alleles_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_alleles_container;
 
 	stats_basic[3].cost_compressed   += (U64)stream.tellp() - last_pos;
@@ -451,13 +452,13 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[3].cost_uncompressed += (S32)this->meta_names_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_gt_8b, this->gt_rle8_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_8b, this->gt_rle8_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_rle8_container;
-	this->__updateHeader(this->footer.offset_gt_16b, this->gt_rle16_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_16b, this->gt_rle16_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_rle16_container;
-	this->__updateHeader(this->footer.offset_gt_32b, this->gt_rle32_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_32b, this->gt_rle32_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_rle32_container;
-	this->__updateHeader(this->footer.offset_gt_64b, this->gt_rle64_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_64b, this->gt_rle64_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_rle64_container;
 
 	stats_basic[4].cost_compressed   += (U64)stream.tellp() - last_pos;
@@ -471,35 +472,35 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[4].cost_uncompressed += (S32)this->gt_rle64_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_gt_simple, this->gt_simple_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_simple, this->gt_simple_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_simple_container;
 	stats_basic[5].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.data_header.uLength;
 	stats_basic[5].cost_uncompressed += (S32)this->gt_simple_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_gt_helper, this->gt_support_data_container, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_gt_helper, this->gt_support_data_container, (U64)stream.tellp() - start_pos);
 	stream << this->gt_support_data_container;
 	stats_basic[6].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header.data_header.uLength;
 	stats_basic[6].cost_uncompressed += (S32)this->gt_support_data_container.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_meta_info_id, this->meta_info_map_ids, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_info_id, this->meta_info_map_ids, (U64)stream.tellp() - start_pos);
 	stream << this->meta_info_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header.data_header.uLength - this->meta_info_map_ids.header.data_header.cLength;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_info_map_ids.header.stride_header.uLength - this->meta_info_map_ids.header.stride_header.cLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_meta_filter_id, this->meta_filter_map_ids, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_filter_id, this->meta_filter_map_ids, (U64)stream.tellp() - start_pos);
 	stream << this->meta_filter_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header.data_header.uLength;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_filter_map_ids.header.stride_header.uLength;
 	last_pos = stream.tellp();
 
-	this->__updateHeader(this->footer.offset_meta_format_id, this->meta_format_map_ids, stream.tellp() - start_pos);
+	this->__updateHeader(this->footer.offset_meta_format_id, this->meta_format_map_ids, (U64)stream.tellp() - start_pos);
 	stream << this->meta_format_map_ids;
 	stats_basic[7].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[7].cost_uncompressed += (S32)this->meta_format_map_ids.header.data_header.uLength;
@@ -507,7 +508,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	last_pos = stream.tellp();
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
-		this->__updateHeader(this->footer.info_offsets[i], this->info_containers[i], stream.tellp() - start_pos);
+		this->__updateHeader(this->footer.info_offsets[i], this->info_containers[i], (U64)stream.tellp() - start_pos);
 		stream << this->info_containers[i];
 		stats_info[this->footer.info_offsets[i].data_header.global_key].cost_uncompressed += this->info_containers[i].header.data_header.uLength;
 		stats_info[this->footer.info_offsets[i].data_header.global_key].cost_compressed   += this->info_containers[i].header.data_header.cLength;
@@ -519,7 +520,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	last_pos = stream.tellp();
 
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i){
-		this->__updateHeader(this->footer.format_offsets[i], this->format_containers[i], stream.tellp() - start_pos);
+		this->__updateHeader(this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
 		stream << this->format_containers[i];
 		stats_format[this->footer.format_offsets[i].data_header.global_key].cost_uncompressed += this->format_containers[i].header.data_header.uLength;
 		stats_format[this->footer.format_offsets[i].data_header.global_key].cost_compressed   += this->format_containers[i].header.data_header.cLength;
@@ -531,7 +532,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	last_pos = stream.tellp();
 
 	// writing footer
-	assert(this->header.l_offset_footer == stream.tellp() - start_pos);
+	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 	// Compress and write footer
 	/*
 	const U32 footer_uLength = this->footer_support.buffer_data_uncompressed.size();
@@ -542,7 +543,7 @@ bool VariantBlock::write(std::ofstream& stream,
 	stream << this->footer_support.buffer_data;
 	*/
 	stream << this->footer;
-	const U32 return_offset = stream.tellp() - last_pos;
+	const U32 return_offset = (U64)stream.tellp() - last_pos;
 	// Write negative offset to start of offsets
 	stream.write(reinterpret_cast<const char*>(&return_offset), sizeof(U32));
 	// Write EOB

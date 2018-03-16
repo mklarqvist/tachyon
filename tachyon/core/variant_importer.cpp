@@ -170,6 +170,8 @@ bool VariantImporter::BuildBCF(void){
 			return false;
 		}
 
+
+
 		// Digests
 		//if(checksums.update(this->block, this->header->mapTable) == false){
 		//	std::cerr << utility::timestamp("ERROR","CHECKSUM") << "Failed to update!" << std::endl;
@@ -285,19 +287,10 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		return false;
 	}
 
-	meta_type meta;
-	meta.position = entry.body->POS - this->index_entry.minPosition;
-	meta.contigID = entry.body->CHROM;
-	meta.name     = std::string(entry.ID, entry.l_ID);
-	meta.quality  = entry.body->QUAL;
-	meta.controller.simple_snv = entry.isSimple();
-	if(meta.isSimpleSNV() || meta.isReferenceNONREF())
-		meta.controller.simple_snv = true;
-
-	meta.n_alleles = entry.body->n_allele;
-	meta.alleles   = new meta_type::allele_type[meta.n_alleles];
-	for(U32 i = 0; i < meta.n_alleles; ++i){
-		meta.alleles[i](entry.alleles[i].data, entry.alleles[i].length);
+	meta_type meta(entry, this->block.header.minPosition);
+	if(!this->parseBCFBody(meta, entry)){
+		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
+		return false;
 	}
 
 	// GT encoding if available
@@ -313,11 +306,6 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		}
 	} else {
 		meta.controller.gt_available = false;
-	}
-
-	if(!this->parseBCFBody(meta, entry)){
-		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
-		return false;
 	}
 
 	// Add meta
@@ -422,8 +410,8 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Hash FILTER pattern
 		const U64 hash_filter_vector = entry.hashFilter();
 
-		U32 mapID = 0;
-		if(this->block.checkPatternsFILTER(hash_filter_vector) == false){
+		S32 mapID = this->block.getPatternsFILTER(hash_filter_vector);
+		if(mapID == -1){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.filterPointer; ++i)
 				ret_pattern.push_back(this->header->filter_remap[entry.filterID[i].mapID]);
@@ -432,23 +420,15 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			assert(mapID < 65536);
 			this->block.addPatternFILTER(ret_pattern, hash_filter_vector);
 		}
-
-		// Store this map in the meta
-		//this->block.meta_filter_map_ids.Add((S32)mapID);
-		//++this->block.meta_filter_map_ids;
 		meta.filter_pattern_id = mapID;
-	} else {
-		//this->block.meta_filter_map_ids.Add((S32)-1);
-		//++this->block.meta_filter_map_ids;
-		meta.filter_pattern_id = -1;
 	}
 
 	if(entry.infoPointer){
-		U32 mapID = 0;
 		// Hash INFO pattern
 		const U64 hash_info_vector = entry.hashInfo();
 
-		if(this->block.checkPatternsINFO(hash_info_vector) == false){
+		S32 mapID = this->block.getPatternsINFO(hash_info_vector);
+		if(mapID == -1){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.infoPointer; ++i)
 				ret_pattern.push_back(this->header->info_remap[entry.infoID[i].mapID]);
@@ -457,24 +437,15 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			assert(mapID < 65536);
 			this->block.addPatternINFO(ret_pattern, hash_info_vector);
 		}
-
-		// Store this map in the meta
-		//meta.INFO_map_ID = mapID;
-		//this->block.meta_info_map_ids.Add((S32)mapID);
-		//++this->block.meta_info_map_ids;
 		meta.info_pattern_id = mapID;
-	} else {
-		//this->block.meta_info_map_ids.Add((S32)-1);
-		//++this->block.meta_info_map_ids;
-		meta.info_pattern_id = -1;
 	}
 
 	if(entry.formatPointer){
-		U32 mapID = 0;
 		// Hash FORMAT pattern
 		const U64 hash_format_vector = entry.hashFormat();
 
-		if(this->block.checkPatternsFORMAT(hash_format_vector) == false){
+		S32 mapID = this->block.getPatternsFORMAT(hash_format_vector);
+		if(mapID == -1){
 			std::vector<U32> ret_pattern;
 			for(U32 i = 0; i < entry.formatPointer; ++i)
 				ret_pattern.push_back(this->header->format_remap[entry.formatID[i].mapID]);
@@ -483,16 +454,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			assert(mapID < 65536);
 			this->block.addPatternFORMAT(ret_pattern, hash_format_vector);
 		}
-
-		// Store this map in the meta
-		//meta.FORMAT_map_ID = mapID;
-		//this->block.meta_format_map_ids.Add((S32)mapID);
-		//++this->block.meta_format_map_ids;
 		meta.format_pattern_id = mapID;
-	} else {
-		//this->block.meta_format_map_ids.Add((S32)-1);
-		//++this->block.meta_format_map_ids;
-		meta.format_pattern_id = -1;
 	}
 
 	// Return

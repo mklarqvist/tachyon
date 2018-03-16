@@ -256,6 +256,7 @@ public:
 
 	U64 iterate_all_info(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
+
 		// Store as double pointers to avoid memory collisions because
 		// infocontainers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.footer.n_info_streams];
