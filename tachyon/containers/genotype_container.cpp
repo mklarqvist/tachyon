@@ -5,25 +5,32 @@
 namespace tachyon{
 namespace containers{
 
-GenotypeContainer::GenotypeContainer(const block_type& block) :
+GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContainer& meta) :
 	n_entries(0),
 	__meta_container(block),
 	__iterators(nullptr)
 {
 	// Todo: if anything is uniform
 	// Support
-	MetaContainer meta(block); // meta information
-	StrideContainer<U32> target(block.gt_support_data_container); // target container family
 	PrimitiveContainer<U32> lengths(block.gt_support_data_container); // n_runs / objects size
 
-	U32 offset_rle8 = 0;  const char* const rle8 = block.gt_rle8_container.buffer_data.data();
-	U32 offset_rle16 = 0; const char* const rle16 = block.gt_rle16_container.buffer_data.data();
-	U32 offset_rle32 = 0; const char* const rle32 = block.gt_rle32_container.buffer_data.data();
-	U32 offset_rle64 = 0; const char* const rle64 = block.gt_rle64_container.buffer_data.data();
-	U32 offset_simple8 = 0;  const char* const simple8 = block.gt_simple8_container.buffer_data.data();
-	U32 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data.data();
-	U32 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data.data();
-	U32 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data.data();
+	U32 offset_rle8     = 0; const char* const rle8     = block.gt_rle8_container.buffer_data_uncompressed.data();
+	U32 offset_rle16    = 0; const char* const rle16    = block.gt_rle16_container.buffer_data_uncompressed.data();
+	U32 offset_rle32    = 0; const char* const rle32    = block.gt_rle32_container.buffer_data_uncompressed.data();
+	U32 offset_rle64    = 0; const char* const rle64    = block.gt_rle64_container.buffer_data_uncompressed.data();
+	U32 offset_simple8  = 0; const char* const simple8  = block.gt_simple8_container.buffer_data_uncompressed.data();
+	U32 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data_uncompressed.data();
+	U32 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data_uncompressed.data();
+	U32 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data_uncompressed.data();
+
+	assert(block.gt_rle8_container.buffer_data_uncompressed.size()     % sizeof(BYTE) == 0);
+	assert(block.gt_rle16_container.buffer_data_uncompressed.size()    % sizeof(U16)  == 0);
+	assert(block.gt_rle32_container.buffer_data_uncompressed.size()    % sizeof(U32)  == 0);
+	assert(block.gt_rle64_container.buffer_data_uncompressed.size()    % sizeof(U64)  == 0);
+	assert(block.gt_simple8_container.buffer_data_uncompressed.size()  % sizeof(BYTE) == 0);
+	assert(block.gt_simple16_container.buffer_data_uncompressed.size() % sizeof(U16)  == 0);
+	assert(block.gt_simple32_container.buffer_data_uncompressed.size() % sizeof(U32)  == 0);
+	assert(block.gt_simple64_container.buffer_data_uncompressed.size() % sizeof(U64)  == 0);
 
 	// Count number of fields with GT data
 	U32 n_has_gt = 0;

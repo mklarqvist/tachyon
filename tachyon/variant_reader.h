@@ -335,7 +335,31 @@ public:
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		//std::cerr << "before meta: " << this->block.size() << std::endl;
-		containers::GenotypeContainer gt(this->block);
+		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
+
+		for(U32 i = 0; i < gt.size(); ++i){
+			// All of these functions are in relative terms very expensive!
+			// Avoid using them unless you absolutely have to!
+			// Vector of literal genotype representations (lower level)
+			std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
+			// Vector of genotype objects (high level permuted)
+			std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
+			// Vector of genotype objects (high level unpermuted - original)
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+
+			//std::cerr << objects.size() << ' ' << objects_all.size() << std::endl;
+			//for(U32 i = 0; i < objects.size(); ++i){
+			//	std::cerr << (int)objects[i].alleles[0].first << "|" << (int)objects[i].alleles[1].first << "," << objects[i].n_objects << ' ';
+			//}
+			//std::cerr << std::endl;
+
+			// Print the difference
+			std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
+			// Dump data
+			//gt[i].getMeta().toVCFString(std::cout, this->header, this->block.header.contigID, this->block.header.minPosition);
+			//utility::to_vcf_string(std::cout, objects_true) << '\n';
+		}
 
 		//containers::MetaContainer meta(this->block);
 		//for(U32 i = 0; i < this->block.index_entry.n_format_streams; ++i)
@@ -357,7 +381,8 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		containers::GenotypeContainer gt(this->block);
+		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].comparePairwise(square_temporary);
 
@@ -372,7 +397,8 @@ public:
 	}
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TsTvObject>& global){
-		containers::GenotypeContainer gt(this->block);
+		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
 
 		std::vector<tachyon::core::TsTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
@@ -393,7 +419,8 @@ public:
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		containers::GenotypeContainer gt(this->block);
+		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
 		containers::GenotypeSum gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue

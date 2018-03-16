@@ -15,6 +15,7 @@ namespace core{
 
 struct MetaEntry{
 public:
+	typedef MetaEntry                   self_type;
 	typedef containers::DataContainer   container_type;
 	typedef containers::DataBlockFooter datablock_footer_type;
 	typedef VariantHeader               header_type;
@@ -25,6 +26,7 @@ public:
 
 public:
 	MetaEntry();
+	MetaEntry(const self_type& other);
 	MetaEntry(const bcf_entry_type& bcf_entry);
 	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset);
 	~MetaEntry();

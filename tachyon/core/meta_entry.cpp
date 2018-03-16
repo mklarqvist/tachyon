@@ -58,6 +58,20 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 	}
 }
 
+MetaEntry::MetaEntry(const self_type& other) :
+	n_alleles(other.n_alleles),
+	info_pattern_id(other.info_pattern_id),
+	filter_pattern_id(other.filter_pattern_id),
+	format_pattern_id(other.format_pattern_id),
+	quality(other.quality),
+	contigID(other.contigID),
+	position(other.position),
+	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
+{
+	for(U32 i = 0; i < this->n_alleles; ++i)
+		new( &this->alleles[i] ) allele_type( other.alleles[i] );
+}
+
 MetaEntry::~MetaEntry(){
 	for(std::size_t i = 0; i < this->n_alleles; ++i)
 		(this->alleles + i)->~MetaAllele();

@@ -108,19 +108,19 @@ void VariantBlock::updateBaseContainers(void){
 	this->updateContainer(this->meta_controller_container, false);
 	this->updateContainer(this->meta_quality_container);
 	this->updateContainer(this->meta_names_container);
-	this->updateContainer(this->gt_simple8_container);
-	this->updateContainer(this->gt_simple16_container);
-	this->updateContainer(this->gt_simple32_container);
-	this->updateContainer(this->gt_simple64_container);
+	this->updateContainer(this->gt_simple8_container, false);
+	this->updateContainer(this->gt_simple16_container, false);
+	this->updateContainer(this->gt_simple32_container, false);
+	this->updateContainer(this->gt_simple64_container, false);
 	this->updateContainer(this->gt_support_data_container);
 	this->updateContainer(this->meta_alleles_container);
 	this->updateContainer(this->meta_filter_map_ids);
 	this->updateContainer(this->meta_format_map_ids);
 	this->updateContainer(this->meta_info_map_ids);
-	this->updateContainer(this->gt_rle8_container);
-	this->updateContainer(this->gt_rle16_container);
-	this->updateContainer(this->gt_rle32_container);
-	this->updateContainer(this->gt_rle64_container);
+	this->updateContainer(this->gt_rle8_container, false);
+	this->updateContainer(this->gt_rle16_container, false);
+	this->updateContainer(this->gt_rle32_container, false);
+	this->updateContainer(this->gt_rle64_container, false);
 }
 
 void VariantBlock::VariantBlock::updateContainer(container_type* container, const U32& length){

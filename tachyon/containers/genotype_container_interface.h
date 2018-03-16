@@ -31,14 +31,13 @@ protected:
 public:
     GenotypeContainerInterface(void) :
     	n_entries(0),
-		__data(nullptr),
-		__meta(nullptr)
+		__data(nullptr)
 	{}
 
     GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
 		__data(new char[n_bytes]),
-		__meta(&meta)
+		__meta(meta)
     {
     	memcpy(this->__data, data, n_bytes);
     }
@@ -97,7 +96,7 @@ public:
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
-    inline const meta_type& getMeta(void) const{ return(*this->__meta); }
+    inline const meta_type& getMeta(void) const{ return(this->__meta); }
 
 protected:
     inline float comparatorSamplesDiploid(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB) const{
@@ -128,7 +127,7 @@ protected:
 protected:
     size_type        n_entries;
     char*            __data;
-    const meta_type* __meta;
+    const meta_type  __meta;
 };
 
 }

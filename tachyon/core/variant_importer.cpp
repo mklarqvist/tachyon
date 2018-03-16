@@ -163,14 +163,11 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.n_variants       = reader.size();
 		this->block.finalize();
 
-
 		// Perform compression using standard parameters
 		if(!this->compression_manager.compress(this->block)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
-
-
 
 		// Digests
 		//if(checksums.update(this->block, this->header->mapTable) == false){

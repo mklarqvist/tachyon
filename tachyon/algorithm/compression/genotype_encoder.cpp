@@ -43,7 +43,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		meta_base.controller.gt_rle = true;
 
 		//++block.gt_rle_container;
-		block.gt_support_data_container.addStride(1);
 		block.gt_support_data_container.Add((U32)cost.n_runs);
 		++block.gt_support_data_container;
 
@@ -86,8 +85,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		// RLE is cheaper
 		if(cost.word_width * cost.n_runs < costBCFStyle){
-			block.gt_support_data_container.addStride(2);
-
 			meta_base.controller.gt_rle = true;
 			block.gt_support_data_container.Add((U32)cost.n_runs);
 			++block.gt_support_data_container;
@@ -122,7 +119,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		// BCF style is cheaper
 		else {
 			//std::cerr << "BCF-style cheaper" << std::endl;
-			block.gt_support_data_container.addStride(3);
 			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
 
@@ -157,7 +153,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	// temp
 	else {
 		std::cerr << "other bcf style: n_alleles: " << line.body->n_allele << ",ploidy: " << line.gt_support.ploidy << std::endl;
-		block.gt_support_data_container.addStride(4);
 		block.gt_support_data_container.Add((U32)this->n_samples*line.gt_support.ploidy);
 		++block.gt_support_data_container;
 		++block.gt_simple8_container;

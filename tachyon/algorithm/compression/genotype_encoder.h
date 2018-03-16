@@ -219,7 +219,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 			assert((RLE >> (ploidy*shift + add)) == length);
 
 			// Push RLE to buffer
-			runs.AddLiteral(RLE);
+			runs.AddLiteral((YON_RLE_TYPE)RLE);
 
 			// Reset and update
 			sumLength += length;
@@ -237,7 +237,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	assert((RLE >> (ploidy*shift + add)) == length);
 
 	// Push RLE to buffer
-	runs.AddLiteral(RLE);
+	runs.AddLiteral((YON_RLE_TYPE)RLE);
 	++n_runs;
 
 	// Reset and update
@@ -307,7 +307,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 			assert(length != 0);
 
 			// Push RLE to buffer
-			runs.AddLiteral(RLE);
+			runs.AddLiteral((YON_RLE_TYPE)RLE);
 
 			// Reset and update
 			sumLength += length;
@@ -325,7 +325,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	assert(length != 0);
 
 	// Push RLE to buffer
-	runs.AddLiteral(RLE);
+	runs.AddLiteral((YON_RLE_TYPE)RLE);
 	++n_runs;
 
 	// Reset and update

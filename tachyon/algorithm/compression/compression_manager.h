@@ -38,7 +38,7 @@ public:
 			zstd_codec.compress(block.meta_names_container);
 		}
 
-		const std::string zpaq_cmd = "4";
+		//const std::string zpaq_cmd = "4";
 		if(block.gt_rle8_container.n_entries){
 			zstd_codec.compress(block.gt_rle8_container);
 			//zstd_codec.compressStrides(block.gt_rle8_container);

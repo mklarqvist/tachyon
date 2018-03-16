@@ -33,7 +33,7 @@ private:
 	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
 
 public:
-    GenotypeContainer(const block_type& block);
+    GenotypeContainer(const block_type& block, const MetaContainer& meta);
     ~GenotypeContainer();
 
     class iterator{

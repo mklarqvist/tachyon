@@ -24,15 +24,6 @@ public:
     GenotypeContainerDiploidRLE(const char* const data, const U32 n_entries, const meta_type& meta_entry);
     ~GenotypeContainerDiploidRLE();
 
-    void operator()(const char* const data, const U32 n_entries, const meta_type& meta_entry){
-		this->n_entries = n_entries;
-		delete [] this->__data;
-
-		const T* const re = reinterpret_cast<const T* const>(data);
-		for(U32 i = 0; i < n_entries; ++i)
-			this->__data[i] = re[i];
-    }
-
     // Element access
     inline reference at(const size_type& position){ return(*reinterpret_cast<const T* const>(&this->__data[position * sizeof(value_type)])); }
     inline const_reference at(const size_type& position) const{ return(*reinterpret_cast<const T* const>(&this->__data[position * sizeof(value_type)])); }
@@ -59,26 +50,26 @@ public:
 // IMPLEMENTATION -------------------------------------------------------------
 
 
-template <class return_type>
-GenotypeContainerDiploidRLE<return_type>::GenotypeContainerDiploidRLE(){
+template <class T>
+GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(){
 
 }
 
-template <class return_type>
-GenotypeContainerDiploidRLE<return_type>::GenotypeContainerDiploidRLE(const char* const data, const U32 n_entries, const meta_type& meta_entry) :
+template <class T>
+GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(const char* const data, const U32 n_entries, const meta_type& meta_entry) :
 	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
 {
 
 }
 
-template <class return_type>
-GenotypeContainerDiploidRLE<return_type>::~GenotypeContainerDiploidRLE(){  }
+template <class T>
+GenotypeContainerDiploidRLE<T>::~GenotypeContainerDiploidRLE(){  }
 
-template <class return_type>
-U32 GenotypeContainerDiploidRLE<return_type>::getSum(void) const{
+template <class T>
+U32 GenotypeContainerDiploidRLE<T>::getSum(void) const{
 	U32 count = 0;
-	const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
-	const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+	const BYTE shift = this->__meta.isAnyGTMissing()    ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing()  ? 1 : 0;
 
 	for(U32 i = 0; i < this->n_entries; ++i)
 	count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
@@ -86,16 +77,16 @@ U32 GenotypeContainerDiploidRLE<return_type>::getSum(void) const{
 	return(count);
 }
 
-template <class return_type>
-math::SquareMatrix<double>& GenotypeContainerDiploidRLE<return_type>::comparePairwise(square_matrix_type& square_matrix) const{
+template <class T>
+math::SquareMatrix<double>& GenotypeContainerDiploidRLE<T>::comparePairwise(square_matrix_type& square_matrix) const{
 	// Has to be a SNV
 	if(this->getMeta().isSimpleSNV() == false){
 		//std::cerr << "skipping" << std::endl;
 		return square_matrix;
 	}
 
-	const BYTE shift = this->__meta->isAnyGTMissing()    ? 2 : 1;
-	const BYTE add   = this->__meta->isGTMixedPhasing()  ? 1 : 0;
+	const BYTE shift = this->__meta.isAnyGTMissing()    ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing()  ? 1 : 0;
 
 	U32 start_position = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -143,23 +134,23 @@ math::SquareMatrix<double>& GenotypeContainerDiploidRLE<return_type>::comparePai
 	return(square_matrix);
 }
 
-template <class return_type>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::getLiteralObjects(void) const{
+template <class T>
+std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getLiteralObjects(void) const{
 		std::vector<tachyon::core::GTObject> ret(this->n_entries);
 		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
 		for(U32 i = 0; i < this->n_entries; ++i)
-			entries[i](this->at(i), *this->__meta);
+			entries[i](this->at(i), this->__meta);
 
 		return(ret);
 }
 
-template <class return_type>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::getObjects(const U64& n_samples) const{
+template <class T>
+std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples) const{
 	std::vector<tachyon::core::GTObject> ret(n_samples);
 	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
 
-	const BYTE shift = this->__meta->isAnyGTMissing()   ? 2 : 1;
-	const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -169,7 +160,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::g
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta->getControllerPhase();
+		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
 			entries[cum_pos].alleles = new std::pair<char,char>[2];
@@ -184,8 +175,8 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::g
 	return(ret);
 }
 
-template <class return_type>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
+template <class T>
+std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
 	std::vector<gt_object> ret(this->getObjects(n_samples));
 	std::vector<gt_object> ret_unpermuted(n_samples);
 
@@ -196,27 +187,27 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<return_type>::g
 	return(ret_unpermuted);
 }
 
-template <class return_type>
-GenotypeSum& GenotypeContainerDiploidRLE<return_type>::updateSummary(gt_summary& gt_summary_object) const{
+template <class T>
+GenotypeSum& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
-template <class return_type>
-GenotypeSum GenotypeContainerDiploidRLE<return_type>::getSummary(void) const{
+template <class T>
+GenotypeSum GenotypeContainerDiploidRLE<T>::getSummary(void) const{
 	gt_summary summary;
 	summary += *this;
 	return(summary);
 }
 
-template <class return_type>
-GenotypeSum& GenotypeContainerDiploidRLE<return_type>::getSummary(gt_summary& gt_summary_object) const{
+template <class T>
+GenotypeSum& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
-template <class return_type>
-void GenotypeContainerDiploidRLE<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
+template <class T>
+void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
 	std::cerr << "not yet" << std::endl;
 	exit(1);
 
@@ -233,8 +224,8 @@ void GenotypeContainerDiploidRLE<return_type>::getTsTv(std::vector<ts_tv_object_
 		return;
 	}
 
-	const BYTE shift = this->__meta->isAnyGTMissing()   ? 2 : 1;
-	const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
 	// If alleleA/B == ref then update self
 	// If allele != ref then update ref->observed
