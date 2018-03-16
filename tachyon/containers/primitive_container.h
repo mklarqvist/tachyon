@@ -23,6 +23,7 @@ private:
 
 public:
     PrimitiveContainer();
+    PrimitiveContainer(const container_type& container);
     PrimitiveContainer(const container_type& container, const U32& offset, const U32 n_entries);
     ~PrimitiveContainer(void);
 
@@ -75,6 +76,7 @@ public:
     // Capacity
     inline const bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
+    inline const bool isUniform(void) const{ return(this->__uniform); }
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__entries[0]); }
@@ -92,6 +94,7 @@ private:
     void __setupSigned(const container_type& container, const U32& offset);
 
 private:
+    bool    __uniform;
     size_t  n_entries;
     pointer __entries;
 };
@@ -102,6 +105,7 @@ private:
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer() :
+	__uniform(false),
 	n_entries(0),
 	__entries(nullptr)
 {
@@ -109,9 +113,53 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 }
 
 template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container) :
+	__uniform(false),
+	n_entries(0),
+	__entries(nullptr)
+{
+	if(container.header.data_header.getPrimitiveWidth() == -1)
+		return;
+
+	assert(container.buffer_data_uncompressed.size() % container.header.data_header.getPrimitiveWidth() == 0);
+
+	this->n_entries = container.buffer_data_uncompressed.size() / container.header.data_header.getPrimitiveWidth();
+	this->__entries = new value_type[this->n_entries];
+
+	if(this->n_entries == 0)
+		return;
+
+	this->__uniform = container.header.data_header.isUniform();
+
+	if(container.header.data_header.isSigned()){
+		switch(container.header.data_header.getPrimitiveType()){
+		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, 0));  break;
+		case(YON_TYPE_CHAR):   (this->__setupSigned<char>(container, 0));   break;
+		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, 0));    break;
+		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, 0));    break;
+		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, 0));    break;
+		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));        break;
+		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0));       break;
+		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		}
+	} else {
+		switch(container.header.data_header.getPrimitiveType()){
+		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, 0));   break;
+		case(YON_TYPE_16B):    (this->__setup<U16>(container, 0));    break;
+		case(YON_TYPE_32B):    (this->__setup<U32>(container, 0));    break;
+		case(YON_TYPE_64B):    (this->__setup<U64>(container, 0));    break;
+		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));  break;
+		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0)); break;
+		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		}
+	}
+}
+
+template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container,
                                                               const U32& offset,
                                                               const U32  n_entries) :
+	__uniform(false),
 	n_entries(n_entries),
 	__entries(new value_type[n_entries])
 {
@@ -122,8 +170,8 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, offset));    break;
 		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, offset));    break;
-		case(YON_TYPE_FLOAT):  (this->__setupSigned<float>(container, offset));  break;
-		case(YON_TYPE_DOUBLE): (this->__setupSigned<double>(container, offset)); break;
+		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));        break;
+		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));       break;
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {

@@ -7,6 +7,7 @@
 #include "components/datablock_header.h"
 #include "datablock_settings.h"
 #include "datacontainer.h"
+#include "../core/meta_entry.h"
 
 namespace tachyon{
 namespace containers{
@@ -28,6 +29,7 @@ class VariantBlock{
 	typedef core::DataBlockSettings         settings_type;
 	typedef support::VariantImporterContainerStats  import_stats_type;
 	typedef DataContainerHeader             offset_type;
+	typedef tachyon::core::MetaEntry        meta_entry_type;
 
 public:
 	VariantBlock();
@@ -149,6 +151,15 @@ public:
 	 * @return             Returns TRUE upon success or FALSE otherwise
 	 */
 	bool write(std::ofstream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+
+	// Add a meta entry
+	/**<
+	 * Overloaded operator for adding a variant entry
+	 * @param meta_entry
+	 * @return
+	 */
+	bool operator+=(meta_entry_type& meta_entry);
+	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
 private:
 	/**<

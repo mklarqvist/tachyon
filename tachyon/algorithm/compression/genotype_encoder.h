@@ -59,7 +59,7 @@ private:
 	typedef GenotypeEncoder              self_type;
 	typedef io::BasicBuffer              buffer_type;
 	typedef bcf::BCFEntry                bcf_type;
-	typedef core::MetaHot                meta_type;
+	typedef core::MetaEntry              meta_type;
 	typedef containers::GenotypesSummary helper_type;
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;

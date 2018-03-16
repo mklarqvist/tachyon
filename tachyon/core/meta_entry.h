@@ -5,23 +5,15 @@
 
 #include "../containers/components/datablock_header.h"
 #include "header/variant_header.h"
+#include "../containers/datacontainer.h"
 #include "meta_allele.h"
-#include "meta_cold.h"
 #include "meta_hot.h"
 
 namespace tachyon{
 namespace core{
 
-/**< Envelope record for meta hot-cold split
- * Is used primarily in the simple API. Has a
- * high(ish) cost as cold data has to be copied.
- * Cold meta allele data is always read even
- * though in most cases it is not required
- */
 struct MetaEntry{
-private:
-	typedef MetaHot                     hot_entry;
-	typedef MetaCold                    cold_entry;
+public:
 	typedef containers::DataContainer   container_type;
 	typedef containers::DataBlockFooter datablock_footer_type;
 	typedef VariantHeader               header_type;
@@ -31,9 +23,6 @@ private:
 
 public:
 	MetaEntry();
-	MetaEntry(const hot_entry& hot);
-	MetaEntry(const hot_entry& hot, const cold_entry& cold);
-	MetaEntry(const hot_entry& hot, char* cold);
 	~MetaEntry();
 
 	/**<
@@ -88,39 +77,21 @@ public:
 	const BYTE getPrimitiveWidth(void) const{
 		switch(this->controller.gt_primtive_type){
 		case(YON_GT_BYTE):  return(1);
-		case(YON_GT_U16): return(2);
-		case(YON_GT_U32): return(4);
-		case(YON_GT_U64): return(8);
+		case(YON_GT_U16):   return(2);
+		case(YON_GT_U32):   return(4);
+		case(YON_GT_U64):   return(8);
 		}
 		return(0);
 	}
 
-	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(this->hot.getGenotypeType()); }
-	inline const BYTE getGTPrimitiveWidth(void) const{ return(this->hot.getPrimitiveWidth()); }
+	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC); }
+	inline const BYTE getGTPrimitiveWidth(void) const{ return(1); }
 
 	inline const float& getQuality(void) const{ return(this->quality); }
 	inline const std::string& getName(void) const{ return(this->name); }
 	inline const U16& getNumberAlleles(void) const{ return(this->n_alleles); }
 	inline const U32 getContigID(void) const{ return(this->contigID); }
 	inline const U64 getPosition(void) const{ return(this->position); }
-
-	inline const char getBiallelicAlleleLiteral(const U32 position) const{
-		/*
-		if(this->isBiallelic()){
-			assert(position == 0 || position == 1);
-			switch(position){
-			case(0): return(this->hot.ref_alt.getRefAlleleLiteral());
-			case(1): return(this->hot.ref_alt.getAltAlleleLiteral());
-			default: std::cerr << utility::timestamp("ERROR") << "Illegal allele in biallelic!" << std::endl;
-			         exit(1);
-			}
-		} else {
-			std::cerr << utility::timestamp("ERROR") << "Variant is not biallelic!" << std::endl;
-			exit(1);
-		}
-		*/
-		return('A');
-	}
 
 	// Set and get for patterns
 	inline S32& getInfoPatternID(void){ return(this->info_pattern_id); }
@@ -130,15 +101,78 @@ public:
 	inline const S32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
 	inline const S32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
 
-public:
-	bool       loaded_cold;       // Boolean triggered if cold meta object was overloaded
-	hot_entry  hot;               // Hot meta object
-	cold_entry cold;              // Cold meta object - can be empty
+	inline const bool isReferenceNONREF(void) const{
+		// If the variant site is not biallelic
+		if(this->isBiallelic() == false)
+			return false;
 
+		int found = 0;
+		if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+			++found;
+		}
+
+		if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+			++found;
+		}
+
+		if(found == 2) return true;
+		if(found == 1){
+			if(this->alleles[0].l_allele == 1 && this->alleles[1].l_allele == 9) return true;
+			if(this->alleles[0].l_allele == 9 && this->alleles[1].l_allele == 1) return true;
+			return false;
+		}
+		return(false);
+	}
+	/**<
+	 *
+	 * @return
+	 */
+	inline const BYTE packedRefAltByte(void) const{
+		// <NON_REF>
+		BYTE ref_alt = 0;
+		if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+			ref_alt ^= constants::REF_ALT_NON_REF << 4;
+		}
+
+		if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+			ref_alt ^= constants::REF_ALT_NON_REF << 0;
+		}
+
+		// Set mock ref-alt if not simple
+		if(this->alleles[0].l_allele != 1 || this->alleles[1].l_allele != 1){
+			return(255);
+		}
+
+		switch(this->alleles[0].allele[0]){
+		case 'A': ref_alt ^= constants::REF_ALT_A << 4; break;
+		case 'T': ref_alt ^= constants::REF_ALT_T << 4; break;
+		case 'G': ref_alt ^= constants::REF_ALT_G << 4; break;
+		case 'C': ref_alt ^= constants::REF_ALT_C << 4; break;
+		default:
+			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
+			std::cerr << this->alleles[1].allele << std::endl;
+				std::cerr << this->alleles[0].allele << std::endl;
+			exit(1);
+		}
+
+		switch(this->alleles[1].allele[0]){
+		case 'A': ref_alt ^= constants::REF_ALT_A << 0; break;
+		case 'T': ref_alt ^= constants::REF_ALT_T << 0; break;
+		case 'G': ref_alt ^= constants::REF_ALT_G << 0; break;
+		case 'C': ref_alt ^= constants::REF_ALT_C << 0; break;
+		case '.': ref_alt ^= constants::REF_ALT_N << 0; break;
+		default:
+			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
+			exit(1);
+		}
+
+		return(ref_alt);
+	}
+
+public:
 	// Markup: populate from streams
-	//BYTE  refalt;
 	controller_type controller;
-	U32   n_alleles;
+	U16   n_alleles;
 	S32   info_pattern_id;   // Info pattern ID
 	S32   filter_pattern_id; // Filter pattern ID
 	S32   format_pattern_id; // Format pattern ID

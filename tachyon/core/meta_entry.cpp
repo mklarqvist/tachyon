@@ -4,41 +4,27 @@ namespace tachyon{
 namespace core{
 
 MetaEntry::MetaEntry() :
-	loaded_cold(false),
-	info_pattern_id(std::numeric_limits<S32>::min()),
-	filter_pattern_id(std::numeric_limits<S32>::min()),
-	format_pattern_id(std::numeric_limits<S32>::min())
+	n_alleles(0),
+	info_pattern_id(-1),
+	filter_pattern_id(-1),
+	format_pattern_id(-1),
+	quality(NAN),
+	contigID(0),
+	position(0),
+	alleles(nullptr)
 {}
 
-MetaEntry::MetaEntry(const hot_entry& hot) :
-	loaded_cold(false),
-	info_pattern_id(std::numeric_limits<S32>::min()),
-	filter_pattern_id(std::numeric_limits<S32>::min()),
-	format_pattern_id(std::numeric_limits<S32>::min()),
-	hot(hot)
-{}
+MetaEntry::~MetaEntry(){
+	//delete [] this->alleles;
+	for(std::size_t i = 0; i < this->n_alleles; ++i)
+		(this->alleles + i)->~MetaAllele();
 
-MetaEntry::MetaEntry(const hot_entry& hot, const cold_entry& cold) :
-	loaded_cold(true),
-	info_pattern_id(std::numeric_limits<S32>::min()),
-	filter_pattern_id(std::numeric_limits<S32>::min()),
-	format_pattern_id(std::numeric_limits<S32>::min()),
-	hot(hot),
-	cold(cold)
-{}
-
-MetaEntry::MetaEntry(const hot_entry& hot, char* cold) :
-	loaded_cold(true),
-	info_pattern_id(std::numeric_limits<S32>::min()),
-	filter_pattern_id(std::numeric_limits<S32>::min()),
-	format_pattern_id(std::numeric_limits<S32>::min()),
-	hot(hot),
-	cold(cold)
-{}
-
-MetaEntry::~MetaEntry(){ /* do nothing */ };
+	::operator delete[](static_cast<void*>(this->alleles));
+};
 
 void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const{
+	exit(1);
+	/*
 	dest.write(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size()) << '\t';
 	dest << this->hot.position + 1 << '\t';
 
@@ -65,9 +51,13 @@ void MetaEntry::toVCFString(std::ostream& dest, const header_type& header) const
 			dest << '\t' << this->cold.QUAL << '\t';
 		}
 	}
+	*/
 }
 
 void MetaEntry::toVCFString(buffer_type& dest, const header_type& header) const{
+	exit(1);
+
+	/*
 	dest.Add(&header.getContig(this->hot.contigID).name[0], header.getContig(this->hot.contigID).name.size());
 	dest += '\t';
 	//dest += std::to_string(blockPos + this->hot.position + 1);
@@ -109,6 +99,7 @@ void MetaEntry::toVCFString(buffer_type& dest, const header_type& header) const{
 			dest += '\t';
 		}
 	}
+	*/
 }
 
 }

@@ -1,7 +1,6 @@
 #include <fstream>
 
 #include "../algorithm/digital_digest.h"
-#include "meta_cold.h"
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
 #include "../algorithm/timer.h"
@@ -287,15 +286,19 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	}
 
 	meta_type meta;
-	meta.position = entry.body->POS;
+	meta.position = entry.body->POS - this->index_entry.minPosition;
 	meta.contigID = entry.body->CHROM;
-	this->block.meta_positions_container.Add((U32)entry.body->POS - this->index_entry.minPosition);
-	this->block.meta_contig_container.Add(entry.body->CHROM);
-	++this->block.meta_positions_container;
-	++this->block.meta_contig_container;
-
-	meta.ref_alt  = entry.ref_alt;
+	meta.name     = std::string(entry.ID, entry.l_ID);
+	meta.quality  = entry.body->QUAL;
 	meta.controller.simple_snv = entry.isSimple();
+	if(meta.isSimpleSNV() || meta.isReferenceNONREF())
+		meta.controller.simple_snv = true;
+
+	meta.n_alleles = entry.body->n_allele;
+	meta.alleles   = new meta_type::allele_type[meta.n_alleles];
+	for(U32 i = 0; i < meta.n_alleles; ++i){
+		meta.alleles[i](entry.alleles[i].data, entry.alleles[i].length);
+	}
 
 	// GT encoding if available
 	if(entry.hasGenotypes){
@@ -317,31 +320,8 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		return false;
 	}
 
-	this->block.meta_controller_container.Add(meta.controller.toValue()); // has been overloaded
-	++this->block.meta_controller_container;
-
-	if(meta.isSimpleSNV() || (entry.ref_alt & 15) == 5){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
-		this->block.meta_refalt_container.Add((BYTE)(meta.ref_alt.alt << 4 | meta.ref_alt.ref));
-		++this->block.meta_refalt_container;
-	}
-	// add complex
-	else {
-		// Special encoding
-		for(U32 i = 0; i < entry.body->n_allele; ++i){
-			// Write out allele
-			this->block.meta_alleles_container.AddLiteral((U16)entry.alleles[i].length);
-			this->block.meta_alleles_container.AddLiteral(entry.alleles[i].data, entry.alleles[i].length);
-		}
-		this->block.meta_alleles_container.addStride(entry.body->n_allele);
-		++this->block.meta_alleles_container;
-	}
-
-	this->block.meta_quality_container.Add(entry.body->QUAL);
-	++this->block.meta_quality_container;
-
-	this->block.meta_names_container.addStride(entry.l_ID);
-	this->block.meta_names_container.AddCharacter(entry.ID, entry.l_ID);
-	++this->block.meta_names_container;
+	// Add meta
+	this->block += meta;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;
@@ -454,11 +434,13 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 
 		// Store this map in the meta
-		this->block.meta_filter_map_ids.Add((S32)mapID);
-		++this->block.meta_filter_map_ids;
+		//this->block.meta_filter_map_ids.Add((S32)mapID);
+		//++this->block.meta_filter_map_ids;
+		meta.filter_pattern_id = mapID;
 	} else {
-		this->block.meta_filter_map_ids.Add((S32)-1);
-		++this->block.meta_filter_map_ids;
+		//this->block.meta_filter_map_ids.Add((S32)-1);
+		//++this->block.meta_filter_map_ids;
+		meta.filter_pattern_id = -1;
 	}
 
 	if(entry.infoPointer){
@@ -478,11 +460,13 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Store this map in the meta
 		//meta.INFO_map_ID = mapID;
-		this->block.meta_info_map_ids.Add((S32)mapID);
-		++this->block.meta_info_map_ids;
+		//this->block.meta_info_map_ids.Add((S32)mapID);
+		//++this->block.meta_info_map_ids;
+		meta.info_pattern_id = mapID;
 	} else {
-		this->block.meta_info_map_ids.Add((S32)-1);
-		++this->block.meta_info_map_ids;
+		//this->block.meta_info_map_ids.Add((S32)-1);
+		//++this->block.meta_info_map_ids;
+		meta.info_pattern_id = -1;
 	}
 
 	if(entry.formatPointer){
@@ -502,11 +486,13 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 
 		// Store this map in the meta
 		//meta.FORMAT_map_ID = mapID;
-		this->block.meta_format_map_ids.Add((S32)mapID);
-		++this->block.meta_format_map_ids;
+		//this->block.meta_format_map_ids.Add((S32)mapID);
+		//++this->block.meta_format_map_ids;
+		meta.format_pattern_id = mapID;
 	} else {
-		this->block.meta_format_map_ids.Add((S32)-1);
-		++this->block.meta_format_map_ids;
+		//this->block.meta_format_map_ids.Add((S32)-1);
+		//++this->block.meta_format_map_ids;
+		meta.format_pattern_id = -1;
 	}
 
 	// Return

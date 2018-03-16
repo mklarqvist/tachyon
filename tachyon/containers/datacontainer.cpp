@@ -163,7 +163,7 @@ void DataContainer::reformat(){
 
 	// Recode integer types only
 	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
-		//std::cerr << utility::timestamp("DEBUG") << "Not reformatting because: " << this->header.getPrimitiveType() << "," << this->header.isSigned() << std::endl;
+		//std::cerr << utility::timestamp("DEBUG") << "Not reformatting because: " << this->header.data_header.getPrimitiveType() << "," << this->header.data_header.isSigned() << std::endl;
 		return;
 	}
 

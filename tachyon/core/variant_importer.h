@@ -33,7 +33,7 @@ private:
 	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
-	typedef core::MetaHot                   meta_type;
+	typedef core::MetaEntry                 meta_type;
 
 public:
 	VariantImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);

@@ -219,6 +219,9 @@ void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_obje
 	if(this->size() == 0)
 		return;
 
+	exit(1);
+
+	/*
 	// Reference has to be a SNV
 	if(this->getMeta().cold.alleles[0].l_allele != 1)
 		return;
@@ -292,6 +295,7 @@ void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_obje
 
 	// Cleanup
 	delete [] references;
+	*/
 }
 
 }

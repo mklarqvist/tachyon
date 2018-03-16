@@ -42,6 +42,7 @@ struct MetaHotController{
 		diploid(0),
 		mixed_ploidy(0),
 		gt_available(0),
+		alleles_packed(0),
 		unused(0)
 	{}
 
@@ -52,6 +53,24 @@ struct MetaHotController{
 		buffer += (U16)*reinterpret_cast<const U16* const>(&entry);
 		return(buffer);
 
+	}
+
+	void operator=(const U16& value){
+		const self_type* const other = reinterpret_cast<const self_type* const>(&value);
+		this->gt_anyMissing    = other->gt_anyMissing;
+		this->gt_phase         = other->gt_phase;
+		this->gt_anyNA         = other->gt_anyNA;
+		this->gt_antEOV        = other->gt_antEOV;
+		this->gt_mixed_phasing = other->gt_mixed_phasing;
+		this->biallelic        = other->biallelic;
+		this->simple_snv       = other->simple_snv;
+		this->gt_rle           = other->gt_rle;
+		this->gt_primtive_type = other->gt_primtive_type;
+		this->diploid          = other->diploid;
+		this->mixed_ploidy     = other->mixed_ploidy;
+		this->gt_available     = other->gt_available;
+		this->alleles_packed   = other->alleles_packed;
+		this->unused           = other->unused;
 	}
 
 	inline const U16 toValue(void) const{ return((U16)*reinterpret_cast<const U16* const>(this)); }
@@ -84,146 +103,9 @@ struct MetaHotController{
 		diploid:          1, // is diploid
 		mixed_ploidy:     1, // has mixed ploidy (e.g. X chromosome or CNV)
         gt_available:     1, // if there is any GT data
-		unused:           3; // reserved
+		alleles_packed:   1,
+		unused:           2; // reserved
 };
-
-/**
- * MetaHotRefAlt:
- * @brief Supportive structure for internal use only. Helper for ref/alt allele encodings
- * Heuristic approach storing the reference/alternative
- * allele information in all cases where the variant site
- * is bi-allelic and simple SNV->SNV change. If this
- * is true then we can store the reference/alternative
- * in a single byte as two nibbles (4 bits). If the variant
- * site does not meet this criterion then the allele data
- * is stored in the cold meta sub-structure.
- */
-struct MetaHotRefAlt{
-private:
-	typedef MetaHotRefAlt self_type;
-
-public:
-	MetaHotRefAlt();
-	~MetaHotRefAlt();
-
-	inline void operator=(const BYTE& other){
-		this->alt = other & 15;
-		this->ref = (other >> 4) & 15;
-	}
-
-	inline void setMissing(void){
-		this->ref = constants::REF_ALT_N;
-		this->alt = constants::REF_ALT_N;
-	}
-
-	inline const char getRef(void) const{ return(constants::REF_ALT_LOOKUP[this->ref]); }
-	inline const char getAlt(void) const{ return(constants::REF_ALT_LOOKUP[this->alt]); }
-
-	inline const BYTE getRefAlleleLiteral(void) const{ return(this->ref); }
-	inline const BYTE getAltAlleleLiteral(void) const{ return(this->alt); }
-
-	bool setRef(const char& c);
-	bool setAlt(const char& c);
-
-public:
-	BYTE ref: 4,
-	     alt: 4;
-};
-
-/**
- * MetaHot:
- * @brief Contains the hot component of the hot-cold split of a
- * variant site meta information
- * Hot sub-structure of a variant sites meta information. This
- * structure requires a CPU that allows non-aligned memory access.
- * Using a packed entry permits the reinterpret_cast of this
- * struct directly from a byte stream.
- *
- */
-#pragma pack(push, 1)
-struct __attribute__((packed, aligned(1))) MetaHot{
-private:
-	typedef MetaHot           self_type;
-	typedef io::BasicBuffer   buffer_type;
-	typedef MetaHotController controller_type;
-	typedef MetaHotRefAlt     allele_type;
-
-public:
-	// ctor
-	MetaHot();
-	MetaHot(const self_type& other);
-	MetaHot(self_type&& other) noexcept;
-	MetaHot& operator=(const self_type& other) noexcept;
-	MetaHot& operator=(self_type&& other) noexcept;
-	~MetaHot();
-
-	// Access
-	inline const controller_type& getController(void) const{ return(this->controller); }
-
-	// Supportive boolean functions
-	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
-	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
-	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
-	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
-	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
-	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
-	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
-	inline const bool isAnyGTSpecial(void) const{ return(this->controller.gt_anyNA); }
-	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
-	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
-
-	const TACHYON_GT_TYPE getGenotypeType(void) const{
-		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && !this->controller.gt_anyNA) return YON_GT_RLE_DIPLOID_BIALLELIC;
-		else if(this->controller.gt_rle && this->controller.diploid) return YON_GT_RLE_DIPLOID_NALLELIC;
-		else if(!this->controller.gt_rle && this->controller.diploid) return YON_GT_BCF_DIPLOID;
-		else return YON_GT_UNKNOWN;
-	}
-
-	const BYTE getPrimitiveWidth(void) const{
-		switch(this->controller.gt_primtive_type){
-		case(YON_GT_BYTE):  return(1);
-		case(YON_GT_U16): return(2);
-		case(YON_GT_U32): return(4);
-		case(YON_GT_U64): return(8);
-		}
-		return(0);
-	}
-
-private:
-	// Used for debugging only
-	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << entry.position << '\t' <<
-			   (int)*reinterpret_cast<const BYTE* const>(&entry.controller) << '\t' <<
-			   entry.ref_alt.getRef() << '\t' << entry.ref_alt.getAlt();
-		return(out);
-	}
-
-	// Overload operator+= for basic buffer
-	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
-		buffer += (U16)*reinterpret_cast<const U16* const>(&entry.controller);
-		buffer += (BYTE)*reinterpret_cast<const BYTE* const>(&entry.ref_alt);
-		buffer += entry.position;
-		buffer += entry.contigID;
-		return(buffer);
-	}
-
-public:
-	/**< Controller bit-fields for a variant site */
-	controller_type controller;
-
-	/**< Heuristic approach storing the reference/alternative
-	 * allele information in all cases where the variant site
-	 * is bi-allelic and simple SNV->SNV change. If this
-	 * is true then we can store the reference/alternative
-	 * in a single byte as two nibbles (4 bits). If the variant
-	 * site does not meet this criterion then the allele data
-	 * is stored in the cold meta sub-structure.
-	 */
-	allele_type ref_alt;
-	U64 position;
-	U32 contigID;
-};
-#pragma pack(pop)
 
 }
 }

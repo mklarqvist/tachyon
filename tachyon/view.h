@@ -138,7 +138,7 @@ int view(int argc, char** argv){
 	//U64 square_division = 0;
 	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		//n_variants += reader.countVariants();
+		n_variants += reader.countVariants();
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
 		//n_variants += reader.iterate_all_info();
 		//n_variants += reader.iterate_all_info();

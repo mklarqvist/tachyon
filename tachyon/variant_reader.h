@@ -13,8 +13,6 @@
 #include "containers/genotype_container.h"
 #include "containers/info_container.h"
 #include "containers/info_container_string.h"
-#include "containers/meta_cold_container.h"
-#include "containers/meta_hot_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
 #include "containers/checksum_container.h"
@@ -32,7 +30,7 @@ namespace tachyon{
 
 class VariantReader{
 	typedef VariantReader                       self_type;
-	typedef containers::VariantBlock               block_entry_type;
+	typedef containers::VariantBlock            block_entry_type;
 	typedef io::BasicBuffer                     buffer_type;
 	typedef core::VariantHeader                 header_type;
 	typedef core::Footer                        footer_type;

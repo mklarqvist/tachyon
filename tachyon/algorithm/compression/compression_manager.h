@@ -116,11 +116,13 @@ public:
 		if(block.meta_contig_container.getSizeCompressed())     this->decompress(block.meta_contig_container);
 		if(block.meta_positions_container.getSizeCompressed())  this->decompress(block.meta_positions_container);
 		if(block.meta_refalt_container.getSizeCompressed())     this->decompress(block.meta_refalt_container);
+		if(block.meta_alleles_container.getSizeCompressed())    this->decompress(block.meta_alleles_container);
 		if(block.meta_controller_container.getSizeCompressed()) this->decompress(block.meta_controller_container);
 		if(block.meta_quality_container.getSizeCompressed())    this->decompress(block.meta_quality_container);
 		if(block.gt_simple_container.getSizeCompressed())       this->decompress(block.gt_simple_container);
 		if(block.gt_support_data_container.getSizeCompressed()) this->decompress(block.gt_support_data_container);
 		if(block.meta_info_map_ids.getSizeCompressed())         this->decompress(block.meta_info_map_ids);
+		if(block.meta_names_container.getSizeCompressed())      this->decompress(block.meta_names_container);
 		if(block.meta_filter_map_ids.getSizeCompressed())       this->decompress(block.meta_filter_map_ids);
 		if(block.meta_format_map_ids.getSizeCompressed())       this->decompress(block.meta_format_map_ids);
 		if(block.gt_rle8_container.getSizeCompressed())         this->decompress(block.gt_rle8_container);
@@ -161,6 +163,7 @@ public:
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
 		}
+		//std::cout.write(container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
 
 		if(container.header.data_header.controller.mixedStride){
 			if(container.header.stride_header.controller.encoder == YON_ENCODE_ZSTD){
@@ -173,6 +176,7 @@ public:
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 				return false;
 			}
+			//std::cout.write(container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 		}
 		return true;
 	}

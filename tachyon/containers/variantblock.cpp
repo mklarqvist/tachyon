@@ -13,11 +13,9 @@ VariantBlock::VariantBlock() :
 {
 	// Base container streams are always of type TYPE_STRUCT
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle64_container.setType(YON_TYPE_STRUCT);
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
+	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
+	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
 
 	this->footer_support.resize(65536);
 }
@@ -59,12 +57,9 @@ void VariantBlock::clear(void){
 	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
 	this->gt_simple_container.setType(tachyon::YON_TYPE_STRUCT);
-	this->gt_support_data_container.setType(tachyon::YON_TYPE_32B);
-	this->gt_rle8_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle16_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle32_container.setType(YON_TYPE_STRUCT);
-	this->gt_rle64_container.setType(YON_TYPE_STRUCT);
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
+	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
+	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
 
 	this->footer_support.reset();
 
@@ -105,7 +100,7 @@ void VariantBlock::updateBaseContainers(void){
 	this->updateContainer(this->meta_contig_container);
 	this->updateContainer(this->meta_positions_container);
 	this->updateContainer(this->meta_refalt_container);
-	this->updateContainer(this->meta_controller_container);
+	this->updateContainer(this->meta_controller_container, false);
 	this->updateContainer(this->meta_quality_container);
 	this->updateContainer(this->meta_names_container);
 	this->updateContainer(this->gt_simple_container);
@@ -122,25 +117,9 @@ void VariantBlock::updateBaseContainers(void){
 
 void VariantBlock::VariantBlock::updateContainer(container_type* container, const U32& length){
 	for(U32 i = 0; i < length; ++i){
-		// If the data container has entries in it but has
-		// no actual data then it is a BOOLEAN
-		if(container[i].n_entries > 0 && container[i].buffer_data_uncompressed.size() == 0){
-			container[i].header.data_header.controller.type = tachyon::YON_TYPE_BOOLEAN;
-			container[i].header.data_header.controller.uniform = true;
-			container[i].header.data_header.stride  = 0;
-			container[i].header.data_header.uLength = 0;
-			container[i].header.data_header.cLength = 0;
-			container[i].header.data_header.controller.mixedStride = false;
-			container[i].header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
-			container[i].n_entries      = 0;
-			container[i].n_additions    = 0;
-			container[i].header.data_header.controller.signedness = 0;
-			continue;
-		}
-
+		assert(container[i].header.data_header.stride != 0);
 		// If the data type is not a BOOLEAN
 		this->updateContainer(container[i]);
-		assert(container[i].header.data_header.stride != 0);
 	}
 }
 
@@ -197,8 +176,23 @@ void VariantBlock::deltaEncode(containers::DataContainer& container){
 }
 
 void VariantBlock::updateContainer(container_type& container, bool reformat){
-	if(container.buffer_data_uncompressed.size() == 0 &&
-	   container.header.data_header.controller.type != tachyon::YON_TYPE_BOOLEAN)
+	// If the data container has entries in it but has
+	// no actual data then it is a BOOLEAN
+	if(container.n_entries > 0 && container.buffer_data_uncompressed.size() == 0){
+		container.header.data_header.controller.type = tachyon::YON_TYPE_BOOLEAN;
+		container.header.data_header.controller.uniform = true;
+		container.header.data_header.stride  = 0;
+		container.header.data_header.uLength = 0;
+		container.header.data_header.cLength = 0;
+		container.header.data_header.controller.mixedStride = false;
+		container.header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
+		container.n_entries      = 0;
+		container.n_additions    = 0;
+		container.header.data_header.controller.signedness = 0;
+		return;
+	}
+
+	if(container.buffer_data_uncompressed.size() == 0)
 		return;
 
 	// Check if stream is uniform in content
@@ -243,7 +237,6 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 	const U64 end_of_block = stream.tellg();
-
 	if(settings.importPPA){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 			stream.seekg(start_offset + this->footer.offset_ppa.data_header.offset);
@@ -557,6 +550,58 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[0].cost_uncompressed += (U64)stream.tellp() - last_pos;
 
 	return(true);
+}
+
+bool VariantBlock::operator+=(meta_entry_type& meta_entry){
+	// Meta positions
+	this->meta_positions_container.Add((S32)meta_entry.position);
+	++this->meta_positions_container;
+
+	// Contig ID
+	this->meta_contig_container.Add((S32)meta_entry.contigID);
+	++this->meta_contig_container;
+
+	// Ref-alt data
+	if(meta_entry.isSimpleSNV() || meta_entry.isReferenceNONREF()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+		meta_entry.controller.alleles_packed = true;
+		const BYTE ref_alt = meta_entry.packedRefAltByte();
+		this->meta_refalt_container.AddLiteral(ref_alt);
+		++this->meta_refalt_container;
+	}
+	// add complex
+	else {
+		// Special encoding
+		for(U32 i = 0; i < meta_entry.n_alleles; ++i){
+			// Write out allele
+			this->meta_alleles_container.AddLiteral((U16)meta_entry.alleles[i].l_allele);
+			this->meta_alleles_container.AddCharacter(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
+		}
+		++this->meta_alleles_container; // update before to not trigger
+		this->meta_alleles_container.addStride(meta_entry.n_alleles);
+	}
+
+	// Quality
+	this->meta_quality_container.Add(meta_entry.quality);
+	++this->meta_quality_container;
+
+	// Variant name
+	this->meta_names_container.addStride(meta_entry.name.size());
+	this->meta_names_container.AddCharacter(meta_entry.name);
+	++this->meta_names_container;
+
+	// Tachyon pattern identifiers
+	this->meta_info_map_ids.Add(meta_entry.info_pattern_id);
+	this->meta_format_map_ids.Add(meta_entry.format_pattern_id);
+	this->meta_filter_map_ids.Add(meta_entry.filter_pattern_id);
+	++this->meta_info_map_ids;
+	++this->meta_format_map_ids;
+	++this->meta_filter_map_ids;
+
+	// Controller
+	this->meta_controller_container.AddLiteral((U16)meta_entry.controller.toValue()); // has been overloaded
+	++this->meta_controller_container;
+
+	return true;
 }
 
 }

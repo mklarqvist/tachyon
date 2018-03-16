@@ -16,11 +16,10 @@ private:
     typedef const value_type&        const_reference;
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
-    typedef tachyon::core::MetaHot   hot_type;
-    typedef tachyon::core::MetaCold  cold_type;
+    typedef VariantBlock             block_type;
 
 public:
-	MetaContainer(const VariantBlock& block);
+	MetaContainer(const block_type& block);
 	~MetaContainer(void);
 
 	class iterator{
@@ -82,7 +81,7 @@ public:
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
 private:
-    void __ctor_setup(const VariantBlock& block);
+    void __ctor_setup(const block_type& block);
 
 private:
     size_t  n_entries;

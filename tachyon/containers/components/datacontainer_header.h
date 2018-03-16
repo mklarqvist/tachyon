@@ -17,7 +17,7 @@ struct DataContainerHeaderObject{
 	typedef DataContainerHeaderController controller_type;
 
 	DataContainerHeaderObject() :
-		stride(-1),
+		stride(1),
 		offset(0),
 		cLength(0),
 		uLength(0),
@@ -78,7 +78,7 @@ struct DataContainerHeaderObject{
 
 	inline void reset(void){
 		this->controller.clear();
-		this->stride     = -1;
+		this->stride     = 1;
 		this->offset     = 0;
 		this->cLength    = 0;
 		this->uLength    = 0;

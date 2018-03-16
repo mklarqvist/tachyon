@@ -217,6 +217,9 @@ GenotypeSum& GenotypeContainerDiploidRLE<return_type>::getSummary(gt_summary& gt
 
 template <class return_type>
 void GenotypeContainerDiploidRLE<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
+	std::cerr << "not yet" << std::endl;
+	exit(1);
+
 	if(this->size() == 0)
 		return;
 
@@ -236,8 +239,10 @@ void GenotypeContainerDiploidRLE<return_type>::getTsTv(std::vector<ts_tv_object_
 	// If alleleA/B == ref then update self
 	// If allele != ref then update ref->observed
 	BYTE references[4];
-	references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
-	references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
+	//references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
+	//references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
+	references[0] = 0;
+	references[1] = 0;
 	references[2] = 4; // Missing
 	references[3] = 4; // EOV
 

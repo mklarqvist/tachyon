@@ -47,7 +47,6 @@ void InfoContainer<std::string>::__setup(const data_container_type& container){
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-
 	U32 current_offset = 0;
 	for(U32 i = 0; i < this->size(); ++i){
 		new( &this->__containers[i] ) value_type(&container.buffer_data_uncompressed.data()[current_offset], strides[i]);
