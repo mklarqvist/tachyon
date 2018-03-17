@@ -55,7 +55,6 @@ public:
 
     GTObject& operator=(self_type&& other) noexcept{
 		if (this == &other){
-			// take precautions against `foo = std::move(foo)`
 			return *this;
 		}
 

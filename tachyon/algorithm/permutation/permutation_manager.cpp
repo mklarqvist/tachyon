@@ -36,7 +36,7 @@ void PermutationManager::reset(void){
 	this->PPA.n_chars = this->n_samples*sizeof(U32);
 	this->u_length = 0;
 	this->c_length = 0;
-	this->crc = 0;
+	this->crc      = 0;
 }
 
 bool PermutationManager::generateCRC(void){

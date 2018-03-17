@@ -172,19 +172,40 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 			entries[cum_pos].n_alleles = 2;
 		}
 	}
+	//assert(cum_pos == n_samples);
 	return(ret);
 }
 
 template <class T>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-	std::vector<gt_object> ret(this->getObjects(n_samples));
-	std::vector<gt_object> ret_unpermuted(n_samples);
+	std::vector<tachyon::core::GTObject> ret(n_samples);
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
 
-	for(U32 i = 0; i < n_samples; ++i)
-		ret_unpermuted[i] = ret[ppa_manager[i]];
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
-	//delete [] pointer;
-	return(ret_unpermuted);
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].n_objects = 1;
+			entries[ppa_manager[cum_pos]].n_alleles = 2;
+		}
+	}
+	//assert(cum_pos == n_samples);
+	return(ret);
 }
 
 template <class T>

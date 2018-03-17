@@ -54,19 +54,6 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 
 	// Cycle over BCF entries
 	for(U32 i = 0; i < reader.size(); ++i){
-		// Have to have genotypes available
-		if(reader[i].hasGenotypes == false)
-			continue;
-
-		if(reader[i].gt_support.hasEOV || reader[i].gt_support.ploidy != 2)
-			continue;
-
-		// Has to be biallelic
-		// otherwise skip
-		if(!reader[i].isBiallelic())
-			continue;
-
-		//std::cerr << "update: " << i << std::endl;
 		if(!this->update(reader[i]))
 			continue;
 
@@ -82,6 +69,15 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	// iteratively at some point in time
 	// i.e. not operating through the
 	// build() function
+	// Have to have genotypes available
+	if(entry.hasGenotypes == false)
+		return false;
+
+	if(entry.gt_support.hasEOV || entry.gt_support.ploidy != 2)
+		return false;
+
+	// Has to be biallelic
+	// otherwise skip
 	if(!entry.isBiallelic())
 		return false;
 
@@ -107,14 +103,11 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 
 	U32 internal_pos = entry.formatID[0].l_offset;
 	U32 k = 0;
-	//BYTE* debug = new BYTE[2*this->n_samples];
 	for(U32 i = 0; i < 2*this->n_samples; i += 2, ++k){
 		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const SBYTE& fmt_type_value2 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
 		const BYTE packed = (bcf::BCF_UNPACK_GENOTYPE(fmt_type_value2) << 2) | bcf::BCF_UNPACK_GENOTYPE(fmt_type_value1);
 		this->GT_array[k] = packed;
-		//debug[i] = fmt_type_value1;
-		//debug[i+1] = fmt_type_value2;
 	}
 
 	// Build PPA

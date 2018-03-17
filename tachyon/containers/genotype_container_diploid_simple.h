@@ -157,7 +157,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 	std::vector<tachyon::core::GTObject> ret(n_samples);
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 
-	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.controller.gt_antEOV)); // Bits occupied per allele, 1 value for missing
 	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
@@ -185,14 +185,40 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 
 template <class return_type>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-	std::vector<gt_object> ret(this->getObjects(n_samples));
-	std::vector<gt_object> ret_unpermuted(n_samples);
+	std::vector<tachyon::core::GTObject> ret(n_samples);
+	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 
-	for(U32 i = 0; i < n_samples; ++i)
-		ret_unpermuted[i] = ret[ppa_manager[i]];
+	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.controller.gt_antEOV)); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
-	//delete [] pointer;
-	return(ret_unpermuted);
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+
+		// 0 is missing, 1 is EOV
+		if(alleleA == 0) alleleA = -1;
+		else             alleleA -= 1;
+		if(alleleB == 0) alleleB = -1;
+		else             alleleB -= 1;
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].n_objects = 1;
+			entries[ppa_manager[cum_pos]].n_alleles = 2;
+		}
+	}
+	//assert(cum_pos == n_samples);
+	return(ret);
 }
 
 template <class return_type>

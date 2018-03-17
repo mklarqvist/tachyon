@@ -139,6 +139,18 @@ bool VariantImporter::BuildBCF(void){
 		if(header.getSampleNumber() <= 1)
 			this->block.header.controller.hasGTPermuted = false;
 
+		// test
+		/*
+		for(U32 i = 0; i < reader.size(); ++i){
+			if(!this->add(reader[i])){
+				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
+				return false;
+			}
+
+			this->permutator.update(reader[i]);
+		}
+		*/
+
 		// Permute GT if GT is available and the appropriate flag is triggered
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
@@ -335,13 +347,13 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			}
 		}
 		// Floats
-		else if(entry.infoID[i].primitive_type == 5){
+		else if(entry.infoID[i].primitive_type == bcf::BCF_FLOAT){
 			for(U32 j = 0; j < entry.infoID[i].l_stride; ++j){
 				target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
-		else if(entry.infoID[i].primitive_type == 7){
+		else if(entry.infoID[i].primitive_type == bcf::BCF_CHAR){
 			target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.infoID[i].l_stride);
 			internal_pos += entry.infoID[i].l_stride;
 		}
@@ -378,14 +390,14 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 			}
 		}
 		// Floats
-		else if(entry.formatID[i].primitive_type == 5){
+		else if(entry.formatID[i].primitive_type == bcf::BCF_FLOAT){
 			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
-		else if(entry.formatID[i].primitive_type == 7){
+		else if(entry.formatID[i].primitive_type == bcf::BCF_CHAR){
 			for(U32 s = 0; s < this->header->samples; ++s){
 				//for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 				target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.formatID[i].l_stride);

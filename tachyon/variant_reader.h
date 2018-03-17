@@ -256,6 +256,7 @@ public:
 
 	U64 iterate_all_info(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
 
 		// Store as double pointers to avoid memory collisions because
 		// info containers have different class members
@@ -289,15 +290,15 @@ public:
 				const U32* filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
 				if(n_filter_keys){
 					// Local key -> global key
-					std::cout << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+					stream << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 					for(U32 i = 1; i < n_filter_keys; ++i){
-						std::cout << ';' << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+						stream << ';' << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
 					}
-					std::cout.put('\t');
+					stream.put('\t');
 				} else
-					std::cout << ".\t";
+					stream << ".\t";
 			} else
-				std::cout << ".\t";
+				stream << ".\t";
 
 			if(this->block.footer.n_info_streams){
 				const U32& n_keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
@@ -305,25 +306,33 @@ public:
 
 				// First
 				if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
-					std::cout << global_fields[keys[0]];
+					stream << global_fields[keys[0]];
 					continue;
 				}
 				if(its[keys[0]]->emptyPosition(p)) continue;
-				std::cout << global_fields[keys[0]] << "=";
+				stream << global_fields[keys[0]] << "=";
 				its[keys[0]]->to_vcf_string(std::cout, p);
 
 				for(U32 i = 1; i < n_keys; ++i){
 					if(this->header.info_fields[this->block.footer.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
-						std::cout << ";" << global_fields[keys[i]];
+						stream << ";" << global_fields[keys[i]];
 						continue;
 					}
 					if(its[keys[i]]->emptyPosition(p)) continue;
-					std::cout << ";" << global_fields[keys[i]] << "=";
+					stream << ";" << global_fields[keys[i]] << "=";
 					its[keys[i]]->to_vcf_string(std::cout, p);
 				}
-				std::cout << '\n';
+				stream << '\t';
 			} else
-				std::cout << ".\n";
+				stream << ".\t";
+
+			stream << "GT\t";  // TODO: all foramt fields
+			std::vector<core::GTObject> objects_true = gt[p].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+			stream << (int)objects_true[0].alleles[0].first << (objects_true[0].alleles[1].second ? '/' : '|') << (int)objects_true[0].alleles[1].first;
+			for(U32 i = 1; i < objects_true.size(); ++i){
+				stream << '\t' << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
+			}
+			stream.put('\n');
 		}
 
 		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i)
@@ -342,9 +351,9 @@ public:
 			// All of these functions are in relative terms very expensive!
 			// Avoid using them unless you absolutely have to!
 			// Vector of literal genotype representations (lower level)
-			std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
+			//std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
 			// Vector of genotype objects (high level permuted)
-			std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
+			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
 			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 
@@ -354,8 +363,16 @@ public:
 			//}
 			//std::cerr << std::endl;
 
+
+			std::cout << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
+			for(U32 i = 1; i < objects_true.size(); ++i){
+				std::cout << '\t' << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
+			}
+			std::cout << std::endl;
+
+
 			// Print the difference
-			std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
+			//std::cerr << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
 			// Dump data
 			//gt[i].getMeta().toVCFString(std::cout, this->header, this->block.header.contigID, this->block.header.minPosition);
 			//utility::to_vcf_string(std::cout, objects_true) << '\n';
