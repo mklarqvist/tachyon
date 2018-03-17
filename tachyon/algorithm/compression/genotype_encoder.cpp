@@ -40,8 +40,8 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	const char* const data = &line.data[line.formatID[0].l_offset];
 	U32 j = 0;
 	for(U32 i = 0; i < n_samples; ++i){
-		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&data[2*sizeof(SBYTE)*ppa[j]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&data[2*sizeof(SBYTE)*ppa[j]+sizeof(SBYTE)]);
+		const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[2*sizeof(BYTE)*ppa[j]]);
+		const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[2*sizeof(BYTE)*ppa[j]+sizeof(BYTE)]);
 		std::cout << (int)bcf::BCF_UNPACK_GENOTYPE(allele1) + (int)bcf::BCF_UNPACK_GENOTYPE(allele2) << '\t';
 		++j;
 	}
@@ -259,7 +259,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	const BYTE ploidy    = 2;
 
 	// Assess RLE cost
-	const BYTE shift = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1));
+	const BYTE shift = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 2));
 	const BYTE add   = line.gt_support.mixedPhasing  ? 1 : 0;
 
 	// Run limits
@@ -283,16 +283,52 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	const char* const data = &line.data[line.formatID[0].l_offset];
 	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
 	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
-	if(allele1 == 0x81) allele1 = 1;
-	if(allele2 == 0x81) allele2 = 1;
+	if((allele1 >> 1) == 0){
+
+	}
+	else if(allele1 == 0x81){
+		allele1 = 1;
+		//std::cerr << "eov" << std::endl;
+	} else {
+		// Add 1 to value
+		allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
+	}
+
+	if((allele2 >> 1) == 0){
+
+	}
+	else if(allele2 == 0x81){
+		allele2 = 1;
+		//std::cerr << "eov" << std::endl;
+	} else {
+		allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
+	}
 	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
 
 	U32 ppa_pos = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
 		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
 		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
-		if(allele1 == 0x81) allele1 = 1;
-		if(allele2 == 0x81) allele2 = 1;
+		if((allele1 >> 1) == 0){
+
+		}
+		else if(allele1 == 0x81){
+			allele1 = 1;
+			//std::cerr << "eov" << std::endl;
+		} else {
+			// Add 1 to value
+			allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
+		}
+
+		if((allele2 >> 1) == 0){
+
+		}
+		else if(allele2 == 0x81){
+			allele2 = 1;
+			//std::cerr << "eov" << std::endl;
+		} else {
+			allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
+		}
 		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
 
 		if(ref != internal){

@@ -51,7 +51,7 @@ namespace algorithm{
 
 */
 
-#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
+#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)          (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) (((A) >> 1) << ((SHIFT) + (ADD))) | (((B) >> 1) << (ADD)) | ((A) & (ADD))
 
 class GenotypeEncoder {
@@ -197,14 +197,14 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 
 	const char* const data = &line.data[line.formatID[0].l_offset];
 	const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
-	const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]+sizeof(BYTE)]);
+	const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 	YON_RLE_TYPE packed = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 	U32 ppa_pos = 1;
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
 		const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
-		const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]+sizeof(BYTE)]);
+		const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
 		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 		if(packed != packed_internal || length == run_limit){
@@ -260,22 +260,34 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1)); // Bits occupied per allele
+	const BYTE shift    = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 2)); // Bits occupied per allele
 	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE)  - (ploidy*shift + add)) - 1;
 
 	// Setup first run
 	const char* const data = &line.data[line.formatID[0].l_offset];
 	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
-	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]+sizeof(BYTE)]);
+	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 
-	if(allele1 == 0x81){
+	if((allele1 >> 1) == 0){
+		allele1 = 0;
+	}
+	else if(allele1 == 0x81){
 		allele1 = 1;
 		//std::cerr << "eov" << std::endl;
+	} else {
+		// Add 1 to value
+		allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
 	}
-	if(allele2 == 0x81){
+
+	if((allele2 >> 1) == 0){
+		allele2 = 0;
+	}
+	else if(allele2 == 0x81){
 		allele2 = 1;
 		//std::cerr << "eov" << std::endl;
+	} else {
+		allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
 	}
 
 	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
@@ -284,14 +296,27 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
 		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
-		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]+sizeof(BYTE)]);
-		if(allele1 == 0x81){
+		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
+
+		if((allele1 >> 1) == 0){
+			allele1 = 0;
+		}
+		else if(allele1 == 0x81){
 			allele1 = 1;
 			//std::cerr << "eov" << std::endl;
+		} else {
+			// Add 1 to value
+			allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
 		}
-		if(allele2 == 0x81){
+
+		if((allele2 >> 1) == 0){
+			allele2 = 0;
+		}
+		else if(allele2 == 0x81){
 			allele2 = 1;
 			//std::cerr << "eov" << std::endl;
+		} else {
+			allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
 		}
 
 		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
@@ -300,8 +325,6 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 		if(packed != packed_internal || length == run_limit){
 			// Prepare RLE
 			RLE = (length << (ploidy*shift + add)) | packed;
-
-			//std::cerr << (int)line.body->n_allele << '\t' << std::bitset<32>(RLE) << '\t' << std::bitset<32>(RLE >> (ploidy*shift + add)) << '\t' << std::bitset<32>(length) << std::endl;
 			assert((RLE >> (ploidy*shift + add)) == length);
 			assert(length != 0);
 
@@ -320,7 +343,6 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	// Last entry
 	// Prepare RLE
 	RLE = (length << (ploidy*shift + add)) | packed;
-	//std::cerr << "last:" << (int)line.body->n_allele << '\t' << std::bitset<32>(RLE) << '\t' << std::bitset<32>(RLE >> (ploidy*shift + add)) << '\t' << std::bitset<32>(length) << std::endl;
 	assert((RLE >> (ploidy*shift + add)) == length);
 	assert(length != 0);
 

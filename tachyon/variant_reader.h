@@ -326,7 +326,24 @@ public:
 			} else
 				stream << ".\t";
 
-			stream << "GT\t";  // TODO: all foramt fields
+			if(this->block.footer.n_format_streams){
+				const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
+				const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
+				if(n_format_keys){
+					// Local key -> global key
+					stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
+					for(U32 i = 1; i < n_format_keys; ++i){
+						stream << ';' << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+					}
+					stream.put('\t');
+				} else
+					stream << ".\t";
+			} else
+				stream << ".\t";
+
+
+			// Todo: abstract
+			// Genotype data
 			std::vector<core::GTObject> objects_true = gt[p].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 			stream << (int)objects_true[0].alleles[0].first << (objects_true[0].alleles[1].second ? '/' : '|') << (int)objects_true[0].alleles[1].first;
 			for(U32 i = 1; i < objects_true.size(); ++i){
