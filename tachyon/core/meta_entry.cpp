@@ -59,6 +59,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 }
 
 MetaEntry::MetaEntry(const self_type& other) :
+	controller(other.controller),
 	n_alleles(other.n_alleles),
 	info_pattern_id(other.info_pattern_id),
 	filter_pattern_id(other.filter_pattern_id),

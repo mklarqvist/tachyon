@@ -53,9 +53,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 	//std::cerr << meta_base.controller.biallelic << "," << line.gt_support.ploidy << "," << line.gt_support.hasEOV << std::endl;
 	if(meta_base.controller.biallelic && meta_base.controller.diploid && meta_base.controller.mixed_ploidy == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(line, ppa);
-		meta_base.controller.gt_rle = true;
-
-		//++block.gt_rle_container;
+		meta_base.controller.gt_compression_type = tachyon::core::YON_GT_RLE_DIPLOID_BIALLELIC;
 		block.gt_support_data_container.Add((U32)cost.n_runs);
 		++block.gt_support_data_container;
 
@@ -98,7 +96,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 
 		// RLE is cheaper
 		if(cost.word_width * cost.n_runs < costBCFStyle){
-			meta_base.controller.gt_rle = true;
+			meta_base.controller.gt_compression_type = tachyon::core::YON_GT_RLE_DIPLOID_NALLELIC;
 			block.gt_support_data_container.Add((U32)cost.n_runs);
 			++block.gt_support_data_container;
 
@@ -131,9 +129,10 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		}
 		// BCF style is cheaper
 		else {
-			//std::cerr << "BCF-style cheaper" << std::endl;
+			std::cerr << "BCF-style cheaper" << std::endl;
 			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
+			meta_base.controller.gt_compression_type = tachyon::core::YON_GT_BCF_DIPLOID;
 
 			U64 n_runs = this->n_samples;
 			if(line.body->n_allele + 1 < 8){
@@ -157,9 +156,6 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 							 "Format is limited to 32768..." << std::endl;
 				return false;
 			}
-
-			// Reset and recycle helper
-			//this->helper.reset();
 			return true;
 		}
 	}
@@ -169,6 +165,7 @@ bool GenotypeEncoder::Encode(const bcf_type& line,
 		block.gt_support_data_container.Add((U32)this->n_samples*line.gt_support.ploidy);
 		++block.gt_support_data_container;
 		++block.gt_simple8_container;
+		meta_base.controller.gt_compression_type = tachyon::core::YON_GT_BCF_STYLE;
 
 		U64 n_runs = this->n_samples*line.gt_support.ploidy;
 
@@ -259,7 +256,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	const BYTE ploidy    = 2;
 
 	// Assess RLE cost
-	const BYTE shift = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 2));
+	const BYTE shift = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1));
 	const BYTE add   = line.gt_support.mixedPhasing  ? 1 : 0;
 
 	// Run limits
@@ -291,7 +288,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 		//std::cerr << "eov" << std::endl;
 	} else {
 		// Add 1 to value
-		allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
+		allele1 = (((allele1 >> 1) + line.gt_support.hasEOV) << 1) | (allele1 & 1);
 	}
 
 	if((allele2 >> 1) == 0){
@@ -301,7 +298,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 		allele2 = 1;
 		//std::cerr << "eov" << std::endl;
 	} else {
-		allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
+		allele2 = (((allele2 >> 1) + line.gt_support.hasEOV) << 1) | (allele2 & 1);
 	}
 	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
 
@@ -317,7 +314,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 			//std::cerr << "eov" << std::endl;
 		} else {
 			// Add 1 to value
-			allele1 = (((allele1 >> 1) + 1) << 1) | (allele1 & 1);
+			allele1 = (((allele1 >> 1) + line.gt_support.hasEOV) << 1) | (allele1 & 1);
 		}
 
 		if((allele2 >> 1) == 0){
@@ -327,7 +324,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 			allele2 = 1;
 			//std::cerr << "eov" << std::endl;
 		} else {
-			allele2 = (((allele2 >> 1) + 1) << 1) | (allele2 & 1);
+			allele2 = (((allele2 >> 1) + line.gt_support.hasEOV) << 1) | (allele2 & 1);
 		}
 		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
 

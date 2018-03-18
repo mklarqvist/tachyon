@@ -344,12 +344,16 @@ public:
 
 			// Todo: abstract
 			// Genotype data
-			std::vector<core::GTObject> objects_true = gt[p].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-			stream << (int)objects_true[0].alleles[0].first << (objects_true[0].alleles[1].second ? '/' : '|') << (int)objects_true[0].alleles[1].first;
-			for(U32 i = 1; i < objects_true.size(); ++i){
-				stream << '\t' << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
-			}
+			//if(gt[p].getMeta().isMixedPloidy()){
+				std::vector<core::GTObject> objects_true = gt[p].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+				stream << objects_true[0];
+				for(U32 i = 1; i < objects_true.size(); ++i){
+					stream << '\t' << objects_true[i];
+				}
+				//exit(1);
+			//}
 			stream.put('\n');
+
 		}
 
 		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i)

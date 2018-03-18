@@ -17,12 +17,10 @@ enum TACHYON_GT_PRIMITIVE_TYPE{
 };
 
 enum TACHYON_GT_TYPE{
-	YON_GT_UNKNOWN = -1,
 	YON_GT_RLE_DIPLOID_BIALLELIC,
 	YON_GT_RLE_DIPLOID_NALLELIC,
 	YON_GT_BCF_DIPLOID,
-	YON_GT_BCF_STYLE,
-	YON_GT_KEEP_ALL = 10000 // special case
+	YON_GT_BCF_STYLE
 };
 
 struct MetaHotController{
@@ -33,18 +31,33 @@ struct MetaHotController{
 		gt_anyMissing(0),
 		gt_phase(0),
 		gt_anyNA(0),
-		gt_antEOV(0),
 		gt_mixed_phasing(0),
+		gt_compression_type(0),
+		gt_primtive_type(0),
 		biallelic(0),
 		simple_snv(0),
-		gt_rle(0),
-		gt_primtive_type(0),
 		diploid(0),
 		mixed_ploidy(0),
 		gt_available(0),
 		alleles_packed(0),
 		unused(0)
 	{}
+
+	MetaHotController(const self_type& other){
+		this->gt_anyMissing    = other.gt_anyMissing;
+		this->gt_phase         = other.gt_phase;
+		this->gt_anyNA         = other.gt_anyNA;
+		this->gt_mixed_phasing = other.gt_mixed_phasing;
+		this->gt_compression_type = other.gt_compression_type;
+		this->gt_primtive_type = other.gt_primtive_type;
+		this->biallelic        = other.biallelic;
+		this->simple_snv       = other.simple_snv;
+		this->diploid          = other.diploid;
+		this->mixed_ploidy     = other.mixed_ploidy;
+		this->gt_available     = other.gt_available;
+		this->alleles_packed   = other.alleles_packed;
+		this->unused           = other.unused;
+	}
 
 	// Dtor
 	~MetaHotController(){}
@@ -60,12 +73,11 @@ struct MetaHotController{
 		this->gt_anyMissing    = other->gt_anyMissing;
 		this->gt_phase         = other->gt_phase;
 		this->gt_anyNA         = other->gt_anyNA;
-		this->gt_antEOV        = other->gt_antEOV;
 		this->gt_mixed_phasing = other->gt_mixed_phasing;
+		this->gt_compression_type = other->gt_compression_type;
+		this->gt_primtive_type = other->gt_primtive_type;
 		this->biallelic        = other->biallelic;
 		this->simple_snv       = other->simple_snv;
-		this->gt_rle           = other->gt_rle;
-		this->gt_primtive_type = other->gt_primtive_type;
 		this->diploid          = other->diploid;
 		this->mixed_ploidy     = other->mixed_ploidy;
 		this->gt_available     = other->gt_available;
@@ -94,17 +106,16 @@ struct MetaHotController{
 	U16 gt_anyMissing:    1, // any missing
         gt_phase:         1, // all phased
 		gt_anyNA:         1, // any NA
-		gt_antEOV:        1, // any EOV values
         gt_mixed_phasing: 1, // has mixed phasing
+		gt_compression_type: 3, // uses RLE compression
+		gt_primtive_type: 2, // type of RLE (BYTE, U16, U32, U64)
         biallelic:        1, // is biallelic
         simple_snv:       1, // is simple SNV->SNV
-        gt_rle:           1, // uses RLE compression
-		gt_primtive_type: 2, // type of RLE (BYTE, U16, U32, U64)
 		diploid:          1, // is diploid
 		mixed_ploidy:     1, // has mixed ploidy (e.g. X chromosome or CNV)
         gt_available:     1, // if there is any GT data
 		alleles_packed:   1,
-		unused:           2; // reserved
+		unused:           1; // reserved
 };
 
 }

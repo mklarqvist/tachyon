@@ -121,6 +121,19 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->alleles[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->alleles[this->n_objects]); }
 
+    friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+    	if(entry.n_alleles){
+    		stream << (int)entry.alleles[0].first;
+    		for(U32 i = 1; i < entry.n_alleles; ++i){
+    			if(entry.alleles[i].first == -2) break;
+    			stream << (entry.alleles[i].second ? '/' : '|');
+    			if(entry.alleles[i].first == -1) stream.put('.');
+    			else stream << (int)entry.alleles[i].first;
+    		}
+    	}
+    	return(stream);
+    }
+
 public:
     BYTE      n_alleles;
     size_type n_objects;

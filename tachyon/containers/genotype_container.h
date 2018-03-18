@@ -29,9 +29,6 @@ private:
     typedef containers::GenotypeSum    gt_summary_type;
     typedef VariantBlock               block_type;
 
-    // Function pointers
-	typedef const U32 (self_type::*getNativeFuncDef)(const buffer_type& buffer, const U32 position) const;
-
 public:
     GenotypeContainer(const block_type& block, const MetaContainer& meta);
     ~GenotypeContainer();

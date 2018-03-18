@@ -49,7 +49,7 @@ public:
 	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
-	inline const bool isRLE(void) const{ return(this->controller.gt_rle); }
+	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(TACHYON_GT_TYPE(this->controller.gt_compression_type)); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
@@ -71,16 +71,6 @@ public:
 		return(0);
 	}
 
-	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{
-		if(this->controller.gt_rle && this->controller.biallelic && this->controller.diploid && this->controller.mixed_ploidy == false)
-			return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC);
-		else if(this->controller.gt_rle && this->controller.diploid)
-			return(TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_NALLELIC);
-		else if(this->controller.diploid)
-			return(TACHYON_GT_TYPE::YON_GT_BCF_DIPLOID);
-		else
-			return(TACHYON_GT_TYPE::YON_GT_BCF_STYLE);
-	}
 	inline const BYTE getGTPrimitiveWidth(void) const{ return(1); }
 
 	inline const float& getQuality(void) const{ return(this->quality); }

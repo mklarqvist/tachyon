@@ -156,18 +156,17 @@ public:
 
 		if(this->formatID[0].primitive_type == YON_BCF_PRIMITIVE_TYPES::BCF_BYTE){
 			for(U32 p = 0; p < ploidy; ++p){
-				const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&internal_data[internal_data_offset]);
-				const BYTE& uref = *reinterpret_cast<const BYTE* const>(ref);
-				if(uref == 0x80){
+				const BYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
+				if((ref >> 1) == 0){
 					//std::cerr << "is missing" << std::endl;
 					this->gt_support.hasMissing = true;
 					++this->gt_support.n_missing;
-				} else if(uref == 0x81){
+				} else if(ref == 0x81){
 					//std::cerr << "is vector eof" << std::endl;
 					this->gt_support.hasEOV = true;
 					++this->gt_support.n_eov;
 				}
-				if(p + 1 == ploidy) first_phase = uref & 1;
+				if(p + 1 == ploidy) first_phase = ref & 1;
 				internal_data_offset += sizeof(BYTE);
 			}
 			++current_sample;
@@ -175,19 +174,18 @@ public:
 			for(U32 i = ploidy; i < n_samples*ploidy; i+=ploidy, ++current_sample){
 				// retrieve ploidy primitives
 				for(U32 p = 0; p < ploidy; ++p){
-					const SBYTE* const ref  = reinterpret_cast<const SBYTE* const>(&internal_data[internal_data_offset]);
-					const BYTE& uref = *reinterpret_cast<const BYTE* const>(ref);
-					if(uref == 0x80){
+					const SBYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
+					if((ref >> 1) == 0){
 						//std::cerr << "is missing" << std::endl;
 						this->gt_support.hasMissing = true;
 						++this->gt_support.n_missing;
-					} else if(uref == 0x81){
+					} else if(ref == 0x81){
 						//std::cerr << "is vector eof" << std::endl;
 						this->gt_support.hasEOV = true;
 						++this->gt_support.n_eov;
 					}
 					if(p + 1 == ploidy){
-						if(first_phase != (uref & 1)){
+						if(first_phase != (ref & 1)){
 							//std::cerr << "triggering mixed phase" << std::endl;
 							this->gt_support.mixedPhasing = true;
 							this->gt_support.phase = 0;
