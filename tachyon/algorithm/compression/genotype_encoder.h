@@ -6,7 +6,7 @@
 #include <cassert>
 
 #include "../../containers/variantblock.h"
-#include "../../core/meta_hot.h"
+#include "../../core/variant_controller.h"
 #include "../../io/bcf/BCFEntry.h"
 #include "../../core/genotype_summary.h"
 

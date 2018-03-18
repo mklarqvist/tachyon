@@ -7,8 +7,8 @@
 #include "header/variant_header.h"
 #include "../containers/datacontainer.h"
 #include "meta_allele.h"
-#include "meta_hot.h"
 #include "../io/bcf/BCFEntry.h"
+#include "variant_controller.h"
 
 namespace tachyon{
 namespace core{
@@ -21,14 +21,14 @@ public:
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;
-	typedef MetaHotController           controller_type;
+	typedef VariantController           controller_type;
 	typedef bcf::BCFEntry               bcf_entry_type;
 
 public:
 	MetaEntry();
 	MetaEntry(const self_type& other);
-	MetaEntry(const bcf_entry_type& bcf_entry);
-	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset);
+	MetaEntry(const bcf_entry_type& bcf_entry); // transmute data from bcfentry
+	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset); // transmute from bcfentry with positional offset
 	~MetaEntry();
 
 	// Check if a field is set
@@ -49,7 +49,6 @@ public:
 	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
 	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
-	inline const TACHYON_GT_TYPE getGenotypeEncoding(void) const{ return(TACHYON_GT_TYPE(this->controller.gt_compression_type)); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
@@ -57,21 +56,14 @@ public:
 	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
 	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
 
-	inline const TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{
-		return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type));
-	}
+	inline const TACHYON_GT_ENCODING getGenotypeEncoding(void) const{ return(TACHYON_GT_ENCODING(this->controller.gt_compression_type)); }
+	inline const TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{ return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type)); }
 
-	const BYTE getPrimitiveWidth(void) const{
-		switch(this->controller.gt_primtive_type){
-		case(YON_GT_BYTE):  return(1);
-		case(YON_GT_U16):   return(2);
-		case(YON_GT_U32):   return(4);
-		case(YON_GT_U64):   return(8);
-		}
-		return(0);
-	}
-
-	inline const BYTE getGTPrimitiveWidth(void) const{ return(1); }
+	inline const float& getQuality(void){ return(this->quality); }
+	inline const std::string& getName(void){ return(this->name); }
+	inline const U16& getNumberAlleles(void){ return(this->n_alleles); }
+	inline const U32 getContigID(void){ return(this->contigID); }
+	inline const U64 getPosition(void){ return(this->position); }
 
 	inline const float& getQuality(void) const{ return(this->quality); }
 	inline const std::string& getName(void) const{ return(this->name); }

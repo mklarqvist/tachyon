@@ -43,7 +43,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	U32 gt_offset = 0;
 	for(U32 i = 0; i < meta.size(); ++i){
 		if(meta[i].hasGT()){
-			if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_BIALLELIC){
+			if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
 				if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &rle8[offset_rle8], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle8 += lengths[gt_offset]*sizeof(BYTE);
@@ -61,7 +61,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					exit(1);
 				}
 
-			} else if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_TYPE::YON_GT_RLE_DIPLOID_NALLELIC) {
+			} else if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_NALLELIC) {
 				if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);

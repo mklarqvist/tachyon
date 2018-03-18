@@ -19,7 +19,7 @@ private:
 
 protected:
     typedef tachyon::core::MetaEntry           meta_type;
-    typedef tachyon::core::MetaHotController   hot_controller_type;
+    typedef tachyon::core::VariantController   hot_controller_type;
     typedef tachyon::core::GTObject            gt_object;
     typedef GenotypeSum                        gt_summary;
     typedef math::SquareMatrix<double>         square_matrix_type;
