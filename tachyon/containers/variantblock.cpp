@@ -101,124 +101,35 @@ void VariantBlock::resize(const U32 s){
 	}
 }
 
-void VariantBlock::updateBaseContainers(void){
-	this->updateContainer(this->meta_contig_container);
-	this->updateContainer(this->meta_positions_container);
-	this->updateContainer(this->meta_refalt_container);
-	this->updateContainer(this->meta_controller_container, false);
-	this->updateContainer(this->meta_quality_container);
-	this->updateContainer(this->meta_names_container);
-	this->updateContainer(this->gt_simple8_container, false);
-	this->updateContainer(this->gt_simple16_container, false);
-	this->updateContainer(this->gt_simple32_container, false);
-	this->updateContainer(this->gt_simple64_container, false);
-	this->updateContainer(this->gt_support_data_container);
-	this->updateContainer(this->meta_alleles_container);
-	this->updateContainer(this->meta_filter_map_ids);
-	this->updateContainer(this->meta_format_map_ids);
-	this->updateContainer(this->meta_info_map_ids);
-	this->updateContainer(this->gt_rle8_container, false);
-	this->updateContainer(this->gt_rle16_container, false);
-	this->updateContainer(this->gt_rle32_container, false);
-	this->updateContainer(this->gt_rle64_container, false);
-}
+void VariantBlock::updateContainers(void){
+	this->meta_contig_container.updateContainer();
+	this->meta_positions_container.updateContainer();
+	this->meta_refalt_container.updateContainer();
+	this->meta_controller_container.updateContainer(false);
+	this->meta_quality_container.updateContainer();
+	this->meta_names_container.updateContainer();
+	this->gt_simple8_container.updateContainer(false);
+	this->gt_simple16_container.updateContainer(false);
+	this->gt_simple32_container.updateContainer(false);
+	this->gt_simple64_container.updateContainer(false);
+	this->gt_support_data_container.updateContainer();
+	this->meta_alleles_container.updateContainer();
+	this->meta_filter_map_ids.updateContainer();
+	this->meta_format_map_ids.updateContainer();
+	this->meta_info_map_ids.updateContainer();
+	this->gt_rle8_container.updateContainer(false);
+	this->gt_rle16_container.updateContainer(false);
+	this->gt_rle32_container.updateContainer(false);
+	this->gt_rle64_container.updateContainer(false);
 
-void VariantBlock::VariantBlock::updateContainer(container_type* container, const U32& length){
-	for(U32 i = 0; i < length; ++i){
-		assert(container[i].header.data_header.stride != 0);
-		// If the data type is not a BOOLEAN
-		this->updateContainer(container[i]);
-	}
-}
-
-void VariantBlock::deltaEncode(containers::DataContainer& container){
-	if(container.size() == 0)
-		return;
-
-	// Recode integer types only
-	if(!(container.header.data_header.controller.type == YON_TYPE_32B && container.header.data_header.controller.signedness == 1)){
-		return;
+	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
+		assert(this->info_containers[i].header.data_header.stride != 0);
+		this->info_containers[i].updateContainer();
 	}
 
-	if(container.header.data_header.controller.uniform == true)
-		return;
-
-	// At this point all integers are S32
-	const S32* const dat  = reinterpret_cast<const S32* const>(container.buffer_data_uncompressed.buffer);
-
-	// check for uniformity except first
-	if(container.n_additions > 1){
-		bool is_uniform_delta = true;
-		const S32 first = dat[0];
-		const S32 test_diff = dat[1] - dat[0];
-		for(U32 i = 2; i < container.n_additions; ++i){
-			if(dat[i] - dat[i - 1] != test_diff){
-				is_uniform_delta = false;
-				break;
-			}
-		}
-
-		if(is_uniform_delta){
-			container.n_entries   = 1;
-			container.n_additions = 1;
-			// Data pointers are updated in case there is no reformatting
-			// see StreamContainer::reformat()
-			container.buffer_data_uncompressed.n_chars             = sizeof(S32);
-			container.header.data_header.uLength                   = sizeof(S32);
-			container.header.data_header.cLength                   = sizeof(S32);
-			container.header.data_header.controller.uniform        = true;
-			container.header.data_header.controller.mixedStride    = false;
-			container.header.data_header.controller.encoder        = YON_ENCODE_NONE;
-			return;
-		}
-	}
-
-	container.buffer_data += dat[0];
-	for(U32 j = 1; j < container.n_additions; ++j){
-		container.buffer_data += dat[j] - dat[j-1];
-	}
-	memcpy(container.buffer_data_uncompressed.data(),
-			container.buffer_data.data(),
-			container.buffer_data.size());
-
-}
-
-void VariantBlock::updateContainer(container_type& container, bool reformat){
-	// If the data container has entries in it but has
-	// no actual data then it is a BOOLEAN
-	if(container.n_entries > 0 && container.buffer_data_uncompressed.size() == 0){
-		container.header.data_header.controller.type = tachyon::YON_TYPE_BOOLEAN;
-		container.header.data_header.controller.uniform = true;
-		container.header.data_header.stride  = 0;
-		container.header.data_header.uLength = 0;
-		container.header.data_header.cLength = 0;
-		container.header.data_header.controller.mixedStride = false;
-		container.header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
-		container.n_entries      = 0;
-		container.n_additions    = 0;
-		container.n_strides      = 0;
-		container.header.data_header.controller.signedness = 0;
-		return;
-	}
-
-	if(container.buffer_data_uncompressed.size() == 0)
-		return;
-
-	// Check if stream is uniform in content
-	if(container.header.data_header.controller.type != tachyon::YON_TYPE_STRUCT){
-		container.checkUniformity();
-		// Reformat stream to use as small word size as possible
-		if(reformat) container.reformat();
-	}
-
-	// Set uncompressed length
-	container.header.data_header.uLength = container.buffer_data_uncompressed.size();
-
-	// If we have mixed striding
-	if(container.header.data_header.hasMixedStride()){
-		// Reformat stream to use as small word size as possible
-		if(reformat) container.reformatStride();
-		container.header.stride_header.uLength = container.buffer_strides_uncompressed.size();
+	for(U32 i = 0; i < this->footer.n_format_streams; ++i){
+		assert(this->format_containers[i].header.data_header.stride != 0);
+		this->format_containers[i].updateContainer();
 	}
 }
 
@@ -255,27 +166,40 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 	if(settings.loadContig_){
 		stream.seekg(start_offset + this->footer.offset_meta_contig.data_header.offset);
-
 		this->meta_contig_container.header = this->footer.offset_meta_contig;
 		stream >> this->meta_contig_container;
+	}
 
+	if(settings.loadPositons_){
+		stream.seekg(start_offset + this->footer.offset_meta_position.data_header.offset);
 		this->meta_positions_container.header = this->footer.offset_meta_position;
 		stream >> this->meta_positions_container;
+	}
 
-		this->meta_refalt_container.header = this->footer.offset_meta_refalt;
-		stream >> this->meta_refalt_container;
-
+	if(settings.loadController_){
+		stream.seekg(start_offset + this->footer.offset_meta_controllers.data_header.offset);
 		this->meta_controller_container.header = this->footer.offset_meta_controllers;
 		stream >> this->meta_controller_container;
+	}
 
-
+	if(settings.loadQuality_){
 		stream.seekg(start_offset + this->footer.offset_meta_quality.data_header.offset);
 		this->meta_quality_container.header = this->footer.offset_meta_quality;
 		stream >> this->meta_quality_container;
+	}
 
+	if(settings.loadNames_){
+		stream.seekg(start_offset + this->footer.offset_meta_names.data_header.offset);
 		this->meta_names_container.header = this->footer.offset_meta_names;
 		stream >> this->meta_names_container;
+	}
 
+	if(settings.loadAlleles_){
+		stream.seekg(start_offset + this->footer.offset_meta_refalt.data_header.offset);
+		this->meta_refalt_container.header = this->footer.offset_meta_refalt;
+		stream >> this->meta_refalt_container;
+
+		stream.seekg(start_offset + this->footer.offset_meta_alleles.data_header.offset);
 		this->meta_alleles_container.header = this->footer.offset_meta_alleles;
 		stream >> this->meta_alleles_container;
 	}
@@ -293,7 +217,9 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 		this->gt_rle64_container.header = this->footer.offset_gt_64b;
 		stream >> this->gt_rle64_container;
+	}
 
+	if(settings.loadGenotypesSimple_){
 		stream.seekg(start_offset + this->footer.offset_gt_simple8.data_header.offset);
 		this->gt_simple8_container.header  = this->footer.offset_gt_simple8;
 		stream >> this->gt_simple8_container;
@@ -303,13 +229,15 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->gt_simple32_container;
 		this->gt_simple64_container.header = this->footer.offset_gt_simple64;
 		stream >> this->gt_simple64_container;
+	}
 
+	if(settings.loadGenotypesSupport_){
 		stream.seekg(start_offset + this->footer.offset_gt_helper.data_header.offset);
 		this->gt_support_data_container.header = this->footer.offset_gt_helper;
 		stream >> this->gt_support_data_container;
 	}
 
-	if((settings.loadContig_)){
+	if(settings.loadSetMembership_){
 		stream.seekg(start_offset + this->footer.offset_meta_info_id.data_header.offset);
 		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
 		stream >> this->meta_info_map_ids;
@@ -340,8 +268,8 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 				if(this->footer.info_offsets[j].data_header.global_key == settings.info_ID_list[i]){
 					settings.load_info_ID_loaded.push_back(
 							core::SettingsMap(
-									iterator_index++,                   // iterator value
-									j,                                  // local index id
+									iterator_index++,              // iterator value
+									j,                             // local index id
 									&this->footer.info_offsets[j]) // offset
 									);
 					break;
@@ -434,12 +362,17 @@ bool VariantBlock::write(std::ofstream& stream,
 	stream << this->meta_contig_container;
 	this->__updateHeader(this->footer.offset_meta_position, this->meta_positions_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_positions_container;
-	this->__updateHeader(this->footer.offset_meta_refalt, this->meta_refalt_container, (U64)stream.tellp() - start_pos);
-	stream << this->meta_refalt_container;
 	this->__updateHeader(this->footer.offset_meta_controllers, this->meta_controller_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_controller_container;
 
+	this->__updateHeader(this->footer.offset_meta_refalt, this->meta_refalt_container, (U64)stream.tellp() - start_pos);
+	stream << this->meta_refalt_container;
 	stats_basic[2].cost_compressed   += (U64)stream.tellp() - last_pos;
+	last_pos = stream.tellp();
+
+	this->__updateHeader(this->footer.offset_meta_alleles, this->meta_alleles_container, (U64)stream.tellp() - start_pos);
+	stream << this->meta_alleles_container;
+
 	stats_basic[2].cost_uncompressed += (S32)this->meta_contig_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_contig_container.header.stride_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_positions_container.header.data_header.uLength;
@@ -448,14 +381,12 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[2].cost_uncompressed += (S32)this->meta_refalt_container.header.stride_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.stride_header.uLength;
-	last_pos = stream.tellp();
+
 
 	this->__updateHeader(this->footer.offset_meta_quality, this->meta_quality_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_quality_container;
 	this->__updateHeader(this->footer.offset_meta_names, this->meta_names_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_names_container;
-	this->__updateHeader(this->footer.offset_meta_alleles, this->meta_alleles_container, (U64)stream.tellp() - start_pos);
-	stream << this->meta_alleles_container;
 
 	stats_basic[3].cost_compressed   += (U64)stream.tellp() - last_pos;
 	stats_basic[3].cost_uncompressed += (S32)this->meta_quality_container.header.data_header.uLength;

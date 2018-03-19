@@ -130,9 +130,7 @@ public:
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();
 		this->allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
-		this->updateBaseContainers();
-		this->updateContainerSet(containers::DataBlockFooter::INDEX_INFO);
-		this->updateContainerSet(containers::DataBlockFooter::INDEX_FORMAT);
+		this->updateContainers();
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
@@ -182,24 +180,6 @@ private:
 		this->footer.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
 	}
 
-	/**<
-	 * Wrapper function (indirection) for invoking the updateContainer
-	 * function for either all INFO or FORMAT containers
-	 * @param target Enum target for groups of containers
-	 */
-	inline void updateContainerSet(DataBlockFooter::INDEX_BLOCK_TARGET target){
-		// Determine target
-		switch(target){
-		case(DataBlockFooter::INDEX_BLOCK_TARGET::INDEX_INFO)   :
-			return(this->updateContainer(this->info_containers, this->footer.n_info_streams));
-			break;
-		case(DataBlockFooter::INDEX_BLOCK_TARGET::INDEX_FORMAT) :
-			return(this->updateContainer(this->format_containers, this->footer.n_format_streams));
-			break;
-		default: std::cerr << "unknown target type" << std::endl; exit(1);
-		}
-	}
-
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
 	 * container offsets and checks/builds
@@ -207,33 +187,9 @@ private:
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
-	void updateBaseContainers(void);
+	void updateContainers(void);
 
-	/**< @brief Update base container header data and evaluate output byte streams
-	 * Internal use only (import): Collectively updates base
-	 * container offsets and checks/builds
-	 * 1) If the byte stream is uniform
-	 * 2) Generates CRC checksums for both data and strides
-	 * 3) Reformat (change used word-size) for strides and data; if possible
-	 *
-	 * @param container Data container
-	 * @param length    Iterator length
-	 */
-	void updateContainer(container_type* container, const U32& length);
 
-	/**< @brief Update base container header data and evaluate output byte streams
-	 * Internal use only (import): Collectively updates base
-	 * container offsets and checks/builds
-	 * 1) If the byte stream is uniform
-	 * 2) Generates CRC checksums for both data and strides
-	 * 3) Reformat (change used word-size) for strides and data; if possible
-	 *
-	 * @param container Data container
-	 * @param reormat   Reformat boolean
-	 */
-	void updateContainer(container_type& container, bool reformat = true);
-
-	void deltaEncode(container_type& container);
 
 	const U64 __determineCompressedSize(void) const;
 

@@ -56,6 +56,7 @@ struct DataBlockSettings{
 		loadNames_(false),
 		loadAlleles_(false),
 		loadSetMembership_(false),
+		loadGenotypesAll_(false),
 		loadGenotypesRLE_(false),
 		loadGenotypesSimple_(false),
 		loadGenotypesOther_(false),
@@ -74,6 +75,7 @@ struct DataBlockSettings{
 		loadNames_ = set;
 		loadAlleles_ = set;
 		loadSetMembership_ = set;
+		loadGenotypesAll_ = set;
 		loadGenotypesRLE_ = set;
 		loadGenotypesSimple_ = set;
 		loadGenotypesOther_ = set;
@@ -91,6 +93,11 @@ struct DataBlockSettings{
 		loadQuality_ = set;
 		loadNames_ = set;
 		loadAlleles_ = set;
+		return(*this);
+	}
+
+	self_type& loadFILTER(const bool set = true){
+		loadSetMembership_ = set;
 		return(*this);
 	}
 
@@ -119,6 +126,7 @@ struct DataBlockSettings{
 		loadContig_ = set;
 		loadPositons_ = set;
 		loadSetMembership_ = set;
+		loadGenotypesAll_ = set;
 		loadGenotypesRLE_ = set;
 		loadGenotypesSimple_ = set;
 		loadGenotypesOther_ = set;
@@ -155,6 +163,7 @@ public:
 	bool loadNames_;
 	bool loadAlleles_;
 	bool loadSetMembership_;
+	bool loadGenotypesAll_;
 	bool loadGenotypesRLE_;
 	bool loadGenotypesSimple_;
 	bool loadGenotypesOther_;

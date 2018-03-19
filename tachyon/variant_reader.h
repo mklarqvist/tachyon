@@ -258,109 +258,123 @@ public:
 		containers::MetaContainer meta(this->block);
 		//containers::GenotypeContainer* gt = new containers::GenotypeContainer(this->block, meta);
 		containers::GenotypeContainer* gt = nullptr;
+		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_)
+			gt = new containers::GenotypeContainer(this->block, meta);
 
 		// Store as double pointers to avoid memory collisions because
 		// info containers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.footer.n_info_streams];
 
 		std::vector<std::string> global_fields;
-		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-			//std::cerr << i << "/" << this->block.footer.n_info_streams << ": " << this->block.footer.info_offsets[i].data_header.global_key << "@" << this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID << std::endl;
-			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
-			if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
-				its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
-			} else if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-                      this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
-				its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
-			} else if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
-				its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
-				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
-			} else {
-				its[i] = new containers::InfoContainer<U32>();
-				global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+		if(settings.loadINFO_){
+			for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+				//std::cerr << i << "/" << this->block.footer.n_info_streams << ": " << this->block.footer.info_offsets[i].data_header.global_key << "@" << this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID << std::endl;
+				std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+				if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+					its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
+					global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+				} else if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
+						  this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+					its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
+					global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+				} else if(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+					its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
+					global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+				} else {
+					its[i] = new containers::InfoContainer<U32>();
+					global_fields.push_back(this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID);
+				}
 			}
 		}
 
 		for(U32 p = 0; p < meta.size(); ++p){
 			utility::to_vcf_string(std::cout, meta[p], this->header);
 
-			if(this->block.footer.n_filter_streams){
-				const U32& n_filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
-				const U32* filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
-				if(n_filter_keys){
-					// Local key -> global key
-					stream << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
-					for(U32 i = 1; i < n_filter_keys; ++i){
-						stream << ';' << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
-					}
-					stream.put('\t');
+			if(settings.loadSetMembership_){
+				if(this->block.footer.n_filter_streams){
+					const U32& n_filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
+					const U32* filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
+					if(n_filter_keys){
+						// Local key -> global key
+						stream << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+						for(U32 i = 1; i < n_filter_keys; ++i){
+							stream << ';' << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+						}
+						stream.put('\t');
+					} else
+						stream << ".\t";
 				} else
 					stream << ".\t";
 			} else
 				stream << ".\t";
 
-			if(this->block.footer.n_info_streams){
-				const U32& n_keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
-				const U32* keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].local_keys;
+			if(settings.loadINFO_){
+				if(this->block.footer.n_info_streams){
+					const U32& n_keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
+					const U32* keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].local_keys;
 
-				// First
-				if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
-					stream << global_fields[keys[0]];
-					continue;
-				}
-				if(its[keys[0]]->emptyPosition(p)) continue;
-				stream << global_fields[keys[0]] << "=";
-				its[keys[0]]->to_vcf_string(std::cout, p);
-
-				for(U32 i = 1; i < n_keys; ++i){
-					if(this->header.info_fields[this->block.footer.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
-						stream << ";" << global_fields[keys[i]];
+					// First
+					if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
+						stream << global_fields[keys[0]];
 						continue;
 					}
-					if(its[keys[i]]->emptyPosition(p)) continue;
-					stream << ";" << global_fields[keys[i]] << "=";
-					its[keys[i]]->to_vcf_string(std::cout, p);
+					if(its[keys[0]]->emptyPosition(p)) continue;
+					stream << global_fields[keys[0]] << "=";
+					its[keys[0]]->to_vcf_string(std::cout, p);
+
+					for(U32 i = 1; i < n_keys; ++i){
+						if(this->header.info_fields[this->block.footer.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
+							stream << ";" << global_fields[keys[i]];
+							continue;
+						}
+						if(its[keys[i]]->emptyPosition(p)) continue;
+						stream << ";" << global_fields[keys[i]] << "=";
+						its[keys[i]]->to_vcf_string(std::cout, p);
+					}
 				}
 			}
 
-			if(this->block.footer.n_format_streams){
-				stream << '\t';
-				const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
-				const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
-				if(n_format_keys){
-					// Local key -> global key
-					stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
-					for(U32 i = 1; i < n_format_keys; ++i){
-						stream << ';' << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
-					}
-					stream.put('\t');
+			if(settings.loadFORMAT_){
+				if(this->block.footer.n_format_streams){
+					stream << '\t';
+					const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
+					const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
+					if(n_format_keys){
+						// Local key -> global key
+						stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
+						for(U32 i = 1; i < n_format_keys; ++i){
+							stream << ';' << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+						}
+						stream.put('\t');
+					} else
+						stream << ".\t";
 				} else
-					stream << ".\t";
-			} else
-				stream << "\n";
+					stream << "\n";
 
 
-			if(this->block.footer.n_format_streams){
-				// Todo: abstract
-				// Genotype data
-				//if(gt[p].getMeta().isMixedPloidy()){
-					std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-					stream << objects_true[0];
-					for(U32 i = 1; i < objects_true.size(); ++i){
-						stream << '\t' << objects_true[i];
-					}
-					//exit(1);
-				//}
-				stream.put('\n');
+				if(this->block.footer.n_format_streams){
+					// Todo: abstract
+					// Genotype data
+					//if(gt[p].getMeta().isMixedPloidy()){
+						std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+						stream << objects_true[0];
+						for(U32 i = 1; i < objects_true.size(); ++i){
+							stream << '\t' << objects_true[i];
+						}
+						//exit(1);
+					//}
+					stream.put('\n');
+				}
 			}
 		}
 
-		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i)
-			delete its[i];
+		if(settings.loadINFO_){
+			for(U32 i = 0; i < this->block.footer.n_info_streams; ++i)
+				delete its[i];
+		}
 
 		delete [] its;
+		delete gt;
 		return(meta.size());
 	}
 

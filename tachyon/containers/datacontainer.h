@@ -366,6 +366,19 @@ public:
 	 */
 	const U32 getObjectSize(void) const;
 
+	/**< @brief Update base container header data and evaluate output byte streams
+	 * Internal use only (import): Collectively updates base
+	 * container offsets and checks/builds
+	 * 1) If the byte stream is uniform
+	 * 2) Generates CRC checksums for both data and strides
+	 * 3) Reformat (change used word-size) for strides and data; if possible
+	 *
+	 * @param container Data container
+	 * @param reormat   Reformat boolean
+	 */
+	void updateContainer(bool reformat = true);
+	void deltaEncode();
+
 	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 

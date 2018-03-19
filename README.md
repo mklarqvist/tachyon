@@ -38,16 +38,16 @@ There are a large number of field-specific file formats that have reached near-u
 ### Highlights of Tachyon
 * **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
 * **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
-* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms
-* **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than standard formats
-* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented database management system with several layers of domain-specific heuristics providing  
+* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl]
+* **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than current file-formats
+* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries  
 * **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
 * **Comaptibility**: We strive to provide API calls to return YON data streams to any of the file-formats we are supplanting. This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools
 
 ---
 
 ## Benchmarks
-Some benchmarks: these results may be subject to change at any time. The following table shows data for the 1000 Genomes Project Phase 3 release (in megabytes; 1 MB = 1E6 bytes). The uncompressed file size represents the amount of bytes needed to be parsed internally   
+Some benchmarks: these results may be subject to change at any time. The following table shows data for the 1000 Genomes Project Phase 3 release (2,504 samples, in megabytes; 1 MB = 1E6 bytes). The uncompressed file size represents the amount of bytes needed to be parsed internally   
 
 | Contig | BCF-compressed | BCF-uncompressed | YON-compressed | YON-uncompressed | YON-fold | BCF-fold | Uncompressed-fold |
 |--------|----------------|------------------|----------------|------------------|----------|----------|-------------------|
@@ -75,6 +75,7 @@ Some benchmarks: these results may be subject to change at any time. The followi
 | 22     | 177.18         | 5654.2           | 51.468         | 229.95           | 109.86   | 31.912   | 24.589            |
 
 ![screenshot](examples/1kgp3_yon_bcf.jpeg)  
+The following table shows data for the Haplotype Reference Consortium (32,488 whole-genome sequenced samples)  
 
 | Contig | BCF-compressed | BCF-uncompressed | YON-compressed | YON-uncompressed | YON_fold | BCF_fold | Uncompressed_fold |
 |--------|----------------|------------------|----------------|------------------|----------|----------|-------------------|

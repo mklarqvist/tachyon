@@ -172,17 +172,24 @@ struct DataContainerHeader{
 private:
 	typedef DataContainerHeader       self_type;
 	typedef DataContainerHeaderObject header_type;
+	typedef io::BasicBuffer           buffer_type;
 
 public:
-	DataContainerHeader(){}
+	DataContainerHeader() : n_entries(0), n_additions(0), n_strides(0){}
 	~DataContainerHeader(){}
 
 	void reset(void){
+		this->n_entries   = 0;
+		this->n_additions = 0;
+		this->n_strides   = 0;
 		this->data_header.reset();
 		this->stride_header.reset();
 	}
 
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
+		buffer += entry.n_entries;
+		buffer += entry.n_additions;
+		buffer += entry.n_strides;
 		buffer += entry.data_header;
 		if(entry.data_header.hasMixedStride())
 			buffer += entry.stride_header;
@@ -191,6 +198,9 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+		stream.write(reinterpret_cast<const char* const>(&entry.n_entries),   sizeof(U32));
+		stream.write(reinterpret_cast<const char* const>(&entry.n_additions), sizeof(U32));
+		stream.write(reinterpret_cast<const char* const>(&entry.n_strides),   sizeof(U32));
 		stream << entry.data_header;
 		if(entry.data_header.hasMixedStride())
 			stream << entry.stride_header;
@@ -199,13 +209,15 @@ public:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.n_entries),   sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(U32));
 		stream >> entry.data_header;
 		if(entry.data_header.hasMixedStride())
 			stream >> entry.stride_header;
 
 		return(stream);
 	}
-
 
 public:
 	U32 n_entries;      // number of container entries

@@ -384,5 +384,96 @@ const U32 DataContainer::getObjectSize(void) const{
 	return(total_size);
 }
 
+void DataContainer::deltaEncode(){
+	if(this->size() == 0)
+		return;
+
+	// Recode integer types only
+	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
+		return;
+	}
+
+	if(this->header.data_header.controller.uniform == true)
+		return;
+
+	// At this point all integers are S32
+	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.buffer);
+
+	// check for uniformity except first
+	if(this->n_additions > 1){
+		bool is_uniform_delta = true;
+		const S32 first = dat[0];
+		const S32 test_diff = dat[1] - dat[0];
+		for(U32 i = 2; i < this->n_additions; ++i){
+			if(dat[i] - dat[i - 1] != test_diff){
+				is_uniform_delta = false;
+				break;
+			}
+		}
+
+		if(is_uniform_delta){
+			this->n_entries   = 1;
+			this->n_additions = 1;
+			// Data pointers are updated in case there is no reformatting
+			// see StreamContainer::reformat()
+			this->buffer_data_uncompressed.n_chars             = sizeof(S32);
+			this->header.data_header.uLength                   = sizeof(S32);
+			this->header.data_header.cLength                   = sizeof(S32);
+			this->header.data_header.controller.uniform        = true;
+			this->header.data_header.controller.mixedStride    = false;
+			this->header.data_header.controller.encoder        = YON_ENCODE_NONE;
+			return;
+		}
+	}
+
+	this->buffer_data += dat[0];
+	for(U32 j = 1; j < this->n_additions; ++j){
+		this->buffer_data += dat[j] - dat[j-1];
+	}
+	memcpy(this->buffer_data_uncompressed.data(),
+			this->buffer_data.data(),
+			this->buffer_data.size());
+
+}
+
+void DataContainer::updateContainer(bool reformat){
+	// If the data container has entries in it but has
+	// no actual data then it is a BOOLEAN
+	if(this->n_entries > 0 && this->buffer_data_uncompressed.size() == 0){
+		this->header.data_header.controller.type = tachyon::YON_TYPE_BOOLEAN;
+		this->header.data_header.controller.uniform = true;
+		this->header.data_header.stride  = 0;
+		this->header.data_header.uLength = 0;
+		this->header.data_header.cLength = 0;
+		this->header.data_header.controller.mixedStride = false;
+		this->header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
+		this->n_entries      = 0;
+		this->n_additions    = 0;
+		this->n_strides      = 0;
+		this->header.data_header.controller.signedness = 0;
+		return;
+	}
+
+	if(this->buffer_data_uncompressed.size() == 0)
+		return;
+
+	// Check if stream is uniform in content
+	if(this->header.data_header.controller.type != tachyon::YON_TYPE_STRUCT){
+		this->checkUniformity();
+		// Reformat stream to use as small word size as possible
+		if(reformat) this->reformat();
+	}
+
+	// Set uncompressed length
+	this->header.data_header.uLength = this->buffer_data_uncompressed.size();
+
+	// If we have mixed striding
+	if(this->header.data_header.hasMixedStride()){
+		// Reformat stream to use as small word size as possible
+		if(reformat) this->reformatStride();
+		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
+	}
+	}
+
 }
 }

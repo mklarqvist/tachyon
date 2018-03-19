@@ -111,7 +111,6 @@ int view(int argc, char** argv){
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadINFO(true);
 	//reader.getSettings().loadAll(true);
-	reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -131,6 +130,9 @@ int view(int argc, char** argv){
 	U64 n_variants = 0;
 	tachyon::algorithm::Timer timer;
 	timer.Start();
+
+	reader.getSettings().loadAll(true);
+	//reader.getSettings().loadMeta(true);
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
