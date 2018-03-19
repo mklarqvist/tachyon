@@ -385,7 +385,7 @@ public:
 			if(settings.loadFORMAT_ && this->block.n_format_loaded) stream.put('\t');
 			else stream.put('\n');
 
-			if(settings.loadFORMAT_){
+			if(settings.loadFORMAT_ && this->block.n_format_loaded){
 				if(this->block.n_format_loaded){
 					const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
 					const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
@@ -402,19 +402,17 @@ public:
 					stream.put('\n');
 
 				// GT
-				if(this->block.n_format_loaded){
-					// Todo: abstract
-					// Genotype data
-					//if(gt[p].getMeta().isMixedPloidy()){
-						std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-						stream << objects_true[0];
-						for(U32 i = 1; i < objects_true.size(); ++i){
-							stream << '\t' << objects_true[i];
-						}
-						//exit(1);
-					//}
-					stream.put('\n');
-				}
+				// Todo: abstract
+				// Genotype data
+				//if(gt[p].getMeta().isMixedPloidy()){
+					std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+					stream << objects_true[0];
+					for(U32 i = 1; i < objects_true.size(); ++i){
+						stream << '\t' << objects_true[i];
+					}
+					//exit(1);
+				//}
+				stream.put('\n');
 			}
 		}
 
