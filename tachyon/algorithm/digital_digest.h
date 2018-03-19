@@ -8,7 +8,7 @@
 #include "../containers/datacontainer.h"
 
 namespace tachyon{
-namespace core{
+namespace algorithm{
 
 struct DigitalDigest{
 private:

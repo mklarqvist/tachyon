@@ -85,33 +85,33 @@ public:
 	GenotypeEncoder();
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
-	bool Encode(const bcf_type& line, meta_type& meta_base, block_type& block, const U32* const ppa);
+	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 
 private:
-	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& line, const U32* const ppa) const;
-	const rle_helper_type assessDiploidRLEnAllelic(const bcf_type& line, const U32* const ppa) const;
-	const rle_helper_type assessMploidRLEBiallelic(const bcf_type& line, const U32* const ppa) const;
-	const rle_helper_type assessMploidRLEnAllelic(const bcf_type& line, const U32* const ppa) const;
+	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
+	const rle_helper_type assessDiploidRLEnAllelic(const bcf_type& bcf_entry, const U32* const ppa) const;
+	const rle_helper_type assessMploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
+	const rle_helper_type assessMploidRLEnAllelic(const bcf_type& bcf_entry, const U32* const ppa) const;
 
-	template <class YON_STORE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeBCFStyle(const bcf_type& line, container_type& container, U64& n_runs) const;
-	template <class YON_RLE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeDiploidBCF(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa) const;
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEBiallelic(const bcf_type& line, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& line, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
-	template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa) const;
-	template <class T> bool EncodeMploidRLENallelic(const bcf_type& line, container_type& runs, U64& n_runs, const U32* const ppa) const;
+	template <class YON_STORE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeBCFStyle(const bcf_type& bcf_entry, container_type& container, U64& n_runs) const;
+	template <class YON_RLE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeDiploidBCF(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
+	template <class YON_RLE_TYPE> bool EncodeDiploidRLEBiallelic(const bcf_type& bcf_entry, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
+	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
+	template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
+	template <class T> bool EncodeMploidRLENallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
 
 private:
 	U64 n_samples; // number of samples
 };
 
 template <class YON_STORE_TYPE, class BCF_GT_TYPE>
-bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
+bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& bcf_entry,
                                      container_type& simple,
                                                 U64& n_runs) const
 {
-	const BYTE ploidy = line.gt_support.ploidy;
-	U32 bcf_gt_pos = line.formatID[0].l_offset;
+	const BYTE ploidy = bcf_entry.gt_support.ploidy;
+	U32 bcf_gt_pos = bcf_entry.formatID[0].l_offset;
 	const BCF_GT_TYPE missing_value = (BCF_GT_TYPE)1 << (sizeof(BCF_GT_TYPE)*8 - 1);
 	const BCF_GT_TYPE EOV_value     = missing_value + 1;
 
@@ -121,7 +121,7 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 	U32 j = 0;
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy, ++j){
 		for(U32 p = 0; p < ploidy; ++p){
-			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&line.data[bcf_gt_pos]);
+			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&bcf_entry.data[bcf_gt_pos]);
 			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0); // missing
 			else if(allele == EOV_value ) simple.AddLiteral((YON_STORE_TYPE)1); // eov
 			else { // otherwise
@@ -140,7 +140,7 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& line,
 }
 
 template <class YON_RLE_TYPE, class BCF_GT_TYPE>
-bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
 		                               container_type& simple,
 										          U64& n_runs,
                                      const U32* const  ppa) const
@@ -152,7 +152,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
 
 	// Virtual byte offset into start of genotypes
 	// in BCF entry
-	const char* const data = &line.data[line.formatID[0].l_offset];
+	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 
 	// Pack genotypes as
 	// allele A | alleleB | isPhased
@@ -175,7 +175,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& line,
 }
 
 template <class YON_RLE_TYPE>
-bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& bcf_entry,
 		                                        container_type& runs,
                                               const U32* const  ppa,
 								         const rle_helper_type& helper) const
@@ -184,12 +184,12 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = line.gt_support.hasMissing    ? 2 : 1;
-	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
+	const BYTE shift    = bcf_entry.gt_support.hasMissing    ? 2 : 1;
+	const BYTE add      = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
 
 	// Run limits
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*shift + add)) - 1;
-	const char* const data       = &line.data[line.formatID[0].l_offset];
+	const char* const data       = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 	const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
 	const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 	YON_RLE_TYPE packed = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
@@ -245,7 +245,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& line,
 }
 
 template <class YON_RLE_TYPE>
-bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
+bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
 		                                       container_type& runs,
 											 const U32* const  ppa,
 										const rle_helper_type& helper) const
@@ -254,12 +254,12 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	U32 sumLength       = 0;
 	YON_RLE_TYPE length = 1;
 	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = ceil(log2(line.body->n_allele + line.gt_support.hasMissing + line.gt_support.hasEOV + 1)); // Bits occupied per allele
-	const BYTE add      = line.gt_support.mixedPhasing  ? 1 : 0;
+	const BYTE shift    = ceil(log2(bcf_entry.body->n_allele + bcf_entry.gt_support.hasMissing + bcf_entry.gt_support.hasEOV + 1)); // Bits occupied per allele
+	const BYTE add      = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
 	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE)  - (ploidy*shift + add)) - 1;
 
 	// Setup first run
-	const char* const data = &line.data[line.formatID[0].l_offset];
+	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
 	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 
@@ -268,10 +268,10 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	}
 	else if(allele1 == 0x81){
 		allele1 = 1;
-		//std::cerr << "eov and: " << line.gt_support.hasEOV << std::endl;
+		//std::cerr << "eov and: " << bcf_entry.gt_support.hasEOV << std::endl;
 	} else {
 		// Add 1 to value
-		allele1 = (((allele1 >> 1) + line.gt_support.hasEOV) << 1) | (allele1 & 1);
+		allele1 = (((allele1 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele1 & 1);
 	}
 
 	if((allele2 >> 1) == 0){
@@ -279,9 +279,9 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 	}
 	else if(allele2 == 0x81){
 		allele2 = 1;
-		//std::cerr << "eov and: " << line.gt_support.hasEOV << std::endl;
+		//std::cerr << "eov and: " << bcf_entry.gt_support.hasEOV << std::endl;
 	} else {
-		allele2 = (((allele2 >> 1) + line.gt_support.hasEOV) << 1) | (allele2 & 1);
+		allele2 = (((allele2 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele2 & 1);
 	}
 
 	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
@@ -300,7 +300,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 			//std::cerr << "eov" << std::endl;
 		} else {
 			// Add 1 to value
-			allele1 = (((allele1 >> 1) + line.gt_support.hasEOV) << 1) | (allele1 & 1);
+			allele1 = (((allele1 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele1 & 1);
 		}
 
 		if((allele2 >> 1) == 0){
@@ -310,7 +310,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& line,
 			allele2 = 1;
 			//std::cerr << "eov" << std::endl;
 		} else {
-			allele2 = (((allele2 >> 1) + line.gt_support.hasEOV) << 1) | (allele2 & 1);
+			allele2 = (((allele2 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele2 & 1);
 		}
 
 		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);

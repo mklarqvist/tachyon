@@ -12,14 +12,14 @@ class ChecksumContainer {
 private:
 	typedef ChecksumContainer        self_type;
     typedef std::size_t              size_type;
-    typedef tachyon::core::DigitalDigestPair  value_type;
+    typedef algorithm::DigitalDigestPair  value_type;
     typedef value_type&              reference;
     typedef const value_type&        const_reference;
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
     typedef containers::VariantBlock block_type;
-    typedef tachyon::core::VariantHeader header_type;
+    typedef core::VariantHeader      header_type;
 
 public:
 	ChecksumContainer(void);

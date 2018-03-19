@@ -35,7 +35,7 @@ class VariantReader{
 	typedef core::VariantHeader                 header_type;
 	typedef core::Footer                        footer_type;
 	typedef algorithm::CompressionManager       codec_manager_type;
-	typedef containers::core::DataBlockSettings settings_type;
+	typedef core::DataBlockSettings             settings_type;
 	typedef index::Index                        index_type;
 	typedef containers::ChecksumContainer       checksum_type;
 
@@ -256,7 +256,8 @@ public:
 
 	U64 iterate_all_info(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		//containers::GenotypeContainer* gt = new containers::GenotypeContainer(this->block, meta);
+		containers::GenotypeContainer* gt = nullptr;
 
 		// Store as double pointers to avoid memory collisions because
 		// info containers have different class members
@@ -322,11 +323,10 @@ public:
 					stream << ";" << global_fields[keys[i]] << "=";
 					its[keys[i]]->to_vcf_string(std::cout, p);
 				}
-				stream << '\t';
-			} else
-				stream << ".\t";
+			}
 
 			if(this->block.footer.n_format_streams){
+				stream << '\t';
 				const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
 				const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
 				if(n_format_keys){
@@ -339,21 +339,22 @@ public:
 				} else
 					stream << ".\t";
 			} else
-				stream << ".\t";
+				stream << "\n";
 
 
-			// Todo: abstract
-			// Genotype data
-			//if(gt[p].getMeta().isMixedPloidy()){
-				std::vector<core::GTObject> objects_true = gt[p].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-				stream << objects_true[0];
-				for(U32 i = 1; i < objects_true.size(); ++i){
-					stream << '\t' << objects_true[i];
-				}
-				//exit(1);
-			//}
-			stream.put('\n');
-
+			if(this->block.footer.n_format_streams){
+				// Todo: abstract
+				// Genotype data
+				//if(gt[p].getMeta().isMixedPloidy()){
+					std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+					stream << objects_true[0];
+					for(U32 i = 1; i < objects_true.size(); ++i){
+						stream << '\t' << objects_true[i];
+					}
+					//exit(1);
+				//}
+				stream.put('\n');
+			}
 		}
 
 		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i)
@@ -434,11 +435,11 @@ public:
 		return((U64)2*this->header.getSampleNumber()*gt.size());
 	}
 
-	U64 getTiTVRatios(std::ostream& stream, std::vector<tachyon::core::TsTvObject>& global){
+	U64 getTiTVRatios(std::ostream& stream, std::vector<core::TsTvObject>& global){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer gt(this->block, meta);
 
-		std::vector<tachyon::core::TsTvObject> objects(this->header.getSampleNumber());
+		std::vector<core::TsTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 

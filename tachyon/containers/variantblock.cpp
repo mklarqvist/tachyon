@@ -246,14 +246,14 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 	const U64 end_of_block = stream.tellg();
-	if(settings.importPPA){
+	if(settings.loadPPA_){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 			stream.seekg(start_offset + this->footer.offset_ppa.data_header.offset);
 			stream >> this->ppa_manager;
 		}
 	}
 
-	if(settings.importMeta){
+	if(settings.loadContig_){
 		stream.seekg(start_offset + this->footer.offset_meta_contig.data_header.offset);
 
 		this->meta_contig_container.header = this->footer.offset_meta_contig;
@@ -280,7 +280,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->meta_alleles_container;
 	}
 
-	if(settings.importGT){
+	if(settings.loadGenotypesRLE_){
 		stream.seekg(start_offset + this->footer.offset_gt_8b.data_header.offset);
 		this->gt_rle8_container.header = this->footer.offset_gt_8b;
 		stream >> this->gt_rle8_container;
@@ -309,7 +309,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		stream >> this->gt_support_data_container;
 	}
 
-	if((settings.importMeta)){
+	if((settings.loadContig_)){
 		stream.seekg(start_offset + this->footer.offset_meta_info_id.data_header.offset);
 		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
 		stream >> this->meta_info_map_ids;
@@ -320,7 +320,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	// Load all info
-	if(settings.importInfoAll && this->footer.n_info_streams > 0){
+	if(settings.loadINFO_ && this->footer.n_info_streams > 0){
 		stream.seekg(start_offset + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 			this->info_containers[i].header = this->footer.info_offsets[i];
@@ -366,7 +366,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	} // end case load_info_ID
 
-	if(settings.importFormatAll && this->footer.n_format_streams){
+	if(settings.loadFORMAT_ && this->footer.n_format_streams){
 		stream.seekg(start_offset + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 			this->format_containers[i].header = this->footer.format_offsets[i];

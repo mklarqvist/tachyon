@@ -8,13 +8,13 @@ namespace index{
 
 class IndexMetaContainer{
 private:
-	typedef IndexMetaContainer         self_type;
-    typedef std::size_t       size_type;
-    typedef IndexIndexEntry   value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
+	typedef IndexMetaContainer self_type;
+    typedef std::size_t        size_type;
+    typedef IndexIndexEntry    value_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
 
 public:
     IndexMetaContainer() :

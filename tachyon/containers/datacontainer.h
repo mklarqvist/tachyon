@@ -396,7 +396,7 @@ public:
 	header_type header; // usually written elsewhere
 	U32 n_entries;      // number of container entries
 	U32 n_additions;    // number of times an addition operation was executed
-	U32 n_strides;
+	U32 n_strides;      // number of stride elements
 
 	// Buffers - only bit that are written to disk from here
 	buffer_type buffer_data;

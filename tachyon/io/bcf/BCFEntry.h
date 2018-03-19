@@ -158,11 +158,9 @@ public:
 			for(U32 p = 0; p < ploidy; ++p){
 				const BYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
 				if((ref >> 1) == 0){
-					//std::cerr << "is missing" << std::endl;
 					this->gt_support.hasMissing = true;
 					++this->gt_support.n_missing;
 				} else if(ref == 0x81){
-					//std::cerr << "is vector eof" << std::endl;
 					this->gt_support.hasEOV = true;
 					++this->gt_support.n_eov;
 				}
@@ -184,6 +182,7 @@ public:
 						this->gt_support.hasEOV = true;
 						++this->gt_support.n_eov;
 					}
+
 					if(p + 1 == ploidy){
 						if(first_phase != (ref & 1)){
 							//std::cerr << "triggering mixed phase" << std::endl;
