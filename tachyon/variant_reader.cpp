@@ -91,6 +91,11 @@ bool VariantReader::nextBlock(){
 	// Reset and re-use
 	this->block.clear();
 
+	if(!this->block.readHeaderFooter(this->stream))
+		return false;
+
+	//this->parseSettings();
+
 	// Attempts to read a YON block with the provided
 	// settings
 	if(!this->block.read(this->stream, this->settings))
@@ -165,6 +170,7 @@ const int VariantReader::has_filter_field(const std::string& field_name) const{
 
 const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std::string& field_name) const{
 	int global_info_value = this->has_info_field(field_name);
+
 	std::vector<bool> ret;
 	if(global_info_value >= 0){
 		// Collect all matches
@@ -184,7 +190,7 @@ const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std:
 
 		ret.resize(this->block.footer.n_info_patterns, false);
 		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
-			//std::cerr << i << '\t' << this->block.index_entry.info_bit_vectors[i][local_info_field_id] << std::endl;
+			//std::cerr << i << '\t' << this->block.footer.info_bit_vectors[i][local_key] << std::endl;
 			ret[i] = this->block.footer.info_bit_vectors[i][local_key];
 		}
 	}

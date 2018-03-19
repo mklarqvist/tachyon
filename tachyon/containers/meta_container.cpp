@@ -94,6 +94,7 @@ void MetaContainer::__ctor_setup(const block_type& block){
 
 			// If data is <non_ref> or not
 			if((refalt[refalt_position] & 15) != 5){
+				//assert((refalt[refalt_position] & 15) < 5);
 				const char ref = constants::REF_ALT_LOOKUP[refalt[refalt_position] & 15];
 				new( &this->__entries[i].alleles[1] ) value_type::allele_type( ref );
 			} else {
@@ -102,18 +103,24 @@ void MetaContainer::__ctor_setup(const block_type& block){
 
 			// If data is <non_ref> or not
 			if(((refalt[refalt_position] >> 4) & 15) != 5){
+				//assert(((refalt[refalt_position] >> 4) & 15) < 5);
 				const char alt = constants::REF_ALT_LOOKUP[(refalt[refalt_position] >> 4) & 15];
 				new( &this->__entries[i].alleles[0] ) value_type::allele_type( alt );
 			} else {
 				new( &this->__entries[i].alleles[0] ) value_type::allele_type( "<NON_REF>" );
 			}
-			++refalt_position;
+			// Do not increment in case this data is uniform
+			if(refalt.isUniform() == false)
+				++refalt_position;
 		}
 		// otherwise load from literal cold
 		else {
 			// number of alleles is parsed from the stride container
 		}
-	}
+	} // end loop
+	if(refalt.isUniform())
+		refalt_position = 1;
+
 	assert(refalt_position == refalt.size());
 
 	if(block.meta_alleles_container.buffer_data_uncompressed.size()){

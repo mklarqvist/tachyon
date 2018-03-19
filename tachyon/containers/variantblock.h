@@ -146,6 +146,8 @@ public:
 	 */
 	bool read(std::ifstream& stream, settings_type& settings);
 
+	bool readHeaderFooter(std::ifstream& stream);
+
 	/**<
 	 * Standard way of writing out a YON block.
 	 * @param stream       Target output stream
@@ -244,7 +246,10 @@ public:
 	// Utility
 	//size_t n_capacity_info_;
 	//size_t n_capacity_format_;
-	//U64    disk_offset_;       // utility primitive to support the construction of iterators over blocks
+	U64    disk_offset_;
+	U64    start_offset_;
+	U32 n_info_loaded;
+	U32 n_format_loaded;
 	container_type footer_support; // used internally only
 };
 

@@ -32,12 +32,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	assert(block.gt_simple32_container.buffer_data_uncompressed.size() % sizeof(U32)  == 0);
 	assert(block.gt_simple64_container.buffer_data_uncompressed.size() % sizeof(U64)  == 0);
 
-	// Count number of fields with GT data
-	U32 n_has_gt = 0;
-	for(U32 i = 0; i < meta.size(); ++i)
-		n_has_gt += meta[i].hasGT();
-
-	this->n_entries   = n_has_gt;
+	this->n_entries   = meta.size();
 	this->__iterators = static_cast<pointer>(::operator new[](this->size() * sizeof(value_type)));
 
 	U32 gt_offset = 0;
@@ -84,7 +79,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 			}
 			++gt_offset;
 		} else {
-			new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( );
+			new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( );
 		}
 	}
 

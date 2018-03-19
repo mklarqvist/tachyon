@@ -16,7 +16,18 @@ namespace bcf {
 const BYTE BCF_UNPACK_TOMAHAWK[3] = {2, 0, 1};
 #define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TOMAHAWK[((A) >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
-enum YON_BCF_PRIMITIVE_TYPES{BCF_FLAG = 0, BCF_BYTE = 1, BCF_U16 = 2, BCF_U32 = 3, BCF_FLOAT = 5, BCF_CHAR = 7};
+
+/**<
+ * BCF-specific primitive triggers
+ */
+enum YON_BCF_PRIMITIVE_TYPES{
+	BCF_FLAG = 0, //!< BCF_FLAG
+	BCF_BYTE = 1, //!< BCF_BYTE
+	BCF_U16 = 2,  //!< BCF_U16
+	BCF_U32 = 3,  //!< BCF_U32
+	BCF_FLOAT = 5,//!< BCF_FLOAT
+	BCF_CHAR = 7  //!< BCF_CHAR
+};
 
 #pragma pack(push, 1)
 struct __attribute__((packed, aligned(1))) BCFAtomicBase{
@@ -76,8 +87,39 @@ private:
 	typedef BCFGenotypeSupport self_type;
 
 public:
-	BCFGenotypeSupport() : hasGenotypes(false), hasMissing(false), hasEOV(false), mixedPhasing(false), ploidy(0), phase(0), n_missing(0), n_eov(0){}
+	BCFGenotypeSupport() :
+		hasGenotypes(false),
+		hasMissing(false),
+		hasEOV(false),
+		mixedPhasing(false),
+		ploidy(0),
+		phase(0),
+		n_missing(0),
+		n_eov(0)
+	{}
 
+	BCFGenotypeSupport(const self_type& other) :
+		hasGenotypes(other.hasGenotypes),
+		hasMissing(other.hasMissing),
+		hasEOV(other.hasEOV),
+		mixedPhasing(other.mixedPhasing),
+		ploidy(other.ploidy),
+		phase(other.phase),
+		n_missing(other.n_missing),
+		n_eov(other.n_eov)
+	{
+	}
+
+	void operator=(const self_type& other){
+		this->hasGenotypes = other.hasGenotypes;
+		this->hasMissing = other.hasMissing;
+		this->hasEOV = other.hasEOV;
+		this->mixedPhasing = other.mixedPhasing;
+		this->ploidy = other.ploidy;
+		this->phase = other.phase;
+		this->n_missing = other.n_missing;
+		this->n_eov = other.n_eov;
+	}
 
 public:
 	bool hasGenotypes;
@@ -199,6 +241,14 @@ public:
 
 	inline const bool& good(void) const{ return(this->isGood); }
 
+	/**<
+	 * Decode an integer primitive from a BCF buffer stream. Forces all
+	 * return types to be of type S32 and with missing and EOV values
+	 * expanded to match this possibly larger primitive type.
+	 * @param key
+	 * @param pos
+	 * @return
+	 */
 	inline const S32 getInteger(const BYTE& key, U32& pos){
 		S32 value = 0;
 		if(key == 1){
@@ -246,12 +296,22 @@ public:
 		}
 	}
 
+	/**<
+	 * Decodes a float values from a BCF buffer stream
+	 * @param pos
+	 * @return
+	 */
 	inline const float getFloat(U32& pos){
 		const float& val = *reinterpret_cast<const float* const>(&this->data[pos]);
 		pos += sizeof(float);
 		return val;
 	}
 
+	/**<
+	 * Decodes a char from a BCF buffer stream
+	 * @param pos
+	 * @return
+	 */
 	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
 	inline const char* const getCharPointer(U32& pos){ return(reinterpret_cast<const char* const>(&this->data[pos])); }
 

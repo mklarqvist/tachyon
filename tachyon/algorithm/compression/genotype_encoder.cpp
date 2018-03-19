@@ -166,14 +166,22 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		std::cerr << "other bcf style: n_alleles: " << bcf_entry.body->n_allele << ",ploidy: " << bcf_entry.gt_support.ploidy << std::endl;
 		block.gt_support_data_container.Add((U32)this->n_samples*bcf_entry.gt_support.ploidy);
 		++block.gt_support_data_container;
-		++block.gt_simple8_container;
 		meta.controller.gt_compression_type = core::YON_GT_BCF_STYLE;
 
 		U64 n_runs = this->n_samples*bcf_entry.gt_support.ploidy;
 
-		if(bcf_entry.body->n_allele + 1 < 8)          this->EncodeBCFStyle<BYTE>(bcf_entry, block.gt_simple8_container, n_runs);
-		else if(bcf_entry.body->n_allele + 1 < 128)   this->EncodeBCFStyle<U16> (bcf_entry, block.gt_simple8_container, n_runs);
-		else if(bcf_entry.body->n_allele + 1 < 32768) this->EncodeBCFStyle<U32> (bcf_entry, block.gt_simple8_container, n_runs);
+		if(bcf_entry.body->n_allele + 1 < 8){
+			this->EncodeBCFStyle<BYTE>(bcf_entry, block.gt_simple8_container, n_runs);
+			++block.gt_simple8_container;
+		}
+		else if(bcf_entry.body->n_allele + 1 < 128){
+			this->EncodeBCFStyle<U16> (bcf_entry, block.gt_simple16_container, n_runs);
+			++block.gt_simple16_container;
+		}
+		else if(bcf_entry.body->n_allele + 1 < 32768){
+			this->EncodeBCFStyle<U32> (bcf_entry, block.gt_simple32_container, n_runs);
+			++block.gt_simple32_container;
+		}
 		else {
 			std::cerr << utility::timestamp("ERROR", "ENCODER") <<
 						 "Illegal number of alleles (" << bcf_entry.body->n_allele + 1 << "). "
@@ -203,15 +211,15 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBialleli
 
 	// First ref
 	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
-	const SBYTE& allele1_2 = *reinterpret_cast<const SBYTE* const>(&data[ploidy*sizeof(SBYTE)*ppa[0]]);
-	const SBYTE& allele2_2 = *reinterpret_cast<const SBYTE* const>(&data[ploidy*sizeof(SBYTE)*ppa[0] + sizeof(SBYTE)]);
+	const BYTE& allele1_2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
+	const BYTE& allele2_2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 	U32 ref = YON_PACK_GT_DIPLOID(allele2_2, allele1_2, shift, add);
 
 	// Cycle over GT values
 	U32 ppa_pos = 1;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
-		const SBYTE& allele1 = *reinterpret_cast<const SBYTE* const>(&data[ploidy*sizeof(SBYTE)*ppa[ppa_pos]]);
-		const SBYTE& allele2 = *reinterpret_cast<const SBYTE* const>(&data[ploidy*sizeof(SBYTE)*ppa[ppa_pos] + sizeof(SBYTE)]);
+		const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
+		const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
 		U32 internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
 
 		// Extend or break run
@@ -283,7 +291,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
 	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
 	if((allele1 >> 1) == 0){
-
+		allele1 = 0;
 	}
 	else if(allele1 == 0x81){
 		allele1 = 1;
@@ -294,7 +302,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	}
 
 	if((allele2 >> 1) == 0){
-
+		allele2 = 0;
 	}
 	else if(allele2 == 0x81){
 		allele2 = 1;
@@ -309,7 +317,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
 		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
 		if((allele1 >> 1) == 0){
-
+			allele1 = 0;
 		}
 		else if(allele1 == 0x81){
 			allele1 = 1;
@@ -320,7 +328,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 		}
 
 		if((allele2 >> 1) == 0){
-
+			allele2 = 0;
 		}
 		else if(allele2 == 0x81){
 			allele2 = 1;

@@ -86,7 +86,7 @@ struct DataBlockSettings{
 		return(*this);
 	}
 
-	self_type& loadMeta(const bool set = true){
+	self_type& loadAllMeta(const bool set = true){
 		loadContig_ = set;
 		loadPositons_ = set;
 		loadController_ = set;
@@ -96,12 +96,12 @@ struct DataBlockSettings{
 		return(*this);
 	}
 
-	self_type& loadFILTER(const bool set = true){
+	self_type& loadAllFILTER(const bool set = true){
 		loadSetMembership_ = set;
 		return(*this);
 	}
 
-	self_type& loadINFO(const bool set = true){
+	self_type& loadAllINFO(const bool set = true){
 		loadContig_ = set;
 		loadPositons_ = set;
 		loadSetMembership_ = set;
@@ -111,18 +111,22 @@ struct DataBlockSettings{
 
 	self_type& loadINFO(const std::string& field_name){
 		if(field_name.size() == 0) return(*this);
-		this->loadINFO(true);
+		this->loadContig_ = true;
+		this->loadPositons_ = true;
+		this->loadSetMembership_ = true;
 		this->info_list.push_back(field_name);
 		return(*this);
 	}
 
 	self_type& loadINFO(const U32 field_id){
 		this->info_ID_list.push_back(field_id);
-		this->loadINFO(true);
+		this->loadContig_ = true;
+		this->loadPositons_ = true;
+		this->loadSetMembership_ = true;
 		return(*this);
 	}
 
-	self_type& loadGenotypes(const bool set = true){
+	self_type& loadGenotypes(const bool set){
 		loadContig_ = set;
 		loadPositons_ = set;
 		loadSetMembership_ = set;
@@ -134,9 +138,9 @@ struct DataBlockSettings{
 		return(*this);
 	}
 
-	self_type& loadFORMAT(const bool set = true){
+	self_type& loadFORMAT(const bool set){
 		this->loadPPA_ = set;
-		this->loadGenotypes(true);
+		this->loadGenotypes(set);
 		this->loadFORMAT_ = set;
 		return(*this);
 	}

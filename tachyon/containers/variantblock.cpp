@@ -9,7 +9,11 @@ namespace containers{
 
 VariantBlock::VariantBlock() :
 	info_containers(new container_type[200]),
-	format_containers(new container_type[200])
+	format_containers(new container_type[200]),
+	disk_offset_(0),
+	start_offset_(0),
+	n_info_loaded(0),
+	n_format_loaded(0)
 {
 	// Base container streams are always of type TYPE_STRUCT
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
@@ -25,6 +29,11 @@ VariantBlock::~VariantBlock(){
 }
 
 void VariantBlock::clear(void){
+	this->disk_offset_ = 0;
+	this->n_info_loaded = 0;
+	this->n_format_loaded = 0;
+	this->start_offset_ = 0;
+
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -133,10 +142,9 @@ void VariantBlock::updateContainers(void){
 	}
 }
 
-bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
-	settings.load_info_ID_loaded.clear();
+bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	stream >> this->header;
-	const U64 start_offset = (U64)stream.tellg();
+	this->start_offset_ = (U64)stream.tellg();
 	stream.seekg(stream.tellg() + this->header.l_offset_footer);
 	/*
 	U32 footer_uLength = 0;
@@ -156,71 +164,74 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
-	const U64 end_of_block = stream.tellg();
+	this->disk_offset_ = stream.tellg();
+	return(stream.good());
+}
+
+bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
+	settings.load_info_ID_loaded.clear();
+
 	if(settings.loadPPA_){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
-			stream.seekg(start_offset + this->footer.offset_ppa.data_header.offset);
+			stream.seekg(this->start_offset_ + this->footer.offset_ppa.data_header.offset);
 			stream >> this->ppa_manager;
 		}
 	}
 
 	if(settings.loadContig_){
-		stream.seekg(start_offset + this->footer.offset_meta_contig.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_contig.data_header.offset);
 		this->meta_contig_container.header = this->footer.offset_meta_contig;
 		stream >> this->meta_contig_container;
 	}
 
 	if(settings.loadPositons_){
-		stream.seekg(start_offset + this->footer.offset_meta_position.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_position.data_header.offset);
 		this->meta_positions_container.header = this->footer.offset_meta_position;
 		stream >> this->meta_positions_container;
 	}
 
 	if(settings.loadController_){
-		stream.seekg(start_offset + this->footer.offset_meta_controllers.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_controllers.data_header.offset);
 		this->meta_controller_container.header = this->footer.offset_meta_controllers;
 		stream >> this->meta_controller_container;
 	}
 
 	if(settings.loadQuality_){
-		stream.seekg(start_offset + this->footer.offset_meta_quality.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_quality.data_header.offset);
 		this->meta_quality_container.header = this->footer.offset_meta_quality;
 		stream >> this->meta_quality_container;
 	}
 
 	if(settings.loadNames_){
-		stream.seekg(start_offset + this->footer.offset_meta_names.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_names.data_header.offset);
 		this->meta_names_container.header = this->footer.offset_meta_names;
 		stream >> this->meta_names_container;
 	}
 
 	if(settings.loadAlleles_){
-		stream.seekg(start_offset + this->footer.offset_meta_refalt.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_refalt.data_header.offset);
 		this->meta_refalt_container.header = this->footer.offset_meta_refalt;
 		stream >> this->meta_refalt_container;
 
-		stream.seekg(start_offset + this->footer.offset_meta_alleles.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_alleles.data_header.offset);
 		this->meta_alleles_container.header = this->footer.offset_meta_alleles;
 		stream >> this->meta_alleles_container;
 	}
 
 	if(settings.loadGenotypesRLE_){
-		stream.seekg(start_offset + this->footer.offset_gt_8b.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_gt_8b.data_header.offset);
 		this->gt_rle8_container.header = this->footer.offset_gt_8b;
 		stream >> this->gt_rle8_container;
-
 		this->gt_rle16_container.header = this->footer.offset_gt_16b;
 		stream >> this->gt_rle16_container;
-
 		this->gt_rle32_container.header = this->footer.offset_gt_32b;
 		stream >> this->gt_rle32_container;
-
 		this->gt_rle64_container.header = this->footer.offset_gt_64b;
 		stream >> this->gt_rle64_container;
 	}
 
 	if(settings.loadGenotypesSimple_){
-		stream.seekg(start_offset + this->footer.offset_gt_simple8.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_gt_simple8.data_header.offset);
 		this->gt_simple8_container.header  = this->footer.offset_gt_simple8;
 		stream >> this->gt_simple8_container;
 		this->gt_simple16_container.header = this->footer.offset_gt_simple16;
@@ -232,13 +243,13 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	if(settings.loadGenotypesSupport_){
-		stream.seekg(start_offset + this->footer.offset_gt_helper.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_gt_helper.data_header.offset);
 		this->gt_support_data_container.header = this->footer.offset_gt_helper;
 		stream >> this->gt_support_data_container;
 	}
 
 	if(settings.loadSetMembership_){
-		stream.seekg(start_offset + this->footer.offset_meta_info_id.data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.offset_meta_info_id.data_header.offset);
 		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
 		stream >> this->meta_info_map_ids;
 		this->meta_filter_map_ids.header = this->footer.offset_meta_filter_id;
@@ -249,61 +260,45 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 	// Load all info
 	if(settings.loadINFO_ && this->footer.n_info_streams > 0){
-		stream.seekg(start_offset + this->footer.info_offsets[0].data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
+			++this->n_info_loaded;
 			this->info_containers[i].header = this->footer.info_offsets[i];
 			stream >> this->info_containers[i];
+			settings.load_info_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.info_offsets[i]));
 		}
 	}
 	// If we have supplied a list of identifiers
-	else if(settings.info_ID_list.size() > 0) {
-		core::SettingsMap map_entry;
-		// Cycle over all the keys we are interested in
-		U32 iterator_index = 0;
-		for(U32 i = 0; i < settings.info_ID_list.size(); ++i){
-			// Cycle over all available streams in this block
-			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
-				// If there is a match
-				// Push back field into map
-				if(this->footer.info_offsets[j].data_header.global_key == settings.info_ID_list[i]){
-					settings.load_info_ID_loaded.push_back(
-							core::SettingsMap(
-									iterator_index++,              // iterator value
-									j,                             // local index id
-									&this->footer.info_offsets[j]) // offset
-									);
-					break;
-				}
-			}
-		}
-
+	else if(settings.load_info_ID_loaded.size() > 0) {
 		// Ascertain that random access is linearly forward
 		std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
 
 		// Todo: have to jump to next info block we know exists
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
-			stream.seekg(start_offset + settings.load_info_ID_loaded[i].offset->data_header.offset);
+			stream.seekg(this->start_offset_ + settings.load_info_ID_loaded[i].offset->data_header.offset);
 			if(!stream.good()){
 				std::cerr << utility::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
 				return false;
 			}
 
 			// Read data
-			this->info_containers[settings.load_info_ID_loaded[i].iterator_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].iterator_index];
+			this->info_containers[settings.load_info_ID_loaded[i].iterator_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local];
 			stream >> this->info_containers[settings.load_info_ID_loaded[i].iterator_index];
+			++this->n_info_loaded;
 		}
 	} // end case load_info_ID
 
 	if(settings.loadFORMAT_ && this->footer.n_format_streams){
-		stream.seekg(start_offset + this->footer.format_offsets[0].data_header.offset);
+		stream.seekg(this->start_offset_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 			this->format_containers[i].header = this->footer.format_offsets[i];
 			stream >> this->format_containers[i];
+			++this->n_format_loaded;
 			//std::cerr << "loaded: " << this->index_entry.format_offsets[i].global_key << '\t' << this->format_containers[i].header.cLength << std::endl;
 		}
 	}
 
-	stream.seekg(end_of_block);
+	stream.seekg(this->disk_offset_);
 	return(true);
 }
 
@@ -381,7 +376,6 @@ bool VariantBlock::write(std::ofstream& stream,
 	stats_basic[2].cost_uncompressed += (S32)this->meta_refalt_container.header.stride_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.data_header.uLength;
 	stats_basic[2].cost_uncompressed += (S32)this->meta_controller_container.header.stride_header.uLength;
-
 
 	this->__updateHeader(this->footer.offset_meta_quality, this->meta_quality_container, (U64)stream.tellp() - start_pos);
 	stream << this->meta_quality_container;

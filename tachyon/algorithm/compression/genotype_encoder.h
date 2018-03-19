@@ -14,43 +14,6 @@ namespace tachyon{
 namespace algorithm{
 
 #define ENCODER_GT_DEBUG 0
-
-/*
- RLE biallelic diploid
- +---+---+---+---+
- |  RLE  | A/B|P |
- +---+---+---+---+
- ^       ^
- |       |
- LENGTH  BIALLELIC GT
-
-*/
-
-/*
- Simple biallelic
- +---+---+---+---+---+---+
- |  A    |   B   |   P   |
- +---+---+---+---+---+---+
- ^       ^       ^
- |       |       |
- A       B       P
-
-*/
-
-/*
-
- sizeof(T1) + sizeof(T2)
-
- RLE simple biallelic
- +---+---+---+---+---+---+---+---+
- |  RLE  |   A   |   B   |   P   |
- +---+---+---+---+---+---+---+---+
- ^       ^       ^       ^
- |       |       |       |
- LENGTH  A       B       P
-
-*/
-
 #define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)          (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) (((A) >> 1) << ((SHIFT) + (ADD))) | (((B) >> 1) << (ADD)) | ((A) & (ADD))
 
@@ -123,7 +86,7 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& bcf_entry,
 		for(U32 p = 0; p < ploidy; ++p){
 			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&bcf_entry.data[bcf_gt_pos]);
 			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0); // missing
-			else if(allele == EOV_value ) simple.AddLiteral((YON_STORE_TYPE)1); // eov
+			else if(allele == EOV_value) simple.AddLiteral((YON_STORE_TYPE)1); // eov
 			else { // otherwise
 				// Add 1 because 1 is reserved for EOV
 				const YON_STORE_TYPE val = ((allele >> 1) + 1) << 1 | (allele & 1);
@@ -348,8 +311,8 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
 	sumLength += length;
 	assert(sumLength == this->n_samples);
 	assert(helper.n_runs == n_runs);
-	runs.n_additions += n_runs;
 	assert(ppa_pos == n_samples);
+	runs.n_additions += n_runs;
 
 #if ENCODER_GT_DEBUG == 1
 	std::cout << 1 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';

@@ -20,15 +20,11 @@ BCFEntry::BCFEntry(void):
 	ploidy(0),
 	filter_start(0),
 	n_filter(0),
-	// Vectors of identifiers
 	filterPointer(0),
 	infoPointer(0),
 	formatPointer(0),
-	// FILTER
 	filterID(new BCFKeyTuple[256]),
-	// INFO
 	infoID(new BCFKeyTuple[256]),
-	// FORMAT
 	formatID(new BCFKeyTuple[256])
 {
 
@@ -48,16 +44,12 @@ BCFEntry::BCFEntry(const self_type& other):
 	ploidy(other.ploidy),
 	filter_start(other.filter_start),
 	n_filter(other.n_filter),
-	// Vectors of identifiers
 	filterPointer(other.filterPointer),
 	infoPointer(other.infoPointer),
 	formatPointer(other.formatPointer),
 	gt_support(other.gt_support),
-	// FILTER
 	filterID(new BCFKeyTuple[256]),
-	// INFO
 	infoID(new BCFKeyTuple[256]),
-	// FORMAT
 	formatID(new BCFKeyTuple[256])
 {
 	memcpy(this->data, other.data, other.l_data);
@@ -73,7 +65,6 @@ BCFEntry::BCFEntry(const self_type& other):
 	this->__parseID(internal_pos);
 	this->__parseRefAlt(internal_pos);
 	this->SetRefAlt();
-
 }
 
 BCFEntry::BCFEntry(self_type&& other) noexcept :
@@ -90,16 +81,12 @@ BCFEntry::BCFEntry(self_type&& other) noexcept :
 	ploidy(other.ploidy),
 	filter_start(other.filter_start),
 	n_filter(other.n_filter),
-	// Vectors of identifiers
 	filterPointer(other.filterPointer),
 	infoPointer(other.infoPointer),
 	formatPointer(other.formatPointer),
 	gt_support(other.gt_support),
-	// FILTER
 	filterID(other.filterID),
-	// INFO
 	infoID(other.infoID),
-	// FORMAT
 	formatID(other.formatID)
 {
 	other.data      = nullptr;
@@ -142,15 +129,11 @@ BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
 	ploidy = other.ploidy;
 	filter_start = other.filter_start;
 	n_filter = other.n_filter;
-	// Vectors of identifiers
 	filterPointer = other.filterPointer;
 	infoPointer = other.infoPointer;
 	formatPointer = other.formatPointer;
-	// FILTER
 	filterID = other.filterID;
-	// INFO
 	infoID = other.infoID;
-	// FORMAT
 	formatID = other.formatID;
 	gt_support = other.gt_support;
 

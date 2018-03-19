@@ -50,7 +50,6 @@ int view(int argc, char** argv){
 		{"noHeader",		no_argument, 0,  'H' },
 		{"onlyHeader",		no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
-		{"dropInfo",	no_argument, 0,  'I' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
 	};
@@ -59,7 +58,6 @@ int view(int argc, char** argv){
 	std::string output;
 	SILENT = 0;
 	bool dropFormat = false;
-	bool dropInfo   = false;
 	bool headerOnly = false;
 	bool showHeader = true;
 
@@ -76,9 +74,6 @@ int view(int argc, char** argv){
 			break;
 		case 'G':
 			dropFormat = true;
-			break;
-		case 'I':
-			dropInfo = true;
 			break;
 		case 's':
 			SILENT = 1;
@@ -132,6 +127,16 @@ int view(int argc, char** argv){
 	timer.Start();
 
 	reader.getSettings().loadAll(true);
+	if(dropFormat){
+		reader.getSettings().loadGenotypesAll_     = false;
+		reader.getSettings().loadGenotypesRLE_     = false;
+		reader.getSettings().loadGenotypesSimple_  = false;
+		reader.getSettings().loadGenotypesSupport_ = false;
+		reader.getSettings().loadFORMAT_           = false;
+	}
+	//reader.getSettings().loadINFO_ = false;
+	//reader.getSettings().loadINFO("AC").loadINFO("AN").loadINFO("DP");
+
 	//reader.getSettings().loadMeta(true);
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
