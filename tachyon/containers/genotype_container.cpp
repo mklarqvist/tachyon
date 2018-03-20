@@ -47,10 +47,10 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					offset_rle16 += lengths[gt_offset]*sizeof(U16);
 				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &rle32[offset_rle32], lengths[gt_offset], this->__meta_container[i] );
-					offset_rle32 += lengths[gt_offset]*sizeof(U16);
+					offset_rle32 += lengths[gt_offset]*sizeof(U32);
 				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &rle64[offset_rle64], lengths[gt_offset], this->__meta_container[i] );
-					offset_rle64 += lengths[gt_offset]*sizeof(U16);
+					offset_rle64 += lengths[gt_offset]*sizeof(U64);
 				} else {
 					std::cerr << "unknwn type" << std::endl;
 					exit(1);
@@ -65,10 +65,10 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					offset_simple16 += lengths[gt_offset]*sizeof(U16);
 				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple32 += lengths[gt_offset]*sizeof(U16);
+					offset_simple32 += lengths[gt_offset]*sizeof(U32);
 				} else if(meta[i].getGenotypeType() == tachyon::core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple64 += lengths[gt_offset]*sizeof(U16);
+					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				} else {
 					std::cerr << "unknwn type" << std::endl;
 					exit(1);

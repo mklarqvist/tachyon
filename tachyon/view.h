@@ -39,7 +39,7 @@ int view(int argc, char** argv){
 
 	int c;
 	if(argc < 2){
-		import_usage();
+		view_usage();
 		return(1);
 	}
 
@@ -47,8 +47,8 @@ int view(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
-		{"noHeader",		no_argument, 0,  'H' },
-		{"onlyHeader",		no_argument, 0,  'h' },
+		{"noHeader",	no_argument, 0,  'H' },
+		{"onlyHeader",	no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
 		{"silent",		no_argument, 0,  's' },
 		{0,0,0,0}
@@ -61,7 +61,7 @@ int view(int argc, char** argv){
 	bool headerOnly = false;
 	bool showHeader = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:GIshH?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:GshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -103,9 +103,6 @@ int view(int argc, char** argv){
 	}
 
 	tachyon::VariantReader reader;
-	//reader.getSettings().loadGenotypes(true);
-	//reader.getSettings().loadINFO(true);
-	//reader.getSettings().loadAll(true);
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
@@ -145,16 +142,10 @@ int view(int argc, char** argv){
 	//U64 square_division = 0;
 	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		//n_variants += reader.countVariants();
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
 		n_variants += reader.iterate_all_info();
-		//n_variants += reader.iterate_genotypes(std::cout);
-		//n_variants += reader.iterate_all_info();
 		//square_division += reader.calculateIBS(square, square_temporary);
-		//std::cerr << n_blocks << '\t' << 597 << std::endl;
-		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
 		++n_blocks;
-		//if(n_blocks == 50) break;
 	}
 
 	/*

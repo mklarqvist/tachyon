@@ -229,9 +229,6 @@ GenotypeSum& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_o
 
 template <class T>
 void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
-	std::cerr << "not yet" << std::endl;
-	exit(1);
-
 	if(this->size() == 0)
 		return;
 

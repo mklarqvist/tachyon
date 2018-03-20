@@ -100,9 +100,9 @@ struct DataContainerHeaderObject{
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.crc),       sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(S32));
 		return(stream);
@@ -111,9 +111,9 @@ struct DataContainerHeaderObject{
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),        sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(S32));
 
@@ -161,9 +161,9 @@ struct DataContainerHeaderObject{
 public:
 	controller_type controller; // controller bits
 	S32 stride;                 // stride size: -1 if not uniform, a non-zero positive value otherwise
-	U64 offset;                 // relative file offset
-	U64 cLength;                // compressed length
-	U64 uLength;                // uncompressed length
+	U32 offset;                 // relative file offset
+	U32 cLength;                // compressed length
+	U32 uLength;                // uncompressed length
 	U32 crc;                    // crc32 checksum
 	S32 global_key;             // global key
 };
