@@ -14,14 +14,14 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	// Support
 	PrimitiveContainer<U32> lengths(block.gt_support_data_container); // n_runs / objects size
 
-	U32 offset_rle8     = 0; const char* const rle8     = block.gt_rle8_container.buffer_data_uncompressed.data();
-	U32 offset_rle16    = 0; const char* const rle16    = block.gt_rle16_container.buffer_data_uncompressed.data();
-	U32 offset_rle32    = 0; const char* const rle32    = block.gt_rle32_container.buffer_data_uncompressed.data();
-	U32 offset_rle64    = 0; const char* const rle64    = block.gt_rle64_container.buffer_data_uncompressed.data();
-	U32 offset_simple8  = 0; const char* const simple8  = block.gt_simple8_container.buffer_data_uncompressed.data();
-	U32 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data_uncompressed.data();
-	U32 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data_uncompressed.data();
-	U32 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data_uncompressed.data();
+	U64 offset_rle8     = 0; const char* const rle8     = block.gt_rle8_container.buffer_data_uncompressed.data();
+	U64 offset_rle16    = 0; const char* const rle16    = block.gt_rle16_container.buffer_data_uncompressed.data();
+	U64 offset_rle32    = 0; const char* const rle32    = block.gt_rle32_container.buffer_data_uncompressed.data();
+	U64 offset_rle64    = 0; const char* const rle64    = block.gt_rle64_container.buffer_data_uncompressed.data();
+	U64 offset_simple8  = 0; const char* const simple8  = block.gt_simple8_container.buffer_data_uncompressed.data();
+	U64 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data_uncompressed.data();
+	U64 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data_uncompressed.data();
+	U64 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data_uncompressed.data();
 
 	assert(block.gt_rle8_container.buffer_data_uncompressed.size()     % sizeof(BYTE) == 0);
 	assert(block.gt_rle16_container.buffer_data_uncompressed.size()    % sizeof(U16)  == 0);
@@ -35,7 +35,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	this->n_entries   = meta.size();
 	this->__iterators = static_cast<pointer>(::operator new[](this->size() * sizeof(value_type)));
 
-	U32 gt_offset = 0;
+	U64 gt_offset = 0;
 	for(U32 i = 0; i < meta.size(); ++i){
 		if(meta[i].hasGT()){
 			if(meta[i].getGenotypeEncoding() == tachyon::core::TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
@@ -83,11 +83,11 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 		}
 	}
 
-	assert(offset_rle8 == block.gt_rle8_container.getSizeUncompressed());
+	assert(offset_rle8  == block.gt_rle8_container.getSizeUncompressed());
 	assert(offset_rle16 == block.gt_rle16_container.getSizeUncompressed());
 	assert(offset_rle32 == block.gt_rle32_container.getSizeUncompressed());
 	assert(offset_rle64 == block.gt_rle64_container.getSizeUncompressed());
-	assert(offset_simple8 == block.gt_simple8_container.getSizeUncompressed());
+	assert(offset_simple8  == block.gt_simple8_container.getSizeUncompressed());
 	assert(offset_simple16 == block.gt_simple16_container.getSizeUncompressed());
 	assert(offset_simple32 == block.gt_simple32_container.getSizeUncompressed());
 	assert(offset_simple64 == block.gt_simple64_container.getSizeUncompressed());

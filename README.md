@@ -8,14 +8,14 @@
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-Tachyon is an open source software library for storing and querying sequencing/sequence variant data. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium and identity-by-state in large-scale cohorts.
+Tachyon is an open source software library for storing and querying sequencing/sequence variant data in a lossless and bit-exact representation. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium and identity-by-state in large-scale cohorts.
 
 ### Author
 Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)  
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
-## Notice!
+### Notice!
 Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
 Commits may break functionality!  
 **THERE IS NO STABILITY PROMISE WHATSOEVER!**  
@@ -31,7 +31,7 @@ There are a large number of field-specific file formats that have reached near-u
 * **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
 * **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts emphasis on user experience. Tachyon follows best practices for reducing cognitive load: it offers consistent and simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
 * **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
-* **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness making Tachyon suitable for advanced research.
+* **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness.
 
 ---
 
@@ -39,15 +39,28 @@ There are a large number of field-specific file formats that have reached near-u
 * **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
 * **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
 * **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl]
-* **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than current file-formats
-* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries  
+* **Compression**: Tachyon files are generally many fold (in many cases many 10-100-fold) smaller than current file-formats/
+* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries.  
 * **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
-* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the file-formats we are supplanting. This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools
+* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the file-formats we are supplanting. This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
 ---
 
 ## Benchmarks
-Some benchmarks: these results may be subject to change at any time. The following table shows data for the 1000 Genomes Project Phase 3 release (2,504 samples, in megabytes; 1 MB = 1E6 bytes). The uncompressed file size represents the amount of bytes needed to be parsed internally   
+### Simulations
+We simulated haplotypes using [msprime][msprime] for a 50 megabase region for varying number of individuals (fixed parameters: recombination rate 2e-8, mutation rate 2e-8, effective population size 1e4) and concatened pairs of haplotypes together to form diploid genotypes. Decompression times were measured by `time zcat <file.bcf> > /dev/null` for `bcf` and using the API for Tachyon and timings for printing fixed-fields were measured as `time bcftools view <file.bcf> -GH > /dev/null` for `bcf` and `time tachyon view -GH > /dev/null` for Tachyon. File sizes are listed in gigabytes (1 GB = 10e9 b) and timings in seconds. All experiments were run on a single CPU.  
+
+| Variants  | Samples  | Filesize (BCF) | Filesize (YON) | Decomp. (BCF) | Decomp. (YON) | Print sites (BCF) | Print sites (YON) |
+|-----------|----------|----------------|----------------|---------------|---------------|-------------------|-------------------|
+| 523,842   | 100,00   | 0.53655        | 0.16043        | 44.295        | 1.859         | 28.098            | 0.680             |
+| 604,487   | 500,00   | 2.57511        | 0.59032        | 251.682       | 7.077         | 137.200           | 1.609             |
+| 639,666   | 100,000  | 5.12134        | 0.99690        | 526.733       | 12.473        | 286.413           | 1.936             |
+| 685,363   | 250,000  | 12.64719       | 1.90681        | 1927.011      | 24.671        | 1028.046          | 4.745             |
+| 719,754   | 500,000  | 25.08209       | 3.04404        | 4139.424      | 45.247        | 2241.756          | 11.706            |
+
+
+### Real datasets
+The following table shows data for the 1000 Genomes Project Phase 3 release (2,504 samples, in megabytes; 1 MB = 1E6 bytes). The uncompressed file size represents the amount of bytes needed to be parsed internally   
 
 | Contig | BCF-compressed | BCF-uncompressed | YON-compressed | YON-uncompressed | YON-fold | BCF-fold | Uncompressed-fold |
 |--------|----------------|------------------|----------------|------------------|----------|----------|-------------------|
@@ -103,10 +116,6 @@ The following table shows data for the Haplotype Reference Consortium (32,488 wh
 | 22     | 953.16         | 34110            | 196.84         | 1156.9           | 173.29   | 35.786   | 29.484            |
 
 ![screenshot](examples/hrc_bcf_yon.jpeg)  
-
-Decompression speeds as measured by `time zcat file.bcf > /dev/null` for `bcf` and using the API for `tachyon`:  
-
-
 
 --- 
 
@@ -498,6 +507,7 @@ Generated output
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
 [tomahawk]: https://github.com/mklarqvist/tomahawk
+[msprime]:  https://github.com/jeromekelleher/msprime
 
 ### Acknowledgements
 [James Bonfield](https://github.com/jkbonfield), Wellcome Trust Sanger Institute  
