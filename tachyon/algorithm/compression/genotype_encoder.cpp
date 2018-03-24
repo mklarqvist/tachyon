@@ -34,6 +34,7 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 	meta.controller.gt_anyNA         = bcf_entry.gt_support.hasMissing;
 	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
 	meta.controller.mixed_ploidy     = bcf_entry.gt_support.hasEOV;
+	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
 
 	// temp
 	/*

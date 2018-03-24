@@ -9,7 +9,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 
 	stream << container[0];
 	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << container[i];
+		stream << ',' << (U32)container[i];
 
 	return(stream);
 }
@@ -20,7 +20,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 
 	stream << container[0];
 	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << container[i];
+		stream << ',' << (U32)container[i];
 
 	return(stream);
 }
@@ -59,13 +59,13 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 
 	// First value
 	if(ref[0] == YON_BYTE_MISSING) stream << '.';
-	else stream << container[0];
+	else stream << (S32)container[0];
 
 	// Remainder values
 	for(U32 i = 1; i < container.size(); ++i){
 		if(ref[i] == YON_BYTE_MISSING) stream << ",.";
 		else if(ref[i] == YON_BYTE_EOV){ return stream; }
-		else stream << ',' << container[i];
+		else stream << ',' << (S32)container[i];
 	}
 
 	return(stream);
@@ -83,13 +83,13 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 
 	// First value
 	if(ref[0] == YON_SHORT_MISSING) stream << '.';
-	else stream << container[0];
+	else stream << (S32)container[0];
 
 	// Remainder values
 	for(U32 i = 1; i < container.size(); ++i){
 		if(ref[i] == YON_SHORT_MISSING) stream << ",.";
 		else if(ref[i] == YON_SHORT_EOV){ return stream; }
-		else stream << ',' << container[i];
+		else stream << ',' << (S32)container[i];
 	}
 
 	return(stream);
@@ -102,8 +102,9 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
 
 	// If the first value is end-of-vector then return
-	if(ref[0] == YON_INT_EOV)
+	if(ref[0] == YON_INT_EOV){
 		return(stream.put('.'));
+	}
 
 	// First value
 	if(ref[0] == YON_INT_MISSING) stream << '.';

@@ -82,7 +82,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 			// If pattern matches
 			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
-				current_offset += strides[strides_offset];
+				current_offset += strides[strides_offset] * n_samples;
 				++strides_offset;
 			}
 			// Otherwise place an empty
@@ -118,7 +118,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 			}
 		}
 
-		current_offset += stride_size;
+		current_offset += stride_size * n_samples;
 	}
 	// Case 2: if data is not uniform
 	else {

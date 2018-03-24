@@ -6,11 +6,11 @@
 namespace tachyon{
 namespace containers{
 
-template <class T>
+template <class return_type>
 class PrimitiveGroupContainer{
 private:
     typedef PrimitiveGroupContainer self_type;
-    typedef PrimitiveContainer<T>   value_type;
+    typedef PrimitiveContainer<return_type> value_type;
     typedef std::size_t             size_type;
     typedef value_type&             reference;
     typedef const value_type&       const_reference;
@@ -83,6 +83,10 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->__n_objects]); }
 
 private:
+	template <class actual_primitive_type>
+	void __setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each);
+
+private:
     size_type __n_objects;
     pointer   __containers;
 };
@@ -91,27 +95,54 @@ private:
 // IMPLEMENTATION -------------------------------------------------------------
 
 
-template <class T>
-PrimitiveGroupContainer<T>::PrimitiveGroupContainer() : __n_objects(0), __containers(nullptr){}
+template <class return_type>
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : __n_objects(0), __containers(nullptr){}
 
-template <class T>
-PrimitiveGroupContainer<T>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :
+template <class return_type>
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :
 	__n_objects(n_objects),
 	__containers(static_cast<pointer>(::operator new[](this->__n_objects*sizeof(value_type))))
 {
-	U32 current_offset = offset;
-	for(U32 i = 0; i < this->__n_objects; ++i){
-		new( &this->__containers[i] ) value_type( container, current_offset, strides_each );
-		current_offset += strides_each * sizeof(T);
+
+	if(container.header.data_header.isSigned()){
+		switch(container.header.data_header.getPrimitiveType()){
+		case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset, n_objects, strides_each));  break;
+		case(YON_TYPE_16B):    (this->__setup<S16>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_32B):    (this->__setup<S32>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_64B):    (this->__setup<S64>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
+		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
+		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		}
+	} else {
+		switch(container.header.data_header.getPrimitiveType()){
+		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset, n_objects, strides_each));   break;
+		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_64B):    (this->__setup<U64>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
+		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
+		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		}
 	}
 }
 
-template <class T>
-PrimitiveGroupContainer<T>::~PrimitiveGroupContainer(){
+template <class return_type>
+PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer(){
 	for(std::size_t i = 0; i < this->__n_objects; ++i)
 		((this->__containers + i)->~value_type)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
+}
+
+template <class return_type>
+template <class actual_primitive_type>
+void PrimitiveGroupContainer<return_type>::__setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each){
+	U32 current_offset = offset;
+	for(U32 i = 0; i < this->__n_objects; ++i){
+		new( &this->__containers[i] ) value_type( container, current_offset, strides_each );
+		current_offset += strides_each * sizeof(actual_primitive_type);
+	}
 }
 
 }

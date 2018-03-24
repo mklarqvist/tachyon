@@ -187,8 +187,10 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		SBYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		SBYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		if(alleleA == 2) alleleA = -1;
+		if(alleleB == 2) alleleB = -1;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
@@ -204,6 +206,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 			entries[ppa_manager[cum_pos]].n_alleles = 2;
 		}
 	}
+
 	//assert(cum_pos == n_samples);
 	return(ret);
 }

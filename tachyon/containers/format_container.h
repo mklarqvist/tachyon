@@ -5,6 +5,7 @@
 #include "primitive_group_container.h"
 #include "meta_container.h"
 #include "stride_container.h"
+#include "../utility/support_vcf.h"
 
 namespace tachyon{
 namespace containers{
@@ -23,8 +24,9 @@ public:
 	inline const bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
-    //virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U32 sample_number) const =0;
-    //virtual const bool emptyPosition(const U32& position) const =0;
+    virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample_number) const =0;
+    virtual const bool emptyPosition(const U32& position) const =0;
+    virtual const bool emptyPosition(const U32& position, const U64& sample) const =0;
 
 protected:
     TACHYON_CORE_TYPE primitive_type;
@@ -113,6 +115,14 @@ public:
     inline const_iterator end()    const{ return const_iterator(&this->__containers[this->n_entries]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
+
+    // Type-specific
+	std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{
+		utility::to_vcf_string(stream, this->at(position).at(sample));
+		return(stream);
+	}
+	const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+	const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<
@@ -240,7 +250,6 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
 		if(container.header.data_header.isSigned()){
 			switch(container.header.data_header.controller.type){
 			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples));  break;
-			case(YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples));   break;
 			case(YON_TYPE_16B):    (this->__setup<S16>(container, n_samples));    break;
 			case(YON_TYPE_32B):    (this->__setup<S32>(container, n_samples));    break;
 			case(YON_TYPE_64B):    (this->__setup<S64>(container, n_samples));    break;
@@ -263,7 +272,6 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
 		if(container.header.data_header.isSigned()){
 			switch(container.header.data_header.controller.type){
 			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, container.header.data_header.getStride()));  break;
-			case(YON_TYPE_CHAR):   (this->__setup<char>(container, n_samples, container.header.data_header.getStride()));   break;
 			case(YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, container.header.data_header.getStride()));    break;
 			case(YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, container.header.data_header.getStride()));    break;
 			case(YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, container.header.data_header.getStride()));    break;
@@ -327,14 +335,14 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 		U32 current_offset = 0;
 		U32 strides_offset = 0;
 		for(U32 i = 0; i < this->size(); ++i){
-			// There are no INFO fields
-			if(meta_container[i].getInfoPatternID() == -1){
+			// There are no FORMAT fields
+			if(meta_container[i].getFormatPatternID() == -1){
 				new( &this->__containers[i] ) value_type( );
 			}
 			// If pattern matches
 			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
-				current_offset += strides[strides_offset] * sizeof(actual_primitive);
+				current_offset += strides[strides_offset] * sizeof(actual_primitive) * n_samples;
 				++strides_offset;
 			}
 			// Otherwise place an empty
@@ -358,8 +366,8 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	// Case 1: if data is uniform
 	if(data_container.header.data_header.isUniform()){
 		for(U32 i = 0; i < this->size(); ++i){
-			// There are no INFO fields
-			if(meta_container[i].getInfoPatternID() == -1){
+			// There are no FORMAT fields
+			if(meta_container[i].getFormatPatternID() == -1){
 				new( &this->__containers[i] ) value_type( );
 			}
 			// If pattern matches
@@ -372,7 +380,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 			}
 		}
 
-		current_offset += stride_size * sizeof(actual_primitive);
+		current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 	}
 	// Case 2: if data is not uniform
 	else {

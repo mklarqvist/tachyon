@@ -294,6 +294,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 			this->format_containers[i].header = this->footer.format_offsets[i];
 			stream >> this->format_containers[i];
 			++this->n_format_loaded;
+			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
 			//std::cerr << "loaded: " << this->index_entry.format_offsets[i].global_key << '\t' << this->format_containers[i].header.cLength << std::endl;
 		}
 	}

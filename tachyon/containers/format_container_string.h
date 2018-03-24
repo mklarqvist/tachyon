@@ -95,6 +95,12 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
+    // Type-specific
+	std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{ utility::to_vcf_string(stream, this->at(position).at(sample)); return(stream); }
+	const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+	const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+
+
 private:
     /**<
      *

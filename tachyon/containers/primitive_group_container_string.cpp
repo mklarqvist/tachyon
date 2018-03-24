@@ -11,7 +11,15 @@ PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_contain
 {
 	U32 current_offset = offset;
 	for(size_type i = 0; i < this->size(); ++i){
-		new( &this->__strings[i] ) value_type( &container.buffer_data_uncompressed[current_offset], strides_each );
+		// check length
+		U32 j = 0;
+		for(; j < strides_each; ++j){
+			// Find premature end-of-string marker
+			if(container.buffer_data_uncompressed[current_offset + j] == '\0'){
+				break;
+			}
+		}
+		new( &this->__strings[i] ) value_type( &container.buffer_data_uncompressed[current_offset], j );
 		current_offset += strides_each;
 	}
 }

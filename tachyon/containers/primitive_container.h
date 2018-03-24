@@ -134,7 +134,6 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 	if(container.header.data_header.isSigned()){
 		switch(container.header.data_header.getPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, 0));  break;
-		case(YON_TYPE_CHAR):   (this->__setupSigned<char>(container, 0));   break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, 0));    break;
 		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, 0));    break;
 		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, 0));    break;
@@ -166,7 +165,6 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 	if(container.header.data_header.isSigned()){
 		switch(container.header.data_header.getPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, offset));  break;
-		case(YON_TYPE_CHAR):   (this->__setupSigned<char>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, offset));    break;
 		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, offset));    break;
@@ -217,6 +215,7 @@ void PrimitiveContainer<return_type>::__setupSigned(const container_type& contai
 			}
 			// If the data is EOV in the native format
 			else if(data[i] == std::numeric_limits<native_primitive>::min() + 1){
+				//std::cerr << "is eov: " << std::bitset<sizeof(native_primitive)*8>(data[i]) << "\t" << std::bitset<sizeof(return_type)*8>(std::numeric_limits<return_type>::min() + 1) << std::endl;
 				this->__entries[i] = std::numeric_limits<return_type>::min() + 1;
 			}
 			else

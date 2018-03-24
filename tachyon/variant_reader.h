@@ -299,6 +299,46 @@ public:
 		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_)
 			gt = new containers::GenotypeContainer(this->block, meta);
 
+		// Todo: to VCF
+		// 1) n_samples output buffers
+		// 2) add gt
+		// 3) keep adding format fields until empty
+		// 4) print format in order
+		containers::FormatContainerInterface** fits = new containers::FormatContainerInterface*[this->block.n_format_loaded];
+
+		std::vector<std::string> global_fields_format;
+		if(this->block.n_format_loaded){
+			for(U32 i = 0; i < this->block.n_format_loaded; ++i){
+				//std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
+				const U32 global_key = settings.load_format_ID_loaded[i].offset->data_header.global_key;
+				//std::cerr << i << "/" << this->block.footer.n_format_streams << ": " << global_key << "@" << this->header.format_fields[this->block.footer.format_offsets[i].data_header.global_key].ID << '\t' << this->header.format_fields[global_key].getType() << std::endl;
+				std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
+
+				if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+					fits[i] = new containers::FormatContainer<S32>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
+					//global_fields.push_back(this->header.format_fields[global_key].ID);
+					//std::cerr << "s32: " << fits[i]->size() << std::endl;
+				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
+						  this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+					fits[i] = new containers::FormatContainer<std::string>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
+					//global_fields.push_back(this->header.format_fields[global_key].ID);
+					//std::cerr << "string: " << fits[i]->size() << std::endl;
+
+				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+					fits[i] = new containers::FormatContainer<float>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
+					//global_fields.push_back(this->header.format_fields[global_key].ID);
+					//std::cerr << "float: " << fits[i]->size() << std::endl;
+				} else {
+					fits[i] = new containers::FormatContainer<U32>;
+					//global_fields.push_back(this->header.format_fields[global_key].ID);
+				}
+
+				//containers::FormatContainer<U32> ad(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
+				//std::cerr << ad.size() << std::endl;
+				global_fields_format.push_back(this->header.format_fields[global_key].ID);
+			}
+		}
+
 		// Store as double pointers to avoid memory collisions because
 		// info containers have different class members
 		containers::InfoContainerInterface** its = new containers::InfoContainerInterface*[this->block.n_info_loaded];
@@ -333,8 +373,8 @@ public:
 
 			if(settings.loadSetMembership_){
 				if(this->block.footer.n_filter_streams){
-					const U32& n_filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].n_keys;
-					const U32* filter_keys = this->block.footer.filter_bit_vectors[meta.at(p).filter_pattern_id].local_keys;
+					const U32& n_filter_keys = this->block.footer.filter_bit_vectors[meta[p].filter_pattern_id].n_keys;
+					const U32* filter_keys   = this->block.footer.filter_bit_vectors[meta[p].filter_pattern_id].local_keys;
 					if(n_filter_keys){
 						// Local key -> global key
 						stream << this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
@@ -357,8 +397,8 @@ public:
 
 			if(settings.loadINFO_ || this->block.n_info_loaded){
 				if(this->block.n_info_loaded){
-					const U32& n_keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].n_keys;
-					const U32* keys = this->block.footer.info_bit_vectors[meta.at(p).info_pattern_id].local_keys;
+					const U32& n_keys = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].n_keys;
+					const U32* keys   = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].local_keys;
 
 					// First
 					if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
@@ -387,32 +427,36 @@ public:
 
 			if(settings.loadFORMAT_ && this->block.n_format_loaded){
 				if(this->block.n_format_loaded){
-					const U32& n_format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].n_keys;
-					const U32* format_keys = this->block.footer.format_bit_vectors[meta.at(p).format_pattern_id].local_keys;
+					const U32& n_format_keys = this->block.footer.format_bit_vectors[meta[p].format_pattern_id].n_keys;
+					const U32* format_keys   = this->block.footer.format_bit_vectors[meta[p].format_pattern_id].local_keys;
 					if(n_format_keys){
-						// Local key -> global key
+						// Print key map
 						stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
 						for(U32 i = 1; i < n_format_keys; ++i){
-							stream << ';' << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+							stream.put(':');
+							stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
 						}
 						stream.put('\t');
-					} else
-						stream << ".\t";
-				} else
-					stream.put('\n');
+						std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 
-				// GT
-				// Todo: abstract
-				// Genotype data
-				//if(gt[p].getMeta().isMixedPloidy()){
-					std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-					stream << objects_true[0];
-					for(U32 i = 1; i < objects_true.size(); ++i){
-						stream << '\t' << objects_true[i];
-					}
-					//exit(1);
-				//}
-				stream.put('\n');
+						stream << objects_true[0];
+						for(U32 i = 1; i < n_format_keys; ++i){
+							stream.put(':');
+							fits[format_keys[i]]->to_vcf_string(std::cout, p, 0);
+						}
+
+						for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
+							stream.put('\t');
+							stream << objects_true[s];
+							for(U32 i = 1; i < n_format_keys; ++i){
+								stream.put(':');
+								fits[format_keys[i]]->to_vcf_string(std::cout, p, s);
+							}
+						}
+						stream.put('\n');
+					} else // has no keys
+						stream << ".\t";
+				}
 			}
 		}
 
@@ -421,7 +465,12 @@ public:
 				delete its[i];
 		}
 
-		delete [] its;
+		if(settings.loadFORMAT_){
+			for(U32 i = 0; i < this->block.n_format_loaded; ++i)
+				delete fits[i];
+		}
+
+		delete [] its; delete [] fits;
 		delete gt;
 		return(meta.size());
 	}

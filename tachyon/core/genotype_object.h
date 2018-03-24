@@ -123,10 +123,16 @@ public:
 
     friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
     	if(entry.n_alleles){
-    		stream << (int)entry.alleles[0].first;
+    		if(entry.alleles[0].first == -2){
+    			stream.put('.');
+    			return(stream);
+    		}
+    		if(entry.alleles[0].first == -1) stream.put('.');
+    		else stream << (int)entry.alleles[0].first;
+
     		for(U32 i = 1; i < entry.n_alleles; ++i){
     			if(entry.alleles[i].first == -2) break;
-    			stream << (entry.alleles[i].second ? '/' : '|');
+    			stream << (entry.alleles[i].second ? '|' : '/');
     			if(entry.alleles[i].first == -1) stream.put('.');
     			else stream << (int)entry.alleles[i].first;
     		}

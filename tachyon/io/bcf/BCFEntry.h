@@ -235,6 +235,10 @@ public:
 					internal_data_offset += sizeof(BYTE);
 				}
 			}
+
+			if(this->gt_support.mixedPhasing == false){
+				this->gt_support.phase = first_phase;
+			}
 		}
 		return true;
 	}
