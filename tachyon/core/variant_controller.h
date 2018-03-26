@@ -35,7 +35,7 @@ struct VariantController{
 	typedef VariantController self_type;
 
 	// Ctor
-	explicit VariantController(void) :
+	VariantController(void) :
 		gt_available(0),
 		gt_anyMissing(0),
 		gt_phase(0),
@@ -49,7 +49,9 @@ struct VariantController{
 		mixed_ploidy(0),
 		alleles_packed(0),
 		unused(0)
-	{}
+	{
+
+	}
 
 	VariantController(const self_type& other) :
 		gt_available(other.gt_available),

@@ -68,8 +68,28 @@ struct __attribute__((packed, aligned(1))) BCFEntryBody{
 #pragma pack(pop)
 
 struct BCFTypeString{
+	typedef BCFTypeString self_type;
+
+	BCFTypeString() : length(0), data(nullptr){}
+	BCFTypeString(const self_type& other) : length(other.length), data(new char[other.length]){ memcpy(this->data, other.data, other.length); }
+	void operator=(const self_type& other){
+		this->length = other.length;
+		delete [] this->data;
+		this->data = new char[other.length];
+		memcpy(this->data, other.data, other.length);
+	}
+	void operator()(const char* const data, const U16 length){
+		this->length = length;
+		delete [] this->data;
+		this->data = new char[length];
+		memcpy(this->data, data, length);
+	}
+	~BCFTypeString(){
+		delete [] this->data;
+	}
+
 	U16 length;
-	char* data; // reinterpret me as char*
+	char* data;
 };
 
 struct BCFKeyTuple{

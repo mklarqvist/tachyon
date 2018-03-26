@@ -125,7 +125,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 	// If there is any carry over
 	if(this->n_carry_over == 1){
 		value_type last = std::move(this->entries[this->n_entries]);
-		//last.parse(this->header.samples);
 		if(last.body->n_fmt > 0 && this->map_gt_id != -1){
 			if(last.formatID[0].mapID == this->map_gt_id)
 				last.hasGenotypes = true;
@@ -144,7 +143,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		this->n_entries  = 1;
 		firstPos         = this->entries[0].body->POS;
 		firstContig      = this->entries[0].body->CHROM;
-		//std::cerr << utility::timestamp("LOG", "SWITCHING") << firstPos << '\t' << firstContig << std::endl;
 	}
 	// Nothing carried over
 	else {
@@ -189,7 +187,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			firstContig = this->entries[0].body->CHROM;
 		}
 
-
 		// Make sure that data does not span over
 		// multiple CHROM fields
 		// Note: This property is maintainable only
@@ -197,7 +194,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		if(!across_contigs){
 			if(this->entries[this->n_entries].body->CHROM != firstContig){
 				//std::cerr << utility::timestamp("LOG","CONTIG") << "Switch in CHROM: " << firstContig << "->" << this->entries[this->n_entries].body->CHROM << std::endl;
-				//std::cerr << "Last is now: " << this->last().body->CHROM << ':' << this->last().body->POS << std::endl;
 				this->n_carry_over = 1;
 				return(this->size() > 0);
 			}
@@ -205,7 +201,6 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 		// Check break condition for window
 		if(this->entries[this->n_entries].body->POS - firstPos > bp_window){
-			//std::cerr << utility::timestamp("LOG","LD") << "Breaking at " << this->n_entries + 1 << " (" << (this->entries[this->n_entries].body->POS) - firstPos << ")" << std::endl;
 			++this->n_entries;
 			break;
 		}

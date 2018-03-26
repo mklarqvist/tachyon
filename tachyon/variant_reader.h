@@ -296,17 +296,12 @@ public:
 	U64 iterate_all_info(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer* gt = nullptr;
-		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_)
+		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_){
 			gt = new containers::GenotypeContainer(this->block, meta);
+		}
 
-		// Todo: to VCF
-		// 1) n_samples output buffers
-		// 2) add gt
-		// 3) keep adding format fields until empty
-		// 4) print format in order
 		containers::FormatContainerInterface** fits = new containers::FormatContainerInterface*[this->block.n_format_loaded];
 
-		std::vector<std::string> global_fields_format;
 		if(this->block.n_format_loaded){
 			for(U32 i = 0; i < this->block.n_format_loaded; ++i){
 				//std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
@@ -332,10 +327,6 @@ public:
 					fits[i] = new containers::FormatContainer<U32>;
 					//global_fields.push_back(this->header.format_fields[global_key].ID);
 				}
-
-				//containers::FormatContainer<U32> ad(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
-				//std::cerr << ad.size() << std::endl;
-				global_fields_format.push_back(this->header.format_fields[global_key].ID);
 			}
 		}
 

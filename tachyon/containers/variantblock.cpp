@@ -170,6 +170,7 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 
 bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	settings.load_info_ID_loaded.clear();
+	settings.load_format_ID_loaded.clear();
 
 	if(settings.loadPPA_){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){

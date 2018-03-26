@@ -305,11 +305,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	// GT encoding if available
 	if(entry.hasGenotypes){
 		meta.controller.gt_available = true;
-		if(!this->encoder.Encode(entry,
-								 meta,
-								 this->block,
-								 this->permutator.manager->get()))
-		{
+		if(!this->encoder.Encode(entry, meta, this->block, this->permutator.manager->get())){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 			return false;
 		}

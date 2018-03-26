@@ -113,37 +113,46 @@ public:
 		if(block.ppa_manager.PPA.size()){
 			if(!this->decompress(block.ppa_manager)){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT permutation information!" << std::endl;
+				return false;
 			}
 		}
 
-		if(block.meta_contig_container.getSizeCompressed())     this->decompress(block.meta_contig_container);
-		if(block.meta_positions_container.getSizeCompressed())  this->decompress(block.meta_positions_container);
-		if(block.meta_refalt_container.getSizeCompressed())     this->decompress(block.meta_refalt_container);
-		if(block.meta_alleles_container.getSizeCompressed())    this->decompress(block.meta_alleles_container);
-		if(block.meta_controller_container.getSizeCompressed()) this->decompress(block.meta_controller_container);
-		if(block.meta_quality_container.getSizeCompressed())    this->decompress(block.meta_quality_container);
-		if(block.gt_support_data_container.getSizeCompressed()) this->decompress(block.gt_support_data_container);
-		if(block.meta_info_map_ids.getSizeCompressed())         this->decompress(block.meta_info_map_ids);
-		if(block.meta_names_container.getSizeCompressed())      this->decompress(block.meta_names_container);
-		if(block.meta_filter_map_ids.getSizeCompressed())       this->decompress(block.meta_filter_map_ids);
-		if(block.meta_format_map_ids.getSizeCompressed())       this->decompress(block.meta_format_map_ids);
-		if(block.gt_rle8_container.getSizeCompressed())         this->decompress(block.gt_rle8_container);
-		if(block.gt_rle16_container.getSizeCompressed())        this->decompress(block.gt_rle16_container);
-		if(block.gt_rle32_container.getSizeCompressed())        this->decompress(block.gt_rle32_container);
-		if(block.gt_rle64_container.getSizeCompressed())        this->decompress(block.gt_rle64_container);
-		if(block.gt_simple8_container.getSizeCompressed())      this->decompress(block.gt_simple8_container);
-		if(block.gt_simple16_container.getSizeCompressed())     this->decompress(block.gt_simple16_container);
-		if(block.gt_simple32_container.getSizeCompressed())     this->decompress(block.gt_simple32_container);
-		if(block.gt_simple64_container.getSizeCompressed())     this->decompress(block.gt_simple64_container);
+		if(block.meta_contig_container.getSizeCompressed())     if(!this->decompress(block.meta_contig_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta contig information!" << std::endl; return false; }
+		if(block.meta_positions_container.getSizeCompressed())  if(!this->decompress(block.meta_positions_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta positions information!" << std::endl; return false; }
+		if(block.meta_refalt_container.getSizeCompressed())     if(!this->decompress(block.meta_refalt_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta ref_alt information!" << std::endl; return false; }
+		if(block.meta_alleles_container.getSizeCompressed())    if(!this->decompress(block.meta_alleles_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta alleles information!" << std::endl; return false; }
+		if(block.meta_controller_container.getSizeCompressed()) if(!this->decompress(block.meta_controller_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta controller information!" << std::endl; return false; }
+		if(block.meta_quality_container.getSizeCompressed())    if(!this->decompress(block.meta_quality_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta quality information!" << std::endl; return false; }
+		if(block.gt_support_data_container.getSizeCompressed()) if(!this->decompress(block.gt_support_data_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotype support information!" << std::endl; return false; }
+		if(block.meta_info_map_ids.getSizeCompressed())         if(!this->decompress(block.meta_info_map_ids)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta INFO maps information!" << std::endl; return false; }
+		if(block.meta_names_container.getSizeCompressed())      if(!this->decompress(block.meta_names_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta names maps information!" << std::endl; return false; }
+		if(block.meta_filter_map_ids.getSizeCompressed())       if(!this->decompress(block.meta_filter_map_ids)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta FILTER maps information!" << std::endl; return false; }
+		if(block.meta_format_map_ids.getSizeCompressed())       if(!this->decompress(block.meta_format_map_ids)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta FORMAT maps information!" << std::endl; return false; }
+		if(block.gt_rle8_container.getSizeCompressed())         if(!this->decompress(block.gt_rle8_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (RLE-8) information!" << std::endl; return false; }
+		if(block.gt_rle16_container.getSizeCompressed())        if(!this->decompress(block.gt_rle16_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (RLE-16) information!" << std::endl; return false; }
+		if(block.gt_rle32_container.getSizeCompressed())        if(!this->decompress(block.gt_rle32_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (RLE-32) information!" << std::endl; return false; }
+		if(block.gt_rle64_container.getSizeCompressed())        if(!this->decompress(block.gt_rle64_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (RLE-64) information!" << std::endl; return false; }
+		if(block.gt_simple8_container.getSizeCompressed())      if(!this->decompress(block.gt_simple8_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (simple-8) information!" << std::endl; return false; }
+		if(block.gt_simple16_container.getSizeCompressed())     if(!this->decompress(block.gt_simple16_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (simple-16) information!" << std::endl; return false; }
+		if(block.gt_simple32_container.getSizeCompressed())     if(!this->decompress(block.gt_simple32_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (simple-32) information!" << std::endl; return false; }
+		if(block.gt_simple64_container.getSizeCompressed())     if(!this->decompress(block.gt_simple64_container)){ std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress genotypes (simplre-64) information!" << std::endl; return false; }
 
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
-			if(block.format_containers[i].getSizeCompressed())
-				this->decompress(block.format_containers[i]);
+			if(block.format_containers[i].getSizeCompressed()){
+				if(!this->decompress(block.format_containers[i])){
+					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress FORMAT container " << i << "/" << block.footer.n_format_streams << "!" << std::endl;
+					return false;
+				}
+			}
 		}
 
 		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
-			if(block.info_containers[i].getSizeCompressed())
-				this->decompress(block.info_containers[i]);
+			if(block.info_containers[i].getSizeCompressed()){
+				if(!this->decompress(block.info_containers[i])){
+					std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress INFO container " << i << "/" << block.footer.n_info_streams << "!" << std::endl;
+					return false;
+				}
+			}
 		}
 
 		return true;
@@ -160,11 +169,11 @@ public:
 	 */
 	bool decompress(container_type& container){
 		if(container.header.data_header.controller.encoder == YON_ENCODE_ZSTD){
-			if(!this->zstd_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress!" << std::endl; return false; }
+			if(!this->zstd_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress data!" << std::endl; return false; }
 		} else if(container.header.data_header.controller.encoder == YON_ENCODE_NONE){
-			if(!this->no_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress!" << std::endl; return false; }
+			if(!this->no_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress data!" << std::endl; return false; }
 		} else if(container.header.data_header.controller.encoder == YON_ENCODE_ZPAQ){
-			if(!this->zpaq_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress!" << std::endl; return false; }
+			if(!this->zpaq_codec.decompress(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress data!" << std::endl; return false; }
 		} else {
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
@@ -173,11 +182,11 @@ public:
 
 		if(container.header.data_header.controller.mixedStride){
 			if(container.header.stride_header.controller.encoder == YON_ENCODE_ZSTD){
-				this->zstd_codec.decompressStrides(container);
+				if(!this->zstd_codec.decompressStrides(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress strides!" << std::endl; return false; }
 			} else if (container.header.stride_header.controller.encoder == YON_ENCODE_NONE){
-				this->no_codec.decompressStrides(container);
+				if(!this->no_codec.decompressStrides(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress strides!" << std::endl; return false; }
 			} else if (container.header.stride_header.controller.encoder == YON_ENCODE_ZPAQ){
-				this->zpaq_codec.decompressStrides(container);
+				if(!this->zpaq_codec.decompressStrides(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress strides!" << std::endl; return false; }
 			} else {
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 				return false;

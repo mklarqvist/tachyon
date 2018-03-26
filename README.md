@@ -27,14 +27,6 @@ There are a large number of field-specific file formats that have reached near-u
 
 ---
 
-### Guiding principles
-* **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
-* **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts emphasis on user experience. Tachyon follows best practices for reducing cognitive load: it offers consistent and simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
-* **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
-* **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness.
-
----
-
 ### Highlights of Tachyon
 * **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
 * **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
@@ -43,6 +35,14 @@ There are a large number of field-specific file formats that have reached near-u
 * **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries.  
 * **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
 * **Comaptibility**: We strive to provide API calls to return YON data streams to any of the file-formats we are supplanting. This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
+
+---
+
+### Guiding principles
+* **Uniformity**. Tachyon is designed from data-agnostic STL-like containers and as such is decoupled from the higher-order file type-specific implementation details. This forces all underlying specifcations to share the same API calls.
+* **User friendliness**. Tachyon is an API designed to be used by human beings and simultaneously a backbone specification consumed by machines. It puts emphasis on user experience. Tachyon follows best practices for reducing cognitive load: it offers consistent and simple APIs, it minimizes the number of user actions required for common use cases, and it provides clear and actionable feedback upon user error.
+* **Modularity**. Tachyon is composed entirely of STL-like data containers that in turn are abstracted into higher-order type-specific containers. These containers are all standalone and can be plugged together with little restriction in any context.
+* **Easy extensibility**. Describing novel specifcations and/or adding new functionality is simple as all basic containers are data-agnostic. Allowing for easy extensibility and to create new tools and modules allows for near-unlimited expressiveness.
 
 ---
 

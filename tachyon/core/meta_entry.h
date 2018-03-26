@@ -85,11 +85,11 @@ public:
 			return false;
 
 		int found = 0;
-		if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+		if((this->alleles[0].l_allele == 9) && (strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0)){
 			++found;
 		}
 
-		if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+		if((this->alleles[1].l_allele == 9) && (strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0)){
 			++found;
 		}
 

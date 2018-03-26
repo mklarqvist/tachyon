@@ -27,6 +27,8 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		return false;
 	}
 
+	assert(bcf_entry.body != nullptr);
+
 	meta.controller.biallelic        = bcf_entry.body->n_allele    == 2;
 	meta.controller.diploid          = bcf_entry.gt_support.ploidy == 2;
 	meta.controller.gt_mixed_phasing = bcf_entry.gt_support.mixedPhasing;
@@ -36,24 +38,8 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 	meta.controller.mixed_ploidy     = bcf_entry.gt_support.hasEOV;
 	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
 
-	// temp
-	/*
-	if(meta.controller.biallelic){
-		const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
-		U32 j = 0;
-		for(U32 i = 0; i < n_samples; ++i){
-			const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[2*sizeof(BYTE)*ppa[j]]);
-			const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[2*sizeof(BYTE)*ppa[j]+sizeof(BYTE)]);
-			std::cout << (int)bcf::BCF_UNPACK_GENOTYPE(allele1) + (int)bcf::BCF_UNPACK_GENOTYPE(allele2) << '\t';
-			++j;
-		}
-		std::cout << std::endl;
-	}
-	*/
-
 	// Assess cost and encode
 	rle_helper_type cost;
-	//std::cerr << meta.controller.biallelic << "," << bcf_entry.gt_support.ploidy << "," << bcf_entry.gt_support.hasEOV << std::endl;
 	if(meta.controller.biallelic && meta.controller.diploid && meta.controller.mixed_ploidy == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(bcf_entry, ppa);
 		meta.controller.gt_compression_type = core::YON_GT_RLE_DIPLOID_BIALLELIC;
@@ -174,14 +160,17 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		if(bcf_entry.body->n_allele + 1 < 8){
 			this->EncodeBCFStyle<BYTE>(bcf_entry, block.gt_simple8_container, n_runs);
 			++block.gt_simple8_container;
+			meta.controller.gt_primtive_type = core::YON_GT_BYTE;
 		}
 		else if(bcf_entry.body->n_allele + 1 < 128){
 			this->EncodeBCFStyle<U16> (bcf_entry, block.gt_simple16_container, n_runs);
 			++block.gt_simple16_container;
+			meta.controller.gt_primtive_type = core::YON_GT_U16;
 		}
 		else if(bcf_entry.body->n_allele + 1 < 32768){
 			this->EncodeBCFStyle<U32> (bcf_entry, block.gt_simple32_container, n_runs);
 			++block.gt_simple32_container;
+			meta.controller.gt_primtive_type = core::YON_GT_U32;
 		}
 		else {
 			std::cerr << utility::timestamp("ERROR", "ENCODER") <<

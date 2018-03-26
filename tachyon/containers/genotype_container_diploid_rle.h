@@ -256,7 +256,7 @@ void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 	references[0] = 0;
 	references[1] = 0;
 	references[2] = 4; // Missing
-	references[3] = 4; // EOV
+	references[3] = 4; // EOV: is never available in this encodin
 
 	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
 	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];

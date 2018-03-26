@@ -79,7 +79,7 @@ bool VariantReader::open(void){
 bool VariantReader::nextBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted!" << std::endl;
 		return false;
 	}
 
@@ -102,8 +102,10 @@ bool VariantReader::nextBlock(){
 		return false;
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->block))
+	if(!this->codec_manager.decompress(this->block)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
+	}
 
 	// All passed
 	return true;

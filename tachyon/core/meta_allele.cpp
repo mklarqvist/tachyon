@@ -20,7 +20,7 @@ MetaAllele::MetaAllele(const std::string& reference) :
 	l_allele(reference.size()),
 	allele(new char[this->l_allele])
 {
-	memcpy(this->allele, &reference[0], reference.size());
+	memcpy(this->allele, reference.data(), reference.size());
 }
 
 // Ctor from buffer
@@ -62,20 +62,20 @@ MetaAllele& MetaAllele::operator=(const self_type& other){
 	delete [] this->allele;
 	this->allele = new char[other.l_allele];
 	memcpy(this->allele, other.allele, other.l_allele);
-	return *this;
+	return(*this);
 }
 
 void MetaAllele::operator()(const char* const in){
 	this->l_allele = *reinterpret_cast<const U16* const>(in);
 	delete [] this->allele;
-	this->allele   =  new char[this->l_allele];
+	this->allele = new char[this->l_allele];
 	memcpy(this->allele, &in[sizeof(U16)], this->l_allele);
 }
 
 void MetaAllele::operator()(const char* const in, const U32 length){
 	this->l_allele = length;
 	delete [] this->allele;
-	this->allele   =  new char[this->l_allele];
+	this->allele = new char[this->l_allele];
 	memcpy(this->allele, &in[0], this->l_allele);
 }
 

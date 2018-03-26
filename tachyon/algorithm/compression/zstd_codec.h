@@ -211,7 +211,7 @@ public:
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
-			exit(1);
+			return(false);
 		}
 
 		assert(ret >= 0);
@@ -240,6 +240,11 @@ public:
 										 container.buffer_strides_uncompressed.capacity(),
 										 container.buffer_strides.data(),
 										 container.buffer_strides.size());
+
+		if(ZSTD_isError(ret_stride)){
+			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret_stride)) << std::endl;
+			return(false);
+		}
 
 		assert(ret_stride >= 0);
 		container.buffer_strides_uncompressed.n_chars = ret_stride;

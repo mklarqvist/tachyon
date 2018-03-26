@@ -8,7 +8,7 @@ namespace bcf {
 
 BCFEntry::BCFEntry(void):
 	l_data(0),
-	l_capacity(262144),
+	l_capacity(512144),
 	l_ID(0),
 	ref_alt(0),
 	isGood(false),
@@ -63,8 +63,10 @@ BCFEntry::BCFEntry(const self_type& other):
 
 	U32 internal_pos = sizeof(body_type);
 	this->__parseID(internal_pos);
-	this->__parseRefAlt(internal_pos);
-	this->SetRefAlt();
+	//this->__parseRefAlt(internal_pos);
+	//this->SetRefAlt();
+	for(U32 i = 0; i < this->body->n_allele; ++i)
+		this->alleles[i] = other.alleles[i];
 }
 
 BCFEntry::BCFEntry(self_type&& other) noexcept :
@@ -116,26 +118,26 @@ BCFEntry& BCFEntry::operator=(self_type&& other) noexcept{
 	delete [] this->filterID;
 	delete [] this->infoID;
 	delete [] this->formatID;
-	l_data = other.l_data;
-	l_capacity = other.l_capacity;
-	l_ID = other.l_ID;
-	ref_alt = other.ref_alt;
-	isGood = other.isGood;
-	data = other.data;
-	body = other.body;
-	alleles = other.alleles;
-	ID = other.ID;
-	hasGenotypes = other.hasGenotypes;
-	ploidy = other.ploidy;
-	filter_start = other.filter_start;
-	n_filter = other.n_filter;
-	filterPointer = other.filterPointer;
-	infoPointer = other.infoPointer;
-	formatPointer = other.formatPointer;
-	filterID = other.filterID;
-	infoID = other.infoID;
-	formatID = other.formatID;
-	gt_support = other.gt_support;
+	this->l_data        = other.l_data;
+	this->l_capacity    = other.l_capacity;
+	this->l_ID          = other.l_ID;
+	this->ref_alt       = other.ref_alt;
+	this->isGood        = other.isGood;
+	this->data          = other.data;
+	this->body          = other.body;
+	this->alleles       = other.alleles;
+	this->ID            = other.ID;
+	this->hasGenotypes  = other.hasGenotypes;
+	this->ploidy        = other.ploidy;
+	this->filter_start  = other.filter_start;
+	this->n_filter      = other.n_filter;
+	this->filterPointer = other.filterPointer;
+	this->infoPointer   = other.infoPointer;
+	this->formatPointer = other.formatPointer;
+	this->filterID      = other.filterID;
+	this->infoID        = other.infoID;
+	this->formatID      = other.formatID;
+	this->gt_support    = other.gt_support;
 
 	other.data     = nullptr;
 	other.alleles  = nullptr;
@@ -192,9 +194,8 @@ void BCFEntry::__parseID(U32& internal_pos){
 		// Type and length
 		const base_type& array_base = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
 		this->l_ID = this->getInteger(array_base.low, internal_pos);
-		this->ID = &this->data[internal_pos];
+		this->ID   = &this->data[internal_pos];
 	}
-	//std::cerr << std::string(this->ID, this->l_ID) << ":" << this->l_ID << '\t';
 	internal_pos += this->l_ID;
 }
 
@@ -206,17 +207,18 @@ void BCFEntry::__parseRefAlt(U32& internal_pos){
 		assert(alelle_base.low == 7);
 #endif
 
-		this->alleles[i].length = alelle_base.high;
-		this->alleles[i].data = &this->data[internal_pos];
+		S32 length =  alelle_base.high;
+		const char* ref_alt_data  = &this->data[internal_pos];
 
 		if(alelle_base.high == 15){
 			// Type and length
 			const base_type& array_base = *reinterpret_cast<const base_type* const>(&this->data[internal_pos++]);
-			this->alleles[i].length = this->getInteger(array_base.low, internal_pos);
-			this->alleles[i].data = &this->data[internal_pos];
+			length =  this->getInteger(array_base.low, internal_pos);
+			ref_alt_data = &this->data[internal_pos];
 		}
+		this->alleles[i](ref_alt_data, length);
 
-		//std::cerr << std::string(this->alleles[i].data, this->alleles[i].length) << '\t';
+		//std::cerr << std::string(this->alleles[i].data, this->alleles[i].length) << std::endl;
 		internal_pos += this->alleles[i].length;
 	}
 }
