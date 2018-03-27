@@ -97,7 +97,7 @@ bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& bcf_entry,
 	}
 
 	n_runs = this->n_samples*ploidy;
-	simple.n_additions += n_runs;
+	simple.header.n_additions += n_runs;
 
 	return(true);
 }
@@ -132,7 +132,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
 	}
 
 	n_runs = this->n_samples;
-	simple.n_additions += n_runs;
+	simple.header.n_additions += n_runs;
 
 	return(true);
 }
@@ -198,7 +198,7 @@ bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& bcf_entry,
 	sumLength += length;
 	assert(sumLength == this->n_samples);
 	assert(helper.n_runs == n_runs);
-	runs.n_additions += n_runs;
+	runs.header.n_additions += n_runs;
 	assert(ppa_pos == n_samples);
 
 #if ENCODER_GT_DEBUG == 1
@@ -312,7 +312,7 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
 	assert(sumLength == this->n_samples);
 	assert(helper.n_runs == n_runs);
 	assert(ppa_pos == n_samples);
-	runs.n_additions += n_runs;
+	runs.header.n_additions += n_runs;
 
 #if ENCODER_GT_DEBUG == 1
 	std::cout << 1 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';

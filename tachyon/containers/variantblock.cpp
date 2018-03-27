@@ -12,6 +12,7 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200]),
 	disk_offset_(0),
 	start_offset_(0),
+	end_of_data_offset_(0),
 	n_info_loaded(0),
 	n_format_loaded(0)
 {
@@ -29,11 +30,6 @@ VariantBlock::~VariantBlock(){
 }
 
 void VariantBlock::clear(void){
-	this->disk_offset_ = 0;
-	this->n_info_loaded = 0;
-	this->n_format_loaded = 0;
-	this->start_offset_ = 0;
-
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -42,25 +38,23 @@ void VariantBlock::clear(void){
 
 	this->header.reset();
 	this->footer.reset();
-	this->meta_quality_container.reset();
-	this->meta_refalt_container.reset();
+	this->footer_support.reset();
+
 	this->meta_contig_container.reset();
 	this->meta_positions_container.reset();
-	this->meta_contig_container.reset();
+	this->meta_refalt_container.reset();
 	this->meta_controller_container.reset();
-	this->meta_info_map_ids.reset();
-	this->meta_filter_map_ids.reset();
-	this->meta_format_map_ids.reset();
-	this->gt_support_data_container.reset();
-	this->ppa_manager.reset();
+	this->meta_quality_container.reset();
 	this->meta_names_container.reset();
 	this->meta_alleles_container.reset();
-
+	this->meta_info_map_ids.reset();
+	this->meta_format_map_ids.reset();
+	this->meta_filter_map_ids.reset();
+	this->gt_support_data_container.reset(); // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
 	this->gt_rle8_container.reset();
 	this->gt_rle16_container.reset();
 	this->gt_rle32_container.reset();
 	this->gt_rle64_container.reset();
-
 	this->gt_simple8_container.reset();
 	this->gt_simple16_container.reset();
 	this->gt_simple32_container.reset();
@@ -72,37 +66,44 @@ void VariantBlock::clear(void){
 	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
 	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
 
-	this->footer_support.reset();
-
 	this->info_fields.clear();
-	this->info_patterns.clear();
 	this->format_fields.clear();
-	this->format_patterns.clear();
 	this->filter_fields.clear();
+	this->info_patterns.clear();
+	this->format_patterns.clear();
 	this->filter_patterns.clear();
+
+	this->disk_offset_    = 0;
+	this->n_info_loaded   = 0;
+	this->n_format_loaded = 0;
+	this->start_offset_   = 0;
+	this->end_of_data_offset_ = 0;
+
+	this->ppa_manager.reset();
 }
 
 void VariantBlock::resize(const U32 s){
 	if(s == 0) return;
-	this->meta_names_container.resize(s);
-	this->meta_quality_container.resize(s);
+
 	this->meta_contig_container.resize(s);
 	this->meta_positions_container.resize(s);
 	this->meta_refalt_container.resize(s);
 	this->meta_controller_container.resize(s);
-	this->gt_simple8_container.resize(s);
-	this->gt_simple16_container.resize(s);
-	this->gt_simple32_container.resize(s);
-	this->gt_simple64_container.resize(s);
-	this->meta_info_map_ids.resize(s);
-	this->meta_filter_map_ids.resize(s);
-	this->meta_format_map_ids.resize(s);
-	this->gt_support_data_container.resize(s);
+	this->meta_quality_container.resize(s);
+	this->meta_names_container.resize(s);
 	this->meta_alleles_container.resize(s);
+	this->meta_info_map_ids.resize(s);
+	this->meta_format_map_ids.resize(s);
+	this->meta_filter_map_ids.resize(s);
+	this->gt_support_data_container.resize(s);
 	this->gt_rle8_container.resize(s);
 	this->gt_rle16_container.resize(s);
 	this->gt_rle32_container.resize(s);
 	this->gt_rle64_container.resize(s);
+	this->gt_simple8_container.resize(s);
+	this->gt_simple16_container.resize(s);
+	this->gt_simple32_container.resize(s);
+	this->gt_simple64_container.resize(s);
 
 	for(U32 i = 0; i < 200; ++i){
 		this->info_containers[i].resize(s);
@@ -156,6 +157,7 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	algorithm::ZSTDCodec zstd_codec;
 	zstd_codec.decompress(this->footer_support);
 	*/
+	this->end_of_data_offset_ = stream.tellg();
 	stream >> this->footer;
 	//std::cerr << "footer ulength" << std::endl;
 
@@ -211,17 +213,15 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 
 	if(settings.loadAlleles_){
 		stream.seekg(this->start_offset_ + this->footer.offset_meta_refalt.data_header.offset);
-		this->meta_refalt_container.header = this->footer.offset_meta_refalt;
+		this->meta_refalt_container.header  = this->footer.offset_meta_refalt;
 		stream >> this->meta_refalt_container;
-
-		stream.seekg(this->start_offset_ + this->footer.offset_meta_alleles.data_header.offset);
 		this->meta_alleles_container.header = this->footer.offset_meta_alleles;
 		stream >> this->meta_alleles_container;
 	}
 
 	if(settings.loadGenotypesRLE_){
 		stream.seekg(this->start_offset_ + this->footer.offset_gt_8b.data_header.offset);
-		this->gt_rle8_container.header = this->footer.offset_gt_8b;
+		this->gt_rle8_container.header  = this->footer.offset_gt_8b;
 		stream >> this->gt_rle8_container;
 		this->gt_rle16_container.header = this->footer.offset_gt_16b;
 		stream >> this->gt_rle16_container;
@@ -260,7 +260,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	// Load all info
-	if(settings.loadINFO_ && this->footer.n_info_streams > 0){
+	if(settings.loadINFO_ && this->footer.n_info_streams){
 		stream.seekg(this->start_offset_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 			++this->n_info_loaded;
@@ -270,11 +270,10 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	}
 	// If we have supplied a list of identifiers
-	else if(settings.load_info_ID_loaded.size() > 0) {
+	else if(settings.load_info_ID_loaded.size()) {
 		// Ascertain that random access is linearly forward
 		std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
 
-		// Todo: have to jump to next info block we know exists
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(this->start_offset_ + settings.load_info_ID_loaded[i].offset->data_header.offset);
 			if(!stream.good()){
@@ -290,14 +289,19 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	} // end case load_info_ID
 
 	if(settings.loadFORMAT_ && this->footer.n_format_streams){
+		std::cerr << "Pos: " << stream.tellg() << "->";
 		stream.seekg(this->start_offset_ + this->footer.format_offsets[0].data_header.offset);
+		std::cerr << stream.tellg() << std::endl;
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
+			//stream.seekg(this->start_offset_ + this->footer.format_offsets[i].data_header.offset);
 			this->format_containers[i].header = this->footer.format_offsets[i];
 			stream >> this->format_containers[i];
 			++this->n_format_loaded;
 			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
-			//std::cerr << "loaded: " << this->index_entry.format_offsets[i].global_key << '\t' << this->format_containers[i].header.cLength << std::endl;
+			std::cerr << stream.tellg() << " -> loaded: " << this->footer.format_offsets[i].data_header.global_key << '\t' << this->format_containers[i].header.data_header.cLength << '\t' << this->format_containers[i].header.data_header.offset << std::endl;
 		}
+		std::cerr << this->disk_offset_ << '/' << end_of_data_offset_ << std::endl;
+		assert(this->end_of_data_offset_ == (U64)stream.tellg());
 	}
 
 	stream.seekg(this->disk_offset_);

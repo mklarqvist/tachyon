@@ -305,7 +305,7 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& data){
-		out.write(data.buffer, data.n_chars);
+		out.write(data.data(), data.size());
 		return(out);
 	}
 

@@ -167,6 +167,7 @@ bool VariantImporter::BuildBCF(void){
 			}
 		}
 
+
 		// Stats
 		n_variants_read += reader.size();
 
@@ -281,8 +282,8 @@ bool VariantImporter::BuildBCF(void){
 		}
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
-		std::cerr << utility::timestamp("PROGRESS") << "BCF: " << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
-		std::cerr << utility::timestamp("PROGRESS") << "YON: " << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "YON: "   << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
 	}
 
 	// All done

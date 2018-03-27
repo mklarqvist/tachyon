@@ -182,11 +182,11 @@ public:
 		const S32* const dat  = reinterpret_cast<const S32* const>(container.buffer_data_uncompressed.buffer);
 
 		// check for uniformity except first
-		if(container.n_additions > 1){
+		if(container.header.n_additions > 1){
 			bool is_uniform_delta = true;
 			const S32 first = dat[0];
 			const S32 test_diff = dat[1] - dat[0];
-			for(U32 i = 2; i < container.n_additions; ++i){
+			for(U32 i = 2; i < container.header.n_additions; ++i){
 				if(dat[i] - dat[i - 1] != test_diff){
 					is_uniform_delta = false;
 					break;
@@ -194,8 +194,8 @@ public:
 			}
 
 			if(is_uniform_delta){
-				container.n_entries   = 1;
-				container.n_additions = 1;
+				container.header.n_entries   = 1;
+				container.header.n_additions = 1;
 				// Data pointers are updated in case there is no reformatting
 				// see StreamContainer::reformat()
 				container.buffer_data_uncompressed.n_chars = sizeof(S32);
@@ -212,7 +212,7 @@ public:
 
 		container.buffer_data += dat[0];
 		//std::cerr << dat[0];
-		for(U32 j = 1; j < container.n_additions; ++j){
+		for(U32 j = 1; j < container.header.n_additions; ++j){
 			container.buffer_data += dat[j] - dat[j-1];
 			//std::cerr << ' ' << dat[j]-dat[j-1];
 			//std::cerr << "diff: " << dat[j] - dat[j-1] << std::endl;
@@ -275,7 +275,7 @@ public:
 		while(getline(std::cin, line)){
 			if(count % 4 == 1){
 				//std::cerr << line << std::endl;
-				if(block.basesContainer.n_additions == 0){
+				if(block.basesContainer.header.n_additions == 0){
 					block.basesContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
 				}
 
@@ -295,7 +295,7 @@ public:
 				std::vector<std::string> first = utility::split(parts[0], '.');
 
 				//std::cerr << "string: " << first[0] << std::endl;
-				if(block.nameContainer[0].n_additions == 0){
+				if(block.nameContainer[0].header.n_additions == 0){
 					block.nameContainer[0].setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
 				}
 				block.nameContainer[0].buffer_data_uncompressed.Add(&first[0][0], first[0].size());
@@ -317,7 +317,7 @@ public:
 				// split end part
 				std::vector<std::string> final = utility::split(end[0], ':');
 				//std::cerr << "string: " << final[0] << std::endl;
-				if(block.nameContainer[3].n_additions == 0){
+				if(block.nameContainer[3].header.n_additions == 0){
 					block.nameContainer[3].setType(TACHYON_CORE_TYPE::YON_TYPE_CHAR);
 				}
 				block.nameContainer[3].buffer_data_uncompressed.Add(&final[0][0], final[0].size());
@@ -332,7 +332,7 @@ public:
 			}
 
 			if(count % 4 == 3){
-				if(block.qualContainer.n_additions == 0){
+				if(block.qualContainer.header.n_additions == 0){
 					block.qualContainer.setType(TACHYON_CORE_TYPE::YON_TYPE_8B);
 				}
 

@@ -84,15 +84,22 @@ bool VariantReader::nextBlock(){
 	}
 
 	// If the current position is the EOF then
-	// exit the function
+	// exit the functiont
 	if((U64)this->stream.tellg() == this->footer.offset_end_of_data)
 		return false;
 
 	// Reset and re-use
+	std::cerr << "Clearing: " << this->block.footer.n_format_streams << " streams" << std::endl;
 	this->block.clear();
 
 	if(!this->block.readHeaderFooter(this->stream))
 		return false;
+
+	// temp
+	std::cerr << "Loaded: " << this->block.footer.n_format_streams << " streams" << std::endl;
+	for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
+		std::cerr << i << ": "<< this->header.format_fields[this->block.footer.format_offsets[i].data_header.global_key].ID << std::endl;
+	}
 
 	//this->parseSettings();
 

@@ -18,8 +18,8 @@ namespace containers{
  */
 class DataContainer{
 	typedef DataContainer       self_type;
-	typedef io::BasicBuffer     buffer_type;
 	typedef DataContainerHeader header_type;
+	typedef io::BasicBuffer     buffer_type;
 
 public:
 	DataContainer();
@@ -49,7 +49,7 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline const bool checkStrideSize(const U32& value) const{
+	inline const bool checkStrideSize(const S32 value) const{
 		if(this->header.data_header.hasMixedStride() == false)
 			return false;
 
@@ -66,7 +66,7 @@ public:
 	}
 
 	// Operators
-	inline void operator++(void){ ++this->n_entries; }
+	inline void operator++(void){ ++this->header.n_entries; }
 
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
@@ -77,7 +77,7 @@ public:
 	 */
 	inline void addStride(const U32 value){
 		// If this is the first stride set
-		if(this->n_strides == 0){
+		if(this->header.n_strides == 0){
 			this->header.stride_header.controller.type = YON_TYPE_32B;
 			this->header.stride_header.controller.signedness = false;
 			this->setStrideSize(value);
@@ -90,26 +90,19 @@ public:
 
 		// Add value
 		this->buffer_strides_uncompressed += (U32)value;
-		++this->n_strides;
+		++this->header.n_strides;
 	}
-
-	// Adding integers: all should be S32
-	// Adding chars
-	// Adding floats
-	// Adding doubles
 
 	// Supportive
 	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
 	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
-	inline const U32& size(void) const{ return(this->n_entries); }
+	inline const U32& size(void) const{ return(this->header.n_entries); }
 
 	inline bool __checkInteger(void){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
-			//std::cerr << "triggering: S32" << std::endl;
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_32B);
 			this->header.data_header.controller.signedness = true;
 		}
-
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
@@ -123,7 +116,7 @@ public:
 	inline bool Add(const BYTE& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
@@ -131,7 +124,7 @@ public:
 	inline bool Add(const U16& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
@@ -139,7 +132,7 @@ public:
 	inline bool Add(const U32& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
@@ -147,7 +140,7 @@ public:
 	inline bool Add(const SBYTE& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
@@ -155,7 +148,7 @@ public:
 	inline bool Add(const S16& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
@@ -163,18 +156,17 @@ public:
 	inline bool Add(const S32& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const U64& value){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_64B);
 			this->header.data_header.controller.signedness = false;
 			//std::cerr << "triggering: U64" << std::endl;
 		}
-
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)){
@@ -184,13 +176,13 @@ public:
 		}
 
 		this->buffer_data_uncompressed += (U64)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const S64& value){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_64B);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: S64" << std::endl;
@@ -205,18 +197,17 @@ public:
 		}
 
 		this->buffer_data_uncompressed += (U64)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const float& value){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_FLOAT);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: float" << std::endl;
 		}
-
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)){
@@ -226,18 +217,17 @@ public:
 		}
 
 		this->buffer_data_uncompressed += (float)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const double& value){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_DOUBLE);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: float" << std::endl;
 		}
-
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)){
@@ -247,18 +237,17 @@ public:
 		}
 
 		this->buffer_data_uncompressed += (double)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool AddCharacter(const char& value){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_CHAR);
 			this->header.data_header.controller.signedness = true;
 			std::cerr << "triggering: char" << std::endl;
 		}
-
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
@@ -268,13 +257,13 @@ public:
 		}
 
 		this->buffer_data_uncompressed += (char)value;
-		++this->n_additions;
+		++this->header.n_additions;
 		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool AddCharacter(const char* const string, const U32 l_string){
-		if(this->header.data_header.controller.encoder == 0 && this->n_entries == 0){
+		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_CHAR);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: string" << std::endl;
@@ -288,7 +277,7 @@ public:
 		}
 
 		this->buffer_data_uncompressed.Add(string, l_string);
-		this->n_additions += l_string;
+		this->header.n_additions += l_string;
 		//++this->n_entries;
 		return(true);
 	}
@@ -305,12 +294,12 @@ public:
 	template <class T>
 	inline void AddLiteral(const T& value){
 		this->buffer_data_uncompressed += (T)value;
-		++this->n_additions;
+		++this->header.n_additions;
 	}
 
 	inline void AddLiteral(const char* const string, const U32 l_string){
 		this->buffer_data_uncompressed.Add(string, l_string);
-		this->n_additions += l_string;
+		this->header.n_additions += l_string;
 	}
 
 	void reset(void);
@@ -377,6 +366,10 @@ public:
 	 * @param reormat   Reformat boolean
 	 */
 	void updateContainer(bool reformat = true);
+
+	/**<
+	 *
+	 */
 	void deltaEncode();
 
 	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
@@ -392,12 +385,12 @@ private:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		entry.buffer_data.resize(entry.header.data_header.uLength);
+		entry.buffer_data.resize(entry.header.data_header.cLength);
 		stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
 		entry.buffer_data.n_chars = entry.header.data_header.cLength;
 
 		if(entry.header.data_header.hasMixedStride()){
-			entry.buffer_strides.resize(entry.header.stride_header.uLength);
+			entry.buffer_strides.resize(entry.header.stride_header.cLength);
 			stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
 			entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
 		}
@@ -407,9 +400,6 @@ private:
 public:
 	// Not written
 	header_type header; // usually written elsewhere
-	U32 n_entries;      // number of container entries
-	U32 n_additions;    // number of times an addition operation was executed
-	U32 n_strides;      // number of stride elements
 
 	// Buffers - only bit that are written to disk from here
 	buffer_type buffer_data;

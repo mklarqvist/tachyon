@@ -124,7 +124,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 	S32 firstContig = -1;
 	// If there is any carry over
 	if(this->n_carry_over == 1){
-		value_type last = std::move(this->entries[this->n_entries]);
+		value_type last(this->entries[this->n_entries]);
 		if(last.body->n_fmt > 0 && this->map_gt_id != -1){
 			if(last.formatID[0].mapID == this->map_gt_id)
 				last.hasGenotypes = true;

@@ -132,13 +132,13 @@ public:
 
 	void operator=(const self_type& other){
 		this->hasGenotypes = other.hasGenotypes;
-		this->hasMissing = other.hasMissing;
-		this->hasEOV = other.hasEOV;
+		this->hasMissing   = other.hasMissing;
+		this->hasEOV       = other.hasEOV;
 		this->mixedPhasing = other.mixedPhasing;
-		this->ploidy = other.ploidy;
-		this->phase = other.phase;
-		this->n_missing = other.n_missing;
-		this->n_eov = other.n_eov;
+		this->ploidy       = other.ploidy;
+		this->phase        = other.phase;
+		this->n_missing    = other.n_missing;
+		this->n_eov        = other.n_eov;
 	}
 
 public:
@@ -336,8 +336,8 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	inline const char getChar(U32& pos){ return(*reinterpret_cast<const char* const>(&this->data[pos++])); }
-	inline const char* const getCharPointer(U32& pos){ return(reinterpret_cast<const char* const>(&this->data[pos])); }
+	inline const char getChar(U32& pos){ return(this->data[pos++]); }
+	inline const char* const getCharPointer(U32& pos){ return(&this->data[pos]); }
 
 	// Hash field identifiers
 	inline const U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }

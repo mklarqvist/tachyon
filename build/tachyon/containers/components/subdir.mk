@@ -4,12 +4,15 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../tachyon/containers/components/datablock_footer.cpp \
 ../tachyon/containers/components/datablock_header.cpp 
 
 OBJS += \
+./tachyon/containers/components/datablock_footer.o \
 ./tachyon/containers/components/datablock_header.o 
 
 CPP_DEPS += \
+./tachyon/containers/components/datablock_footer.d \
 ./tachyon/containers/components/datablock_header.d 
 
 

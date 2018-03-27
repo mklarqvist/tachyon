@@ -1,8 +1,7 @@
-#include "compression_container.h"
-
 #ifndef ALGORITHM_COMPRESSION_ZSTD_CODEC_H_
 #define ALGORITHM_COMPRESSION_ZSTD_CODEC_H_
 
+#include "compression_container.h"
 #include "zstd.h"
 #include "zstd_errors.h"
 
@@ -11,15 +10,28 @@ namespace algorithm{
 
 class ZSTDCodec : public CompressionContainer{
 private:
-	typedef ZSTDCodec self_type;
+	typedef        ZSTDCodec   self_type;
+	typedef struct ZSTD_CCtx_s ZSTD_CCtx;
+	typedef struct ZSTD_DCtx_s ZSTD_DCtx;
 
 public:
-	ZSTDCodec() : compression_level_data(0), compression_level_strides(0){}
-	~ZSTDCodec(){}
+	ZSTDCodec() :
+		compression_level_data(0),
+		compression_level_strides(0),
+		compression_context_(ZSTD_createCCtx()),
+		decompression_context_(ZSTD_createDCtx())
+	{
 
-	inline void setCompressionLevel(const int& c){ this->compression_level_data = c; this->compression_level_strides = c; }
-	inline void setCompressionLevelData(const int& c){ this->compression_level_data = c; }
-	inline void setCompressionLevelStrides(const int& c){ this->compression_level_strides = c; }
+	}
+
+	~ZSTDCodec(){
+		ZSTD_freeCCtx(this->compression_context_);
+		ZSTD_freeDCtx(this->decompression_context_);
+	}
+
+	inline void setCompressionLevel(const S32& c){ this->compression_level_data = c; this->compression_level_strides = c; }
+	inline void setCompressionLevelData(const S32& c){ this->compression_level_data = c; }
+	inline void setCompressionLevelStrides(const S32& c){ this->compression_level_strides = c; }
 
 	/**
 	 *
@@ -28,6 +40,13 @@ public:
 	 */
 	const bool compress(container_type& container){
 		container.generateCRC();
+
+		if(container.header.n_entries == 0){
+			container.header.data_header.controller.encoder = YON_ENCODE_NONE;
+			container.buffer_data.n_chars                   = 0;
+			container.header.data_header.cLength            = 0;
+			container.header.data_header.uLength            = 0;
+		}
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
 			memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
@@ -43,7 +62,8 @@ public:
 
 		this->buffer.reset();
 		this->buffer.resize(container.buffer_data_uncompressed.size() + 65536);
-		size_t ret = ZSTD_compress(this->buffer.data(),
+		size_t ret = ZSTD_compressCCtx(this->compression_context_,
+                                   this->buffer.data(),
 								   this->buffer.capacity(),
 								   container.buffer_data_uncompressed.data(),
 								   container.buffer_data_uncompressed.size(),
@@ -54,7 +74,7 @@ public:
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
-			exit(1);
+			return(false);
 		}
 
 		const float fold = (float)container.buffer_data_uncompressed.size() / ret;
@@ -72,9 +92,9 @@ public:
 
 		container.buffer_data.resize(ret + 65536);
 		memcpy(container.buffer_data.data(), this->buffer.data(), ret);
-		container.header.data_header.cLength            = ret;
-		container.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
 		container.buffer_data.n_chars                   = ret;
+		container.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
+		container.header.data_header.cLength            = container.buffer_data.size();
 		container.header.data_header.uLength            = container.buffer_data_uncompressed.size();
 
 		if(container.header.data_header.controller.mixedStride == true)
@@ -100,7 +120,8 @@ public:
 
 		this->buffer.reset();
 		this->buffer.resize(container.buffer_strides_uncompressed.size() + 65536);
-		size_t ret = ZSTD_compress(this->buffer.data(),
+		size_t ret = ZSTD_compressCCtx(this->compression_context_,
+                                   this->buffer.data(),
                                    this->buffer.capacity(),
 								   container.buffer_strides_uncompressed.data(),
 								   container.buffer_strides_uncompressed.size(),
@@ -108,7 +129,7 @@ public:
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
-			exit(1);
+			return(false);
 		}
 
 		const float fold = (float)container.buffer_strides_uncompressed.size()/ret;
@@ -125,9 +146,10 @@ public:
 
 		container.buffer_data.resize(ret + 65536);
 		memcpy(container.buffer_strides.data(), this->buffer.data(), ret);
-		container.header.stride_header.cLength            = ret;
-		container.header.stride_header.controller.encoder = YON_ENCODE_ZSTD;
 		container.buffer_strides.n_chars                  = ret;
+		container.header.stride_header.cLength            = container.buffer_strides.size();
+		container.header.stride_header.uLength            = container.buffer_strides_uncompressed.size();
+		container.header.stride_header.controller.encoder = YON_ENCODE_ZSTD;
 
 		return true;
 	}
@@ -200,10 +222,12 @@ public:
 
 	const bool decompress(container_type& container){
 		if(container.header.data_header.controller.encoder != YON_ENCODE_ZSTD){
-			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used in decompressor..." << std::endl;
 			return false;
 		}
-		container.buffer_data_uncompressed.resize(container.header.data_header.uLength + 16536);
+
+		container.buffer_data_uncompressed.reset();
+		container.buffer_data_uncompressed.resize(container.header.data_header.uLength + 65536);
 		int ret = ZSTD_decompress(container.buffer_data_uncompressed.data(),
 								  container.buffer_data_uncompressed.capacity(),
 								  container.buffer_data.data(),
@@ -211,6 +235,7 @@ public:
 
 		if(ZSTD_isError(ret)){
 			std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+			std::cerr << ret << std::endl;
 			return(false);
 		}
 
@@ -227,15 +252,12 @@ public:
 			return false;
 
 		if(container.header.stride_header.controller.encoder != YON_ENCODE_ZSTD){
-			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used in decompressor..." << std::endl;
 			return false;
 		}
 
-
-		if(container.header.stride_header.controller.encoder != YON_ENCODE_ZSTD)
-			return true;
-
-		container.buffer_strides_uncompressed.resize(container.header.stride_header.uLength + 16536);
+		container.buffer_strides_uncompressed.reset();
+		container.buffer_strides_uncompressed.resize(container.header.stride_header.uLength + 65536);
 		int ret_stride = ZSTD_decompress(container.buffer_strides_uncompressed.data(),
 										 container.buffer_strides_uncompressed.capacity(),
 										 container.buffer_strides.data(),
@@ -290,8 +312,10 @@ public:
 	}
 
 private:
-	int compression_level_data;
-	int compression_level_strides;
+	S32 compression_level_data;
+	S32 compression_level_strides;
+	ZSTD_CCtx* compression_context_;
+	ZSTD_DCtx* decompression_context_;
 };
 
 }

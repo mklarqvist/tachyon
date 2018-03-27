@@ -8,6 +8,7 @@
 #include "datablock_settings.h"
 #include "datacontainer.h"
 #include "../core/meta_entry.h"
+#include "components/datablock_footer.h"
 
 namespace tachyon{
 namespace containers{
@@ -27,7 +28,7 @@ class VariantBlock{
 	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef core::DataBlockSettings         settings_type;
-	typedef support::VariantImporterContainerStats  import_stats_type;
+	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
 
@@ -116,25 +117,19 @@ public:
 	}
 
 	/**<
-	 * Finalize this block before writing to disk
-	 * @param info_values
-	 * @param info_patterns
-	 * @param filter_values
-	 * @param filter_patterns
-	 * @param format_values
-	 * @param format_patterns
-	 * @return
+	 * Finalize this block before writing to disk. This wrapper function
+	 * calls all necessary functions to construct a valid Tachyon block
+	 * for sequence variant data
 	 */
-	inline bool finalize(void){
+	inline void finalize(void){
 		this->footer.n_info_streams   = this->info_fields.size();
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();
-		this->allocateDiskOffsets(this->info_fields.size(), this->format_fields.size(), this->filter_fields.size());
+		this->footer.allocateDiskOffsets(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
 		this->updateContainers();
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
-		return true;
 	}
 
 	/**< @brief Reads one or more separate digital objects from disk
@@ -146,6 +141,11 @@ public:
 	 */
 	bool read(std::ifstream& stream, settings_type& settings);
 
+	/**<
+	 *
+	 * @param stream
+	 * @return
+	 */
 	bool readHeaderFooter(std::ifstream& stream);
 
 	/**<
@@ -168,20 +168,6 @@ public:
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
 private:
-	/**<
-	 * Wrapper function for INFO, FORMAT, and FILTER disk
-	 * offsets. Internally generates virtual disk offsets
-	 * into the buffer stream where a given byte stream
-	 * begins. This allows for random access searches to the
-	 * data in question.
-	 * @param n_info_fields   Number of INFO fields in this block
-	 * @param n_format_fields Number of FORMAT fields in this block
-	 * @param n_filter_fields Number of FILTER fields in this block
-	 */
-	inline void allocateDiskOffsets(const U32& n_info_fields, const U32& n_format_fields, const U32& n_filter_fields){
-		this->footer.allocateDiskOffsets(n_info_fields, n_format_fields, n_filter_fields);
-	}
-
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
 	 * container offsets and checks/builds
@@ -192,20 +178,35 @@ private:
 	void updateContainers(void);
 
 
-
+	/**<
+	 * Determine compressed block-size. Execute this function prior to writing a
+	 * block
+	 * @return Returns the sum total disk size
+	 */
 	const U64 __determineCompressedSize(void) const;
 
+	/**<
+	 * Move over pair of headers from a data container to a block footer
+	 * @param offset    Destination header in footer
+	 * @param container Target container hosting the header
+	 */
 	inline void __updateHeader(offset_type& offset, const container_type& container){
 		const U32 global_key = offset.data_header.global_key;
 		offset = container.header;
 		offset.data_header.global_key = global_key;
 	}
 
+	/**<
+	 * Move over pair of headers from a data container to a block footer
+	 * @param offset         Destination header in footer
+	 * @param container      Target container hosting the header
+	 * @param virtual_offset Block virtual offset
+	 */
 	inline void __updateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
 		const U32 global_key = offset.data_header.global_key;
 		offset = container.header;
 		offset.data_header.global_key = global_key;
-		offset.data_header.offset = virtual_offset;
+		offset.data_header.offset     = virtual_offset;
 	}
 
 public:
@@ -248,6 +249,7 @@ public:
 	//size_t n_capacity_format_;
 	U64    disk_offset_;
 	U64    start_offset_;
+	U64    end_of_data_offset_;
 	U32 n_info_loaded;
 	U32 n_format_loaded;
 	container_type footer_support; // used internally only

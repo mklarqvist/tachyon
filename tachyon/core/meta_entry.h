@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "../containers/components/datablock_header.h"
+#include "../containers/components/datablock_footer.h"
 #include "header/variant_header.h"
 #include "../containers/datacontainer.h"
 #include "meta_allele.h"

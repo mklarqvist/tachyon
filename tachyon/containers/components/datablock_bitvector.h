@@ -1,6 +1,8 @@
 #ifndef INDEX_INDEXBLOCKENTRYBITVECTOR_H_
 #define INDEX_INDEXBLOCKENTRYBITVECTOR_H_
 
+#include <fstream>
+
 namespace tachyon{
 namespace containers{
 

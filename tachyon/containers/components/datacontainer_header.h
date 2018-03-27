@@ -186,6 +186,15 @@ public:
 		this->stride_header.reset();
 	}
 
+	self_type& operator=(const self_type& other){
+		this->n_entries     = other.n_entries;
+		this->n_additions   = other.n_additions;
+		this->n_strides     = other.n_strides;
+		this->data_header   = other.data_header;
+		this->stride_header = other.stride_header;
+		return(*this);
+	}
+
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
 		buffer += entry.n_entries;
 		buffer += entry.n_additions;
@@ -198,9 +207,9 @@ public:
 	}
 
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char* const>(&entry.n_entries),   sizeof(U32));
-		stream.write(reinterpret_cast<const char* const>(&entry.n_additions), sizeof(U32));
-		stream.write(reinterpret_cast<const char* const>(&entry.n_strides),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_entries),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(U32));
 		stream << entry.data_header;
 		if(entry.data_header.hasMixedStride())
 			stream << entry.stride_header;
