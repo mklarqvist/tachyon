@@ -23,7 +23,7 @@ public:
 		container.buffer_data.resize(container.buffer_data_uncompressed.size() + 65536);
 		memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
-		container.buffer_data.n_chars       = container.buffer_data_uncompressed.size();
+		container.buffer_data.n_chars                   = container.buffer_data_uncompressed.size();
 		container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 		return true;
 	}

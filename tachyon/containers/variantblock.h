@@ -227,6 +227,7 @@ private:
 	 */
 	inline void __writeContainer(std::ofstream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		this->__updateHeader(offset, container, virtual_offset);
+		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;
 	}
 

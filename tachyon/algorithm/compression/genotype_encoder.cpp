@@ -126,7 +126,7 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		}
 		// BCF style is cheaper
 		else {
-			std::cerr << "BCF-style cheaper" << std::endl;
+			//std::cerr << "BCF-style cheaper" << std::endl;
 			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
 			meta.controller.gt_compression_type = core::YON_GT_BCF_DIPLOID;

@@ -89,18 +89,10 @@ bool VariantReader::nextBlock(){
 		return false;
 
 	// Reset and re-use
-	std::cerr << this->header.contigs[this->block.header.contigID].name << ":" << this->block.header.minPosition << "-" << this->block.header.maxPosition << std::endl;
-	std::cerr << "Clearing: " << this->block.footer.n_format_streams << " streams" << std::endl;
 	this->block.clear();
 
 	if(!this->block.readHeaderFooter(this->stream))
 		return false;
-
-	// temp
-	std::cerr << "Loaded: " << this->block.footer.n_format_streams << " streams" << std::endl;
-	for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-		std::cerr << i << ": "<< this->header.format_fields[this->block.footer.format_offsets[i].data_header.global_key].ID << std::endl;
-	}
 
 	//this->parseSettings();
 

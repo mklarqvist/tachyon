@@ -62,7 +62,7 @@ public:
 
 		this->buffer.reset();
 		this->buffer.resize(container.buffer_data_uncompressed.size() + 65536);
-		size_t ret = ZSTD_compressCCtx(this->compression_context_,
+		const size_t ret = ZSTD_compressCCtx(this->compression_context_,
                                    this->buffer.data(),
 								   this->buffer.capacity(),
 								   container.buffer_data_uncompressed.data(),
@@ -144,7 +144,7 @@ public:
 
 		//std::cerr << utility::timestamp("LOG","COMPRESSION-STRIDE") << "Input: " << container.buffer_strides_uncompressed.n_chars << " and output: " << ret << " -> " << (float)container.buffer_strides_uncompressed.n_chars/ret << "-fold"  << std::endl;
 
-		container.buffer_data.resize(ret + 65536);
+		container.buffer_strides.resize(ret + 65536);
 		memcpy(container.buffer_strides.data(), this->buffer.data(), ret);
 		container.buffer_strides.n_chars                  = ret;
 		container.header.stride_header.cLength            = container.buffer_strides.size();

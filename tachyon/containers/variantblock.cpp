@@ -155,11 +155,7 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	this->end_compressed_data_ = stream.tellg(); // end of compressed data
 	stream >> this->footer; // load footer
 
-	// teemp
-	std::cerr << this->footer.offset_ppa.data_header.offset << std::endl;
-	std::cerr << this->footer.offset_meta_contig.data_header.offset << std::endl;
-
-	// Assert end-of-blocm marker
+	// Assert end-of-block marker
 	U64 eof_marker;
 	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
@@ -297,7 +293,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	}
 	// If we have supplied a list of identifiers
-	else if(settings.load_info_ID_loaded.size()) {
+	else if(settings.load_info_ID_loaded.size()){
 		// Ascertain that random access is linearly forward
 		std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
 
@@ -315,7 +311,6 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	} // end case load_info_ID
 
-
 	// Load all FORMAT data
 	if(settings.loadFORMAT_ && this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
@@ -324,10 +319,8 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 			stream >> this->format_containers[i];
 			++this->n_format_loaded;
 			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
-			std::cerr << stream.tellg() << " -> loaded: " << this->footer.format_offsets[i].data_header.global_key << '\t' << this->format_containers[i].header.data_header.cLength + this->format_containers[i].header.stride_header.cLength << '\t' << this->format_containers[i].header.data_header.offset << std::endl;
 			assert(this->format_containers[i].header == this->footer.format_offsets[i]);
 		}
-		std::cerr << "EOD = " << (U64)stream.tellg() << '/' << end_compressed_data_ << std::endl;
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
 	}
 
