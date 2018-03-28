@@ -18,6 +18,11 @@ ImportWriter::ImportWriter() :
 ImportWriter::~ImportWriter(){}
 
 bool ImportWriter::open(const std::string output){
+	if(output.size() == 0){
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "No output file/file prefix provided!" << std::endl;
+		return false;
+	}
+
 	this->filename = output;
 	this->CheckOutputNames(output);
 	this->stream.open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);

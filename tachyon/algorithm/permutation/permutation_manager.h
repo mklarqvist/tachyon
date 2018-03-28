@@ -39,7 +39,7 @@ private:
 		stream.write(reinterpret_cast<const char*>(&manager.n_samples),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.u_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.c_length), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&manager.crc), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&manager.crc),      sizeof(U32));
 		stream.write(manager.PPA.buffer, manager.c_length);
 		return(stream);
 	}
@@ -48,7 +48,7 @@ private:
 		stream.read(reinterpret_cast<char*>(&manager.n_samples),sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.u_length), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&manager.c_length), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&manager.crc), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&manager.crc),      sizeof(U32));
 		manager.PPA.resize(manager.u_length);
 		stream.read(manager.PPA.buffer, manager.c_length);
 		manager.PPA.n_chars = manager.c_length;

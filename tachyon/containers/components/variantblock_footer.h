@@ -1,5 +1,5 @@
-#ifndef CONTAINERS_COMPONENTS_DATABLOCK_FOOTER_H_
-#define CONTAINERS_COMPONENTS_DATABLOCK_FOOTER_H_
+#ifndef CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_
+#define CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_
 
 #include "../../io/basic_buffer.h"
 #include "../../algorithm/OpenHashTable.h"
@@ -10,9 +10,9 @@
 namespace tachyon{
 namespace containers{
 
-struct DataBlockFooter{
+struct VariantBlockFooter{
 private:
-	typedef DataBlockFooter           self_type;
+	typedef VariantBlockFooter        self_type;
 	typedef DataBlockBitvector        bit_vector;
 	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
@@ -26,8 +26,8 @@ public:
 	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
 
 public:
-	DataBlockFooter();
-	~DataBlockFooter();
+	VariantBlockFooter();
+	~VariantBlockFooter();
 	void reset(void);
 
 	// Allocate offset vectors
@@ -148,4 +148,4 @@ public:
 
 
 
-#endif /* CONTAINERS_COMPONENTS_DATABLOCK_FOOTER_H_ */
+#endif /* CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_ */

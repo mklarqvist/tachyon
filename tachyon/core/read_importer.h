@@ -136,7 +136,7 @@ public:
 		// Check if stream is uniform in content
 		container.checkUniformity();
 		// Reformat stream to use as small word size as possible
-		container.reformat();
+		container.reformatInteger();
 
 		// Set uncompressed length
 		container.header.data_header.uLength = container.buffer_data_uncompressed.size();

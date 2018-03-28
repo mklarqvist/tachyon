@@ -79,16 +79,17 @@ bool VariantReader::open(void){
 bool VariantReader::nextBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
 		return false;
 	}
 
 	// If the current position is the EOF then
-	// exit the functiont
+	// exit the function
 	if((U64)this->stream.tellg() == this->footer.offset_end_of_data)
 		return false;
 
 	// Reset and re-use
+	std::cerr << this->header.contigs[this->block.header.contigID].name << ":" << this->block.header.minPosition << "-" << this->block.header.maxPosition << std::endl;
 	std::cerr << "Clearing: " << this->block.footer.n_format_streams << " streams" << std::endl;
 	this->block.clear();
 

@@ -1,12 +1,28 @@
 #ifndef CORE_VARIANT_IMPORTER_CONTAINER_STATS_H_
 #define CORE_VARIANT_IMPORTER_CONTAINER_STATS_H_
 
+#include "../containers/datacontainer.h"
+
 namespace tachyon{
 namespace support{
 
 struct VariantImporterStatsObject{
+	typedef VariantImporterStatsObject self_type;
+	typedef containers::DataContainer data_container_type;
+
 	VariantImporterStatsObject(void) : cost_uncompressed(0), cost_compressed(0){}
 	~VariantImporterStatsObject(){}
+
+	void operator+=(const data_container_type& container){
+		this->cost_uncompressed += container.getObjectSizeUncompressed();
+		this->cost_compressed   += container.getObjectSize();
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed << '\t' <<
+				(entry.cost_compressed ? (double)entry.cost_uncompressed/entry.cost_compressed : 0);
+		return(stream);
+	}
 
 	U64 cost_uncompressed;
 	U64 cost_compressed;

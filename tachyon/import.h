@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2016-2017 Genome Research Ltd.
+Copyright (C) 2017-2018 Genome Research Ltd.
 Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,8 +30,8 @@ DEALINGS IN THE SOFTWARE.
 void import_usage(void){
 	programMessage();
 	std::cerr <<
-	"Brief:  Convert VCF/BCF -> YON/\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <in.bcf> -o <output.yon>\n\n"
+	"Brief:  Convert VCF/BCF/FASTQ/FASTA -> YON/\n"
+	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input file> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input BCF file (required)\n"
 	"  -o FILE  output file prefix (required)\n"
@@ -56,8 +56,7 @@ int import(int argc, char** argv){
 	int option_index = 0;
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
-		{"output",		optional_argument, 0,  'o' },
-
+		{"output",		required_argument, 0,  'o' },
 		{"fastq",		no_argument, 0,  'f' },
 		{"checkpoint-variants",		optional_argument, 0,  'c' },
 		{"checkpoint-bases",		optional_argument, 0,  'C' },
@@ -110,13 +109,21 @@ int import(int argc, char** argv){
 			break;
 
 		default:
+			import_usage();
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
 	}
 
 	if(input.length() == 0){
+		import_usage();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
+		return(1);
+	}
+
+	if(output.length() == 0){
+		import_usage();
+		std::cerr << tachyon::utility::timestamp("ERROR") << "No output file specified..." << std::endl;
 		return(1);
 	}
 

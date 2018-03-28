@@ -39,7 +39,7 @@ void DataContainer::resize(const U32 size){
 	this->buffer_strides_uncompressed.resize(size);
 }
 
-const bool DataContainer::generateCRC(void){
+void DataContainer::generateCRC(void){
 	if(this->buffer_data_uncompressed.size() == 0){
 		this->header.data_header.crc = 0;
 	} else {
@@ -62,7 +62,6 @@ const bool DataContainer::generateCRC(void){
 			}
 		}
 	}
-	return true;
 }
 
 bool DataContainer::checkCRC(int target){
@@ -106,7 +105,7 @@ bool DataContainer::checkUniformity(void){
 	if(this->header.n_entries == 0)
 		return false;
 
-	// We know the data cannot be uniform if
+	// We know the stride cannot be uniform if
 	// the stride size is uneven
 	const S16& stride_size = this->header.data_header.stride;
 	if(stride_size == -1)
@@ -116,24 +115,26 @@ bool DataContainer::checkUniformity(void){
 
 	BYTE word_width = sizeof(char);
 	switch(this->header.data_header.controller.type){
-	case YON_TYPE_32B:    stride_update *= sizeof(S32);    word_width = sizeof(S32);    break;
 	case YON_TYPE_DOUBLE: stride_update *= sizeof(double); word_width = sizeof(double); break;
 	case YON_TYPE_FLOAT:  stride_update *= sizeof(float);  word_width = sizeof(float);  break;
-	case YON_TYPE_8B:     stride_update *= sizeof(char);   word_width = sizeof(char);   break;
+	case YON_TYPE_8B:     stride_update *= sizeof(BYTE);   word_width = sizeof(BYTE);   break;
 	case YON_TYPE_16B:    stride_update *= sizeof(U16);    word_width = sizeof(U16);    break;
+	case YON_TYPE_32B:    stride_update *= sizeof(S32);    word_width = sizeof(S32);    break;
 	case YON_TYPE_64B:    stride_update *= sizeof(U64);    word_width = sizeof(U64);    break;
 	case YON_TYPE_CHAR:   stride_update *= sizeof(char);   word_width = sizeof(char);   break;
 	default: return false; break;
 	}
 
-	const U64 first_hash = XXH64(&this->buffer_data_uncompressed.buffer[0], stride_update, 2147483647);
+	const U64 first_hash = XXH64(this->buffer_data_uncompressed.data(), stride_update, 2147483647);
 
+	U64 cumulative_position = stride_update;
 	for(U32 i = 1; i < this->header.n_entries; ++i){
-		if(XXH64(&this->buffer_data_uncompressed.buffer[i*stride_update], stride_update, 2147483647) != first_hash){
-			//std::cerr << "not uniform" << std::endl;
+		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_hash){
 			return(false);
 		}
+		cumulative_position += stride_update;
 	}
+	assert(cumulative_position == this->buffer_data_uncompressed.size());
 
 	this->header.n_entries   = 1;
 	this->header.n_strides   = 0;
@@ -146,17 +147,17 @@ bool DataContainer::checkUniformity(void){
 	return(true);
 }
 
-void DataContainer::reformat(){
+void DataContainer::reformatInteger(){
 	if(this->buffer_data_uncompressed.size() == 0)
 		return;
 
 	// Recode integer types only
 	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
-		//std::cerr << utility::timestamp("DEBUG") << "Not reformatting because: " << this->header.data_header.getPrimitiveType() << "," << this->header.data_header.isSigned() << std::endl;
 		return;
 	}
 
-	if(this->header.data_header.controller.uniform == true)
+	// Do not recode if the data is uniform
+	if(this->header.data_header.isUniform())
 		return;
 
 	// At this point all integers are S32
@@ -176,8 +177,7 @@ void DataContainer::reformat(){
 	}
 
 	BYTE byte_width = 0;
-	// If we have missing values then we have to
-	// use signedness
+	// If we have missing values then we have to use signedness
 	if(min < 0 || hasMissing == true){
 		byte_width = ceil((ceil(log2(abs(min) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
 		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1 + 2)) + 1) / 8);
@@ -187,15 +187,12 @@ void DataContainer::reformat(){
 	}
 	else byte_width = ceil(ceil(log2(max + 1)) / 8);
 
-	if(byte_width == 0) byte_width = 1;
+	if(byte_width == 0)     byte_width = 1;
 	else if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
 
-	//std::cerr << "Reformat\t" << min << '\t' << max << '\t' << (int)byte_width << '\t' << (int)hasMissing << std::endl;
-
 	// Phase 2
-	// Here we re-encode values using the smallest possible
-	// word-size
+	// Here we re-encode values using the smallest possible word-size
 	this->buffer_data.reset();
 	this->buffer_data.resize(this->buffer_data_uncompressed.size() + 65536);
 
@@ -208,7 +205,6 @@ void DataContainer::reformat(){
 			this->header.data_header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//assert(dat[j] == (BYTE)dat[j]);
 				this->buffer_data += (BYTE)dat[j];
 			}
 
@@ -216,7 +212,6 @@ void DataContainer::reformat(){
 			this->header.data_header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//assert(dat[j] == (U16)dat[j]);
 				this->buffer_data += (U16)dat[j];
 			}
 
@@ -224,7 +219,6 @@ void DataContainer::reformat(){
 			this->header.data_header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//assert(dat[j] == (U32)dat[j]);
 				this->buffer_data += (U32)dat[j];
 			}
 
@@ -241,13 +235,12 @@ void DataContainer::reformat(){
 	}
 	// Is negative or has missing
 	else {
-		this->header.data_header.controller.signedness = 1;
+		this->header.data_header.controller.signedness = true;
 
 		if(byte_width == 1){
 			this->header.data_header.controller.type = YON_TYPE_8B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//assert(dat[j] == (SBYTE)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
 				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
 				else this->buffer_data += (SBYTE)dat[j];
@@ -257,8 +250,6 @@ void DataContainer::reformat(){
 			this->header.data_header.controller.type = YON_TYPE_16B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//this->buffer_data += (S16)dat[j];
-				//assert(dat[j] == (S16)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (U16)0x8000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
 				else this->buffer_data += (S16)dat[j];
@@ -268,8 +259,6 @@ void DataContainer::reformat(){
 			this->header.data_header.controller.type = YON_TYPE_32B;
 
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				//this->buffer_data += (S32)dat[j];
-				//assert(dat[j] == (S32)dat[j]);
 				if(udat[j] == 0x80000000)      this->buffer_data += (U32)0x80000000;
 				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
 				else this->buffer_data += (S32)dat[j];
@@ -315,7 +304,7 @@ void DataContainer::reformatStride(){
 	BYTE byte_width = ceil(log2(max + 1) / 8);
 	if(byte_width == 0) byte_width = 1;
 	if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
-	if(byte_width > 4) byte_width = 8;
+	if(byte_width > 4)  byte_width = 8;
 
 	// This cannot ever be uniform
 	this->buffer_strides.reset();
@@ -354,10 +343,9 @@ void DataContainer::reformatStride(){
 		}
 
 	} else {
-		std::cerr << utility::timestamp("ERROR") << "Illegal primtive type!" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "Illegal primitive type!" << std::endl;
 		exit(1);
 	}
-	//std::cerr << "recode shrink strides: " << this->buffer_strides.size() << '\t' << buffer.size() << std::endl;
 	memcpy(this->buffer_strides_uncompressed.data(), this->buffer_strides.data(), this->buffer_strides.size());
 	this->buffer_strides_uncompressed.n_chars = this->buffer_strides.size();
 	this->header.stride_header.uLength        = this->buffer_strides_uncompressed.size();
@@ -368,6 +356,14 @@ const U32 DataContainer::getObjectSize(void) const{
 	U32 total_size = this->buffer_data.size();
 	if(this->header.data_header.hasMixedStride())
 		total_size += this->buffer_strides.size();
+
+	return(total_size);
+}
+
+const U64 DataContainer::getObjectSizeUncompressed(void) const{
+	U64 total_size = this->buffer_data_uncompressed.size();
+	if(this->header.data_header.hasMixedStride())
+		total_size += this->buffer_strides_uncompressed.size();
 
 	return(total_size);
 }
@@ -428,16 +424,16 @@ void DataContainer::updateContainer(bool reformat){
 	// If the data container has entries in it but has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
-		this->header.data_header.controller.type    = tachyon::YON_TYPE_BOOLEAN;
-		this->header.data_header.controller.uniform = true;
+		this->header.reset();
+		this->header.data_header.controller.type        = YON_TYPE_BOOLEAN;
+		this->header.data_header.controller.uniform     = true;
+		this->header.data_header.controller.mixedStride = false;
+		this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
+		this->header.data_header.controller.signedness  = 0;
 		this->header.data_header.stride  = 0;
 		this->header.data_header.uLength = 0;
 		this->header.data_header.cLength = 0;
-		this->header.data_header.controller.mixedStride = false;
-		this->header.data_header.controller.encoder = tachyon::YON_ENCODE_NONE;
-		this->header.n_entries   = 0;
-		this->header.n_strides   = 0;
-		this->header.data_header.controller.signedness = 0;
+		this->header.n_strides           = 0;
 		return;
 	}
 
@@ -445,10 +441,10 @@ void DataContainer::updateContainer(bool reformat){
 		return;
 
 	// Check if stream is uniform in content
-	if(this->header.data_header.controller.type != tachyon::YON_TYPE_STRUCT){
+	if(this->header.data_header.controller.type != YON_TYPE_STRUCT){
 		this->checkUniformity();
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->reformat();
+		if(reformat) this->reformatInteger();
 	}
 
 	// Set uncompressed length
@@ -460,7 +456,7 @@ void DataContainer::updateContainer(bool reformat){
 		if(reformat) this->reformatStride();
 		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
 	}
-	}
+}
 
 }
 }

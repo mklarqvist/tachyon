@@ -99,7 +99,6 @@ bool VariantImporter::BuildBCF(void){
 	U32 previousFirst    = 0;
 	U32 previousLast     = 0;
 	S32 previousContigID = -1;
-	U64 n_variants_read  = 0;
 
 	// Index
 	index_entry_type current_index_entry;
@@ -114,6 +113,9 @@ bool VariantImporter::BuildBCF(void){
 		std::setfill(' ') << std::setw(8) << "Completion" << ' ' <<
 		"Elapsed " << "Contig:from->to" << std::endl;
 	}
+
+	// temp
+	//this->nn = new algorithm::GenotypeNearestNeighbour(header.getSampleNumber());
 
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
@@ -152,12 +154,16 @@ bool VariantImporter::BuildBCF(void){
 		*/
 
 		// Permute GT if GT is available and the appropriate flag is triggered
+
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
 		}
+
+		// test
+		//this->nn->build(reader);
 
 		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
@@ -166,10 +172,6 @@ bool VariantImporter::BuildBCF(void){
 				return false;
 			}
 		}
-
-
-		// Stats
-		n_variants_read += reader.size();
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
@@ -210,7 +212,7 @@ bool VariantImporter::BuildBCF(void){
 			std::cerr << utility::timestamp("PROGRESS") <<
 			std::setfill(' ') << std::setw(10) << this->writer.n_variants_written << ' ' <<
 			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(writer.stream.tellp()) << '\t' <<
-			std::setfill(' ') << std::setw(8) << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
+			std::setfill(' ') << std::setw(8)  << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
 			timer.ElapsedString() << ' ' <<
 			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
 		}
@@ -247,39 +249,42 @@ bool VariantImporter::BuildBCF(void){
 	this->writer.stream.flush();
 
 	if(!SILENT){
-		std::cerr << "Header:    " << utility::ToPrettyString(this->stats_basic[0].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[0].cost_uncompressed) << '\t' << (double)this->stats_basic[0].cost_uncompressed/this->stats_basic[0].cost_compressed << "-fold" << std::endl;
-		std::cerr << "PPA:       " << utility::ToPrettyString(this->stats_basic[1].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[1].cost_uncompressed) << '\t' << (double)this->stats_basic[1].cost_uncompressed/this->stats_basic[1].cost_compressed << "-fold" << std::endl;
-		std::cerr << "Meta hot:  " << utility::ToPrettyString(this->stats_basic[2].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[2].cost_uncompressed) << '\t' << (double)this->stats_basic[2].cost_uncompressed/this->stats_basic[2].cost_compressed << "-fold" << std::endl;
-		std::cerr << "Meta cold: " << utility::ToPrettyString(this->stats_basic[3].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[3].cost_uncompressed) << '\t' << (double)this->stats_basic[3].cost_uncompressed/this->stats_basic[3].cost_compressed << "-fold" << std::endl;
-		std::cerr << "GT RLE:    " << utility::ToPrettyString(this->stats_basic[4].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[4].cost_uncompressed) << '\t' << (double)this->stats_basic[4].cost_uncompressed/this->stats_basic[4].cost_compressed << "-fold" << std::endl;
-		std::cerr << "GT Packed: " << utility::ToPrettyString(this->stats_basic[5].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[5].cost_uncompressed) << '\t' << (double)this->stats_basic[5].cost_uncompressed/this->stats_basic[5].cost_compressed << "-fold" << std::endl;
-		std::cerr << "GT Support:" << utility::ToPrettyString(this->stats_basic[6].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[6].cost_uncompressed) << '\t' << (double)this->stats_basic[6].cost_uncompressed/this->stats_basic[6].cost_compressed << "-fold" << std::endl;
-		std::cerr << "Meta IDs:  " << utility::ToPrettyString(this->stats_basic[7].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[7].cost_uncompressed) << '\t' << (double)this->stats_basic[7].cost_uncompressed/this->stats_basic[7].cost_compressed << "-fold" << std::endl;
-		std::cerr << "INFO:      " << utility::ToPrettyString(this->stats_basic[8].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[8].cost_uncompressed) << '\t' << (double)this->stats_basic[8].cost_uncompressed/this->stats_basic[8].cost_compressed << "-fold" << std::endl;
-		std::cerr << "FORMAT:    " << utility::ToPrettyString(this->stats_basic[9].cost_compressed) << "\t" << utility::ToPrettyString(this->stats_basic[9].cost_uncompressed) << '\t' << (double)this->stats_basic[9].cost_uncompressed/this->stats_basic[9].cost_compressed << "-fold" << std::endl;
-		std::cerr << "Checksums: " << utility::ToPrettyString(digests_ends - index_ends) << std::endl;
-
-		for(U32 i = 0; i < header.header_magic.n_info_values; ++i){
-			const U64 cost = this->stats_info[i].cost_uncompressed;
-			if(cost)
-				std::cerr << std::setw(14) << header.info_fields[i].ID << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_info[i].cost_compressed) << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_info[i].cost_uncompressed) << '\t' << std::setw(14) << (double)this->stats_info[i].cost_uncompressed/this->stats_info[i].cost_compressed << "-fold" << std::endl;
-			else
-				std::cerr << std::setw(14) << header.info_fields[i].ID << '\t' << "unused" << std::endl;
-		}
-
-		for(U32 i = 0; i < header.header_magic.n_format_values; ++i){
-			const U64 cost = this->stats_format[i].cost_uncompressed;
-			if(cost)
-				std::cerr << std::setw(14) << header.format_fields[i].ID << '\t' << std::setw(14) << utility::ToPrettyString(this->stats_format[i].cost_compressed) << "\t" << std::setw(14) << utility::ToPrettyString(this->stats_format[i].cost_uncompressed) << '\t' << std::setw(14) << (double)this->stats_format[i].cost_uncompressed/this->stats_format[i].cost_compressed << "-fold" << std::endl;
-			else
-				std::cerr << std::setw(14) << header.format_fields[i].ID << '\t' << "unused" << std::endl;
-		}
+		std::vector<std::string> usage_statistics_names = {
+			"FooterHeader","GT-PPA","MetaContig","MetaPositions","MetaRefAlt","MetaController","MetaQuality","MetaNames",
+			"MetaAlleles","MetaInfoMaps","MetaFormatMaps","MetaFilterMaps","GT-Support",
+			"GT-RLE8","GT-RLE16","GT-RLE32","GT-RLE64",
+			"GT-Simple8","GT-Simple16","GT-Simple32","GT-Simple64","INFO-ALL","FORMAT-ALL"};
 
 		U64 total_uncompressed = 0; U64 total_compressed = 0;
-		for(U32 i = 0; i < 10; ++i){
+		for(U32 i = 0; i < usage_statistics_names.size(); ++i){
 			total_uncompressed += this->stats_basic[i].cost_uncompressed;
 			total_compressed   += this->stats_basic[i].cost_compressed;
 		}
+
+		std::ofstream writer_stats;
+		writer_stats.open(this->writer.basePath + this->writer.baseName + "_yon_stats.txt", std::ios::out);
+		if(writer_stats.good()){
+			for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
+			for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
+			for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
+
+			writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
+			writer_stats << "YON\t" << this->writer.stream.tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer.stream.tellp() << std::endl;
+			writer_stats.close();
+		} else {
+			std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (this->writer.basePath + this->writer.baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;
+		}
+
+		const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
+		const U64 n_total_gt = gt_stats.getTotal();
+		std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-64\t"  << gt_stats.rle_counts[3] << '\t' << (float)gt_stats.rle_counts[3]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-8\t"  << gt_stats.rle_simple_counts[0] << '\t' << (float)gt_stats.rle_simple_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-16\t" << gt_stats.rle_simple_counts[1] << '\t' << (float)gt_stats.rle_simple_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-32\t" << gt_stats.rle_simple_counts[2] << '\t' << (float)gt_stats.rle_simple_counts[2]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-64\t" << gt_stats.rle_simple_counts[3] << '\t' << (float)gt_stats.rle_simple_counts[3]/n_total_gt << std::endl;
 
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
@@ -306,10 +311,18 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	// GT encoding if available
 	if(entry.hasGenotypes){
 		meta.controller.gt_available = true;
+
 		if(!this->encoder.Encode(entry, meta, this->block, this->permutator.manager->get())){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 			return false;
 		}
+
+		/*
+		if(!this->encoder.Encode(entry, meta, this->block, this->nn->get())){
+			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
+			return false;
+		}
+		 */
 	} else {
 		meta.controller.gt_available = false;
 	}

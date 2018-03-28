@@ -3,8 +3,8 @@
 
 #include <limits>
 
-#include "../containers/components/datablock_header.h"
-#include "../containers/components/datablock_footer.h"
+#include "../containers/components/variantblock_header.h"
+#include "../containers/components/variantblock_footer.h"
 #include "header/variant_header.h"
 #include "../containers/datacontainer.h"
 #include "meta_allele.h"
@@ -18,7 +18,7 @@ struct MetaEntry{
 public:
 	typedef MetaEntry                   self_type;
 	typedef containers::DataContainer   container_type;
-	typedef containers::DataBlockFooter datablock_footer_type;
+	typedef containers::VariantBlockFooter datablock_footer_type;
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;

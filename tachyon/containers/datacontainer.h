@@ -98,26 +98,10 @@ public:
 	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
 	inline const U32& size(void) const{ return(this->header.n_entries); }
 
-	inline bool __checkInteger(void){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_32B);
-			this->header.data_header.controller.signedness = true;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
-			std::cerr << "Illegal primitive type match integer!" << std::endl;
-			exit(1);
-			return false;
-		}
-		return true;
-	}
-
 	inline bool Add(const BYTE& value){
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
@@ -125,7 +109,6 @@ public:
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
@@ -133,7 +116,6 @@ public:
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
@@ -141,7 +123,6 @@ public:
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
@@ -149,7 +130,6 @@ public:
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
@@ -157,15 +137,13 @@ public:
 		if(!this->__checkInteger()) return false;
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const U64& value){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_64B);
 			this->header.data_header.controller.signedness = false;
-			//std::cerr << "triggering: U64" << std::endl;
 		}
 
 		// Make checks
@@ -177,15 +155,13 @@ public:
 
 		this->buffer_data_uncompressed += (U64)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const S64& value){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_64B);
 			this->header.data_header.controller.signedness = true;
-			//std::cerr << "triggering: S64" << std::endl;
 		}
 
 
@@ -203,10 +179,9 @@ public:
 	}
 
 	inline bool Add(const float& value){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_FLOAT);
 			this->header.data_header.controller.signedness = true;
-			//std::cerr << "triggering: float" << std::endl;
 		}
 
 		// Make checks
@@ -218,15 +193,13 @@ public:
 
 		this->buffer_data_uncompressed += (float)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool Add(const double& value){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_DOUBLE);
 			this->header.data_header.controller.signedness = true;
-			//std::cerr << "triggering: float" << std::endl;
 		}
 
 		// Make checks
@@ -238,15 +211,13 @@ public:
 
 		this->buffer_data_uncompressed += (double)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool AddCharacter(const char& value){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_CHAR);
 			this->header.data_header.controller.signedness = true;
-			std::cerr << "triggering: char" << std::endl;
 		}
 
 		// Make checks
@@ -258,12 +229,11 @@ public:
 
 		this->buffer_data_uncompressed += (char)value;
 		++this->header.n_additions;
-		//++this->n_entries;
 		return(true);
 	}
 
 	inline bool AddCharacter(const char* const string, const U32 l_string){
-		if(this->header.data_header.controller.encoder == 0 && this->header.n_entries == 0){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.setType(YON_TYPE_CHAR);
 			this->header.data_header.controller.signedness = true;
 			//std::cerr << "triggering: string" << std::endl;
@@ -278,7 +248,6 @@ public:
 
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
-		//++this->n_entries;
 		return(true);
 	}
 	// Aliases
@@ -297,6 +266,11 @@ public:
 		++this->header.n_additions;
 	}
 
+	/**<
+	 *
+	 * @param string
+	 * @param l_string
+	 */
 	inline void AddLiteral(const char* const string, const U32 l_string){
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
@@ -309,9 +283,8 @@ public:
 	 * Generates a CRC32 checksum of the uncompressed
 	 * data and, if set, the uncompressed strides data.
 	 * CRC32 checksums are stored in the header
-	 * @return
 	 */
-	const bool generateCRC(void);
+	void generateCRC(void);
 
 	/**<
 	 *
@@ -322,7 +295,7 @@ public:
 	 * 3: Compressed strides data
 	 *
 	 * @param target Target buffer stream
-	 * @return       Returns TRUE if passing checks or FALSE otherwise
+	 * @return       Returns TRUE if the CRC checksums are identical or FALSE otherwise
 	 */
 	bool checkCRC(int target = 0);
 
@@ -339,7 +312,7 @@ public:
 	 * At this stage all integer values in the stream is of
 	 * type S32. No other values can be shrunk
 	 */
-	void reformat(void);
+	void reformatInteger(void);
 
 	/**<
 	 * This function is caled during import to shrink each
@@ -354,6 +327,12 @@ public:
 	 * @return Total size in bytes
 	 */
 	const U32 getObjectSize(void) const;
+
+	/**<
+	 *
+	 * @return
+	 */
+	const U64 getObjectSizeUncompressed(void) const;
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
@@ -370,12 +349,27 @@ public:
 	/**<
 	 *
 	 */
-	void deltaEncode();
+	void deltaEncode(void);
 
 	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
 private:
+	inline bool __checkInteger(void){
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = true;
+		}
+
+		// Make checks
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
+			std::cerr << "Illegal primitive type match integer!" << std::endl;
+			exit(1);
+			return false;
+		}
+		return true;
+	}
+
 	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.buffer_data;
 		if(entry.header.data_header.hasMixedStride())
@@ -398,14 +392,9 @@ private:
 	}
 
 public:
-	// Not written
 	header_type header; // usually written elsewhere
-
-	// Buffers - only bit that are written to disk from here
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
-
-	// These buffers are for internal use only
 	buffer_type buffer_data_uncompressed;
 	buffer_type buffer_strides_uncompressed;
 };

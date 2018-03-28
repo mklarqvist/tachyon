@@ -17,6 +17,24 @@ namespace algorithm{
 #define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)          (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) (((A) >> 1) << ((SHIFT) + (ADD))) | (((B) >> 1) << (ADD)) | ((A) & (ADD))
 
+struct GenotypeEncoderStatistics{
+	GenotypeEncoderStatistics(){}
+
+	const U64 getTotal(void) const{
+		U64 total = 0;
+		for(U32 i = 0; i < 4; ++i) total += this->rle_counts[i];
+		for(U32 i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
+		for(U32 i = 0; i < 3; ++i) total += this->diploid_bcf_counts[i];
+		for(U32 i = 0; i < 3; ++i) total += this->bcf_counts[i];
+		return(total);
+	}
+
+	U64 rle_counts[4];
+	U64 rle_simple_counts[4];
+	U64 diploid_bcf_counts[3];
+	U64 bcf_counts[3];
+};
+
 class GenotypeEncoder {
 private:
 	typedef GenotypeEncoder              self_type;
@@ -26,6 +44,7 @@ private:
 	typedef containers::GenotypesSummary helper_type;
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;
+	typedef GenotypeEncoderStatistics    stats_type;
 
 	typedef struct __RLEAssessHelper{
 		explicit __RLEAssessHelper(void) :
@@ -50,6 +69,7 @@ public:
 	~GenotypeEncoder();
 	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
+	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }
 
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
@@ -66,6 +86,7 @@ private:
 
 private:
 	U64 n_samples; // number of samples
+	stats_type stats_;
 };
 
 template <class YON_STORE_TYPE, class BCF_GT_TYPE>

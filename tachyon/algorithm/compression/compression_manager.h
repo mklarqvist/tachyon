@@ -23,7 +23,7 @@ public:
 	~CompressionManager(){}
 
 	bool compress(variant_block_type& block){
-		const BYTE zstd_compression_level = 19;
+		const BYTE zstd_compression_level = 3;
 		zstd_codec.setCompressionLevel(zstd_compression_level);
 		zstd_codec.setCompressionLevelData(3);
 		if(block.header.controller.hasGTPermuted)            zstd_codec.compress(block.ppa_manager);

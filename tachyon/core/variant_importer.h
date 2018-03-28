@@ -73,6 +73,9 @@ private:
 	// Data container
 	block_type block;
 
+	// temp
+	//algorithm::GenotypeNearestNeighbour* nn;
+
 };
 
 

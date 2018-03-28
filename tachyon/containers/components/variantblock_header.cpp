@@ -1,13 +1,12 @@
-#include "../components/datablock_header.h"
-
 #include <cmath>
 #include <cassert>
+#include "variantblock_header.h"
 
 
 namespace tachyon{
 namespace containers{
 
-DataBlockHeader::DataBlockHeader() :
+VariantBlockHeader::VariantBlockHeader() :
 	l_offset_footer(0),
 	contigID(-1),
 	minPosition(0),
@@ -15,7 +14,7 @@ DataBlockHeader::DataBlockHeader() :
 	n_variants(0)
 {}
 
-DataBlockHeader::~DataBlockHeader(){}
+VariantBlockHeader::~VariantBlockHeader(){}
 
 }
 }

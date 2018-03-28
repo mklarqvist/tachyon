@@ -120,6 +120,19 @@ struct DataContainerHeaderObject{
 		return(stream);
 	}
 
+	const bool operator==(const self_type& other) const{
+		if(this->stride != other.stride)         return false;
+		if(this->offset != other.offset)         return false;
+		if(this->cLength != other.cLength)       return false;
+		if(this->uLength != other.uLength)       return false;
+		if(this->crc != other.crc)               return false;
+		if(this->global_key != other.global_key) return false;
+		if(this->controller != other.controller) return false;
+		return true;
+	}
+
+	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+
 	const SBYTE getPrimitiveWidth(void) const{
 		// We do not care about signedness here
 		switch(this->controller.type){
@@ -194,6 +207,16 @@ public:
 		this->stride_header = other.stride_header;
 		return(*this);
 	}
+
+	const bool operator==(const self_type& other) const{
+		if(this->n_entries     != other.n_entries)     return false;
+		if(this->n_additions   != other.n_additions)   return false;
+		if(this->n_strides     != other.n_strides)     return false;
+		if(this->data_header   != other.data_header)   return false;
+		if(this->stride_header != other.stride_header) return false;
+		return true;
+	}
+	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
 		buffer += entry.n_entries;

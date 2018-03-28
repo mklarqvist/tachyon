@@ -4,11 +4,11 @@
 #include "../algorithm/permutation/permutation_manager.h"
 #include "../core/variant_importer_container_stats.h"
 #include "../io/vcf/VCFHeader.h"
-#include "components/datablock_header.h"
 #include "datablock_settings.h"
 #include "datacontainer.h"
 #include "../core/meta_entry.h"
-#include "components/datablock_footer.h"
+#include "components/variantblock_footer.h"
+#include "components/variantblock_header.h"
 
 namespace tachyon{
 namespace containers{
@@ -22,8 +22,8 @@ class VariantBlock{
 	typedef VariantBlock                    self_type;
 	typedef DataContainer                   container_type;
 	typedef algorithm::PermutationManager   permutation_type;
-	typedef DataBlockHeader                 block_header_type;
-	typedef DataBlockFooter                 block_footer_type;
+	typedef VariantBlockHeader              block_header_type;
+	typedef VariantBlockFooter              block_footer_type;
 	typedef HashContainer                   hash_container_type;
 	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
@@ -127,9 +127,9 @@ public:
 		this->footer.n_format_streams = this->format_fields.size();
 		this->footer.allocateDiskOffsets(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
 		this->updateContainers();
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->footer.constructBitVector(containers::DataBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
+		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
+		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
+		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 	}
 
 	/**< @brief Reads one or more separate digital objects from disk
@@ -177,7 +177,6 @@ private:
 	 */
 	void updateContainers(void);
 
-
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
 	 * block
@@ -186,13 +185,22 @@ private:
 	const U64 __determineCompressedSize(void) const;
 
 	/**<
+	 *
+	 * @param stats_basic
+	 * @param stats_info
+	 * @param stats_format
+	 */
+	void updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+
+	/**<
 	 * Move over pair of headers from a data container to a block footer
 	 * @param offset    Destination header in footer
 	 * @param container Target container hosting the header
 	 */
 	inline void __updateHeader(offset_type& offset, const container_type& container){
-		const U32 global_key = offset.data_header.global_key;
+		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
+		assert(offset == container.header); // Assert copy is correct
 		offset.data_header.global_key = global_key;
 	}
 
@@ -203,10 +211,23 @@ private:
 	 * @param virtual_offset Block virtual offset
 	 */
 	inline void __updateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
-		const U32 global_key = offset.data_header.global_key;
+		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
+		assert(offset == container.header); // Assert copy is correct
 		offset.data_header.global_key = global_key;
 		offset.data_header.offset     = virtual_offset;
+	}
+
+	/**<
+	 *
+	 * @param stream
+	 * @param offset
+	 * @param container
+	 * @param virtual_offset
+	 */
+	inline void __writeContainer(std::ofstream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+		this->__updateHeader(offset, container, virtual_offset);
+		stream << container;
 	}
 
 public:
@@ -247,9 +268,9 @@ public:
 	// Utility
 	//size_t n_capacity_info_;
 	//size_t n_capacity_format_;
-	U64    disk_offset_;
-	U64    start_offset_;
-	U64    end_of_data_offset_;
+	U64 end_block_;
+	U64 start_compressed_data_;
+	U64 end_compressed_data_;
 	U32 n_info_loaded;
 	U32 n_format_loaded;
 	container_type footer_support; // used internally only

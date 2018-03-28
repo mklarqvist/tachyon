@@ -17,17 +17,17 @@ namespace containers{
  * This structure is for internal use only and describes
  * various internal states as flags.
  */
-struct DataBlockHeaderController{
-	typedef DataBlockHeaderController self_type;
+struct VariantBlockHeaderController{
+	typedef VariantBlockHeaderController self_type;
 
 public:
-	DataBlockHeaderController():
+	VariantBlockHeaderController():
 		hasGT(0),
 		hasGTPermuted(0),
 		anyEncrypted(0),
 		unused(0)
 	{}
-	~DataBlockHeaderController(){}
+	~VariantBlockHeaderController(){}
 
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 
@@ -62,15 +62,15 @@ public:
  * 3) Number of containers and ID patterns
  * 4) Controller flags
  */
-struct DataBlockHeader{
+struct VariantBlockHeader{
 private:
-	typedef DataBlockHeader              self_type;
-	typedef DataBlockHeaderController    controller_type;
+	typedef VariantBlockHeader           self_type;
+	typedef VariantBlockHeaderController    controller_type;
 	typedef DataContainerHeader          header_type;
 
 public:
-	DataBlockHeader();
-	~DataBlockHeader();
+	VariantBlockHeader();
+	~VariantBlockHeader();
 
 	inline const U32& size(void) const{ return(this->n_variants); }
 	inline const S32& getContigID(void) const{ return(this->contigID); }
