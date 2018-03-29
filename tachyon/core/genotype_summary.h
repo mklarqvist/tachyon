@@ -10,7 +10,7 @@ namespace containers{
 class GenotypeContainerInterface;
 template <class T> class GenotypeContainerDiploidRLE;
 template <class T> class GenotypeContainerDiploidSimple;
-
+template <class T> class GenotypeContainerDiploidBCF;
 /**<
  * We cannot decouple the GenotypeContainer objects from
  * this structure as their interpretation is contingent
@@ -103,6 +103,11 @@ struct GenotypeSum{
 			this->getAlleleA(alleleA) += length;
 			this->getAlleleB(alleleB) += length;
 		}
+	}
+
+	template <class T>
+	inline void operator+=(const GenotypeContainerDiploidBCF<T>& gt_diploid_bcf_container){
+
 	}
 
 	// Utility

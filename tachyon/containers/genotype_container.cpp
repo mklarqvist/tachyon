@@ -84,16 +84,16 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 			// Case BCF-style encoding of diploids
 			else if(meta[i].getGenotypeEncoding() == core::TACHYON_GT_ENCODING::YON_GT_BCF_DIPLOID) {
 				if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);
 				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U16>( &simple16[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple16 += lengths[gt_offset]*sizeof(U16);
 				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U32>( &simple32[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple32 += lengths[gt_offset]*sizeof(U32);
 				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U64>( &simple64[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				}  else {
 					std::cerr << "unknwn type" << std::endl;

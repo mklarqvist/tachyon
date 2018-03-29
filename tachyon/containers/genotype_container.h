@@ -3,6 +3,7 @@
 
 #include "genotype_container_diploid_rle.h"
 #include "genotype_container_diploid_simple.h"
+#include "genotype_container_diploid_bcf.h"
 #include "meta_container.h"
 #include "variantblock.h"
 

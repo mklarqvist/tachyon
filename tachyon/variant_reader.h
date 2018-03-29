@@ -428,7 +428,14 @@ public:
 							stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
 						}
 						stream.put('\t');
-						std::vector<core::GTObject> objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+
+						std::vector<core::GTObject> objects_true;
+						if(this->settings.loadPPA_ && this->block.header.controller.hasGTPermuted){
+							std::cerr << "has ppa and loaded" << std::endl;
+							objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+						} else {
+							objects_true = gt->at(p).getObjects(this->header.getSampleNumber());
+						}
 
 						stream << objects_true[0];
 						for(U32 i = 1; i < n_format_keys; ++i){

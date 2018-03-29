@@ -108,43 +108,40 @@ public:
 	 */
 	inline const BYTE packedRefAltByte(void) const{
 		// <NON_REF>
-		BYTE ref_alt = 0;
+		BYTE ref_alt = 0; // start out with nonsense
+
 		if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
 			ref_alt ^= constants::REF_ALT_NON_REF << 4;
+		} else {
+			switch(this->alleles[0].allele[0]){
+			case 'A': ref_alt ^= constants::REF_ALT_A << 4; break;
+			case 'T': ref_alt ^= constants::REF_ALT_T << 4; break;
+			case 'G': ref_alt ^= constants::REF_ALT_G << 4; break;
+			case 'C': ref_alt ^= constants::REF_ALT_C << 4; break;
+			case 'N': ref_alt ^= constants::REF_ALT_N << 4; break;
+			default:
+				std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
+				std::cerr << std::string(this->alleles[0].allele , this->alleles[0].l_allele) << std::endl;
+				std::cerr << std::string(this->alleles[1].allele , this->alleles[1].l_allele) << std::endl;
+				exit(1);
+			}
 		}
 
 		if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
 			ref_alt ^= constants::REF_ALT_NON_REF << 0;
+		} else {
+			switch(this->alleles[1].allele[0]){
+			case 'A': ref_alt ^= constants::REF_ALT_A << 0; break;
+			case 'T': ref_alt ^= constants::REF_ALT_T << 0; break;
+			case 'G': ref_alt ^= constants::REF_ALT_G << 0; break;
+			case 'C': ref_alt ^= constants::REF_ALT_C << 0; break;
+			case 'N': ref_alt ^= constants::REF_ALT_N << 0; break;
+			case '.': ref_alt ^= constants::REF_ALT_MISSING << 0; break;
+			default:
+				std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
+				exit(1);
+			}
 		}
-
-		// Set mock ref-alt if not simple
-		if(this->alleles[0].l_allele != 1 || this->alleles[1].l_allele != 1){
-			return(255);
-		}
-
-		switch(this->alleles[0].allele[0]){
-		case 'A': ref_alt ^= constants::REF_ALT_A << 4; break;
-		case 'T': ref_alt ^= constants::REF_ALT_T << 4; break;
-		case 'G': ref_alt ^= constants::REF_ALT_G << 4; break;
-		case 'C': ref_alt ^= constants::REF_ALT_C << 4; break;
-		default:
-			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
-			std::cerr << this->alleles[1].allele << std::endl;
-				std::cerr << this->alleles[0].allele << std::endl;
-			exit(1);
-		}
-
-		switch(this->alleles[1].allele[0]){
-		case 'A': ref_alt ^= constants::REF_ALT_A << 0; break;
-		case 'T': ref_alt ^= constants::REF_ALT_T << 0; break;
-		case 'G': ref_alt ^= constants::REF_ALT_G << 0; break;
-		case 'C': ref_alt ^= constants::REF_ALT_C << 0; break;
-		case '.': ref_alt ^= constants::REF_ALT_N << 0; break;
-		default:
-			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
-			exit(1);
-		}
-
 		return(ref_alt);
 	}
 

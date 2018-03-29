@@ -11,6 +11,10 @@ namespace core{
 #define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD)     ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
 #define YON_GT_DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) (((A) & (mask)) << (shift)) | ((B) & (mask))
 
+#define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> (SHIFT)) & ((1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       ((PRIMITIVE) & ((1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
+
 struct GTObject{
 private:
     typedef GTObject             self_type;
@@ -148,7 +152,8 @@ public:
 
 struct GTObjectDiploidRLE : public GTObject{
 private:
-	typedef core::MetaEntry meta_type;
+	typedef GTObjectDiploidRLE self_type;
+	typedef core::MetaEntry    meta_type;
 
 public:
     GTObjectDiploidRLE(void){}
@@ -179,7 +184,8 @@ private:
 
 struct GTObjectDiploidSimple : public GTObject{
 private:
-	typedef core::MetaEntry meta_type;
+	typedef GTObjectDiploidSimple self_type;
+	typedef core::MetaEntry       meta_type;
 
 public:
 	GTObjectDiploidSimple(void){}
@@ -205,6 +211,35 @@ private:
 		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
 		this->alleles[0].first = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
 		this->alleles[1].first = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
+	}
+};
+
+struct GTObjectDiploidBCF : public GTObject{
+private:
+	typedef GTObjectDiploidBCF self_type;
+	typedef core::MetaEntry    meta_type;
+
+public:
+	GTObjectDiploidBCF(void){}
+
+    template <class T>
+    void operator()(const T& gt_primitive, const meta_type& meta_entry)
+    {
+    	this->__interpret<T>(gt_primitive, meta_entry);
+    }
+
+private:
+    template <class T>
+    void __interpret(const T& gt_primitive, const meta_type& meta_entry)
+    {
+		this->n_alleles     = 2;
+		this->alleles       = new std::pair<char,char>[2];
+		const BYTE shift    = (sizeof(T)*8 - 1) / 2;
+
+		this->alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(gt_primitive);
+		this->n_objects         = 1;
+		this->alleles[0].first  = YON_GT_DIPLOID_BCF_A(gt_primitive, shift);
+		this->alleles[1].first  = YON_GT_DIPLOID_BCF_B(gt_primitive, shift);
 	}
 };
 

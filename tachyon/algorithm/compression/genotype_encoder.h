@@ -130,16 +130,14 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
                                      const U32* const  ppa) const
 {
 	const BYTE ploidy = 2;
-	BYTE shift_size = 3;
-	if(sizeof(YON_RLE_TYPE) == 2) shift_size = 7;
-	if(sizeof(YON_RLE_TYPE) == 4) shift_size = 15;
+	// Shift size is equivalent to floor((sizeof(T)*8 - 1)/2)
+	const BYTE shift_size = (sizeof(YON_RLE_TYPE)*8 - 1) / 2;
 
-	// Virtual byte offset into start of genotypes
-	// in BCF entry
+	// Start of GT byte stream
 	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 
 	// Pack genotypes as
-	// allele A | alleleB | isPhased
+	// allele A | allele B | phasing information
 	U32 ppa_pos = 0;
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy){
 		const BCF_GT_TYPE& allele1 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos]]);

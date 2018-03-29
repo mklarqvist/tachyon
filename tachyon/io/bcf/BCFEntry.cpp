@@ -424,6 +424,7 @@ void BCFEntry::SetRefAlt(void){
 	case 'T': this->ref_alt ^= constants::REF_ALT_T << 4; break;
 	case 'G': this->ref_alt ^= constants::REF_ALT_G << 4; break;
 	case 'C': this->ref_alt ^= constants::REF_ALT_C << 4; break;
+	case 'N': this->ref_alt ^= constants::REF_ALT_N << 4; break;
 	default:
 		std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
 		std::cerr << this->alleles[1].data << std::endl;
@@ -436,7 +437,8 @@ void BCFEntry::SetRefAlt(void){
 	case 'T': this->ref_alt ^= constants::REF_ALT_T << 0; break;
 	case 'G': this->ref_alt ^= constants::REF_ALT_G << 0; break;
 	case 'C': this->ref_alt ^= constants::REF_ALT_C << 0; break;
-	case '.': this->ref_alt ^= constants::REF_ALT_N << 0; break;
+	case '.': this->ref_alt ^= constants::REF_ALT_MISSING << 0; break;
+	case 'N': this->ref_alt ^= constants::REF_ALT_N << 0; break;
 	default:
 		std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
 		exit(1);
