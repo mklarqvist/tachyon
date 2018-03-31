@@ -121,11 +121,11 @@ struct DataContainerHeaderObject{
 	}
 
 	const bool operator==(const self_type& other) const{
-		if(this->stride != other.stride)         return false;
-		if(this->offset != other.offset)         return false;
-		if(this->cLength != other.cLength)       return false;
-		if(this->uLength != other.uLength)       return false;
-		if(this->crc != other.crc)               return false;
+		if(this->stride     != other.stride)     return false;
+		if(this->offset     != other.offset)     return false;
+		if(this->cLength    != other.cLength)    return false;
+		if(this->uLength    != other.uLength)    return false;
+		if(this->crc        != other.crc)        return false;
 		if(this->global_key != other.global_key) return false;
 		if(this->controller != other.controller) return false;
 		return true;
@@ -151,12 +151,12 @@ struct DataContainerHeaderObject{
 	}
 
 	//
+	inline S32& getStride(void){ return(this->stride); }
 	inline const S32& getStride(void) const{ return(this->stride); }
 
 	inline const bool isUniform(void) const{ return(this->controller.uniform); }
 	inline const bool isSigned(void) const{ return(this->controller.signedness); }
 	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
-
 	inline void setUniform(const bool yes){ this->controller.uniform = yes; }
 	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
 	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
@@ -168,6 +168,7 @@ struct DataContainerHeaderObject{
 	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
 
 	// Checksum
+	inline U32& getChecksum(void){ return(this->crc); }
 	inline const U32& getChecksum(void) const{ return(this->crc); }
 	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
 
@@ -208,6 +209,7 @@ public:
 		return(*this);
 	}
 
+	// Comparators
 	const bool operator==(const self_type& other) const{
 		if(this->n_entries     != other.n_entries)     return false;
 		if(this->n_additions   != other.n_additions)   return false;
@@ -218,13 +220,19 @@ public:
 	}
 	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
+	// Accessors
+	inline S32& getGlobalKey(void){ return(this->data_header.global_key); }
+	inline const S32& getGlobalKey(void) const{ return(this->data_header.global_key); }
+	inline const bool hasMixedStride(void) const{ return(this->data_header.hasMixedStride()); }
+
+private:
 	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
 		buffer += entry.n_entries;
 		buffer += entry.n_additions;
 		buffer += entry.n_strides;
 		buffer += entry.data_header;
-		if(entry.data_header.hasMixedStride())
-			buffer += entry.stride_header;
+
+		if(entry.data_header.hasMixedStride()) buffer += entry.stride_header;
 
 		return(buffer);
 	}
@@ -234,8 +242,8 @@ public:
 		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(U32));
 		stream << entry.data_header;
-		if(entry.data_header.hasMixedStride())
-			stream << entry.stride_header;
+
+		if(entry.data_header.hasMixedStride()) stream << entry.stride_header;
 
 		return(stream);
 	}
@@ -245,8 +253,8 @@ public:
 		stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(U32));
 		stream >> entry.data_header;
-		if(entry.data_header.hasMixedStride())
-			stream >> entry.stride_header;
+
+		if(entry.data_header.hasMixedStride()) stream >> entry.stride_header;
 
 		return(stream);
 	}

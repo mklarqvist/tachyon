@@ -176,120 +176,61 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	}
 
 	if(settings.loadContig_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_contig.data_header.offset);
-		this->meta_contig_container.header = this->footer.offset_meta_contig;
-		stream >> this->meta_contig_container;
-		assert(this->meta_contig_container.header == this->footer.offset_meta_contig);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_contig, this->meta_contig_container);
 	}
 
 	if(settings.loadPositons_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_position.data_header.offset);
-		this->meta_positions_container.header = this->footer.offset_meta_position;
-		stream >> this->meta_positions_container;
-		assert(this->meta_positions_container.header == this->footer.offset_meta_position);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_position, this->meta_positions_container);
 	}
 
 	if(settings.loadController_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_controllers.data_header.offset);
-		this->meta_controller_container.header = this->footer.offset_meta_controllers;
-		stream >> this->meta_controller_container;
-		assert(this->meta_controller_container.header == this->footer.offset_meta_controllers);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
 	}
 
 	if(settings.loadQuality_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_quality.data_header.offset);
-		this->meta_quality_container.header = this->footer.offset_meta_quality;
-		stream >> this->meta_quality_container;
-		assert(this->meta_quality_container.header == this->footer.offset_meta_quality);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_quality, this->meta_quality_container);
 	}
 
 	if(settings.loadNames_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_names.data_header.offset);
-		this->meta_names_container.header = this->footer.offset_meta_names;
-		stream >> this->meta_names_container;
-		assert(this->meta_names_container.header == this->footer.offset_meta_names);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_names, this->meta_names_container);
 	}
 
 	if(settings.loadAlleles_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_refalt.data_header.offset);
-		this->meta_refalt_container.header  = this->footer.offset_meta_refalt;
-		stream >> this->meta_refalt_container;
-		assert(this->meta_refalt_container.header == this->footer.offset_meta_refalt);
-
-		this->meta_alleles_container.header = this->footer.offset_meta_alleles;
-		stream >> this->meta_alleles_container;
-		assert(this->meta_alleles_container.header == this->footer.offset_meta_alleles);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
+		this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
 	}
 
 	if(settings.loadGenotypesRLE_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_gt_8b.data_header.offset);
-		this->gt_rle8_container.header  = this->footer.offset_gt_8b;
-		stream >> this->gt_rle8_container;
-		assert(this->gt_rle8_container.header == this->footer.offset_gt_8b);
-
-		this->gt_rle16_container.header = this->footer.offset_gt_16b;
-		stream >> this->gt_rle16_container;
-		assert(this->gt_rle16_container.header == this->footer.offset_gt_16b);
-
-		this->gt_rle32_container.header = this->footer.offset_gt_32b;
-		stream >> this->gt_rle32_container;
-		assert(this->gt_rle32_container.header == this->footer.offset_gt_32b);
-
-		this->gt_rle64_container.header = this->footer.offset_gt_64b;
-		stream >> this->gt_rle64_container;
-		assert(this->gt_rle64_container.header == this->footer.offset_gt_64b);
+		this->__loadContainerSeek(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
+		this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
+		this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
+		this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
 	}
 
 	if(settings.loadGenotypesSimple_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_gt_simple8.data_header.offset);
-		this->gt_simple8_container.header  = this->footer.offset_gt_simple8;
-		stream >> this->gt_simple8_container;
-		assert(this->gt_simple8_container.header == this->footer.offset_gt_simple8);
-
-		this->gt_simple16_container.header = this->footer.offset_gt_simple16;
-		stream >> this->gt_simple16_container;
-		assert(this->gt_simple16_container.header == this->footer.offset_gt_simple16);
-
-		this->gt_simple32_container.header = this->footer.offset_gt_simple32;
-		stream >> this->gt_simple32_container;
-		assert(this->gt_simple32_container.header == this->footer.offset_gt_simple32);
-
-		this->gt_simple64_container.header = this->footer.offset_gt_simple64;
-		stream >> this->gt_simple64_container;
-		assert(this->gt_simple64_container.header == this->footer.offset_gt_simple64);
+		this->__loadContainerSeek(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
+		this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
+		this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
+		this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
 	}
 
 	if(settings.loadGenotypesSupport_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_gt_helper.data_header.offset);
-		this->gt_support_data_container.header = this->footer.offset_gt_helper;
-		stream >> this->gt_support_data_container;
-		assert(this->gt_support_data_container.header == this->footer.offset_gt_helper);
+		this->__loadContainerSeek(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
 	}
 
 	if(settings.loadSetMembership_){
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_meta_info_id.data_header.offset);
-		this->meta_info_map_ids.header = this->footer.offset_meta_info_id;
-		stream >> this->meta_info_map_ids;
-		assert(this->meta_info_map_ids.header == this->footer.offset_meta_info_id);
-
-		this->meta_filter_map_ids.header = this->footer.offset_meta_filter_id;
-		stream >> this->meta_filter_map_ids;
-		assert(this->meta_filter_map_ids.header == this->footer.offset_meta_filter_id);
-
-		this->meta_format_map_ids.header = this->footer.offset_meta_format_id;
-		stream >> this->meta_format_map_ids;
-		assert(this->meta_format_map_ids.header == this->footer.offset_meta_format_id);
+		this->__loadContainerSeek(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
+		this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
+		this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
 	}
 
 	// Load all info
 	if(settings.loadINFO_ && this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
+			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
 			++this->n_info_loaded;
-			this->info_containers[i].header = this->footer.info_offsets[i];
-			stream >> this->info_containers[i];
 			settings.load_info_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.info_offsets[i]));
-			assert(this->info_containers[i].header == this->footer.info_offsets[i]);
 		}
 	}
 	// If we have supplied a list of identifiers
@@ -315,11 +256,9 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	if(settings.loadFORMAT_ && this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
-			this->format_containers[i].header = this->footer.format_offsets[i];
-			stream >> this->format_containers[i];
+			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
 			++this->n_format_loaded;
 			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
-			assert(this->format_containers[i].header == this->footer.format_offsets[i]);
 		}
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
 	}

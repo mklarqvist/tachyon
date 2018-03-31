@@ -111,11 +111,10 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(
 
 template <class T>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-	std::cerr << "here in permute bcf-style diploid getobjects" << std::endl;
 	std::vector<tachyon::core::GTObject> ret(n_samples);
 	tachyon::core::GTObjectDiploidBCF* entries = reinterpret_cast<tachyon::core::GTObjectDiploidBCF*>(&ret[0]);
 
-	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
+	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){

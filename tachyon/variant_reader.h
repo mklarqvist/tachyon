@@ -251,18 +251,18 @@ public:
 	bool seek_to_block(const U32& blockID);
 
 	bool parseSettings(void){
-		std::cerr << "clearing settings" << std::endl;
+		//std::cerr << "clearing settings" << std::endl;
 		this->settings.info_ID_list.clear();
 
 		// Map INFO
-		std::cerr << "list size: " << settings.info_list.size() << std::endl;
+		//std::cerr << "list size: " << settings.info_list.size() << std::endl;
 		U32 info_matches = 0;
 		for(U32 i = 0; i < settings.info_list.size(); ++i){
 			const S32 global_key = this->has_info_field(settings.info_list[i]);
-			std::cerr << i << ": " << settings.info_list[i] << " -> " << global_key << std::endl;
+			//std::cerr << i << ": " << settings.info_list[i] << " -> " << global_key << std::endl;
 			if(global_key){
 				S32 local_key = -1;
-				std::cerr << "number of streams: " << this->block.footer.n_info_streams << std::endl;
+				//std::cerr << "number of streams: " << this->block.footer.n_info_streams << std::endl;
 				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
 					//std::cerr << "checking: " << this->block.footer.info_offsets[i].data_header.global_key << " == " << global_key << std::endl;
 					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
@@ -270,7 +270,7 @@ public:
 						this->settings.info_ID_list.push_back(i);
 						settings.load_info_ID_loaded.push_back(
 													core::SettingsMap(
-															info_matches++,              // iterator value
+															info_matches++,                // iterator value
 															i,                             // local index id
 															&this->block.footer.info_offsets[i]) // offset
 															);
@@ -281,10 +281,12 @@ public:
 
 				if(local_key == -1){
 					std::cerr << "could not find local" << std::endl;
-
 				}
 			}
 		}
+
+		// Todo: for each local hit
+		// build new bit-vector
 
 		return(true);
 	}
@@ -293,12 +295,11 @@ public:
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
 
-	U64 iterate_all_info(std::ostream& stream = std::cout){
+	U64 outputVCF(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer* gt = nullptr;
-		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_){
+		if(this->block.header.controller.hasGT && settings.loadGenotypesRLE_)
 			gt = new containers::GenotypeContainer(this->block, meta);
-		}
 
 		containers::FormatContainerInterface** fits = new containers::FormatContainerInterface*[this->block.n_format_loaded];
 
@@ -386,10 +387,17 @@ public:
 				continue;
 			}
 
+
+			// At this point we need to ascertain that the target set membership identifier
+			// contain a loaded INFO value
 			if(settings.loadINFO_ || this->block.n_info_loaded){
 				if(this->block.n_info_loaded){
 					const U32& n_keys = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].n_keys;
 					const U32* keys   = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].local_keys;
+
+					//for(U32 z = 0; z < this->settings.load_info_ID_loaded.size(); ++z){
+					//	std::cerr << "Key: " << this->settings.load_info_ID_loaded[z].offset->data_header.global_key << " of " << this->settings.load_info_ID_loaded.size() << " " << this->block.footer.info_bit_vectors[meta[p].info_pattern_id][settings.load_info_ID_loaded[z].offset->data_header.global_key] << std::endl;
+					//}
 
 					// First
 					if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
@@ -429,9 +437,9 @@ public:
 						}
 						stream.put('\t');
 
+						// Begin print FORMAT data for each sample
 						std::vector<core::GTObject> objects_true;
 						if(this->settings.loadPPA_ && this->block.header.controller.hasGTPermuted){
-							std::cerr << "has ppa and loaded" << std::endl;
 							objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 						} else {
 							objects_true = gt->at(p).getObjects(this->header.getSampleNumber());

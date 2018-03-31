@@ -133,8 +133,7 @@ int view(int argc, char** argv){
 	}
 	//reader.getSettings().loadINFO_ = false;
 	//reader.getSettings().loadINFO("AC").loadINFO("AN").loadINFO("DP");
-
-	//reader.getSettings().loadMeta(true);
+	//reader.getSettings().loadAllMeta(true);
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
@@ -143,7 +142,7 @@ int view(int argc, char** argv){
 	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		n_variants += reader.iterate_all_info();
+		n_variants += reader.outputVCF();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		++n_blocks;
 	}

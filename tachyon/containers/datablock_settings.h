@@ -36,9 +36,9 @@ struct SettingsMap{
 	inline bool operator<(const self_type& other) const{ return(this->offset->data_header.offset < other.offset->data_header.offset); }
 	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
-	U32 iterator_index;
-	S32 target_stream_local;
-	const header_type* offset;
+	U32 iterator_index;        // Incrementor index
+	S32 target_stream_local;   // Local target index
+	const header_type* offset; // Header object of target data container
 };
 
 /**<

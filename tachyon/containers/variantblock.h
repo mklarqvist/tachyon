@@ -231,6 +231,36 @@ private:
 		stream << container;
 	}
 
+	/**<
+	 * Wrapper function to load a data container from packed YON blocks
+	 * @param stream    Input file handler
+	 * @param offset    Header object
+	 * @param container Destination container object
+	 * @return
+	 */
+	inline bool __loadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
+		container.header = offset;
+		stream >> container;
+		assert(container.header == offset);
+		return(stream.good());
+	}
+
+	/**<
+	 * Wrapper function to load a data container from packed YON blocks. Additionally
+	 * performs a (potential) random seek to the start of the data sector before reading.
+	 * @param stream    Input file handler
+	 * @param offset    Header object
+	 * @param container Destination container object
+	 * @return
+	 */
+	inline bool __loadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
+		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
+		container.header = offset;
+		stream >> container;
+		assert(container.header == offset);
+		return(stream.good());
+	}
+
 public:
 	block_header_type header;
 	block_footer_type footer;
