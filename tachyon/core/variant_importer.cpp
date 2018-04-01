@@ -88,12 +88,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	// Digest controller
-	containers::ChecksumContainer checksums;
-	if(checksums.allocate(this->header->info_map.size() + this->header->format_map.size() + this->header->filter_map.size()) == false){
-		std::cerr << "failed to allocate" << std::endl;
-		return false;
-	}
-	//tachyon::DigitalDigestPair* digests = new tachyon::DigitalDigestPair[this->header->map.size()];
+	algorithm::VariantDigitalDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
 
 	// Start import
 	U32 previousFirst    = 0;
@@ -113,9 +108,6 @@ bool VariantImporter::BuildBCF(void){
 		std::setfill(' ') << std::setw(8) << "Completion" << ' ' <<
 		"Elapsed " << "Contig:from->to" << std::endl;
 	}
-
-	// temp
-	//this->nn = new algorithm::GenotypeNearestNeighbour(header.getSampleNumber());
 
 	while(true){
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
@@ -141,29 +133,13 @@ bool VariantImporter::BuildBCF(void){
 		if(header.getSampleNumber() <= 1)
 			this->block.header.controller.hasGTPermuted = false;
 
-		// test
-		/*
-		for(U32 i = 0; i < reader.size(); ++i){
-			if(!this->add(reader[i])){
-				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
-				return false;
-			}
-
-			this->permutator.update(reader[i]);
-		}
-		*/
-
 		// Permute GT if GT is available and the appropriate flag is triggered
-
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
 		}
-
-		// test
-		//this->nn->build(reader);
 
 		// Perform parsing of BCF entries in memory
 		for(U32 i = 0; i < reader.size(); ++i){
@@ -184,18 +160,15 @@ bool VariantImporter::BuildBCF(void){
 			return false;
 		}
 
-		// Digests
-		//if(checksums.update(this->block, this->header->mapTable) == false){
-		//	std::cerr << utility::timestamp("ERROR","CHECKSUM") << "Failed to update!" << std::endl;
-		//	return false;
-		//}
-
 		// Todo: abstraction
 		// Perform writing and update index
+		checksums += this->block;
 
 		current_index_entry.byte_offset     = this->writer.stream.tellp();
-		//this->block.footer_support.buffer_data_uncompressed += this->block.footer;
-		//this->compression_manager.zstd_codec.compress(this->block.footer_support);
+
+		this->block.footer_support.buffer_data_uncompressed += this->block.footer;
+		this->compression_manager.zstd_codec.compress(this->block.footer_support);
+		std::cerr << "Offsets: " << this->block.footer_support.getSizeUncompressed() << "->" << this->block.footer_support.getSizeCompressed() << std::endl;
 
 		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
 		current_index_entry.byte_offset_end = this->writer.stream.tellp();
@@ -232,6 +205,22 @@ bool VariantImporter::BuildBCF(void){
 	footer.offset_end_of_data = this->writer.stream.tellp();
 	footer.n_blocks           = this->writer.n_blocks_written;
 	footer.n_variants         = this->writer.n_variants_written;
+
+	// temp
+	for(U32 i = 0; i < 20; ++i){
+		if(!checksums[i].finalize()){ std::cerr << "failed to finalize" << std::endl; }
+		std::cerr << checksums[i] << std::endl;
+	}
+
+	for(U32 k = 0; k < this->header->info_map.size(); ++k){
+		if(!checksums.atINFO(k).finalize()){ std::cerr << "failed to finalize" << std::endl; }
+		std::cerr << checksums.atINFO(k) << std::endl;
+	}
+
+	for(U32 k = 0; k < this->header->format_map.size(); ++k){
+		if(!checksums.atFORMAT(k).finalize()){ std::cerr << "failed to finalize" << std::endl; }
+		std::cerr << checksums.atFORMAT(k) << std::endl;
+	}
 
 	// Write index
 	this->writer.WriteIndex();

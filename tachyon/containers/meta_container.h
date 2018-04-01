@@ -17,7 +17,7 @@ private:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef VariantBlock             block_type;
-    typedef VariantBlockHeader          block_header_type;
+    typedef VariantBlockHeader       block_header_type;
 
 public:
 	MetaContainer(const block_type& block);

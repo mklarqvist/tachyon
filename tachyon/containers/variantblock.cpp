@@ -301,7 +301,7 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
 		stats_basic[1].cost_uncompressed += this->ppa_manager.getObjectSize();
-		stats_basic[1].cost_compressed   += this->footer.offset_ppa.data_header.cLength;
+		stats_basic[1].cost_compressed   += this->ppa_manager.c_length;
 	}
 
 	stats_basic[2]  += this->meta_contig_container;

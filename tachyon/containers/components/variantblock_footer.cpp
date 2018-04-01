@@ -287,12 +287,6 @@ io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	buffer += (U16)entry.n_format_patterns;
 	buffer += (U16)entry.n_filter_patterns;
 
-	buffer += entry.n_info_streams;
-	buffer += entry.n_format_streams;
-	buffer += entry.n_filter_streams;
-	buffer += entry.n_info_patterns;
-	buffer += entry.n_format_patterns;
-	buffer += entry.n_filter_patterns;
 	buffer += entry.offset_ppa;
 	buffer += entry.offset_meta_contig;
 	buffer += entry.offset_meta_position;

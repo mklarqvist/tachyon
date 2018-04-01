@@ -15,7 +15,7 @@
 #include "containers/info_container_string.h"
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
-#include "containers/checksum_container.h"
+#include "algorithm/digital_digest.h"
 #include "containers/variantblock.h"
 #include "core/genotype_object.h"
 #include "core/footer/footer.h"
@@ -37,7 +37,7 @@ class VariantReader{
 	typedef algorithm::CompressionManager       codec_manager_type;
 	typedef core::DataBlockSettings             settings_type;
 	typedef index::Index                        index_type;
-	typedef containers::ChecksumContainer       checksum_type;
+	typedef algorithm::VariantDigitalDigestManager checksum_type;
 
 public:
 	VariantReader();
@@ -251,27 +251,22 @@ public:
 	bool seek_to_block(const U32& blockID);
 
 	bool parseSettings(void){
-		//std::cerr << "clearing settings" << std::endl;
 		this->settings.info_ID_list.clear();
 
 		// Map INFO
-		//std::cerr << "list size: " << settings.info_list.size() << std::endl;
 		U32 info_matches = 0;
 		for(U32 i = 0; i < settings.info_list.size(); ++i){
 			const S32 global_key = this->has_info_field(settings.info_list[i]);
-			//std::cerr << i << ": " << settings.info_list[i] << " -> " << global_key << std::endl;
 			if(global_key){
 				S32 local_key = -1;
-				//std::cerr << "number of streams: " << this->block.footer.n_info_streams << std::endl;
 				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-					//std::cerr << "checking: " << this->block.footer.info_offsets[i].data_header.global_key << " == " << global_key << std::endl;
 					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
 						local_key = i;
 						this->settings.info_ID_list.push_back(i);
 						settings.load_info_ID_loaded.push_back(
 													core::SettingsMap(
-															info_matches++,                // iterator value
-															i,                             // local index id
+															info_matches++, // iterator value
+															i,              // local index id
 															&this->block.footer.info_offsets[i]) // offset
 															);
 						std::cerr << "match @ local: " << i << std::endl;
