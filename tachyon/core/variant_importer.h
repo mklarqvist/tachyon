@@ -7,18 +7,21 @@
 #include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "ImportWriter.h"
 #include "../containers/variantblock.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
 #include "variant_importer_container_stats.h"
+#include "../algorithm/timer.h"
+#include "variant_import_writer.h"
 
 namespace tachyon {
 
 class VariantImporter {
 private:
 	typedef VariantImporter                 self_type;
-	typedef ImportWriter                    writer_type;
+	typedef VariantImportWriterInterface    writer_interface_type;
+	typedef VariantImportWriterFile         writer_file_type;
+	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef vcf::VCFHeader                  header_type;
 	typedef index::IndexEntry               index_entry_type;
@@ -41,6 +44,8 @@ public:
 	bool Build();
 
 	inline void setPermute(const bool yes){ this->permute = yes; }
+	void setWriterTypeFile(void){ this->writer = new writer_file_type; }
+	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 private:
 	bool BuildBCF();  // import a BCF file
@@ -61,7 +66,7 @@ private:
 	// Read/write fields
 	std::string inputFile;   // input file name
 	std::string outputPrefix;// output file prefix
-	writer_type writer;      // writer
+	writer_interface_type* writer;      // writer
 
 	index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter

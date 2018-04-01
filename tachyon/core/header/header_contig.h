@@ -18,13 +18,8 @@ public:
 	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
 	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
 
-	friend std::ostream& operator<<(std::ostream& out, const self_type& contig){
-		out << contig.name << '\t' << contig.bp_length << '\t' << contig.n_blocks;
-		return(out);
-	}
-
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		const U32 l_name = entry.name.size();
 		stream.write(reinterpret_cast<const char*>(&l_name),          sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.bp_length), sizeof(U64));

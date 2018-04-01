@@ -3,7 +3,6 @@
 #include "../algorithm/digital_digest.h"
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
-#include "../algorithm/timer.h"
 #include "variant_importer.h"
 
 namespace tachyon {
@@ -20,12 +19,14 @@ VariantImporter::VariantImporter(std::string inputFile,
 	checkpoint_bases(checkpoint_bases),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
-	writer(),
+	writer(nullptr),
 	header(nullptr)
 {
 }
 
-VariantImporter::~VariantImporter(){ }
+VariantImporter::~VariantImporter(){
+	delete this->writer;
+}
 
 bool VariantImporter::Build(){
 	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
@@ -64,13 +65,16 @@ bool VariantImporter::BuildBCF(void){
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->samples);
 
-	if(!this->writer.open(this->outputPrefix)){
+	if(this->outputPrefix.size() == 0) this->writer = new writer_stream_type;
+	else this->writer = new writer_file_type;
+
+	if(!this->writer->open(this->outputPrefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
 	core::VariantHeader header(*this->header);
-	header.write(this->writer.stream);
+	header.write(*this->writer->stream);
 	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
@@ -164,27 +168,27 @@ bool VariantImporter::BuildBCF(void){
 		// Perform writing and update index
 		checksums += this->block;
 
-		current_index_entry.byte_offset     = this->writer.stream.tellp();
+		current_index_entry.byte_offset     = this->writer->stream->tellp();
 
-		this->block.footer_support.buffer_data_uncompressed += this->block.footer;
-		this->compression_manager.zstd_codec.compress(this->block.footer_support);
-		std::cerr << "Offsets: " << this->block.footer_support.getSizeUncompressed() << "->" << this->block.footer_support.getSizeCompressed() << std::endl;
+		//this->block.footer_support.buffer_data_uncompressed += this->block.footer;
+		//this->compression_manager.zstd_codec.compress(this->block.footer_support);
+		//std::cerr << "Offsets: " << this->block.footer_support.getSizeUncompressed() << "->" << this->block.footer_support.getSizeCompressed() << std::endl;
 
-		this->block.write(this->writer.stream, this->stats_basic, this->stats_info, this->stats_format);
-		current_index_entry.byte_offset_end = this->writer.stream.tellp();
+		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
+		current_index_entry.byte_offset_end = this->writer->stream->tellp();
 		current_index_entry.contigID        = reader.front().body->CHROM;
 		current_index_entry.minPosition     = reader.front().body->POS;
 		current_index_entry.maxPosition     = reader.back().body->POS;
 		current_index_entry.n_variants      = reader.size();
-		this->writer.index += current_index_entry;
+		this->writer->index += current_index_entry;
 		current_index_entry.reset();
-		++this->writer.n_blocks_written;
-		this->writer.n_variants_written += reader.size();
+		++this->writer->n_blocks_written;
+		this->writer->n_variants_written += reader.size();
 
 		if(!SILENT){
 			std::cerr << utility::timestamp("PROGRESS") <<
-			std::setfill(' ') << std::setw(10) << this->writer.n_variants_written << ' ' <<
-			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(writer.stream.tellp()) << '\t' <<
+			std::setfill(' ') << std::setw(10) << this->writer->n_variants_written << ' ' <<
+			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(this->writer->stream->tellp()) << '\t' <<
 			std::setfill(' ') << std::setw(8)  << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
 			timer.ElapsedString() << ' ' <<
 			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
@@ -193,49 +197,25 @@ bool VariantImporter::BuildBCF(void){
 		// Reset and update
 		this->block.clear();
 		this->permutator.reset();
-		this->writer.stream.flush();
+		this->writer->stream->flush();
 		previousContigID = reader.front().body->CHROM;
 		previousFirst    = reader.front().body->POS;
 		previousLast     = reader.back().body->POS;
 	}
 	// Done importing
-	this->writer.stream.flush();
+	this->writer->stream->flush();
 
 	core::Footer footer;
-	footer.offset_end_of_data = this->writer.stream.tellp();
-	footer.n_blocks           = this->writer.n_blocks_written;
-	footer.n_variants         = this->writer.n_variants_written;
+	footer.offset_end_of_data = this->writer->stream->tellp();
+	footer.n_blocks           = this->writer->n_blocks_written;
+	footer.n_variants         = this->writer->n_variants_written;
+	assert(footer.n_blocks == this->writer->index.size());
 
-	// temp
-	for(U32 i = 0; i < 20; ++i){
-		if(!checksums[i].finalize()){ std::cerr << "failed to finalize" << std::endl; }
-		std::cerr << checksums[i] << std::endl;
-	}
-
-	for(U32 k = 0; k < this->header->info_map.size(); ++k){
-		if(!checksums.atINFO(k).finalize()){ std::cerr << "failed to finalize" << std::endl; }
-		std::cerr << checksums.atINFO(k) << std::endl;
-	}
-
-	for(U32 k = 0; k < this->header->format_map.size(); ++k){
-		if(!checksums.atFORMAT(k).finalize()){ std::cerr << "failed to finalize" << std::endl; }
-		std::cerr << checksums.atFORMAT(k) << std::endl;
-	}
-
-	// Write index
-	this->writer.WriteIndex();
-	const U64 index_ends = this->writer.stream.tellp();
-
-	// Finalize SHA-512 digests
-	// Write digests
-	checksums.finalize();
-	this->writer.stream << checksums;
-
-	this->writer.stream.flush();
-	const U64 digests_ends = this->writer.stream.tellp();
-
-	this->writer.stream << footer;
-	this->writer.stream.flush();
+	this->writer->writeIndex(); // Write index
+	checksums.finalize();       // Finalize SHA-512 digests
+	*this->writer->stream << checksums;
+	*this->writer->stream << footer;
+	this->writer->stream->flush();
 
 	if(!SILENT){
 		std::vector<std::string> usage_statistics_names = {
@@ -250,38 +230,41 @@ bool VariantImporter::BuildBCF(void){
 			total_compressed   += this->stats_basic[i].cost_compressed;
 		}
 
-		std::ofstream writer_stats;
-		writer_stats.open(this->writer.basePath + this->writer.baseName + "_yon_stats.txt", std::ios::out);
-		if(writer_stats.good()){
-			for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
-			for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
-			for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
+		if(this->outputPrefix.size()){
+			std::ofstream writer_stats;
+			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
+			writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
+			if(writer_stats.good()){
+				for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
+				for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
+				for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
 
-			writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
-			writer_stats << "YON\t" << this->writer.stream.tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer.stream.tellp() << std::endl;
-			writer_stats.close();
-		} else {
-			std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (this->writer.basePath + this->writer.baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;
+				writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
+				writer_stats << "YON\t" << this->writer->stream->tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer->stream->tellp() << std::endl;
+				writer_stats.close();
+			} else {
+				std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (wstats->basePath + wstats->baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;
+			}
+
+			const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
+			const U64 n_total_gt = gt_stats.getTotal();
+			std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
+			std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
+			std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
+			std::cout << "GT-RLE-64\t"  << gt_stats.rle_counts[3] << '\t' << (float)gt_stats.rle_counts[3]/n_total_gt << std::endl;
+			std::cout << "GT-RLES-8\t"  << gt_stats.rle_simple_counts[0] << '\t' << (float)gt_stats.rle_simple_counts[0]/n_total_gt << std::endl;
+			std::cout << "GT-RLES-16\t" << gt_stats.rle_simple_counts[1] << '\t' << (float)gt_stats.rle_simple_counts[1]/n_total_gt << std::endl;
+			std::cout << "GT-RLES-32\t" << gt_stats.rle_simple_counts[2] << '\t' << (float)gt_stats.rle_simple_counts[2]/n_total_gt << std::endl;
+			std::cout << "GT-RLES-64\t" << gt_stats.rle_simple_counts[3] << '\t' << (float)gt_stats.rle_simple_counts[3]/n_total_gt << std::endl;
+			std::cout << "GT-DIPLOID-BCF-8\t"  << gt_stats.diploid_bcf_counts[0] << '\t' << (float)gt_stats.diploid_bcf_counts[0]/n_total_gt << std::endl;
+			std::cout << "GT-DIPLOID-BCF-16\t" << gt_stats.diploid_bcf_counts[1] << '\t' << (float)gt_stats.diploid_bcf_counts[1]/n_total_gt << std::endl;
+			std::cout << "GT-DIPLOID-BCF-32\t" << gt_stats.diploid_bcf_counts[2] << '\t' << (float)gt_stats.diploid_bcf_counts[2]/n_total_gt << std::endl;
+			std::cout << "GT-BCF-8\t"  << gt_stats.bcf_counts[0] << '\t' << (float)gt_stats.bcf_counts[0]/n_total_gt << std::endl;
+			std::cout << "GT-BCF-16\t" << gt_stats.bcf_counts[1] << '\t' << (float)gt_stats.bcf_counts[1]/n_total_gt << std::endl;
+			std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
+
 		}
-
-		const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
-		const U64 n_total_gt = gt_stats.getTotal();
-		std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
-		std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
-		std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
-		std::cout << "GT-RLE-64\t"  << gt_stats.rle_counts[3] << '\t' << (float)gt_stats.rle_counts[3]/n_total_gt << std::endl;
-		std::cout << "GT-RLES-8\t"  << gt_stats.rle_simple_counts[0] << '\t' << (float)gt_stats.rle_simple_counts[0]/n_total_gt << std::endl;
-		std::cout << "GT-RLES-16\t" << gt_stats.rle_simple_counts[1] << '\t' << (float)gt_stats.rle_simple_counts[1]/n_total_gt << std::endl;
-		std::cout << "GT-RLES-32\t" << gt_stats.rle_simple_counts[2] << '\t' << (float)gt_stats.rle_simple_counts[2]/n_total_gt << std::endl;
-		std::cout << "GT-RLES-64\t" << gt_stats.rle_simple_counts[3] << '\t' << (float)gt_stats.rle_simple_counts[3]/n_total_gt << std::endl;
-		std::cout << "GT-DIPLOID-BCF-8\t"  << gt_stats.diploid_bcf_counts[0] << '\t' << (float)gt_stats.diploid_bcf_counts[0]/n_total_gt << std::endl;
-		std::cout << "GT-DIPLOID-BCF-16\t" << gt_stats.diploid_bcf_counts[1] << '\t' << (float)gt_stats.diploid_bcf_counts[1]/n_total_gt << std::endl;
-		std::cout << "GT-DIPLOID-BCF-32\t" << gt_stats.diploid_bcf_counts[2] << '\t' << (float)gt_stats.diploid_bcf_counts[2]/n_total_gt << std::endl;
-		std::cout << "GT-BCF-8\t"  << gt_stats.bcf_counts[0] << '\t' << (float)gt_stats.bcf_counts[0]/n_total_gt << std::endl;
-		std::cout << "GT-BCF-16\t" << gt_stats.bcf_counts[1] << '\t' << (float)gt_stats.bcf_counts[1]/n_total_gt << std::endl;
-		std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
-
-		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer.n_variants_written) << " variants in " << utility::ToPrettyString(this->writer.n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer.stream.tellp()) << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "YON: "   << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
 	}

@@ -110,11 +110,9 @@ public:
 	}
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_entries), sizeof(size_type));
-
-		for(U32 i = 0; i < entry.size(); ++i)
-			stream << entry[i];
+		for(U32 i = 0; i < entry.size(); ++i) stream << entry[i];
 
 		return(stream);
 	}

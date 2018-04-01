@@ -113,7 +113,7 @@ private:
 		return(buffer);
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_keys), sizeof(U32));
 		for(U32 i = 0; i < entry.n_keys; ++i)
 			stream.write(reinterpret_cast<const char*>(&entry.local_keys[i]), sizeof(U32));

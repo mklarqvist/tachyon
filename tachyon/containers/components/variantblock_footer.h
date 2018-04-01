@@ -82,7 +82,7 @@ public:
 	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry);
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry);
 

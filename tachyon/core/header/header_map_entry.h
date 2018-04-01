@@ -87,7 +87,7 @@ public:
 	inline const TACHYON_VARIANT_HEADER_FIELD_TYPE getType(void) const{ return(TACHYON_VARIANT_HEADER_FIELD_TYPE(this->primitive_type)); }
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		const U32 l_ID = entry.ID.size();
 		stream.write(reinterpret_cast<const char*>(&l_ID),       sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry),      sizeof(BYTE));

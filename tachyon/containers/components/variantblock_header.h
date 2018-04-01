@@ -31,7 +31,7 @@ public:
 
 	inline void clear(){ memset(this, 0, sizeof(U16)); }
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller){
 		const U16 c = controller.hasGT |
                       controller.hasGTPermuted << 1 |
                       controller.anyEncrypted  << 2 |
@@ -77,7 +77,7 @@ public:
 	inline const S64& getMinPosition(void) const{ return(this->minPosition); }
 	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));

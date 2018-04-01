@@ -156,7 +156,7 @@ public:
 	 * @param stats_format Tracking for FORMAT containers
 	 * @return             Returns TRUE upon success or FALSE otherwise
 	 */
-	bool write(std::ofstream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+	bool write(std::ostream& stream, import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
 
 	// Add a meta entry
 	/**<
@@ -225,7 +225,7 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void __writeContainer(std::ofstream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void __writeContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		this->__updateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;

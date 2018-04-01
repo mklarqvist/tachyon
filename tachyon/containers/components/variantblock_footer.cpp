@@ -145,7 +145,7 @@ bool VariantBlockFooter::__constructBitVector(bit_vector*& target,
 	return true;
 }
 
-std::ofstream& operator<<(std::ofstream& stream, const VariantBlockFooter& entry){
+std::ostream& operator<<(std::ostream& stream, const VariantBlockFooter& entry){
 	stream.write(reinterpret_cast<const char*>(&entry.n_info_streams),    sizeof(U16));
 	stream.write(reinterpret_cast<const char*>(&entry.n_format_streams),  sizeof(U16));
 	stream.write(reinterpret_cast<const char*>(&entry.n_filter_streams),  sizeof(U16));

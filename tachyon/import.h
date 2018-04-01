@@ -56,7 +56,7 @@ int import(int argc, char** argv){
 	int option_index = 0;
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
-		{"output",		required_argument, 0,  'o' },
+		{"output",		optional_argument, 0,  'o' },
 		{"fastq",		no_argument, 0,  'f' },
 		{"checkpoint-variants",		optional_argument, 0,  'c' },
 		{"checkpoint-bases",		optional_argument, 0,  'C' },
@@ -118,12 +118,6 @@ int import(int argc, char** argv){
 	if(input.length() == 0){
 		import_usage();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
-		return(1);
-	}
-
-	if(output.length() == 0){
-		import_usage();
-		std::cerr << tachyon::utility::timestamp("ERROR") << "No output file specified..." << std::endl;
 		return(1);
 	}
 

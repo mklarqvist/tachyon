@@ -97,7 +97,7 @@ struct DataContainerHeaderObject{
 		return(buffer);
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(U32));
@@ -237,7 +237,7 @@ private:
 		return(buffer);
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_entries),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(U32));

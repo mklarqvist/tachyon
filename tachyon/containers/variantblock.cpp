@@ -335,7 +335,7 @@ void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import
 	}
 }
 
-bool VariantBlock::write(std::ofstream& stream,
+bool VariantBlock::write(std::ostream& stream,
                      import_stats_type& stats_basic,
                      import_stats_type& stats_info,
                      import_stats_type& stats_format)

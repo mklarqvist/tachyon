@@ -117,7 +117,7 @@ public:
 	bool update(const block_type& block, const header_type& header);
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){
+	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
 		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries), sizeof(size_type));
 		for(size_type i = 0; i < container.size(); ++i)
 			out << container[i];

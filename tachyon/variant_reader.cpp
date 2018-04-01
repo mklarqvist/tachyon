@@ -72,7 +72,6 @@ bool VariantReader::open(void){
 	this->stream >> this->index;
 	this->stream >> this->checksums;
 	this->stream.seekg(return_pos);
-
 	return(this->stream.good());
 }
 

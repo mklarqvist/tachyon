@@ -370,7 +370,7 @@ private:
 		return true;
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.buffer_data;
 		if(entry.header.data_header.hasMixedStride())
 			stream << entry.buffer_strides;

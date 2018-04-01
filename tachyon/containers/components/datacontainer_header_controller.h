@@ -71,7 +71,7 @@ private:
 		return(buffer);
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& controller){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller){
 		const U16 c = controller.signedness  << 0  |
 					  controller.mixedStride << 1  |
 					  controller.type        << 2  |

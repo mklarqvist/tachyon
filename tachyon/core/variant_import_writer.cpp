@@ -3,32 +3,43 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "../support/MagicConstants.h"
 #include "../support/helpers.h"
-#include "ImportWriter.h"
+#include "variant_import_writer.h"
 
 namespace tachyon {
 
-ImportWriter::ImportWriter() :
+VariantImportWriterInterface::VariantImportWriterInterface() :
 	n_blocks_written(0),
-	n_variants_written(0)
+	n_variants_written(0),
+	stream(nullptr)
 {}
 
-ImportWriter::~ImportWriter(){}
+VariantImportWriterInterface::~VariantImportWriterInterface()
+{
+}
 
-bool ImportWriter::open(const std::string output){
+void VariantImportWriterInterface::writeIndex(void){
+	this->index.buildSuperIndex();
+	*this->stream << this->index;
+	this->stream->flush();
+}
+
+bool VariantImportWriterFile::open(const std::string output){
 	if(output.size() == 0){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "No output file/file prefix provided!" << std::endl;
 		return false;
 	}
+	std::ofstream* ostream = reinterpret_cast<std::ofstream*>(this->stream);
 
 	this->filename = output;
-	this->CheckOutputNames(output);
-	this->stream.open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
+	this->checkOutputNames(output);
+	ostream->open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
-	if(!this->stream.good()){
+	if(!this->stream->good()){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
@@ -40,23 +51,7 @@ bool ImportWriter::open(const std::string output){
 	return true;
 }
 
-void ImportWriter::WriteIndex(void){
-	this->index.buildSuperIndex();
-	this->stream << this->index;
-	this->stream.flush();
-}
-
-void ImportWriter::WriteFinal(const U64& data_ends){
-	this->stream.write(reinterpret_cast<const char* const>(&data_ends), sizeof(U64));
-
-	// Write EOF
-	BYTE eof_data[32];
-	utility::HexToBytes(constants::TACHYON_FILE_EOF, &eof_data[0]);
-	this->stream.write((char*)&eof_data[0], 32);
-	this->stream.flush();
-}
-
-void ImportWriter::CheckOutputNames(const std::string& input){
+void VariantImportWriterFile::checkOutputNames(const std::string& input){
 	std::vector<std::string> paths = utility::filePathBaseExtension(input);
 	this->basePath = paths[0];
 	if(this->basePath.size() > 0)
@@ -67,5 +62,14 @@ void ImportWriter::CheckOutputNames(const std::string& input){
 	else this->baseName = paths[1];
 }
 
+VariantImportWriterFile::VariantImportWriterFile(){ this->stream = new std::ofstream; }
+VariantImportWriterFile::~VariantImportWriterFile(){
+	this->stream->flush();
+	delete this->stream;
+}
+VariantImportWriterStream::VariantImportWriterStream(){ this->stream = &std::cout; }
+VariantImportWriterStream::~VariantImportWriterStream(){
+	this->stream->flush();;
+}
 
 } /* namespace Tachyon */

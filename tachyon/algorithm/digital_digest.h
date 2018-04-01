@@ -94,6 +94,7 @@ public:
 	}
 
 private:
+	/*
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << std::hex;
 		for(U32 j = 0; j < 64; ++j)
@@ -106,8 +107,9 @@ private:
 		stream << std::hex;
 		return(stream);
 	}
+	*/
 
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char* const>(&entry.data_digest),   64);
 		stream.write(reinterpret_cast<const char* const>(&entry.stride_digest), 64);
 		return(stream);
@@ -163,11 +165,6 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream << entry.compressed << '\t' << entry.uncompressed;
-		return(stream);
-	}
-
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
 		stream << entry.compressed;
 		stream << entry.uncompressed;
 		return(stream);
@@ -267,10 +264,9 @@ public:
 	}
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){
+	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
 		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries_), sizeof(size_type));
-		for(size_type i = 0; i < container.size(); ++i)
-			out << container[i];
+		for(size_type i = 0; i < container.size(); ++i) out << container[i];
 
 		return(out);
 	}
@@ -279,13 +275,12 @@ private:
 		stream.read((char*)reinterpret_cast<size_type*>(&container.n_entries_), sizeof(size_type));
 		delete [] container.__entries;
 		container.__entries = new value_type[container.n_entries_];
-		for(size_type i = 0; i < container.size(); ++i)
-			stream >> container[i];
+		for(size_type i = 0; i < container.size(); ++i) stream >> container[i];
 
 		return(stream);
 	}
 
-private:
+protected:
 	size_type n_entries_;
 	size_type n_capacity_;
 	pointer   __entries;
@@ -373,14 +368,14 @@ public:
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i) this->__entries_format[block.footer.format_offsets[i].data_header.global_key] += block.format_containers[i];
 	}
 
-	friend std::ofstream& operator<<(std::ofstream& out, const self_type& container){
+	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
 		const parent_type* const parent = reinterpret_cast<const parent_type* const>(&container);
 		out << *parent;
 
 		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries_info_), sizeof(size_type));
 		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries_format_), sizeof(size_type));
-		for(size_type i = 0; i < container.n_capacity_info_; ++i) out << container.atINFO(i);
-		for(size_type i = 0; i < container.n_capacity_format; ++i) out << container.atFORMAT(i);
+		for(size_type i = 0; i < container.n_entries_info_; ++i)   out << container.atINFO(i);
+		for(size_type i = 0; i < container.n_entries_format_; ++i) out << container.atFORMAT(i);
 
 		return(out);
 	}
@@ -396,8 +391,8 @@ public:
 		delete [] container.__entries_format;
 		container.__entries_info = new value_type[container.n_entries_info_];
 		container.__entries_format = new value_type[container.n_entries_format_];
-		for(size_type i = 0; i < container.n_capacity_info_; ++i) stream >> container.atINFO(i);
-		for(size_type i = 0; i < container.n_capacity_format; ++i) stream >> container.atFORMAT(i);
+		for(size_type i = 0; i < container.n_entries_info_; ++i)   stream >> container.atINFO(i);
+		for(size_type i = 0; i < container.n_entries_format_; ++i) stream >> container.atFORMAT(i);
 
 		return(stream);
 	}

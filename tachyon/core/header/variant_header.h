@@ -51,7 +51,7 @@ public:
 
 	/**<
 	 * Interconvert a VCF header (provided during import) to
-	 * a tachyon header
+	 * a Tachyon header
 	 * @param vcf_header Target input VCF header
 	 */
 	void operator=(const vcf_header_type& vcf_header){
@@ -106,22 +106,13 @@ public:
 	}
 
 	// write
-	std::ofstream& write(std::ofstream& stream){
+	std::ostream& write(std::ostream& stream){
 		stream << this->header_magic;
-		for(U32 i = 0; i < this->header_magic.n_contigs; ++i)
-			stream << this->contigs[i];
-
-		for(U32 i = 0; i < this->header_magic.n_samples; ++i)
-			stream << this->samples[i];
-
-		for(U32 i = 0; i < this->header_magic.n_info_values; ++i)
-			stream << this->info_fields[i];
-
-		for(U32 i = 0; i < this->header_magic.n_format_values; ++i)
-			stream << this->format_fields[i];
-
-		for(U32 i = 0; i < this->header_magic.n_filter_values; ++i)
-			stream << this->filter_fields[i];
+		for(U32 i = 0; i < this->header_magic.n_contigs; ++i) stream << this->contigs[i];
+		for(U32 i = 0; i < this->header_magic.n_samples; ++i) stream << this->samples[i];
+		for(U32 i = 0; i < this->header_magic.n_info_values; ++i)   stream << this->info_fields[i];
+		for(U32 i = 0; i < this->header_magic.n_format_values; ++i) stream << this->format_fields[i];
+		for(U32 i = 0; i < this->header_magic.n_filter_values; ++i) stream << this->filter_fields[i];
 
 		stream.write(&this->literals[0], this->literals.size());
 		return(stream);
@@ -177,24 +168,19 @@ private:
 		stream >> entry.header_magic;
 
 		entry.contigs = new contig_type[entry.header_magic.n_contigs];
-		for(U32 i = 0; i < entry.header_magic.n_contigs; ++i)
-			stream >> entry.contigs[i];
+		for(U32 i = 0; i < entry.header_magic.n_contigs; ++i) stream >> entry.contigs[i];
 
 		entry.samples = new sample_type[entry.header_magic.n_samples];
-		for(U32 i = 0; i < entry.header_magic.n_samples; ++i)
-			stream >> entry.samples[i];
+		for(U32 i = 0; i < entry.header_magic.n_samples; ++i) stream >> entry.samples[i];
 
 		entry.info_fields = new map_entry_type[entry.header_magic.n_info_values];
-		for(U32 i = 0; i < entry.header_magic.n_info_values; ++i)
-			stream >> entry.info_fields[i];
+		for(U32 i = 0; i < entry.header_magic.n_info_values; ++i) stream >> entry.info_fields[i];
 
 		entry.format_fields = new map_entry_type[entry.header_magic.n_format_values];
-		for(U32 i = 0; i < entry.header_magic.n_format_values; ++i)
-			stream >> entry.format_fields[i];
+		for(U32 i = 0; i < entry.header_magic.n_format_values; ++i) stream >> entry.format_fields[i];
 
 		entry.filter_fields = new map_entry_type[entry.header_magic.n_filter_values];
-		for(U32 i = 0; i < entry.header_magic.n_filter_values; ++i)
-			stream >> entry.filter_fields[i];
+		for(U32 i = 0; i < entry.header_magic.n_filter_values; ++i) stream >> entry.filter_fields[i];
 
 		entry.literals.resize(entry.header_magic.l_literals);
 		stream.read(&entry.literals[0], entry.header_magic.l_literals);

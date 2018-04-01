@@ -60,7 +60,7 @@ public:
 	inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.index_;
 		stream << entry.index_meta_;
 		return(stream);

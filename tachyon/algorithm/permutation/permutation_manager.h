@@ -35,7 +35,7 @@ public:
 
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& manager){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& manager){
 		stream.write(reinterpret_cast<const char*>(&manager.n_samples),sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.u_length), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&manager.c_length), sizeof(U32));

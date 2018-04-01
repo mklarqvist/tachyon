@@ -35,7 +35,7 @@ public:
 	}
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),        sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&entry.byte_offset),     sizeof(U64));

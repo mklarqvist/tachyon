@@ -22,7 +22,7 @@ public:
 	inline const char* const data(void) const{ return(&this->name[0]); }
 
 private:
-	friend std::ofstream& operator<<(std::ofstream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		const U32 l_name = entry.name.size();
 		stream.write(reinterpret_cast<const char*>(&l_name), sizeof(U32));
 		stream.write(&entry.name[0], entry.name.size());
