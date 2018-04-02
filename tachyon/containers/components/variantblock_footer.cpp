@@ -279,7 +279,7 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 	return(stream);
 }
 
-io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const VariantBlockFooter& entry){
+io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& entry){
 	buffer += (U16)entry.n_info_streams;
 	buffer += (U16)entry.n_format_streams;
 	buffer += (U16)entry.n_filter_streams;
@@ -287,40 +287,35 @@ io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	buffer += (U16)entry.n_format_patterns;
 	buffer += (U16)entry.n_filter_patterns;
 
-	buffer += entry.offset_ppa;
-	buffer += entry.offset_meta_contig;
-	buffer += entry.offset_meta_position;
-	buffer += entry.offset_meta_refalt;
-	buffer += entry.offset_meta_controllers;
-	buffer += entry.offset_meta_quality;
-	buffer += entry.offset_meta_names;
-	buffer += entry.offset_meta_alleles;
-	buffer += entry.offset_meta_info_id;
-	buffer += entry.offset_meta_format_id;
-	buffer += entry.offset_meta_filter_id;
-	buffer += entry.offset_gt_8b;
-	buffer += entry.offset_gt_16b;
-	buffer += entry.offset_gt_32b;
-	buffer += entry.offset_gt_64b;
-	buffer += entry.offset_gt_simple8;
-	buffer += entry.offset_gt_simple16;
-	buffer += entry.offset_gt_simple32;
-	buffer += entry.offset_gt_simple64;
-	buffer += entry.offset_gt_helper;
+	buffer << entry.offset_ppa;
+	buffer << entry.offset_meta_contig;
+	buffer << entry.offset_meta_position;
+	buffer << entry.offset_meta_refalt;
+	buffer << entry.offset_meta_controllers;
+	buffer << entry.offset_meta_quality;
+	buffer << entry.offset_meta_names;
+	buffer << entry.offset_meta_alleles;
+	buffer << entry.offset_meta_info_id;
+	buffer << entry.offset_meta_format_id;
+	buffer << entry.offset_meta_filter_id;
+	buffer << entry.offset_gt_8b;
+	buffer << entry.offset_gt_16b;
+	buffer << entry.offset_gt_32b;
+	buffer << entry.offset_gt_64b;
+	buffer << entry.offset_gt_simple8;
+	buffer << entry.offset_gt_simple16;
+	buffer << entry.offset_gt_simple32;
+	buffer << entry.offset_gt_simple64;
+	buffer << entry.offset_gt_helper;
 
-	for(U32 i = 0; i < entry.n_info_streams; ++i)
-		buffer += entry.info_offsets[i];
-
-	for(U32 i = 0; i < entry.n_format_streams; ++i)
-		buffer += entry.format_offsets[i];
-
-	for(U32 i = 0; i < entry.n_filter_streams; ++i)
-		buffer += entry.filter_offsets[i];
+	for(U32 i = 0; i < entry.n_info_streams; ++i)   buffer << entry.info_offsets[i];
+	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer << entry.format_offsets[i];
+	for(U32 i = 0; i < entry.n_filter_streams; ++i) buffer << entry.filter_offsets[i];
 
 	if(entry.n_info_patterns > 0){
 		const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
 		for(U32 i = 0; i < entry.n_info_patterns; ++i){
-			buffer += entry.info_bit_vectors[i];
+			buffer << entry.info_bit_vectors[i];
 			buffer.Add((const char* const)&entry.info_bit_vectors[i].bit_bytes[0], info_bitvector_width);
 		}
 	}
@@ -328,7 +323,7 @@ io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	if(entry.n_format_patterns > 0){
 		const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 		for(U32 i = 0; i < entry.n_format_patterns; ++i){
-			buffer += entry.format_bit_vectors[i];
+			buffer << entry.format_bit_vectors[i];
 			buffer.Add((const char* const)&entry.format_bit_vectors[i].bit_bytes[0], format_bitvector_width);
 		}
 	}
@@ -336,8 +331,82 @@ io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	if(entry.n_filter_patterns > 0){
 		const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
-			buffer += entry.filter_bit_vectors[i];
+			buffer << entry.filter_bit_vectors[i];
 			buffer.Add((const char* const)&entry.filter_bit_vectors[i].bit_bytes[0], filter_bitvector_width);
+		}
+	}
+
+	return(buffer);
+}
+
+
+io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
+	entry.n_info_streams    << buffer;
+	entry.n_format_streams  << buffer;
+	entry.n_filter_streams  << buffer;
+	entry.n_info_patterns   << buffer;
+	entry.n_format_patterns << buffer;
+	entry.n_filter_patterns << buffer;
+
+	entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
+	entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
+	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
+
+	buffer >> entry.offset_ppa;
+	buffer >> entry.offset_meta_contig;
+	buffer >> entry.offset_meta_position;
+	buffer >> entry.offset_meta_refalt;
+	buffer >> entry.offset_meta_controllers;
+	buffer >> entry.offset_meta_quality;
+	buffer >> entry.offset_meta_names;
+	buffer >> entry.offset_meta_alleles;
+	buffer >> entry.offset_meta_info_id;
+	buffer >> entry.offset_meta_format_id;
+	buffer >> entry.offset_meta_filter_id;
+	buffer >> entry.offset_gt_8b;
+	buffer >> entry.offset_gt_16b;
+	buffer >> entry.offset_gt_32b;
+	buffer >> entry.offset_gt_64b;
+	buffer >> entry.offset_gt_simple8;
+	buffer >> entry.offset_gt_simple16;
+	buffer >> entry.offset_gt_simple32;
+	buffer >> entry.offset_gt_simple64;
+	buffer >> entry.offset_gt_helper;
+
+	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
+	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];
+	entry.filter_offsets = new DataContainerHeader[entry.n_filter_streams];
+	for(U32 i = 0; i < entry.n_info_streams; ++i)   buffer >> entry.info_offsets[i];
+	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer >> entry.format_offsets[i];
+	for(U32 i = 0; i < entry.n_filter_streams; ++i) buffer >> entry.filter_offsets[i];
+
+	if(entry.n_info_patterns){
+		BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
+		entry.info_bit_vectors = new DataBlockBitvector[entry.n_info_patterns];
+		for(U32 i = 0; i < entry.n_info_patterns; ++i){
+			buffer >> entry.info_bit_vectors[i];
+			entry.info_bit_vectors[i].allocate(info_bitvector_width);
+			buffer.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+		}
+	}
+
+	if(entry.n_format_patterns){
+		BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
+		entry.format_bit_vectors = new DataBlockBitvector[entry.n_format_patterns];
+		for(U32 i = 0; i < entry.n_format_patterns; ++i){
+			buffer >> entry.format_bit_vectors[i];
+			entry.format_bit_vectors[i].allocate(format_bitvector_width);
+			buffer.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+		}
+	}
+
+	if(entry.n_filter_patterns){
+		BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
+		entry.filter_bit_vectors = new DataBlockBitvector[entry.n_filter_patterns];
+		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+			buffer >> entry.filter_bit_vectors[i];
+			entry.filter_bit_vectors[i].allocate(filter_bitvector_width);
+			buffer.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
 		}
 	}
 

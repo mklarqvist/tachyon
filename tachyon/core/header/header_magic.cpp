@@ -17,9 +17,9 @@ HeaderMagic::HeaderMagic() :
 	l_header(0),
 	l_header_uncompressed(0)
 {
-	memcpy(&this->magic_string[0],
-		   &tachyon::constants::FILE_HEADER[0],
-			tachyon::constants::FILE_HEADER_LENGTH);
+	//memcpy(&this->magic_string[0],
+	//	   &tachyon::constants::FILE_HEADER[0],
+	//		tachyon::constants::FILE_HEADER_LENGTH);
 }
 
 HeaderMagic::HeaderMagic(const self_type& other) :
@@ -36,9 +36,9 @@ HeaderMagic::HeaderMagic(const self_type& other) :
 	l_header(other.l_header),
 	l_header_uncompressed(other.l_header_uncompressed)
 {
-	memcpy(&this->magic_string[0],
-		   &other.magic_string[0],
-			tachyon::constants::FILE_HEADER_LENGTH);
+	//memcpy(&this->magic_string[0],
+	//	   &other.magic_string[0],
+	//		tachyon::constants::FILE_HEADER_LENGTH);
 }
 
 }

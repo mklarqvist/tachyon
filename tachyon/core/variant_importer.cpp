@@ -73,8 +73,15 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
+	this->writer->stream->write(&tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH);
 	core::VariantHeader header(*this->header);
-	header.write(*this->writer->stream);
+	containers::DataContainer header_data;
+	header_data.resize(1000000);
+	header_data.buffer_data_uncompressed << header;
+	this->compression_manager.zstd_codec.compress(header_data);
+	*this->writer->stream << header_data.header; // write header
+	*this->writer->stream << header_data.buffer_data;
+
 	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
@@ -164,17 +171,29 @@ bool VariantImporter::BuildBCF(void){
 			return false;
 		}
 
-		// Todo: abstraction
-		// Perform writing and update index
 		checksums += this->block;
 
 		current_index_entry.byte_offset     = this->writer->stream->tellp();
-
-		//this->block.footer_support.buffer_data_uncompressed += this->block.footer;
-		//this->compression_manager.zstd_codec.compress(this->block.footer_support);
-		//std::cerr << "Offsets: " << this->block.footer_support.getSizeUncompressed() << "->" << this->block.footer_support.getSizeCompressed() << std::endl;
-
 		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
+		this->block.footer_support.buffer_data_uncompressed << this->block.footer;
+		this->compression_manager.zstd_codec.compress(this->block.footer_support);
+		const U64 start_footer_pos = this->writer->stream->tellp();
+		// Compress and write footer
+
+		const U32 footer_uLength = this->block.footer_support.header.data_header.uLength;
+		const U32 footer_cLength = this->block.footer_support.header.data_header.cLength;
+		const U32 footer_crc     = this->block.footer_support.header.data_header.crc;
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(U32));
+		*this->writer->stream << this->block.footer_support.buffer_data;
+
+		//stream << this->footer;
+		stats_basic[0].cost_uncompressed += (U64)this->writer->stream->tellp() - start_footer_pos;
+
+		// Write EOB
+		this->writer->stream->write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
+
 		current_index_entry.byte_offset_end = this->writer->stream->tellp();
 		current_index_entry.contigID        = reader.front().body->CHROM;
 		current_index_entry.minPosition     = reader.front().body->POS;
@@ -202,7 +221,7 @@ bool VariantImporter::BuildBCF(void){
 		previousFirst    = reader.front().body->POS;
 		previousLast     = reader.back().body->POS;
 	}
-	// Done importing
+	//t Done importing
 	this->writer->stream->flush();
 
 	core::Footer footer;
@@ -210,6 +229,7 @@ bool VariantImporter::BuildBCF(void){
 	footer.n_blocks           = this->writer->n_blocks_written;
 	footer.n_variants         = this->writer->n_variants_written;
 	assert(footer.n_blocks == this->writer->index.size());
+
 
 	this->writer->writeIndex(); // Write index
 	checksums.finalize();       // Finalize SHA-512 digests

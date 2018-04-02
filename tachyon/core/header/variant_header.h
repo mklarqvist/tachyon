@@ -9,6 +9,7 @@
 #include "header_sample.h"
 #include "header_magic.h"
 #include "../../io/vcf/VCFHeader.h"
+#include "../../io/basic_buffer.h"
 
 namespace tachyon{
 namespace core{
@@ -142,7 +143,7 @@ public:
 		return(false);
 	}
 
-	std::ostream& writeHeaderString(std::ostream& stream, const bool showFormat = true) const{
+	std::ostream& writeVCFHeaderString(std::ostream& stream, const bool showFormat = true) const{
 		stream << this->literals;
 		if(this->literals.size()) stream.put('\n');
 		if(showFormat){
@@ -163,6 +164,39 @@ public:
 
 private:
 	bool buildHashTables(void);
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& header){
+		buffer << header.header_magic;
+		for(U32 i = 0; i < header.header_magic.n_contigs; ++i) buffer << header.contigs[i];
+		for(U32 i = 0; i < header.header_magic.n_samples; ++i) buffer << header.samples[i];
+		for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   buffer << header.info_fields[i];
+		for(U32 i = 0; i < header.header_magic.n_format_values; ++i) buffer << header.format_fields[i];
+		for(U32 i = 0; i < header.header_magic.n_filter_values; ++i) buffer << header.filter_fields[i];
+
+		buffer.Add(&header.literals[0], header.literals.size());
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& header){
+		buffer >> header.header_magic;
+		header.contigs = new contig_type[header.header_magic.n_contigs];
+		header.samples = new sample_type[header.header_magic.n_samples];
+		header.info_fields   = new map_entry_type[header.header_magic.n_info_values];
+		header.format_fields = new map_entry_type[header.header_magic.n_format_values];
+		header.filter_fields = new map_entry_type[header.header_magic.n_filter_values];
+		for(U32 i = 0; i < header.header_magic.n_contigs; ++i) buffer >> header.contigs[i];
+		for(U32 i = 0; i < header.header_magic.n_samples; ++i) buffer >> header.samples[i];
+		for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   buffer >> header.info_fields[i];
+		for(U32 i = 0; i < header.header_magic.n_format_values; ++i) buffer >> header.format_fields[i];
+		for(U32 i = 0; i < header.header_magic.n_filter_values; ++i) buffer >> header.filter_fields[i];
+
+		header.literals.resize(header.header_magic.l_literals);
+		buffer.read(&header.literals[0], header.header_magic.l_literals);
+
+		header.buildHashTables();
+
+		return(buffer);
+	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.header_magic;

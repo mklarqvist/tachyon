@@ -5,6 +5,7 @@
 #include <istream>
 #include <cstring>
 
+#include "../../io/basic_buffer.h"
 #include "../../support/MagicConstants.h"
 
 namespace tachyon{
@@ -26,14 +27,15 @@ public:
 	inline const U16& getController(void) const{ return(this->controller); }
 	inline U16& getController(void){ return(this->controller); }
 
-	inline bool validateMagic(void) const{ return(strncmp(&this->magic_string[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) == 0); }
+	//inline bool validateMagic(void) const{ return(strncmp(&this->magic_string[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) == 0); }
 	inline bool validate(void) const{
-		return(this->validateMagic() && this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0));
+		//return(this->validateMagic() && this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0));
+		return(this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0));
 	}
 
 	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 	inline const bool operator==(const self_type& other) const{
-		if(strncmp(&this->magic_string[0], &other.magic_string[0], tachyon::constants::FILE_HEADER_LENGTH) != 0) return false;
+		//if(strncmp(&this->magic_string[0], &other.magic_string[0], tachyon::constants::FILE_HEADER_LENGTH) != 0) return false;
 		if(this->n_samples != other.n_samples) return false;
 		if(this->n_contigs != other.n_contigs) return false;
 		return true;
@@ -41,7 +43,7 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& header){
-		stream.write(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
+		//stream.write(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MINOR),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_RELEASE), sizeof(S32));
@@ -58,7 +60,7 @@ private:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& header){
-		stream.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
+		//stream.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		stream.read(reinterpret_cast<char*>(&header.major_version),   sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&header.minor_version),   sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&header.release_version), sizeof(S32));
@@ -74,8 +76,42 @@ private:
 		return(stream);
 	}
 
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& header){
+		//buffer.Add(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
+		buffer += header.major_version;
+		buffer += header.minor_version;
+		buffer += header.release_version;
+		buffer += header.controller;
+		buffer += header.n_samples;
+		buffer += header.n_contigs;
+		buffer += header.n_info_values;
+		buffer += header.n_format_values;
+		buffer += header.n_filter_values;
+		buffer += header.l_literals;
+		buffer += header.l_header;
+		buffer += header.l_header_uncompressed;
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& header){
+		//buffer.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
+		header.major_version   << buffer;
+		header.minor_version   << buffer;
+		header.release_version << buffer;
+		header.controller      << buffer;
+		header.n_samples       << buffer;
+		header.n_contigs       << buffer;
+		header.n_info_values   << buffer;
+		header.n_format_values << buffer;
+		header.n_filter_values << buffer;
+		header.l_literals      << buffer;
+		header.l_header        << buffer;
+		header.l_header_uncompressed << buffer;
+		return(buffer);
+	}
+
 public:
-	char magic_string[tachyon::constants::FILE_HEADER_LENGTH];
+	//char magic_string[tachyon::constants::FILE_HEADER_LENGTH];
 	S32  major_version;
 	S32  minor_version;
 	S32  release_version;

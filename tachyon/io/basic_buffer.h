@@ -21,11 +21,11 @@ private:
     typedef std::size_t       size_type;
 
 public:
-	BasicBuffer() : owns_data_(true), n_chars(0), width(0), buffer(nullptr){}
-	BasicBuffer(const U64 size) : owns_data_(true), n_chars(0), width(size), buffer(new char[size]){}
-	BasicBuffer(char* target, const size_t length) : owns_data_(false), n_chars(length), width(length), buffer(target){}
-	BasicBuffer(const U64 size, char* target) : owns_data_(false), n_chars(0), width(size), buffer(target){}
-	BasicBuffer(const self_type& other) : owns_data_(other.owns_data_), n_chars(0), width(other.width), buffer(new char[other.width]){}
+	BasicBuffer() : owns_data_(true), n_chars(0), width(0), iterator_position_(0), buffer(nullptr){}
+	BasicBuffer(const U64 size) : owns_data_(true), n_chars(0), width(size), iterator_position_(0), buffer(new char[size]){}
+	BasicBuffer(char* target, const size_t length) : owns_data_(false), n_chars(length), width(length), iterator_position_(0), buffer(target){}
+	BasicBuffer(const U64 size, char* target) : owns_data_(false), n_chars(0), width(size), iterator_position_(0), buffer(target){}
+	BasicBuffer(const self_type& other) : owns_data_(other.owns_data_), n_chars(0), width(other.width), iterator_position_(0), buffer(new char[other.width]){}
 	virtual ~BasicBuffer(){
 		if(this->owns_data_)
 			delete [] this->buffer;
@@ -67,11 +67,11 @@ public:
 
 	// Iterator
 	inline iterator begin(){ return iterator(&this->buffer[0]); }
-	inline iterator end()  { return iterator(&this->buffer[this->n_chars - 1]); }
+	inline iterator end()  { return iterator(&this->buffer[this->n_chars]); }
 	inline const_iterator begin()  const{ return const_iterator(&this->buffer[0]); }
-	inline const_iterator end()    const{ return const_iterator(&this->buffer[this->n_chars - 1]); }
+	inline const_iterator end()    const{ return const_iterator(&this->buffer[this->n_chars]); }
 	inline const_iterator cbegin() const{ return const_iterator(&this->buffer[0]); }
-	inline const_iterator cend()   const{ return const_iterator(&this->buffer[this->n_chars - 1]); }
+	inline const_iterator cend()   const{ return const_iterator(&this->buffer[this->n_chars]); }
 
 	inline void set(const size_t size){
 		this->n_chars = 0;
@@ -94,7 +94,8 @@ public:
 		this->buffer = target;
 	}
 
-	inline void reset(){ this->n_chars = 0; }
+	inline void reset(){ this->n_chars = 0; this->iterator_position_ = 0; }
+	inline void resetIterator(){ this->iterator_position_ = 0; }
 	inline void move(const U64 to){ this->n_chars = to; }
 	inline const U64& size(void) const{ return this->n_chars; }
 	inline const U64& capacity(void) const{ return this->width; }
@@ -303,7 +304,70 @@ public:
 	inline pointer data(void){ return(this->buffer); }
 	inline const_pointer data(void) const{ return(this->buffer); }
 
+	void read(char* target, const U32 n_length){
+		memcpy(target, &this->buffer[this->iterator_position_], n_length);
+		this->iterator_position_ += n_length;
+	}
+
 private:
+	friend BYTE& operator<<(BYTE& target, self_type& data){
+		target = *reinterpret_cast<BYTE*>(&data.buffer[data.iterator_position_++]);
+		return(target);
+	}
+
+	friend U16& operator<<(U16& target, self_type& data){
+		target = *reinterpret_cast<U16*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(U16);
+		return(target);
+	}
+
+	friend U32& operator<<(U32& target, self_type& data){
+		target = *reinterpret_cast<U32*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(U32);
+		return(target);
+	}
+
+	friend U64& operator<<(U64& target, self_type& data){
+		target = *reinterpret_cast<U64*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(U64);
+		return(target);
+	}
+
+	friend SBYTE& operator<<(SBYTE& target, self_type& data){
+		target = *reinterpret_cast<SBYTE*>(&data.buffer[data.iterator_position_++]);
+		return(target);
+	}
+
+	friend S16& operator<<(S16& target, self_type& data){
+		target = *reinterpret_cast<S16*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(S16);
+		return(target);
+	}
+
+	friend S32& operator<<(S32& target, self_type& data){
+		target = *reinterpret_cast<S32*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(S32);
+		return(target);
+	}
+
+	friend S64& operator<<(S64& target, self_type& data){
+		target = *reinterpret_cast<S64*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(S64);
+		return(target);
+	}
+
+	friend float& operator<<(float& target, self_type& data){
+		target = *reinterpret_cast<float*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(float);
+		return(target);
+	}
+
+	friend double& operator<<(double& target, self_type& data){
+		target = *reinterpret_cast<double*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(double);
+		return(target);
+	}
+
 	friend std::ostream& operator<<(std::ostream& out, const self_type& data){
 		out.write(data.data(), data.size());
 		return(out);
@@ -313,6 +377,7 @@ public:
 	bool    owns_data_;
 	U64     n_chars;
 	U64     width;
+	U64     iterator_position_;
 	pointer buffer;
 };
 

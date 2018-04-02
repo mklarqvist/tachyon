@@ -88,6 +88,12 @@ private:
 		return(stream);
 	}
 
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& controller){
+		U16* c = reinterpret_cast<U16*>(&controller);
+		*c << buffer;
+		return(buffer);
+	}
+
 public:
 	U16 signedness:  1, // Signed type
 		mixedStride: 1, // Different stride sizes

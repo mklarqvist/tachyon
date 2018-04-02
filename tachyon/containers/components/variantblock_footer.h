@@ -84,7 +84,9 @@ public:
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry);
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+
 
 private:
 	/**<

@@ -153,7 +153,24 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	this->start_compressed_data_ = (U64)stream.tellg(); // start of compressed data
 	stream.seekg(this->start_compressed_data_ + this->header.l_offset_footer); // seek to start of footer
 	this->end_compressed_data_ = stream.tellg(); // end of compressed data
-	stream >> this->footer; // load footer
+
+
+	U32 footer_uLength = 0;
+	U32 footer_cLength = 0;
+	U32 footer_crc = 0;
+	stream.read(reinterpret_cast<char*>(&footer_uLength), sizeof(U32));
+	stream.read(reinterpret_cast<char*>(&footer_cLength), sizeof(U32));
+	stream.read(reinterpret_cast<char*>(&footer_crc),     sizeof(U32));
+	this->footer_support.resize(footer_cLength);
+	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
+	this->footer_support.buffer_data.n_chars = footer_cLength;
+	this->footer_support.buffer_data_uncompressed.resize(footer_uLength);
+	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
+	this->footer_support.header.data_header.cLength = footer_cLength;
+	this->footer_support.header.data_header.uLength = footer_uLength;
+	this->footer_support.header.data_header.crc     = footer_crc;
+
+	//stream >> this->footer; // load footer
 
 	// Assert end-of-block marker
 	U64 eof_marker;
@@ -260,6 +277,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 			++this->n_format_loaded;
 			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
 		}
+		//std::cerr << this->end_compressed_data_ << '/' << (U64)stream.tellg() << std::endl;
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
 	}
 
@@ -379,21 +397,7 @@ bool VariantBlock::write(std::ostream& stream,
 
 	// writing footer
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
-	// Compress and write footer
-	/*
-	const U32 footer_uLength = this->footer_support.buffer_data_uncompressed.size();
-	stream.write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
-	const U32 footer_cLength = this->footer_support.buffer_data.size();
-	stream.write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
 
-	stream << this->footer_support.buffer_data;
-	*/
-	const U64 start_footer_pos = stream.tellp();
-	stream << this->footer;
-	stats_basic[0].cost_uncompressed += (U64)stream.tellp() - start_footer_pos;
-
-	// Write EOB
-	stream.write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
 	// Update stats
 	this->updateOutputStatistics(stats_basic, stats_info, stats_format);

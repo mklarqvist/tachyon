@@ -105,10 +105,18 @@ public:
 	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
 private:
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
 		buffer += entry.n_keys;
-		for(U32 i = 0; i < entry.n_keys; ++i)
-			buffer += entry.local_keys[i];
+		for(U32 i = 0; i < entry.n_keys; ++i) buffer += entry.local_keys[i];
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry){
+		delete [] entry.local_keys;
+		entry.n_keys << buffer;
+		entry.local_keys = new U32[entry.n_keys];
+		for(U32 i = 0; i < entry.n_keys; ++i) entry.local_keys[i] << buffer;
 
 		return(buffer);
 	}
@@ -122,6 +130,7 @@ private:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+		delete [] entry.local_keys;
 		stream.read(reinterpret_cast<char*>(&entry.n_keys), sizeof(U32));
 		entry.local_keys = new U32[entry.n_keys];
 		for(U32 i = 0; i < entry.n_keys; ++i)

@@ -116,7 +116,7 @@ int view(int argc, char** argv){
 	}
 
 	if(showHeader){
-		reader.header.writeHeaderString(std::cout, false);
+		reader.header.writeVCFHeaderString(std::cout, false);
 	}
 
 	U64 n_variants = 0;

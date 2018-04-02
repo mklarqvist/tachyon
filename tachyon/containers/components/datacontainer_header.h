@@ -108,6 +108,17 @@ struct DataContainerHeaderObject{
 		return(stream);
 	}
 
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry){
+		buffer >> entry.controller;
+		entry.stride     << buffer;
+		entry.offset     << buffer;
+		entry.cLength    << buffer;
+		entry.uLength    << buffer;
+		entry.crc        << buffer;
+		entry.global_key << buffer;
+		return(buffer);
+	}
+
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(S32));
@@ -226,13 +237,24 @@ public:
 	inline const bool hasMixedStride(void) const{ return(this->data_header.hasMixedStride()); }
 
 private:
-	friend buffer_type& operator+=(buffer_type& buffer, const self_type& entry){
+	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry){
 		buffer += entry.n_entries;
 		buffer += entry.n_additions;
 		buffer += entry.n_strides;
 		buffer += entry.data_header;
 
 		if(entry.data_header.hasMixedStride()) buffer += entry.stride_header;
+
+		return(buffer);
+	}
+
+	friend buffer_type& operator>>(buffer_type& buffer, self_type& entry){
+		entry.n_entries   << buffer;
+		entry.n_additions << buffer;
+		entry.n_strides   << buffer;
+		buffer >> entry.data_header;
+
+		if(entry.data_header.hasMixedStride()) buffer >> entry.stride_header;
 
 		return(buffer);
 	}

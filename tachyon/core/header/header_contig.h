@@ -2,6 +2,7 @@
 #define CORE_HEADERCONTIG_H_
 
 #include <fstream>
+#include "../../io/basic_buffer.h"
 
 namespace tachyon{
 namespace core{
@@ -37,6 +38,24 @@ private:
 		stream.read(&entry.name[0], l_name);
 
 		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& contig){
+		buffer += (U32)contig.name.size();
+		buffer += contig.bp_length;
+		buffer += contig.n_blocks;
+		buffer.Add(&contig.name[0], contig.name.size());
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& contig){
+		U32 l_name;
+		l_name << buffer;
+		contig.bp_length << buffer;
+		contig.n_blocks << buffer;
+		contig.name.resize(l_name);
+		buffer.read(&contig.name[0], l_name);
+		return(buffer);
 	}
 
 public:

@@ -3,6 +3,7 @@
 
 #include <fstream>
 
+#include "../../io/basic_buffer.h"
 #include "../../io/vcf/VCFHeaderLine.h"
 
 namespace tachyon{
@@ -90,7 +91,6 @@ private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		const U32 l_ID = entry.ID.size();
 		stream.write(reinterpret_cast<const char*>(&l_ID),       sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry),      sizeof(BYTE));
 		stream.write(reinterpret_cast<const char*>(&entry.IDX),  sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&entry.primitive_type),  sizeof(BYTE));
 		stream.write(&entry.ID[0], entry.ID.size());
@@ -100,13 +100,30 @@ private:
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		U32 l_ID = 0;
 		stream.read(reinterpret_cast<char*>(&l_ID),       sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry),      sizeof(BYTE));
 		stream.read(reinterpret_cast<char*>(&entry.IDX),  sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&entry.primitive_type),  sizeof(BYTE));
 		entry.ID.resize(l_ID);
 		stream.read(&entry.ID[0], l_ID);
 
 		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
+		buffer += (U32)entry.ID.size();
+		buffer += entry.IDX;
+		buffer += entry.primitive_type;
+		buffer.Add(&entry.ID[0], entry.ID.size());
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry){
+		U32 l_ID = 0;
+		l_ID << buffer;
+		entry.IDX << buffer;
+		entry.primitive_type << buffer;
+		entry.ID.resize(l_ID);
+		buffer.read(&entry.ID[0], l_ID);
+		return(buffer);
 	}
 
 public:

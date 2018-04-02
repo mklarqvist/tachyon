@@ -55,7 +55,25 @@ bool VariantReader::open(void){
 	}
 
 	// Load header
-	this->stream >> this->header;
+	//this->stream >> this->header;
+	char magic_string[tachyon::constants::FILE_HEADER_LENGTH];
+	this->stream.read(&magic_string[0], tachyon::constants::FILE_HEADER_LENGTH);
+	if(strncmp(&magic_string[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
+		std::cerr << utility::timestamp("ERROR") << "Failed to validate Tachyon magic string!" << std::endl;
+		return false;
+	}
+
+	containers::DataContainer header_container;
+	this->stream >> header_container.header;
+	header_container.buffer_data.resize(header_container.header.data_header.cLength);
+	this->stream.read(header_container.buffer_data.data(), header_container.header.data_header.cLength);
+	header_container.buffer_data.n_chars = header_container.header.data_header.cLength;
+	if(!this->codec_manager.zstd_codec.decompress(header_container)){
+		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
+		return false;
+	}
+	header_container.buffer_data_uncompressed >> this->header; // parse header from buffer
+
 	if(!this->header.header_magic.validate()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate header!" << std::endl;
 		return false;
@@ -93,10 +111,13 @@ bool VariantReader::nextBlock(){
 	if(!this->block.readHeaderFooter(this->stream))
 		return false;
 
+	if(!this->codec_manager.zstd_codec.decompress(this->block.footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+	}
+	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
 	//this->parseSettings();
 
 	// Attempts to read a YON block with the provided
-	// settings
 	if(!this->block.read(this->stream, this->settings))
 		return false;
 
