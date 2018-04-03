@@ -65,7 +65,7 @@ public:
 struct VariantBlockHeader{
 private:
 	typedef VariantBlockHeader           self_type;
-	typedef VariantBlockHeaderController    controller_type;
+	typedef VariantBlockHeaderController controller_type;
 	typedef DataContainerHeader          header_type;
 
 public:
@@ -76,9 +76,12 @@ public:
 	inline const S32& getContigID(void) const{ return(this->contigID); }
 	inline const S64& getMinPosition(void) const{ return(this->minPosition); }
 	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
+	inline U64& getBlockID(void){ return(this->blockID); }
+	inline const U64& getBlockID(void) const{ return(this->blockID); }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.blockID),           sizeof(U64));
 		stream << entry.controller;
 		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(S64));
@@ -90,6 +93,7 @@ public:
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.blockID),           sizeof(U64));
 		stream >> entry.controller;
 		stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(S64));
@@ -101,6 +105,7 @@ public:
 
 	void reset(void){
 		this->l_offset_footer    = 0;
+		this->blockID            = 0;
 		this->controller.clear();
 		this->contigID           = -1;
 		this->minPosition        = 0;
@@ -113,6 +118,7 @@ public:
 	// over the file and not using the index
 	// EOF marker is at this position - sizeof(EOF marker)
 	U32 l_offset_footer;
+	U64 blockID;        // block identifier in the form of a random hash
 	controller_type controller;
 	S32 contigID;       // contig identifier
 	S64 minPosition;    // minimum coordinate in this block

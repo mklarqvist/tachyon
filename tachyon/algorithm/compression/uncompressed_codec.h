@@ -30,6 +30,11 @@ public:
 	inline const bool compressStrides(container_type& container){ return true; }
 
 	const bool decompress(container_type& container){
+		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
+			return false;
+		}
+
 		if(container.header.data_header.controller.encoder != YON_ENCODE_NONE){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used..." << std::endl;
 			return false;
@@ -42,6 +47,11 @@ public:
 	}
 
 	const bool decompressStrides(container_type& container){
+		if(container.header.stride_header.controller.encryption != YON_ENCRYPTION_NONE){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
+			return false;
+		}
+
 		if(!container.header.data_header.controller.mixedStride){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Cannot decode strides. Stream has no strides..." << std::endl;
 			return false;

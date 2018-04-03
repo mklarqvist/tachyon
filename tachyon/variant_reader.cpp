@@ -121,6 +121,8 @@ bool VariantReader::nextBlock(){
 	if(!this->block.read(this->stream, this->settings))
 		return false;
 
+	// encryption manager ascertainment
+
 	// Internally decompress available data
 	if(!this->codec_manager.decompress(this->block)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;

@@ -4,15 +4,27 @@
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
 #include "variant_importer.h"
+#include "../algorithm/encryption/EncryptionDecorator.h"
 
 namespace tachyon {
 
 #define IMPORT_ASSERT 1
 
+S32 reg2bin(S32 beg, S32 end){
+	//--end;
+	if (beg>>11 == end>>11) return ((1<<12)-1)/7 + (beg>>11);
+	if (beg>>14 == end>>14) return ((1<<15)-1)/7 + (beg>>14);
+	if (beg>>17 == end>>17) return ((1<<12)-1)/7 + (beg>>17);
+	if (beg>>20 == end>>20) return ((1<<9)-1)/7  + (beg>>20);
+	if (beg>>23 == end>>23) return ((1<<6)-1)/7  + (beg>>23);
+	if (beg>>26 == end>>26) return ((1<<3)-1)/7  + (beg>>26);
+	return 0;
+}
+
 VariantImporter::VariantImporter(std::string inputFile,
-		           std::string outputPrefix,
-                     const U32 checkpoint_n_snps,
-                  const double checkpoint_bases) :
+		                         std::string outputPrefix,
+                                   const U32 checkpoint_n_snps,
+                                const double checkpoint_bases) :
 	GT_available_(false),
 	permute(true),
 	checkpoint_n_snps(checkpoint_n_snps),
@@ -73,10 +85,13 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
+	// Writer MAGIC
 	this->writer->stream->write(&tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH);
+	// Convert VCF header to Tachyon heeader
 	core::VariantHeader header(*this->header);
+	// Convert header to byte stream, compress, and write to file
 	containers::DataContainer header_data;
-	header_data.resize(1000000);
+	header_data.resize(65536 + header.literals.size()*2);
 	header_data.buffer_data_uncompressed << header;
 	this->compression_manager.zstd_codec.compress(header_data);
 	*this->writer->stream << header_data.header; // write header
@@ -92,22 +107,22 @@ bool VariantImporter::BuildBCF(void){
 	this->block.header.controller.hasGT = this->GT_available_;
 
 	// Resize containers
-	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * this->header->samples * 100;
+	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
 	this->block.resize(resize_to);
-	if(this->header->samples == 0){
-		this->block.resize(this->checkpoint_n_snps * sizeof(U32) * 100);
-	}
 
 	// Digest controller
 	algorithm::VariantDigitalDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
+	encryption::EncryptionDecorator encryptionManager;
+
+	// Todo fix: blockID identifier
+	hash::HashTable<U64, U32> blockID_hash_table(500000);
+	BYTE RANDOM_BYTES[32];
+	U64 blockID;
 
 	// Start import
 	U32 previousFirst    = 0;
 	U32 previousLast     = 0;
 	S32 previousContigID = -1;
-
-	// Index
-	index_entry_type current_index_entry;
 
 	// Begin import
 	// Get BCF entries
@@ -172,8 +187,16 @@ bool VariantImporter::BuildBCF(void){
 		}
 
 		checksums += this->block;
+		// TODO: if encryption is set then we have to lift over the offset headers
+		// prior to invoking the writing functions as we need to encrypt the offset
+		// headers with the same key
 
-		current_index_entry.byte_offset     = this->writer->stream->tellp();
+		// temp: encrypt before writing but after compression
+		//if(!encryptionManager.encrypt(this->block)){
+		//	std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+		//}
+
+		this->index_entry.byte_offset = this->writer->stream->tellp();
 		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
 		this->block.footer_support.buffer_data_uncompressed << this->block.footer;
 		this->compression_manager.zstd_codec.compress(this->block.footer_support);
@@ -191,16 +214,36 @@ bool VariantImporter::BuildBCF(void){
 		//stream << this->footer;
 		stats_basic[0].cost_uncompressed += (U64)this->writer->stream->tellp() - start_footer_pos;
 
+		while(true){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			blockID = XXH64(&RANDOM_BYTES[0], 32, 9823743);
+			U32* temp;
+			if(blockID_hash_table.GetItem(&blockID, temp, sizeof(U64))){
+				std::cerr << "already exists @ " << *temp << ": generate new id" << std::endl;
+				continue;
+			}
+			if(!blockID_hash_table.SetItem(&blockID, this->writer->n_blocks_written, sizeof(U64))){
+				std::cerr << "failed to set blockID" << std::endl;
+				return false;
+			}
+			this->block.header.blockID = blockID;
+			break;
+		}
+		//std::cerr << "blockID: " << blockID << " for " << this->writer->n_blocks_written << std::endl;
+
 		// Write EOB
 		this->writer->stream->write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
-		current_index_entry.byte_offset_end = this->writer->stream->tellp();
-		current_index_entry.contigID        = reader.front().body->CHROM;
-		current_index_entry.minPosition     = reader.front().body->POS;
-		current_index_entry.maxPosition     = reader.back().body->POS;
-		current_index_entry.n_variants      = reader.size();
-		this->writer->index += current_index_entry;
-		current_index_entry.reset();
+		this->index_entry.blockID         = blockID;
+		this->index_entry.byte_offset_end = this->writer->stream->tellp();
+		this->index_entry.contigID        = reader.front().body->CHROM;
+		this->index_entry.minPosition     = reader.front().body->POS;
+		this->index_entry.maxPosition     = reader.back().body->POS;
+		this->index_entry.n_variants      = reader.size();
+		this->writer->index += this->index_entry;
+		std::cerr << this->index_entry.minBin << "->" << this->index_entry.maxBin << std::endl;
+
+		this->index_entry.reset();
 		++this->writer->n_blocks_written;
 		this->writer->n_variants_written += reader.size();
 
@@ -213,6 +256,8 @@ bool VariantImporter::BuildBCF(void){
 			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
 		}
 
+		// Todo: fix conditional binning
+
 		// Reset and update
 		this->block.clear();
 		this->permutator.reset();
@@ -220,6 +265,7 @@ bool VariantImporter::BuildBCF(void){
 		previousContigID = reader.front().body->CHROM;
 		previousFirst    = reader.front().body->POS;
 		previousLast     = reader.back().body->POS;
+		this->index_entry.reset();
 	}
 	//t Done importing
 	this->writer->stream->flush();
@@ -282,7 +328,6 @@ bool VariantImporter::BuildBCF(void){
 			std::cout << "GT-BCF-8\t"  << gt_stats.bcf_counts[0] << '\t' << (float)gt_stats.bcf_counts[0]/n_total_gt << std::endl;
 			std::cout << "GT-BCF-16\t" << gt_stats.bcf_counts[1] << '\t' << (float)gt_stats.bcf_counts[1]/n_total_gt << std::endl;
 			std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
-
 		}
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
@@ -327,6 +372,10 @@ bool VariantImporter::add(bcf_entry_type& entry){
 
 	// Add meta
 	this->block += meta;
+
+	const S32 index_bin = reg2bin(entry.body->POS, entry.body->POS);
+	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
+	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;

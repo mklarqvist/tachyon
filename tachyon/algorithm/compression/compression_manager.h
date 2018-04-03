@@ -168,6 +168,12 @@ public:
 	 * @return          Returns TRUE upon success or FALSE otherwise
 	 */
 	bool decompress(container_type& container){
+		// Ascertain that data is not encrypted
+		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
+			return false;
+		}
+
 		if(container.header.data_header.controller.encoder == YON_ENCODE_ZSTD){
 			if(!this->zstd_codec.decompress(container)){
 				std::cerr << utility::timestamp("ERROR","CODEC-ZSTD") << "Failed to decompress data!" << std::endl;

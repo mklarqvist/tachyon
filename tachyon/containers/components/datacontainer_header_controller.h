@@ -10,11 +10,6 @@
 namespace tachyon{
 namespace containers{
 
-enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
-	                    YON_ENCRYPTION_AES_128,
-					    YON_ENCRYPTION_AES_256,
-					    YON_ENCRYPTION_RSA_4096};
-
 // Controller type for stream container
 struct DataContainerHeaderController{
 	typedef DataContainerHeaderController self_type;

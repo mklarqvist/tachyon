@@ -221,6 +221,11 @@ public:
 	}
 
 	const bool decompress(container_type& container){
+		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
+			return false;
+		}
+
 		if(container.header.data_header.controller.encoder != YON_ENCODE_ZSTD){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Wrong codec used in decompressor..." << std::endl;
 			return false;
@@ -248,6 +253,11 @@ public:
 	}
 
 	const bool decompressStrides(container_type& container){
+		if(container.header.stride_header.controller.encryption != YON_ENCRYPTION_NONE){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
+			return false;
+		}
+
 		if(!container.header.data_header.controller.mixedStride)
 			return false;
 
