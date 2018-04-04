@@ -182,7 +182,8 @@ inline const U32 unpermuteByteBits(char* data,
 
 class CompressionContainer{
 private:
-	typedef CompressionContainer self_type;
+	typedef CompressionContainer          self_type;
+
 protected:
 	typedef containers::DataContainer     container_type;
 	typedef io::BasicBuffer               buffer_type;
@@ -190,7 +191,7 @@ protected:
 
 public:
 	CompressionContainer(){}
-	virtual ~CompressionContainer(){ }
+	virtual ~CompressionContainer(){}
 	virtual const bool compress(permutation_type& manager) =0;
 	virtual const bool compress(container_type& container) =0;
 	virtual const bool compressStrides(container_type& container) =0;

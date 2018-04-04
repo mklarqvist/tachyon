@@ -226,9 +226,19 @@ private:
 	 * @param virtual_offset
 	 */
 	inline void __writeContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
+			return(this->__writeContainerEncrypted(stream, offset, container, virtual_offset));
+
 		this->__updateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;
+	}
+
+	inline void __writeContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+		this->__updateHeader(offset, container, virtual_offset);
+		assert(container.buffer_data.size() == offset.data_header.eLength);
+		// Encrypted data is concatenated: write only data buffer
+		stream.write(container.buffer_data.data(), container.buffer_data.size());
 	}
 
 	/**<

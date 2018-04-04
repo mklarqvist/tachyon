@@ -382,7 +382,6 @@ public:
 				continue;
 			}
 
-
 			// At this point we need to ascertain that the target set membership identifier
 			// contain a loaded INFO value
 			if(settings.loadINFO_ || this->block.n_info_loaded){

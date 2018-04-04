@@ -353,6 +353,10 @@ void DataContainer::reformatStride(){
 }
 
 const U32 DataContainer::getObjectSize(void) const{
+	// In case data is encrypted
+	if(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
+		return(this->buffer_data.size());
+
 	U32 total_size = this->buffer_data.size();
 	if(this->header.data_header.hasMixedStride())
 		total_size += this->buffer_strides.size();
@@ -386,7 +390,6 @@ void DataContainer::deltaEncode(){
 	// check for uniformity except first
 	if(this->header.n_additions > 1){
 		bool is_uniform_delta = true;
-		const S32 first = dat[0];
 		const S32 test_diff = dat[1] - dat[0];
 		for(U32 i = 2; i < this->header.n_additions; ++i){
 			if(dat[i] - dat[i - 1] != test_diff){

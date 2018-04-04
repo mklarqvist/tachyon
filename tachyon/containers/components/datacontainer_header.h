@@ -21,6 +21,7 @@ struct DataContainerHeaderObject{
 		offset(0),
 		cLength(0),
 		uLength(0),
+		eLength(0),
 		crc(0),
 		global_key(-1)
 	{}
@@ -31,6 +32,7 @@ struct DataContainerHeaderObject{
 		offset(other.offset),
 		cLength(other.cLength),
 		uLength(other.uLength),
+		eLength(other.eLength),
 		crc(other.crc),
 		global_key(other.global_key)
 	{
@@ -43,6 +45,7 @@ struct DataContainerHeaderObject{
 		offset(other.offset),
 		cLength(other.cLength),
 		uLength(other.uLength),
+		eLength(other.eLength),
 		crc(other.crc),
 		global_key(other.global_key)
 	{
@@ -56,6 +59,7 @@ struct DataContainerHeaderObject{
 		this->offset     = other.offset;
 		this->cLength    = other.cLength;
 		this->uLength    = other.uLength;
+		this->eLength    = other.eLength;
 		this->crc        = other.crc;
 		this->global_key = other.global_key;
 		return *this;
@@ -69,6 +73,7 @@ struct DataContainerHeaderObject{
 		this->offset     = other.offset;
 		this->cLength    = other.cLength;
 		this->uLength    = other.uLength;
+		this->eLength    = other.eLength;
 		this->crc        = other.crc;
 		this->global_key = other.global_key;
 		return *this;
@@ -92,6 +97,7 @@ struct DataContainerHeaderObject{
 		buffer += entry.offset;
 		buffer += entry.cLength;
 		buffer += entry.uLength;
+		buffer += entry.eLength;
 		buffer += entry.crc;
 		buffer += entry.global_key;
 		return(buffer);
@@ -103,6 +109,7 @@ struct DataContainerHeaderObject{
 		stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.crc),       sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(S32));
 		return(stream);
@@ -114,6 +121,7 @@ struct DataContainerHeaderObject{
 		entry.offset     << buffer;
 		entry.cLength    << buffer;
 		entry.uLength    << buffer;
+		entry.eLength    << buffer;
 		entry.crc        << buffer;
 		entry.global_key << buffer;
 		return(buffer);
@@ -125,6 +133,7 @@ struct DataContainerHeaderObject{
 		stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.crc),        sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(S32));
 
@@ -136,6 +145,7 @@ struct DataContainerHeaderObject{
 		if(this->offset     != other.offset)     return false;
 		if(this->cLength    != other.cLength)    return false;
 		if(this->uLength    != other.uLength)    return false;
+		if(this->eLength    != other.eLength)    return false;
 		if(this->crc        != other.crc)        return false;
 		if(this->global_key != other.global_key) return false;
 		if(this->controller != other.controller) return false;
@@ -189,6 +199,7 @@ public:
 	U32 offset;                 // relative file offset
 	U32 cLength;                // compressed length
 	U32 uLength;                // uncompressed length
+	U32 eLength;                // encrypted length
 	U32 crc;                    // crc32 checksum
 	S32 global_key;             // global key
 };

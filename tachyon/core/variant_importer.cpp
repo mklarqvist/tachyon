@@ -192,9 +192,9 @@ bool VariantImporter::BuildBCF(void){
 		// headers with the same key
 
 		// temp: encrypt before writing but after compression
-		//if(!encryptionManager.encrypt(this->block)){
-		//	std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
-		//}
+		if(!encryptionManager.encryptAES256(this->block)){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+		}
 
 		this->index_entry.byte_offset = this->writer->stream->tellp();
 		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
@@ -241,7 +241,7 @@ bool VariantImporter::BuildBCF(void){
 		this->index_entry.maxPosition     = reader.back().body->POS;
 		this->index_entry.n_variants      = reader.size();
 		this->writer->index += this->index_entry;
-		std::cerr << this->index_entry.minBin << "->" << this->index_entry.maxBin << std::endl;
+		//std::cerr << this->index_entry.minBin << "->" << this->index_entry.maxBin << std::endl;
 
 		this->index_entry.reset();
 		++this->writer->n_blocks_written;
