@@ -378,15 +378,21 @@ private:
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		entry.buffer_data.resize(entry.header.data_header.cLength);
-		stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
-		entry.buffer_data.n_chars = entry.header.data_header.cLength;
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		if(entry.header.data_header.controller.encryption == YON_ENCRYPTION_NONE){
+			entry.buffer_data.resize(entry.header.data_header.cLength);
+			stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
+			entry.buffer_data.n_chars = entry.header.data_header.cLength;
 
-		if(entry.header.data_header.hasMixedStride()){
-			entry.buffer_strides.resize(entry.header.stride_header.cLength);
-			stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
-			entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
+			if(entry.header.data_header.hasMixedStride()){
+				entry.buffer_strides.resize(entry.header.stride_header.cLength);
+				stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
+				entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
+			}
+		} else { // Data is encrypted
+			entry.buffer_data.resize(entry.header.data_header.eLength);
+			stream.read(entry.buffer_data.buffer, entry.header.data_header.eLength);
+			entry.buffer_data.n_chars = entry.header.data_header.eLength;
 		}
 		return(stream);
 	}

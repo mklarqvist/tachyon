@@ -341,12 +341,12 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& e
 
 
 io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
-	entry.n_info_streams    << buffer;
-	entry.n_format_streams  << buffer;
-	entry.n_filter_streams  << buffer;
-	entry.n_info_patterns   << buffer;
-	entry.n_format_patterns << buffer;
-	entry.n_filter_patterns << buffer;
+	buffer >> entry.n_info_streams;
+	buffer >> entry.n_format_streams;
+	buffer >> entry.n_filter_streams;
+	buffer >> entry.n_info_patterns;
+	buffer >> entry.n_format_patterns;
+	buffer >> entry.n_filter_patterns;
 
 	entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
 	entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);

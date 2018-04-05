@@ -60,7 +60,7 @@ public:
 	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
 private:
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer,const self_type& controller){
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer,const self_type& controller){
 		const U16* c = reinterpret_cast<const U16* const>(&controller);
 		buffer += *c;
 		return(buffer);
@@ -78,14 +78,14 @@ private:
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& controller){
+	friend std::istream& operator>>(std::istream& stream, self_type& controller){
 		stream.read(reinterpret_cast<char*>(&controller), sizeof(U16));
 		return(stream);
 	}
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& controller){
 		U16* c = reinterpret_cast<U16*>(&controller);
-		*c << buffer;
+		buffer >> *c;
 		return(buffer);
 	}
 

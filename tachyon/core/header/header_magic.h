@@ -95,18 +95,18 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& header){
 		//buffer.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
-		header.major_version   << buffer;
-		header.minor_version   << buffer;
-		header.release_version << buffer;
-		header.controller      << buffer;
-		header.n_samples       << buffer;
-		header.n_contigs       << buffer;
-		header.n_info_values   << buffer;
-		header.n_format_values << buffer;
-		header.n_filter_values << buffer;
-		header.l_literals      << buffer;
-		header.l_header        << buffer;
-		header.l_header_uncompressed << buffer;
+		buffer >> header.major_version;
+		buffer >> header.minor_version;
+		buffer >> header.release_version;
+		buffer >> header.controller;
+		buffer >> header.n_samples;
+		buffer >> header.n_contigs;
+		buffer >> header.n_info_values;
+		buffer >> header.n_format_values;
+		buffer >> header.n_filter_values;
+		buffer >> header.l_literals;
+		buffer >> header.l_header;
+		buffer >> header.l_header_uncompressed;
 		return(buffer);
 	}
 

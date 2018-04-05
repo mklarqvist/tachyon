@@ -154,7 +154,6 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	stream.seekg(this->start_compressed_data_ + this->header.l_offset_footer); // seek to start of footer
 	this->end_compressed_data_ = stream.tellg(); // end of compressed data
 
-
 	U32 footer_uLength = 0;
 	U32 footer_cLength = 0;
 	U32 footer_crc = 0;
@@ -169,8 +168,6 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	this->footer_support.header.data_header.cLength = footer_cLength;
 	this->footer_support.header.data_header.uLength = footer_uLength;
 	this->footer_support.header.data_header.crc     = footer_crc;
-
-	//stream >> this->footer; // load footer
 
 	// Assert end-of-block marker
 	U64 eof_marker;

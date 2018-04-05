@@ -280,6 +280,16 @@ public:
 		return *this;
 	}
 
+	inline self_type& operator+=(const size_t& value){
+		if(this->n_chars + sizeof(size_t) >= this->width)
+			this->resize(this->width*2);
+
+		size_t* p = reinterpret_cast<size_t*>(&this->buffer[this->n_chars]);
+		*p = value;
+		this->n_chars += sizeof(size_t);
+		return *this;
+	}
+
 	inline self_type& operator+=(const std::string& value){
 		if(this->n_chars + value.size() + sizeof(BYTE) >= this->width){
 			U64 resize_to = this->width * 2;
@@ -310,62 +320,68 @@ public:
 	}
 
 private:
-	friend BYTE& operator<<(BYTE& target, self_type& data){
+	friend self_type& operator>>(self_type& data, BYTE& target){
 		target = *reinterpret_cast<BYTE*>(&data.buffer[data.iterator_position_++]);
-		return(target);
+		return(data);
 	}
 
-	friend U16& operator<<(U16& target, self_type& data){
+	friend self_type& operator>>(self_type& data, U16& target){
 		target = *reinterpret_cast<U16*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(U16);
-		return(target);
+		return(data);
 	}
 
-	friend U32& operator<<(U32& target, self_type& data){
+	friend self_type& operator>>(self_type& data, U32& target){
 		target = *reinterpret_cast<U32*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(U32);
-		return(target);
+		return(data);
 	}
 
-	friend U64& operator<<(U64& target, self_type& data){
+	friend self_type& operator>>(self_type& data, U64& target){
 		target = *reinterpret_cast<U64*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(U64);
-		return(target);
+		return(data);
 	}
 
-	friend SBYTE& operator<<(SBYTE& target, self_type& data){
+	friend self_type& operator>>(self_type& data, SBYTE& target){
 		target = *reinterpret_cast<SBYTE*>(&data.buffer[data.iterator_position_++]);
-		return(target);
+		return(data);
 	}
 
-	friend S16& operator<<(S16& target, self_type& data){
+	friend self_type& operator>>(self_type& data, S16& target){
 		target = *reinterpret_cast<S16*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(S16);
-		return(target);
+		return(data);
 	}
 
-	friend S32& operator<<(S32& target, self_type& data){
+	friend self_type& operator>>(self_type& data, S32& target){
 		target = *reinterpret_cast<S32*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(S32);
-		return(target);
+		return(data);
 	}
 
-	friend S64& operator<<(S64& target, self_type& data){
+	friend self_type& operator>>(self_type& data, S64& target){
 		target = *reinterpret_cast<S64*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(S64);
-		return(target);
+		return(data);
 	}
 
-	friend float& operator<<(float& target, self_type& data){
+	friend self_type& operator>>(self_type& data, float& target){
 		target = *reinterpret_cast<float*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(float);
-		return(target);
+		return(data);
 	}
 
-	friend double& operator<<(double& target, self_type& data){
+	friend self_type& operator>>(self_type& data, double& target){
 		target = *reinterpret_cast<double*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(double);
-		return(target);
+		return(data);
+	}
+
+	friend self_type& operator>>(self_type& data, size_type& target){
+		target = *reinterpret_cast<size_type*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(size_type);
+		return(data);
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& data){

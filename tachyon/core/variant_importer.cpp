@@ -118,6 +118,10 @@ bool VariantImporter::BuildBCF(void){
 	hash::HashTable<U64, U32> blockID_hash_table(500000);
 	BYTE RANDOM_BYTES[32];
 	U64 blockID;
+	hash::HashTable<U64, U32> fieldID_hash_table(500000);
+
+	// Todo
+	encryption::Keychain keychain(100);
 
 	// Start import
 	U32 previousFirst    = 0;
@@ -180,40 +184,57 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.n_variants       = reader.size();
 		this->block.finalize();
 
-		// Perform compression using standard parameters
-		if(!this->compression_manager.compress(this->block)){
-			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
-			return false;
+		// Todo
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_contig_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_positions_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_refalt_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_controller_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_quality_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_names_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_alleles_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_info_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_format_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.meta_filter_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_support_data_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_rle8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_rle16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_rle32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_rle64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_simple8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_simple16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_simple32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		this->block.gt_simple64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+
+		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			this->block.info_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
 		}
 
-		checksums += this->block;
-		// TODO: if encryption is set then we have to lift over the offset headers
-		// prior to invoking the writing functions as we need to encrypt the offset
-		// headers with the same key
-
-		// temp: encrypt before writing but after compression
-		if(!encryptionManager.encryptAES256(this->block)){
-			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			this->block.format_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
 		}
 
-		this->index_entry.byte_offset = this->writer->stream->tellp();
-		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
-		this->block.footer_support.buffer_data_uncompressed << this->block.footer;
-		this->compression_manager.zstd_codec.compress(this->block.footer_support);
-		const U64 start_footer_pos = this->writer->stream->tellp();
-		// Compress and write footer
-
-		const U32 footer_uLength = this->block.footer_support.header.data_header.uLength;
-		const U32 footer_cLength = this->block.footer_support.header.data_header.cLength;
-		const U32 footer_crc     = this->block.footer_support.header.data_header.crc;
-		this->writer->stream->write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
-		this->writer->stream->write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
-		this->writer->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(U32));
-		*this->writer->stream << this->block.footer_support.buffer_data;
-
-		//stream << this->footer;
-		stats_basic[0].cost_uncompressed += (U64)this->writer->stream->tellp() - start_footer_pos;
-
+		// Todo
 		while(true){
 			RAND_bytes(&RANDOM_BYTES[0], 32);
 			blockID = XXH64(&RANDOM_BYTES[0], 32, 9823743);
@@ -229,6 +250,47 @@ bool VariantImporter::BuildBCF(void){
 			this->block.header.blockID = blockID;
 			break;
 		}
+
+		// Perform compression using standard parameters
+		if(!this->compression_manager.compress(this->block)){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			return false;
+		}
+
+		checksums += this->block;
+		// TODO: if encryption is set then we have to lift over the offset headers
+		// prior to invoking the writing functions as we need to encrypt the offset
+		// headers with the same key
+
+		// temp: encrypt before writing but after compression
+
+		if(!encryptionManager.encryptAES256(this->block, keychain)){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+		}
+
+/*
+		if(!encryptionManager.decryptAES256(this->block, keychain)){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decrypt..." << std::endl;
+		}
+		*/
+
+		this->index_entry.byte_offset = this->writer->stream->tellp();
+		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
+
+		// Compress and write footer
+		this->block.footer_support.buffer_data_uncompressed << this->block.footer;
+		this->compression_manager.zstd_codec.compress(this->block.footer_support);
+		const U64 start_footer_pos = this->writer->stream->tellp();
+		const U32 footer_uLength   = this->block.footer_support.header.data_header.uLength;
+		const U32 footer_cLength   = this->block.footer_support.header.data_header.cLength;
+		const U32 footer_crc       = this->block.footer_support.header.data_header.crc;
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
+		this->writer->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(U32));
+		*this->writer->stream << this->block.footer_support.buffer_data;
+
+		//stream << this->footer;
+		stats_basic[0].cost_uncompressed += (U64)this->writer->stream->tellp() - start_footer_pos;
 		//std::cerr << "blockID: " << blockID << " for " << this->writer->n_blocks_written << std::endl;
 
 		// Write EOB
@@ -300,6 +362,8 @@ bool VariantImporter::BuildBCF(void){
 			std::ofstream writer_stats;
 			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
 			writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
+			std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
+
 			if(writer_stats.good()){
 				for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
 				for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
@@ -332,6 +396,26 @@ bool VariantImporter::BuildBCF(void){
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
 		std::cerr << utility::timestamp("PROGRESS") << "YON: "   << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
+	}
+
+	std::cerr << "Keychain:" << keychain.size() << "/" << keychain.capacity() << std::endl;
+	buffer_type keybuffer(1000000);
+	keybuffer.Add(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+	keybuffer += keychain;
+	std::cerr << "keysize: " << keybuffer.size() << std::endl;
+	if(this->outputPrefix.size()){
+		std::ofstream writer_keychain;
+		writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
+		writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
+		std::cerr << utility::timestamp("LOG") << "Writing keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
+
+		if(writer_keychain.good()){
+			writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+			//writer_keychain.write(keybuffer.data(), keybuffer.size());
+			writer_keychain << keychain;
+			writer_keychain.flush();
+		}
+		writer_keychain.close();
 	}
 
 	// All done

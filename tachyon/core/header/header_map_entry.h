@@ -118,9 +118,9 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry){
 		U32 l_ID = 0;
-		l_ID << buffer;
-		entry.IDX << buffer;
-		entry.primitive_type << buffer;
+		buffer >> l_ID;
+		buffer >> entry.IDX;
+		buffer >> entry.primitive_type;
 		entry.ID.resize(l_ID);
 		buffer.read(&entry.ID[0], l_ID);
 		return(buffer);

@@ -47,7 +47,7 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& sample){
 		U32 l_name = 0;
-		l_name << buffer;
+		buffer >> l_name;
 		buffer.read(&sample.name[0], l_name);
 		return(buffer);
 	}

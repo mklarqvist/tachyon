@@ -114,9 +114,9 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry){
 		delete [] entry.local_keys;
-		entry.n_keys << buffer;
+		buffer >> entry.n_keys;
 		entry.local_keys = new U32[entry.n_keys];
-		for(U32 i = 0; i < entry.n_keys; ++i) entry.local_keys[i] << buffer;
+		for(U32 i = 0; i < entry.n_keys; ++i) buffer >> entry.local_keys[i];
 
 		return(buffer);
 	}

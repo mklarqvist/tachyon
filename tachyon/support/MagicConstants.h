@@ -22,7 +22,7 @@ const std::string TACHYON_LIB_VERSION = std::to_string(TACHYON_VERSION_MAJOR) + 
 /*------   Basics   ------*/
 const std::string PROGRAM_NAME  = "tachyon";
 const std::string OUTPUT_SUFFIX = "yon"; // yonder
-const std::string FILE_HEADER   = "TACHYON\7";
+const std::string FILE_HEADER   = "TACHYON\1";
 const U32 FILE_HEADER_LENGTH    = 8;
 
 /*------   Genotype packing   ------*/

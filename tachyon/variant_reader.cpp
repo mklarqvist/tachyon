@@ -122,6 +122,11 @@ bool VariantReader::nextBlock(){
 		return false;
 
 	// encryption manager ascertainment
+	encryption::EncryptionDecorator e;
+	if(!e.decryptAES256(this->block, this->keychain)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decryption!" << std::endl;
+		return false;
+	}
 
 	// Internally decompress available data
 	if(!this->codec_manager.decompress(this->block)){

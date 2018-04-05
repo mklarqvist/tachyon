@@ -47,6 +47,7 @@ int view(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
+		{"keychain",	optional_argument, 0,  'k' },
 		{"noHeader",	no_argument, 0,  'H' },
 		{"onlyHeader",	no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
@@ -56,12 +57,13 @@ int view(int argc, char** argv){
 
 	std::string input;
 	std::string output;
+	std::string keychain_file;
 	SILENT = 0;
 	bool dropFormat = false;
 	bool headerOnly = false;
 	bool showHeader = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:GshH?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:GshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -71,6 +73,9 @@ int view(int argc, char** argv){
 			break;
 		case 'o':
 			output = std::string(optarg);
+			break;
+		case 'k':
+			keychain_file = std::string(optarg);
 			break;
 		case 'G':
 			dropFormat = true;
@@ -103,6 +108,27 @@ int view(int argc, char** argv){
 	}
 
 	tachyon::VariantReader reader;
+
+	// temp
+	if(keychain_file.size()){
+		std::ifstream keychain_reader(keychain_file, std::ios::binary | std::ios::in);
+		if(!keychain_reader.good()){
+			std::cerr << "failed to open: " << keychain_file << std::endl;
+			return 1;
+		}
+		char header[tachyon::constants::FILE_HEADER_LENGTH];
+		keychain_reader.read(&header[0], tachyon::constants::FILE_HEADER_LENGTH);
+		if(strncmp(&header[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
+			std::cerr << "ILLEGAL KEY FILE" << std::endl;
+			return 1;
+		}
+
+		keychain_reader >> reader.keychain;
+		if(!keychain_reader.good()){
+			std::cerr << "failed to parse kechain" << std::endl;
+			return 1;
+		}
+	}
 
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;

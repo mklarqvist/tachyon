@@ -50,9 +50,9 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& contig){
 		U32 l_name;
-		l_name << buffer;
-		contig.bp_length << buffer;
-		contig.n_blocks << buffer;
+		buffer >> l_name;
+		buffer >> contig.bp_length;
+		buffer >> contig.n_blocks;
 		contig.name.resize(l_name);
 		buffer.read(&contig.name[0], l_name);
 		return(buffer);

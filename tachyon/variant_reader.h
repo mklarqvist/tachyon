@@ -7,6 +7,7 @@
 #include "zstd_errors.h"
 
 #include "algorithm/compression/compression_manager.h"
+#include "algorithm/encryption/EncryptionDecorator.h"
 #include "algorithm/timer.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
@@ -38,6 +39,7 @@ class VariantReader{
 	typedef core::DataBlockSettings             settings_type;
 	typedef index::Index                        index_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
+	typedef encryption::Keychain                   keychain_type;
 
 public:
 	VariantReader();
@@ -622,6 +624,7 @@ public:
 	index_type         index;
 	checksum_type      checksums;
 	codec_manager_type codec_manager;
+	keychain_type      keychain;
 };
 
 }
