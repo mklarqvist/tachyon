@@ -60,8 +60,11 @@ private:
 
 public:
 	// Base -> Base
-	U64  n_transitions;
-	U64  n_transversions;
+	U32  n_insertions;
+	U32  n_deletions;
+	U32  n_singletons;
+	U32  n_transitions;
+	U32  n_transversions;
 	U64* base_conversions[5]; // {A,T,G,C,N} -> {A,T,G,C,N}. A 5x5 matrix
 };
 

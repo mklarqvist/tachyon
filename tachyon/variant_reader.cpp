@@ -122,10 +122,17 @@ bool VariantReader::nextBlock(){
 		return false;
 
 	// encryption manager ascertainment
-	encryption::EncryptionDecorator e;
-	if(!e.decryptAES256(this->block, this->keychain)){
-		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decryption!" << std::endl;
-		return false;
+	if(this->block.header.controller.anyEncrypted){
+		if(this->keychain.size() == 0){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
+			return false;
+		}
+
+		encryption::EncryptionDecorator e;
+		if(!e.decryptAES256(this->block, this->keychain)){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
+			return false;
+		}
 	}
 
 	// Internally decompress available data

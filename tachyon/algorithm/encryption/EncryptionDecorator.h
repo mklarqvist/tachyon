@@ -463,9 +463,18 @@ public:
 		// Todo: temporary validation hack
 
 		U32 i = 0;
+		bool found = false;
 		for(; i < keychain.size(); ++i){
-			if(keychain[i].blockID == block.header.blockID) break;
+			if(keychain[i].blockID == block.header.blockID){
+				found = true;
+				break;
+			}
 		}
+		if(!found){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to find block identifier in keychain!" << std::endl;
+			return false;
+		}
+
 		//std::cerr << "found block at: " << i << std::endl;
 		keychainentry_type& chain = keychain[i];
 
@@ -503,6 +512,8 @@ public:
 	bool encryptAES256(variant_block_type& block, keychain_type& keychain){
 		keychainentry_type chain(block.footer.n_info_streams, block.footer.n_format_streams);
 		chain.blockID = block.header.blockID;
+
+		this->__setFieldIdentifiers(block);
 
 		if(!this->encryptAES256(block.meta_contig_container,chain[0])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 		if(!this->encryptAES256(block.meta_positions_container,chain[1])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
@@ -698,6 +709,60 @@ public:
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to validate decryption..." << std::endl;
 			return(false);
 		}
+	}
+
+private:
+	bool __setFieldIdentifiers(variant_block_type& variant_block){
+		BYTE RANDOM_BYTES[32];
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_contig_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_positions_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_refalt_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_controller_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_quality_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_names_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_alleles_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_info_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_format_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.meta_filter_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_support_data_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_rle8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_rle16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_rle32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_rle64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_simple8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_simple16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_simple32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		variant_block.gt_simple64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+
+		for(U32 i = 0; i < variant_block.footer.n_info_streams; ++i){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			variant_block.info_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		}
+
+		for(U32 i = 0; i < variant_block.footer.n_format_streams; ++i){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			variant_block.format_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		}
+		return(true);
 	}
 
 public:

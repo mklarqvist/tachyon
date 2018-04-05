@@ -235,38 +235,68 @@ void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 	if(this->size() == 0)
 		return;
 
-	// Has to be a SNV
-	if(this->getMeta().isSimpleSNV() == false){
-		//std::cerr << "skipping" << std::endl;
+	if(this->getMeta().isDiploid() == false){
 		return;
 	}
 
-	if(this->getMeta().isBiallelic() == false){
+	if(this->getMeta().alleles[0].size() != 1)
+		return;
+
+	// If alleleA/B == ref then update self
+	// If allele != ref then update ref->observed
+	BYTE* references = new BYTE[this->getMeta().getNumberAlleles()];
+	switch(this->getMeta().alleles[0].allele[0]){
+	case('A'): references[0] = constants::REF_ALT_A; break;
+	case('T'): references[0] = constants::REF_ALT_T; break;
+	case('G'): references[0] = constants::REF_ALT_G; break;
+	case('C'): references[0] = constants::REF_ALT_C; break;
+	case('N'):
+	default:   references[0] = constants::REF_ALT_N; break;
+	}
+
+	if(references[0] == constants::REF_ALT_N){
+		std::cerr << "ref cannot be 0" << std::endl;
+		delete [] references;
+		return;
+	}
+
+	U32 n_valid_alleles = 0;
+	for(U32 i = 1; i < this->getMeta().getNumberAlleles(); ++i){
+		if(this->getMeta().alleles[i].size() != 1){
+			references[i] = constants::REF_ALT_N;
+			continue;
+		}
+
+		switch(this->getMeta().alleles[i].allele[0]){
+		case('A'): references[i] = constants::REF_ALT_A; ++n_valid_alleles; break;
+		case('T'): references[i] = constants::REF_ALT_T; ++n_valid_alleles; break;
+		case('G'): references[i] = constants::REF_ALT_G; ++n_valid_alleles; break;
+		case('C'): references[i] = constants::REF_ALT_C; ++n_valid_alleles; break;
+		case('N'):
+		default:   references[i] = constants::REF_ALT_N; break;
+		}
+	}
+	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
+	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
+
+	if(n_valid_alleles == 0){
+		//std::cerr << "no valid alleles: " << this->getMeta().getNumberAlleles() << std::endl;
+		//for(U32 i = 0; i < this->getMeta().getNumberAlleles(); ++i){
+		//	std::cerr << this->getMeta().alleles[i].toString() << std::endl;
+		//}
+		delete [] references;
 		return;
 	}
 
 	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
 	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
-	// If alleleA/B == ref then update self
-	// If allele != ref then update ref->observed
-	BYTE references[4];
-	//references[0] = this->getMeta().getBiallelicAlleleLiteral(0);
-	//references[1] = this->getMeta().getBiallelicAlleleLiteral(1);
-	references[0] = 0;
-	references[1] = 0;
-	references[2] = 4; // Missing
-	references[3] = 4; // EOV: is never available in this encodin
-
-	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
-	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
-
 	// Cycle over genotype objects
 	U32 cum_position = 0;
 	for(U32 i = 0; i < this->size(); ++i){
 		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		SBYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		SBYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
 		if(alleleA == 2 || alleleB == 2){
 			cum_position += length;
@@ -282,6 +312,8 @@ void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 			objects[cum_position].n_transversions += transversion_map_target[references[alleleB]];
 		}
 	}
+
+	delete [] references;
 }
 
 }

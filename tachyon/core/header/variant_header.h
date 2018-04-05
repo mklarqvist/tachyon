@@ -179,6 +179,11 @@ private:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& header){
 		buffer >> header.header_magic;
+		delete [] header.contigs;
+		delete [] header.samples;
+		delete [] header.info_fields;
+		delete [] header.format_fields;
+		delete [] header.filter_fields;
 		header.contigs = new contig_type[header.header_magic.n_contigs];
 		header.samples = new sample_type[header.header_magic.n_samples];
 		header.info_fields   = new map_entry_type[header.header_magic.n_info_values];
@@ -201,18 +206,23 @@ private:
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
 		stream >> entry.header_magic;
 
+		delete [] entry.contigs;
 		entry.contigs = new contig_type[entry.header_magic.n_contigs];
 		for(U32 i = 0; i < entry.header_magic.n_contigs; ++i) stream >> entry.contigs[i];
 
+		delete [] entry.samples;
 		entry.samples = new sample_type[entry.header_magic.n_samples];
 		for(U32 i = 0; i < entry.header_magic.n_samples; ++i) stream >> entry.samples[i];
 
+		delete [] entry.info_fields;
 		entry.info_fields = new map_entry_type[entry.header_magic.n_info_values];
 		for(U32 i = 0; i < entry.header_magic.n_info_values; ++i) stream >> entry.info_fields[i];
 
+		delete [] entry.format_fields;
 		entry.format_fields = new map_entry_type[entry.header_magic.n_format_values];
 		for(U32 i = 0; i < entry.header_magic.n_format_values; ++i) stream >> entry.format_fields[i];
 
+		delete entry.filter_fields;
 		entry.filter_fields = new map_entry_type[entry.header_magic.n_filter_values];
 		for(U32 i = 0; i < entry.header_magic.n_filter_values; ++i) stream >> entry.filter_fields[i];
 

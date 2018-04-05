@@ -27,6 +27,7 @@ VariantImporter::VariantImporter(std::string inputFile,
                                 const double checkpoint_bases) :
 	GT_available_(false),
 	permute(true),
+	encrypt(false),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
 	inputFile(inputFile),
@@ -185,56 +186,6 @@ bool VariantImporter::BuildBCF(void){
 		this->block.finalize();
 
 		// Todo
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_contig_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_positions_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_refalt_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_controller_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_quality_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_names_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_alleles_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_info_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_format_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.meta_filter_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_support_data_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_rle8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_rle16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_rle32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_rle64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_simple8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_simple16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_simple32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		this->block.gt_simple64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-
-		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-			RAND_bytes(&RANDOM_BYTES[0], 32);
-			this->block.info_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		}
-
-		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-			RAND_bytes(&RANDOM_BYTES[0], 32);
-			this->block.format_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		}
-
-		// Todo
 		while(true){
 			RAND_bytes(&RANDOM_BYTES[0], 32);
 			blockID = XXH64(&RANDOM_BYTES[0], 32, 9823743);
@@ -264,15 +215,12 @@ bool VariantImporter::BuildBCF(void){
 
 		// temp: encrypt before writing but after compression
 
-		if(!encryptionManager.encryptAES256(this->block, keychain)){
-			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+		if(this->encrypt){
+			this->block.header.controller.anyEncrypted = true;
+			if(!encryptionManager.encryptAES256(this->block, keychain)){
+				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
+			}
 		}
-
-/*
-		if(!encryptionManager.decryptAES256(this->block, keychain)){
-			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decrypt..." << std::endl;
-		}
-		*/
 
 		this->index_entry.byte_offset = this->writer->stream->tellp();
 		this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
@@ -362,7 +310,8 @@ bool VariantImporter::BuildBCF(void){
 			std::ofstream writer_stats;
 			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
 			writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
-			std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
+			if(!SILENT)
+				std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
 
 			if(writer_stats.good()){
 				for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
@@ -398,24 +347,22 @@ bool VariantImporter::BuildBCF(void){
 		std::cerr << utility::timestamp("PROGRESS") << "YON: "   << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
 	}
 
-	std::cerr << "Keychain:" << keychain.size() << "/" << keychain.capacity() << std::endl;
-	buffer_type keybuffer(1000000);
-	keybuffer.Add(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
-	keybuffer += keychain;
-	std::cerr << "keysize: " << keybuffer.size() << std::endl;
-	if(this->outputPrefix.size()){
-		std::ofstream writer_keychain;
-		writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
-		writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
-		std::cerr << utility::timestamp("LOG") << "Writing keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
+	if(this->encrypt){
+		if(this->outputPrefix.size()){
+			std::ofstream writer_keychain;
+			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
+			writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
+			if(!SILENT)
+				std::cerr << utility::timestamp("LOG") << "Writing keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
 
-		if(writer_keychain.good()){
-			writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
-			//writer_keychain.write(keybuffer.data(), keybuffer.size());
-			writer_keychain << keychain;
-			writer_keychain.flush();
+			if(writer_keychain.good()){
+				writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+				//writer_keychain.write(keybuffer.data(), keybuffer.size());
+				writer_keychain << keychain;
+				writer_keychain.flush();
+			}
+			writer_keychain.close();
 		}
-		writer_keychain.close();
 	}
 
 	// All done

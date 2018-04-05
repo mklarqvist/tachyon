@@ -30,14 +30,15 @@ DEALINGS IN THE SOFTWARE.
 void import_usage(void){
 	programMessage();
 	std::cerr <<
-	"Brief:  Convert VCF/BCF/FASTQ/FASTA -> YON/\n"
+	"Brief:  Convert BCF -> YON/\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input file> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input BCF file (required)\n"
 	"  -o FILE  output file prefix (required)\n"
-	"  -c INT   Import checkpoint size in number of variants\n"
-	"  -C FLOAT Import checkpoint size in bases\n"
+	"  -c INT   Import checkpoint size in number of variants (default: 1000)\n"
+	"  -C FLOAT Import checkpoint size in bases (defaukt: 5 Mb)\n"
 	"  -p/-P    Permute/Do not permute diploid genotypes\n"
+	"  -e       Encrypt data (default AES-256)\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -55,26 +56,28 @@ int import(int argc, char** argv){
 
 	int option_index = 0;
 	static struct option long_options[] = {
-		{"input",		required_argument, 0,  'i' },
-		{"output",		optional_argument, 0,  'o' },
-		{"fastq",		no_argument, 0,  'f' },
-		{"checkpoint-variants",		optional_argument, 0,  'c' },
-		{"checkpoint-bases",		optional_argument, 0,  'C' },
-		{"permute",		no_argument, 0,  'p' },
-		{"no-permute",		no_argument, 0,  'P' },
-		{"silent",		no_argument, 0,  's' },
+		{"input",               required_argument, 0, 'i' },
+		{"output",              optional_argument, 0, 'o' },
+		{"fastq",               no_argument,       0, 'f' },
+		{"checkpoint-variants", optional_argument, 0, 'c' },
+		{"checkpoint-bases",    optional_argument, 0, 'C' },
+		{"permute",             no_argument,       0, 'p' },
+		{"encrypt",             no_argument,       0, 'e' },
+		{"no-permute",          no_argument,       0, 'P' },
+		{"silent",              no_argument,       0, 's' },
 		{0,0,0,0}
 	};
 
 	std::string input;
 	std::string output;
 	SILENT = 0;
-	S32 checkpoint_n_variants = 500;
-	double checkpoint_bp_window = 30e3;
+	S32 checkpoint_n_variants = 1000;
+	double checkpoint_bp_window = 5e6;
 	bool permute = true;
+	bool encrypt = false;
 	bool isFASTQ = false;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:C:spPf?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:c:C:sepPf?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -87,6 +90,9 @@ int import(int argc, char** argv){
 			break;
 		case 'f':
 			isFASTQ = true;
+			break;
+		case 'e':
+			encrypt = true;
 			break;
 		case 'c':
 			checkpoint_n_variants = atoi(optarg);
@@ -136,6 +142,7 @@ int import(int argc, char** argv){
 	} else {
 		tachyon::VariantImporter importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
 		importer.setPermute(permute);
+		importer.setEncrypt(encrypt);
 
 		if(!importer.Build())
 			return 1;

@@ -246,86 +246,85 @@ GenotypeSum& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary&
 
 template <class return_type>
 void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
-	if(this->size() == 0)
+	if(this->size() == 0) return;
+	if(this->getMeta().isDiploid() == false) return;
+	if(this->getMeta().alleles[0].size() != 1) return;
+
+	// If alleleA/B == ref then update self
+	// If allele != ref then update ref->observed
+	BYTE* references = new BYTE[this->getMeta().getNumberAlleles()];
+	switch(this->getMeta().alleles[0].allele[0]){
+	case('A'): references[0] = constants::REF_ALT_A; break;
+	case('T'): references[0] = constants::REF_ALT_T; break;
+	case('G'): references[0] = constants::REF_ALT_G; break;
+	case('C'): references[0] = constants::REF_ALT_C; break;
+	case('N'):
+	default:   references[0] = constants::REF_ALT_N; break;
+	}
+
+	if(references[0] == constants::REF_ALT_N){
+		std::cerr << "ref cannot be 0" << std::endl;
+		delete [] references;
 		return;
+	}
 
-	exit(1);
+	U32 n_valid_alleles = 0;
+	for(U32 i = 1; i < this->getMeta().getNumberAlleles(); ++i){
+		if(this->getMeta().alleles[i].size() != 1){
+			references[i] = constants::REF_ALT_N;
+			continue;
+		}
 
-	/*
-	// Reference has to be a SNV
-	if(this->getMeta().cold.alleles[0].l_allele != 1)
-		return;
-
-	// Check
-	U32 n_variants_is_snv = 0;
-	// Lookup for reference
-	std::pair<BYTE, bool>* references = new std::pair<BYTE, bool>[this->getMeta().getNumberAlleles() + 1];
-
-	for(U32 i = 0; i < this->__meta->getNumberAlleles(); ++i){
-		if(this->getMeta().cold.alleles[i].l_allele == 1){
-			++n_variants_is_snv;
-
-			switch(this->getMeta().cold.alleles[i].allele[0]){
-			case('A'): references[i].first = constants::REF_ALT_A; break;
-			case('T'): references[i].first = constants::REF_ALT_T; break;
-			case('G'): references[i].first = constants::REF_ALT_G; break;
-			case('C'): references[i].first = constants::REF_ALT_C; break;
-			case('N'): references[i].first = constants::REF_ALT_N; break;
-			}
-
-			references[i].second = true;
-		} else {
-			references[i].second = false;
-			references[i].first  = 5;
+		switch(this->getMeta().alleles[i].allele[0]){
+		case('A'): references[i] = constants::REF_ALT_A; ++n_valid_alleles; break;
+		case('T'): references[i] = constants::REF_ALT_T; ++n_valid_alleles; break;
+		case('G'): references[i] = constants::REF_ALT_G; ++n_valid_alleles; break;
+		case('C'): references[i] = constants::REF_ALT_C; ++n_valid_alleles; break;
+		case('N'):
+		default:   references[i] = constants::REF_ALT_N; break;
 		}
 	}
 
-	if(n_variants_is_snv == 0){
+	if(n_valid_alleles == 0){
+		//std::cerr << "no valid alleles: " << this->getMeta().getNumberAlleles() << std::endl;
+		//for(U32 i = 0; i < this->getMeta().getNumberAlleles(); ++i){
+		//	std::cerr << this->getMeta().alleles[i].toString() << std::endl;
+		//}
 		delete [] references;
 		return;
 	}
 
-	if(references[0].second == false){
-		delete [] references;
-		return;
-	}
-
-	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0].first];
-	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0].first];
-	const BYTE shift = ceil(log2(this->__meta->getNumberAlleles() + 1 + this->__meta->isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
-	const BYTE add   = this->__meta->isGTMixedPhasing() ? 1 : 0;
+	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[references[0]];
+	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[references[0]];
+	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
 
 	// Cycle over genotype objects
 	U32 cum_position = 0;
 	for(U32 i = 0; i < this->size(); ++i){
-		const U32 length   = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		SBYTE alleleA    = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		SBYTE alleleB    = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		alleleA -= subtract; alleleB -= subtract;
 
-		// Allele 0 is encoded as missing
-		if(alleleA == 0 || alleleB == 0){
-			cum_position += length;
-			continue;
-		}
-
-		if(references[alleleA-1].second == false || references[alleleB-1].second == false){
-			cum_position += length;
-			continue;
-		}
+		BYTE targetA = references[alleleA];
+		BYTE targetB = references[alleleB];
+		if(alleleA < 0) targetA = constants::REF_ALT_N;
+		if(alleleB < 0) targetB = constants::REF_ALT_N;
 
 		for(U32 j = 0; j < length; ++j, cum_position++){
-			++objects[cum_position].base_conversions[references[0].first][references[alleleA-1].first];
-			++objects[cum_position].base_conversions[references[0].first][references[alleleB-1].first];
-			objects[cum_position].n_transitions   += transition_map_target[references[alleleA-1].first];
-			objects[cum_position].n_transversions += transversion_map_target[references[alleleA-1].first];
-			objects[cum_position].n_transitions   += transition_map_target[references[alleleB-1].first];
-			objects[cum_position].n_transversions += transversion_map_target[references[alleleB-1].first];
+			++objects[cum_position].base_conversions[references[0]][targetA];
+			++objects[cum_position].base_conversions[references[0]][targetB];
+			objects[cum_position].n_transitions   += transition_map_target[targetA];
+			objects[cum_position].n_transversions += transversion_map_target[targetA];
+			objects[cum_position].n_transitions   += transition_map_target[targetB];
+			objects[cum_position].n_transversions += transversion_map_target[targetB];
 		}
 	}
 
 	// Cleanup
 	delete [] references;
-	*/
 }
 
 }

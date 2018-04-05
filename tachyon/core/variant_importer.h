@@ -44,6 +44,7 @@ public:
 	bool Build();
 
 	inline void setPermute(const bool yes){ this->permute = yes; }
+	inline void setEncrypt(const bool yes){ this->encrypt = yes; }
 	void setWriterTypeFile(void){ this->writer = new writer_file_type; }
 	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
@@ -55,6 +56,7 @@ private:
 private:
 	bool GT_available_;
 	bool permute;            // permute GT flag
+	bool encrypt;            // encryption flag
 	U32 checkpoint_n_snps;   // number of variants until checkpointing
 	double checkpoint_bases; // number of bases until checkpointing
 

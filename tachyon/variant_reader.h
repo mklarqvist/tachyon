@@ -289,9 +289,6 @@ public:
 	}
 
 
-	//<----------------- EXAMPLE FUNCTIONS -------------------------->
-
-
 	U64 outputVCF(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer* gt = nullptr;
@@ -358,7 +355,7 @@ public:
 		}
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(std::cout, meta[p], this->header);
+			utility::to_vcf_string(stream, meta[p], this->header);
 
 			if(settings.loadSetMembership_){
 				if(this->block.footer.n_filter_streams){
@@ -396,22 +393,20 @@ public:
 					//}
 
 					// First
-					if(this->header.info_fields[this->block.footer.info_offsets[keys[0]].data_header.global_key].primitive_type == 2){
-						stream << global_fields[keys[0]];
-						continue;
+					stream << global_fields[keys[0]];
+					if(its[keys[0]]->emptyPosition(p) == false){;
+						stream.put('=');
+						its[keys[0]]->to_vcf_string(stream, p);
 					}
-					if(its[keys[0]]->emptyPosition(p)) continue;
-					stream << global_fields[keys[0]] << "=";
-					its[keys[0]]->to_vcf_string(std::cout, p);
 
 					for(U32 i = 1; i < n_keys; ++i){
+						stream << ";" << global_fields[keys[i]];
 						if(this->header.info_fields[this->block.footer.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
-							stream << ";" << global_fields[keys[i]];
 							continue;
 						}
 						if(its[keys[i]]->emptyPosition(p)) continue;
-						stream << ";" << global_fields[keys[i]] << "=";
-						its[keys[i]]->to_vcf_string(std::cout, p);
+						stream.put('=');
+						its[keys[i]]->to_vcf_string(stream, p);
 					}
 				} else
 					stream.put('.');
@@ -433,6 +428,7 @@ public:
 						}
 						stream.put('\t');
 
+						// Todo: print if no GT data
 						// Begin print FORMAT data for each sample
 						std::vector<core::GTObject> objects_true;
 						if(this->settings.loadPPA_ && this->block.header.controller.hasGTPermuted){
@@ -444,7 +440,7 @@ public:
 						stream << objects_true[0];
 						for(U32 i = 1; i < n_format_keys; ++i){
 							stream.put(':');
-							fits[format_keys[i]]->to_vcf_string(std::cout, p, 0);
+							fits[format_keys[i]]->to_vcf_string(stream, p, 0);
 						}
 
 						for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
@@ -452,7 +448,7 @@ public:
 							stream << objects_true[s];
 							for(U32 i = 1; i < n_format_keys; ++i){
 								stream.put(':');
-								fits[format_keys[i]]->to_vcf_string(std::cout, p, s);
+								fits[format_keys[i]]->to_vcf_string(stream, p, s);
 							}
 						}
 						stream.put('\n');
@@ -476,6 +472,10 @@ public:
 		delete gt;
 		return(meta.size());
 	}
+
+
+	//<----------------- EXAMPLE FUNCTIONS -------------------------->
+
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
 		//std::cerr << "before meta: " << this->block.size() << std::endl;
