@@ -556,11 +556,12 @@ public:
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
-		for(U32 i = 0; i < objects.size(); ++i){
-			//std::cerr << this->block.ppa_manager[i] << std::endl;
+		//for(U32 i = 0; i < objects.size(); ++i)
+		//	std::cerr << objects[i] << std::endl;
+
+		for(U32 i = 0; i < objects.size(); ++i)
 			global[this->block.ppa_manager[i]] += objects[i];
-			//stream << i << '\t' << objects[i] << '\n';
-		}
+
 
 		return(gt.size());
 	}

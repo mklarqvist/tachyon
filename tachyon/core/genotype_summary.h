@@ -296,13 +296,13 @@ struct GenotypesSummary{
 		} else return false;
 	}
 
-	/*
+	/**<
 	// This code implements an exact SNP test of Hardy-Weinberg Equilibrium as described in
 	// Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
 	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
 	//
 	// Written by Jan Wigginton
-	// Modified to use Tachyon data
+	// Modified to use Tachyon data by Marcus D. R. Klarqvist
 	*/
 	void calculateHardyWeinberg(void){
 		U64 obs_hets = this->countsGenotypes[1] + this->countsGenotypes[4];
@@ -318,15 +318,13 @@ struct GenotypesSummary{
 		double* het_probs = new double[rare_copies + 1];
 
 		int64_t i;
-		for (i = 0; i <= rare_copies; ++i)
-			het_probs[i] = 0.0;
+		for (i = 0; i <= rare_copies; ++i) het_probs[i] = 0.0;
 
-		/* start at midpoint */
+		// start at midpoint
 		int64_t mid = rare_copies * (2 * genotypes - rare_copies) / (2 * genotypes);
 
-		/* check to ensure that midpoint and rare alleles have same parity */
-		if ((rare_copies & 1) ^ (mid & 1))
-			++mid;
+		// check to ensure that midpoint and rare alleles have same parity
+		if ((rare_copies & 1) ^ (mid & 1)) ++mid;
 
 		int64_t curr_hets = mid;
 		int64_t curr_homr = (rare_copies - mid) / 2;
@@ -335,11 +333,10 @@ struct GenotypesSummary{
 		het_probs[mid] = 1.0;
 		double sum = het_probs[mid];
 		for (curr_hets = mid; curr_hets > 1; curr_hets -= 2){
-			het_probs[curr_hets - 2] = het_probs[curr_hets] * curr_hets * (curr_hets - 1.0)
-							   / (4.0 * (curr_homr + 1.0) * (curr_homc + 1.0));
+			het_probs[curr_hets - 2] = het_probs[curr_hets] * curr_hets * (curr_hets - 1.0) / (4.0 * (curr_homr + 1.0) * (curr_homc + 1.0));
 			sum += het_probs[curr_hets - 2];
 
-			/* 2 fewer heterozygotes for next iteration -> add one rare, one common homozygote */
+			// 2 fewer heterozygotes for next iteration -> add one rare, one common homozygote
 			++curr_homr;
 			++curr_homc;
 		}
@@ -348,17 +345,15 @@ struct GenotypesSummary{
 		curr_homr = (rare_copies - mid) / 2;
 		curr_homc = genotypes - curr_hets - curr_homr;
 		for (curr_hets = mid; curr_hets <= rare_copies - 2; curr_hets += 2){
-			het_probs[curr_hets + 2] = het_probs[curr_hets] * 4.0 * curr_homr * curr_homc
-							/((curr_hets + 2.0) * (curr_hets + 1.0));
+			het_probs[curr_hets + 2] = het_probs[curr_hets] * 4.0 * curr_homr * curr_homc /((curr_hets + 2.0) * (curr_hets + 1.0));
 			sum += het_probs[curr_hets + 2];
 
-			/* add 2 heterozygotes for next iteration -> subtract one rare, one common homozygote */
+			// add 2 heterozygotes for next iteration -> subtract one rare, one common homozygote
 			--curr_homr;
 			--curr_homc;
 		}
 
-		for (i = 0; i <= rare_copies; i++)
-			het_probs[i] /= sum;
+		for (i = 0; i <= rare_copies; i++) het_probs[i] /= sum;
 
 		double p_hwe = 0.0;
 		/*  p-value calculation for p_hwe  */

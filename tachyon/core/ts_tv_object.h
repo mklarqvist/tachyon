@@ -13,7 +13,12 @@ private:
 	typedef MetaEntry  meta_type;
 
 public:
-	TsTvObject() : n_transitions(0), n_transversions(0)
+	TsTvObject() :
+		n_insertions(0),
+		n_deletions(0),
+		n_singletons(0),
+		n_transitions(0),
+		n_transversions(0)
 	{
 		for(U32 i = 0; i < 5; ++i){
 			this->base_conversions[i] = new U64[5];
@@ -27,7 +32,10 @@ public:
 	}
 
 	self_type& operator+=(const self_type& other){
-		this->n_transitions += other.n_transitions;
+		this->n_insertions    += other.n_insertions;
+		this->n_deletions     += other.n_deletions;
+		this->n_singletons    += other.n_singletons;
+		this->n_transitions   += other.n_transitions;
 		this->n_transversions += other.n_transversions;
 		for(U32 i = 0; i < 5; ++i){
 			for(U32 j = 0; j < 5; ++j){
@@ -38,9 +46,8 @@ public:
 	}
 
 	inline const double getTiTVRatio(void) const{
-		if(this->n_transversions + this->n_transitions == 0)
-			return 0;
-
+		// Prevent division by 0
+		if(this->n_transversions == 0) return 0;
 		return((double)this->n_transitions / this->n_transversions);
 	}
 
@@ -48,13 +55,14 @@ private:
 	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
 		U64 n_total_variants = 0;
 		out << entry.n_transversions << '\t' << entry.n_transitions << '\t' << entry.getTiTVRatio() << '\t';
+		// Skip 5: encoding for N
 		for(U32 i = 0; i < 4; ++i){
 			for(U32 j = 0; j < 4; ++j){
 				out << entry.base_conversions[i][j] << '\t';
 				if(i != j) n_total_variants += entry.base_conversions[i][j];
 			}
 		}
-		out << n_total_variants;
+		out << n_total_variants << '\t' << entry.n_insertions;
 		return(out);
 	}
 

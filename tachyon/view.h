@@ -157,27 +157,29 @@ int view(int argc, char** argv){
 		reader.getSettings().loadGenotypesSupport_ = false;
 		reader.getSettings().loadFORMAT_           = false;
 	}
-	//reader.getSettings().loadINFO_ = false;
-	//reader.getSettings().loadINFO("AC").loadINFO("AN").loadINFO("DP");
-	//reader.getSettings().loadAllMeta(true);
+	//reader.getSettings().loadGenotypes(true);
+	//reader.getSettings().loadPPA_ = true;
+	//reader.getSettings().loadAlleles_ = true;
 
 	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
 	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
 	U32 n_blocks = 0;
 	//U64 square_division = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
+	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		//n_variants += reader.outputVCF();
+		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
+		n_variants += reader.outputVCF();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		++n_blocks;
 	}
 
-	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\n";
+	/*
+	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
 		std::cout << reader.header.samples[i].name << '\t' << global_titv[i] << '\n';
 		//std::cout << reader.header.samples[i].name << std::endl;
 	}
+	*/
 
 	//square /= square_division;
 	std::cerr << "Blocks: " << n_blocks << std::endl;

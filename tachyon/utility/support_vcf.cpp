@@ -143,12 +143,12 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 		return(stream.put('.'));
 
 	// First value
-	if(ref[0] == YON_FLOAT_MISSING || ref[0] == YON_FLOAT_NAN) stream << '.';
+	if(ref[0] == YON_FLOAT_MISSING) stream << '.';
 	else stream << container[0];
 
 	// Remainder values
 	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_FLOAT_MISSING || ref[i] == YON_FLOAT_NAN) stream << ",.";
+		if(ref[i] == YON_FLOAT_MISSING) stream << ",.";
 		else if(ref[i] == YON_FLOAT_EOV){ return stream; }
 		else stream << ',' << container[i];
 	}

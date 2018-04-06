@@ -84,44 +84,46 @@ void MetaContainer::__ctor_setup(const block_type& block){
 		}
 	}
 
-	U32 refalt_position = 0;
-	for(U32 i = 0; i < this->size(); ++i){
-		if(this->__entries[i].controller.alleles_packed){
-			// load from special packed
-			// this is always diploid
-			this->__entries[i].n_alleles = 2;
-			this->__entries[i].alleles   = static_cast<value_type::allele_type*>(::operator new[](2*sizeof(value_type::allele_type)));
+	if(refalt.size()){ // execute only if we have data
+		U32 refalt_position = 0;
+		for(U32 i = 0; i < this->size(); ++i){
+			if(this->__entries[i].controller.alleles_packed){
+				// load from special packed
+				// this is always diploid
+				this->__entries[i].n_alleles = 2;
+				this->__entries[i].alleles   = static_cast<value_type::allele_type*>(::operator new[](2*sizeof(value_type::allele_type)));
 
-			// If data is <non_ref> or not
-			if((refalt[refalt_position] & 15) != 5){
-				//assert((refalt[refalt_position] & 15) < 5);
-				const char ref = constants::REF_ALT_LOOKUP[refalt[refalt_position] & 15];
-				new( &this->__entries[i].alleles[1] ) value_type::allele_type( ref );
-			} else {
-				const std::string s = "<NON_REF>";
-				new( &this->__entries[i].alleles[1] ) value_type::allele_type( s );
+				// If data is <non_ref> or not
+				if((refalt[refalt_position] & 15) != 5){
+					//assert((refalt[refalt_position] & 15) < 5);
+					const char ref = constants::REF_ALT_LOOKUP[refalt[refalt_position] & 15];
+					new( &this->__entries[i].alleles[1] ) value_type::allele_type( ref );
+				} else {
+					const std::string s = "<NON_REF>";
+					new( &this->__entries[i].alleles[1] ) value_type::allele_type( s );
+				}
+
+				// If data is <non_ref> or not
+				if(((refalt[refalt_position] >> 4) & 15) != 5){
+					//assert(((refalt[refalt_position] >> 4) & 15) < 5);
+					const char alt = constants::REF_ALT_LOOKUP[(refalt[refalt_position] >> 4) & 15];
+					new( &this->__entries[i].alleles[0] ) value_type::allele_type( alt );
+				} else {
+					const std::string s = "<NON_REF>";
+					new( &this->__entries[i].alleles[0] ) value_type::allele_type( s );
+				}
+				// Do not increment in case this data is uniform
+				if(refalt.isUniform() == false) ++refalt_position;
 			}
-
-			// If data is <non_ref> or not
-			if(((refalt[refalt_position] >> 4) & 15) != 5){
-				//assert(((refalt[refalt_position] >> 4) & 15) < 5);
-				const char alt = constants::REF_ALT_LOOKUP[(refalt[refalt_position] >> 4) & 15];
-				new( &this->__entries[i].alleles[0] ) value_type::allele_type( alt );
-			} else {
-				const std::string s = "<NON_REF>";
-				new( &this->__entries[i].alleles[0] ) value_type::allele_type( s );
+			// otherwise load from literal cold
+			else {
+				// number of alleles is parsed from the stride container
 			}
-			// Do not increment in case this data is uniform
-			if(refalt.isUniform() == false) ++refalt_position;
-		}
-		// otherwise load from literal cold
-		else {
-			// number of alleles is parsed from the stride container
-		}
-	} // end loop
+		} // end loop
 
-	if(refalt.isUniform()) refalt_position = 1;
-	assert(refalt_position == refalt.size());
+		if(refalt.isUniform()) refalt_position = 1;
+		assert(refalt_position == refalt.size());
+	}
 
 	if(block.meta_alleles_container.buffer_data_uncompressed.size()){
 		StrideContainer<U32> strides(block.meta_alleles_container);

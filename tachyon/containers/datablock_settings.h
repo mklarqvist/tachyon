@@ -129,6 +129,7 @@ struct DataBlockSettings{
 	self_type& loadGenotypes(const bool set){
 		loadContig_ = set;
 		loadPositons_ = set;
+		loadController_ = set;
 		loadSetMembership_ = set;
 		loadGenotypesAll_ = set;
 		loadGenotypesRLE_ = set;
