@@ -75,8 +75,6 @@ public:
 	KeychainKeyGCM(const KeychainKeyGCM& other) :
 		parent_type(other)
 	{
-		memcpy(&this->key[0], &other.key[0], 32);
-		memcpy(&this->iv[0],  &other.iv[0],  16);
 		memcpy(&this->tag[0], &other.tag[0], 16);
 	}
 
@@ -139,184 +137,33 @@ public:
 	BYTE tag[16];  // validation tag for gcm
 };
 
-struct KeychainEntry{
-public:
-	typedef KeychainEntry     self_type;
-	typedef KeychainKeyGCM    value_type;
-	typedef value_type&       reference;
-	typedef const value_type& const_reference;
-
-public:
-	KeychainEntry() :
-		blockID(0),
-		n_info_keys_(0),
-		n_format_keys_(0),
-		info_keys_(nullptr),
-		format_keys_(nullptr)
-	{}
-
-	KeychainEntry(const U32 n_info_fields, const U32 n_format_fields) :
-		blockID(0),
-		n_info_keys_(n_info_fields),
-		n_format_keys_(n_format_fields),
-		info_keys_(new value_type[n_info_fields]),
-		format_keys_(new value_type[n_format_fields])
-	{}
-
-	~KeychainEntry(){
-		delete [] this->info_keys_;
-		delete [] this->format_keys_;
-	}
-
-	KeychainEntry(const KeychainEntry& other) :
-		blockID(other.blockID),
-		n_info_keys_(other.n_info_keys_),
-		n_format_keys_(other.n_format_keys_),
-		info_keys_(new value_type[this->n_info_keys_]),
-		format_keys_(new value_type[this->n_format_keys_])
-	{
-		for(U32 i = 0; i < 19; ++i) this->base_keys_[i] = other.base_keys_[i];
-		for(U32 i = 0; i < this->n_info_keys_; ++i) this->info_keys_[i] = other.info_keys_[i];
-		for(U32 i = 0; i < this->n_format_keys_; ++i) this->format_keys_[i] = other.format_keys_[i];
-	}
-
-	KeychainEntry(KeychainEntry&& other) :
-		blockID(other.blockID),
-		n_info_keys_(other.n_info_keys_),
-		n_format_keys_(other.n_format_keys_),
-		info_keys_(other.info_keys_),
-		format_keys_(other.format_keys_)
-	{
-		for(U32 i = 0; i < 19; ++i) this->base_keys_[i] = other.base_keys_[i];
-		other.info_keys_ = nullptr;
-		other.format_keys_ = nullptr;
-	}
-
-	KeychainEntry& operator=(const KeychainEntry& other){
-		this->blockID = other.blockID;
-		this->n_info_keys_ = other.n_info_keys_;
-		this->n_format_keys_ = other.n_format_keys_;
-		delete [] this->info_keys_;
-		delete [] this->format_keys_;
-		this->info_keys_ = new value_type[this->n_info_keys_];
-		this->format_keys_ = new value_type[this->n_format_keys_];
-		for(U32 i = 0; i < 19; ++i) this->base_keys_[i] = other.base_keys_[i];
-		for(U32 i = 0; i < this->n_info_keys_; ++i) this->info_keys_[i] = other.info_keys_[i];
-		for(U32 i = 0; i < this->n_format_keys_; ++i) this->format_keys_[i] = other.format_keys_[i];
-		return *this;
-	}
-
-	KeychainEntry& operator=(KeychainEntry&& other){
-		if(this!=&other){
-			this->blockID = other.blockID;
-			this->n_info_keys_ = other.n_info_keys_;
-			this->n_format_keys_ = other.n_format_keys_;
-			delete [] this->info_keys_;
-			delete [] this->format_keys_;
-			this->info_keys_ = other.info_keys_;
-			this->format_keys_ = other.format_keys_;
-			other.info_keys_ = nullptr;
-			other.format_keys_ = nullptr;
-			for(U32 i = 0; i < 19; ++i) this->base_keys_[i] = other.base_keys_[i];
-		}
-		return *this;
-	}
-
-	inline U64& getBlockID(void){ return(this->blockID); }
-	inline const U64& getBlockID(void) const{ return(this->blockID); }
-
-	inline reference operator[](const U32 position){ return(this->base_keys_[position]); }
-	inline const_reference operator[](const U32 position) const{ return(this->base_keys_[position]); }
-	inline reference at(const U32 position){ return(this->base_keys_[position]); }
-	inline const_reference at(const U32 position) const{ return(this->base_keys_[position]); }
-	inline reference atINFO(const U32 position){ return(this->info_keys_[position]); }
-	inline const_reference atINFO(const U32 position) const{ return(this->info_keys_[position]); }
-	inline reference atFORMAT(const U32 position){ return(this->format_keys_[position]); }
-	inline const_reference atFORMAT(const U32 position) const{ return(this->format_keys_[position]); }
-
-private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& chain){
-		stream.write(reinterpret_cast<const char*>(&chain.blockID),        sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&chain.n_info_keys_),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&chain.n_format_keys_), sizeof(U32));
-		for(U32 i = 0; i < 19; ++i) stream << chain.base_keys_[i];
-		for(U32 i = 0; i < chain.n_info_keys_; ++i) stream << chain.info_keys_[i];
-		for(U32 i = 0; i < chain.n_format_keys_; ++i) stream << chain.format_keys_[i];
-		return(stream);
-	}
-
-	friend std::istream& operator>>(std::istream& stream, self_type& chain){
-		stream.read(reinterpret_cast<char*>(&chain.blockID),        sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&chain.n_info_keys_),   sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&chain.n_format_keys_), sizeof(U32));
-		delete [] chain.info_keys_;
-		delete [] chain.format_keys_;
-		chain.info_keys_ = new value_type[chain.n_info_keys_];
-		chain.format_keys_ = new value_type[chain.n_format_keys_];
-		for(U32 i = 0; i < 19; ++i) stream >> chain.base_keys_[i];
-		for(U32 i = 0; i < chain.n_info_keys_; ++i) stream >> chain.info_keys_[i];
-		for(U32 i = 0; i < chain.n_format_keys_; ++i) stream >> chain.format_keys_[i];
-		return(stream);
-	}
-
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& chain){
-		buffer += chain.blockID;
-		buffer += chain.n_info_keys_;
-		buffer += chain.n_format_keys_;
-		for(U32 i = 0; i < 19; ++i) buffer += chain.base_keys_[i];
-		for(U32 i = 0; i < chain.n_info_keys_; ++i)   buffer += chain.info_keys_[i];
-		for(U32 i = 0; i < chain.n_format_keys_; ++i) buffer += chain.format_keys_[i];
-		return(buffer);
-	}
-
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& chain){
-		buffer >> chain.blockID;
-		buffer >> chain.n_info_keys_;
-		buffer >> chain.n_format_keys_;
-		delete [] chain.info_keys_;
-		delete [] chain.format_keys_;
-		chain.info_keys_ = new value_type[chain.n_info_keys_];
-		chain.format_keys_ = new value_type[chain.n_format_keys_];
-		for(U32 i = 0; i < chain.n_info_keys_; ++i)   buffer >> chain.info_keys_[i];
-		for(U32 i = 0; i < chain.n_format_keys_; ++i) buffer >> chain.format_keys_[i];
-
-		return(buffer);
-	}
-
-public:
-	U64 blockID;
-	U32 n_info_keys_;
-	U32 n_format_keys_;
-	value_type  base_keys_[19];
-	value_type* info_keys_;
-	value_type* format_keys_;
-};
-
 class Keychain{
 private:
     typedef Keychain           self_type;
 	typedef std::size_t        size_type;
-    typedef KeychainEntry      value_type;
+    typedef KeychainKeyGCM     value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
     typedef hash::HashTable<U64, U32> hash_table;
     typedef containers::VariantBlock  variant_block_type;
+    typedef containers::DataContainer container_type;
 
 public:
     Keychain() :
     	n_entries_(0),
-		n_capacity_(1000),
+		n_capacity_(100000),
 		entries_(new value_type[this->n_capacity_]),
-		htable_identifiers_(nullptr)
-	{}
+		htable_identifiers_(new hash_table(500000))
+	{
+    }
 
     Keychain(const U32 start_capacity) :
     	n_entries_(0),
 		n_capacity_(start_capacity),
 		entries_(new value_type[this->n_capacity_]),
-		htable_identifiers_(nullptr)
+		htable_identifiers_(new hash_table(500000))
     {}
 
     ~Keychain(){
@@ -398,7 +245,6 @@ public:
 
 		pointer old = this->entries_;
 		this->entries_ = new value_type[new_capacity];
-		//memcpy(this->data(), old, this->size()*sizeof(value_type));
 		for(U32 i = 0; i < this->size(); ++i) this->entries_[i] = old[i];
 		delete [] old;
 		this->n_capacity_ =  new_capacity;
@@ -406,7 +252,54 @@ public:
 
 	void resize(void){ this->resize(this->capacity()*2); }
 
+
+	U64 getRandomHashIdentifier(){
+		if(this->htable_identifiers_ == nullptr) return false;
+		BYTE RANDOM_BYTES[32];
+		U64 value = 0;
+		U32* match = nullptr;
+		while(true){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			value = XXH64(&RANDOM_BYTES[0], 32, 1337);
+
+			if(value == 0) continue;
+
+			if(this->htable_identifiers_->GetItem(&value, match, sizeof(U64)))
+				continue;
+
+			if(!this->htable_identifiers_->SetItem(&value, this->size(), sizeof(U64))){
+				std::cerr << utility::timestamp("ERROR","HASH") << "Failed to add field identifier..." << std::endl;
+				return 0;
+			}
+			break;
+		}
+
+		return value;
+	}
+
+	bool getHashIdentifier(const U64& value, U32*& match){
+		if(this->htable_identifiers_ == nullptr) return false;
+		if(this->htable_identifiers_->GetItem(&value, match, sizeof(U64))){
+			return true;
+		}
+		return false;
+	}
+
 private:
+	bool __buildHashTable(void){
+		delete this->htable_identifiers_;
+
+		if(this->size()*2 < 50e3) this->htable_identifiers_ = new hash_table(50e3);
+		else this->htable_identifiers_ = new hash_table(this->size()*2);
+		for(U32 i = 0; i < this->size(); ++i){
+			if(!this->htable_identifiers_->SetItem(&this->at(i).fieldIdentifier, i, sizeof(U64))){
+				std::cerr << utility::timestamp("ERROR", "KEYCHAIN") << "Failed to generate ID..." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
+
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& keychain){
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
@@ -420,6 +313,7 @@ private:
 		delete [] keychain.entries_;
 		keychain.entries_ = new value_type[keychain.n_capacity_];
 		for(U32 i = 0; i < keychain.size(); ++i) stream >> keychain[i];
+		keychain.__buildHashTable();
 		return(stream);
 	}
 
@@ -436,6 +330,7 @@ private:
 		delete [] keychain.entries_;
 		keychain.entries_ = new value_type[keychain.n_capacity_];
 		for(U32 i = 0; i < keychain.size(); ++i) buffer >> keychain.entries_[i];
+		keychain.__buildHashTable();
 		return(buffer);
 	}
 
@@ -453,116 +348,97 @@ public:
 	typedef containers::DataContainer stream_container;
 	typedef io::BasicBuffer           buffer_type;
 	typedef KeychainKeyGCM            aes256gcm_type;
-	typedef KeychainEntry             keychainentry_type;
 	typedef Keychain                  keychain_type;
 
 public:
+	bool encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
+		if(encryption_type == YON_ENCRYPTION_AES_256_GCM){
+			return(this->encryptAES256(block, keychain));
+		}
+		return(false);
+	}
+
 	bool decryptAES256(variant_block_type& block, keychain_type& keychain){
-		// 1: find blockID in keychain
-		// a) if not found return false
-		// Todo: temporary validation hack
-
-		U32 i = 0;
-		bool found = false;
-		for(; i < keychain.size(); ++i){
-			if(keychain[i].blockID == block.header.blockID){
-				found = true;
-				break;
-			}
-		}
-		if(!found){
-			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to find block identifier in keychain!" << std::endl;
-			return false;
-		}
-
-		//std::cerr << "found block at: " << i << std::endl;
-		keychainentry_type& chain = keychain[i];
-
-		if(!this->decryptAES256(block.meta_contig_container, chain[0])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_positions_container, chain[1])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_refalt_container, chain[2])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_controller_container, chain[3])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_quality_container, chain[4])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_names_container, chain[5])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_rle8_container, chain[6])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_rle16_container, chain[7])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_rle32_container, chain[8])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_rle64_container, chain[9])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_alleles_container, chain[10])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_simple8_container, chain[11])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_simple16_container, chain[12])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_simple32_container, chain[13])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_simple64_container, chain[14])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.gt_support_data_container, chain[15])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_info_map_ids, chain[16])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_filter_map_ids, chain[17])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-		if(!this->decryptAES256(block.meta_format_map_ids, chain[18])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_contig_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_positions_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_refalt_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_controller_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_quality_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_names_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_rle8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_rle16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_rle32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_rle64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_alleles_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_simple8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_simple16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_simple32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_simple64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.gt_support_data_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_info_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_filter_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(!this->decryptAES256(block.meta_format_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
 
 		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
-			if(!this->decryptAES256(block.info_containers[i], chain.atINFO(i))){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+			if(!this->decryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
 		}
 
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
-			if(!this->decryptAES256(block.format_containers[i], chain.atFORMAT(i))){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+			if(!this->decryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
 		}
 
 		return(true);
 	}
 
 	bool encryptAES256(variant_block_type& block, keychain_type& keychain){
-		keychainentry_type chain(block.footer.n_info_streams, block.footer.n_format_streams);
-		chain.blockID = block.header.blockID;
+		BYTE RANDOM_BYTES[32];
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		block.header.blockID = XXH64(&RANDOM_BYTES[0], 32, 1337);
 
-		this->__setFieldIdentifiers(block);
-
-		if(!this->encryptAES256(block.meta_contig_container,chain[0])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_positions_container,chain[1])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_refalt_container,chain[2])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_controller_container,chain[3])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_quality_container,chain[4])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_names_container,chain[5])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_rle8_container,chain[6])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_rle16_container,chain[7])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_rle32_container,chain[8])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_rle64_container,chain[9])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_alleles_container,chain[10])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_simple8_container,chain[11])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_simple16_container,chain[12])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_simple32_container,chain[13])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_simple64_container,chain[14])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.gt_support_data_container,chain[15])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_info_map_ids,chain[16])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_filter_map_ids,chain[17])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-		if(!this->encryptAES256(block.meta_format_map_ids,chain[18])){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_contig_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_positions_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_refalt_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_controller_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_quality_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_names_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_rle8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_rle16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_rle32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_rle64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_alleles_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_simple8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_simple16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_simple32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_simple64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.gt_support_data_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_info_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_filter_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->encryptAES256(block.meta_format_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 
 		for(U32 i = 0; i < block.footer.n_info_streams; ++i){
-			if(!this->encryptAES256(block.info_containers[i], chain.atINFO(i))){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+			if(!this->encryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 		}
 
 		for(U32 i = 0; i < block.footer.n_format_streams; ++i){
-			if(!this->encryptAES256(block.format_containers[i], chain.atFORMAT(i))){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+			if(!this->encryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 		}
-
-		keychain += chain;
 
 		return(true);
 	}
 
-	bool encryptAES256(stream_container& container, aes256gcm_type& entry){
+	bool encryptAES256(stream_container& container, keychain_type& keychain){
+		KeychainKeyGCM entry;
 		entry.initiateRandom();
 		entry.encryption_type = YON_ENCRYPTION_AES_256_GCM;
-		entry.fieldIdentifier = container.header.identifier;
 
 		EVP_CIPHER_CTX *ctx = NULL;
-		int len = 0;
+		S32 len = 0;
 
-		/* Create and initialise the context */
 		if(!(ctx = EVP_CIPHER_CTX_new())){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to initialise the encryption context..." << std::endl;
 			return false;
 		}
 
-		/* Initialise the encryption operation. */
 		if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL)){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to initialise the encryption..." << std::endl;
 			return false;
@@ -574,22 +450,28 @@ public:
 			return false;
 		}
 
-		/* Initialise key and IV */
 		if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, entry.key, entry.iv)){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to initialise the encryption key and IV..." << std::endl;
 			return false;
 		}
 
-		/* Provide the message to be encrypted, and obtain the encrypted output.
-		 * EVP_EncryptUpdate can be called multiple times if necessary
-		 */
+		// Mask header in encrypted message
 		this->buffer.reset();
-		this->buffer.resize(container.buffer_data.size() + container.buffer_strides.size() + 65536);
-		if(1 != EVP_EncryptUpdate(ctx, (BYTE*)this->buffer.data(), &len, (BYTE*)container.buffer_data.data(), container.buffer_data.size())){
+		io::BasicBuffer temp(65536);
+		temp << container.header;
+		this->buffer.resize(container.buffer_data.size() + container.buffer_strides.size() + temp.size() + 65536);
+
+		if(1 != EVP_EncryptUpdate(ctx, (BYTE*)this->buffer.data(), &len, (BYTE*)temp.data(), temp.size())){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 			return false;
 		}
 		this->buffer.n_chars = len;
+
+		if(1 != EVP_EncryptUpdate(ctx, (BYTE*)&this->buffer[this->buffer.n_chars], &len, (BYTE*)container.buffer_data.data(), container.buffer_data.size())){
+			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
+			return false;
+		}
+		this->buffer.n_chars += len;
 
 		if(1 != EVP_EncryptUpdate(ctx, (BYTE*)&this->buffer[this->buffer.n_chars], &len, (BYTE*)container.buffer_strides.data(), container.buffer_strides.size())){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
@@ -597,37 +479,36 @@ public:
 		}
 		this->buffer.n_chars += len;
 
-		/* Finalise the encryption. Normally ciphertext bytes may be written at
-		 * this stage, but this does not occur in GCM mode
-		 */
 		if(1 != EVP_EncryptFinal_ex(ctx, (BYTE*)this->buffer.data() + len, &len)){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to finalise the encryption..." << std::endl;
 			return false;
 		}
 		this->buffer.n_chars += len;
 
-		/* Get the tag */
 		container.buffer_data.resize(this->buffer.size());
 		if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, &entry.tag[0])){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to retrieve the GCM tag..." << std::endl;
 			return false;
 		}
 
-		/* Clean up */
 		EVP_CIPHER_CTX_free(ctx);
 
 		// Trigger encryption flag
+		container.header.reset(); // reset data
 		container.header.data_header.controller.encryption = YON_ENCRYPTION_AES_256_GCM;
 		memcpy(container.buffer_data.data(), this->buffer.data(), this->buffer.size());
 		container.buffer_data.n_chars = this->buffer.size();
 		container.header.data_header.eLength = this->buffer.size();
-		//std::cerr << container.header.data_header.eLength << "/" << this->buffer.size() << '\t' << container.header.data_header.cLength << "/" << container.header.stride_header.cLength << std::endl;
-		assert(container.header.data_header.eLength == container.header.data_header.cLength + container.header.stride_header.cLength);
+
+		const U64 hashID = keychain.getRandomHashIdentifier();
+		container.header.identifier = hashID;
+		entry.fieldIdentifier = hashID;
+		keychain += entry; // add key to keychain
 
 		return(true);
 	}
 
-	bool decryptAES256(stream_container& container, aes256gcm_type& entry){
+	bool decryptAES256(stream_container& container, keychain_type& keychain){
 		if(container.buffer_data.size() == 0)
 			return true;
 
@@ -639,8 +520,15 @@ public:
 			return false;
 		}
 
+		U32* match = nullptr;
+		if(keychain.getHashIdentifier(container.header.identifier, match) == false){
+			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Did not find ID in keychain..." << std::endl;
+			return false;
+		}
+		KeychainKeyGCM& entry = keychain[*match];
+
 		EVP_CIPHER_CTX *ctx = NULL;
-		int len = 0, plaintext_len = 0, ret;
+		S32 len = 0, plaintext_len = 0, ret;
 
 		/* Create and initialise the context */
 		if(!(ctx = EVP_CIPHER_CTX_new())){
@@ -665,18 +553,13 @@ public:
 			return(false);
 		}
 
-		/* Provide the message to be decrypted, and obtain the plaintext output.
-		 * EVP_DecryptUpdate can be called multiple times if necessary
-		 */
 		this->buffer.reset();
 		if(container.buffer_data.size()){
-			//std::cerr << "decrypting: " << container.buffer_data.size() << std::endl;
 			this->buffer.resize(container.buffer_data.size() + 65536);
 			if(!EVP_DecryptUpdate(ctx, (BYTE*)this->buffer.data(), &len, (BYTE*)container.buffer_data.data(), container.buffer_data.size())){
 				std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the decryption..." << std::endl;
 				return(false);
 			}
-
 			plaintext_len = len;
 		}
 
@@ -694,12 +577,14 @@ public:
 
 		if(ret > 0){
 			plaintext_len += len;
+			this->buffer >> container.header; // unmask encrypted header
+
 			container.buffer_data.reset();
 			container.buffer_strides.reset();
 			container.buffer_data.resize(container.header.data_header.cLength + 65536);
 			container.buffer_strides.resize(container.header.stride_header.cLength + 65536);
-			memcpy(container.buffer_data.data(), this->buffer.data(), container.header.data_header.cLength);
-			memcpy(container.buffer_strides.data(), &this->buffer[container.header.data_header.cLength], container.header.stride_header.cLength);
+			memcpy(container.buffer_data.data(), &this->buffer[this->buffer.iterator_position_], container.header.data_header.cLength);
+			memcpy(container.buffer_strides.data(), &this->buffer[this->buffer.iterator_position_ + container.header.data_header.cLength], container.header.stride_header.cLength);
 			container.header.data_header.controller.encryption = YON_ENCRYPTION_NONE;
 			container.buffer_data.n_chars = container.header.data_header.cLength;
 			container.buffer_strides.n_chars = container.header.stride_header.cLength;
@@ -711,59 +596,6 @@ public:
 		}
 	}
 
-private:
-	bool __setFieldIdentifiers(variant_block_type& variant_block){
-		BYTE RANDOM_BYTES[32];
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_contig_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_positions_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_refalt_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_controller_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_quality_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_names_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_alleles_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_info_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_format_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.meta_filter_map_ids.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_support_data_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_rle8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_rle16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_rle32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_rle64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_simple8_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_simple16_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_simple32_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		variant_block.gt_simple64_container.header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-
-		for(U32 i = 0; i < variant_block.footer.n_info_streams; ++i){
-			RAND_bytes(&RANDOM_BYTES[0], 32);
-			variant_block.info_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		}
-
-		for(U32 i = 0; i < variant_block.footer.n_format_streams; ++i){
-			RAND_bytes(&RANDOM_BYTES[0], 32);
-			variant_block.format_containers[i].header.identifier = XXH64(&RANDOM_BYTES[0], 32, 1337);
-		}
-		return(true);
-	}
 
 public:
 	buffer_type buffer;

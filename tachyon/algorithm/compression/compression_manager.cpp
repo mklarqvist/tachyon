@@ -146,11 +146,6 @@ bool CompressionManager::decompress(algorithm::PermutationManager& permutation_m
 	return(this->zstd_codec.decompress(permutation_manager));
 }
 
-/**<
- * Decompress an abstract data container
- * @param container Target container
- * @return          Returns TRUE upon success or FALSE otherwise
- */
 bool CompressionManager::decompress(container_type& container){
 	// Ascertain that data is not encrypted
 	if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){

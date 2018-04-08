@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #include "import.h"
 #include "view.h"
 #include "utility.h"
+#include "stats.h"
 
 int main(int argc, char** argv){
 	if(tachyon::utility::isBigEndian()){
@@ -49,7 +50,9 @@ int main(int argc, char** argv){
 
 	} else if(strncmp(&argv[1][0], "view", 4) == 0){
 		return(view(argc, argv));
-	} else if(strncmp(&argv[1][0], "check", 5) == 0){
+	} else if(strncmp(&argv[1][0], "stats", 5) == 0){
+		return(stats(argc, argv));
+	}  else if(strncmp(&argv[1][0], "check", 5) == 0){
 		return(0);
 	} else {
 		programMessage();

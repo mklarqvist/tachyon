@@ -70,6 +70,9 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
+	encryption::EncryptionDecorator encryptionManager;
+	encryption::Keychain keychain;
+
 	this->header = &reader.header;
 
 	// Spawn RLE controller and update PPA controller
@@ -90,6 +93,15 @@ bool VariantImporter::BuildBCF(void){
 	this->writer->stream->write(&tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH);
 	// Convert VCF header to Tachyon heeader
 	core::VariantHeader header(*this->header);
+	header.literals += "\n##tachyon_importVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+	header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
+	header.literals += "\n##tachyon_importCommand=import -i " + this->inputFile + " -o " + this->outputPrefix + " -c " + std::to_string(this->checkpoint_n_snps) + " -C " + std::to_string(this->checkpoint_bases);
+	if(this->encrypt) header.literals += " -k";
+	if(this->permute) header.literals += " -P";
+	else header.literals += " -p";
+	header.header_magic.l_literals = header.literals.size();
+
 	// Convert header to byte stream, compress, and write to file
 	containers::DataContainer header_data;
 	header_data.resize(65536 + header.literals.size()*2);
@@ -113,16 +125,6 @@ bool VariantImporter::BuildBCF(void){
 
 	// Digest controller
 	algorithm::VariantDigitalDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
-	encryption::EncryptionDecorator encryptionManager;
-
-	// Todo fix: blockID identifier
-	hash::HashTable<U64, U32> blockID_hash_table(500000);
-	BYTE RANDOM_BYTES[32];
-	U64 blockID;
-	hash::HashTable<U64, U32> fieldID_hash_table(500000);
-
-	// Todo
-	encryption::Keychain keychain(100);
 
 	// Start import
 	U32 previousFirst    = 0;
@@ -185,39 +187,19 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.n_variants       = reader.size();
 		this->block.finalize();
 
-		// Todo
-		while(true){
-			RAND_bytes(&RANDOM_BYTES[0], 32);
-			blockID = XXH64(&RANDOM_BYTES[0], 32, 9823743);
-			U32* temp;
-			if(blockID_hash_table.GetItem(&blockID, temp, sizeof(U64))){
-				std::cerr << "already exists @ " << *temp << ": generate new id" << std::endl;
-				continue;
-			}
-			if(!blockID_hash_table.SetItem(&blockID, this->writer->n_blocks_written, sizeof(U64))){
-				std::cerr << "failed to set blockID" << std::endl;
-				return false;
-			}
-			this->block.header.blockID = blockID;
-			break;
-		}
-
 		// Perform compression using standard parameters
 		if(!this->compression_manager.compress(this->block)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
 
+		// Checksum have to come before encryption
 		checksums += this->block;
-		// TODO: if encryption is set then we have to lift over the offset headers
-		// prior to invoking the writing functions as we need to encrypt the offset
-		// headers with the same key
 
-		// temp: encrypt before writing but after compression
-
+		// Encryption
 		if(this->encrypt){
 			this->block.header.controller.anyEncrypted = true;
-			if(!encryptionManager.encryptAES256(this->block, keychain)){
+			if(!encryptionManager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
 			}
 		}
@@ -237,21 +219,18 @@ bool VariantImporter::BuildBCF(void){
 		this->writer->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(U32));
 		*this->writer->stream << this->block.footer_support.buffer_data;
 
-		//stream << this->footer;
 		stats_basic[0].cost_uncompressed += (U64)this->writer->stream->tellp() - start_footer_pos;
-		//std::cerr << "blockID: " << blockID << " for " << this->writer->n_blocks_written << std::endl;
 
 		// Write EOB
 		this->writer->stream->write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
-		this->index_entry.blockID         = blockID;
+		this->index_entry.blockID         = this->block.header.blockID;
 		this->index_entry.byte_offset_end = this->writer->stream->tellp();
 		this->index_entry.contigID        = reader.front().body->CHROM;
 		this->index_entry.minPosition     = reader.front().body->POS;
 		this->index_entry.maxPosition     = reader.back().body->POS;
 		this->index_entry.n_variants      = reader.size();
 		this->writer->index += this->index_entry;
-		//std::cerr << this->index_entry.minBin << "->" << this->index_entry.maxBin << std::endl;
 
 		this->index_entry.reset();
 		++this->writer->n_blocks_written;
@@ -265,8 +244,6 @@ bool VariantImporter::BuildBCF(void){
 			timer.ElapsedString() << ' ' <<
 			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
 		}
-
-		// Todo: fix conditional binning
 
 		// Reset and update
 		this->block.clear();
@@ -390,13 +367,6 @@ bool VariantImporter::add(bcf_entry_type& entry){
 			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
 			return false;
 		}
-
-		/*
-		if(!this->encoder.Encode(entry, meta, this->block, this->nn->get())){
-			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
-			return false;
-		}
-		 */
 	} else {
 		meta.controller.gt_available = false;
 	}
