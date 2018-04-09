@@ -27,7 +27,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry) :
 {
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isSimpleSNV() || this->isReferenceNONREF())
+	if(this->isBiallelicSNV() || this->isReferenceNONREF())
 		this->controller.simple_snv = true;
 
 	for(U32 i = 0; i < this->n_alleles; ++i){
@@ -55,7 +55,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isSimpleSNV() || this->isReferenceNONREF())
+	if(this->isBiallelicSNV() || this->isReferenceNONREF())
 		this->controller.simple_snv = true;
 }
 

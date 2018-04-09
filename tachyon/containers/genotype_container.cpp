@@ -1,3 +1,4 @@
+#include "../support/enums.h"
 #include "genotype_container.h"
 #include "primitive_container.h"
 #include "stride_container.h"
@@ -43,17 +44,17 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	for(U32 i = 0; i < meta.size(); ++i){
 		if(meta[i].hasGT()){
 			// Case run-length encoding diploid and biallelic and no missing
-			if(meta[i].getGenotypeEncoding() == core::TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
-				if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+			if(meta[i].getGenotypeEncoding() == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
+				if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( &rle8[offset_rle8], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle8 += lengths[gt_offset]*sizeof(BYTE);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U16>( &rle16[offset_rle16], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle16 += lengths[gt_offset]*sizeof(U16);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U32>( &rle32[offset_rle32], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle32 += lengths[gt_offset]*sizeof(U32);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &rle64[offset_rle64], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle64 += lengths[gt_offset]*sizeof(U64);
 				} else {
@@ -63,17 +64,17 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 
 			}
 			// Case run-length encoding diploid and biallelic/EOV or n-allelic
-			else if(meta[i].getGenotypeEncoding() == core::TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_NALLELIC) {
-				if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+			else if(meta[i].getGenotypeEncoding() == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_NALLELIC) {
+				if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U16>( &simple16[offset_simple16], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple16 += lengths[gt_offset]*sizeof(U16);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple32 += lengths[gt_offset]*sizeof(U32);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				} else {
@@ -82,17 +83,17 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 				}
 			}
 			// Case BCF-style encoding of diploids
-			else if(meta[i].getGenotypeEncoding() == core::TACHYON_GT_ENCODING::YON_GT_BCF_DIPLOID) {
-				if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+			else if(meta[i].getGenotypeEncoding() == TACHYON_GT_ENCODING::YON_GT_BCF_DIPLOID) {
+				if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U16>( &simple16[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple16 += lengths[gt_offset]*sizeof(U16);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U32>( &simple32[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple32 += lengths[gt_offset]*sizeof(U32);
-				} else if(meta[i].getGenotypeType() == core::TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U64>( &simple64[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				}  else {

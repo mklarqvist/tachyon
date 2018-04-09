@@ -11,7 +11,7 @@ class MetaContainer {
 private:
 	typedef MetaContainer            self_type;
     typedef std::size_t              size_type;
-    typedef tachyon::core::MetaEntry value_type;
+    typedef core::MetaEntry          value_type;
     typedef value_type&              reference;
     typedef const value_type&        const_reference;
     typedef value_type*              pointer;

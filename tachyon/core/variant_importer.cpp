@@ -320,8 +320,6 @@ bool VariantImporter::BuildBCF(void){
 			std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
 		}
 		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
-		std::cerr << utility::timestamp("PROGRESS") << "BCF: "   << utility::toPrettyDiskString(reader.filesize) << "\t" << utility::toPrettyDiskString(reader.b_data_read) << std::endl;
-		std::cerr << utility::timestamp("PROGRESS") << "YON: "   << utility::toPrettyDiskString(total_compressed) << '\t' << utility::toPrettyDiskString(total_uncompressed) << std::endl;
 	}
 
 	if(this->encrypt){
@@ -330,7 +328,7 @@ bool VariantImporter::BuildBCF(void){
 			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
 			writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
 			if(!SILENT)
-				std::cerr << utility::timestamp("LOG") << "Writing keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
+				std::cerr << utility::timestamp("LOG") << "Writing encryption keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
 
 			if(writer_keychain.good()){
 				writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
@@ -338,7 +336,10 @@ bool VariantImporter::BuildBCF(void){
 				writer_keychain << keychain;
 				writer_keychain.flush();
 			}
+			const U32 keychain_size = writer_keychain.tellp();
 			writer_keychain.close();
+			if(!SILENT)
+				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::toPrettyDiskString(keychain_size) << "..." << std::endl;
 		}
 	}
 
@@ -373,6 +374,17 @@ bool VariantImporter::add(bcf_entry_type& entry){
 
 	// Add meta
 	this->block += meta;
+
+	/*
+	if(meta.isBiallelicSNV() == false){
+		for(U32 i = 1; i < meta.n_alleles; ++i){
+			if(meta.alleles[i].allele[0] == '<'){
+				std::cerr << "is special: " << meta.alleles[i].toString() << std::endl;
+			}
+			std::cerr << reg2bin(entry.body->POS, entry.body->POS + meta.alleles[i].l_allele - 1) << std::endl;
+		}
+	}
+	*/
 
 	const S32 index_bin = reg2bin(entry.body->POS, entry.body->POS);
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;

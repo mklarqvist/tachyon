@@ -117,7 +117,7 @@ private:
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
 		stream.read(reinterpret_cast<char*>(&entry.n_entries), sizeof(size_type));
 
 		if(entry.size() > entry.capacity()){

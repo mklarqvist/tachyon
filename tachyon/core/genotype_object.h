@@ -168,6 +168,7 @@ private:
     template <class T>
     void __interpret(const T& gt_primitive, const meta_type& meta_entry)
     {
+    	delete [] this->alleles;
 		this->n_alleles  = 2;
 		this->alleles    = new std::pair<char,char>[2];
 		const BYTE shift = meta_entry.isAnyGTMissing()   ? 2 : 1;
@@ -200,6 +201,7 @@ private:
     template <class T>
     void __interpret(const T& gt_primitive, const meta_type& meta_entry)
     {
+    	delete [] this->alleles;
 		this->n_alleles     = 2;
 		this->alleles       = new std::pair<char,char>[2];
 		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + 1 + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
@@ -232,6 +234,7 @@ private:
     template <class T>
     void __interpret(const T& gt_primitive, const meta_type& meta_entry)
     {
+    	delete [] this->alleles;
 		this->n_alleles     = 2;
 		this->alleles       = new std::pair<char,char>[2];
 		const BYTE shift    = (sizeof(T)*8 - 1) / 2;

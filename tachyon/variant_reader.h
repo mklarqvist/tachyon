@@ -40,6 +40,7 @@ class VariantReader{
 	typedef index::Index                        index_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
 	typedef encryption::Keychain                   keychain_type;
+	typedef core::MetaEntry                        meta_entry_type;
 
 public:
 	VariantReader();
@@ -415,47 +416,7 @@ public:
 			if(settings.loadFORMAT_ && this->block.n_format_loaded) stream.put('\t');
 			else stream.put('\n');
 
-			if(settings.loadFORMAT_ && this->block.n_format_loaded){
-				if(this->block.n_format_loaded){
-					const U32& n_format_keys = this->block.footer.format_bit_vectors[meta[p].format_pattern_id].n_keys;
-					const U32* format_keys   = this->block.footer.format_bit_vectors[meta[p].format_pattern_id].local_keys;
-					if(n_format_keys){
-						// Print key map
-						stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
-						for(U32 i = 1; i < n_format_keys; ++i){
-							stream.put(':');
-							stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
-						}
-						stream.put('\t');
-
-						// Todo: print if no GT data
-						// Begin print FORMAT data for each sample
-						std::vector<core::GTObject> objects_true;
-						if(this->settings.loadPPA_ && this->block.header.controller.hasGTPermuted){
-							objects_true = gt->at(p).getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
-						} else {
-							objects_true = gt->at(p).getObjects(this->header.getSampleNumber());
-						}
-
-						stream << objects_true[0];
-						for(U32 i = 1; i < n_format_keys; ++i){
-							stream.put(':');
-							fits[format_keys[i]]->to_vcf_string(stream, p, 0);
-						}
-
-						for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
-							stream.put('\t');
-							stream << objects_true[s];
-							for(U32 i = 1; i < n_format_keys; ++i){
-								stream.put(':');
-								fits[format_keys[i]]->to_vcf_string(stream, p, s);
-							}
-						}
-						stream.put('\n');
-					} else // has no keys
-						stream << ".\t";
-				}
-			}
+			this->printFORMAT(stream, meta[p], p, fits, gt);
 		}
 
 		if(settings.loadINFO_){
@@ -471,6 +432,60 @@ public:
 		delete [] its; delete [] fits;
 		delete gt;
 		return(meta.size());
+	}
+
+	/**<
+	 * This function assumes that ALL available FORMAT fields described in the header
+	 * has been decrypted, decompressed, and loaded and are available for use
+	 * @param stream
+	 * @param meta_entry
+	 * @param individual
+	 * @param fits
+	 * @param gt
+	 */
+	void printFORMAT(std::ostream& stream, const meta_entry_type& meta_entry, const U32& individual, containers::FormatContainerInterface** fits, containers::GenotypeContainer* gt){
+		if(settings.loadFORMAT_ && this->block.n_format_loaded){
+			if(this->block.n_format_loaded){
+				std::vector<core::GTObject> objects_true(this->header.getSampleNumber());
+
+				const U32& n_format_keys = this->block.footer.format_bit_vectors[meta_entry.format_pattern_id].n_keys;
+				const U32* format_keys   = this->block.footer.format_bit_vectors[meta_entry.format_pattern_id].local_keys;
+				if(n_format_keys){
+					// Print key map
+					stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
+					for(U32 i = 1; i < n_format_keys; ++i){
+						stream.put(':');
+						stream << this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+					}
+					stream.put('\t');
+
+					// Todo: print if no GT data
+					// Begin print FORMAT data for each sample
+					if(this->settings.loadPPA_ && this->block.header.controller.hasGTPermuted){
+						gt->at(individual).getObjects(objects_true, this->header.getSampleNumber(), this->block.ppa_manager);
+					} else {
+						gt->at(individual).getObjects(objects_true, this->header.getSampleNumber());
+					}
+
+					stream << objects_true[0];
+					for(U32 i = 1; i < n_format_keys; ++i){
+						stream.put(':');
+						fits[format_keys[i]]->to_vcf_string(stream, individual, 0);
+					}
+
+					for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
+						stream.put('\t');
+						stream << objects_true[s];
+						for(U32 i = 1; i < n_format_keys; ++i){
+							stream.put(':');
+							fits[format_keys[i]]->to_vcf_string(stream, individual, s);
+						}
+					}
+					stream.put('\n');
+				} else // have no keys
+					stream << ".\t";
+			}
+		}
 	}
 
 

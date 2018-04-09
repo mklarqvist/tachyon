@@ -412,7 +412,7 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	++this->meta_contig_container;
 
 	// Ref-alt data
-	if(meta_entry.isSimpleSNV() || meta_entry.isReferenceNONREF()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+	if(meta_entry.isBiallelicSNV() || meta_entry.isReferenceNONREF()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
 		meta_entry.controller.alleles_packed = true;
 		const BYTE ref_alt = meta_entry.packedRefAltByte();
 		this->meta_refalt_container.AddLiteral(ref_alt);
@@ -446,6 +446,13 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	++this->meta_info_map_ids;
 	++this->meta_format_map_ids;
 	++this->meta_filter_map_ids;
+
+	// Check if all variants are of length 1 (as in all alleles are SNVs)
+	bool all_snv = true;
+	for(U32 i = 0; i < meta_entry.n_alleles; ++i){
+		if(meta_entry.alleles[i].l_allele != 1) all_snv = false;
+	}
+	meta_entry.controller.all_snv = all_snv;
 
 	// Controller
 	this->meta_controller_container.AddLiteral((U16)meta_entry.controller.toValue()); // has been overloaded

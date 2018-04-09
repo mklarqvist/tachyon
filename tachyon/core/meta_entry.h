@@ -49,7 +49,7 @@ public:
 	// Supportive boolean functions
 	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
 	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
-	inline const bool isSimpleSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
+	inline const bool isBiallelicSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }

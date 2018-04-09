@@ -40,6 +40,9 @@ public:
     std::vector<gt_object> getLiteralObjects(void) const;
     std::vector<gt_object> getObjects(const U64& n_samples) const;
     std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    void getLiteralObjects(std::vector<gt_object>& objects) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const;
     gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
     gt_summary& getSummary(gt_summary& gt_summary_object) const;
@@ -80,9 +83,9 @@ math::SquareMatrix<double>& GenotypeContainerDiploidBCF<T>::comparePairwise(squa
 }
 
 template <class T>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getLiteralObjects(void) const{
-	std::vector<tachyon::core::GTObject> ret(this->n_entries);
-	tachyon::core::GTObjectDiploidBCF* entries = reinterpret_cast<tachyon::core::GTObjectDiploidBCF*>(&ret[0]);
+std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getLiteralObjects(void) const{
+	std::vector<core::GTObject> ret(this->n_entries);
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&ret[0]);
 	for(U32 i = 0; i < this->n_entries; ++i)
 		entries[i](this->at(i), this->__meta);
 
@@ -90,9 +93,9 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getLiteralO
 }
 
 template <class T>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples) const{
-	std::vector<tachyon::core::GTObject> ret(n_samples);
-	tachyon::core::GTObjectDiploidBCF* entries = reinterpret_cast<tachyon::core::GTObjectDiploidBCF*>(&ret[0]);
+std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples) const{
+	std::vector<core::GTObject> ret(n_samples);
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&ret[0]);
 
 	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
 
@@ -110,9 +113,9 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(
 }
 
 template <class T>
-std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
-	std::vector<tachyon::core::GTObject> ret(n_samples);
-	tachyon::core::GTObjectDiploidBCF* entries = reinterpret_cast<tachyon::core::GTObjectDiploidBCF*>(&ret[0]);
+std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, const permutation_type& ppa_manager) const{
+	std::vector<core::GTObject> ret(n_samples);
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&ret[0]);
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 
@@ -129,6 +132,53 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(
 
 	//assert(cum_pos == n_samples);
 	return(ret);
+}
+
+template <class T>
+void GenotypeContainerDiploidBCF<T>::getLiteralObjects(std::vector<core::GTObject>& objects) const{
+	if(objects.size() < this->size()) objects.resize(this->size());
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
+	for(U32 i = 0; i < this->n_entries; ++i)
+		entries[i](this->at(i), this->__meta);
+}
+
+template <class T>
+void GenotypeContainerDiploidBCF<T>::getObjects(std::vector<core::GTObject>& objects, const U64& n_samples) const{
+	if(objects.size() < n_samples) objects.resize(n_samples);
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
+
+	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
+
+	for(U32 i = 0; i < this->n_entries; ++i){
+		delete [] entries[i].alleles;
+		entries[i].alleles = new std::pair<char,char>[2];
+		entries[i].alleles[0].first  = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
+		entries[i].alleles[1].first  = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
+		entries[i].alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].alleles[1].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].n_objects = 1;
+		entries[i].n_alleles = 2;
+	}
+}
+
+template <class T>
+void GenotypeContainerDiploidBCF<T>::getObjects(std::vector<core::GTObject>& objects, const U64& n_samples, const permutation_type& ppa_manager) const{
+	if(objects.size() < n_samples) objects.resize(n_samples);
+	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
+
+	const BYTE shift = (sizeof(T)*8 - 1) / 2;
+
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		delete [] entries[ppa_manager[cum_pos]].alleles;
+		entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+		entries[ppa_manager[cum_pos]].alleles[0].first  = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
+		entries[ppa_manager[cum_pos]].alleles[1].first  = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
+		entries[ppa_manager[cum_pos]].alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[cum_pos]].alleles[1].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[cum_pos]].n_objects = 1;
+		entries[ppa_manager[cum_pos]].n_alleles = 2;
+	}
 }
 
 template <class T>
@@ -156,8 +206,7 @@ void GenotypeContainerDiploidBCF<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 		return;
 
 	// Has to be a SNV and biallelic
-	if(this->getMeta().isSimpleSNV() == false) return;
-	if(this->getMeta().isBiallelic() == false) return;
+	if(this->getMeta().isBiallelicSNV() == false) return;
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 

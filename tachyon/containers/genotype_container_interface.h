@@ -14,17 +14,17 @@ namespace containers{
 // Todo: value type should be GT object
 class GenotypeContainerInterface{
 private:
-    typedef GenotypeContainerInterface     self_type;
-    typedef std::size_t                    size_type;
+    typedef GenotypeContainerInterface    self_type;
+    typedef std::size_t                   size_type;
 
 protected:
-    typedef tachyon::core::MetaEntry           meta_type;
-    typedef tachyon::core::VariantController   hot_controller_type;
-    typedef tachyon::core::GTObject            gt_object;
-    typedef GenotypeSum                        gt_summary;
-    typedef math::SquareMatrix<double>         square_matrix_type;
-    typedef algorithm::PermutationManager      permutation_type;
-    typedef tachyon::core::TsTvObject          ts_tv_object_type;
+    typedef core::MetaEntry               meta_type;
+    typedef core::VariantController       hot_controller_type;
+    typedef core::GTObject                gt_object;
+    typedef GenotypeSum                   gt_summary;
+    typedef math::SquareMatrix<double>    square_matrix_type;
+    typedef algorithm::PermutationManager permutation_type;
+    typedef core::TsTvObject              ts_tv_object_type;
 
     // Function pointers
 	typedef float (self_type::*matrix_comparator)(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB);
@@ -53,44 +53,21 @@ public:
     //virtual void std::vector<U32> getSamplesPloidy(void) =0;
     //virtual void std::vector<sample_summary> getSamplesSummary(void) =0;
 
-    /**<
-     *
-     * @param square_matrix
-     * @return
-     */
     virtual square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const =0;
-
-    /**<
-     *
-     * @return
-     */
     virtual U32 getSum(void) const =0;
 
     // Summary statistics
-    /**<
-     *
-     * @param gt_summary_object
-     * @return
-     */
     virtual gt_summary& updateSummary(gt_summary& gt_summary_object) const =0;
-
-    /**<
-     *
-     * @return
-     */
     virtual gt_summary getSummary(void) const =0;
-
-    /**<
-     *
-     * @param gt_summary_object
-     * @return
-     */
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
 
 
     virtual std::vector<gt_object> getLiteralObjects(void) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
+	virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
+	virtual void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const =0;
+	virtual void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const =0;
 
     virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 

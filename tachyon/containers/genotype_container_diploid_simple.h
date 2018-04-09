@@ -49,6 +49,9 @@ public:
 	std::vector<gt_object> getLiteralObjects(void) const;
 	std::vector<gt_object> getObjects(const U64& n_samples) const;
 	std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    void getLiteralObjects(std::vector<gt_object>& objects) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const;
 	gt_summary& updateSummary(gt_summary& gt_summary_object) const;
 	gt_summary getSummary(void) const;
 	gt_summary& getSummary(gt_summary& gt_summary_object) const;
@@ -223,6 +226,87 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 	}
 	//assert(cum_pos == n_samples);
 	return(ret);
+}
+
+template <class return_type>
+void GenotypeContainerDiploidSimple<return_type>::getLiteralObjects(std::vector<tachyon::core::GTObject>& objects) const{
+	if(objects.size() < this->size()) objects.resize(this->size());
+	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
+	for(U32 i = 0; i < this->n_entries; ++i){
+		entries[i](this->at(i), this->__meta);
+	}
+}
+
+template <class return_type>
+void GenotypeContainerDiploidSimple<return_type>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples) const{
+	if(objects.size() < n_samples) objects.resize(n_samples);
+	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
+
+	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		BYTE alleleA     = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		BYTE alleleB     = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+
+		// 0 is missing, 1 is EOV
+		if(this->at(i) == 0)      alleleA = -1;
+		else if(this->at(i) == 1) alleleA = -2;
+		else {
+			alleleA -= 2;
+			alleleB -= 2;
+		}
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			delete [] entries[cum_pos].alleles;
+			entries[cum_pos].alleles = new std::pair<char,char>[2];
+			entries[cum_pos].alleles[0].first  = alleleA;
+			entries[cum_pos].alleles[1].first  = alleleB;
+			entries[cum_pos].alleles[0].second = phasing;
+			entries[cum_pos].alleles[1].second = phasing;
+			entries[cum_pos].n_objects = 1;
+			entries[cum_pos].n_alleles = 2;
+		}
+	}
+}
+
+template <class return_type>
+void GenotypeContainerDiploidSimple<return_type>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples, const permutation_type& ppa_manager) const{
+	if(objects.size() < n_samples) objects.resize(n_samples);
+	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
+
+	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
+
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		SBYTE alleleA    = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		SBYTE alleleB    = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		alleleA -= subtract; alleleB -= subtract;
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			delete [] entries[ppa_manager[cum_pos]].alleles;
+			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].n_objects = 1;
+			entries[ppa_manager[cum_pos]].n_alleles = 2;
+		}
+	}
 }
 
 template <class return_type>

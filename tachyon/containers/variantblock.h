@@ -234,6 +234,13 @@ private:
 		stream << container;
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 * @param offset
+	 * @param container
+	 * @param virtual_offset
+	 */
 	inline void __writeContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		this->__updateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);
@@ -285,7 +292,7 @@ public:
 	container_type    meta_info_map_ids;
 	container_type    meta_format_map_ids;
 	container_type    meta_filter_map_ids;
-	container_type    gt_support_data_container; // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
+	container_type    gt_support_data_container;
 	container_type    gt_rle8_container;
 	container_type    gt_rle16_container;
 	container_type    gt_rle32_container;

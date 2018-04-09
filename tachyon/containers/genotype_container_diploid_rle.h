@@ -40,6 +40,10 @@ public:
     std::vector<gt_object> getLiteralObjects(void) const;
     std::vector<gt_object> getObjects(const U64& n_samples) const;
     std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    void getLiteralObjects(std::vector<gt_object>& objects) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const;
+	void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const;
+
     gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
     gt_summary& getSummary(gt_summary& gt_summary_object) const;
@@ -80,7 +84,7 @@ U32 GenotypeContainerDiploidRLE<T>::getSum(void) const{
 template <class T>
 math::SquareMatrix<double>& GenotypeContainerDiploidRLE<T>::comparePairwise(square_matrix_type& square_matrix) const{
 	// Has to be a SNV
-	if(this->getMeta().isSimpleSNV() == false){
+	if(this->getMeta().isBiallelicSNV() == false){
 		//std::cerr << "skipping" << std::endl;
 		return square_matrix;
 	}
@@ -136,12 +140,12 @@ math::SquareMatrix<double>& GenotypeContainerDiploidRLE<T>::comparePairwise(squa
 
 template <class T>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getLiteralObjects(void) const{
-		std::vector<tachyon::core::GTObject> ret(this->n_entries);
-		tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
-		for(U32 i = 0; i < this->n_entries; ++i)
-			entries[i](this->at(i), this->__meta);
+	std::vector<tachyon::core::GTObject> ret(this->n_entries);
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&ret[0]);
+	for(U32 i = 0; i < this->n_entries; ++i)
+		entries[i](this->at(i), this->__meta);
 
-		return(ret);
+	return(ret);
 }
 
 template <class T>
@@ -209,6 +213,78 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 
 	//assert(cum_pos == n_samples);
 	return(ret);
+}
+
+template <class T>
+void GenotypeContainerDiploidRLE<T>::getLiteralObjects(std::vector<tachyon::core::GTObject>& objects) const{
+	if(objects.size() < this->size()) objects.resize(this->size());
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
+	for(U32 i = 0; i < this->size(); ++i)
+		entries[i](this->at(i), this->__meta);
+}
+
+template <class T>
+void GenotypeContainerDiploidRLE<T>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples) const{
+	if(objects.size() < n_samples) objects.resize(n_samples);
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
+
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			delete [] entries[cum_pos].alleles;
+			entries[cum_pos].alleles = new std::pair<char,char>[2];
+			entries[cum_pos].alleles[0].first  = alleleA;
+			entries[cum_pos].alleles[1].first  = alleleB;
+			entries[cum_pos].alleles[0].second = phasing;
+			entries[cum_pos].alleles[1].second = phasing;
+			entries[cum_pos].n_objects = 1;
+			entries[cum_pos].n_alleles = 2;
+		}
+	}
+}
+
+template <class T>
+void GenotypeContainerDiploidRLE<T>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples, const permutation_type& ppa_manager) const{
+	if(objects.size() != n_samples) objects.resize(n_samples);
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
+
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		SBYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		SBYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		if(alleleA == 2) alleleA = -1;
+		if(alleleB == 2) alleleB = -1;
+
+		BYTE phasing = 0;
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			delete [] entries[ppa_manager[cum_pos]].alleles;
+			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].n_objects = 1;
+			entries[ppa_manager[cum_pos]].n_alleles = 2;
+		}
+	}
 }
 
 template <class T>

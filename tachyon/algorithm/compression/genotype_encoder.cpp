@@ -42,32 +42,32 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 	rle_helper_type cost;
 	if(meta.controller.biallelic && meta.controller.diploid && meta.controller.mixed_ploidy == false){ // Case diploid and biallelic
 		cost = this->assessDiploidRLEBiallelic(bcf_entry, ppa);
-		meta.controller.gt_compression_type = core::YON_GT_RLE_DIPLOID_BIALLELIC;
+		meta.controller.gt_compression_type = YON_GT_RLE_DIPLOID_BIALLELIC;
 		block.gt_support_data_container.Add((U32)cost.n_runs);
 		++block.gt_support_data_container;
 
 		switch(cost.word_width){
 		case 1:
 			this->EncodeDiploidRLEBiallelic<BYTE>(bcf_entry, block.gt_rle8_container, ppa, cost);
-			meta.controller.gt_primtive_type = core::YON_GT_BYTE;
+			meta.controller.gt_primtive_type = YON_GT_BYTE;
 			++block.gt_rle8_container;
 			++this->stats_.rle_counts[0];
 			break;
 		case 2:
 			this->EncodeDiploidRLEBiallelic<U16>(bcf_entry, block.gt_rle16_container, ppa, cost);
-			meta.controller.gt_primtive_type = core::YON_GT_U16;
+			meta.controller.gt_primtive_type = YON_GT_U16;
 			++block.gt_rle16_container;
 			++this->stats_.rle_counts[1];
 			break;
 		case 4:
 			this->EncodeDiploidRLEBiallelic<U32>(bcf_entry, block.gt_rle32_container, ppa, cost);
-			meta.controller.gt_primtive_type = core::YON_GT_U32;
+			meta.controller.gt_primtive_type = YON_GT_U32;
 			++block.gt_rle32_container;
 			++this->stats_.rle_counts[2];
 			break;
 		case 8:
 			this->EncodeDiploidRLEBiallelic<U64>(bcf_entry, block.gt_rle64_container, ppa, cost);
-			meta.controller.gt_primtive_type = core::YON_GT_U64;
+			meta.controller.gt_primtive_type = YON_GT_U64;
 			++block.gt_rle64_container;
 			++this->stats_.rle_counts[3];
 			break;
@@ -89,32 +89,32 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 
 		// RLE is cheaper
 		if(cost.word_width * cost.n_runs < costBCFStyle){
-			meta.controller.gt_compression_type = core::YON_GT_RLE_DIPLOID_NALLELIC;
+			meta.controller.gt_compression_type = YON_GT_RLE_DIPLOID_NALLELIC;
 			block.gt_support_data_container.Add((U32)cost.n_runs);
 			++block.gt_support_data_container;
 
 			switch(cost.word_width){
 			case 1:
 				this->EncodeDiploidRLEnAllelic<BYTE>(bcf_entry, block.gt_simple8_container, ppa, cost);
-				meta.controller.gt_primtive_type = core::YON_GT_BYTE;
+				meta.controller.gt_primtive_type = YON_GT_BYTE;
 				++block.gt_simple8_container;
 				++this->stats_.rle_simple_counts[0];
 				break;
 			case 2:
 				this->EncodeDiploidRLEnAllelic<U16>(bcf_entry, block.gt_simple16_container, ppa, cost);
-				meta.controller.gt_primtive_type = core::YON_GT_U16;
+				meta.controller.gt_primtive_type = YON_GT_U16;
 				++block.gt_simple16_container;
 				++this->stats_.rle_simple_counts[1];
 				break;
 			case 4:
 				this->EncodeDiploidRLEnAllelic<U32>(bcf_entry, block.gt_simple32_container, ppa, cost);
-				meta.controller.gt_primtive_type = core::YON_GT_U32;
+				meta.controller.gt_primtive_type = YON_GT_U32;
 				++block.gt_simple32_container;
 				++this->stats_.rle_simple_counts[2];
 				break;
 			case 8:
 				this->EncodeDiploidRLEnAllelic<U64>(bcf_entry, block.gt_simple64_container, ppa, cost);
-				meta.controller.gt_primtive_type = core::YON_GT_U64;
+				meta.controller.gt_primtive_type = YON_GT_U64;
 				++block.gt_simple64_container;
 				++this->stats_.rle_simple_counts[3];
 				break;
@@ -129,23 +129,23 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 			//std::cerr << "BCF-style cheaper" << std::endl;
 			block.gt_support_data_container.Add((U32)this->n_samples);
 			++block.gt_support_data_container;
-			meta.controller.gt_compression_type = core::YON_GT_BCF_DIPLOID;
+			meta.controller.gt_compression_type = YON_GT_BCF_DIPLOID;
 
 			U64 n_runs = this->n_samples;
 			if(bcf_entry.body->n_allele + 1 < 8){
-				meta.controller.gt_primtive_type = core::YON_GT_BYTE;
+				meta.controller.gt_primtive_type = YON_GT_BYTE;
 				this->EncodeDiploidBCF<BYTE>(bcf_entry, block.gt_simple8_container, n_runs, ppa);
 				++block.gt_simple8_container;
 				++this->stats_.diploid_bcf_counts[0];
 			}
 			else if(bcf_entry.body->n_allele + 1 < 128){
-				meta.controller.gt_primtive_type = core::YON_GT_U16;
+				meta.controller.gt_primtive_type = YON_GT_U16;
 				this->EncodeDiploidBCF<U16> (bcf_entry, block.gt_simple16_container, n_runs, ppa);
 				++block.gt_simple16_container;
 				++this->stats_.diploid_bcf_counts[1];
 			}
 			else if(bcf_entry.body->n_allele + 1 < 32768){
-				meta.controller.gt_primtive_type = core::YON_GT_U32;
+				meta.controller.gt_primtive_type = YON_GT_U32;
 				this->EncodeDiploidBCF<U32> (bcf_entry, block.gt_simple32_container, n_runs, ppa);
 				++block.gt_simple32_container;
 				++this->stats_.diploid_bcf_counts[2];
@@ -164,26 +164,26 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		std::cerr << "other bcf style: n_alleles: " << bcf_entry.body->n_allele << ",ploidy: " << bcf_entry.gt_support.ploidy << std::endl;
 		block.gt_support_data_container.Add((U32)this->n_samples*bcf_entry.gt_support.ploidy);
 		++block.gt_support_data_container;
-		meta.controller.gt_compression_type = core::YON_GT_BCF_STYLE;
+		meta.controller.gt_compression_type = YON_GT_BCF_STYLE;
 
 		U64 n_runs = this->n_samples*bcf_entry.gt_support.ploidy;
 
 		if(bcf_entry.body->n_allele + 1 < 8){
 			this->EncodeBCFStyle<BYTE>(bcf_entry, block.gt_simple8_container, n_runs);
 			++block.gt_simple8_container;
-			meta.controller.gt_primtive_type = core::YON_GT_BYTE;
+			meta.controller.gt_primtive_type = YON_GT_BYTE;
 			++this->stats_.bcf_counts[0];
 		}
 		else if(bcf_entry.body->n_allele + 1 < 128){
 			this->EncodeBCFStyle<U16> (bcf_entry, block.gt_simple16_container, n_runs);
 			++block.gt_simple16_container;
-			meta.controller.gt_primtive_type = core::YON_GT_U16;
+			meta.controller.gt_primtive_type = YON_GT_U16;
 			++this->stats_.bcf_counts[1];
 		}
 		else if(bcf_entry.body->n_allele + 1 < 32768){
 			this->EncodeBCFStyle<U32> (bcf_entry, block.gt_simple32_container, n_runs);
 			++block.gt_simple32_container;
-			meta.controller.gt_primtive_type = core::YON_GT_U32;
+			meta.controller.gt_primtive_type = YON_GT_U32;
 			++this->stats_.bcf_counts[2];
 		}
 		else {

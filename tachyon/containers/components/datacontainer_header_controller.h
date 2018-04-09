@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
+#include <cassert>
 #include "../../support/type_definitions.h"
 
 namespace tachyon{
@@ -73,6 +74,8 @@ private:
 					  controller.encoder     << 8  |
 					  controller.uniform     << 13 |
 					  controller.encryption  << 14;
+
+		assert(*reinterpret_cast<const U16* const>(&controller) == c);
 
 		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
 		return(stream);
