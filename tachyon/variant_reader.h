@@ -581,6 +581,22 @@ public:
 		return(gt.size());
 	}
 
+	U64 getGenotypeSummary(std::ostream& stream){
+		containers::MetaContainer meta(this->block);
+		containers::GenotypeContainer gt(this->block, meta);
+
+		containers::GTSummary gtsum(10);
+		for(U32 i = 0; i < gt.size(); ++i){
+			//std::cerr << "here" << std::endl;
+			gt[i].getSummary(gtsum);
+			//gtsum.printDiploid(std::cerr);
+			//std::cerr << gtsum.alleleCount() << "/" << gtsum.genotypeCount() << std::endl;
+			//std::cerr << std::endl;
+			gtsum.clear();
+		}
+		return(gt.size());
+	}
+
 	U64 countVariants(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		return(meta.size());
@@ -589,12 +605,12 @@ public:
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer gt(this->block, meta);
-		containers::GenotypeSum gt_summary;
+		containers::GTSummary gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
 			// Calculate summary statistics
-			gt[i].getSummary(gt_summary);
+			//gt[i].getSummary(gt_summary);
 
 			// Calculate total number of alt-alleles (allele 1, where 0 is ref)
 			//std::cerr << gt_summary << '\n';

@@ -123,6 +123,11 @@ int view(int argc, char** argv){
 			return 1;
 		}
 
+		S32 major = 0, minor = 0, release = 0;
+		keychain_reader.read(reinterpret_cast<char*>(&major),   sizeof(S32));
+		keychain_reader.read(reinterpret_cast<char*>(&minor),   sizeof(S32));
+		keychain_reader.read(reinterpret_cast<char*>(&release), sizeof(S32));
+
 		keychain_reader >> reader.keychain;
 		if(!keychain_reader.good()){
 			std::cerr << "failed to parse kechain" << std::endl;
@@ -136,13 +141,13 @@ int view(int argc, char** argv){
 	}
 
 	if(headerOnly){
-		std::cerr << reader.header.literals.size() << std::endl;
 		std::cout << reader.header.literals << std::endl;
+		reader.header.writeVCFHeaderString(std::cout, true);
 		return(0);
 	}
 
 	if(showHeader){
-		reader.header.writeVCFHeaderString(std::cout, false);
+		reader.header.writeVCFHeaderString(std::cout, !dropFormat);
 	}
 
 	U64 n_variants = 0;

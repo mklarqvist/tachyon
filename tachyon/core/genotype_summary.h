@@ -11,63 +11,105 @@ class GenotypeContainerInterface;
 template <class T> class GenotypeContainerDiploidRLE;
 template <class T> class GenotypeContainerDiploidSimple;
 template <class T> class GenotypeContainerDiploidBCF;
-/**<
- * We cannot decouple the GenotypeContainer objects from
- * this structure as their interpretation is contingent
- * on the internal memory layout of this structure.
- *
- * Note the non-polynomial expansion of `__allele_cells`
- * cost. Number of entries for `n_alleles` {1..10} is shown:
- * 4      16      64     256    1024    4096   16384   65536  262144
- *
- * At `n_alleles` = 14 the memory cost for this object exceeds
- * 2 GB!
- */
-struct GenotypeSum{
-	typedef GenotypeSum self_type;
 
-	GenotypeSum() :
-		n_alleles(5),
-		n_cells(pow(2,(this->n_alleles*2))),           // 2^(n_alelles*2) where 2 is ploidy and base is bits
-		__genotype_cells(new U64[this->n_cells]),
-		__alleleA_cells(new U64[this->n_alleles]),
-		__alleleB_cells(new U64[this->n_alleles]),
-		__bit_mask((1 << this->n_alleles) - 1),
-		__bit_shift_width(this->n_alleles)
+// Remaps
+const BYTE TACHYON_GT_SUMMARY_REMAP[4] = {2, 3, 1, 1}; // 0 = EOV does not exist in this encoding
+
+struct GTSummaryObject{
+	GTSummaryObject() : counts_(0), countsA_(0), countsB_(0){}
+	~GTSummaryObject(){}
+
+	void reset(void){
+		this->counts_ = 0;
+		this->countsA_ = 0;
+		this->countsB_ = 0;
+	}
+
+	void operator+=(const U64& value){ this->counts_ += value; }
+
+	U64 counts_;
+	U64 countsA_;
+	U64 countsB_;
+};
+
+struct GTSummary{
+	typedef U64 value_type;
+
+public:
+	GTSummary() :
+		n_alleles_(7),
+		matrix_(new value_type*[this->n_alleles_]),
+		vectorA_(new value_type[this->n_alleles_]),
+		vectorB_(new value_type[this->n_alleles_])
 	{
-		memset(this->__genotype_cells,  0, sizeof(U64)*this->n_cells);
-		memset(this->__alleleA_cells,   0, sizeof(U64)*this->n_alleles);
-		memset(this->__alleleB_cells,   0, sizeof(U64)*this->n_alleles);
+		for(U32 i = 0; i < this->n_alleles_; ++i){
+			this->matrix_[i] = new value_type[this->n_alleles_];
+			memset(this->matrix_[i], 0, sizeof(value_type)*this->n_alleles_);
+		}
+		memset(this->vectorA_, 0, sizeof(value_type)*this->n_alleles_);
+		memset(this->vectorB_, 0, sizeof(value_type)*this->n_alleles_);
 	}
 
-	GenotypeSum(const BYTE& number_of_alleles) :
-		n_alleles(number_of_alleles),
-		n_cells(pow(2,(this->n_alleles*2))),           // 2^(n_alelles*2) where 2 is ploidy and base is bits
-		__genotype_cells(new U64[this->n_cells]),
-		__alleleA_cells(new U64[this->n_alleles]),
-		__alleleB_cells(new U64[this->n_alleles]),
-		__bit_mask((1 << this->n_alleles) - 1),
-		__bit_shift_width(this->n_alleles)
+	GTSummary(const BYTE n_alleles) :
+		n_alleles_(n_alleles + 2),
+		matrix_(new value_type*[this->n_alleles_]),
+		vectorA_(new value_type[this->n_alleles_]),
+		vectorB_(new value_type[this->n_alleles_])
 	{
-		memset(this->__genotype_cells,  0, sizeof(U64)*this->n_cells);
-		memset(this->__alleleA_cells,   0, sizeof(U64)*this->n_alleles);
-		memset(this->__alleleB_cells,   0, sizeof(U64)*this->n_alleles);
+		for(U32 i = 0; i < this->n_alleles_; ++i){
+			this->matrix_[i] = new value_type[this->n_alleles_];
+			memset(this->matrix_[i], 0, sizeof(value_type)*this->n_alleles_);
+		}
+		memset(this->vectorA_, 0, sizeof(value_type)*this->n_alleles_);
+		memset(this->vectorB_, 0, sizeof(value_type)*this->n_alleles_);
 	}
 
-	~GenotypeSum(){
-		delete [] this->__genotype_cells;
-		delete [] this->__alleleA_cells;
-		delete [] this->__alleleB_cells;
+	~GTSummary(){
+		for(U32 i = 0; i < this->n_alleles_; ++i)
+			delete [] this->matrix_[i];
+		delete [] this->matrix_;
+		delete [] this->vectorA_;
+		delete [] this->vectorB_;
 	}
 
-	// Overloaded operators
-	inline self_type& operator+=(const self_type& other){ // TODO
-		// if their sizes are different then we need to map
-		// from object 1 to object 2
-		// map from SMALLER -> LARGER by expanding bit-width:
-		// a) if this is smaller then expand this first to size of other and map 1:1
-		// b) if the other object is smaller then map from other to this by bit-expansion
-		return(*this);
+	void clear(void){
+		for(U32 i = 0; i < this->n_alleles_; ++i){
+			memset(this->matrix_[i], 0, sizeof(value_type)*this->n_alleles_);
+		}
+		memset(this->vectorA_, 0, sizeof(value_type)*this->n_alleles_);
+		memset(this->vectorB_, 0, sizeof(value_type)*this->n_alleles_);
+	}
+
+	void printDiploid(std::ostream& stream){
+		stream << this->matrix_[0][0];
+		for(U32 j = 1; j < this->n_alleles_; ++j){
+			if(this->matrix_[0][j]) stream << '\t' << this->matrix_[0][j];
+		}
+
+		for(U32 i = 1; i < this->n_alleles_; ++i){
+			for(U32 j = 0; j < this->n_alleles_; ++j){
+				if(this->matrix_[i][j]) stream << '\t' << this->matrix_[i][j];
+			}
+		}
+	}
+
+	U64 alleleCount(void) const{
+		U64 total = 0;
+		for(U32 i = 2; i < this->n_alleles_; ++i){
+			total += this->vectorA_[i];
+			total += this->vectorB_[i];
+		}
+		return(total);
+	}
+
+	U64 genotypeCount(void) const{
+		U64 total = 0;
+		for(U32 i = 2; i < this->n_alleles_; ++i){
+			for(U32 j = 2; j < this->n_alleles_; ++j){
+				total += this->matrix_[i][j];
+			}
+		}
+		return(total);
 	}
 
 	template <class T>
@@ -75,33 +117,39 @@ struct GenotypeSum{
 		const BYTE shift = gt_rle_container.getMeta().isAnyGTMissing()    ? 2 : 1;
 		const BYTE add   = gt_rle_container.getMeta().isGTMixedPhasing()  ? 1 : 0;
 
-		// Have to remap to shared type
-		// 0 is missing for other types
-		// but higher value in RLE
-		// remap RLE -> Regular
-
 		for(U32 i = 0; i < gt_rle_container.size(); ++i){
-			const BYTE alleleA = (gt_rle_container[i] & ((1 << shift) - 1) << add) >> add;
-			const BYTE alleleB = (gt_rle_container[i] & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-			const U32  length  = gt_rle_container[i] >> (2*shift + add);
-			this->getGenotypeCell(alleleA, alleleB) += length;
-			this->getAlleleA(alleleA) += length;
-			this->getAlleleB(alleleB) += length;
+			const U64 length  = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(gt_rle_container.at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(gt_rle_container.at(i), shift, add);
+			this->matrix_[TACHYON_GT_SUMMARY_REMAP[alleleA]][TACHYON_GT_SUMMARY_REMAP[alleleB]] += length;
+			this->vectorA_[TACHYON_GT_SUMMARY_REMAP[alleleA]] += length;
+			this->vectorB_[TACHYON_GT_SUMMARY_REMAP[alleleB]] += length;
 		}
 	}
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidSimple<T>& gt_simple_container){
-		const BYTE shift = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 1 + gt_simple_container.getMeta().isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE shift = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 1 + gt_simple_container.getMeta().isAnyGTMissing() + gt_simple_container.getMeta().isMixedPloidy())); // Bits occupied per allele, 1 value for missing
 		const BYTE add   = gt_simple_container.getMeta().isGTMixedPhasing() ? 1 : 0;
+		const BYTE matrix_add = !gt_simple_container.getMeta().isMixedPloidy();
+		if(gt_simple_container.getMeta().n_alleles + 2 > this->n_alleles_){
+			std::cerr << "too many alleles: " << gt_simple_container.getMeta().n_alleles + 2 << "/" << (int)this->n_alleles_ << std::endl;
+			return;
+		}
 
 		for(U32 i = 0; i < gt_simple_container.size(); ++i){
-			const BYTE alleleA = (gt_simple_container[i] & ((1 << shift) - 1) << add) >> add;
-			const BYTE alleleB = (gt_simple_container[i] & ((1 << shift) - 1) << (add+shift)) >> (add+shift);
-			const U32  length  = gt_simple_container[i] >> (2*shift + add);
-			this->getGenotypeCell(alleleA, alleleB) += length;
-			this->getAlleleA(alleleA) += length;
-			this->getAlleleB(alleleB) += length;
+			const U64 length = YON_GT_RLE_LENGTH(gt_simple_container.at(i), shift, add);
+			BYTE alleleA    = YON_GT_RLE_ALLELE_A(gt_simple_container.at(i), shift, add);
+			BYTE alleleB    = YON_GT_RLE_ALLELE_B(gt_simple_container.at(i), shift, add);
+
+			//std::cerr << "adding: " << (int)alleleA << "+" << (alleleA > 0 ? matrix_add : 0) << "/" << (int)alleleB << "+" << (alleleB > 0 ? matrix_add : 0) << ": " << (int)matrix_add << std::endl;
+
+			alleleA += alleleA > 0 ? matrix_add : 0;
+			alleleB += alleleB > 0 ? matrix_add : 0;
+
+			this->matrix_[alleleA][alleleB] += length;
+			this->vectorA_[alleleA] += length;
+			this->vectorB_[alleleB] += length;
 		}
 	}
 
@@ -110,97 +158,12 @@ struct GenotypeSum{
 
 	}
 
-	// Utility
-	void resize(const BYTE& n_alleles);
-	inline const size_t& size(void) const{ return(this->n_cells); }
-	inline void clear(void){
-		memset(this->__genotype_cells,  0, sizeof(U64)*this->n_cells);
-		memset(this->__alleleA_cells,   0, sizeof(U64)*this->n_alleles);
-		memset(this->__alleleB_cells,   0, sizeof(U64)*this->n_alleles);
-	}
-
-	// Genotype accessors
-	inline U64& operator()(const BYTE& allele1, const BYTE& allele2){
-		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
-	}
-
-	inline const U64& operator()(const BYTE& allele1, const BYTE& allele2) const{
-		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1, allele2, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
-	}
-
-	inline U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2){
-		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
-	}
-
-	inline const U64& getGenotypeCell(const BYTE& allele1, const BYTE& allele2) const{
-		assert((YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)) < this->n_cells);
-		return(this->__genotype_cells[YON_GT_DIPLOID_ALLELE_LOOKUP(allele1 - 1, allele2 - 1, this->__bit_shift_width, this->__bit_mask)]);
-	}
-
-	// Allele accessors
-	inline U64& getAlleleA(const BYTE& allele){ return(this->__alleleA_cells[allele]); }
-	inline const U64& getAlleleA(const BYTE& allele) const{ return(this->__alleleA_cells[allele]); }
-	inline U64& getAlleleB(const BYTE& allele){ return(this->__alleleB_cells[allele]); }
-	inline const U64& getAlleleB(const BYTE& allele) const{ return(this->__alleleB_cells[allele]); }
-	inline U64 getAllele(const BYTE& allele) const{ return(this->__alleleA_cells[allele] + this->__alleleB_cells[allele]); }
-
-	//
-	U64 alleleCount(void) const{
-		U64 total = 0;
-		for(U32 i = 0; i < this->n_alleles; ++i)
-			total += this->getAllele(i);
-		return(total);
-	}
-
-	U64 genotypeCount(void) const{
-		U64 total = 0;
-		for(U32 i = 0; i < this->n_cells; ++i)
-			total += this->__genotype_cells[i];
-		return(total);
-	}
-
-private:
-	friend std::ostream& operator<<(std::ostream& out, const self_type& entry){
-		out << "alleles = [" << entry.getAllele(0);
-		for(U32 i = 1; i < entry.n_alleles; ++i){
-			out << ',' << entry.getAllele(i);
-		}
-		out << "] allelesA = [" << entry.getAlleleA(0);
-		for(U32 i = 1; i < entry.n_alleles; ++i){
-			out << ',' << entry.getAlleleA(i);
-		}
-		out << "] allelesB = [" << entry.getAlleleB(0);
-		for(U32 i = 1; i < entry.n_alleles; ++i){
-			out << ',' << entry.getAlleleB(i);
-		}
-
-		out << "] genotypes = [";
-		for(U32 i = 0; i < entry.n_alleles; ++i){
-			for(U32 j = 0; j < entry.n_alleles; ++j){
-				const U64& target_cell = entry.getGenotypeCell(i,j);
-				if(target_cell)
-					out << i << "," << j << ":" << target_cell << ',';
-			}
-		}
-		out << "]";
-
-		return(out);
-	}
-
-private:
-	BYTE   n_alleles;         // number of alleles (including NA and missing)
-	size_t n_cells;           // length of `__genotype_cells`
-	U64*   __genotype_cells;  // length is `n_cells`
-	U64*   __alleleA_cells;   // length is `n_alleles`
-	U64*   __alleleB_cells;   // length is `n_alleles`
-	BYTE   __bit_mask;        // guard against undesired residual overflow in packing
-	BYTE   __bit_shift_width; // bit shift size for packing
+public:
+	BYTE  n_alleles_; // number of alleles (including EOV and missing)
+	value_type** matrix_;
+	value_type*  vectorA_;
+	value_type*  vectorB_;
 };
-
-// value1 << ceiling(log2(n_alleles))
 
 struct GenotypesSummary{
 	typedef GenotypesSummary self_type;

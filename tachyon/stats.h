@@ -111,6 +111,11 @@ int stats(int argc, char** argv){
 			return 1;
 		}
 
+		S32 major = 0, minor = 0, release = 0;
+		keychain_reader.read(reinterpret_cast<char*>(&major),   sizeof(S32));
+		keychain_reader.read(reinterpret_cast<char*>(&minor),   sizeof(S32));
+		keychain_reader.read(reinterpret_cast<char*>(&release), sizeof(S32));
+
 		keychain_reader >> reader.keychain;
 		if(!keychain_reader.good()){
 			std::cerr << "failed to parse kechain" << std::endl;
@@ -123,20 +128,17 @@ int stats(int argc, char** argv){
 		return 1;
 	}
 
-	U64 n_variants = 0;
 	tachyon::algorithm::Timer timer;
 	timer.Start();
-
 
 	reader.getSettings().loadGenotypes(true);
 	reader.getSettings().loadPPA_ = true;
 	reader.getSettings().loadAlleles_ = true;
 
-	U32 n_blocks = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		++n_blocks;
+		//reader.getTiTVRatios(std::cout, global_titv);
+		reader.getGenotypeSummary(std::cout);
 	}
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";

@@ -1,4 +1,5 @@
 #include <fstream>
+#include <regex>
 
 #include "../algorithm/digital_digest.h"
 #include "footer/footer.h"
@@ -21,6 +22,14 @@ S32 reg2bin(S32 beg, S32 end){
 	return 0;
 }
 
+S32 reg2bin2(S64 beg, S64 end, U64 ref_size, BYTE n_levels){
+	std::cerr << "input: " << beg << "-" << end << std::endl;
+	for(S32 i = n_levels; i >= 0; --i){
+		std::cerr << i << ": " << ref_size / pow(4,i) << " " << S64(beg/(ref_size / pow(4,i))) << " == " << S64(end/(ref_size / pow(4,i))) << std::endl;
+	}
+	return(0);
+}
+
 VariantImporter::VariantImporter(std::string inputFile,
 		                         std::string outputPrefix,
                                    const U32 checkpoint_n_snps,
@@ -30,6 +39,8 @@ VariantImporter::VariantImporter(std::string inputFile,
 	encrypt(false),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
+	info_end_key_(-1),
+	info_svlen_key_(-1),
 	inputFile(inputFile),
 	outputPrefix(outputPrefix),
 	writer(nullptr),
@@ -110,10 +121,27 @@ bool VariantImporter::BuildBCF(void){
 	*this->writer->stream << header_data.header; // write header
 	*this->writer->stream << header_data.buffer_data;
 
+	// Search for GT field in the header
 	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
 			reader.map_gt_id = this->header->format_map[i].IDX;
+		}
+	}
+
+	// Search for END field in the header
+	for(U32 i = 0; i < this->header->info_map.size(); ++i){
+		if(this->header->info_map[i].ID == "END"){
+			this->info_end_key_ = this->header->info_map[i].IDX;
+			std::cerr << "Found END at: " << this->header->info_map[i].IDX << std::endl;
+		}
+	}
+
+	// Search for END field in the header
+	for(U32 i = 0; i < this->header->info_map.size(); ++i){
+		if(this->header->info_map[i].ID == "SVLEN"){
+			this->info_svlen_key_ = this->header->info_map[i].IDX;
+			std::cerr << "Found SVLEN at: " << this->header->info_map[i].IDX << std::endl;
 		}
 	}
 
@@ -332,6 +360,10 @@ bool VariantImporter::BuildBCF(void){
 
 			if(writer_keychain.good()){
 				writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
+				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(S32));
+				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE), sizeof(S32));
+
 				//writer_keychain.write(keybuffer.data(), keybuffer.size());
 				writer_keychain << keychain;
 				writer_keychain.flush();
@@ -341,6 +373,13 @@ bool VariantImporter::BuildBCF(void){
 			if(!SILENT)
 				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::toPrettyDiskString(keychain_size) << "..." << std::endl;
 		}
+	}
+
+	// temp
+	for(U32 i = 0; i < writer->index.size(); ++i){
+		std::cerr << i << "\t";
+		writer->index.getIndex().at(i).print(std::cerr);
+		std::cerr << std::endl;
 	}
 
 	// All done
@@ -375,18 +414,58 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	// Add meta
 	this->block += meta;
 
-	/*
-	if(meta.isBiallelicSNV() == false){
-		for(U32 i = 1; i < meta.n_alleles; ++i){
-			if(meta.alleles[i].allele[0] == '<'){
-				std::cerr << "is special: " << meta.alleles[i].toString() << std::endl;
+	// Has END position?
+	S32 index_bin = -1;
+
+	// test
+	//std::cerr << this->header->contigs[entry.body->CHROM].bp_length << std::endl;
+	const U64 contig_length = this->header->contigs[entry.body->CHROM].bp_length;
+	const double raw_section_range = (double)contig_length/pow(4,8);
+	const U64 used_contig_length = ceil(ceil(raw_section_range) / ((double)contig_length/pow(4,8))*contig_length);
+	//std::cerr << raw_section_range << "->" << used_contig_length << " sub " << ((double)contig_length/pow(4,8))*contig_length << std::endl;
+
+	//for(S32 i = 7; i > 0; --i){
+	//	std::cerr << i << ' ' << pow(4, i) << '\t' << (float)used_contig_length/pow(4,i) << std::endl;
+	//}
+
+
+	if(this->info_end_key_ != -1){
+		// Linear search: this is not optimal but probably still faster
+		// than generating a new hash table for each record
+		for(U32 i = 0; i < entry.infoPointer; ++i){
+			if(entry.infoID[i].mapID == this->info_end_key_){
+				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
+				std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
+				reg2bin2(entry.body->POS, end, used_contig_length, 7);
+
+				index_bin = reg2bin(entry.body->POS, end);
+				break;
 			}
-			std::cerr << reg2bin(entry.body->POS, entry.body->POS + meta.alleles[i].l_allele - 1) << std::endl;
 		}
 	}
-	*/
 
-	const S32 index_bin = reg2bin(entry.body->POS, entry.body->POS);
+	if(index_bin == -1){
+		S32 longest = -1;
+		for(U32 i = 0; i < meta.n_alleles; ++i){
+			// Regex pattern ^[ATGC]{1,}$
+			std::regex txt_regex("^[ATGC]{1,}$");
+			if(std::regex_match(meta.alleles[i].toString(), txt_regex)){
+				//std::cerr << "regex match: " << meta.alleles[i].toString() << std::endl;
+				if(meta.alleles[i].l_allele > longest) longest = meta.alleles[i].l_allele;
+			} else {
+				std::cerr << "POS=" << entry.body->POS+1 << " no regex match: " << meta.alleles[i].toString() << std::endl;
+			}
+			// alt = <> or
+			//meta.alleles[i].l_allele
+		}
+
+		if(longest){
+			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
+			index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
+		} else // fallback if all others fail
+			index_bin = reg2bin(entry.body->POS, entry.body->POS);
+	}
+
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
 	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
 

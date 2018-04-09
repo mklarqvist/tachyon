@@ -27,7 +27,7 @@ private:
     typedef MetaContainer              meta_container_type;
     typedef tachyon::core::MetaEntry   meta_type;
     typedef io::BasicBuffer            buffer_type;
-    typedef containers::GenotypeSum    gt_summary_type;
+    typedef containers::GTSummary      gt_summary_type;
     typedef VariantBlock               block_type;
 
 public:
@@ -97,16 +97,6 @@ public:
 	inline const GenotypeContainerDiploidRLE<U16>*     getDiploidRLEU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
 	inline const GenotypeContainerDiploidRLE<U32>*     getDiploidRLEU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
 	inline const GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
-
-	// GT summary
-	gt_summary_type calculateSummary(void) const{
-		gt_summary_type summary;
-		for(U32 i = 0; i < this->size(); ++i){
-			this->at(i).updateSummary(summary);
-		}
-		return(summary);
-	}
-
 
 private:
     template <class intrinsic_primitive> inline const U32 getNative(const buffer_type& buffer, const U32 position) const{

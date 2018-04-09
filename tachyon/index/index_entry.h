@@ -41,6 +41,11 @@ public:
 		this->maxBin          = 0;
 	}
 
+	std::ostream& print(std::ostream& stream) const{
+		stream << blockID << '\t' << contigID << '\t' << n_variants << '\t' << byte_offset << '-' << byte_offset_end << '\t' << minPosition << '-' << maxPosition << '\t' << minBin << '-' << maxBin;
+		return(stream);
+	}
+
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.blockID),         sizeof(U64));

@@ -182,20 +182,20 @@ void GenotypeContainerDiploidBCF<T>::getObjects(std::vector<core::GTObject>& obj
 }
 
 template <class T>
-GenotypeSum& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
+GTSummary& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSum GenotypeContainerDiploidBCF<T>::getSummary(void) const{
+GTSummary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
 	gt_summary summary;
 	summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSum& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
+GTSummary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }

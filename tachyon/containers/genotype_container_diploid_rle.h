@@ -288,20 +288,20 @@ void GenotypeContainerDiploidRLE<T>::getObjects(std::vector<tachyon::core::GTObj
 }
 
 template <class T>
-GenotypeSum& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{
+GTSummary& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSum GenotypeContainerDiploidRLE<T>::getSummary(void) const{
+GTSummary GenotypeContainerDiploidRLE<T>::getSummary(void) const{
 	gt_summary summary;
 	summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSum& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_object) const{
+GTSummary& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }

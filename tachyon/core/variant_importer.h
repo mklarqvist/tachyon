@@ -60,6 +60,9 @@ private:
 	U32 checkpoint_n_snps;   // number of variants until checkpointing
 	double checkpoint_bases; // number of bases until checkpointing
 
+	S32 info_end_key_;
+	S32 info_svlen_key_;
+
 	// Stats
 	import_stats_type stats_basic;
 	import_stats_type stats_info;

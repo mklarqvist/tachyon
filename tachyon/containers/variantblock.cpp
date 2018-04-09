@@ -145,7 +145,7 @@ void VariantBlock::updateContainers(void){
 
 bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	if(!stream.good()){
-		std::cerr << "stream is bad" << std::endl;
+		std::cerr << utility::timestamp("ERROR") << "File stream is corrupted..." << std::endl;
 		return false;
 	}
 
@@ -255,7 +255,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(this->start_compressed_data_ + settings.load_info_ID_loaded[i].offset->data_header.offset);
 			if(!stream.good()){
-				std::cerr << utility::timestamp("ERROR","IO") << "Failed seek!" << std::endl;
+				std::cerr << utility::timestamp("ERROR","IO") << "Failed to seek for INFO field in block!" << std::endl;
 				return false;
 			}
 

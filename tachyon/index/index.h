@@ -59,6 +59,11 @@ public:
 	inline void operator+=(const entry_type& entry){ this->index_ += entry; }
 	inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
 
+	inline container_type& getIndex(void){ return(this->index_); }
+	inline const container_type& getIndex(void) const{ return(this->index_); }
+	inline container_meta_type& getMetaIndex(void){ return(this->index_meta_); }
+	inline const container_meta_type& getMetaIndex(void) const{ return(this->index_meta_); }
+
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.index_;
