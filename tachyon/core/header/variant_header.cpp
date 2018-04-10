@@ -32,6 +32,40 @@ VariantHeader::VariantHeader(const vcf_header_type& vcf_header) :
 	*this = vcf_header;
 }
 
+VariantHeader::VariantHeader(const self_type& other) :
+	header_magic(other.header_magic),
+	contigs(new contig_type[this->header_magic.getNumberContigs()]),
+	samples(new sample_type[this->header_magic.getNumberSamples()]),
+	info_fields(new map_entry_type[this->header_magic.n_info_values]),
+	format_fields(new map_entry_type[this->header_magic.n_format_values]),
+	filter_fields(new map_entry_type[this->header_magic.n_filter_values]),
+	htable_contigs(nullptr),
+	htable_samples(nullptr),
+	htable_info_fields(nullptr),
+	htable_format_fields(nullptr),
+	htable_filter_fields(nullptr)
+{
+	for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i)
+		this->contigs[i] = other.contigs[i];
+
+	for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)
+		this->samples[i] = other.samples[i];
+
+	for(U32 i = 0; i < this->header_magic.n_info_values; ++i){
+		this->info_fields[i] = other.info_fields[i];
+	}
+
+	for(U32 i = 0; i < this->header_magic.n_format_values; ++i){
+		this->format_fields[i] = other.format_fields[i];
+	}
+
+	for(U32 i = 0; i < this->header_magic.n_filter_values; ++i){
+		this->filter_fields[i] = other.filter_fields[i];
+	}
+
+	this->buildHashTables();
+}
+
 VariantHeader::~VariantHeader(){
 	delete [] this->contigs;
 	delete [] this->samples;

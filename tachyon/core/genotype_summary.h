@@ -15,9 +15,9 @@ template <class T> class GenotypeContainerDiploidBCF;
 // Remaps
 const BYTE TACHYON_GT_SUMMARY_REMAP[4] = {2, 3, 1, 1}; // 0 = EOV does not exist in this encoding
 
-struct GTSummaryObject{
-	GTSummaryObject() : counts_(0), countsA_(0), countsB_(0){}
-	~GTSummaryObject(){}
+struct GenotypeSummaryObject{
+	GenotypeSummaryObject() : counts_(0), countsA_(0), countsB_(0){}
+	~GenotypeSummaryObject(){}
 
 	void reset(void){
 		this->counts_ = 0;
@@ -32,12 +32,13 @@ struct GTSummaryObject{
 	U64 countsB_;
 };
 
-struct GTSummary{
+struct GenotypeSummary{
 	typedef U64 value_type;
+	typedef core::MetaEntry meta_type;
 
 public:
-	GTSummary() :
-		n_alleles_(7),
+	GenotypeSummary() :
+		n_alleles_(10),
 		matrix_(new value_type*[this->n_alleles_]),
 		vectorA_(new value_type[this->n_alleles_]),
 		vectorB_(new value_type[this->n_alleles_])
@@ -50,7 +51,7 @@ public:
 		memset(this->vectorB_, 0, sizeof(value_type)*this->n_alleles_);
 	}
 
-	GTSummary(const BYTE n_alleles) :
+	GenotypeSummary(const BYTE n_alleles) :
 		n_alleles_(n_alleles + 2),
 		matrix_(new value_type*[this->n_alleles_]),
 		vectorA_(new value_type[this->n_alleles_]),
@@ -64,7 +65,7 @@ public:
 		memset(this->vectorB_, 0, sizeof(value_type)*this->n_alleles_);
 	}
 
-	~GTSummary(){
+	~GenotypeSummary(){
 		for(U32 i = 0; i < this->n_alleles_; ++i)
 			delete [] this->matrix_[i];
 		delete [] this->matrix_;
@@ -112,13 +113,48 @@ public:
 		return(total);
 	}
 
+	/**<
+	// This code implements an exact SNP test of Hardy-Weinberg Equilibrium as described in
+	// Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
+	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
+	//
+	// Written by Jan Wigginton
+	// Modified to use Tachyon data by Marcus D. R. Klarqvist (https;//github.com/mklarqvist/tachyon)
+	*/
+	std::vector<double> calculateHardyWeinberg(const meta_type& meta) const{
+		if(meta.n_alleles == 1) return std::vector<double>();
+		const BYTE n_limit = meta.n_alleles + 2 > this->n_alleles_ ? this->n_alleles_ - 1 : meta.n_alleles - 1;
+		std::vector<double> results(n_limit, 1);
+
+		for(U32 i = 0; i < n_limit; ++i)
+			results[i] = this->__calculateHardyWeinberg(2, 3+i);
+
+		return(results);
+	}
+
+	std::vector<double> calculateAlleleFrequency(const meta_type& meta) const{
+		const BYTE n_limit = meta.n_alleles + 2 > this->n_alleles_ ? this->n_alleles_ - 2: meta.n_alleles;
+		std::vector<double> results(n_limit, 0);
+
+		U64 n_total = 0;
+		for(U32 i = 0; i < n_limit; ++i){
+			results[i] = this->vectorA_[2+i] + this->vectorB_[2+i];
+			n_total += results[i];
+		}
+
+		for(U32 i = 0; i < n_limit; ++i)
+			results[i] /= n_total;
+
+		return(results);
+	}
+
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidRLE<T>& gt_rle_container){
 		const BYTE shift = gt_rle_container.getMeta().isAnyGTMissing()    ? 2 : 1;
 		const BYTE add   = gt_rle_container.getMeta().isGTMixedPhasing()  ? 1 : 0;
 
 		for(U32 i = 0; i < gt_rle_container.size(); ++i){
-			const U64 length  = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
+			const U64 length   = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
 			const BYTE alleleA = YON_GT_RLE_ALLELE_A(gt_rle_container.at(i), shift, add);
 			const BYTE alleleB = YON_GT_RLE_ALLELE_B(gt_rle_container.at(i), shift, add);
 			this->matrix_[TACHYON_GT_SUMMARY_REMAP[alleleA]][TACHYON_GT_SUMMARY_REMAP[alleleB]] += length;
@@ -139,8 +175,8 @@ public:
 
 		for(U32 i = 0; i < gt_simple_container.size(); ++i){
 			const U64 length = YON_GT_RLE_LENGTH(gt_simple_container.at(i), shift, add);
-			BYTE alleleA    = YON_GT_RLE_ALLELE_A(gt_simple_container.at(i), shift, add);
-			BYTE alleleB    = YON_GT_RLE_ALLELE_B(gt_simple_container.at(i), shift, add);
+			BYTE alleleA     = YON_GT_RLE_ALLELE_A(gt_simple_container.at(i), shift, add);
+			BYTE alleleB     = YON_GT_RLE_ALLELE_B(gt_simple_container.at(i), shift, add);
 
 			//std::cerr << "adding: " << (int)alleleA << "+" << (alleleA > 0 ? matrix_add : 0) << "/" << (int)alleleB << "+" << (alleleB > 0 ? matrix_add : 0) << ": " << (int)matrix_add << std::endl;
 
@@ -158,119 +194,12 @@ public:
 
 	}
 
-public:
-	BYTE  n_alleles_; // number of alleles (including EOV and missing)
-	value_type** matrix_;
-	value_type*  vectorA_;
-	value_type*  vectorB_;
-};
-
-struct GenotypesSummary{
-	typedef GenotypesSummary self_type;
-
-	GenotypesSummary(void) :
-		MAF(0),
-		MGF(0),
-		HWE_P(0),
-		missingValues(0),
-		phased(false),
-		expectedSamples(0)
-	{
-		memset(&this->countsGenotypes[0], 0, sizeof(U64)*16);
-		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
-	}
-
-	GenotypesSummary(const U64 expectedSamples) :
-		MAF(0),
-		MGF(0),
-		HWE_P(0),
-		missingValues(0),
-		phased(false),
-		expectedSamples(expectedSamples)
-	{
-		memset(&this->countsGenotypes[0], 0, sizeof(U64)*16);
-		memset(&this->countsAlleles[0],   0, sizeof(U64)*3);
-	}
-	~GenotypesSummary(){}
-
-	void setExpected(const U32 expected){ this->expectedSamples = expected; }
-	U64& operator[](const U32& p){ return(this->countsGenotypes[p]); }
-
-	inline void reset(){
-		this->countsGenotypes[0] = 0;
-		this->countsGenotypes[1] = 0;
-		this->countsGenotypes[4] = 0;
-		this->countsGenotypes[5] = 0;
-		this->countsAlleles[0]   = 0; // p
-		this->countsAlleles[1]   = 0; // q
-		this->countsAlleles[2]   = 0; // missing
-	}
-	inline const bool& hasMissing(void) const{ return(this->missingValues); }
-
-	double calculateMAF(void){
-		if(this->countsAlleles[0] > this->countsAlleles[1])
-			return(this->countsAlleles[1]/((double)this->countsAlleles[0]+this->countsAlleles[1]));
-		else
-			return(this->countsAlleles[0]/((double)this->countsAlleles[0]+this->countsAlleles[1]));
-	}
-
-	void calculateMGF(void){
-		// Find the largest non-missing value
-		U64 curMax = 0;
-		U64* target; // To compare pointer address
-		if(this->countsGenotypes[0] > curMax){
-			curMax = this->countsGenotypes[0];
-			target = &this->countsGenotypes[0];
-		}
-		if(this->countsGenotypes[1] > curMax){
-			curMax = this->countsGenotypes[1];
-			target = &this->countsGenotypes[1];
-		}
-		if(this->countsGenotypes[4] > curMax){
-			curMax = this->countsGenotypes[4];
-			target = &this->countsGenotypes[4];
-		}
-		if(this->countsGenotypes[5] > curMax){
-			curMax = this->countsGenotypes[5];
-			target = &this->countsGenotypes[5];
-		}
-
-		// Find next largest non-missing value
-		U64 curMax2 = 0;
-		if(this->countsGenotypes[0] >= curMax2 && &this->countsGenotypes[0] != target)
-			curMax2 = this->countsGenotypes[0];
-		if(this->countsGenotypes[1] >= curMax2 && &this->countsGenotypes[1] != target)
-			curMax2 = this->countsGenotypes[1];
-		if(this->countsGenotypes[4] >= curMax2 && &this->countsGenotypes[4] != target)
-			curMax2 = this->countsGenotypes[4];
-		if(this->countsGenotypes[5] >= curMax2 && &this->countsGenotypes[5] != target)
-			curMax2 = this->countsGenotypes[5];
-
-		this->MGF = (double)curMax2/this->expectedSamples;
-	}
-
-	bool determinePhase(const char& separator){
-		if(separator == '/'){
-			this->phased = false;
-			return true;
-		} else if(separator == '|'){
-			this->phased = true;
-			return true;
-		} else return false;
-	}
-
-	/**<
-	// This code implements an exact SNP test of Hardy-Weinberg Equilibrium as described in
-	// Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
-	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
-	//
-	// Written by Jan Wigginton
-	// Modified to use Tachyon data by Marcus D. R. Klarqvist
-	*/
-	void calculateHardyWeinberg(void){
-		U64 obs_hets = this->countsGenotypes[1] + this->countsGenotypes[4];
-		U64 obs_hom1 = this->countsGenotypes[0];
-		U64 obs_hom2 = this->countsGenotypes[5];
+private:
+	double __calculateHardyWeinberg(const U32 ref_target, const U32 alt_target) const{
+		U64 obs_hets = this->matrix_[ref_target][alt_target] + this->matrix_[alt_target][ref_target];
+		U64 obs_hom1 = this->matrix_[ref_target][ref_target];
+		U64 obs_hom2 = this->matrix_[alt_target][alt_target];
+		if(obs_hets + obs_hom1 + obs_hom2 == 0) return 1;
 
 		U64 obs_homc = obs_hom1 < obs_hom2 ? obs_hom2 : obs_hom1;
 		U64 obs_homr = obs_hom1 < obs_hom2 ? obs_hom1 : obs_hom2;
@@ -331,24 +260,14 @@ struct GenotypesSummary{
 
 		delete [] het_probs;
 
-		this->HWE_P = p_hwe;
+		return(p_hwe);
 	}
 
-	friend std::ostream& operator<<(std::ostream& os, const self_type& self){
-		os << self.countsGenotypes[0] << '\t' << self.countsGenotypes[1] << '\t' << self.countsGenotypes[4] << '\t' << self.countsGenotypes[5] << '\t' << self.MGF << '\t' << self.HWE_P;
-		return(os);
-	}
-
-	inline const U64 countAlleles(void) const{ return(this->countsAlleles[0] + this->countsAlleles[1] + this->countsAlleles[2]); }
-
-	U64 countsGenotypes[16];
-	U64 countsAlleles[3];
-	float MAF;
-	float MGF;
-	float HWE_P;
-	bool missingValues;
-	bool phased;
-	U64 expectedSamples;
+public:
+	BYTE  n_alleles_; // number of alleles (including EOV and missing)
+	value_type** matrix_;
+	value_type*  vectorA_;
+	value_type*  vectorB_;
 };
 
 }

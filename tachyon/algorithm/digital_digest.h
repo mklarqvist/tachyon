@@ -28,6 +28,16 @@ public:
 		memcpy(&this->stride_digest[0], other.stride_digest, 64);
 	}
 
+	DigitalDigest& operator=(const self_type& other){
+		this->hasInitialized = other.hasInitialized;
+		this->hasFinished = other.hasFinished;
+		this->data_context = other.data_context;
+		this->stride_context = other.stride_context;
+		memcpy(&this->data_digest[0],   &other.data_digest[0],   64);
+		memcpy(&this->stride_digest[0], &other.stride_digest[0], 64);
+		return(*this);
+	}
+
 	~DigitalDigest(void){}
 
 	/**<
@@ -146,6 +156,12 @@ public:
 
 	}
 
+	DigitalDigestPair& operator=(const self_type& other){
+		this->uncompressed = other.uncompressed;
+		this->compressed = other.compressed;
+		return(*this);
+	}
+
 	~DigitalDigestPair(){}
 
 	inline bool finalize(void){
@@ -196,8 +212,26 @@ protected:
 	typedef const value_type* const_pointer;
 
 public:
-	DigitalDigestManager() : n_entries_(0), n_capacity_(100), __entries(new value_type[this->n_capacity_]){}
-	DigitalDigestManager(const size_type start_capacity) : n_entries_(start_capacity), n_capacity_(start_capacity), __entries(new value_type[this->n_capacity_]){}
+	DigitalDigestManager() :
+		n_entries_(0),
+		n_capacity_(100),
+		__entries(new value_type[this->n_capacity_])
+	{}
+
+	DigitalDigestManager(const size_type start_capacity) :
+		n_entries_(start_capacity),
+		n_capacity_(start_capacity),
+		__entries(new value_type[this->n_capacity_])
+	{}
+
+	DigitalDigestManager(const self_type& other) :
+		n_entries_(other.n_entries_),
+		n_capacity_(other.n_capacity_),
+		__entries(new value_type[this->n_capacity_])
+	{
+		for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+	}
+
 	virtual ~DigitalDigestManager(){ delete [] this->__entries; }
 
 	class iterator{
@@ -324,6 +358,19 @@ public:
 		__entries_info(new value_type[this->n_entries_info_]),
 		__entries_format(new value_type[this->n_entries_format_])
 	{
+	}
+
+	VariantDigitalDigestManager(const self_type& other) :
+		parent_type(other),
+		n_entries_info_(other.n_entries_info_),
+		n_entries_format_(other.n_entries_format_),
+		n_capacity_info_(other.n_capacity_info_),
+		n_capacity_format(other.n_capacity_format),
+		__entries_info(new value_type[this->n_entries_info_]),
+		__entries_format(new value_type[this->n_entries_format_])
+	{
+		for(U32 i = 0; i < this->n_entries_info_; ++i) this->__entries_info[i] = other.__entries_info[i];
+		for(U32 i = 0; i < this->n_entries_format_; ++i) this->__entries_format[i] = other.__entries_format[i];
 	}
 
 	~VariantDigitalDigestManager(){

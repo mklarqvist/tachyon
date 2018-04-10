@@ -41,7 +41,6 @@ private:
 	typedef io::BasicBuffer              buffer_type;
 	typedef bcf::BCFEntry                bcf_type;
 	typedef core::MetaEntry              meta_type;
-	typedef containers::GenotypesSummary helper_type;
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;
 	typedef GenotypeEncoderStatistics    stats_type;

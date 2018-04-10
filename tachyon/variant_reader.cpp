@@ -11,8 +11,20 @@ VariantReader::VariantReader(const std::string& filename) :
 	filesize(0)
 {}
 
-// Dtor
 VariantReader::~VariantReader(){}
+
+VariantReader::VariantReader(const self_type& other) :
+	input_file(other.input_file),
+	filesize(other.filesize),
+	settings(other.settings),
+	header(other.header),
+	footer(other.footer),
+	index(other.index),
+	checksums(other.checksums),
+	keychain(other.keychain)
+{
+	this->stream.open(this->input_file, std::ios::in | std::ios::binary);
+}
 
 bool VariantReader::open(void){
 	if(this->input_file.size() == 0){

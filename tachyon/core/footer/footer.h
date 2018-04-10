@@ -32,6 +32,15 @@ public:
 		memcpy(&this->EOF_marker[0], &data[sizeof(U64)*3+sizeof(U16)], constants::TACHYON_FILE_EOF_LENGTH);
 	}
 
+	Footer(const self_type& other) :
+		offset_end_of_data(other.offset_end_of_data),
+		n_blocks(other.n_blocks),
+		n_variants(other.n_variants),
+		controller(other.controller)
+	{
+		memcpy(&this->EOF_marker[0], &other.EOF_marker[0], constants::TACHYON_FILE_EOF_LENGTH);
+	}
+
 	~Footer() = default;
 
 	inline const U64& getEODOffset(void) const{ return(this->offset_end_of_data); }
@@ -84,7 +93,5 @@ public:
 
 }
 }
-
-
 
 #endif /* CORE_FOOTER_FOOTER_H_ */

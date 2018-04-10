@@ -128,17 +128,24 @@ int stats(int argc, char** argv){
 		return 1;
 	}
 
-	tachyon::algorithm::Timer timer;
-	timer.Start();
+	tachyon::algorithm::Timer timer, timer2;
+	timer.Start(); timer2.Start();
 
+	reader.getSettings().loadContig_ = true;
+	reader.getSettings().loadPositons_ = true;
+	reader.getSettings().loadController_ = true;
+	reader.getSettings().loadSetMembership_ = true;
 	reader.getSettings().loadGenotypes(true);
 	reader.getSettings().loadPPA_ = true;
 	reader.getSettings().loadAlleles_ = true;
 
+	U32 block_counter = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
-		//reader.getTiTVRatios(std::cout, global_titv);
-		reader.getGenotypeSummary(std::cout);
+		reader.getTiTVRatios(std::cout, global_titv);
+		//reader.getGenotypeSummary(std::cout);
+		std::cerr << block_counter++ << "/" << reader.index.size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.index.size() << std::endl;
+		timer.Start();
 	}
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";

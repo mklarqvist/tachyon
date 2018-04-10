@@ -30,14 +30,14 @@
 namespace tachyon{
 
 class VariantReader{
-	typedef VariantReader                       self_type;
-	typedef containers::VariantBlock            block_entry_type;
-	typedef io::BasicBuffer                     buffer_type;
-	typedef core::VariantHeader                 header_type;
-	typedef core::Footer                        footer_type;
-	typedef algorithm::CompressionManager       codec_manager_type;
-	typedef core::DataBlockSettings             settings_type;
-	typedef index::Index                        index_type;
+	typedef VariantReader                          self_type;
+	typedef containers::VariantBlock               block_entry_type;
+	typedef io::BasicBuffer                        buffer_type;
+	typedef core::VariantHeader                    header_type;
+	typedef core::Footer                           footer_type;
+	typedef algorithm::CompressionManager          codec_manager_type;
+	typedef core::DataBlockSettings                settings_type;
+	typedef index::Index                           index_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
 	typedef encryption::Keychain                   keychain_type;
 	typedef core::MetaEntry                        meta_entry_type;
@@ -45,6 +45,7 @@ class VariantReader{
 public:
 	VariantReader();
 	VariantReader(const std::string& filename);
+	VariantReader(const self_type& other);
 	~VariantReader();
 
 	/**<
@@ -571,12 +572,8 @@ public:
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
-		//for(U32 i = 0; i < objects.size(); ++i)
-		//	std::cerr << objects[i] << std::endl;
-
 		for(U32 i = 0; i < objects.size(); ++i)
 			global[this->block.ppa_manager[i]] += objects[i];
-
 
 		return(gt.size());
 	}
@@ -584,14 +581,25 @@ public:
 	U64 getGenotypeSummary(std::ostream& stream){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer gt(this->block, meta);
+		containers::GenotypeSummary gtsum(10);
 
-		containers::GTSummary gtsum(10);
 		for(U32 i = 0; i < gt.size(); ++i){
-			//std::cerr << "here" << std::endl;
 			gt[i].getSummary(gtsum);
-			//gtsum.printDiploid(std::cerr);
-			//std::cerr << gtsum.alleleCount() << "/" << gtsum.genotypeCount() << std::endl;
-			//std::cerr << std::endl;
+			std::vector<double> hwe_p = gtsum.calculateHardyWeinberg(meta[i]);
+			std::vector<double> af = gtsum.calculateAlleleFrequency(meta[i]);
+			//if(hwe_p[0] < 1e-3){
+				utility::to_vcf_string(stream, meta[i], this->header);
+				stream << "AF=" << af[0];
+				for(U32 p = 1; p < af.size(); ++p){
+					stream << "," << af[p];
+				}
+				stream << ";HWE_P=" << hwe_p[0];
+
+				for(U32 p = 1; p < hwe_p.size(); ++p){
+					stream << "," << hwe_p[p];
+				}
+				stream.put('\n');
+			//}
 			gtsum.clear();
 		}
 		return(gt.size());
@@ -605,7 +613,7 @@ public:
 	U64 iterateMeta(std::ostream& stream = std::cout){
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer gt(this->block, meta);
-		containers::GTSummary gt_summary;
+		containers::GenotypeSummary gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue
 			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;

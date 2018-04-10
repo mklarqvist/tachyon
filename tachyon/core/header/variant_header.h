@@ -31,6 +31,7 @@ private:
 public:
 	explicit VariantHeader(void);
 	VariantHeader(const vcf_header_type& vcf_header);
+	VariantHeader(const self_type& other);
 	~VariantHeader();
 
 	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }

@@ -27,7 +27,7 @@ private:
     typedef MetaContainer              meta_container_type;
     typedef tachyon::core::MetaEntry   meta_type;
     typedef io::BasicBuffer            buffer_type;
-    typedef containers::GTSummary      gt_summary_type;
+    typedef containers::GenotypeSummary      gt_summary_type;
     typedef VariantBlock               block_type;
 
 public:

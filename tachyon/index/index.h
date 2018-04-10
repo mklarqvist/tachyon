@@ -19,6 +19,7 @@ private:
 
 public:
 	Index(){}
+	Index(const self_type& other) : index_(other.index_), index_meta_(other.index_meta_){}
 	~Index(){}
 
 	/**<

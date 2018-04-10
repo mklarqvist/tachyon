@@ -27,6 +27,21 @@ public:
 		minBin(std::numeric_limits<S32>::max()),
 		maxBin(0)
 	{}
+
+	IndexEntry(const self_type& other) :
+		blockID(other.blockID),
+		contigID(other.contigID),
+		n_variants(other.n_variants),
+		byte_offset(other.byte_offset),
+		byte_offset_end(other.byte_offset_end),
+		minPosition(other.minPosition),
+		maxPosition(other.maxPosition),
+		minBin(other.minBin),
+		maxBin(other.maxBin)
+	{
+
+	}
+
 	~IndexEntry(){}
 
 	void reset(void){

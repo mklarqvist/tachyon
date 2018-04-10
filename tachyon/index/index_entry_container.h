@@ -23,6 +23,14 @@ public:
 		__entries(new value_type[this->n_capacity])
 	{}
 
+    IndexEntryContainer(const self_type& other) :
+    	n_entries(other.n_entries),
+		n_capacity(other.n_capacity),
+		__entries(new value_type[this->n_capacity])
+    {
+    	for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+    }
+
 	~IndexEntryContainer(){
 		delete [] this->__entries;
 	}

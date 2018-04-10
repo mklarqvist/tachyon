@@ -21,7 +21,7 @@ protected:
     typedef core::MetaEntry               meta_type;
     typedef core::VariantController       hot_controller_type;
     typedef core::GTObject                gt_object;
-    typedef GTSummary                     gt_summary;
+    typedef GenotypeSummary                     gt_summary;
     typedef math::SquareMatrix<double>    square_matrix_type;
     typedef algorithm::PermutationManager permutation_type;
     typedef core::TsTvObject              ts_tv_object_type;

@@ -24,6 +24,19 @@ public:
 		minPosition(0),
 		maxPosition(0)
 	{}
+
+	IndexIndexEntry(const self_type& other) :
+		contigID(other.contigID),
+		n_blocks(other.n_blocks),
+		n_variants(other.n_variants),
+		byte_offset_begin(other.byte_offset_begin),
+		byte_offest_end(other.byte_offest_end),
+		minPosition(other.minPosition),
+		maxPosition(other.maxPosition)
+	{
+
+	}
+
 	~IndexIndexEntry(){}
 
 	void reset(void){

@@ -156,11 +156,9 @@ int view(int argc, char** argv){
 
 	reader.getSettings().loadAll(true);
 	if(dropFormat){
-		reader.getSettings().loadGenotypesAll_     = false;
-		reader.getSettings().loadGenotypesRLE_     = false;
-		reader.getSettings().loadGenotypesSimple_  = false;
-		reader.getSettings().loadGenotypesSupport_ = false;
-		reader.getSettings().loadFORMAT_           = false;
+		reader.getSettings().loadGenotypes(false);
+		reader.getSettings().loadPPA_    = false;
+		reader.getSettings().loadFORMAT_ = false;
 	}
 	//reader.getSettings().loadGenotypes(true);
 	//reader.getSettings().loadPPA_ = true;

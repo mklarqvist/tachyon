@@ -310,20 +310,20 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(std::vector<tachyon
 }
 
 template <class return_type>
-GTSummary& GenotypeContainerDiploidSimple<return_type>::updateSummary(gt_summary& gt_summary_object) const{
+GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::updateSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
 template <class return_type>
-GTSummary GenotypeContainerDiploidSimple<return_type>::getSummary(void) const{
+GenotypeSummary GenotypeContainerDiploidSimple<return_type>::getSummary(void) const{
 	gt_summary summary;
 	summary += *this;
 	return(summary);
 }
 
 template <class return_type>
-GTSummary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary& gt_summary_object) const{
+GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary& gt_summary_object) const{
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }

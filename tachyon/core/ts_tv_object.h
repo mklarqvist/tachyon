@@ -2,6 +2,7 @@
 #define CORE_TS_TV_OBJECT_H_
 
 #include "../support/type_definitions.h"
+#include "genotype_summary.h"
 #include "meta_entry.h"
 
 namespace tachyon{
@@ -11,6 +12,7 @@ struct TsTvObject{
 private:
 	typedef TsTvObject self_type;
 	typedef MetaEntry  meta_type;
+	typedef containers::GenotypeSummaryObject gtsum_type;
 
 public:
 	TsTvObject() :
@@ -49,6 +51,11 @@ public:
 		// Prevent division by 0
 		if(this->n_transversions == 0) return 0;
 		return((double)this->n_transitions / this->n_transversions);
+	}
+
+	// Todo:
+	void update(const gtsum_type& gtsum, const meta_type& meta){
+
 	}
 
 private:

@@ -166,6 +166,16 @@ public:
 		htable_identifiers_(new hash_table(500000))
     {}
 
+    Keychain(const self_type& other) :
+    	n_entries_(other.n_entries_),
+		n_capacity_(other.n_capacity_),
+		entries_(new value_type[this->n_capacity_]),
+		htable_identifiers_(new hash_table(500000))
+    {
+    	for(U32 i = 0; i < this->size(); ++i) this->entries_[i] = other.entries_[i];
+    	this->__buildHashTable();
+    }
+
     ~Keychain(){
     	delete [] this->entries_;
     	delete this->htable_identifiers_;
