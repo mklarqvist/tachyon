@@ -144,6 +144,25 @@ public:
     	return(stream);
     }
 
+    friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
+		if(entry.n_alleles){
+			if(entry.alleles[0].first == -2){
+				buffer += '.';
+				return(buffer);
+			}
+			if(entry.alleles[0].first == -1) buffer += '.';
+			else buffer.AddReadble(entry.alleles[0].first);
+
+			for(U32 i = 1; i < entry.n_alleles; ++i){
+				if(entry.alleles[i].first == -2) break;
+				buffer += (entry.alleles[i].second ? '|' : '/');
+				if(entry.alleles[i].first == -1) buffer += '.';
+				else buffer.AddReadble(entry.alleles[i].first);
+			}
+		}
+		return(buffer);
+	}
+
 public:
     BYTE      n_alleles;
     size_type n_objects;

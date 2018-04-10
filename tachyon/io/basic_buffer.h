@@ -137,48 +137,72 @@ public:
 	}
 
 	void AddReadble(const SBYTE& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const S16& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const S32& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const BYTE& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U16& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U32& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U64& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%llu", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const float& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%g", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const double& value){
+		if(this->n_chars + 100 >= this->width)
+			this->resize(this->width*2);
 		const int ret = sprintf(&this->buffer[this->n_chars], "%g", value);
 		this->n_chars += ret;
+	}
+
+	void AddReadble(const std::string& value){
+		if(this->n_chars + value.size() >= this->width)
+			this->resize(this->width*2);
+		*this += value;
 	}
 
 	inline self_type& operator+=(const self_type& other){

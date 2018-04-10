@@ -92,6 +92,7 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ return(stream << this->at(position)); }
+    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{ buffer += this->at(position); return(buffer); }
     const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:

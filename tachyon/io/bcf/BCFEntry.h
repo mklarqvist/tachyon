@@ -13,8 +13,8 @@ namespace bcf {
 // Hash-specific seed
 #define BCF_HASH_SEED 452930477
 
-const BYTE BCF_UNPACK_TOMAHAWK[3] = {2, 0, 1};
-#define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TOMAHAWK[((A) >> 1)]
+const BYTE BCF_UNPACK_TACHYON[3] = {2, 0, 1};
+#define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TACHYON[((A) >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
 
 /**<

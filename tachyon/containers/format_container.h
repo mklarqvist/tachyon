@@ -25,6 +25,7 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample_number) const =0;
+    virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const =0;
     virtual const bool emptyPosition(const U32& position) const =0;
     virtual const bool emptyPosition(const U32& position, const U64& sample) const =0;
 
@@ -117,12 +118,22 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{
+	inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{
 		utility::to_vcf_string(stream, this->at(position).at(sample));
 		return(stream);
 	}
-	const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
-	const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+
+	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{
+		const size_type n_entries = this->at(position).at(sample).size();
+		buffer.AddReadble(this->at(position).at(sample)[0]);
+		for(U32 i = 1; i < n_entries; ++i){
+			buffer += ',';
+			buffer.AddReadble(this->at(position).at(sample)[i]);
+		}
+		return(buffer);
+	}
+	inline const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+	inline const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<

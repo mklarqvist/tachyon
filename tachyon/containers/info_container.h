@@ -24,6 +24,7 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const =0;
+    virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const =0;
     virtual const bool emptyPosition(const U32& position) const =0;
 
 protected:
@@ -108,7 +109,16 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-    std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ utility::to_vcf_string(stream, this->at(position)); return(stream); }
+    inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ utility::to_vcf_string(stream, this->at(position)); return(stream); }
+    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{
+    	const size_type n_entries = this->at(position).size();
+    	buffer.AddReadble(this->at(position)[0]);
+		for(U32 i = 1; i < n_entries; ++i){
+			buffer += ',';
+			buffer.AddReadble(this->at(position)[i]);
+		}
+    	return(buffer);
+    }
     const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:

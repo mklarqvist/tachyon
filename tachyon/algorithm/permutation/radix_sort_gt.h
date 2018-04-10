@@ -3,6 +3,7 @@
 
 #include "../../io/bcf/BCFReader.h"
 #include "../../algorithm/permutation/permutation_manager.h"
+#include "../../core/genotype_summary.h"
 
 namespace tachyon {
 namespace algorithm {
@@ -36,6 +37,119 @@ public:
 
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
+
+	void test(const bcf_entry_type& entry, std::vector<containers::GenotypeSummary>& summaries){
+		if(entry.hasGenotypes == false) return;
+
+		if(entry.body->n_allele + 2 > summaries[0].n_alleles_){
+			std::cerr << "too many alleles: " << entry.body->n_allele + 2 << "/" << (int)summaries[0].n_alleles_ << std::endl;
+			return;
+		}
+
+		U32 internal_pos = entry.formatID[0].l_offset;
+		U32 k = 0;
+		for(U32 i = 0; i < 2*entry.body->n_sample; i += 2, ++k){
+			const BYTE& fmt_type_value1 = *reinterpret_cast<const BYTE* const>(&entry.data[internal_pos++]);
+			const BYTE& fmt_type_value2 = *reinterpret_cast<const BYTE* const>(&entry.data[internal_pos++]);
+			BYTE alleleA = fmt_type_value2 >> 1;
+			BYTE alleleB = fmt_type_value1 >> 1;
+			alleleA += (alleleA != 0 ? 1 : 0);
+			alleleB += (alleleB != 0 ? 1 : 0);
+
+			++summaries[k].matrix_[alleleA][alleleB];
+			//++this->vectorA_[alleleA];
+			//++this->vectorB_[alleleB];
+		}
+	}
+
+	void calculateDifference(const std::vector<containers::GenotypeSummary>& summaries){
+		float** rows = new float*[this->n_samples];
+		for(U32 i = 0; i < this->n_samples; ++i){
+			rows[i] = new float[this->n_samples];
+			memset(rows[i], 0, sizeof(float)*this->n_samples);
+		}
+
+		float mostSimilar = 0;
+		U32 mostSimilar_i = 0, mostSimilar_j = 0;
+		for(U32 i = 0; i < this->n_samples; ++i){ // individual i
+			for(U32 j = i + 1; j < this->n_samples; ++j){ // individual j
+				// compare summary statistics
+				U64 similar = 0; U64 dissimilar = 0;
+				for(U32 a = 0; a < 10; ++a){ // allele A
+					for(U32 b = 0; b < 10; ++b){ // allele B
+						if(summaries[i].matrix_[a][b] == summaries[j].matrix_[a][b]) ++similar;
+						else ++dissimilar;
+					}
+				}
+				rows[i][j] = (float)similar/(dissimilar+similar+1);
+				if(rows[i][j] > mostSimilar){
+					mostSimilar = rows[i][j];
+					mostSimilar_i = i;
+					mostSimilar_j = j;
+				}
+				//std::cerr << i << "/" << j << ":" << (float)similar/(dissimilar+similar+1) << std::endl;
+			}
+		}
+		std::cerr << "Most similar: " << mostSimilar << "@" << mostSimilar_i <<"/" << mostSimilar_j << std::endl;
+
+		bool* visited = new bool[this->n_samples];
+		memset(visited, 0, sizeof(bool)*this->n_samples);
+		U32* output = new U32[this->n_samples];
+
+		// First point
+		visited[mostSimilar_i] = true;
+		visited[mostSimilar_j] = true;
+		output[0] = mostSimilar_i;
+		output[1] = mostSimilar_j;
+
+		float nextSimilar = 0;
+		U32 nextSimilarPerson = 0;
+		for(U32 i = 2; i < this->n_samples; ++i){
+			// From row
+			for(U32 j = 0; j < i; ++j){
+				if(rows[j][i] > nextSimilar && visited[j] == false){
+					nextSimilar = rows[j][i];
+					nextSimilarPerson = j;
+				}
+			}
+
+			// From column
+			for(U32 j = i+1; j < this->n_samples; ++j){
+				if(rows[i][j] > nextSimilar && visited[j] == false){
+					nextSimilar = rows[i][j];
+					nextSimilarPerson = j;
+				}
+			}
+
+			output[i] = nextSimilarPerson;
+			visited[nextSimilarPerson] = true;
+			nextSimilar = 0;
+			nextSimilarPerson = 0;
+		}
+
+		for(U32 i = 0; i < this->n_samples; ++i){
+			assert(visited[i]);
+			(*this->manager)[i] = output[i];
+			//std::cerr << (*this->manager)[i] << std::endl;
+		}
+
+		// temp dump
+		/*
+		for(U32 i = 0; i < this->n_samples; ++i){
+			std::cout << rows[i][0];
+			for(U32 j = 1; j < this->n_samples; ++j){
+				std::cout << '\t' << rows[i][j];
+			}
+			std::cout << std::endl;
+		}
+		*/
+
+		for(U32 i = 0; i < this->n_samples; ++i) delete rows[i];
+		delete [] rows;
+		delete [] visited;
+		delete [] output;
+		//exit(1);
+	}
 
 public:
 	U64           n_samples; // total number of entries in file

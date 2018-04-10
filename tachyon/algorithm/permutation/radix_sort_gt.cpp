@@ -52,12 +52,32 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 	if(reader.size() == 0)
 		return false;
 
+	//std::vector<containers::GenotypeSummary> summary(this->n_samples);
+
 	// Cycle over BCF entries
 	for(U32 i = 0; i < reader.size(); ++i){
+		//summary += reader[i];
+		//this->test(reader[i], summary);
+
 		if(!this->update(reader[i]))
 			continue;
 
 	}
+
+	//this->calculateDifference(summary);
+
+	/*
+	for(U32 s = 0; s < this->n_samples; ++s){
+	for(U32 i = 0; i < 10; ++i){
+		for(U32 j = 0; j < 10; ++j){
+			std::cerr << summary[s].matrix_[i][j] << " ";
+		}
+		std::cerr << std::endl;
+	}
+	std::cerr << std::endl;
+	}
+	std::cerr << std::endl;
+	*/
 
 	// Return TRUE if the number of parsed
 	// entries is > 0

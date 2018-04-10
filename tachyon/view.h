@@ -171,7 +171,8 @@ int view(int argc, char** argv){
 	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
 	while(reader.nextBlock()){
 		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		n_variants += reader.outputVCF();
+		//n_variants += reader.outputVCF();
+		n_variants += reader.outputVCFBuffer();
 		//square_division += reader.calculateIBS(square, square_temporary);
 		++n_blocks;
 	}
