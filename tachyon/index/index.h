@@ -4,6 +4,7 @@
 
 #include "index_entry_container.h"
 #include "index_meta_container.h"
+#include "variant_index.h"
 
 namespace tachyon{
 namespace index{

@@ -11,25 +11,6 @@ namespace tachyon {
 
 #define IMPORT_ASSERT 1
 
-S32 reg2bin(S32 beg, S32 end){
-	//--end;
-	if (beg>>11 == end>>11) return ((1<<12)-1)/7 + (beg>>11);
-	if (beg>>14 == end>>14) return ((1<<15)-1)/7 + (beg>>14);
-	if (beg>>17 == end>>17) return ((1<<12)-1)/7 + (beg>>17);
-	if (beg>>20 == end>>20) return ((1<<9)-1)/7  + (beg>>20);
-	if (beg>>23 == end>>23) return ((1<<6)-1)/7  + (beg>>23);
-	if (beg>>26 == end>>26) return ((1<<3)-1)/7  + (beg>>26);
-	return 0;
-}
-
-S32 reg2bin2(S64 beg, S64 end, U64 ref_size, BYTE n_levels){
-	std::cerr << "input: " << beg << "-" << end << std::endl;
-	for(S32 i = n_levels; i >= 0; --i){
-		std::cerr << i << ": " << ref_size / pow(4,i) << " " << S64(beg/(ref_size / pow(4,i))) << " == " << S64(end/(ref_size / pow(4,i))) << std::endl;
-	}
-	return(0);
-}
-
 VariantImporter::VariantImporter(std::string inputFile,
 		                         std::string outputPrefix,
                                    const U32 checkpoint_n_snps,
@@ -85,6 +66,27 @@ bool VariantImporter::BuildBCF(void){
 	encryption::Keychain keychain;
 
 	this->header = &reader.header;
+
+	//
+	//index::VariantIndex idx;
+	for(U32 i = 0; i < this->header->contigs.size(); ++i){
+		const U64 contig_length = this->header->contigs[i].bp_length;
+		BYTE n_levels = 7;
+		U64 bins_lowest = pow(4,n_levels);
+		double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
+
+		if(used / bins_lowest < 2500){
+			for(S32 i = n_levels-1; i != 0; --i){
+				if(used/pow(4,i) > 2500){
+					n_levels = i;
+					break;
+				}
+			}
+		}
+		this->idx.add(contig_length, n_levels);
+		//std::cerr << "idx size:" << idx.size() << " at " << this->idx[i].size() << std::endl;
+		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+	}
 
 	// Spawn RLE controller and update PPA controller
 	this->encoder.setSamples(this->header->samples);
@@ -282,7 +284,7 @@ bool VariantImporter::BuildBCF(void){
 		previousLast     = reader.back().body->POS;
 		this->index_entry.reset();
 	}
-	//t Done importing
+	// Done importing
 	this->writer->stream->flush();
 
 	core::Footer footer;
@@ -293,64 +295,68 @@ bool VariantImporter::BuildBCF(void){
 
 
 	this->writer->writeIndex(); // Write index
+	const U64 tempPos = this->writer->stream->tellp();
+	*this->writer->stream << this->idx; // test
 	checksums.finalize();       // Finalize SHA-512 digests
 	*this->writer->stream << checksums;
 	*this->writer->stream << footer;
 	this->writer->stream->flush();
 
-		std::vector<std::string> usage_statistics_names = {
-			"FooterHeader","GT-PPA","MetaContig","MetaPositions","MetaRefAlt","MetaController","MetaQuality","MetaNames",
-			"MetaAlleles","MetaInfoMaps","MetaFormatMaps","MetaFilterMaps","GT-Support",
-			"GT-RLE8","GT-RLE16","GT-RLE32","GT-RLE64",
-			"GT-Simple8","GT-Simple16","GT-Simple32","GT-Simple64","INFO-ALL","FORMAT-ALL"};
+	std::vector<std::string> usage_statistics_names = {
+		"FooterHeader","GT-PPA","MetaContig","MetaPositions","MetaRefAlt","MetaController","MetaQuality","MetaNames",
+		"MetaAlleles","MetaInfoMaps","MetaFormatMaps","MetaFilterMaps","GT-Support",
+		"GT-RLE8","GT-RLE16","GT-RLE32","GT-RLE64",
+		"GT-Simple8","GT-Simple16","GT-Simple32","GT-Simple64","INFO-ALL","FORMAT-ALL"};
 
-		U64 total_uncompressed = 0; U64 total_compressed = 0;
-		for(U32 i = 0; i < usage_statistics_names.size(); ++i){
-			total_uncompressed += this->stats_basic[i].cost_uncompressed;
-			total_compressed   += this->stats_basic[i].cost_compressed;
+	U64 total_uncompressed = 0; U64 total_compressed = 0;
+	for(U32 i = 0; i < usage_statistics_names.size(); ++i){
+		total_uncompressed += this->stats_basic[i].cost_uncompressed;
+		total_compressed   += this->stats_basic[i].cost_compressed;
+	}
+
+	// If we are writing to a file
+	if(this->outputPrefix.size()){
+		std::ofstream writer_stats;
+		writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
+		writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
+
+		if(!SILENT)
+			std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
+
+		if(writer_stats.good()){
+			for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
+			for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
+			for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
+
+			writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
+			writer_stats << "YON\t" << this->writer->stream->tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer->stream->tellp() << std::endl;
+			writer_stats.close();
+		} else {
+			std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (wstats->basePath + wstats->baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;
 		}
+	}
 
-		if(this->outputPrefix.size()){
-			std::ofstream writer_stats;
-			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
-			writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
+	const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
+	const U64 n_total_gt = gt_stats.getTotal();
+	if(!SILENT){
+		std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
+		std::cout << "GT-RLE-64\t"  << gt_stats.rle_counts[3] << '\t' << (float)gt_stats.rle_counts[3]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-8\t"  << gt_stats.rle_simple_counts[0] << '\t' << (float)gt_stats.rle_simple_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-16\t" << gt_stats.rle_simple_counts[1] << '\t' << (float)gt_stats.rle_simple_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-32\t" << gt_stats.rle_simple_counts[2] << '\t' << (float)gt_stats.rle_simple_counts[2]/n_total_gt << std::endl;
+		std::cout << "GT-RLES-64\t" << gt_stats.rle_simple_counts[3] << '\t' << (float)gt_stats.rle_simple_counts[3]/n_total_gt << std::endl;
+		std::cout << "GT-DIPLOID-BCF-8\t"  << gt_stats.diploid_bcf_counts[0] << '\t' << (float)gt_stats.diploid_bcf_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-DIPLOID-BCF-16\t" << gt_stats.diploid_bcf_counts[1] << '\t' << (float)gt_stats.diploid_bcf_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-DIPLOID-BCF-32\t" << gt_stats.diploid_bcf_counts[2] << '\t' << (float)gt_stats.diploid_bcf_counts[2]/n_total_gt << std::endl;
+		std::cout << "GT-BCF-8\t"  << gt_stats.bcf_counts[0] << '\t' << (float)gt_stats.bcf_counts[0]/n_total_gt << std::endl;
+		std::cout << "GT-BCF-16\t" << gt_stats.bcf_counts[1] << '\t' << (float)gt_stats.bcf_counts[1]/n_total_gt << std::endl;
+		std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
+	}
 
-			if(!SILENT)
-				std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
-
-			if(writer_stats.good()){
-				for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
-				for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
-				for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
-
-				writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
-				writer_stats << "YON\t" << this->writer->stream->tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer->stream->tellp() << std::endl;
-				writer_stats.close();
-			} else {
-				std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (wstats->basePath + wstats->baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;
-			}
-
-			const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
-			const U64 n_total_gt = gt_stats.getTotal();
-			if(!SILENT){
-				std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
-				std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
-				std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
-				std::cout << "GT-RLE-64\t"  << gt_stats.rle_counts[3] << '\t' << (float)gt_stats.rle_counts[3]/n_total_gt << std::endl;
-				std::cout << "GT-RLES-8\t"  << gt_stats.rle_simple_counts[0] << '\t' << (float)gt_stats.rle_simple_counts[0]/n_total_gt << std::endl;
-				std::cout << "GT-RLES-16\t" << gt_stats.rle_simple_counts[1] << '\t' << (float)gt_stats.rle_simple_counts[1]/n_total_gt << std::endl;
-				std::cout << "GT-RLES-32\t" << gt_stats.rle_simple_counts[2] << '\t' << (float)gt_stats.rle_simple_counts[2]/n_total_gt << std::endl;
-				std::cout << "GT-RLES-64\t" << gt_stats.rle_simple_counts[3] << '\t' << (float)gt_stats.rle_simple_counts[3]/n_total_gt << std::endl;
-				std::cout << "GT-DIPLOID-BCF-8\t"  << gt_stats.diploid_bcf_counts[0] << '\t' << (float)gt_stats.diploid_bcf_counts[0]/n_total_gt << std::endl;
-				std::cout << "GT-DIPLOID-BCF-16\t" << gt_stats.diploid_bcf_counts[1] << '\t' << (float)gt_stats.diploid_bcf_counts[1]/n_total_gt << std::endl;
-				std::cout << "GT-DIPLOID-BCF-32\t" << gt_stats.diploid_bcf_counts[2] << '\t' << (float)gt_stats.diploid_bcf_counts[2]/n_total_gt << std::endl;
-				std::cout << "GT-BCF-8\t"  << gt_stats.bcf_counts[0] << '\t' << (float)gt_stats.bcf_counts[0]/n_total_gt << std::endl;
-				std::cout << "GT-BCF-16\t" << gt_stats.bcf_counts[1] << '\t' << (float)gt_stats.bcf_counts[1]/n_total_gt << std::endl;
-				std::cout << "GT-BCF-32\t" << gt_stats.bcf_counts[2] << '\t' << (float)gt_stats.bcf_counts[2]/n_total_gt << std::endl;
-				std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(this->writer->n_variants_written) << " variants in " << utility::ToPrettyString(this->writer->n_blocks_written) << " blocks in " << timer.ElapsedString() << " to " << utility::toPrettyDiskString((U64)this->writer->stream->tellp()) << std::endl;
-			}
-		}
-
+	// Write keychain
 	if(this->encrypt){
 		if(this->outputPrefix.size()){
 			std::ofstream writer_keychain;
@@ -377,11 +383,16 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	// temp
-	for(U32 i = 0; i < writer->index.size(); ++i){
-		std::cerr << i << "\t";
-		writer->index.getIndex().at(i).print(std::cerr);
-		std::cerr << std::endl;
+	// bins in contig
+	/*
+	for(U32 i = 0; i < this->idx.at(19).size(); ++i){
+		std::cout << i << '\t' << this->idx.at(19).at(i).blockID << '\t' << this->idx.at(19).at(i).n_variants_ << '\t';
+		// hits in bin
+		for(U32 j = 0; j < this->idx.at(19).at(i).size(); ++j)
+			std::cout << ',' << this->idx.at(19).at(i).at(j);
+		std::cout << std::endl;
 	}
+	*/
 
 	// All done
 	return(true);
@@ -418,29 +429,17 @@ bool VariantImporter::add(bcf_entry_type& entry){
 	// Has END position?
 	S32 index_bin = -1;
 
-	/*
-	// test
-	//std::cerr << this->header->contigs[entry.body->CHROM].bp_length << std::endl;
-	const U64 contig_length = this->header->contigs[entry.body->CHROM].bp_length;
-	const double raw_section_range = (double)contig_length/pow(4,8);
-	const U64 used_contig_length = ceil(ceil(raw_section_range) / ((double)contig_length/pow(4,8))*contig_length);
-	//std::cerr << raw_section_range << "->" << used_contig_length << " sub " << ((double)contig_length/pow(4,8))*contig_length << std::endl;
-
-	//for(S32 i = 7; i > 0; --i){
-	//	std::cerr << i << ' ' << pow(4, i) << '\t' << (float)used_contig_length/pow(4,i) << std::endl;
-	//}
-
-
 	if(this->info_end_key_ != -1){
 		// Linear search: this is not optimal but probably still faster
 		// than generating a new hash table for each record
 		for(U32 i = 0; i < entry.infoPointer; ++i){
 			if(entry.infoID[i].mapID == this->info_end_key_){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
-				std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
-				reg2bin2(entry.body->POS, end, used_contig_length, 7);
+				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
+				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
+				index_bin = this->idx[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
 
-				index_bin = reg2bin(entry.body->POS, end);
+				// index_bin= reg2bin(entry.body->POS, end);
 				break;
 			}
 		}
@@ -455,7 +454,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 				//std::cerr << "regex match: " << meta.alleles[i].toString() << std::endl;
 				if(meta.alleles[i].l_allele > longest) longest = meta.alleles[i].l_allele;
 			} else {
-				std::cerr << "POS=" << entry.body->POS+1 << " no regex match: " << meta.alleles[i].toString() << std::endl;
+				//std::cerr << "POS=" << entry.body->POS+1 << " no regex match: " << meta.alleles[i].toString() << std::endl;
 			}
 			// alt = <> or
 			//meta.alleles[i].l_allele
@@ -463,12 +462,18 @@ bool VariantImporter::add(bcf_entry_type& entry){
 
 		if(longest){
 			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
-			index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
-		} else // fallback if all others fail
-			index_bin = reg2bin(entry.body->POS, entry.body->POS);
+			//index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
+			index_bin = this->idx[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
+		} else { // fallback if all others fail
+			index_bin = this->idx[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
+			//index_bin = reg2bin(entry.body->POS, entry.body->POS);
+			//index_bin = 0;
+		}
 	}
-	*/
-	index_bin = reg2bin(entry.body->POS, entry.body->POS);
+
+	//if(index_bin <= 5) std::cerr << "POS=" << entry.body->POS << " to bin=" << index_bin << std::endl;
+
+	//index_bin = reg2bin(entry.body->POS, entry.body->POS);
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
 	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
 
