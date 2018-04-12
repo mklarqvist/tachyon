@@ -20,12 +20,32 @@ public:
 		n_variants_(0),
 		n_blocks_(0),
 		n_capacity_(100),
-		blocks_(new U32[this->capacity()])
+		blocks_(new value_type[this->capacity()])
 	{
 
 	}
 
-    VariantIndexBin(const self_type& other);
+    VariantIndexBin(const self_type& other) :
+    	blockID(other.blockID),
+		n_variants_(other.n_variants_),
+		n_blocks_(other.n_blocks_),
+		n_capacity_(other.n_capacity_),
+		blocks_(new value_type[this->capacity()])
+    {
+    	memcpy(this->blocks_, other.blocks_, sizeof(value_type)*other.n_blocks_);
+    }
+
+
+    VariantIndexBin& operator=(const self_type& other){
+    	delete [] this->blocks_;
+		this->blocks_     = new value_type[other.capacity()];
+    	this->blockID     = other.blockID;
+    	this->n_blocks_   = other.n_blocks_;
+    	this->n_capacity_ = other.n_capacity_;
+    	for(U32 i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
+
+    	return(*this);
+    }
 
     ~VariantIndexBin(){ delete [] this->blocks_; }
 
@@ -118,14 +138,25 @@ public:
 
 private:
     friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
-		// Do not write if this bin is empty
-    	if(bin.n_blocks_ == 0) return(stream);
-
-    	stream.write(reinterpret_cast<const char*>(&bin.blockID), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&bin.blockID),     sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_), sizeof(size_type));
+		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_),   sizeof(size_type));
 		for(U32 i = 0; i < bin.size(); ++i)
 			stream.write(reinterpret_cast<const char*>(&bin.blocks_[i]), sizeof(value_type));
+
+		return(stream);
+	}
+
+    friend std::istream& operator>>(std::istream& stream, self_type& bin){
+    	delete [] bin.blocks_;
+ 		stream.read(reinterpret_cast<char*>(&bin.blockID),     sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&bin.n_blocks_),   sizeof(size_type));
+		bin.n_capacity_ = bin.size() + 64;
+		bin.blocks_ = new value_type[bin.capacity()];
+
+		for(U32 i = 0; i < bin.size(); ++i)
+			stream.read(reinterpret_cast<char*>(&bin.blocks_[i]), sizeof(value_type));
 
 		return(stream);
 	}
@@ -174,8 +205,8 @@ public:
     	if(this->n_levels_ != 0){
     		this->calculateCumulativeSums_();
     		this->n_capacity_ = this->bins_cumsum_[this->n_levels_ - 1] + 64;
-    		this->n_bins_ = this->bins_cumsum_[this->n_levels_ - 1];
-    		this->bins_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+    		this->n_bins_     = this->bins_cumsum_[this->n_levels_ - 1];
+    		this->bins_       = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
     		for(U32 i = 0; i < this->size(); ++i){
     			new( &this->bins_[i] ) value_type(  );
     			this->bins_[i].blockID = i;
@@ -183,7 +214,20 @@ public:
     	}
     }
 
-    VariantIndexContig(const self_type& other);
+    VariantIndexContig(const self_type& other) :
+    	l_contig_(other.l_contig_),
+		l_contig_rounded_(other.l_contig_rounded_),
+		n_bins_(other.n_bins_),
+		n_capacity_(other.n_capacity_),
+		n_levels_(other.n_levels_),
+		bins_cumsum_(nullptr),
+		bins_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+    {
+    	this->calculateCumulativeSums_();
+    	for(U32 i = 0; i < this->size(); ++i)
+    		new( &this->bins_[i] ) value_type( other.bins_[i] );
+    }
+
 
     ~VariantIndexContig(){
     	for(std::size_t i = 0; i < this->size(); ++i)
@@ -285,13 +329,42 @@ private:
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const self_type& contig){
-    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_), sizeof(U64));
+    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_),         sizeof(U64));
     	stream.write(reinterpret_cast<const char*>(&contig.l_contig_rounded_), sizeof(U64));
-    	stream.write(reinterpret_cast<const char*>(&contig.n_bins_), sizeof(size_type));
-    	stream.write(reinterpret_cast<const char*>(&contig.n_levels_), sizeof(BYTE));
+    	stream.write(reinterpret_cast<const char*>(&contig.n_bins_),           sizeof(size_type));
+    	stream.write(reinterpret_cast<const char*>(&contig.n_levels_),         sizeof(BYTE));
     	for(U32 i = 0; i < contig.size(); ++i) stream << contig.bins_[i];
     	return(stream);
     }
+
+    friend std::istream& operator>>(std::istream& stream, self_type& contig){
+    	// Clear old data
+    	if(contig.size()){
+			for(std::size_t i = 0; i < contig.size(); ++i)
+				(contig.bins_ + i)->~VariantIndexBin();
+
+			::operator delete[](static_cast<void*>(contig.bins_));
+    	}
+		delete [] contig.bins_cumsum_;
+		contig.bins_cumsum_ = nullptr;
+
+		stream.read(reinterpret_cast<char*>(&contig.l_contig_),         sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&contig.l_contig_rounded_), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&contig.n_bins_),           sizeof(size_type));
+		stream.read(reinterpret_cast<char*>(&contig.n_levels_),         sizeof(BYTE));
+		contig.n_capacity_ = contig.n_bins_ + 64;
+
+		// Allocate new
+		contig.bins_ = static_cast<pointer>(::operator new[](contig.capacity()*sizeof(value_type)));
+		for(U32 i = 0; i < contig.size(); ++i){
+			new( &contig.bins_[i] ) value_type(  );
+			contig.bins_[i].blockID = i;
+		}
+		contig.calculateCumulativeSums_();
+
+		for(U32 i = 0; i < contig.size(); ++i) stream >> contig.bins_[i];
+		return(stream);
+	}
 
 private:
 	U64       l_contig_;         // as described in header
@@ -416,19 +489,42 @@ public:
 		pointer temp = this->contigs_;
 
 		this->n_capacity_ *= 2;
-		this->contigs_ = new value_type[this->capacity()];
+		this->contigs_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 
 		// Lift over values from old addresses
 		for(U32 i = 0; i < this->size(); ++i)
-			this->contigs_[i] = temp[i];
+			new( &this->contigs_[i] ) value_type( temp[i] );
 
-		delete [] temp;
+		// Clear temp
+		for(std::size_t i = 0; i < this->size(); ++i)
+			(temp + i)->~VariantIndexContig();
+
+		::operator delete[](static_cast<void*>(temp));
 	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& index){
 		stream.write(reinterpret_cast<const char*>(&index.n_contigs_), sizeof(size_type));
 		for(U32 i = 0; i < index.size(); ++i) stream << index.contigs_[i];
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, self_type& index){
+		// Clear old data
+		if(index.size()){
+			for(std::size_t i = 0; i < index.size(); ++i)
+				(index.contigs_ + i)->~VariantIndexContig();
+
+			::operator delete[](static_cast<void*>(index.contigs_));
+		}
+
+		stream.read(reinterpret_cast<char*>(&index.n_contigs_), sizeof(size_type));
+		index.n_capacity_ = index.n_contigs_ + 64;
+
+		// Allocate new data
+		index.contigs_ = static_cast<pointer>(::operator new[](index.capacity()*sizeof(value_type)));
+		for(U32 i = 0; i < index.size(); ++i) new( &index.contigs_[i] ) value_type( );
+		for(U32 i = 0; i < index.size(); ++i) stream >> index.contigs_[i]; // Read
 		return(stream);
 	}
 

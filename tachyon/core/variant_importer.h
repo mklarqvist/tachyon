@@ -73,7 +73,6 @@ private:
 	std::string outputPrefix;// output file prefix
 	writer_interface_type* writer;      // writer
 
-	index::VariantIndex idx;
 	index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter
 	header_type*      header;      // header

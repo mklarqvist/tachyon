@@ -67,7 +67,20 @@ bool VariantImporter::BuildBCF(void){
 
 	this->header = &reader.header;
 
-	//
+	// Spawn RLE controller and update PPA controller
+	this->encoder.setSamples(this->header->samples);
+	this->block.ppa_manager.setSamples(this->header->samples);
+	this->permutator.manager = &this->block.ppa_manager;
+	this->permutator.setSamples(this->header->samples);
+
+	if(this->outputPrefix.size() == 0) this->writer = new writer_stream_type;
+	else this->writer = new writer_file_type;
+
+	if(!this->writer->open(this->outputPrefix)){
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
+		return false;
+	}
+
 	//index::VariantIndex idx;
 	for(U32 i = 0; i < this->header->contigs.size(); ++i){
 		const U64 contig_length = this->header->contigs[i].bp_length;
@@ -83,23 +96,9 @@ bool VariantImporter::BuildBCF(void){
 				}
 			}
 		}
-		this->idx.add(contig_length, n_levels);
-		//std::cerr << "idx size:" << idx.size() << " at " << this->idx[i].size() << std::endl;
+		this->writer->index.variant_index_.add(contig_length, n_levels);
+		//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
 		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
-	}
-
-	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header->samples);
-	this->block.ppa_manager.setSamples(this->header->samples);
-	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header->samples);
-
-	if(this->outputPrefix.size() == 0) this->writer = new writer_stream_type;
-	else this->writer = new writer_file_type;
-
-	if(!this->writer->open(this->outputPrefix)){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
-		return false;
 	}
 
 	// Writer MAGIC
@@ -295,8 +294,6 @@ bool VariantImporter::BuildBCF(void){
 
 
 	this->writer->writeIndex(); // Write index
-	const U64 tempPos = this->writer->stream->tellp();
-	*this->writer->stream << this->idx; // test
 	checksums.finalize();       // Finalize SHA-512 digests
 	*this->writer->stream << checksums;
 	*this->writer->stream << footer;
@@ -385,11 +382,11 @@ bool VariantImporter::BuildBCF(void){
 	// temp
 	// bins in contig
 	/*
-	for(U32 i = 0; i < this->idx.at(19).size(); ++i){
-		std::cout << i << '\t' << this->idx.at(19).at(i).blockID << '\t' << this->idx.at(19).at(i).n_variants_ << '\t';
+	for(U32 i = 0; i < this->writer->index.variant_index_.at(19).size(); ++i){
+		std::cout << i << '\t' << this->writer->index.variant_index_.at(19).at(i).blockID << '\t' << this->writer->index.variant_index_.at(19).at(i).n_variants_ << '\t';
 		// hits in bin
-		for(U32 j = 0; j < this->idx.at(19).at(i).size(); ++j)
-			std::cout << ',' << this->idx.at(19).at(i).at(j);
+		for(U32 j = 0; j < this->writer->index.variant_index_.at(19).at(i).size(); ++j)
+			std::cout << ',' << this->writer->index.variant_index_.at(19).at(i).at(j);
 		std::cout << std::endl;
 	}
 	*/
@@ -437,7 +434,7 @@ bool VariantImporter::add(bcf_entry_type& entry){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
 				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
-				index_bin = this->idx[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
+				index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
 
 				// index_bin= reg2bin(entry.body->POS, end);
 				break;
@@ -463,9 +460,9 @@ bool VariantImporter::add(bcf_entry_type& entry){
 		if(longest){
 			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
-			index_bin = this->idx[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
+			index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
 		} else { // fallback if all others fail
-			index_bin = this->idx[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
+			index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS);
 			//index_bin = 0;
 		}

@@ -17,10 +17,11 @@ private:
 	typedef IndexMetaContainer    container_meta_type;
 	typedef IndexEntry            entry_type;
 	typedef IndexIndexEntry       entry_meta_type;
+	typedef VariantIndex          variant_index_type;
 
 public:
 	Index(){}
-	Index(const self_type& other) : index_(other.index_), index_meta_(other.index_meta_){}
+	Index(const self_type& other) : index_(other.index_), index_meta_(other.index_meta_), variant_index_(other.variant_index_){}
 	~Index(){}
 
 	/**<
@@ -70,18 +71,21 @@ private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.index_;
 		stream << entry.index_meta_;
+		stream << entry.variant_index_;
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+	friend std::istream& operator>>(std::istream& stream, self_type& entry){
 		stream >> entry.index_;
 		stream >> entry.index_meta_;
+		stream >> entry.variant_index_;
 		return(stream);
 	}
 
-private:
+public:
 	container_type      index_;
 	container_meta_type index_meta_;
+	variant_index_type  variant_index_;
 };
 
 }
