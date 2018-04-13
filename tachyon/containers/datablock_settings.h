@@ -64,7 +64,9 @@ struct DataBlockSettings{
 		loadPPA_(false),
 		loadINFO_(false),
 		loadFORMAT_(false),
-		constructOccTable_(false)
+		constructOccTable_(false),
+		customDelimiter_(false),
+		customDelimiterChar_('\t')
 	{}
 
 	self_type& loadAll(const bool set = true){
@@ -159,6 +161,12 @@ struct DataBlockSettings{
 		return(*this);
 	}
 
+	self_type& setCustomDelimiter(const char delimiter){
+		this->customDelimiter_ = true;
+		this->customDelimiterChar_ = delimiter;
+		return(*this);
+	}
+
 
 public:
 	bool loadContig_;
@@ -177,6 +185,8 @@ public:
 	bool loadINFO_;
 	bool loadFORMAT_;
 	bool constructOccTable_;
+	bool customDelimiter_;
+	char customDelimiterChar_;
 
 	std::vector<std::string> samples_list;
 	std::vector<std::string> info_list;

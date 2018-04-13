@@ -54,8 +54,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object);
 std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects);
 
-std::ostream& to_vcf_string(std::ostream& stream, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
+std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
 
 }
 }

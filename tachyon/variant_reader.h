@@ -363,7 +363,7 @@ public:
 		}
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(stream, meta[p], this->header);
+			utility::to_vcf_string(stream, this->settings.customDelimiterChar_, meta[p], this->header);
 
 			if(settings.loadSetMembership_){
 				if(this->block.footer.n_filter_streams){
@@ -551,11 +551,27 @@ public:
 
 		// Todo: Efficiency please!
 		std::vector< std::vector<U32> > local_match_keychain_info(this->block.footer.n_info_patterns);
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
-			for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+
+		// If loading all INFO values then return them in the ORIGINAL order
+		if(this->settings.loadINFO_){
+			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
 				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-						local_match_keychain_info[i].push_back(k);
+					for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+							local_match_keychain_info[i].push_back(k);
+						}
+					}
+				}
+			}
+		}
+		// If loading custom INFO fields then return them in the REQUESTED order
+		else {
+			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
+				for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+					for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+							local_match_keychain_info[i].push_back(k);
+						}
 					}
 				}
 			}
@@ -565,7 +581,7 @@ public:
 		std::vector<core::GTObject> objects_true(this->header.getSampleNumber());
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(outputBuffer, meta[p], this->header);
+			utility::to_vcf_string(outputBuffer, this->settings.customDelimiterChar_, meta[p], this->header);
 
 			if(settings.loadSetMembership_){
 				if(this->block.footer.n_filter_streams){
@@ -586,38 +602,19 @@ public:
 			} else
 				outputBuffer += '.';
 
-			if(settings.loadINFO_ || settings.loadFORMAT_ || this->block.n_info_loaded) outputBuffer += '\t';
+			if(settings.loadINFO_ || settings.loadFORMAT_ || this->block.n_info_loaded) outputBuffer += this->settings.customDelimiterChar_;
 			else {
 				outputBuffer += '\n';
 				continue;
 			}
 
-			if(settings.loadINFO_ || this->block.n_info_loaded){
-				const std::vector<U32>& targetKeys = local_match_keychain_info[meta[p].info_pattern_id];
-				if(this->block.n_info_loaded && targetKeys.size()){
+			// Print normal or with a custom delimiter
+			if(this->settings.customDelimiter_)
+				this->printINFODelimited(outputBuffer, this->settings.customDelimiterChar_, meta[p], p, its, global_fields, local_match_keychain_info);
+			else
+				this->printINFO(outputBuffer, meta[p], p, its, global_fields, local_match_keychain_info);
 
-					// First
-					outputBuffer += global_fields[targetKeys[0]];
-					if(its[targetKeys[0]]->emptyPosition(p) == false){
-						outputBuffer += '=';
-						its[targetKeys[0]]->to_vcf_string(outputBuffer, p);
-					}
-
-					for(U32 i = 1; i < targetKeys.size(); ++i){
-						outputBuffer += ";";
-						outputBuffer += global_fields[targetKeys[i]];
-						if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
-							continue;
-						}
-						if(its[targetKeys[i]]->emptyPosition(p)) continue;
-						outputBuffer += '=';
-						its[targetKeys[i]]->to_vcf_string(outputBuffer, p);
-					}
-				} else
-					outputBuffer += '.';
-			}
-
-			if(settings.loadFORMAT_ && this->block.n_format_loaded) outputBuffer += '\t';
+			if(settings.loadFORMAT_ && this->block.n_format_loaded) outputBuffer += this->settings.customDelimiterChar_;
 			else outputBuffer += '\n';
 
 			// Add FORMAT data
@@ -649,7 +646,7 @@ public:
 		return(meta.size());
 	}
 
-	void printFORMAT(buffer_type& buffer, const meta_entry_type& meta_entry, const U32& individual, containers::FormatContainerInterface** fits, containers::GenotypeContainer* gt, std::vector<core::GTObject>& objects_true){
+	void printFORMAT(buffer_type& buffer, const meta_entry_type& meta_entry, const U32& individual, containers::FormatContainerInterface** fits, containers::GenotypeContainer* gt, std::vector<core::GTObject>& objects_true) const{
 		if(settings.loadFORMAT_ && this->block.n_format_loaded){
 			if(this->block.n_format_loaded){
 
@@ -693,16 +690,16 @@ public:
 		}
 	}
 
-	void printINFO(buffer_type& outputBuffer, const meta_entry_type& meta, const U32& individual, containers::InfoContainerInterface** its){
+	void printINFO(buffer_type& outputBuffer, const meta_entry_type& meta_entry, const U32& site, containers::InfoContainerInterface** its, const std::vector<std::string>& global_fields, const std::vector< std::vector<U32> >& local_match_keychain_info) const{
 		if(settings.loadINFO_ || this->block.n_info_loaded){
-			const std::vector<U32>& targetKeys = local_match_keychain_info[meta[individual].info_pattern_id];
+			const std::vector<U32>& targetKeys = local_match_keychain_info[meta_entry.info_pattern_id];
 			if(this->block.n_info_loaded && targetKeys.size()){
 
 				// First
 				outputBuffer += global_fields[targetKeys[0]];
-				if(its[targetKeys[0]]->emptyPosition(individual) == false){
+				if(its[targetKeys[0]]->emptyPosition(site) == false){
 					outputBuffer += '=';
-					its[targetKeys[0]]->to_vcf_string(outputBuffer, individual);
+					its[targetKeys[0]]->to_vcf_string(outputBuffer, site);
 				}
 
 				for(U32 i = 1; i < targetKeys.size(); ++i){
@@ -711,14 +708,43 @@ public:
 					if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
 						continue;
 					}
-					if(its[targetKeys[i]]->emptyPosition(individual)) continue;
+					if(its[targetKeys[i]]->emptyPosition(site)) continue;
 					outputBuffer += '=';
-					its[targetKeys[i]]->to_vcf_string(outputBuffer, individual);
+					its[targetKeys[i]]->to_vcf_string(outputBuffer, site);
 				}
 			} else
 				outputBuffer += '.';
 		}
 	}
+
+	void printINFODelimited(buffer_type& outputBuffer, const char& delimiter, const meta_entry_type& meta_entry, const U32& site, containers::InfoContainerInterface** its, const std::vector<std::string>& global_fields, const std::vector< std::vector<U32> >& local_match_keychain_info) const{
+			if(settings.loadINFO_ || this->block.n_info_loaded){
+				const std::vector<U32>& targetKeys = local_match_keychain_info[meta_entry.info_pattern_id];
+				if(this->block.n_info_loaded && targetKeys.size()){
+
+					// First
+					//outputBuffer += global_fields[targetKeys[0]];
+					if(its[targetKeys[0]]->emptyPosition(site) == false){
+						//outputBuffer += '=';
+						its[targetKeys[0]]->to_vcf_string(outputBuffer, site);
+					}
+
+					for(U32 i = 1; i < targetKeys.size(); ++i){
+						//outputBuffer += ";";
+						outputBuffer += delimiter;
+						//outputBuffer += global_fields[targetKeys[i]];
+						if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
+							continue;
+						}
+						if(its[targetKeys[i]]->emptyPosition(site)) continue;
+						//outputBuffer += '=';
+						its[targetKeys[i]]->to_vcf_string(outputBuffer, site);
+					}
+				} else {
+					//outputBuffer += '.';
+				}
+			}
+		}
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
@@ -729,7 +755,7 @@ public:
 		buffer_type temp(meta.size() * 1000);
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(temp, meta[p], this->header);
+			utility::to_vcf_string(temp, this->settings.customDelimiterChar_, meta[p], this->header);
 			//utility::to_vcf_string(std::cout, meta[p], this->header);
 			temp += '\n';
 			//if(temp.size() > 65536){
@@ -837,7 +863,7 @@ public:
 			std::vector<double> hwe_p = gtsum.calculateHardyWeinberg(meta[i]);
 			std::vector<double> af = gtsum.calculateAlleleFrequency(meta[i]);
 			//if(hwe_p[0] < 1e-3){
-				utility::to_vcf_string(stream, meta[i], this->header);
+				utility::to_vcf_string(stream, this->settings.customDelimiterChar_, meta[i], this->header);
 				stream << "AF=" << af[0];
 				for(U32 p = 1; p < af.size(); ++p){
 					stream << "," << af[p];

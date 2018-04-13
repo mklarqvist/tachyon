@@ -51,6 +51,7 @@ int view(int argc, char** argv){
 		{"output",		optional_argument, 0,  'o' },
 		{"keychain",	optional_argument, 0,  'k' },
 		{"filter",	optional_argument, 0,  'f' },
+		{"delimiter",	optional_argument, 0,  'd' },
 		{"noHeader",	no_argument, 0,  'H' },
 		{"onlyHeader",	no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
@@ -66,8 +67,12 @@ int view(int argc, char** argv){
 	bool dropFormat = false;
 	bool headerOnly = false;
 	bool showHeader = true;
+	bool customDelimiter = false;
+	char customDelimiterChar = 0;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:GshH?", long_options, &option_index)) != -1){
+	std::string temp;
+
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:GshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -89,6 +94,23 @@ int view(int argc, char** argv){
 			break;
 		case 's':
 			SILENT = 1;
+			break;
+		case 'd':
+			customDelimiter = true;
+			temp = std::string(optarg);
+			if(temp.size() != 1 && !(temp[0] == '\\' && temp.size() == 2)){
+				std::cerr << "not a legal delimiter" << std::endl;
+				return(1);
+			}
+			if(temp.size() == 1) customDelimiterChar = temp[0];
+			else {
+				if(temp[1] == 't') customDelimiterChar = '\t';
+				else if(temp[1] == 'n') customDelimiterChar = '\n';
+				else {
+					std::cerr << "not a legal delimiter" << std::endl;
+					return(1);
+				}
+			}
 			break;
 		case 'h':
 			headerOnly = true;
@@ -165,6 +187,7 @@ int view(int argc, char** argv){
 		 * 2) POS
 		 * 3) ....
 		 */
+		bool allGood = true;
 		reader.getSettings().loadAllINFO(false);
 		std::regex field_identifier_regex("^[A-Z_]{1,}$");
 		std::vector<std::string> INFO_FIELDS;
@@ -174,16 +197,20 @@ int view(int argc, char** argv){
 				for(U32 j = 0; j < ind.size(); ++j){
 					std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 					if(std::regex_match(ind[j], field_identifier_regex)){
-						std::cerr << ind[j] << " GOOD: " << std::regex_match(ind[j], field_identifier_regex) << std::endl;
 						INFO_FIELDS.push_back(ind[j]);
 						reader.getSettings().loadINFO(ind[j]);
 					} else {
-						std::cerr << "Failed: " << ind[j] << " in string " << load_strings[i] << std::endl;
+						std::cerr << tachyon::utility::timestamp("ERROR") << "Failed: " << ind[j] << " in string " << load_strings[i] << std::endl;
+						allGood = false;
 					}
 				}
 			} else {
-				std::cerr << "Unknown pattern: " << load_strings[i] << std::endl;
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Unknown pattern: " << load_strings[i] << std::endl;
 			}
+		}
+
+		if(allGood == false){
+			return(1);
 		}
 	}
 
@@ -191,6 +218,10 @@ int view(int argc, char** argv){
 		reader.getSettings().loadGenotypes(false);
 		reader.getSettings().loadPPA_    = false;
 		reader.getSettings().loadFORMAT_ = false;
+	}
+
+	if(customDelimiter){
+		reader.getSettings().setCustomDelimiter(customDelimiterChar);
 	}
 
 	U64 n_variants = 0;

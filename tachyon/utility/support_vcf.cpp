@@ -220,47 +220,54 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
 	return(stream);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
+std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
 	stream.write(&header.getContig(meta_entry.contigID).name[0], header.getContig(meta_entry.contigID).name.size()) << '\t';
-	stream << meta_entry.position + 1 << '\t';
+	stream << meta_entry.position + 1 << delimiter;
 
 	if(meta_entry.name.size() == 0) stream.put('.');
 	else stream.write(&meta_entry.name[0], meta_entry.name.size());
-	stream.put('\t');
+	stream.put(delimiter);
 	if(meta_entry.n_alleles){
 		stream.write(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
 		//stream << meta_entry.alleles[0].l_allele;
-		stream.put('\t');
+		stream.put(delimiter);
 		stream.write(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
 		for(U32 i = 2; i < meta_entry.n_alleles; ++i){
 			stream.put(',');
 			stream.write(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
-	} else stream << ".\t.\t";
+	} else {
+		//stream << ".\t.\t";
+		stream << '.' << delimiter << '.' << delimiter;
+	}
 
-	if(std::isnan(meta_entry.quality)) stream << "\t.\t";
+	if(std::isnan(meta_entry.quality)){
+		stream << delimiter << '.' << delimiter;
+		//stream << "\t.\t";
+	}
 	else {
-		stream << '\t' << meta_entry.quality << '\t';
+		stream << delimiter << meta_entry.quality << delimiter;
+		//stream << '\t' << meta_entry.quality << '\t';
 	}
 	return(stream);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
 	buffer += header.getContig(meta_entry.contigID).name;
-	buffer += '\t';
+	buffer += delimiter;
 	//stream.write(&header.getContig(meta_entry.contigID).name[0], header.getContig(meta_entry.contigID).name.size()) << '\t';
 	buffer.AddReadble(meta_entry.position + 1);
-	buffer += '\t';
+	buffer += delimiter;
 	//stream << meta_entry.position + 1 << '\t';
 
 	if(meta_entry.name.size() == 0) buffer += '.';
 	else buffer += meta_entry.name;
-	buffer += '\t';
+	buffer += delimiter;
 	if(meta_entry.n_alleles){
 		//stream.write(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
 		buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
 		//stream << meta_entry.alleles[0].l_allele;
-		buffer += '\t';
+		buffer += delimiter;
 		buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
 		//stream.write(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
 		for(U32 i = 2; i < meta_entry.n_alleles; ++i){
@@ -268,13 +275,24 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const core::MetaEntry& m
 			buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 			//stream.write(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
-	} else buffer += ".\t.\t";
+	} else {
+		buffer += '.';
+		buffer += delimiter;
+		buffer += '.';
+		buffer += delimiter;
+		//buffer += ".\t.\t";
+	}
 
-	if(std::isnan(meta_entry.quality)) buffer += "\t.\t";
+	if(std::isnan(meta_entry.quality)){
+		buffer += delimiter;
+		buffer += '.';
+		buffer += delimiter;
+		//buffer += "\t.\t";
+	}
 	else {
-		buffer += '\t';
+		buffer += delimiter;
 		buffer.AddReadble(meta_entry.quality);
-		buffer += '\t';
+		buffer += delimiter;
 	}
 	return(buffer);
 }
