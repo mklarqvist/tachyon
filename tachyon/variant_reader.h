@@ -255,7 +255,8 @@ public:
 	bool seek_to_block(const U32& blockID);
 
 	bool parseSettings(void){
-		this->settings.info_ID_list.clear();
+		settings.load_info_ID_loaded.clear();
+		settings.load_format_ID_loaded.clear();
 
 		// Map INFO
 		U32 info_matches = 0;
@@ -273,13 +274,13 @@ public:
 															i,              // local index id
 															&this->block.footer.info_offsets[i]) // offset
 															);
-						std::cerr << "match @ local: " << i << std::endl;
+						//std::cerr << "match @ local: " << i << std::endl;
 						break;
 					}
 				}
 
 				if(local_key == -1){
-					std::cerr << "could not find local" << std::endl;
+					//std::cerr << "could not find local" << std::endl;
 				}
 			}
 		}
@@ -311,17 +312,17 @@ public:
 				//std::cerr << i << "/" << this->block.footer.n_format_streams << ": " << global_key << "@" << this->header.format_fields[this->block.footer.format_offsets[i].data_header.global_key].ID << '\t' << this->header.format_fields[global_key].getType() << std::endl;
 				std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
 
-				if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 					fits[i] = new containers::FormatContainer<S32>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
 					//global_fields.push_back(this->header.format_fields[global_key].ID);
 					//std::cerr << "s32: " << fits[i]->size() << std::endl;
-				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-						  this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
+						  this->header.format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
 					fits[i] = new containers::FormatContainer<std::string>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
 					//global_fields.push_back(this->header.format_fields[global_key].ID);
 					//std::cerr << "string: " << fits[i]->size() << std::endl;
 
-				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
 					fits[i] = new containers::FormatContainer<float>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
 					//global_fields.push_back(this->header.format_fields[global_key].ID);
 					//std::cerr << "float: " << fits[i]->size() << std::endl;
@@ -344,14 +345,14 @@ public:
 				//std::cerr << i << "/" << this->block.n_info_loaded << ": " << global_key << "@" << this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID << std::endl;
 				std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
 
-				if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 					its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-						  this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
+						  this->header.info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
 					its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
 					its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
 				} else {
@@ -504,28 +505,19 @@ public:
 
 		if(this->block.n_format_loaded){
 			for(U32 i = 0; i < this->block.n_format_loaded; ++i){
-				//std::cerr << this->block.format_containers[i].buffer_data_uncompressed.size() << std::endl;
 				const U32 global_key = settings.load_format_ID_loaded[i].offset->data_header.global_key;
-				//std::cerr << i << "/" << this->block.footer.n_format_streams << ": " << global_key << "@" << this->header.format_fields[this->block.footer.format_offsets[i].data_header.global_key].ID << '\t' << this->header.format_fields[global_key].getType() << std::endl;
 				std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
 
-				if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 					fits[i] = new containers::FormatContainer<S32>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
-					//global_fields.push_back(this->header.format_fields[global_key].ID);
-					//std::cerr << "s32: " << fits[i]->size() << std::endl;
-				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-						  this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
+						  this->header.format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
 					fits[i] = new containers::FormatContainer<std::string>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
-					//global_fields.push_back(this->header.format_fields[global_key].ID);
-					//std::cerr << "string: " << fits[i]->size() << std::endl;
 
-				} else if(this->header.format_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
 					fits[i] = new containers::FormatContainer<float>(this->block.format_containers[i], meta, matches, this->header.getSampleNumber());
-					//global_fields.push_back(this->header.format_fields[global_key].ID);
-					//std::cerr << "float: " << fits[i]->size() << std::endl;
 				} else {
 					fits[i] = new containers::FormatContainer<U32>;
-					//global_fields.push_back(this->header.format_fields[global_key].ID);
 				}
 			}
 		}
@@ -538,23 +530,33 @@ public:
 		if(this->block.n_info_loaded){
 			for(U32 i = 0; i < this->block.n_info_loaded; ++i){
 				const U32 global_key = settings.load_info_ID_loaded[i].offset->data_header.global_key;
-
-				//std::cerr << i << "/" << this->block.n_info_loaded << ": " << global_key << "@" << this->header.info_fields[this->block.footer.info_offsets[i].data_header.global_key].ID << std::endl;
 				std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
 
-				if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_INTEGER){
+				if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 					its[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_STRING ||
-						  this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_CHARACTER){
+				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
+						  this->header.info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
 					its[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == core::TACHYON_VARIANT_HEADER_FIELD_TYPE::YON_VCF_HEADER_FLOAT){
+				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
 					its[i] = new containers::InfoContainer<float>(this->block.info_containers[i], meta, matches);
 					global_fields.push_back(this->header.info_fields[global_key].ID);
 				} else {
 					its[i] = new containers::InfoContainer<U32>();
 					global_fields.push_back(this->header.info_fields[global_key].ID);
+				}
+			}
+		}
+
+		// Todo: Efficiency please!
+		std::vector< std::vector<U32> > local_match_keychain_info(this->block.footer.n_info_patterns);
+		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
+			for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+						local_match_keychain_info[i].push_back(k);
+					}
 				}
 			}
 		}
@@ -590,33 +592,26 @@ public:
 				continue;
 			}
 
-			// At this point we need to ascertain that the target set membership identifier
-			// contain a loaded INFO value
 			if(settings.loadINFO_ || this->block.n_info_loaded){
-				if(this->block.n_info_loaded){
-					const U32& n_keys = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].n_keys;
-					const U32* keys   = this->block.footer.info_bit_vectors[meta[p].info_pattern_id].local_keys;
-
-					//for(U32 z = 0; z < this->settings.load_info_ID_loaded.size(); ++z){
-					//	std::cerr << "Key: " << this->settings.load_info_ID_loaded[z].offset->data_header.global_key << " of " << this->settings.load_info_ID_loaded.size() << " " << this->block.footer.info_bit_vectors[meta[p].info_pattern_id][settings.load_info_ID_loaded[z].offset->data_header.global_key] << std::endl;
-					//}
+				const std::vector<U32>& targetKeys = local_match_keychain_info[meta[p].info_pattern_id];
+				if(this->block.n_info_loaded && targetKeys.size()){
 
 					// First
-					outputBuffer += global_fields[keys[0]];
-					if(its[keys[0]]->emptyPosition(p) == false){;
+					outputBuffer += global_fields[targetKeys[0]];
+					if(its[targetKeys[0]]->emptyPosition(p) == false){
 						outputBuffer += '=';
-						its[keys[0]]->to_vcf_string(outputBuffer, p);
+						its[targetKeys[0]]->to_vcf_string(outputBuffer, p);
 					}
 
-					for(U32 i = 1; i < n_keys; ++i){
+					for(U32 i = 1; i < targetKeys.size(); ++i){
 						outputBuffer += ";";
-						outputBuffer += global_fields[keys[i]];
-						if(this->header.info_fields[this->block.footer.info_offsets[keys[i]].data_header.global_key].primitive_type == 2){
+						outputBuffer += global_fields[targetKeys[i]];
+						if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
 							continue;
 						}
-						if(its[keys[i]]->emptyPosition(p)) continue;
+						if(its[targetKeys[i]]->emptyPosition(p)) continue;
 						outputBuffer += '=';
-						its[keys[i]]->to_vcf_string(outputBuffer, p);
+						its[targetKeys[i]]->to_vcf_string(outputBuffer, p);
 					}
 				} else
 					outputBuffer += '.';
@@ -695,6 +690,33 @@ public:
 				} else // have no keys
 					buffer += ".\t";
 			}
+		}
+	}
+
+	void printINFO(buffer_type& outputBuffer, const meta_entry_type& meta, const U32& individual, containers::InfoContainerInterface** its){
+		if(settings.loadINFO_ || this->block.n_info_loaded){
+			const std::vector<U32>& targetKeys = local_match_keychain_info[meta[individual].info_pattern_id];
+			if(this->block.n_info_loaded && targetKeys.size()){
+
+				// First
+				outputBuffer += global_fields[targetKeys[0]];
+				if(its[targetKeys[0]]->emptyPosition(individual) == false){
+					outputBuffer += '=';
+					its[targetKeys[0]]->to_vcf_string(outputBuffer, individual);
+				}
+
+				for(U32 i = 1; i < targetKeys.size(); ++i){
+					outputBuffer += ";";
+					outputBuffer += global_fields[targetKeys[i]];
+					if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
+						continue;
+					}
+					if(its[targetKeys[i]]->emptyPosition(individual)) continue;
+					outputBuffer += '=';
+					its[targetKeys[i]]->to_vcf_string(outputBuffer, individual);
+				}
+			} else
+				outputBuffer += '.';
 		}
 	}
 

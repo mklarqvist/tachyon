@@ -118,8 +118,8 @@ struct VariantController{
         simple_snv:          1, // is simple SNV->SNV
 		diploid:             1, // is diploid
 		mixed_ploidy:        1, // has mixed ploidy (e.g. X chromosome or CNV)
-		alleles_packed:      1,
-		all_snv:             1; // reserved
+		alleles_packed:      1, // are the alleles packed in a BYTE
+		all_snv:             1; // are all ref/alt simple SNVs
 };
 
 }

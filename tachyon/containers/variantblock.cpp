@@ -179,8 +179,8 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 }
 
 bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
-	settings.load_info_ID_loaded.clear();
-	settings.load_format_ID_loaded.clear();
+	//settings.load_info_ID_loaded.clear();
+	//settings.load_format_ID_loaded.clear();
 
 	if(settings.loadPPA_){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
@@ -250,7 +250,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	// If we have supplied a list of identifiers
 	else if(settings.load_info_ID_loaded.size()){
 		// Ascertain that random access is linearly forward
-		std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
+		//std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
 
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(this->start_compressed_data_ + settings.load_info_ID_loaded[i].offset->data_header.offset);

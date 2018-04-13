@@ -3,19 +3,12 @@
 
 #include <fstream>
 
+#include "../../support/enums.h"
 #include "../../io/basic_buffer.h"
 #include "../../io/vcf/VCFHeaderLine.h"
 
 namespace tachyon{
 namespace core{
-
-enum TACHYON_VARIANT_HEADER_FIELD_TYPE{
-	YON_VCF_HEADER_INTEGER,
-	YON_VCF_HEADER_FLOAT,
-	YON_VCF_HEADER_FLAG,
-	YON_VCF_HEADER_CHARACTER,
-	YON_VCF_HEADER_STRING
-};
 
 
 /**<

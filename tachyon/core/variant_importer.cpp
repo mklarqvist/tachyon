@@ -321,8 +321,8 @@ bool VariantImporter::BuildBCF(void){
 			std::cerr << utility::timestamp("LOG") << "Writing statistics to: " << (wstats->basePath + wstats->baseName) << "_yon_stats.txt" << std::endl;
 
 		if(writer_stats.good()){
-			for(U32 i = 0; i < usage_statistics_names.size(); ++i) writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
-			for(U32 i = 0; i < header.header_magic.n_info_values; ++i) writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
+			for(U32 i = 0; i < usage_statistics_names.size(); ++i)       writer_stats << usage_statistics_names[i] << '\t' << this->stats_basic[i] << std::endl;
+			for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
 			for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
 
 			writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;

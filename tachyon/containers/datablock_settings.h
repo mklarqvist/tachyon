@@ -102,9 +102,9 @@ struct DataBlockSettings{
 	}
 
 	self_type& loadAllINFO(const bool set = true){
-		loadContig_ = set;
-		loadPositons_ = set;
-		loadSetMembership_ = set;
+		//loadContig_ = set;
+		//loadPositons_ = set;
+		//loadSetMembership_ = set;
 		loadINFO_ = set;
 		return(*this);
 	}

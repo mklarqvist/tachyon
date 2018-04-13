@@ -23,6 +23,8 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
+#include <regex>
+
 #include "utility.h"
 #include "variant_reader.h"
 
@@ -48,6 +50,7 @@ int view(int argc, char** argv){
 		{"input",		required_argument, 0,  'i' },
 		{"output",		optional_argument, 0,  'o' },
 		{"keychain",	optional_argument, 0,  'k' },
+		{"filter",	optional_argument, 0,  'f' },
 		{"noHeader",	no_argument, 0,  'H' },
 		{"onlyHeader",	no_argument, 0,  'h' },
 		{"dropFormat",	no_argument, 0,  'G' },
@@ -58,12 +61,13 @@ int view(int argc, char** argv){
 	std::string input;
 	std::string output;
 	std::string keychain_file;
+	std::vector<std::string> load_strings;
 	SILENT = 0;
 	bool dropFormat = false;
 	bool headerOnly = false;
 	bool showHeader = true;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:GshH?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:GshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -76,6 +80,9 @@ int view(int argc, char** argv){
 			break;
 		case 'k':
 			keychain_file = std::string(optarg);
+			break;
+		case 'f':
+			load_strings.push_back(std::string(optarg));
 			break;
 		case 'G':
 			dropFormat = true;
@@ -130,7 +137,7 @@ int view(int argc, char** argv){
 
 		keychain_reader >> reader.keychain;
 		if(!keychain_reader.good()){
-			std::cerr << "failed to parse kechain" << std::endl;
+			std::cerr << "failed to parse keychain" << std::endl;
 			return 1;
 		}
 	}
@@ -150,44 +157,53 @@ int view(int argc, char** argv){
 		reader.header.writeVCFHeaderString(std::cout, !dropFormat);
 	}
 
-	U64 n_variants = 0;
-	tachyon::algorithm::Timer timer;
-	timer.Start();
-
 	reader.getSettings().loadAll(true);
+	if(load_strings.size()){
+		/*
+		 * Reserved:
+		 * 1) CHROM
+		 * 2) POS
+		 * 3) ....
+		 */
+		reader.getSettings().loadAllINFO(false);
+		std::regex field_identifier_regex("^[A-Z_]{1,}$");
+		std::vector<std::string> INFO_FIELDS;
+		for(U32 i = 0; i < load_strings.size(); ++i){
+			if(strncasecmp(load_strings[i].data(), "INFO=", 5) == 0){
+				std::vector<std::string> ind = tachyon::utility::split(load_strings[i].substr(5,load_strings.size()-5), ',');
+				for(U32 j = 0; j < ind.size(); ++j){
+					std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
+					if(std::regex_match(ind[j], field_identifier_regex)){
+						std::cerr << ind[j] << " GOOD: " << std::regex_match(ind[j], field_identifier_regex) << std::endl;
+						INFO_FIELDS.push_back(ind[j]);
+						reader.getSettings().loadINFO(ind[j]);
+					} else {
+						std::cerr << "Failed: " << ind[j] << " in string " << load_strings[i] << std::endl;
+					}
+				}
+			} else {
+				std::cerr << "Unknown pattern: " << load_strings[i] << std::endl;
+			}
+		}
+	}
+
 	if(dropFormat){
 		reader.getSettings().loadGenotypes(false);
 		reader.getSettings().loadPPA_    = false;
 		reader.getSettings().loadFORMAT_ = false;
 	}
-	//reader.getSettings().loadGenotypes(true);
-	//reader.getSettings().loadPPA_ = true;
-	//reader.getSettings().loadAlleles_ = true;
 
-	//tachyon::math::SquareMatrix<double> square(reader.header.n_samples);
-	//tachyon::math::SquareMatrix<double> square_temporary(reader.header.n_samples);
+	U64 n_variants = 0;
+	tachyon::algorithm::Timer timer;
+	timer.Start();
+
 	U32 n_blocks = 0;
-	//U64 square_division = 0;
-	//std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
-	while(reader.nextBlock()){
-		//n_variants += reader.getTiTVRatios(std::cout, global_titv);
-		//n_variants += reader.outputVCF();
+	while(reader.nextBlock()){;
 		n_variants += reader.outputVCFBuffer();
-		//square_division += reader.calculateIBS(square, square_temporary);
 		++n_blocks;
 	}
 
-	/*
-	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
-	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.header.samples[i].name << '\t' << global_titv[i] << '\n';
-		//std::cout << reader.header.samples[i].name << std::endl;
-	}
-	*/
-
-	//square /= square_division;
 	std::cerr << "Blocks: " << n_blocks << std::endl;
-	//std::cout << square << std::endl;
 	std::cerr << "Variants: " << tachyon::utility::ToPrettyString(n_variants) << " genotypes: " << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t' << timer.ElapsedString() << '\t' << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count())) << std::endl;
 
 	return 0;

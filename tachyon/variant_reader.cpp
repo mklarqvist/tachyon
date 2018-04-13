@@ -127,7 +127,7 @@ bool VariantReader::nextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
-	//this->parseSettings();
+	this->parseSettings();
 
 	// Attempts to read a YON block with the provided
 	if(!this->block.read(this->stream, this->settings))
