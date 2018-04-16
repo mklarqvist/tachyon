@@ -182,64 +182,64 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	//settings.load_info_ID_loaded.clear();
 	//settings.load_format_ID_loaded.clear();
 
-	if(settings.loadPPA_){
+	if(settings.load_ppa){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 			stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
 			stream >> this->ppa_manager;
 		}
 	}
 
-	if(settings.loadContig_){
+	if(settings.load_contig){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_contig, this->meta_contig_container);
 	}
 
-	if(settings.loadPositons_){
+	if(settings.load_positons){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_position, this->meta_positions_container);
 	}
 
-	if(settings.loadController_){
+	if(settings.load_controller){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
 	}
 
-	if(settings.loadQuality_){
+	if(settings.load_quality){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_quality, this->meta_quality_container);
 	}
 
-	if(settings.loadNames_){
+	if(settings.load_names){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_names, this->meta_names_container);
 	}
 
-	if(settings.loadAlleles_){
+	if(settings.load_alleles){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
 		this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
 	}
 
-	if(settings.loadGenotypesRLE_){
+	if(settings.load_genotypes_rle){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
 		this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
 		this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
 		this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
 	}
 
-	if(settings.loadGenotypesSimple_){
+	if(settings.load_genotypes_simple){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
 	}
 
-	if(settings.loadGenotypesSupport_){
+	if(settings.load_genotypes_support){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
 	}
 
-	if(settings.loadSetMembership_){
+	if(settings.load_set_membership){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
 		this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
 		this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
 	}
 
 	// Load all info
-	if(settings.loadINFO_ && this->footer.n_info_streams){
+	if(settings.load_info && this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
@@ -250,8 +250,6 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	// If we have supplied a list of identifiers
 	else if(settings.load_info_ID_loaded.size()){
 		// Ascertain that random access is linearly forward
-		//std::sort(settings.load_info_ID_loaded.begin(), settings.load_info_ID_loaded.end());
-
 		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
 			stream.seekg(this->start_compressed_data_ + settings.load_info_ID_loaded[i].offset->data_header.offset);
 			if(!stream.good()){
@@ -267,7 +265,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	} // end case load_info_ID
 
 	// Load all FORMAT data
-	if(settings.loadFORMAT_ && this->footer.n_format_streams){
+	if(settings.load_format && this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);

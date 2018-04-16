@@ -363,11 +363,6 @@ bool VariantImporter::BuildBCF(void){
 				std::cerr << utility::timestamp("LOG") << "Writing encryption keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
 
 			if(writer_keychain.good()){
-				writer_keychain.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
-				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
-				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(S32));
-				writer_keychain.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE), sizeof(S32));
-
 				//writer_keychain.write(keybuffer.data(), keybuffer.size());
 				writer_keychain << keychain;
 				writer_keychain.flush();

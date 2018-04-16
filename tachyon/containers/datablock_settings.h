@@ -41,6 +41,29 @@ struct SettingsMap{
 	const header_type* offset; // Header object of target data container
 };
 
+struct SettingsCustomOutput{
+	SettingsCustomOutput() :
+		show_contig(false),
+		show_position(false),
+		show_quality(false),
+		show_names(false),
+		show_ref(false),
+		show_alt(false),
+		show_filter(false),
+		show_format_map(false)
+	{}
+	~SettingsCustomOutput(){}
+
+	bool show_contig;
+	bool show_position;
+	bool show_quality;
+	bool show_names;
+	bool show_ref;
+	bool show_alt;
+	bool show_filter;
+	bool show_format_map;
+};
+
 /**<
  * Settings
  */
@@ -49,102 +72,97 @@ struct DataBlockSettings{
 	typedef SettingsMap       map_type;
 
 	DataBlockSettings() :
-		loadContig_(false),
-		loadPositons_(false),
-		loadController_(false),
-		loadQuality_(false),
-		loadNames_(false),
-		loadAlleles_(false),
-		loadSetMembership_(false),
-		loadGenotypesAll_(false),
-		loadGenotypesRLE_(false),
-		loadGenotypesSimple_(false),
-		loadGenotypesOther_(false),
-		loadGenotypesSupport_(false),
-		loadPPA_(false),
-		loadINFO_(false),
-		loadFORMAT_(false),
-		constructOccTable_(false),
-		customDelimiter_(false),
-		customDelimiterChar_('\t')
+		show_vcf_header(true),
+		load_contig(false),
+		load_positons(false),
+		load_controller(false),
+		load_quality(false),
+		load_names(false),
+		load_alleles(false),
+		load_set_membership(false),
+		load_genotypes_all(false),
+		load_genotypes_rle(false),
+		load_genotypes_simple(false),
+		load_genotypes_other(false),
+		load_genotypes_support(false),
+		load_ppa(false),
+		load_info(false),
+		load_format(false),
+		construct_occ_table(false),
+		custom_delimiter(false),
+		custom_output_format(false),
+		custom_delimiter_char('\t')
 	{}
 
 	self_type& loadAll(const bool set = true){
-		loadContig_ = set;
-		loadPositons_ = set;
-		loadController_ = set;
-		loadQuality_ = set;
-		loadNames_ = set;
-		loadAlleles_ = set;
-		loadSetMembership_ = set;
-		loadGenotypesAll_ = set;
-		loadGenotypesRLE_ = set;
-		loadGenotypesSimple_ = set;
-		loadGenotypesOther_ = set;
-		loadGenotypesSupport_ = set;
-		loadINFO_ = set;
-		loadFORMAT_ = set;
-		loadPPA_ = set;
+		load_contig = set;
+		load_positons = set;
+		load_controller = set;
+		load_quality = set;
+		load_names = set;
+		load_alleles = set;
+		load_set_membership = set;
+		load_genotypes_all = set;
+		load_genotypes_rle = set;
+		load_genotypes_simple = set;
+		load_genotypes_other = set;
+		load_genotypes_support = set;
+		load_info = set;
+		load_format = set;
+		load_ppa = set;
 		return(*this);
 	}
 
 	self_type& loadAllMeta(const bool set = true){
-		loadContig_ = set;
-		loadPositons_ = set;
-		loadController_ = set;
-		loadQuality_ = set;
-		loadNames_ = set;
-		loadAlleles_ = set;
+		load_contig = set;
+		load_positons = set;
+		load_controller = set;
+		load_quality = set;
+		load_names = set;
+		load_alleles = set;
 		return(*this);
 	}
 
 	self_type& loadAllFILTER(const bool set = true){
-		loadSetMembership_ = set;
+		load_set_membership = set;
 		return(*this);
 	}
 
 	self_type& loadAllINFO(const bool set = true){
-		//loadContig_ = set;
-		//loadPositons_ = set;
-		//loadSetMembership_ = set;
-		loadINFO_ = set;
+		load_info = set;
 		return(*this);
 	}
 
 	self_type& loadINFO(const std::string& field_name){
 		if(field_name.size() == 0) return(*this);
-		this->loadContig_ = true;
-		this->loadPositons_ = true;
-		this->loadSetMembership_ = true;
+		this->load_contig = true;
+		this->load_positons = true;
+		this->load_set_membership = true;
 		this->info_list.push_back(field_name);
 		return(*this);
 	}
 
 	self_type& loadINFO(const U32 field_id){
 		this->info_ID_list.push_back(field_id);
-		this->loadContig_ = true;
-		this->loadPositons_ = true;
-		this->loadSetMembership_ = true;
+		this->load_contig = true;
+		this->load_positons = true;
+		this->load_set_membership = true;
 		return(*this);
 	}
 
 	self_type& loadGenotypes(const bool set){
-		//loadContig_ = set;
-		//loadPositons_ = set;
-		//loadController_ = set;
-		//loadSetMembership_ = set;
-		loadGenotypesAll_ = set;
-		loadGenotypesRLE_ = set;
-		loadGenotypesSimple_ = set;
-		loadGenotypesOther_ = set;
-		loadGenotypesSupport_ = set;
+		load_genotypes_all = set;
+		load_genotypes_rle = set;
+		load_genotypes_simple = set;
+		load_genotypes_other = set;
+		load_genotypes_support = set;
 		return(*this);
 	}
 
 	self_type& loadFORMAT(const bool set){
-		this->loadPPA_ = set;
+		this->load_ppa = set;
 		this->loadGenotypes(set);
-		this->loadFORMAT_ = set;
+		this->load_format = set;
 		return(*this);
 	}
 
@@ -162,31 +180,35 @@ struct DataBlockSettings{
 	}
 
 	self_type& setCustomDelimiter(const char delimiter){
-		this->customDelimiter_ = true;
-		this->customDelimiterChar_ = delimiter;
+		this->custom_delimiter = true;
+		this->custom_delimiter_char = delimiter;
 		return(*this);
 	}
 
 
 public:
-	bool loadContig_;
-	bool loadPositons_;
-	bool loadController_;
-	bool loadQuality_;
-	bool loadNames_;
-	bool loadAlleles_;
-	bool loadSetMembership_;
-	bool loadGenotypesAll_;
-	bool loadGenotypesRLE_;
-	bool loadGenotypesSimple_;
-	bool loadGenotypesOther_;
-	bool loadGenotypesSupport_;
-	bool loadPPA_;
-	bool loadINFO_;
-	bool loadFORMAT_;
-	bool constructOccTable_;
-	bool customDelimiter_;
-	char customDelimiterChar_;
+	bool show_vcf_header;
+	bool load_contig;
+	bool load_positons;
+	bool load_controller;
+	bool load_quality;
+	bool load_names;
+	bool load_alleles;
+	bool load_set_membership;
+	bool load_genotypes_all;
+	bool load_genotypes_rle;
+	bool load_genotypes_simple;
+	bool load_genotypes_other;
+	bool load_genotypes_support;
+	bool load_ppa;
+	bool load_info;
+	bool load_format;
+	bool construct_occ_table;
+	bool custom_delimiter;
+	bool custom_output_format;
+	char custom_delimiter_char;
+
+	SettingsCustomOutput custom_output_controller;
 
 	std::vector<std::string> samples_list;
 	std::vector<std::string> info_list;

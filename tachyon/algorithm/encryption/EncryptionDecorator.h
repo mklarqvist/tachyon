@@ -311,6 +311,10 @@ private:
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& keychain){
+		stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE), sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
 		for(U32 i = 0; i < keychain.size(); ++i) stream << keychain[i];
@@ -318,6 +322,15 @@ private:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& keychain){
+		char header[constants::FILE_HEADER_LENGTH];
+		stream.read(&header[0], constants::FILE_HEADER_LENGTH);
+		if(strncmp(&header[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
+			std::cerr << "ILLEGAL KEY FILE" << std::endl;
+		}
+
+		stream.read(reinterpret_cast<char*>(&keychain.version_major_),   sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&keychain.version_minor_),   sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&keychain.version_release_), sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&keychain.n_capacity_), sizeof(size_type));
 		delete [] keychain.entries_;
@@ -345,6 +358,9 @@ private:
 	}
 
 private:
+	S32 version_major_;
+	S32 version_minor_;
+	S32 version_release_;
     size_type   n_entries_;
     size_type   n_capacity_;
     pointer     entries_;
