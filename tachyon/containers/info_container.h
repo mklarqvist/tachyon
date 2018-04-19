@@ -25,6 +25,7 @@ public:
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const =0;
     virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const =0;
+    virtual io::BasicBuffer& to_json(io::BasicBuffer& buffer, const U32 position) const =0;
     virtual const bool emptyPosition(const U32& position) const =0;
 
 protected:
@@ -110,6 +111,7 @@ public:
 
     // Type-specific
     inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ utility::to_vcf_string(stream, this->at(position)); return(stream); }
+
     inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{
     	const size_type n_entries = this->at(position).size();
     	buffer.AddReadble(this->at(position)[0]);
@@ -119,6 +121,19 @@ public:
 		}
     	return(buffer);
     }
+
+    inline io::BasicBuffer& to_json(io::BasicBuffer& buffer, const U32 position) const{
+    	const size_type n_entries = this->at(position).size();
+		if(n_entries > 1) buffer += '[';
+    	buffer.AddReadble(this->at(position)[0]);
+		for(U32 i = 1; i < n_entries; ++i){
+			buffer += ',';
+			buffer.AddReadble(this->at(position)[i]);
+		}
+		if(n_entries > 1) buffer += ']';
+		return(buffer);
+    }
+
     const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:

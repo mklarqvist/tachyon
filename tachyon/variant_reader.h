@@ -306,33 +306,38 @@ public:
 	 */
 	bool seek_to_block(const U32& blockID);
 
+	/**<
+	 *
+	 * @return
+	 */
 	bool parseSettings(void){
 		settings.load_info_ID_loaded.clear();
 		settings.load_format_ID_loaded.clear();
 
 		// Map INFO
-		U32 info_matches = 0;
-		for(U32 i = 0; i < settings.info_list.size(); ++i){
-			const S32 global_key = this->has_info_field(settings.info_list[i]);
-			if(global_key >= 0){
-				S32 local_key = -1;
-				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
-						local_key = i;
-						this->settings.info_ID_list.push_back(i);
-						settings.load_info_ID_loaded.push_back(
-													core::SettingsMap(
-															info_matches++, // iterator value
-															i,              // local index id
-															&this->block.footer.info_offsets[i]) // offset
-															);
-						//std::cerr << "match @ local: " << i << std::endl;
-						break;
+		if(settings.load_info == false){ // prevent double load
+			U32 info_matches = 0;
+			for(U32 i = 0; i < settings.info_list.size(); ++i){
+				const S32 global_key = this->has_info_field(settings.info_list[i]);
+				if(global_key >= 0){
+					S32 local_key = -1;
+					for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+						if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
+							local_key = i;
+							this->settings.info_ID_list.push_back(i);
+							settings.load_info_ID_loaded.push_back(
+														core::SettingsMap(
+																info_matches++, // iterator value
+																i,              // local index id
+																&this->block.footer.info_offsets[i]) // offset
+																);
+							break;
+						}
 					}
-				}
 
-				if(local_key == -1){
-					//std::cerr << "could not find local" << std::endl;
+					if(local_key == -1){
+						//std::cerr << "could not find local" << std::endl;
+					}
 				}
 			}
 		}
@@ -452,25 +457,11 @@ public:
 		std::vector< std::vector<U32> > local_match_keychain_info(this->block.footer.n_info_patterns);
 
 		// If loading all INFO values then return them in the ORIGINAL order
-		if(this->settings.load_info){
-			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
-				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-					for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-							local_match_keychain_info[i].push_back(k);
-						}
-					}
-				}
-			}
-		}
-		// If loading custom INFO fields then return them in the REQUESTED order
-		else {
-			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
+		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
+			for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-					for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-							local_match_keychain_info[i].push_back(k);
-						}
+					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+						local_match_keychain_info[i].push_back(k);
 					}
 				}
 			}
@@ -499,7 +490,7 @@ public:
 
 			// Print normal or with a custom delimiter
 			if(this->settings.custom_delimiter)
-				this->printINFODelimited(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], p, objects.info_fields, local_match_keychain_info);
+				this->printINFOCustom(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], p, objects.info_fields, local_match_keychain_info);
 			else
 				this->printINFO(output_buffer, (*objects.meta)[p], p, objects.info_fields, objects.info_field_names, local_match_keychain_info);
 
@@ -531,13 +522,35 @@ public:
 		objects_type objects;
 		this->loadObjects(objects);
 
-		// Todo: Efficiency please!
+		// If we want to drop records that do not have all/any of the fields we desire
+		// then we create a vector of size N_PATTERNS and set those that MATCH to TRUE
+		// this allows for filtering in O(1)-time
+		std::vector<U32> info_keep(this->block.footer.n_info_patterns, 0);
+
+
 		std::vector< std::vector<U32> > local_match_keychain_info(this->block.footer.n_info_patterns);
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
-			for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+		// If loading all INFO values then return them in the ORIGINAL order
+		if(this->settings.load_info){
+			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
 				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-						local_match_keychain_info[i].push_back(k);
+					for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+							local_match_keychain_info[i].push_back(k);
+							++info_keep[i];
+						}
+					}
+				}
+			}
+		}
+		// If loading custom INFO fields then return them in the REQUESTED order
+		else {
+			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
+				for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
+					for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
+							local_match_keychain_info[i].push_back(k);
+							++info_keep[i];
+						}
 					}
 				}
 			}
@@ -548,20 +561,24 @@ public:
 		io::BasicBuffer output_buffer(256000 + this->header.getSampleNumber()*2);
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 
+		U32 info_match_limit = 1; // any match
+		info_match_limit = this->settings.info_list.size(); // all match
+
+		U32 n_records_returned = 0;
+
 		for(U32 p = 0; p < objects.meta->size(); ++p){
+			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
+			//	continue;
+
+			++n_records_returned;
+
 			utility::to_vcf_string(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], this->header, this->settings.custom_output_controller);
 
-			// Filter options
-			if(settings.load_set_membership) this->printFILTER(output_buffer, p, objects);
-			else output_buffer += '.';
+			//output_buffer += '{';
+			//utility::to_json(output_buffer, (*objects.meta)[p], this->header, this->settings.custom_output_controller);
+			//output_buffer += '}';
 
-			if(settings.load_info || settings.load_format || this->block.n_info_loaded) output_buffer += this->settings.custom_delimiter_char;
-			else {
-				output_buffer += '\n';
-				continue;
-			}
-
-			this->printINFODelimited(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], p, objects.info_fields, local_match_keychain_info);
+			this->printINFOCustom(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], p, objects.info_fields, local_match_keychain_info);
 
 			if(settings.load_format && this->block.n_format_loaded) output_buffer += this->settings.custom_delimiter_char;
 			else output_buffer += '\n';
@@ -580,7 +597,7 @@ public:
 		output_buffer.reset();
 		std::cout.flush();
 
-		return(objects.meta->size());
+		return(n_records_returned);
 	}
 
 	/**<
@@ -682,13 +699,54 @@ public:
 		}
 	}
 
+	void printINFOCustomBalanced(buffer_type& outputBuffer,
+				   const meta_entry_type& meta_entry,
+				   const U32& site,
+				   containers::InfoContainerInterface** its,
+				   const std::vector<std::string>& info_field_names,
+				   const std::vector< std::vector<U32> >& local_match_keychain_info) const
+	{
+		if(settings.load_info || this->block.n_info_loaded){
+			//const U32* const keys = this->block.footer.info_bit_vectors[meta_entry.info_pattern_id].local_keys;
+			//const U32 n_keys      = this->block.footer.info_bit_vectors[meta_entry.info_pattern_id].n_keys;
+			//this->settings.load_info_ID_loaded[0].offset;
+			const std::vector<U32>& targetKeys = local_match_keychain_info[meta_entry.info_pattern_id];
+
+			// Todo: foreach ID check if field is set
+
+			if(this->block.n_info_loaded && targetKeys.size()){
+				// First
+				outputBuffer += info_field_names[targetKeys[0]];
+				if(its[targetKeys[0]]->emptyPosition(site) == false){
+					outputBuffer += '=';
+					its[targetKeys[0]]->to_vcf_string(outputBuffer, site);
+				}
+
+				for(U32 i = 1; i < targetKeys.size(); ++i){
+					outputBuffer += ";";
+					outputBuffer += info_field_names[targetKeys[i]];
+					if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
+						continue;
+					}
+					if(its[targetKeys[i]]->emptyPosition(site)) continue;
+					outputBuffer += '=';
+					its[targetKeys[i]]->to_vcf_string(outputBuffer, site);
+				}
+			} else
+				outputBuffer += '.';
+		}
+	}
+
 	/**<
 	 *
 	 * @param outputBuffer
 	 * @param position
 	 * @param objects
 	 */
-	void printFILTER(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{
+	void printFILTER(buffer_type& outputBuffer,
+                     const U32& position,
+                     const objects_type& objects) const
+	{
 		if(this->block.footer.n_filter_streams){
 			const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].n_keys;
 			const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].local_keys;
@@ -715,12 +773,12 @@ public:
 	 * @param its
 	 * @param local_match_keychain_info
 	 */
-	void printINFODelimited(buffer_type& outputBuffer,
-                            const char& delimiter,
-                            const meta_entry_type& meta_entry,
-                            const U32& site,
-                            containers::InfoContainerInterface** its,
-                            const std::vector< std::vector<U32> >& local_match_keychain_info) const
+	void printINFOCustom(buffer_type& outputBuffer,
+                         const char& delimiter,
+                         const meta_entry_type& meta_entry,
+                         const U32& site,
+                         containers::InfoContainerInterface** its,
+                         const std::vector< std::vector<U32> >& local_match_keychain_info) const
 	{
 		if(settings.load_info || this->block.n_info_loaded){
 			const std::vector<U32>& targetKeys = local_match_keychain_info[meta_entry.info_pattern_id];

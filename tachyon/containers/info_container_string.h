@@ -93,6 +93,14 @@ public:
 
     inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ return(stream << this->at(position)); }
     inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{ buffer += this->at(position); return(buffer); }
+    inline io::BasicBuffer& to_json(io::BasicBuffer& buffer, const U32 position) const{
+    	if(this->at(position).size() == 0){
+    		buffer += "null";
+    		return(buffer);
+    	}
+    	buffer += '"'; buffer += this->at(position); buffer += '"';
+    	return(buffer);
+    }
     const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:

@@ -39,6 +39,7 @@ void view_usage(void){
 	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
+	"  -T STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
@@ -65,6 +66,7 @@ int view(int argc, char** argv){
 		{"keychain",    optional_argument, 0,  'k' },
 		{"filter",      optional_argument, 0,  'f' },
 		{"delimiter",   optional_argument, 0,  'd' },
+		{"output-type", optional_argument, 0,  'T' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -87,7 +89,7 @@ int view(int argc, char** argv){
 
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:cGshH?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:T:cGshH?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -135,6 +137,9 @@ int view(int argc, char** argv){
 			break;
 		case 'H':
 			showHeader = false;
+			break;
+
+		case 'T':
 			break;
 
 		default:
@@ -194,10 +199,6 @@ int view(int argc, char** argv){
 		 * 6) NAMES
 		 */
 		bool allGood = true;
-		//reader.getSettings().loadAllINFO(false);
-		//reader.getSettings().loadGenotypes(false);
-		//reader.getSettings().load_ppa    = false;
-		//reader.getSettings().load_format = false;
 
 		std::regex field_identifier_regex("^[A-Z_0-9]{1,}$");
 		for(U32 i = 0; i < load_strings.size(); ++i){
@@ -222,19 +223,30 @@ int view(int argc, char** argv){
 							allGood = false;
 						}
 					}
-				} else if(strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6){
+				} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0){
+					reader.getSettings().load_info = true;
+					reader.getSettings().load_set_membership = true;
+				} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
+						  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
+						  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
 					reader.getSettings().custom_output_controller.show_contig = true;
 					reader.getSettings().load_contig = true;
-				} else if(strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8){
+				} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
+				          (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
 					reader.getSettings().custom_output_controller.show_position = true;
 					reader.getSettings().load_positons = true;
-				} else if(strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3){
+				} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
+					      (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
 					reader.getSettings().custom_output_controller.show_ref = true;
 					reader.getSettings().load_alleles = true;
-				} else if(strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3){
+					reader.getSettings().load_controller = true;
+				} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
+				          (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
 					reader.getSettings().custom_output_controller.show_alt = true;
 					reader.getSettings().load_alleles = true;
-				} else if(strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7){
+					reader.getSettings().load_controller = true;
+				} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
+				          (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
 					reader.getSettings().custom_output_controller.show_quality = true;
 					reader.getSettings().load_quality = true;
 				} else if(strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5){
@@ -269,9 +281,8 @@ int view(int argc, char** argv){
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	if(showHeader){
-		reader.getSettings().show_vcf_header = true;
-	}
+	if(showHeader) reader.getSettings().show_vcf_header = true;
+	else reader.getSettings().show_vcf_header = false;
 
 	U64 n_variants = 0;
 	if(customOutputFormat) n_variants = reader.outputCustom();

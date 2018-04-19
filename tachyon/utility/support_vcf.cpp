@@ -269,6 +269,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 			buffer += ',';
 			buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
+		buffer += delimiter;
 	} else {
 		buffer += '.';
 		buffer += delimiter;
@@ -277,15 +278,13 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	}
 
 	if(std::isnan(meta_entry.quality)){
-		buffer += delimiter;
 		buffer += '.';
-		buffer += delimiter;
 	}
 	else {
-		buffer += delimiter;
 		buffer.AddReadble(meta_entry.quality);
-		buffer += delimiter;
 	}
+	buffer += delimiter;
+
 	return(buffer);
 }
 
@@ -296,8 +295,8 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	}
 
 	if(controller.show_position){
-	buffer.AddReadble(meta_entry.position + 1);
-	buffer += delimiter;
+		buffer.AddReadble(meta_entry.position + 1);
+		buffer += delimiter;
 	}
 
 	if(controller.show_names){
@@ -307,40 +306,96 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	}
 
 	if(controller.show_ref){
-		if(meta_entry.n_alleles){
-			buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
-			buffer += delimiter;
-		} else {
-			buffer += '.';
-			buffer += delimiter;
-		}
+		if(meta_entry.n_alleles) buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
+		else buffer += '.';
+		buffer += delimiter;
 	}
 
 	if(controller.show_alt){
 		if(meta_entry.n_alleles){
 			buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
-			buffer += delimiter;
 			for(U32 i = 2; i < meta_entry.n_alleles; ++i){
 				buffer += ',';
 				buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 			}
-		} else {
+		} else
 			buffer += '.';
-			buffer += delimiter;
-		}
+
+		buffer += delimiter;
 	}
 
 	if(controller.show_quality){
-		if(std::isnan(meta_entry.quality)){
-			buffer += delimiter;
-			buffer += '.';
-			buffer += delimiter;
-		}
+		if(std::isnan(meta_entry.quality)) buffer += '.';
+		else buffer.AddReadble(meta_entry.quality);
+		buffer += delimiter;
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller){
+	bool add = false;
+	if(controller.show_contig){
+		buffer += '"';
+		buffer += header.getContig(meta_entry.contigID).name;
+		buffer += '"';
+		add = true;
+	}
+
+	if(controller.show_position){
+		if(add){ buffer += ','; add = false; }
+		buffer.AddReadble(meta_entry.position + 1);
+		add = true;
+	}
+
+	if(controller.show_names){
+		if(add){ buffer += ','; add = false; }
+		if(meta_entry.name.size() == 0) buffer += "null";
 		else {
-			buffer += delimiter;
-			buffer.AddReadble(meta_entry.quality);
-			buffer += delimiter;
+			buffer += '"';
+			buffer += meta_entry.name;
+			buffer += '"';
+			add = true;
 		}
+	}
+
+	if(controller.show_ref){
+		if(add){ buffer += ','; add = false; }
+		if(meta_entry.n_alleles){
+			buffer += '"';
+			buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
+			buffer += '"';
+		} else {
+			buffer += "null";
+		}
+		add = true;
+	}
+
+	if(controller.show_alt){
+		if(add){ buffer += ','; add = false; }
+		if(meta_entry.n_alleles){
+			if(meta_entry.n_alleles > 2) buffer += '[';
+			buffer += '"';
+			buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
+			buffer += '"';
+			for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+				buffer += ',';
+				buffer += '"';
+				buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
+				buffer += '"';
+			}
+			if(meta_entry.n_alleles > 2) buffer += ']';
+		} else {
+			buffer += "null";
+		}
+		add = true;
+	}
+
+	if(controller.show_quality){
+		if(add){ buffer += ','; add = false; }
+		if(std::isnan(meta_entry.quality)) buffer += 0;
+		else buffer.AddReadble(meta_entry.quality);
+		add = true;
 	}
 
 	return(buffer);
