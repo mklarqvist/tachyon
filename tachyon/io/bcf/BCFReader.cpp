@@ -175,7 +175,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			}
 		}
 
-		new( &this->entries[this->n_entries] ) value_type( );
+		new( &this->entries[this->n_entries] ) value_type( this->header.samples * 2 );
 		if(!this->nextVariant(this->entries[this->n_entries])){
 			std::cerr << "failed to get next" << std::endl;
 			return false;

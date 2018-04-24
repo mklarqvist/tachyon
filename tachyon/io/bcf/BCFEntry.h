@@ -163,6 +163,7 @@ private:
 
 public:
 	BCFEntry(void);  // ctor
+	BCFEntry(const U64 start_capacity);  // ctor
 	BCFEntry(const self_type& other);  // copy ctor
 	BCFEntry(self_type&& other) noexcept;
 	BCFEntry& operator=(const self_type& other);

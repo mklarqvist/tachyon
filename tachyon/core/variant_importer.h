@@ -50,7 +50,8 @@ public:
 
 private:
 	bool BuildBCF();  // import a BCF file
-	bool add(bcf_entry_type& line); // Import a BCF line
+	bool add(meta_type& meta, bcf_entry_type& line); // Import a BCF line
+	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
 private:

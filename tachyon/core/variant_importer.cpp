@@ -172,6 +172,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	while(true){
+		std::cerr << utility::timestamp("DEBUG") << "Start get BCF entries" << std::endl;
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
 		}
@@ -196,6 +197,7 @@ bool VariantImporter::BuildBCF(void){
 			this->block.header.controller.hasGTPermuted = false;
 
 		// Permute GT if GT is available and the appropriate flag is triggered
+		std::cerr << utility::timestamp("DEBUG") << "Start get permute" << std::endl;
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
@@ -203,13 +205,33 @@ bool VariantImporter::BuildBCF(void){
 			}
 		}
 
+		std::cerr << utility::timestamp("DEBUG") << "Start import" << std::endl;
+
+		//\////////////////////////////////////////////////
+		// Start new
 		// Perform parsing of BCF entries in memory
+		// Split out RLE compression and importing other INFO/FORMAT
+		meta_type* meta_entries = static_cast<meta_type*>(::operator new[](reader.size() * sizeof(meta_type)));
+
 		for(U32 i = 0; i < reader.size(); ++i){
-			if(!this->add(reader[i])){
+			new( meta_entries + i ) meta_type( reader[i], this->block.header.minPosition );
+			if(!this->add(meta_entries[i], reader[i])){
 				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
 				return false;
 			}
 		}
+
+		std::cerr << utility::timestamp("DEBUG") << "Add genotpyes" << std::endl;
+		this->addGenotypes(reader, meta_entries);
+		std::cerr << utility::timestamp("DEBUG") << "Add meta" << std::endl;
+		for(U32 i = 0; i < reader.size(); ++i) this->block += meta_entries[i];
+
+		for(std::size_t i = 0; i < reader.size(); ++i) (meta_entries + i)->~MetaEntry();
+		::operator delete[](static_cast<void*>(meta_entries));
+
+		//\////////////////////////////////////////////////
+
+		std::cerr << utility::timestamp("DEBUG") << "Start compression" << std::endl;
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
@@ -390,33 +412,43 @@ bool VariantImporter::BuildBCF(void){
 	return(true);
 }
 
-bool VariantImporter::add(bcf_entry_type& entry){
+bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries){
+	/*
+	for(U32 i = 0; i < bcf_reader.size(); ++i){
+		if(bcf_reader[i].hasGenotypes){
+			meta_entries[i].controller.gt_available = true;
+
+			if(!this->encoder.Encode(bcf_reader[i], meta_entries[i], this->block, this->permutator.manager->get())){
+				std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
+				return false;
+			}
+		} else {
+			meta_entries[i].controller.gt_available = false;
+		}
+	}
+	*/
+	this->encoder.EncodeParallel(bcf_reader, meta_entries, this->block, this->permutator.manager->get());
+
+	return true;
+}
+
+bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
 		return false;
 	}
 
-	meta_type meta(entry, this->block.header.minPosition);
+	//meta_type meta(entry, this->block.header.minPosition);
 	if(!this->parseBCFBody(meta, entry)){
 		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
 		return false;
 	}
 
-	// GT encoding if available
-	if(entry.hasGenotypes){
-		meta.controller.gt_available = true;
 
-		if(!this->encoder.Encode(entry, meta, this->block, this->permutator.manager->get())){
-			std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode GT..." << std::endl;
-			return false;
-		}
-	} else {
-		meta.controller.gt_available = false;
-	}
 
 	// Add meta
-	this->block += meta;
+	//this->block += meta;
 
 	// Has END position?
 	S32 index_bin = -1;

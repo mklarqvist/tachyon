@@ -245,6 +245,13 @@ public:
 	}
 	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
+	self_type& operator+=(const self_type& other){
+		this->n_entries     += other.n_entries;
+		this->n_additions   += other.n_additions;
+		this->n_strides     += other.n_strides;
+		return(*this);
+	}
+
 	// Accessors
 	inline S32& getGlobalKey(void){ return(this->data_header.global_key); }
 	inline const S32& getGlobalKey(void) const{ return(this->data_header.global_key); }

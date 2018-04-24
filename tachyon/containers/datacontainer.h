@@ -68,6 +68,17 @@ public:
 	// Operators
 	inline void operator++(void){ ++this->header.n_entries; }
 
+	self_type& operator+=(const self_type& other){
+		// Add buffers together
+		this->buffer_data                 += other.buffer_data;
+		this->buffer_data_uncompressed    += other.buffer_data_uncompressed;
+		this->buffer_strides              += other.buffer_strides;
+		this->buffer_strides_uncompressed += other.buffer_strides_uncompressed;
+		// Add header counters together
+		this->header += other.header;
+		return(*this);
+	}
+
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
 	 * point all stride values added must be of type U32. This

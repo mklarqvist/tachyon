@@ -30,6 +30,31 @@ BCFEntry::BCFEntry(void):
 
 }
 
+BCFEntry::BCFEntry(const U64 start_capacity):
+	l_data(0),
+	l_capacity(256000 + start_capacity),
+	l_ID(0),
+	ref_alt(0),
+	isGood(false),
+	data(new char[this->l_capacity]),
+	body(reinterpret_cast<body_type*>(this->data)),
+	alleles(new string_type[100]),
+	ID(nullptr),
+	hasGenotypes(false),
+	ploidy(0),
+	filter_start(0),
+	n_filter(0),
+	filterPointer(0),
+	infoPointer(0),
+	formatPointer(0),
+	filterID(new BCFKeyTuple[256]),
+	infoID(new BCFKeyTuple[256]),
+	formatID(new BCFKeyTuple[256])
+{
+
+}
+
+
 BCFEntry::BCFEntry(const self_type& other):
 	l_data(other.l_data),
 	l_capacity(other.l_capacity),
