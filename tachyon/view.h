@@ -38,8 +38,10 @@ void view_usage(void){
 	"  -o FILE   output file (- for stdout; default: -)\n"
 	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
+	"  -m        filtered data can match ANY number of requested fields\n"
+	"  -M        filtered data must match ALL requested fields\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -T STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	"  -F STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
@@ -65,8 +67,10 @@ int view(int argc, char** argv){
 		{"output",      optional_argument, 0,  'o' },
 		{"keychain",    optional_argument, 0,  'k' },
 		{"filter",      optional_argument, 0,  'f' },
+		{"filterAny",   no_argument, 0,  'm' },
+		{"filterAll",   no_argument, 0,  'M' },
 		{"delimiter",   optional_argument, 0,  'd' },
-		{"output-type", optional_argument, 0,  'T' },
+		{"output-type", optional_argument, 0,  'F' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -86,10 +90,12 @@ int view(int argc, char** argv){
 	bool customDelimiter = false;
 	char customDelimiterChar = 0;
 	bool customOutputFormat = false;
+	bool filterAny = false;
+	bool filterAll = false;
 
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:T:cGshH?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmM?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -139,7 +145,7 @@ int view(int argc, char** argv){
 			showHeader = false;
 			break;
 
-		case 'T':
+		case 'F':
 			break;
 
 		default:
@@ -165,101 +171,40 @@ int view(int argc, char** argv){
 	if(keychain_file.size()){
 		std::ifstream keychain_reader(keychain_file, std::ios::binary | std::ios::in);
 		if(!keychain_reader.good()){
-			std::cerr << "failed to open: " << keychain_file << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << keychain_file << "..." << std::endl;
 			return 1;
 		}
 
 		keychain_reader >> reader.keychain;
 		if(!keychain_reader.good()){
-			std::cerr << "failed to parse keychain" << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
 			return 1;
 		}
 	}
 
 	if(!reader.open(input)){
-		std::cerr << "failed to open" << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << input << "..." << std::endl;
 		return 1;
 	}
 
 	if(headerOnly){
+		reader.header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		reader.header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+				  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + tachyon::utility::datetime();
+
+		reader.header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
+
 		std::cout << reader.header.literals << std::endl;
 		reader.header.writeVCFHeaderString(std::cout, true);
 		return(0);
 	}
 
+	// User provided '-f' string(s)
 	if(load_strings.size()){
-		reader.getSettings().custom_output_format = customOutputFormat;
-		/*
-		 * Reserved:
-		 * 1) CHROM, CONTIG
-		 * 2) POS, POSITION
-		 * 3) REF, REFERENCE
-		 * 4) ALT, ALTERNATIVE, ALTERNATE
-		 * 5) QUAL, QUALITY
-		 * 6) NAMES
-		 */
-		bool allGood = true;
-
-		std::regex field_identifier_regex("^[A-Z_0-9]{1,}$");
-		for(U32 i = 0; i < load_strings.size(); ++i){
-			std::vector<std::string> partitions = tachyon::utility::split(load_strings[i], ';');
-			for(U32 p = 0; p < partitions.size(); ++p){
-				partitions[p].erase(std::remove(partitions[p].begin(), partitions[p].end(), ' '), partitions[p].end()); // remove all spaces
-				if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
-					std::vector<std::string> ind = tachyon::utility::split(partitions[p].substr(5,load_strings.size()-5), ',');
-					for(U32 j = 0; j < ind.size(); ++j){
-						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
-						std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
-						if(std::regex_match(ind[j], field_identifier_regex)){
-							const tachyon::core::HeaderMapEntry* map = reader.header.getInfoField(ind[j]);
-							if(map == false){
-								std::cerr << tachyon::utility::timestamp("ERROR") << "Failed: " << ind[j] << " in string " << partitions[p] << std::endl;
-								allGood = false;
-								continue;
-							}
-							reader.getSettings().loadINFO(ind[j]);
-						} else {
-							std::cerr << tachyon::utility::timestamp("ERROR") << "Failed: " << ind[j] << " in string " << partitions[p] << std::endl;
-							allGood = false;
-						}
-					}
-				} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0){
-					reader.getSettings().load_info = true;
-					reader.getSettings().load_set_membership = true;
-				} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
-						  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
-						  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
-					reader.getSettings().custom_output_controller.show_contig = true;
-					reader.getSettings().load_contig = true;
-				} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
-				          (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
-					reader.getSettings().custom_output_controller.show_position = true;
-					reader.getSettings().load_positons = true;
-				} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
-					      (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
-					reader.getSettings().custom_output_controller.show_ref = true;
-					reader.getSettings().load_alleles = true;
-					reader.getSettings().load_controller = true;
-				} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
-				          (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
-					reader.getSettings().custom_output_controller.show_alt = true;
-					reader.getSettings().load_alleles = true;
-					reader.getSettings().load_controller = true;
-				} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
-				          (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
-					reader.getSettings().custom_output_controller.show_quality = true;
-					reader.getSettings().load_quality = true;
-				} else if(strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5){
-					reader.getSettings().custom_output_controller.show_names = true;
-					reader.getSettings().load_names = true;
-				} else {
-					std::cerr << tachyon::utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
-					allGood = false;
-				}
-			}
+		if(!reader.getSettings().parseCommandString(load_strings, reader.header, customOutputFormat)){
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
+			return(1);
 		}
-
-		if(allGood == false) return(1);
 	} else {
 		reader.getSettings().loadAll(true);
 

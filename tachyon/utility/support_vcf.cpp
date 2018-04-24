@@ -180,6 +180,542 @@ std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveCon
 	return(stream);
 }
 
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	buffer.AddReadble((U32)container[0]);
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer.AddReadble((U32)container[i]);
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	buffer.AddReadble(container[0]);
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer.AddReadble(container[i]);
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	buffer.AddReadble(container[0]);
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer.AddReadble(container[i]);
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	buffer.AddReadble(container[0]);
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer.AddReadble(container[i]);
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const BYTE* const ref = reinterpret_cast<const BYTE* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_BYTE_EOV){
+		buffer += '.';
+		return(buffer);
+	}
+
+	// First value
+	if(ref[0] == YON_BYTE_MISSING) buffer += '.';
+	else buffer.AddReadble((S32)container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_BYTE_MISSING) buffer += ",.";
+		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble((S32)container[i]);
+		}
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const U16* const ref = reinterpret_cast<const U16* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_SHORT_EOV){
+		buffer += '.';
+		return(buffer);
+	}
+
+	// First value
+	if(ref[0] == YON_SHORT_MISSING) buffer += '.';
+	else buffer.AddReadble((S32)container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_SHORT_MISSING) buffer += ",.";
+		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble((S32)container[i]);
+		}
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_INT_EOV){
+		buffer += '.';
+		return(buffer);
+	}
+
+	// First value
+	if(ref[0] == YON_INT_MISSING) buffer += '.';
+	else buffer.AddReadble(container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_INT_MISSING) buffer += ",.";
+		else if(ref[i] == YON_INT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+	}
+
+	return(buffer);
+}
+
+// Special case
+io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	buffer += container[0];
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer += container[i];
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_FLOAT_EOV){
+		buffer += '.';
+		return(buffer);
+	}
+
+	// First value
+	if(ref[0] == YON_FLOAT_MISSING) buffer += '.';
+	else buffer.AddReadble(container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
+		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_FLOAT_EOV){
+		buffer += '.';
+		return(buffer);
+	}
+
+	// First value
+	if(ref[0] == YON_FLOAT_MISSING) buffer += '.';
+	else buffer.AddReadble(container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
+		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+	}
+
+	return(buffer);
+}
+
+///////////
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	if(container.size() == 1){
+		buffer.AddReadble((U32)container[0]);
+	} else {
+		buffer += '[';
+		buffer.AddReadble((U32)container[0]);
+		for(U32 i = 1; i < container.size(); ++i){
+			buffer += ',';
+			buffer.AddReadble((U32)container[i]);
+		}
+		buffer += ']';
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	if(container.size() == 1){
+		buffer.AddReadble(container[0]);
+	} else {
+		buffer += '[';
+		buffer.AddReadble(container[0]);
+		for(U32 i = 1; i < container.size(); ++i){
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+		buffer += ']';
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	if(container.size() == 1){
+		buffer.AddReadble(container[0]);
+	} else {
+		buffer += '[';
+		buffer.AddReadble(container[0]);
+		for(U32 i = 1; i < container.size(); ++i){
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+		buffer += ']';
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	if(container.size() == 1){
+		buffer.AddReadble(container[0]);
+	} else {
+		buffer += '[';
+		buffer.AddReadble(container[0]);
+		for(U32 i = 1; i < container.size(); ++i){
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+		buffer += ']';
+	}
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	const BYTE* const ref = reinterpret_cast<const BYTE* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_BYTE_EOV){
+		buffer += "null";
+		return(buffer);
+	}
+
+	// First value
+	if(container.size() == 1){
+		if(ref[0] == YON_BYTE_MISSING) buffer += "null";
+		else buffer.AddReadble((S32)container[0]);
+		return(buffer);
+	}
+
+	buffer += '[';
+	if(ref[0] == YON_BYTE_MISSING) buffer += "null";
+	else buffer.AddReadble((S32)container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_BYTE_MISSING) buffer += ",null";
+		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble((S32)container[i]);
+		}
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	const U16* const ref = reinterpret_cast<const U16* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_SHORT_EOV){
+		buffer += "null";
+		return(buffer);
+	}
+
+	// First value
+	if(container.size() == 1){
+		if(ref[0] == YON_SHORT_MISSING) buffer += "null";
+		else buffer.AddReadble((S32)container[0]);
+		return(buffer);
+	}
+
+	buffer += '[';
+	if(ref[0] == YON_SHORT_MISSING) buffer += "null";
+	else buffer.AddReadble((S32)container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_SHORT_MISSING) buffer += ",null";
+		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble((S32)container[i]);
+		}
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container){
+	if(container.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_INT_EOV){
+		buffer += "null";
+		return(buffer);
+	}
+
+	// First value
+	if(container.size() == 1){
+		if(ref[0] == YON_INT_MISSING) buffer += "null";
+		else buffer.AddReadble((S32)container[0]);
+		return(buffer);
+	}
+
+	buffer += '[';
+	if(ref[0] == YON_INT_MISSING) buffer += "null";
+	else buffer.AddReadble((S32)container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_INT_MISSING) buffer += ",null";
+		else if(ref[i] == YON_INT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble((S32)container[i]);
+		}
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+// Special case
+io::BasicBuffer& to_json_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	if(container.size() == 1){
+		buffer += container[0];
+		return(buffer);
+	}
+
+	buffer += '[';
+	buffer += container[0];
+	for(U32 i = 1; i < container.size(); ++i){
+		buffer += ',';
+		buffer += container[i];
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_FLOAT_EOV){
+		buffer += "null";
+		return(buffer);
+	}
+
+	// First value
+	if(container.size() == 1){
+		if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
+		else buffer.AddReadble(container[0]);
+		return(buffer);
+	}
+
+	buffer += '[';
+	if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
+	else buffer.AddReadble(container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_FLOAT_MISSING) buffer += ",null";
+		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container){
+	if(container.size() == 0){
+		buffer += "null";
+		return(buffer);
+	}
+
+	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+
+	// If the first value is end-of-vector then return
+	if(ref[0] == YON_FLOAT_EOV){
+		buffer += "null";
+		return(buffer);
+	}
+
+	// First value
+	if(container.size() == 1){
+		if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
+		else buffer.AddReadble(container[0]);
+		return(buffer);
+	}
+
+	buffer += '[';
+	if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
+	else buffer.AddReadble(container[0]);
+
+	// Remainder values
+	for(U32 i = 1; i < container.size(); ++i){
+		if(ref[i] == YON_FLOAT_MISSING) buffer += ",null";
+		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
+		else {
+			buffer += ',';
+			buffer.AddReadble(container[i]);
+		}
+	}
+	buffer += ']';
+
+	return(buffer);
+}
+
+///
+
 std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object){
 	if(gt_object.n_alleles == 0)
 		return(stream);

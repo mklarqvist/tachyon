@@ -98,9 +98,9 @@ public:
     // Type-specific
 	inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{ utility::to_vcf_string(stream, this->at(position).at(sample)); return(stream); }
 	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample); return(buffer); }
+	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample); return(buffer); }
 	inline const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 	inline const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
-
 
 private:
     /**<

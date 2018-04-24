@@ -257,9 +257,12 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 				return false;
 			}
 
+			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].data_header.uLength << std::endl;
+
 			// Read data
 			this->info_containers[settings.load_info_ID_loaded[i].iterator_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local];
 			stream >> this->info_containers[settings.load_info_ID_loaded[i].iterator_index];
+			//std::cerr << "into: " << settings.load_info_ID_loaded[i].iterator_index << std::endl;
 			++this->n_info_loaded;
 		}
 	} // end case load_info_ID
@@ -274,7 +277,25 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 		//std::cerr << this->end_compressed_data_ << '/' << (U64)stream.tellg() << std::endl;
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
-	}
+	} // If we have supplied a list of identifiers
+	else if(settings.load_format_ID_loaded.size()){
+		// Ascertain that random access is linearly forward
+		for(U32 i = 0; i < settings.load_format_ID_loaded.size(); ++i){
+			stream.seekg(this->start_compressed_data_ + settings.load_format_ID_loaded[i].offset->data_header.offset);
+			if(!stream.good()){
+				std::cerr << utility::timestamp("ERROR","IO") << "Failed to seek for FORMAT field in block!" << std::endl;
+				return false;
+			}
+
+			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].data_header.uLength << std::endl;
+
+			// Read data
+			this->format_containers[settings.load_format_ID_loaded[i].iterator_index].header = this->footer.format_offsets[settings.load_format_ID_loaded[i].target_stream_local];
+			stream >> this->format_containers[settings.load_format_ID_loaded[i].iterator_index];
+			//std::cerr << "into: " << settings.load_info_ID_loaded[i].iterator_index << std::endl;
+			++this->n_format_loaded;
+		}
+	} // end case load_info_ID
 
 	stream.seekg(this->end_block_); // seek to end-of-block
 	return(true);

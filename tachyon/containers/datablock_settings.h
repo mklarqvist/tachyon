@@ -1,6 +1,10 @@
 #ifndef CORE_BLOCKENTRYSETTINGS_H_
 #define CORE_BLOCKENTRYSETTINGS_H_
 
+#include <regex>
+#include "../support/helpers.h"
+#include "../core/header/variant_header.h"
+
 namespace tachyon{
 namespace core{
 
@@ -68,8 +72,9 @@ struct SettingsCustomOutput{
  * Settings
  */
 struct DataBlockSettings{
-	typedef DataBlockSettings self_type;
-	typedef SettingsMap       map_type;
+	typedef DataBlockSettings   self_type;
+	typedef SettingsMap         map_type;
+	typedef core::VariantHeader header_type;
 
 	DataBlockSettings() :
 		show_vcf_header(true),
@@ -159,23 +164,31 @@ struct DataBlockSettings{
 		return(*this);
 	}
 
-	self_type& loadFORMAT(const bool set){
+	self_type& loadAllFORMAT(const bool set){
 		this->load_ppa = set;
 		this->loadGenotypes(set);
 		this->load_format = set;
+		this->load_contig = true;
+		this->load_positons = true;
+		this->load_set_membership = true;
 		return(*this);
 	}
 
 	self_type& loadFORMAT(const std::string& field_name){
 		if(field_name.size() == 0) return(*this);
+		this->load_contig = true;
+		this->load_positons = true;
+		this->load_set_membership = true;
+		if(field_name == "GT") this->loadGenotypes(true);
 		this->format_list.push_back(field_name);
-		this->loadFORMAT(true);
 		return(*this);
 	}
 
 	self_type& loadFORMAT(const U32 field_id){
+		this->load_contig = true;
+		this->load_positons = true;
+		this->load_set_membership = true;
 		this->format_ID_list.push_back(field_id);
-		this->loadFORMAT(true);
 		return(*this);
 	}
 
@@ -183,6 +196,93 @@ struct DataBlockSettings{
 		this->custom_delimiter = true;
 		this->custom_delimiter_char = delimiter;
 		return(*this);
+	}
+
+	bool parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false){
+		this->custom_output_format = customOutputFormat;
+		bool allGood = true;
+
+		std::regex field_identifier_regex("^[A-Z_0-9]{1,}$");
+		for(U32 i = 0; i < command.size(); ++i){
+			std::vector<std::string> partitions = utility::split(command[i], ';');
+			for(U32 p = 0; p < partitions.size(); ++p){
+				partitions[p].erase(std::remove(partitions[p].begin(), partitions[p].end(), ' '), partitions[p].end()); // remove all spaces
+				if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
+					std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
+					for(U32 j = 0; j < ind.size(); ++j){
+						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
+						std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
+						if(std::regex_match(ind[j], field_identifier_regex)){
+							const core::HeaderMapEntry* map = header.getInfoField(ind[j]);
+							if(map == false){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->loadINFO(ind[j]);
+						} else {
+							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
+							allGood = false;
+						}
+					}
+				} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0){
+					this->load_info = true;
+					this->load_set_membership = true;
+				} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
+					std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
+					for(U32 j = 0; j < ind.size(); ++j){
+						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
+						std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
+						if(std::regex_match(ind[j], field_identifier_regex)){
+							const core::HeaderMapEntry* map = header.getFormatField(ind[j]);
+							if(map == false){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->loadFORMAT(ind[j]);
+						} else {
+							std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+							allGood = false;
+						}
+					}
+
+				} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
+						  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
+						  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
+					this->custom_output_controller.show_contig = true;
+					this->load_contig = true;
+				} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
+						  (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
+					this->custom_output_controller.show_position = true;
+					this->load_positons = true;
+				} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
+						  (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
+					this->custom_output_controller.show_ref = true;
+					this->load_alleles = true;
+					this->load_controller = true;
+				} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
+						  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
+					this->custom_output_controller.show_alt = true;
+					this->load_alleles = true;
+					this->load_controller = true;
+				} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
+						  (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
+					this->custom_output_controller.show_quality = true;
+					this->load_quality = true;
+				} else if((strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5) ||
+						  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
+					this->custom_output_controller.show_names = true;
+					this->load_names = true;
+				} else {
+					std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
+					allGood = false;
+				}
+			}
+		}
+
+		if(allGood == false) return false;
+		return true;
 	}
 
 
