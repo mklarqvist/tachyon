@@ -38,6 +38,13 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 	meta.controller.mixed_ploidy     = bcf_entry.gt_support.hasEOV;
 	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
 
+	if(bcf_entry.hasGenotypes){
+		meta.controller.gt_available = true;
+	} else {
+		meta.controller.gt_available = false;
+		return true;
+	}
+
 	// Assess cost and encode
 	rle_helper_type cost;
 	if(meta.controller.biallelic && meta.controller.diploid && meta.controller.mixed_ploidy == false){ // Case diploid and biallelic
@@ -203,34 +210,23 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 bool GenotypeEncoder::EncodeParallel(const bcf_reader_type& bcf_reader,
 		                                         meta_type* meta_entries,
 												block_type& block,
-												 const U32* const ppa) const
+												 const U32* const ppa)
 {
 
-	U32 n_threads = 28;
-
+	const U32 n_threads = 28;
 	GenotypeEncoderSlaveHelper* helpers = new GenotypeEncoderSlaveHelper[bcf_reader.size()];
 	CalcSlave* slaves = new CalcSlave[n_threads];
 	std::vector<std::thread*> threads(n_threads);
 	for(U32 i = 0; i < n_threads; ++i) threads[i] = slaves[i].Start(*this, i, n_threads, bcf_reader, meta_entries, ppa, helpers);
 	for(U32 i = 0; i < n_threads; ++i) threads[i]->join();
-	//std::thread* t = test_slave.Start(*this, 0, 1, bcf_reader, meta_entries, ppa, helpers);
-	//t->join();
-	//for(U32 i = 0; i < bcf_reader.size(); ++i){
-		//if(!this->EncodeParallel(bcf_reader[i], meta_entries[i], ppa, helpers[i])){
-		//	std::cerr << "failed to encode" << std::endl;
-		//	return false;
-		//}
-	//}
-	// Reduce
-	for(U32 i = 0; i < bcf_reader.size(); ++i) block += helpers[i];
+	for(U32 i = 0; i < bcf_reader.size(); ++i) {
+		block += helpers[i];
+		this->updateStatistics(helpers[i]);
+	}
 
 	delete [] slaves;
 	delete [] helpers;
 
-	// Todo: outside
-	//for(U32 i = thread_id; i < N; i += n_threads){
-	//
-	//}
 	return true;
 }
 
@@ -247,14 +243,6 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 		return false;
 	}
 
-	if(bcf_entry.hasGenotypes){
-		meta.controller.gt_available = true;
-	} else {
-		meta.controller.gt_available = false;
-		return true;
-	}
-
-
 	assert(bcf_entry.body != nullptr);
 
 	meta.controller.biallelic        = bcf_entry.body->n_allele    == 2;
@@ -265,6 +253,13 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
 	meta.controller.mixed_ploidy     = bcf_entry.gt_support.hasEOV;
 	meta.controller.gt_phase         = bcf_entry.gt_support.phase;
+
+	if(bcf_entry.hasGenotypes){
+		meta.controller.gt_available = true;
+	} else {
+		meta.controller.gt_available = false;
+		return true;
+	}
 
 	U32 start_capacity = this->n_samples * 2 / 10;
 	if(this->n_samples * 2 / 10 < 65536) start_capacity = 65536;
@@ -418,7 +413,6 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 			return true;
 		}
 	}
-	// temp
 	else {
 		std::cerr << "other bcf style: n_alleles: " << bcf_entry.body->n_allele << ",ploidy: " << bcf_entry.gt_support.ploidy << std::endl;
 		meta.controller.gt_compression_type = YON_GT_BCF_STYLE;
@@ -646,6 +640,46 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 
 	assert(ppa_pos == n_samples);
 	return(rle_helper_type(word_width, chosen_runs));
+}
+
+void GenotypeEncoder::updateStatistics(const GenotypeEncoderSlaveHelper& helper){
+	if(helper.encoding_type == YON_GT_RLE_DIPLOID_BIALLELIC){
+		if(helper.gt_primitive == YON_GT_BYTE){
+			++this->stats_.rle_counts[0];
+		} else if(helper.gt_primitive == YON_GT_U16){
+			++this->stats_.rle_counts[1];
+		} else if(helper.gt_primitive == YON_GT_U32){
+			++this->stats_.rle_counts[2];
+		} else if(helper.gt_primitive == YON_GT_U64){
+			++this->stats_.rle_counts[3];
+		}
+	} else if(helper.encoding_type == YON_GT_RLE_DIPLOID_NALLELIC){
+		if(helper.gt_primitive == YON_GT_BYTE){
+			++this->stats_.rle_simple_counts[0];
+		} else if(helper.gt_primitive == YON_GT_U16){
+			++this->stats_.rle_simple_counts[1];
+		} else if(helper.gt_primitive == YON_GT_U32){
+			++this->stats_.rle_simple_counts[2];
+		} else if(helper.gt_primitive == YON_GT_U64){
+			++this->stats_.rle_simple_counts[3];
+		}
+	} else if(helper.encoding_type == YON_GT_BCF_DIPLOID){
+		if(helper.gt_primitive == YON_GT_BYTE){
+			++this->stats_.diploid_bcf_counts[0];
+		} else if(helper.gt_primitive == YON_GT_U16){
+			++this->stats_.diploid_bcf_counts[1];
+		} else if(helper.gt_primitive == YON_GT_U32){
+			++this->stats_.diploid_bcf_counts[2];
+		}
+	} else if(helper.encoding_type == YON_GT_BCF_STYLE){
+		if(helper.gt_primitive == YON_GT_BYTE){
+			++this->stats_.bcf_counts[0];
+		} else if(helper.gt_primitive == YON_GT_U16){
+			++this->stats_.bcf_counts[1];
+		} else if(helper.gt_primitive == YON_GT_U32){
+			++this->stats_.bcf_counts[2];
+		}
+	}
 }
 
 }

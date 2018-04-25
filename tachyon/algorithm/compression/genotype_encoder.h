@@ -63,6 +63,7 @@ public:
 	}
 	~GenotypeEncoderSlaveHelper(){}
 
+	// Overload operator += for block and RTYPE helper
 	friend block_type& operator+=(block_type& block, const self_type& helper){
 		block.gt_support_data_container.Add((U32)helper.n_runs);
 		++block.gt_support_data_container;
@@ -162,7 +163,7 @@ public:
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
 	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
-	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa) const;
+	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa);
 	bool EncodeParallel(const bcf_type& bcf_entry, meta_type& meta, const U32* const ppa, GenotypeEncoderSlaveHelper& slave_helper) const;
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }
@@ -179,6 +180,15 @@ private:
 	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
 	template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
 	template <class T> bool EncodeMploidRLENallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
+
+	/**<
+	 * Supportive reduce function for updating local import statistics
+	 * following parallel execution of `EncodeParallel`. Iteratively
+	 * call this function with all subproblems to calculate the total
+	 * import statistics of genotypes.
+	 * @param helper Input helper structure
+	 */
+	void updateStatistics(const GenotypeEncoderSlaveHelper& helper);
 
 private:
 	U64 n_samples; // number of samples
@@ -436,6 +446,11 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
 	return(true);
 }
 
+/**<
+ * Parallel support structure: this object encapsulates
+ * a thread that runs the `EncodeParallel` function with
+ * a stride size of N_THREADS
+ */
 struct CalcSlave{
 	typedef CalcSlave       self_type;
 	typedef bcf::BCFEntry   bcf_type;
