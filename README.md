@@ -14,7 +14,7 @@ Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
-### Notice!
+### Status
 Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
 Commits may break functionality!  
 **THERE IS NO STABILITY PROMISE WHATSOEVER!**  
@@ -50,18 +50,33 @@ make
 ```
 
 ## Workflow example: using the CLI
+### `import`: Importing `VCF`/`BCF`
 Import a `bcf` file to `yon` with a block-size of `-c` number of variants and/or `-C` number of base-pairs. If both `-c` and `-C` are set then the block breaks whenever either condition is satisfied.
 ```bash
 tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000
 ```
 
-Viewing a `yon` file in `VCF` format
+### `view`: Viewing, converting, and slicing `YON` files
+Printing a `yon` file as a bit-exact copy of the input `VCF`
 ```bash
 tachyon view -i example_dataset.yon -H
 ```
 Output
 ```
 Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889	GT:AD:DP:GQ:PL	0/0:1,0:1:3:0,3,38	1/1:0,2:.:6:76,6,0	./.:0,0:0:.:0,0,0	0/1:2,2:.:43:58,0,43	0/0:1,0:1:3:0,3,24	0/0:4,0:4:12:0,12,141	./.:0,0:0:.:0,0,0	0/0:1,0:1:3:0,3,29	0/1:1,4:.:19:147,0,19	0/1:3,2:.:49:71,0,49	0/0:5,0:5:0:0,0,81	./.:1,0:1:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:6,0:6:18:0,18,192	1/1:0,2:.:6:58,6,0	0/0:1,0:1:3:0,3,11	./.:1,0:1:.:0,0,0	./.:0,0:0:.:0,0,0	0/1:3,2:.:58:58,0,63	./.:0,0:0:.:0,0,0	0/0:4,0:4:12:0,12,134	0/0:3,0:3:0:0,0,44	0/0:3,0:3:9:0,9,90	./.:0,0:0:.:0,0,0	./.:0,0:0:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:2,0:2:6:0,6,53	0/1:1,2:.:19:62,0,19	0/0:3,0:3:9:0,9,84	0/0:2,0:2:6:0,6,49	0/1:1,2:.:19:74,0,19	0/0:1,0:1:3:0,3,38	./.:2,0:2:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:2,0:2:6:0,6,65	./.:0,0:0:.:0,0,0
+```
+We can check for bit-exact output from `tachyon` by comparing the output of the cryptographic hash function `SHA512` for `bcftools`. We drop the header `-H` as these two are different: both tools inject a timestamp and library versions each time a command is executed.
+```bash
+tachyon view -i example_dataset.yon -H | openssl dgst -sha512
+```
+```
+4c94ee35fa3509935e5ea63f6da9b39dc94b1073b551c7d4d56bca7666a6872ad629b6f91f43a8dc45b306c0b0bbb2f414fb811ed45c7e6434c3570b2e448c68
+```
+```bash
+bcftools view example_dataset.bcf -H | openssl dgst -sha512
+```
+```
+4c94ee35fa3509935e5ea63f6da9b39dc94b1073b551c7d4d56bca7666a6872ad629b6f91f43a8dc45b306c0b0bbb2f414fb811ed45c7e6434c3570b2e448c68
 ```
 
 Listing only site-specific information and `INFO` fields:
@@ -581,7 +596,7 @@ Generated output
 [Richard Durbin](https://github.com/richarddurbin), Wellcome Trust Sanger Institute, and Department of Genetics, University of Cambridge  
 
 ### License
-[MIT](LICENSE)
+Tachyon is licensed under [MIT](LICENSE)
 
 
 [openssl]:  https://www.openssl.org/

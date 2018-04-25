@@ -569,7 +569,6 @@ public:
 		output_buffer.reset();
 		std::cout.flush();
 
-		exit(1);
 		return(n_records_returned);
 	}
 
@@ -590,12 +589,15 @@ public:
 	void printFORMATCustomVector(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 	void printFORMATCustomVectorJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 
-
 	// INFO functions
 	void printINFOVCF(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
 	void printINFOVCF(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	void printINFOCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	void printINFOCustomJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
+
+	// Filters
+	void filterRegions(void) const; // Filter by target intervals
+	void filterFILTER(void) const;  // Filter by desired FILTER values
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
