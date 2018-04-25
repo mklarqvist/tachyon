@@ -239,6 +239,7 @@ int view(int argc, char** argv){
 			if(customDelimiter)
 				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with JSON. Disabled..." << std::endl;
 
+			customOutputFormat = true;
 			reader.getSettings().custom_output_format = true;
 			reader.getSettings().output_json = true;
 			reader.getSettings().output_format_vector = true;
@@ -260,6 +261,7 @@ int view(int argc, char** argv){
 			return(1);
 		} else if(strncmp(&output_type[0], "CUSTOM", 6) == 0 && output_type.size() == 6){
 			reader.getSettings().custom_output_format = true;
+			customOutputFormat = true;
 		} else {
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << output_type << "..." << std::endl;
 			return(1);

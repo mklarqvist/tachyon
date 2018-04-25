@@ -407,13 +407,11 @@ public:
 
 			this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
 
-			this->header.writeVCFHeaderString(std::cout, this->settings.load_format);
+			this->header.writeVCFHeaderString(std::cout, this->settings.load_format || this->settings.format_list.size());
 		}
 
 		// While there are YON blocks
-		while(this->nextBlock()){
-			n_variants += this->outputBlockVCF();
-		}
+		while(this->nextBlock()) n_variants += this->outputBlockVCF();
 		return(n_variants);
 	}
 
@@ -425,9 +423,7 @@ public:
 		U64 n_variants = 0;
 
 		// While there are YON blocks
-		while(this->nextBlock()){
-			n_variants += this->outputBlockCustom();
-		}
+		while(this->nextBlock()) n_variants += this->outputBlockCustom();
 		return(n_variants);
 	}
 
@@ -511,7 +507,6 @@ public:
 		// Function pointer to use
 		print_format_function print_format = &self_type::printFORMATDummy;
 		print_info_function   print_info   = &self_type::printINFODummy;
-		//print_meta_function print_meta   = &utility::to_json_string;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTERDummy;
 
@@ -526,7 +521,7 @@ public:
 			}
 		}
 
-		if(settings.custom_output_controller.show_filter){
+		if(settings.load_info || this->block.n_info_loaded){
 			if(settings.output_json) print_info = &self_type::printINFOCustomJSON;
 			else print_info = &self_type::printINFOCustom;
 		}

@@ -52,39 +52,60 @@ make
 ## Workflow example: using the CLI
 Import a `bcf` file to `yon` with a block-size of `-c` number of variants and/or `-C` number of base-pairs. If both `-c` and `-C` are set then the block breaks whenever either condition is satisfied.
 ```bash
-tachyon import -i 1kgp3_chr20.bcf -o 1kgp3_chr20.yon -c 2000
+tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000
 ```
 
 Viewing a `yon` file in `VCF` format
 ```bash
-tachyon view -i <input.yon>
+tachyon view -i example_dataset.yon
 ```
 
 Listing only site-specific information and INFO fields:
 ```bash
-tachyon view -i <input.yon> -GH
+tachyon view -i example_dataset.yon -GH
 ```
 
 Listing a specific INFO field with output data still adhering to the VCF specification:
 ```bash
-tachyon view -i <input.yon> -GH -f "INFO=AC"
+tachyon view -i example_dataset.yon -GH -f "INFO=AC"
 ```
 
 Add REF and ALT to the output
 ```bash
-tachyon view -i <input.yon> -GH -f "INFO=AC;REF;ALT"
+tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT"
 ```
 
 Listing this output in a custom tab-delimited format
 ```bash
-tachyon view -i <input.yon> -GH -f "INFO=AC;REF;ALT" -c -d'\t'
+tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT" -c -d'\t'
 ```
 
 Listing CHROM,POS, and all INFO fields
 ```bash
-tachyon view -i <input.yon> -GH -f "CHROM;POS;INFO" -c -d'\t'
+tachyon view -i example_dataset.yon -GH -f "CHROM;POS;INFO" -c -d'\t'
 ```
 
+Listing all available INFO fields and the FORMAT fields DP and PL in VCF 
+```bash
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F vcf
+```
+
+Listing all available INFO fields and the FORMAT fields DP and PL in JSON
+```bash
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F JSON
+```
+
+Listing all available INFO fields and the FORMAT fields DP and PL in a custom output format with a tab-delimiter. No
+restrictions are placed on the forming of the output
+```bash
+tachyon view -i example_dataset.yon -f "pos;info;format=dp,pl" -F CUSTOM -cd'\t'
+```
+
+Listing all available INFO fields and the FORMAT fields DP and PL in a custom output format with a tab-delimiter and
+all FORMAT data are printed as vectors of samples instead of per-sample
+```bash
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F CUSTOM -cd'\t' -V
+```
 
 ## C++ API Examples
 ### Standard containers

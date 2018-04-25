@@ -758,7 +758,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ',';
 				outputBuffer += "\"INFO-";
-				outputBuffer += objects.info_field_names[targetKeys[0]];
+				outputBuffer += objects.info_field_names[targetKeys[i]];
 				outputBuffer += "\":";
 				if(this->header.info_fields[this->block.info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += "true";
