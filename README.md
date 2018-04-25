@@ -57,54 +57,102 @@ tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000
 
 Viewing a `yon` file in `VCF` format
 ```bash
-tachyon view -i example_dataset.yon
+tachyon view -i example_dataset.yon -H
+```
+Output
+```
+Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889	GT:AD:DP:GQ:PL	0/0:1,0:1:3:0,3,38	1/1:0,2:.:6:76,6,0	./.:0,0:0:.:0,0,0	0/1:2,2:.:43:58,0,43	0/0:1,0:1:3:0,3,24	0/0:4,0:4:12:0,12,141	./.:0,0:0:.:0,0,0	0/0:1,0:1:3:0,3,29	0/1:1,4:.:19:147,0,19	0/1:3,2:.:49:71,0,49	0/0:5,0:5:0:0,0,81	./.:1,0:1:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:6,0:6:18:0,18,192	1/1:0,2:.:6:58,6,0	0/0:1,0:1:3:0,3,11	./.:1,0:1:.:0,0,0	./.:0,0:0:.:0,0,0	0/1:3,2:.:58:58,0,63	./.:0,0:0:.:0,0,0	0/0:4,0:4:12:0,12,134	0/0:3,0:3:0:0,0,44	0/0:3,0:3:9:0,9,90	./.:0,0:0:.:0,0,0	./.:0,0:0:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:2,0:2:6:0,6,53	0/1:1,2:.:19:62,0,19	0/0:3,0:3:9:0,9,84	0/0:2,0:2:6:0,6,49	0/1:1,2:.:19:74,0,19	0/0:1,0:1:3:0,3,38	./.:2,0:2:.:0,0,0	./.:0,0:0:.:0,0,0	0/0:2,0:2:6:0,6,65	./.:0,0:0:.:0,0,0
 ```
 
-Listing only site-specific information and INFO fields:
+Listing only site-specific information and `INFO` fields:
 ```bash
 tachyon view -i example_dataset.yon -GH
 ```
+Output
+```
+Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889
+```
 
-Listing a specific INFO field with output data still adhering to the VCF specification:
+Listing a specific `INFO` field with output data still adhering to the `VCF` specification:
 ```bash
 tachyon view -i example_dataset.yon -GH -f "INFO=AC"
 ```
+Output
+```
+Contig110_arrow	672	.	.	.	.	basic_filtering	AC=10
+```
 
-Add REF and ALT to the output
+Add `REF` and `ALT` to the output
 ```bash
 tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT"
+```
+Output
+```
+Contig110_arrow	19575	.	A	C	.	basic_filtering	AC=2
 ```
 
 Listing this output in a custom tab-delimited format
 ```bash
 tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT" -c -d'\t'
 ```
-
-Listing CHROM,POS, and all INFO fields
-```bash
-tachyon view -i example_dataset.yon -GH -f "CHROM;POS;INFO" -c -d'\t'
+Output (first five lines)
+```
+A	T	10
+A	T	36
+TG	T	34
+G	A	2
+G	C	2
 ```
 
-Listing all available INFO fields and the FORMAT fields DP and PL in VCF 
+Listing `CHROM`, `POS`, and all `INFO` fields
 ```bash
-tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F vcf
+tachyon view -i example_dataset.yon -GH -f "CHROM;POS;INFO" -c -d'|'
+```
+Output
+```
+Contig110_arrow|672|10|0.217|46|0.967|72|0.8113|54.73|-0.0525|11|0.239|31.05|1.38|18.11|-0.431|5.889
 ```
 
-Listing all available INFO fields and the FORMAT fields DP and PL in JSON
+Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in VCF 
+```bash
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F vcf -H
+```
+Output
+```
+Contig110_arrow	672	.	A	T	.	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889	DP:PL	1:0,3,38	.:76,6,0	0:0,0,0	.:58,0,43	1:0,3,24	4:0,12,141	0:0,0,0	1:0,3,29	.:147,0,19	.:71,0,49	5:0,0,81	1:0,0,0	0:0,0,0	6:0,18,192	.:58,6,0	1:0,3,11	1:0,0,0	0:0,0,0	.:58,0,63	0:0,0,0	4:0,12,134	3:0,0,44	3:0,9,90	0:0,0,0	0:0,0,0	0:0,0,0	2:0,6,53	.:62,0,19	3:0,9,84	2:0,6,49	.:74,0,19	1:0,3,38	2:0,0,0	0:0,0,0	2:0,6,65	0:0,0,0
+```
+
+Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in JSON
 ```bash
 tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F JSON
 ```
+Output
+```json
+"block":{"obj-0":{"contig":"Contig110_arrow","position":672,"ref":"A","alt":"T","INFO-AC":10,"INFO-AF":0.217,"INFO-AN":46,"INFO-BaseQRankSum":0.967,"INFO-DP":72,"INFO-ExcessHet":0.8113,"INFO-FS":54.73,"INFO-InbreedingCoeff":-0.0525,"INFO-MLEAC":11,"INFO-MLEAF":0.239,"INFO-MQ":31.05,"INFO-MQRankSum":1.38,"INFO-QD":18.11,"INFO-ReadPosRankSum":-0.431,"INFO-SOR":5.889,"FORMAT-DP":[1,null,0,null,1,4,0,1,null,null,5,1,0,6,null,1,1,0,null,0,4,3,3,0,0,0,2,null,3,2,null,1,2,0,2,0],"FORMAT-PL":[[0,3,38],[76,6,0],[0,0,0],[58,0,43],[0,3,24],[0,12,141],[0,0,0],[0,3,29],[147,0,19],[71,0,49],[0,0,81],[0,0,0],[0,0,0],[0,18,192],[58,6,0],[0,3,11],[0,0,0],[0,0,0],[58,0,63],[0,0,0],[0,12,134],[0,0,44],[0,9,90],[0,0,0],[0,0,0],[0,0,0],[0,6,53],[62,0,19],[0,9,84],[0,6,49],[74,0,19],[0,3,38],[0,0,0],[0,0,0],[0,6,65],[0,0,0]]},
+```
 
-Listing all available INFO fields and the FORMAT fields DP and PL in a custom output format with a tab-delimiter. No
-restrictions are placed on the forming of the output
+Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in a custom output format with a tab-delimiter. No restrictions are placed on the output format
 ```bash
 tachyon view -i example_dataset.yon -f "pos;info;format=dp,pl" -F CUSTOM -cd'\t'
 ```
+Output
+```
+672	10	0.217	46	0.967	72	0.8113	54.73	-0.0525	11	0.239	31.05	1.38	18.11	-0.431	5.889	DP:PL	1:0,3,38	.:76,6,0	0:0,0,0	.:58,0,43	1:0,3,24	4:0,12,141	0:0,0,01:0,3,29	.:147,0,19	.:71,0,49	5:0,0,81	1:0,0,0	0:0,0,0	6:0,18,192	.:58,6,0	1:0,3,11	1:0,0,0	0:0,0,0	.:58,0,63	0:0,0,0	4:0,12,134	3:0,0,44	3:0,9,90	0:0,0,0	0:0,0,00:0,0,0	2:0,6,53	.:62,0,19	3:0,9,84	2:0,6,49	.:74,0,19	1:0,3,38	2:0,0,0	0:0,0,0	2:0,6,65	0:0,0,0
+```
 
-Listing all available INFO fields and the FORMAT fields DP and PL in a custom output format with a tab-delimiter and
-all FORMAT data are printed as vectors of samples instead of per-sample
+Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in a custom output format with a tab-delimiter and
+all `FORMAT` data are printed as vectors of samples instead of per-sample
 ```bash
 tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F CUSTOM -cd'\t' -V
+```
+Output
+```
+Contig110_arrow	672	A	T	10	0.217	46	0.967	72	0.8113	54.73	-0.0525	11	0.239	31.05	1.38	18.11	-0.431	5.889	DP:PL	1,.,0,.,1,4,0,1,.,.,5,1,0,6,.,1,1,0,.,0,4,3,3,0,0,0,2,.,3,2,.,1,2,0,2,0	0,3,38,76,6,0,0,0,0,58,0,43,0,3,24,0,12,141,0,0,0,0,3,29,147,0,19,71,0,49,0,0,81,0,0,0,0,0,0,0,18,192,58,6,0,0,3,11,0,0,0,0,0,0,58,0,63,0,0,0,0,12,134,0,0,44,0,9,90,0,0,0,0,0,0,0,0,0,0,6,53,62,0,19,0,9,84,0,6,49,74,0,19,0,3,38,0,0,0,0,0,0,0,6,65,0,0,0
+```
+
+Output all available `INFO` fields and the `FORMAT` field `DP` and `FILTERS`
+```bash
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -F CUSTOM -cd';' -V
 ```
 
 ## C++ API Examples
