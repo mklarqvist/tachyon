@@ -76,7 +76,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObje
 std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller);
-io::BasicBuffer& to_json(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller);
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller);
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller);
 
 }
 }

@@ -31,6 +31,11 @@ public:
 			delete [] this->buffer;
 	}
 
+	inline reference back(void){ return(this->buffer[this->n_chars-1]); }
+	inline reference front(void){ return(this->buffer[0]); }
+	inline const_reference back(void) const{ return(this->buffer[this->n_chars-1]); }
+	inline const_reference front(void) const{ return(this->buffer[0]); }
+
 	class iterator{
 	private:
 		typedef iterator self_type;

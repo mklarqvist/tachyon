@@ -96,7 +96,9 @@ struct DataBlockSettings{
 		construct_occ_table(false),
 		custom_delimiter(false),
 		custom_output_format(false),
-		custom_delimiter_char('\t')
+		custom_delimiter_char('\t'),
+		output_json(false),
+		output_format_vector(false)
 	{}
 
 	self_type& loadAll(const bool set = true){
@@ -274,6 +276,10 @@ struct DataBlockSettings{
 						  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
 					this->custom_output_controller.show_names = true;
 					this->load_names = true;
+				} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
+						  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
+					this->custom_output_controller.show_filter = true;
+					this->load_set_membership = true;
 				} else {
 					std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
 					allGood = false;
@@ -307,6 +313,9 @@ public:
 	bool custom_delimiter;
 	bool custom_output_format;
 	char custom_delimiter_char;
+
+	bool output_json;
+	bool output_format_vector;
 
 	SettingsCustomOutput custom_output_controller;
 

@@ -71,6 +71,7 @@ int view(int argc, char** argv){
 		{"filterAll",   no_argument, 0,  'M' },
 		{"delimiter",   optional_argument, 0,  'd' },
 		{"output-type", optional_argument, 0,  'F' },
+		{"vector-output", no_argument, 0,  'V' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -93,9 +94,12 @@ int view(int argc, char** argv){
 	bool filterAny = false;
 	bool filterAll = false;
 
+	std::string output_type;
+	bool output_FORMAT_as_vector = false;
+
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmM?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmMV?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -144,8 +148,12 @@ int view(int argc, char** argv){
 		case 'H':
 			showHeader = false;
 			break;
+		case 'V':
+			output_FORMAT_as_vector = true;
+			break;
 
 		case 'F':
+			output_type = std::string(optarg);
 			break;
 
 		default:
@@ -221,6 +229,41 @@ int view(int argc, char** argv){
 			return(1);
 		}
 		reader.getSettings().setCustomDelimiter(customDelimiterChar);
+	}
+
+	reader.getSettings().output_format_vector = output_FORMAT_as_vector;
+
+	if(output_type.size()){
+		std::transform(output_type.begin(), output_type.end(), output_type.begin(), ::toupper); // transform to UPPERCASE
+		if(strncmp(&output_type[0], "JSON", 4) == 0 && output_type.size() == 4){
+			if(customDelimiter)
+				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with JSON. Disabled..." << std::endl;
+
+			reader.getSettings().custom_output_format = true;
+			reader.getSettings().output_json = true;
+			reader.getSettings().output_format_vector = true;
+		} else if(strncmp(&output_type[0], "VCF", 3) == 0 && output_type.size() == 3){
+			if(customDelimiter)
+				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with VCF. Disabled..." << std::endl;
+
+			reader.getSettings().custom_output_format = false;
+			reader.getSettings().custom_delimiter = false;
+			reader.getSettings().custom_delimiter_char = '\t';
+
+			if(output_FORMAT_as_vector)
+				std::cerr << tachyon::utility::timestamp("WARNING") << "Output FORMAT as vectors (-V) is incompatible with VCF output. Disabled..." << std::endl;
+
+			reader.getSettings().output_format_vector = false;
+		} else if(strncmp(&output_type[0], "BCF", 3) == 0 && output_type.size() == 3){
+			reader.getSettings().custom_output_format = false;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "BCF output not supported yet." << std::endl;
+			return(1);
+		} else if(strncmp(&output_type[0], "CUSTOM", 6) == 0 && output_type.size() == 6){
+			reader.getSettings().custom_output_format = true;
+		} else {
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << output_type << "..." << std::endl;
+			return(1);
+		}
 	}
 
 	tachyon::algorithm::Timer timer;

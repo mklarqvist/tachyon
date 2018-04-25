@@ -74,6 +74,7 @@ public:
 
 	std::vector<std::string> info_field_names;
 	std::vector<std::string> format_field_names;
+
 	meta_container_type*     meta;
 	gt_container_type*       genotypes;
 	info_interface_type**    info_fields;
@@ -97,6 +98,12 @@ class VariantReader{
 	typedef containers::GenotypeContainer          gt_container_type;
 	typedef containers::InfoContainerInterface     info_interface_type;
 	typedef containers::FormatContainerInterface   format_interface_type;
+
+	// Function pointers
+	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
+	typedef void (self_type::*print_info_function)(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
+	typedef void (self_type::*print_filter_function)(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const core::SettingsCustomOutput& controller);
 
 public:
 	VariantReader();
@@ -383,137 +390,7 @@ public:
 	 * @param objects Target objects
 	 * @return        Returns reference to input target objects
 	 */
-	objects_type& loadObjects(objects_type& objects) const{
-		objects.meta = new meta_container_type(this->block);
-		if(this->block.header.controller.hasGT && settings.load_genotypes_all){
-			objects.genotypes = new gt_container_type(this->block, *objects.meta);
-		}
-
-		objects.n_loaded_format = this->block.n_format_loaded;
-		objects.format_fields = new format_interface_type*[objects.n_loaded_format];
-
-		if(this->block.n_format_loaded){
-			for(U32 i = 0; i < this->block.n_format_loaded; ++i){
-				const U32 global_key = settings.load_format_ID_loaded[i].offset->data_header.global_key;
-				std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
-
-				if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-					objects.format_fields[i] = new containers::FormatContainer<S32>(this->block.format_containers[i], *objects.meta, matches, this->header.getSampleNumber());
-					objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
-				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-						  this->header.format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-					objects.format_fields[i] = new containers::FormatContainer<std::string>(this->block.format_containers[i], *objects.meta, matches, this->header.getSampleNumber());
-					objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
-				} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-					objects.format_fields[i] = new containers::FormatContainer<float>(this->block.format_containers[i], *objects.meta, matches, this->header.getSampleNumber());
-					objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
-				} else {
-					objects.format_fields[i] = new containers::FormatContainer<U32>;
-					objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
-				}
-			}
-		}
-
-		// Store as double pointers to avoid memory collisions because
-		// info containers have different class members
-		objects.n_loaded_info = this->block.n_info_loaded;
-		objects.info_fields = new info_interface_type*[objects.n_loaded_info];
-
-		if(this->block.n_info_loaded){
-			for(U32 i = 0; i < this->block.n_info_loaded; ++i){
-				const U32 global_key = settings.load_info_ID_loaded[i].offset->data_header.global_key;
-				std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
-
-				if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-					objects.info_fields[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], *objects.meta, matches);
-					objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-						  this->header.info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-					objects.info_fields[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], *objects.meta, matches);
-					objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
-				} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-					objects.info_fields[i] = new containers::InfoContainer<float>(this->block.info_containers[i], *objects.meta, matches);
-					objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
-				} else {
-					objects.info_fields[i] = new containers::InfoContainer<U32>();
-					objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
-				}
-			}
-		}
-
-		// If we want to drop records that do not have all/any of the fields we desire
-		// then we create a vector of size N_PATTERNS and set those that MATCH to TRUE
-		// this allows for filtering in O(1)-time
-		//
-		// This vector stores the number of INFO fields having set membership with this
-		// particular hash pattern
-		objects.info_keep = std::vector<U32>(this->block.footer.n_info_patterns, 0);
-		objects.format_keep = std::vector<U32>(this->block.footer.n_format_patterns, 0);
-
-		// This vector of vectors keeps the local INFO identifiers for the matched global
-		// identifiers in a given hash pattern
-		//
-		// For example: x[5] contains the local IDs for loaded INFO streams for pattern ID 5
-		objects.local_match_keychain_info = std::vector< std::vector<U32> >(this->block.footer.n_info_patterns);
-		objects.local_match_keychain_format = std::vector< std::vector<U32> >(this->block.footer.n_format_patterns);
-
-		// If loading all INFO values then return them in the ORIGINAL order
-		if(this->settings.load_info){
-			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
-				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-					for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-							objects.local_match_keychain_info[i].push_back(k);
-							++objects.info_keep[i];
-						}
-					}
-				}
-			}
-		}
-		// If loading custom INFO fields then return them in the REQUESTED order
-		else {
-			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // i = Number of info patterns
-				for(U32 k = 0; k < settings.load_info_ID_loaded.size(); ++k){ // k = Number of loaded INFO identifiers
-					for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-						if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_info_ID_loaded[k].offset->data_header.global_key){
-							objects.local_match_keychain_info[i].push_back(k);
-							++objects.info_keep[i];
-						}
-					}
-				}
-			}
-		}
-
-		// For FORMAT
-		// If loading all FORMAT values then return them in the ORIGINAL order
-		if(this->settings.load_format){
-			for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){ // Number of info patterns
-				for(U32 j = 0; j < this->block.footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-					for(U32 k = 0; k < settings.load_format_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-						if(this->block.footer.format_offsets[this->block.footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_format_ID_loaded[k].offset->data_header.global_key){
-							objects.local_match_keychain_format[i].push_back(k);
-							++objects.format_keep[i];
-						}
-					}
-				}
-			}
-		}
-		// If loading custom FORMAT fields then return them in the REQUESTED order
-		else {
-			for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){ // i = Number of info patterns
-				for(U32 k = 0; k < settings.load_format_ID_loaded.size(); ++k){ // k = Number of loaded INFO identifiers
-					for(U32 j = 0; j < this->block.footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-						if(this->block.footer.format_offsets[this->block.footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == settings.load_format_ID_loaded[k].offset->data_header.global_key){
-							objects.local_match_keychain_format[i].push_back(k);
-							++objects.format_keep[i];
-						}
-					}
-				}
-			}
-		}
-
-		return(objects);
-	}
+	objects_type& loadObjects(objects_type& objects) const;
 
 	/**<
 	 * Outputs
@@ -569,15 +446,15 @@ public:
 
 		for(U32 p = 0; p < objects.meta->size(); ++p){
 			if(this->settings.custom_output_format)
-				utility::to_vcf_string(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], this->header, this->settings.custom_output_controller);
+				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->settings.custom_output_controller);
 			else
-				utility::to_vcf_string(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], this->header);
+				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
 
 			// Filter options
 			if(settings.load_set_membership) this->printFILTER(output_buffer, p, objects);
 			else output_buffer += '.';
 
-			if(settings.load_info || settings.load_format || this->block.n_info_loaded) output_buffer += this->settings.custom_delimiter_char;
+			if(settings.load_info || settings.load_format || this->block.n_info_loaded) output_buffer += '\t';
 			else {
 				output_buffer += '\n';
 				continue;
@@ -590,7 +467,7 @@ public:
 				output_buffer += this->settings.custom_delimiter_char;
 
 				if(this->settings.format_ID_list.size())
-					this->printFORMATCustom(output_buffer, this->settings.custom_delimiter_char, p, objects, genotypes_unpermuted);
+					this->printFORMATCustom(output_buffer, '\t', p, objects, genotypes_unpermuted);
 				else
 					this->printFORMATVCF(output_buffer, p, objects, genotypes_unpermuted);
 
@@ -627,254 +504,103 @@ public:
 		io::BasicBuffer output_buffer(256000 + this->header.getSampleNumber()*2);
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 
+		// Todo: move to function
 		U32 info_match_limit = 1; // any match
 		//info_match_limit = this->settings.info_list.size(); // all match
 
+		// Function pointer to use
+		print_format_function print_format = &self_type::printFORMATDummy;
+		print_info_function   print_info   = &self_type::printINFODummy;
+		//print_meta_function print_meta   = &utility::to_json_string;
+		print_meta_function   print_meta   = &utility::to_vcf_string;
+		print_filter_function print_filter = &self_type::printFILTERDummy;
+
+		if(settings.output_json) print_meta = &utility::to_json_string;
+
+		if(settings.load_format || this->block.n_format_loaded){
+			if(settings.output_json){
+				print_format = &self_type::printFORMATCustomVectorJSON;
+			} else {
+				if(settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
+				else print_format = &self_type::printFORMATCustom;
+			}
+		}
+
+		if(settings.custom_output_controller.show_filter){
+			if(settings.output_json) print_info = &self_type::printINFOCustomJSON;
+			else print_info = &self_type::printINFOCustom;
+		}
+
+		if(settings.custom_output_controller.show_filter){
+			if(settings.output_json) print_filter = &self_type::printFILTERJSON;
+			else print_filter = &self_type::printFILTERCustom;
+		}
+
 		U32 n_records_returned = 0;
 
-		for(U32 p = 0; p < objects.meta->size(); ++p){
+		if(settings.output_json) output_buffer += "\"block\":{";
+		for(U32 position = 0; position < objects.meta->size(); ++position){
 			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 			//	continue;
+			if(settings.output_json){
+				if(position != 0) output_buffer += ",\n";
 
+				output_buffer += "\"obj-";
+				output_buffer.AddReadble(position);
+				output_buffer += "\":{";
+			}
 			++n_records_returned;
 
-			utility::to_vcf_string(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[p], this->header, this->settings.custom_output_controller);
+			(*print_meta)(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->settings.custom_output_controller);
+			(this->*print_filter)(output_buffer, position, objects);
+			(this->*print_info)(output_buffer, this->settings.custom_delimiter_char, position, objects);
+			(this->*print_format)(output_buffer, this->settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
 
-			//output_buffer += '{';
-			//utility::to_json(output_buffer, (*objects.meta)[p], this->header, this->settings.custom_output_controller);
-			//output_buffer += '}';
+			if(settings.output_json) output_buffer += "}";
+			else output_buffer += '\n';
+			//output_buffer += "}";
 
-			this->printINFOCustom(output_buffer, this->settings.custom_delimiter_char, p, objects);
-
-			if(settings.load_format || this->block.n_format_loaded){
-				output_buffer += this->settings.custom_delimiter_char;
-
-				// Add FORMAT data
-				this->printFORMATCustom(output_buffer, this->settings.custom_delimiter_char, p, objects, genotypes_unpermuted);
-			}
-			output_buffer += '\n';
-
+			// Flush if buffer is large
 			if(output_buffer.size() > 65536){
 				std::cout.write(output_buffer.data(), output_buffer.size());
 				output_buffer.reset();
 				std::cout.flush();
 			}
 		}
+		if(settings.output_json) output_buffer += "}";
 
+		// Flush buffer
 		std::cout.write(output_buffer.data(), output_buffer.size());
 		output_buffer.reset();
 		std::cout.flush();
 
+		exit(1);
 		return(n_records_returned);
 	}
 
-	/**<
-	 *
-	 * @param outputBuffer
-	 * @param position
-	 * @param objects
-	 */
-	void printFILTER(buffer_type& outputBuffer,
-					 const U32& position,
-					 const objects_type& objects) const
-	{
-		if(this->block.footer.n_filter_streams){
-			const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].n_keys;
-			const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].local_keys;
-			if(n_filter_keys){
-				// Local key -> global key
-				outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
-				for(U32 i = 1; i < n_filter_keys; ++i){
-					outputBuffer += ';';
-					outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
-				}
-			} else
-				outputBuffer += '.';
-		} else {
-			outputBuffer += '.';
-		}
-	}
+	// Dummy functions as interfaces for function pointers
+	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
+	inline void printFORMATDummy(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const{}
+	inline void printINFODummy(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const{}
 
-	/**<
-	 *
-	 * @param buffer
-	 * @param position
-	 * @param objects
-	 * @param genotypes_unpermuted
-	 */
-	void printFORMATVCF(buffer_type& buffer,
-                        const U32& position,
-						const objects_type& objects,
-                        std::vector<core::GTObject>& genotypes_unpermuted) const
-	{
-		if(settings.load_format && this->block.n_format_loaded){
-			if(this->block.n_format_loaded){
-				const U32& n_format_keys = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].n_keys;
-				const U32* format_keys   = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].local_keys;
-				if(n_format_keys){
-					// Print key map
-					buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
-					for(U32 i = 1; i < n_format_keys; ++i){
-						buffer += ':';
-						buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
-					}
-					buffer += '\t';
+	// FILTER functions
+	void printFILTER(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	void printFILTERCustom(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	void printFILTERJSON(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
 
-					// Todo: print if no GT data
-					// Begin print FORMAT data for each sample
-					if(this->settings.load_ppa && this->block.header.controller.hasGTPermuted){
-						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber(), this->block.ppa_manager);
-					} else {
-						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber());
-					}
-
-					buffer << genotypes_unpermuted[0];
-					for(U32 i = 1; i < n_format_keys; ++i){
-						buffer += ':';
-						objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, 0);
-					}
-
-					for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
-						buffer += '\t';
-						buffer << genotypes_unpermuted[s];
-						for(U32 i = 1; i < n_format_keys; ++i){
-							buffer  += ':';
-							objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, s);
-						}
-					}
-				} else // have no keys
-					buffer += ".\t";
-			}
-		}
-	}
-
-	/**<
-	 *
-	 * @param outputBuffer
-	 * @param delimiter
-	 * @param position
-	 * @param objects
-	 * @param genotypes_unpermuted
-	 */
-	void printFORMATCustom(buffer_type& outputBuffer,
-						   const char& delimiter,
-						   const U32& position,
-						   const objects_type& objects,
-						   std::vector<core::GTObject>& genotypes_unpermuted) const
-	{
-		if(settings.load_format || this->block.n_format_loaded){
-			const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta->at(position).format_pattern_id];
-			if(this->block.n_info_loaded && targetKeys.size()){
-				// Print key map
-				outputBuffer += this->header.format_fields[this->block.format_containers[targetKeys[0]].header.getGlobalKey()].ID;
-				for(U32 i = 1; i < targetKeys.size(); ++i){
-					outputBuffer += ':';
-					outputBuffer += this->header.format_fields[this->block.format_containers[targetKeys[i]].header.getGlobalKey()].ID;
-				};
-
-				outputBuffer += delimiter;
-
-				// First individual
-				//if(this->header.getSampleNumber() > 1) outputBuffer += '[';
-
-				//if(targetKeys.size() > 1) outputBuffer += '[';
-				objects.format_fields[targetKeys[0]]->to_vcf_string(outputBuffer, position, 0);
-				for(U32 i = 1; i < targetKeys.size(); ++i){
-					outputBuffer += ':';
-					objects.format_fields[targetKeys[i]]->to_vcf_string(outputBuffer, position, 0);
-				}
-				//if(targetKeys.size() > 1) outputBuffer += ']';
-
-				for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
-					outputBuffer += delimiter;
-					//if(targetKeys.size() > 1) outputBuffer += '[';
-					objects.format_fields[targetKeys[0]]->to_vcf_string(outputBuffer, position, s);
-					for(U32 i = 1; i < targetKeys.size(); ++i){
-						outputBuffer  += ':';
-						objects.format_fields[targetKeys[i]]->to_vcf_string(outputBuffer, position, s);
-					}
-					//if(targetKeys.size() > 1) outputBuffer += ']';
-				}
+	// FORMAT functions
+	void printFORMATVCF(buffer_type& buffer, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
+	void printFORMATVCF(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
+	void printFORMATCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
+	void printFORMATCustomVector(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
+	void printFORMATCustomVectorJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 
 
-				//if(this->header.getSampleNumber() > 1) outputBuffer += ']';
-			}
-		}
-	}
-
-	/**<
-	 * Outputs INFO fields in VCF formatting
-	 * @param outputBuffer
-	 * @param position
-	 * @param objects
-	 */
-	void printINFOVCF(buffer_type& outputBuffer,
-                      const U32& position,
-					  const objects_type& objects) const
-	{
-		if(settings.load_info || this->block.n_info_loaded){
-			const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta->at(position).info_pattern_id];
-
-			if(this->block.n_info_loaded && targetKeys.size()){
-				// First
-				outputBuffer += objects.info_field_names[targetKeys[0]];
-				if(objects.info_fields[targetKeys[0]]->emptyPosition(position) == false){
-					outputBuffer += '=';
-					objects.info_fields[targetKeys[0]]->to_vcf_string(outputBuffer, position);
-				}
-
-				for(U32 i = 1; i < targetKeys.size(); ++i){
-					outputBuffer += ";";
-					outputBuffer += objects.info_field_names[targetKeys[i]];
-					if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
-						continue;
-					}
-					if(objects.info_fields[targetKeys[i]]->emptyPosition(position)) continue;
-					outputBuffer += '=';
-					objects.info_fields[targetKeys[i]]->to_vcf_string(outputBuffer, position);
-				}
-			} else
-				outputBuffer += '.';
-		}
-	}
-
-	/**<
-	 * Outputs INFO fields in a custom format with the delimiter provided
-	 * @param outputBuffer
-	 * @param delimiter
-	 * @param position
-	 * @param objects
-	 */
-	void printINFOCustom(buffer_type& outputBuffer,
-                         const char& delimiter,
-						 const U32& position,
-						 const objects_type& objects) const
-	{
-		if(settings.load_info || this->block.n_info_loaded){
-			const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta->at(position).info_pattern_id];
-			if(this->block.n_info_loaded && targetKeys.size()){
-				// Check if this target container is a FLAG
-				if(this->header.info_fields[this->block.info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
-					outputBuffer += this->header.info_fields[this->block.info_containers[targetKeys[0]].header.getGlobalKey()].ID;
-				} else {
-					// Check if the positon is empty
-					if(objects.info_fields[targetKeys[0]]->emptyPosition(position) == false){
-						objects.info_fields[targetKeys[0]]->to_vcf_string(outputBuffer, position);
-					}
-				}
-
-				for(U32 i = 1; i < targetKeys.size(); ++i){
-					outputBuffer += delimiter;
-					if(this->header.info_fields[this->block.info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
-						outputBuffer += this->header.info_fields[this->block.info_containers[targetKeys[i]].header.getGlobalKey()].ID;
-						continue;
-					}
-					if(objects.info_fields[targetKeys[i]]->emptyPosition(position)) continue;
-					objects.info_fields[targetKeys[i]]->to_vcf_string(outputBuffer, position);
-				}
-			}
-		}
-	}
+	// INFO functions
+	void printINFOVCF(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	void printINFOVCF(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
+	void printINFOCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
+	void printINFOCustomJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
