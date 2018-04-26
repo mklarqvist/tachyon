@@ -274,6 +274,10 @@ int view(int argc, char** argv){
 	if(showHeader) reader.getSettings().show_vcf_header = true;
 	else reader.getSettings().show_vcf_header = false;
 
+	//while(reader.nextBlock())
+	//reader.getGenotypeSummary(std::cout);
+	//return(0);
+
 	U64 n_variants = 0;
 	if(customOutputFormat) n_variants = reader.outputCustom();
 	else n_variants = reader.outputVCF();

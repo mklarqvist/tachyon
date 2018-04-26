@@ -103,6 +103,22 @@ public:
 		return(total);
 	}
 
+	U64 alleleCountA(void) const{
+		U64 total = 0;
+		for(U32 i = 2; i < this->n_alleles_; ++i){
+			total += this->vectorA_[i];
+		}
+		return(total);
+	}
+
+	U64 alleleCountB(void) const{
+		U64 total = 0;
+		for(U32 i = 2; i < this->n_alleles_; ++i){
+			total += this->vectorB_[i];
+		}
+		return(total);
+	}
+
 	U64 genotypeCount(void) const{
 		U64 total = 0;
 		for(U32 i = 2; i < this->n_alleles_; ++i){

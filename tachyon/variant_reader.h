@@ -597,6 +597,41 @@ public:
 	void filterRegions(void) const; // Filter by target intervals
 	void filterFILTER(void) const;  // Filter by desired FILTER values
 
+	// Calculations
+	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const{
+		const S32 ref_size = meta.alleles[0].size();
+		const S32 diff = ref_size - meta.alleles[allele].size();
+		//std::cerr << diff << ",";
+		if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<') return(YON_VARIANT_CLASS_SV);
+		else if(diff == 0){
+			if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
+				if(meta.alleles[allele].allele[0] == 'A' || meta.alleles[allele].allele[0] == 'T' || meta.alleles[allele].allele[0] == 'G' || meta.alleles[allele].allele[0] == 'C')
+					return(YON_VARIANT_CLASS_SNP);
+				else return(YON_VARIANT_CLASS_UNKNOWN);
+			}
+			else if(ref_size != 1){
+				U32 characters_identical = 0;
+				const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+
+				for(U32 c = 0; c < length_shortest; ++c){
+					characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
+				}
+
+				if(characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
+				else return(YON_VARIANT_CLASS_CLUMPED);
+			}
+		} else {
+			const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+			U32 characters_non_standard = 0;
+			for(U32 c = 0; c < length_shortest; ++c){
+				characters_non_standard += (meta.alleles[allele].allele[c] != 'A' && meta.alleles[allele].allele[c] != 'T' && meta.alleles[allele].allele[c] != 'C' && meta.alleles[allele].allele[c] !='G');
+			}
+			if(characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
+			else return(YON_VARIANT_CLASS_INDEL);
+		}
+		return(YON_VARIANT_CLASS_UNKNOWN);
+	}
+
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
@@ -679,24 +714,67 @@ public:
 		containers::MetaContainer meta(this->block);
 		containers::GenotypeContainer gt(this->block, meta);
 		containers::GenotypeSummary gtsum(10);
+		math::Fisher fisher;
 
 		for(U32 i = 0; i < gt.size(); ++i){
+			if(meta[i].isDiploid() == false){
+				std::cerr << "is not diploid" << std::endl;
+				continue;
+			}
+
 			gt[i].getSummary(gtsum);
 			std::vector<double> hwe_p = gtsum.calculateHardyWeinberg(meta[i]);
-			std::vector<double> af = gtsum.calculateAlleleFrequency(meta[i]);
-			//if(hwe_p[0] < 1e-3){
-				utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta[i], this->header);
-				stream << "AF=" << af[0];
-				for(U32 p = 1; p < af.size(); ++p){
-					stream << "," << af[p];
-				}
-				stream << ";HWE_P=" << hwe_p[0];
+			std::vector<double> af    = gtsum.calculateAlleleFrequency(meta[i]);
 
-				for(U32 p = 1; p < hwe_p.size(); ++p){
-					stream << "," << hwe_p[p];
+			utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta[i], this->header);
+
+			// Fisher's exact test for strand bias of allele counts
+			//                    Forward strand    Reverse strand
+			// Target Allele           A                  B
+			// Not Target Allele       C                  D
+			stream << "FS_A=";
+			stream << -10 * log10(fisher.fisherTest(
+					gtsum.vectorA_[2], // A: Allele on forward strand
+					gtsum.vectorB_[2], // B: Allele on reverse strand
+					gtsum.alleleCountA() - (gtsum.vectorA_[2]),  // C: Not allele on forward strand
+					gtsum.alleleCountB() - (gtsum.vectorB_[2]))  // D: Not allele on revese strand
+			);
+			// If n_alleles = 2 then they are identical because of symmetry
+			if(meta[i].n_alleles > 2){
+				for(U32 p = 1; p < meta[i].n_alleles; ++p){
+					stream << ',' <<  -10 * log10(fisher.fisherTest(
+							gtsum.vectorA_[2+p],
+							gtsum.vectorB_[2+p],
+							gtsum.alleleCountA() - (gtsum.vectorA_[2+p]),
+							gtsum.alleleCountB() - (gtsum.vectorB_[2+p]))
+					);
 				}
-				stream.put('\n');
-			//}
+			}
+
+			stream << ";AN=" << gtsum.alleleCount();
+			if(gtsum.vectorA_[1] + gtsum.vectorB_[1]) stream << ";NM=" << gtsum.vectorA_[1] + gtsum.vectorB_[1];
+			if(gtsum.vectorA_[0] + gtsum.vectorB_[0]) stream << ";NPM=" << gtsum.vectorA_[0] + gtsum.vectorB_[0];
+			stream << ";AC=" << gtsum.vectorA_[2] + gtsum.vectorB_[2];
+			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorA_[2+p] + gtsum.vectorB_[2+p];
+			stream << ";AN_F=" << gtsum.vectorA_[2];
+			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorA_[2+p];
+			stream << ";AN_R=" << gtsum.vectorB_[2];
+			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorB_[2+p];
+			stream << ";AF=" << af[0];
+			for(U32 p = 1; p < af.size(); ++p) stream << "," << af[p];
+			stream << ";HWE_P=" << hwe_p[0];
+			for(U32 p = 1; p < hwe_p.size(); ++p) stream << "," << hwe_p[p];
+
+			// Classify
+			stream << ";VT=";
+			stream << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(meta[i], 1)];
+
+			for(U32 p = 2; p < meta[i].n_alleles; ++p){
+				stream << '|' << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(meta[i], p)];
+			}
+			if(meta[i].n_alleles != 2) stream << ";MULTI_ALLELIC";
+
+			stream.put('\n');
 			gtsum.clear();
 		}
 		return(gt.size());

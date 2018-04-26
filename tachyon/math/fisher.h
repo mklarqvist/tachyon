@@ -18,9 +18,16 @@ namespace math{
 class Fisher{
 
 public:
+	Fisher() :
+		number(1000+1),
+		logN_values(1000, 0)
+	{
+		this->Build();
+	}
+
 	Fisher(const U32 number) :
-			number(number+1),
-			logN_values(number, 0)
+		number(number+1),
+		logN_values(number, 0)
 	{
 		this->Build();
 	}
