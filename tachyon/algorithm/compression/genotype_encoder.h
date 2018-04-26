@@ -163,7 +163,7 @@ public:
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
 	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
-	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa);
+	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa, const U32 n_threads);
 	bool EncodeParallel(const bcf_type& bcf_entry, meta_type& meta, const U32* const ppa, GenotypeEncoderSlaveHelper& slave_helper) const;
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }

@@ -20,6 +20,7 @@ VariantImporter::VariantImporter(std::string inputFile,
 	encrypt(false),
 	checkpoint_n_snps(checkpoint_n_snps),
 	checkpoint_bases(checkpoint_bases),
+	n_threads_(std::thread::hardware_concurrency()),
 	info_end_key_(-1),
 	info_svlen_key_(-1),
 	inputFile(inputFile),
@@ -172,7 +173,6 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	while(true){
-		std::cerr << utility::timestamp("DEBUG") << "Start get BCF entries" << std::endl;
 		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
 			break;
 		}
@@ -197,7 +197,6 @@ bool VariantImporter::BuildBCF(void){
 			this->block.header.controller.hasGTPermuted = false;
 
 		// Permute GT if GT is available and the appropriate flag is triggered
-		std::cerr << utility::timestamp("DEBUG") << "Start get permute" << std::endl;
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
 			if(!this->permutator.build(reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
@@ -205,14 +204,13 @@ bool VariantImporter::BuildBCF(void){
 			}
 		}
 
-		std::cerr << utility::timestamp("DEBUG") << "Start import" << std::endl;
-
 		//\////////////////////////////////////////////////
 		// Start new
 		// Perform parsing of BCF entries in memory
 		// Split out RLE compression and importing other INFO/FORMAT
 		meta_type* meta_entries = static_cast<meta_type*>(::operator new[](reader.size() * sizeof(meta_type)));
 
+		// Load meta data
 		for(U32 i = 0; i < reader.size(); ++i){
 			new( meta_entries + i ) meta_type( reader[i], this->block.header.minPosition );
 			if(!this->add(meta_entries[i], reader[i])){
@@ -220,18 +218,15 @@ bool VariantImporter::BuildBCF(void){
 				return false;
 			}
 		}
-
-		std::cerr << utility::timestamp("DEBUG") << "Add genotpyes" << std::endl;
+		// Add genotypes in parallel
 		this->addGenotypes(reader, meta_entries);
-		std::cerr << utility::timestamp("DEBUG") << "Add meta" << std::endl;
+		// Overload
 		for(U32 i = 0; i < reader.size(); ++i) this->block += meta_entries[i];
 
+		// Clean up
 		for(std::size_t i = 0; i < reader.size(); ++i) (meta_entries + i)->~MetaEntry();
 		::operator delete[](static_cast<void*>(meta_entries));
-
 		//\////////////////////////////////////////////////
-
-		std::cerr << utility::timestamp("DEBUG") << "Start compression" << std::endl;
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
@@ -427,7 +422,7 @@ bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_
 		}
 	}
 	*/
-	this->encoder.EncodeParallel(bcf_reader, meta_entries, this->block, this->permutator.manager->get());
+	this->encoder.EncodeParallel(bcf_reader, meta_entries, this->block, this->permutator.manager->get(), this->n_threads_);
 
 	return true;
 }

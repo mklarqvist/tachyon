@@ -477,6 +477,7 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 }
 
 void VariantReader::printFORMATVCF(buffer_type& buffer,
+					const char& delimiter,
 					const U32& position,
 					const objects_type& objects,
 					std::vector<core::GTObject>& genotypes_unpermuted) const
@@ -492,7 +493,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 					buffer += ':';
 					buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
 				}
-				buffer += '\t';
+				buffer += delimiter;
 
 				// Todo: print if no GT data
 				// Begin print FORMAT data for each sample
@@ -509,24 +510,22 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				}
 
 				for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
-					buffer += '\t';
+					buffer += delimiter;
 					buffer << genotypes_unpermuted[s];
 					for(U32 i = 1; i < n_format_keys; ++i){
 						buffer  += ':';
 						objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, s);
 					}
 				}
-			} else // have no keys
-				buffer += ".\t";
+			} else { // have no keys
+				buffer += ".";
+				buffer += delimiter;
+			}
 		}
 	}
 }
 
-void VariantReader::printFORMATVCF(buffer_type& buffer,
-					const char& delimiter,
-					const U32& position,
-					const objects_type& objects,
-					std::vector<core::GTObject>& genotypes_unpermuted) const
+void VariantReader::printFORMATVCF(buffer_type& buffer, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const
 {
 	return(this->printFORMATVCF(buffer, '\t', position, objects, genotypes_unpermuted));
 }
@@ -665,12 +664,19 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 }
 
 void VariantReader::printINFOVCF(buffer_type& outputBuffer,
+				const char& delimiter,
 				  const U32& position,
 				  const objects_type& objects) const
 {
+	// Check if any INFO data exists at all
+	if(this->block.footer.n_info_patterns == 0){
+		outputBuffer += '.';
+		return;
+	}
+
 	if(settings.load_info || this->block.n_info_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta->at(position).info_pattern_id];
-		if(outputBuffer.back() != '\t') outputBuffer += '\t';
+		if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
 
 		if(targetKeys.size()){
 			// First
@@ -690,13 +696,13 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 				outputBuffer += '=';
 				objects.info_fields[targetKeys[i]]->to_vcf_string(outputBuffer, position);
 			}
-		} else
+		} else {
 			outputBuffer += '.';
+		}
 	}
 }
 
 void VariantReader::printINFOVCF(buffer_type& outputBuffer,
-				  const char& delimiter,
 				  const U32& position,
 				  const objects_type& objects) const
 {

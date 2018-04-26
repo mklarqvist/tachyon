@@ -60,6 +60,7 @@ private:
 	bool encrypt;            // encryption flag
 	U32 checkpoint_n_snps;   // number of variants until checkpointing
 	double checkpoint_bases; // number of bases until checkpointing
+	U32 n_threads_;
 
 	S32 info_end_key_;
 	S32 info_svlen_key_;

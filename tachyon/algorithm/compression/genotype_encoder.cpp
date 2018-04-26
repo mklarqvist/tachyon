@@ -210,10 +210,9 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 bool GenotypeEncoder::EncodeParallel(const bcf_reader_type& bcf_reader,
 		                                         meta_type* meta_entries,
 												block_type& block,
-												 const U32* const ppa)
+												 const U32* const ppa,
+												 const U32 n_threads)
 {
-
-	const U32 n_threads = 28;
 	GenotypeEncoderSlaveHelper* helpers = new GenotypeEncoderSlaveHelper[bcf_reader.size()];
 	CalcSlave* slaves = new CalcSlave[n_threads];
 	std::vector<std::thread*> threads(n_threads);

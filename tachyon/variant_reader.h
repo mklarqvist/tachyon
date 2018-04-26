@@ -437,8 +437,18 @@ public:
 
 		// Reserve memory for output buffer
 		// This is much faster than writing directly to ostream because of syncing
-		io::BasicBuffer output_buffer(256000 + this->header.getSampleNumber()*2);
+		io::BasicBuffer output_buffer(256000);
+		if(this->settings.load_format) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
+
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
+
+		print_format_function print_format = &self_type::printFORMATDummy;
+		if(this->settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
+		else if(settings.load_format) print_format = &self_type::printFORMATVCF;
+		print_info_function   print_info   = &self_type::printINFOVCF;
+
+		print_meta_function   print_meta   = &utility::to_vcf_string;
+		print_filter_function print_filter = &self_type::printFILTERDummy;
 
 		for(U32 p = 0; p < objects.meta->size(); ++p){
 			if(this->settings.custom_output_format)
@@ -456,22 +466,10 @@ public:
 				continue;
 			}
 
-			// Print normal or with a custom delimiter
-			this->printINFOVCF(output_buffer, p, objects);
-
-			if(settings.load_format || this->block.n_format_loaded){
-				output_buffer += this->settings.custom_delimiter_char;
-
-				if(this->settings.format_ID_list.size())
-					this->printFORMATCustom(output_buffer, '\t', p, objects, genotypes_unpermuted);
-				else
-					this->printFORMATVCF(output_buffer, p, objects, genotypes_unpermuted);
-
-			}
-
+			(this->*print_info)(output_buffer, '\t', p, objects);
+			output_buffer += this->settings.custom_delimiter_char;
+			(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
 			output_buffer += '\n';
-
-			// Add FORMAT data
 
 			if(output_buffer.size() > 65536){
 				std::cout.write(output_buffer.data(), output_buffer.size());

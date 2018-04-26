@@ -179,9 +179,6 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 }
 
 bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
-	//settings.load_info_ID_loaded.clear();
-	//settings.load_format_ID_loaded.clear();
-
 	if(settings.load_ppa){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 			stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
