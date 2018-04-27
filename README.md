@@ -230,6 +230,34 @@ Output all available `INFO` fields and the `FORMAT` field `DP` and `FILTERS`
 tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -F CUSTOM -cd';' -V
 ```
 
+### Decorating output data
+It is possible to annotate the output data with a series of standard INFO fields computed directly from the genotypic vectors or from the reference/alternative allele data:
+
+| Field           | Length | Type    | Description                                 |
+|-----------------|--------|---------|---------------------------------------------|
+| `FS_A`          | A      | Float   | PHRED-scaled Fisher's exact test P-value for allelic strand bias |
+| `AN`            | A      | Integer | Total number of alleles in called genotypes |
+| `NM`            | A      | Integer | Total number of missing alleles in called genotypes |
+| `NPM`           | A      | Integer | Total number of samples with non-reference (compared to largest) ploidy |
+| `AC`            | A      | Integer | Total number of alleles |
+| `AC_FWD`        | A      | Integer | Total number of alleles on the FORWARD strand |
+| `AC_REV`        | A      | Integer | Total number of alleles on the REVERSE strand |
+| `AF`            | A      | Float   | Allele frequency of allele |
+| `HWE_P`         | A      | Float   | Hardy-Weinberg equilibrium P-value |
+| `VT`            | 1      | String  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
+| `MULTI_ALLELIC` | 0      | Flag    | Indicates if a site is multi-allelic |
+
+Using the example dataset, we can compute the fields that are not already avaiable by passing the flag `-X`
+
+```bash
+tachyon view -i example_dataset.yon -GHX
+```
+Output
+```
+Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889;FS_A=11.5091,0;NM=26;AC_FWD=21,2;AC_REV=15,8;HWE_P=0.25072;VT=SNP
+```
+
+
 ## C++ API Examples
 ### Standard containers
 ```c++
