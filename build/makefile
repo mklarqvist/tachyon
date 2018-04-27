@@ -12,6 +12,7 @@ RM := rm
 -include tachyon/third_party/zlib/subdir.mk
 -include tachyon/third_party/xxhash/subdir.mk
 -include tachyon/support/subdir.mk
+-include tachyon/math/subdir.mk
 -include tachyon/io/vcf/subdir.mk
 -include tachyon/io/compression/subdir.mk
 -include tachyon/io/bcf/subdir.mk
