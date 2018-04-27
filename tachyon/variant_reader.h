@@ -21,7 +21,8 @@
 #include "core/genotype_object.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
-#include "math/fisher.h"
+//#include "math/fisher.h"
+#include "math/fisher_math.h"
 #include "math/square_matrix.h"
 #include "math/basic_vector_math.h"
 #include "utility/support_vcf.h"
@@ -36,6 +37,7 @@ public:
 	typedef containers::GenotypeContainer        gt_container_type;
 	typedef containers::InfoContainerInterface   info_interface_type;
 	typedef containers::FormatContainerInterface format_interface_type;
+	typedef containers::GenotypeSummary          genotype_summary_type;
 
 public:
 	VariantReaderObjects() :
@@ -45,6 +47,7 @@ public:
 		n_loaded_format(0),
 		meta(nullptr),
 		genotypes(nullptr),
+		genotype_summary(nullptr),
 		info_fields(nullptr),
 		format_fields(nullptr)
 	{}
@@ -52,13 +55,12 @@ public:
 	~VariantReaderObjects(){
 		delete this->meta;
 		delete this->genotypes;
+		delete this->genotype_summary;
 
-		for(U32 i = 0; i < this->n_loaded_info; ++i)
-			delete this->info_fields[i];
+		for(U32 i = 0; i < this->n_loaded_info; ++i) delete this->info_fields[i];
 		delete [] this->info_fields;
 
-		for(U32 i = 0; i < this->n_loaded_format; ++i)
-			delete this->format_fields[i];
+		for(U32 i = 0; i < this->n_loaded_format; ++i) delete this->format_fields[i];
 		delete [] this->format_fields;
 	}
 
@@ -77,6 +79,7 @@ public:
 
 	meta_container_type*     meta;
 	gt_container_type*       genotypes;
+	genotype_summary_type*   genotype_summary;
 	info_interface_type**    info_fields;
 	format_interface_type**  format_fields;
 };
@@ -711,73 +714,178 @@ public:
 	}
 
 	U64 getGenotypeSummary(std::ostream& stream){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
-		containers::GenotypeSummary gtsum(10);
-		math::Fisher fisher;
+		if(this->settings.load_alleles == false || this->settings.load_genotypes_all == false || this->settings.load_controller == false || this->settings.load_set_membership == false){
+			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
+			return(0);
+		}
 
-		for(U32 i = 0; i < gt.size(); ++i){
-			if(meta[i].isDiploid() == false){
+		// Preprocess step:
+		// Cycle over INFO patterns and see if any of the custom FIELDS are set
+		// FS_A, AN, NM, NPM, AC, AC_FW, AC_REV, AF, HWE_P, VT, MULTI_ALLELIC
+		std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"};
+		U16 execute_mask = 0;
+
+		// Step 1: Find INFO
+		std::vector< std::pair<U32, U32> > local_keys_found;
+		for(U32 i = 0; i < ADDITIONAL_INFO.size(); ++i){
+			if(this->header.has_info_field(ADDITIONAL_INFO[i])){
+				//std::cerr << "Header has: " << ADDITIONAL_INFO[i] << " check if it is loaded and in what pattern..." << std::endl;
+				const core::HeaderMapEntry* map = this->header.getInfoField(ADDITIONAL_INFO[i]);
+				//std::cerr << map->ID << ":" << map->IDX << std::endl;
+				// Find local key
+				for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
+					if(this->block.info_containers[k].header.getGlobalKey() == map->IDX){
+						//std::cerr << "local key is: " << k << std::endl;
+						//std::cerr << i << ": " << std::bitset<16>(1 << i) << std::endl;
+						execute_mask |= 1 << i;
+						local_keys_found.push_back(std::pair<U32,U32>(k,i));
+					}
+				}
+			}
+		}
+		//std::cerr << "Final flag-set: " << std::bitset<16>(execute_mask) << std::endl;
+
+
+		// Step 2: Cycle over patterns to find existing INFO fields
+		// Cycle over INFO patterns
+		std::vector< U16 > execute_flag(1, 65535);
+		if(ADDITIONAL_INFO.size()){
+			execute_flag.reserve(this->block.footer.n_info_patterns);
+			//std::cerr << std::bitset<16>((1 << ADDITIONAL_INFO.size()) - 1) << std::endl;
+			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
+				execute_flag[i] = (1 << ADDITIONAL_INFO.size()) - 1;
+				for(U32 j = 0; j < local_keys_found.size(); ++j){
+					if(this->block.footer.info_bit_vectors[i][j]){
+						//std::cerr << "Key: " << local_keys_found[j].first << " found in pattern: " << i << std::endl;
+						execute_flag[i] &= ~(1 << local_keys_found[j].second);
+					}
+				}
+				//std::cerr << "Pattern " << i << ": " << std::bitset<16>(execute_flag[i]) << std::endl;
+			}
+		}
+
+		//
+
+		objects_type objects;
+		this->loadObjects(objects);
+		//math::Fisher fisher;
+		U32 n_variants_parsed = 0;
+
+		double fisher_left_p, fisher_right_p, fisher_twosided_p;
+
+		for(U32 i = 0; i < objects.genotypes->size(); ++i){
+			// If set membership is -1 then calculate all fields
+			if(objects.meta->at(i).isDiploid() == false){
 				std::cerr << "is not diploid" << std::endl;
 				continue;
 			}
 
-			gt[i].getSummary(gtsum);
-			std::vector<double> hwe_p = gtsum.calculateHardyWeinberg(meta[i]);
-			std::vector<double> af    = gtsum.calculateAlleleFrequency(meta[i]);
+			// Set target FLAG set to all ones; update with actual values if they exist
+			U16 target_flag_set = 65535;
+			if(objects.meta->at(i).getInfoPatternID() != -1)
+				target_flag_set = execute_flag[objects.meta->at(i).getInfoPatternID()];
 
-			utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta[i], this->header);
+			// Get genotype summary data
+			objects.genotypes->at(i).getSummary(*objects.genotype_summary);
 
-			// Fisher's exact test for strand bias of allele counts
-			//                    Forward strand    Reverse strand
-			// Target Allele           A                  B
-			// Not Target Allele       C                  D
-			stream << "FS_A=";
-			stream << -10 * log10(fisher.fisherTest(
-					gtsum.vectorA_[2], // A: Allele on forward strand
-					gtsum.vectorB_[2], // B: Allele on reverse strand
-					gtsum.alleleCountA() - (gtsum.vectorA_[2]),  // C: Not allele on forward strand
-					gtsum.alleleCountB() - (gtsum.vectorB_[2]))  // D: Not allele on revese strand
-			);
-			// If n_alleles = 2 then they are identical because of symmetry
-			if(meta[i].n_alleles > 2){
-				for(U32 p = 1; p < meta[i].n_alleles; ++p){
-					stream << ',' <<  -10 * log10(fisher.fisherTest(
-							gtsum.vectorA_[2+p],
-							gtsum.vectorB_[2+p],
-							gtsum.alleleCountA() - (gtsum.vectorA_[2+p]),
-							gtsum.alleleCountB() - (gtsum.vectorB_[2+p]))
-					);
+			/*
+			if(fisher_twosided_p > 1e-6 || (objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorA_[2] == 0)){
+				//std::cerr << "poor" << std::endl;
+				objects.genotype_summary->clear();
+				continue;
+			}
+			*/
+
+			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(i));
+			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(i));
+
+			utility::to_vcf_string(stream, this->settings.custom_delimiter_char, objects.meta->at(i), this->header);
+
+			if(target_flag_set & 1){
+				stream << "FS_A=";
+				// Fisher's exact test for strand bias of allele counts
+				//                    Forward strand    Reverse strand
+				// Target Allele           A                  B
+				// Not Target Allele       C                  D
+				kt_fisher_exact(
+				objects.genotype_summary->vectorA_[2], // A: Allele on forward strand
+				objects.genotype_summary->vectorB_[2], // B: Allele on reverse strand
+				objects.genotype_summary->alleleCountA() - (objects.genotype_summary->vectorA_[2]),  // C: Not allele on forward strand
+				objects.genotype_summary->alleleCountB() - (objects.genotype_summary->vectorB_[2]), // D: Not allele on revese strand
+				&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+				stream << std::abs(-10 * log10(fisher_twosided_p));
+				// If n_alleles = 2 then they are identical because of symmetry
+				if(objects.meta->at(i).n_alleles > 2){
+					for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p){
+						kt_fisher_exact(
+						objects.genotype_summary->vectorA_[2+p], // A: Allele on forward strand
+						objects.genotype_summary->vectorB_[2+p], // B: Allele on reverse strand
+						objects.genotype_summary->alleleCountA() - (objects.genotype_summary->vectorA_[2+p]),  // C: Not allele on forward strand
+						objects.genotype_summary->alleleCountB() - (objects.genotype_summary->vectorB_[2+p]), // D: Not allele on revese strand
+						&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+						stream << ',' <<  std::abs(-10 * log10(fisher_twosided_p));
+					}
 				}
 			}
 
-			stream << ";AN=" << gtsum.alleleCount();
-			if(gtsum.vectorA_[1] + gtsum.vectorB_[1]) stream << ";NM=" << gtsum.vectorA_[1] + gtsum.vectorB_[1];
-			if(gtsum.vectorA_[0] + gtsum.vectorB_[0]) stream << ";NPM=" << gtsum.vectorA_[0] + gtsum.vectorB_[0];
-			stream << ";AC=" << gtsum.vectorA_[2] + gtsum.vectorB_[2];
-			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorA_[2+p] + gtsum.vectorB_[2+p];
-			stream << ";AN_F=" << gtsum.vectorA_[2];
-			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorA_[2+p];
-			stream << ";AN_R=" << gtsum.vectorB_[2];
-			for(U32 p = 1; p < meta[i].n_alleles; ++p) stream << "," << gtsum.vectorB_[2+p];
-			stream << ";AF=" << af[0];
-			for(U32 p = 1; p < af.size(); ++p) stream << "," << af[p];
-			stream << ";HWE_P=" << hwe_p[0];
-			for(U32 p = 1; p < hwe_p.size(); ++p) stream << "," << hwe_p[p];
-
-			// Classify
-			stream << ";VT=";
-			stream << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(meta[i], 1)];
-
-			for(U32 p = 2; p < meta[i].n_alleles; ++p){
-				stream << '|' << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(meta[i], p)];
+			if(target_flag_set & 2){
+				stream << ";AN=" << objects.genotype_summary->alleleCount();
 			}
-			if(meta[i].n_alleles != 2) stream << ";MULTI_ALLELIC";
+
+			if(target_flag_set & 4){
+				if(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]) stream << ";NM=" << objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1];
+			}
+
+			if(target_flag_set & 8){
+				if(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]) stream << ";NPM=" << objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0];
+			}
+
+			if(target_flag_set & 16){
+				stream << ";AC=" << objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2];
+
+				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p];
+			}
+
+			if(target_flag_set & 32){
+				stream << ";AC_FWD=" << objects.genotype_summary->vectorA_[2];
+				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorA_[2+p];
+			}
+
+			if(target_flag_set & 64){
+				stream << ";AC_REV=" << objects.genotype_summary->vectorB_[2];
+				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorB_[2+p];
+			}
+
+			if(target_flag_set & 128){
+				stream << ";AF=" << af[0];
+				for(U32 p = 1; p < af.size(); ++p) stream << "," << af[p];
+			}
+
+			if(target_flag_set & 256){
+				stream << ";HWE_P=" << hwe_p[0];
+				for(U32 p = 1; p < hwe_p.size(); ++p) stream << "," << hwe_p[p];
+			}
+
+			if(target_flag_set & 512){
+				// Classify
+				stream << ";VT=";
+				stream << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(i), 1)];
+
+				for(U32 p = 2; p < objects.meta->at(i).n_alleles; ++p){
+					stream << '|' << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(i), p)];
+				}
+			}
+
+			if(target_flag_set & 1024){
+				if(objects.meta->at(i).n_alleles != 2) stream << ";MULTI_ALLELIC";
+			}
 
 			stream.put('\n');
-			gtsum.clear();
+			objects.genotype_summary->clear();
+			++n_variants_parsed;
 		}
-		return(gt.size());
+		return(n_variants_parsed);
 	}
 
 	U64 countVariants(std::ostream& stream = std::cout){

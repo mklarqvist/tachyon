@@ -225,7 +225,7 @@ int view(int argc, char** argv){
 
 	if(customDelimiter){
 		if(customOutputFormat == false){
-			std::cerr << "Have to trigger -c when using a custom separator" << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -c when using a custom separator" << std::endl;
 			return(1);
 		}
 		reader.getSettings().setCustomDelimiter(customDelimiterChar);
@@ -274,9 +274,9 @@ int view(int argc, char** argv){
 	if(showHeader) reader.getSettings().show_vcf_header = true;
 	else reader.getSettings().show_vcf_header = false;
 
-	//while(reader.nextBlock())
-	//reader.getGenotypeSummary(std::cout);
-	//return(0);
+	// Temp
+	while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);
+	return(0);
 
 	U64 n_variants = 0;
 	if(customOutputFormat) n_variants = reader.outputCustom();

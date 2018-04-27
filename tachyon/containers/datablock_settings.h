@@ -236,13 +236,30 @@ struct DataBlockSettings{
 						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
 						std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 						if(std::regex_match(ind[j], field_identifier_regex)){
-							const core::HeaderMapEntry* map = header.getFormatField(ind[j]);
-							if(map == false){
-								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
-								allGood = false;
-								continue;
+							// Special case for genotypes
+							if(strncasecmp(ind[j].data(), "GT", 2) == 0 && ind[j].size() == 2){
+								this->load_contig = true;
+								this->load_positons = true;
+								this->load_controller = true;
+								this->loadGenotypes(true);
+								this->load_set_membership = true;
+							} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
+								this->load_contig = true;
+								this->load_positons = true;
+								this->load_controller = true;
+								this->loadGenotypes(true);
+								this->load_set_membership = true;
 							}
-							this->loadFORMAT(ind[j]);
+							// Any other FORMAT
+							else {
+								const core::HeaderMapEntry* map = header.getFormatField(ind[j]);
+								if(map == false){
+									std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+									allGood = false;
+									continue;
+								}
+								this->loadFORMAT(ind[j]);
+							}
 						} else {
 							std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 							allGood = false;

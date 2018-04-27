@@ -34,6 +34,7 @@ tachyon/io/bcf \
 tachyon/io/compression \
 tachyon/io/vcf \
 tachyon \
+tachyon/math \
 tachyon/support \
 tachyon/third_party/xxhash \
 tachyon/third_party/zlib \

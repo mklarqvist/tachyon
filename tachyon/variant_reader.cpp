@@ -220,6 +220,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	objects.meta = new meta_container_type(this->block);
 	if(this->block.header.controller.hasGT && settings.load_genotypes_all){
 		objects.genotypes = new gt_container_type(this->block, *objects.meta);
+		objects.genotype_summary = new objects_type::genotype_summary_type(10);
 	}
 
 	objects.n_loaded_format = this->block.n_format_loaded;
