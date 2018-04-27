@@ -14,10 +14,13 @@ Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)
 Department of Genetics, University of Cambridge  
 Wellcome Trust Sanger Institute
 
-### Status
+## Status
 Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
-Commits may break functionality!  
-**THERE IS NO STABILITY PROMISE WHATSOEVER!**  
+** Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
+
+Current limitations imposed during development:
+* Importing is restricted to `BCF`
+* Output is restricted to `VCF`, `JSON`, and custom field slicing
 
 ## Introduction
 Tachyon (`YON`) is a command line interface and a user-friendly C++ API for querying population-scaled sequence variant data. Tachyon stores data fields in a custom column-oriented database-like structure that allows for extremely efficient field-specific queries (see [benchmarks](BENCHMARKS.md)). In general, Tachyon is 10- to several 100-folds faster for virtually all queries compared to current record-centric approaches. Depending on the content of your input file, Tachyon can be 2- to 1000-fold smaller on disk compared to `BCF`.  
@@ -247,7 +250,7 @@ It is possible to annotate the output data with a series of standard INFO fields
 | `VT`            | 1      | String  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
 | `MULTI_ALLELIC` | 0      | Flag    | Indicates if a site is multi-allelic |
 
-Using the example dataset, we can compute the fields that are not already avaiable by passing the flag `-X`
+Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
 
 ```bash
 tachyon view -i example_dataset.yon -GHX
