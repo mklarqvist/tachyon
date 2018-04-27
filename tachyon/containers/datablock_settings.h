@@ -98,7 +98,8 @@ struct DataBlockSettings{
 		custom_output_format(false),
 		custom_delimiter_char('\t'),
 		output_json(false),
-		output_format_vector(false)
+		output_format_vector(false),
+		annotate_extra(false)
 	{}
 
 	self_type& loadAll(const bool set = true){
@@ -333,6 +334,8 @@ public:
 
 	bool output_json;
 	bool output_format_vector;
+
+	bool annotate_extra;
 
 	SettingsCustomOutput custom_output_controller;
 

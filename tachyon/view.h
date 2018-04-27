@@ -72,6 +72,7 @@ int view(int argc, char** argv){
 		{"delimiter",   optional_argument, 0,  'd' },
 		{"output-type", optional_argument, 0,  'F' },
 		{"vector-output", no_argument, 0,  'V' },
+		{"annotate-genotype", no_argument, 0,  'X' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -93,13 +94,14 @@ int view(int argc, char** argv){
 	bool customOutputFormat = false;
 	bool filterAny = false;
 	bool filterAll = false;
+	bool annotateGenotypes = false;
 
 	std::string output_type;
 	bool output_FORMAT_as_vector = false;
 
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmMV?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmMVX?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -154,6 +156,10 @@ int view(int argc, char** argv){
 
 		case 'F':
 			output_type = std::string(optarg);
+			break;
+
+		case 'X':
+			annotateGenotypes = true;
 			break;
 
 		default:
@@ -268,6 +274,14 @@ int view(int argc, char** argv){
 		}
 	}
 
+	if(annotateGenotypes){
+		reader.getSettings().annotate_extra = true;
+		reader.getSettings().loadGenotypes(true);
+		reader.getSettings().load_set_membership = true;
+		reader.getSettings().load_alleles = true;
+		reader.getSettings().load_positons = true;;
+	}
+
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
@@ -275,8 +289,8 @@ int view(int argc, char** argv){
 	else reader.getSettings().show_vcf_header = false;
 
 	// Temp
-	while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);
-	return(0);
+	//while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);
+	//return(0);
 
 	U64 n_variants = 0;
 	if(customOutputFormat) n_variants = reader.outputCustom();

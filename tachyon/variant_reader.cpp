@@ -346,6 +346,46 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 		}
 	}
 
+	// if(extra_info_fields_from_genotypes)
+	//
+	// Preprocess step:
+	// Cycle over INFO patterns and see if any of the custom FIELDS are set
+	// FS_A, AN, NM, NPM, AC, AC_FW, AC_REV, AF, HWE_P, VT, MULTI_ALLELIC
+	std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"};
+	U16 execute_mask = 0;
+
+	// Step 1: Find INFO
+	std::vector< std::pair<U32, U32> > additional_local_keys_found;
+	for(U32 i = 0; i < ADDITIONAL_INFO.size(); ++i){
+		if(this->header.has_info_field(ADDITIONAL_INFO[i])){
+			const core::HeaderMapEntry* map = this->header.getInfoField(ADDITIONAL_INFO[i]);
+			// Find local key
+			for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
+				if(this->block.info_containers[k].header.getGlobalKey() == map->IDX){
+					execute_mask |= 1 << i;
+					additional_local_keys_found.push_back(std::pair<U32,U32>(k,i));
+				}
+			}
+		}
+	}
+
+	// Step 2: Cycle over patterns to find existing INFO fields
+	// Cycle over INFO patterns
+	objects.additional_info_execute_flag_set = std::vector< U16 >(1, 65535);
+	if(ADDITIONAL_INFO.size()){
+		objects.additional_info_execute_flag_set.reserve(this->block.footer.n_info_patterns);
+		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
+			objects.additional_info_execute_flag_set[i] = (1 << ADDITIONAL_INFO.size()) - 1;
+			for(U32 j = 0; j < additional_local_keys_found.size(); ++j){
+				if(this->block.footer.info_bit_vectors[i][j]){
+					objects.additional_info_execute_flag_set[i] &= ~(1 << additional_local_keys_found[j].second);
+				}
+			}
+		}
+	}
+
+	//
+
 	return(objects);
 }
 
@@ -671,7 +711,6 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 {
 	// Check if any INFO data exists at all
 	if(this->block.footer.n_info_patterns == 0){
-		outputBuffer += '.';
 		return;
 	}
 

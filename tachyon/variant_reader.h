@@ -71,6 +71,7 @@ public:
 	size_t n_loaded_format;
 	std::vector<U32> info_keep;
 	std::vector<U32> format_keep;
+	std::vector< U16 > additional_info_execute_flag_set;
 	std::vector< std::vector<U32> > local_match_keychain_info;
 	std::vector< std::vector<U32> > local_match_keychain_format;
 
@@ -101,6 +102,7 @@ class VariantReader{
 	typedef containers::GenotypeContainer          gt_container_type;
 	typedef containers::InfoContainerInterface     info_interface_type;
 	typedef containers::FormatContainerInterface   format_interface_type;
+	typedef containers::GenotypeSummary            genotype_summary_type;
 
 	// Function pointers
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
@@ -410,6 +412,22 @@ public:
 
 			this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
 
+			if(this->settings.annotate_extra){
+				// fixme
+				// if special
+				// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"
+				if(this->header.getInfoField("FS_A") == false) this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+				if(this->header.getInfoField("AN") == false) this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+				if(this->header.getInfoField("NM") == false) this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+				if(this->header.getInfoField("NPM") == false) this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+				if(this->header.getInfoField("AC") == false) this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+				if(this->header.getInfoField("AC_FWD") == false) this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+				if(this->header.getInfoField("AC_REV") == false) this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+				if(this->header.getInfoField("HWE_P") == false) this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+				if(this->header.getInfoField("VT") == false) this->header.literals += "\n##INFO=<ID=VT,Number=1,Type=String>";
+				if(this->header.getInfoField("AF") == false) this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+				if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
+			}
 			this->header.writeVCFHeaderString(std::cout, this->settings.load_format || this->settings.format_list.size());
 		}
 
@@ -470,6 +488,9 @@ public:
 			}
 
 			(this->*print_info)(output_buffer, '\t', p, objects);
+			if(output_buffer.back() != ';') output_buffer += ';';
+			if(this->settings.annotate_extra)
+				this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
 			output_buffer += this->settings.custom_delimiter_char;
 			(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
 			output_buffer += '\n';
@@ -713,179 +734,160 @@ public:
 		return(gt.size());
 	}
 
-	U64 getGenotypeSummary(std::ostream& stream){
-		if(this->settings.load_alleles == false || this->settings.load_genotypes_all == false || this->settings.load_controller == false || this->settings.load_set_membership == false){
-			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
-			return(0);
-		}
-
-		// Preprocess step:
-		// Cycle over INFO patterns and see if any of the custom FIELDS are set
-		// FS_A, AN, NM, NPM, AC, AC_FW, AC_REV, AF, HWE_P, VT, MULTI_ALLELIC
-		std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"};
-		U16 execute_mask = 0;
-
-		// Step 1: Find INFO
-		std::vector< std::pair<U32, U32> > local_keys_found;
-		for(U32 i = 0; i < ADDITIONAL_INFO.size(); ++i){
-			if(this->header.has_info_field(ADDITIONAL_INFO[i])){
-				//std::cerr << "Header has: " << ADDITIONAL_INFO[i] << " check if it is loaded and in what pattern..." << std::endl;
-				const core::HeaderMapEntry* map = this->header.getInfoField(ADDITIONAL_INFO[i]);
-				//std::cerr << map->ID << ":" << map->IDX << std::endl;
-				// Find local key
-				for(U32 k = 0; k < this->settings.load_info_ID_loaded.size(); ++k){
-					if(this->block.info_containers[k].header.getGlobalKey() == map->IDX){
-						//std::cerr << "local key is: " << k << std::endl;
-						//std::cerr << i << ": " << std::bitset<16>(1 << i) << std::endl;
-						execute_mask |= 1 << i;
-						local_keys_found.push_back(std::pair<U32,U32>(k,i));
-					}
-				}
-			}
-		}
-		//std::cerr << "Final flag-set: " << std::bitset<16>(execute_mask) << std::endl;
-
-
-		// Step 2: Cycle over patterns to find existing INFO fields
-		// Cycle over INFO patterns
-		std::vector< U16 > execute_flag(1, 65535);
-		if(ADDITIONAL_INFO.size()){
-			execute_flag.reserve(this->block.footer.n_info_patterns);
-			//std::cerr << std::bitset<16>((1 << ADDITIONAL_INFO.size()) - 1) << std::endl;
-			for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
-				execute_flag[i] = (1 << ADDITIONAL_INFO.size()) - 1;
-				for(U32 j = 0; j < local_keys_found.size(); ++j){
-					if(this->block.footer.info_bit_vectors[i][j]){
-						//std::cerr << "Key: " << local_keys_found[j].first << " found in pattern: " << i << std::endl;
-						execute_flag[i] &= ~(1 << local_keys_found[j].second);
-					}
-				}
-				//std::cerr << "Pattern " << i << ": " << std::bitset<16>(execute_flag[i]) << std::endl;
-			}
-		}
-
-		//
-
-		objects_type objects;
-		this->loadObjects(objects);
-		//math::Fisher fisher;
-		U32 n_variants_parsed = 0;
-
+	std::vector<double> calculateStrandBiasAlleles(const meta_entry_type& meta, const genotype_summary_type& genotype_summary, const bool phred_scale = true) const{
+		std::vector<double> strand_bias_p_values(meta.n_alleles);
 		double fisher_left_p, fisher_right_p, fisher_twosided_p;
 
-		for(U32 i = 0; i < objects.genotypes->size(); ++i){
-			// If set membership is -1 then calculate all fields
-			if(objects.meta->at(i).isDiploid() == false){
+		kt_fisher_exact(
+		genotype_summary.vectorA_[2], // A: Allele on forward strand
+		genotype_summary.vectorB_[2], // B: Allele on reverse strand
+		genotype_summary.alleleCountA() - (genotype_summary.vectorA_[2]), // C: Not allele on forward strand
+		genotype_summary.alleleCountB() - (genotype_summary.vectorB_[2]), // D: Not allele on reverse strand
+		&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+		if(phred_scale) strand_bias_p_values[0] = std::abs(-10 * log10(fisher_twosided_p));
+		else strand_bias_p_values[0] = fisher_twosided_p;
+
+		// If n_alleles = 2 then they are identical because of symmetry
+		if(meta.n_alleles > 2){
+			for(U32 p = 1; p < meta.n_alleles; ++p){
+				kt_fisher_exact(
+				genotype_summary.vectorA_[2+p], // A: Allele on forward strand
+				genotype_summary.vectorB_[2+p], // B: Allele on reverse strand
+				genotype_summary.alleleCountA() - (genotype_summary.vectorA_[2+p]), // C: Not allele on forward strand
+				genotype_summary.alleleCountB() - (genotype_summary.vectorB_[2+p]), // D: Not allele on reverse strand
+				&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+				if(phred_scale) strand_bias_p_values[p] = std::abs(-10 * log10(fisher_twosided_p));
+				else strand_bias_p_values[p] = fisher_twosided_p;
+			}
+		}
+		return(strand_bias_p_values);
+	}
+
+	void getGenotypeSummary(buffer_type& buffer, const U32& individual, objects_type& objects) const{
+		if(this->settings.load_alleles == false || this->settings.load_genotypes_all == false || this->settings.load_controller == false || this->settings.load_set_membership == false){
+			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
+			return;
+		}
+
+		//objects_type objects;
+		//this->loadObjects(objects);
+		//U32 n_variants_parsed = 0;
+
+		//for(U32 i = 0; i < objects.genotypes->size(); ++i){
+			if(objects.meta->at(individual).isDiploid() == false){
 				std::cerr << "is not diploid" << std::endl;
-				continue;
+				return;
 			}
 
+			// If set membership is -1 then calculate all fields
 			// Set target FLAG set to all ones; update with actual values if they exist
 			U16 target_flag_set = 65535;
-			if(objects.meta->at(i).getInfoPatternID() != -1)
-				target_flag_set = execute_flag[objects.meta->at(i).getInfoPatternID()];
+			if(objects.meta->at(individual).getInfoPatternID() != -1)
+				target_flag_set = objects.additional_info_execute_flag_set[objects.meta->at(individual).getInfoPatternID()];
 
 			// Get genotype summary data
-			objects.genotypes->at(i).getSummary(*objects.genotype_summary);
+			objects.genotypes->at(individual).getSummary(*objects.genotype_summary);
+			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(individual));
+			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(individual));
 
-			/*
-			if(fisher_twosided_p > 1e-6 || (objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorA_[2] == 0)){
-				//std::cerr << "poor" << std::endl;
-				objects.genotype_summary->clear();
-				continue;
-			}
-			*/
-
-			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(i));
-			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(i));
-
-			utility::to_vcf_string(stream, this->settings.custom_delimiter_char, objects.meta->at(i), this->header);
+			//utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta, this->header);
 
 			if(target_flag_set & 1){
-				stream << "FS_A=";
-				// Fisher's exact test for strand bias of allele counts
-				//                    Forward strand    Reverse strand
-				// Target Allele           A                  B
-				// Not Target Allele       C                  D
-				kt_fisher_exact(
-				objects.genotype_summary->vectorA_[2], // A: Allele on forward strand
-				objects.genotype_summary->vectorB_[2], // B: Allele on reverse strand
-				objects.genotype_summary->alleleCountA() - (objects.genotype_summary->vectorA_[2]),  // C: Not allele on forward strand
-				objects.genotype_summary->alleleCountB() - (objects.genotype_summary->vectorB_[2]), // D: Not allele on revese strand
-				&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
-				stream << std::abs(-10 * log10(fisher_twosided_p));
-				// If n_alleles = 2 then they are identical because of symmetry
-				if(objects.meta->at(i).n_alleles > 2){
-					for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p){
-						kt_fisher_exact(
-						objects.genotype_summary->vectorA_[2+p], // A: Allele on forward strand
-						objects.genotype_summary->vectorB_[2+p], // B: Allele on reverse strand
-						objects.genotype_summary->alleleCountA() - (objects.genotype_summary->vectorA_[2+p]),  // C: Not allele on forward strand
-						objects.genotype_summary->alleleCountB() - (objects.genotype_summary->vectorB_[2+p]), // D: Not allele on revese strand
-						&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
-
-						stream << ',' <<  std::abs(-10 * log10(fisher_twosided_p));
-					}
+				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta->at(individual), *objects.genotype_summary, true);
+				buffer += "FS_A=";
+				buffer.AddReadble(allele_bias[0]);
+				for(U32 p = 1; p < allele_bias.size(); ++p){
+					buffer += ',';
+					buffer.AddReadble(allele_bias[p]);
 				}
 			}
 
 			if(target_flag_set & 2){
-				stream << ";AN=" << objects.genotype_summary->alleleCount();
+				buffer += ";AN=";
+				buffer.AddReadble(objects.genotype_summary->alleleCount());
 			}
 
 			if(target_flag_set & 4){
-				if(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]) stream << ";NM=" << objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1];
+				if(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]){
+					buffer += ";NM=";
+					buffer.AddReadble(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]);
+				}
 			}
 
 			if(target_flag_set & 8){
-				if(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]) stream << ";NPM=" << objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0];
+				if(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]){
+					buffer += ";NPM=";
+					buffer.AddReadble(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]);
+				}
 			}
 
 			if(target_flag_set & 16){
-				stream << ";AC=" << objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2];
-
-				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p];
+				buffer += ";AC=";
+				buffer.AddReadble(objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2]);
+				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+					buffer += ",";
+					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p]);
+				}
 			}
 
 			if(target_flag_set & 32){
-				stream << ";AC_FWD=" << objects.genotype_summary->vectorA_[2];
-				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorA_[2+p];
+				buffer += ";AC_FWD=";
+				buffer.AddReadble(objects.genotype_summary->vectorA_[2]);
+				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+					buffer += ",";
+					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p]);
+				}
 			}
 
 			if(target_flag_set & 64){
-				stream << ";AC_REV=" << objects.genotype_summary->vectorB_[2];
-				for(U32 p = 1; p < objects.meta->at(i).n_alleles; ++p) stream << "," << objects.genotype_summary->vectorB_[2+p];
+				buffer += ";AC_REV=";
+				buffer.AddReadble(objects.genotype_summary->vectorB_[2]);
+				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+					buffer += ",";
+					buffer.AddReadble(objects.genotype_summary->vectorB_[2+p]);
+				}
 			}
 
 			if(target_flag_set & 128){
-				stream << ";AF=" << af[0];
-				for(U32 p = 1; p < af.size(); ++p) stream << "," << af[p];
+				buffer += ";AF=";
+				buffer.AddReadble(af[0]);
+				for(U32 p = 1; p < af.size(); ++p){
+					buffer += ",";
+					buffer.AddReadble(af[p]);
+				}
 			}
 
 			if(target_flag_set & 256){
-				stream << ";HWE_P=" << hwe_p[0];
-				for(U32 p = 1; p < hwe_p.size(); ++p) stream << "," << hwe_p[p];
+				buffer += ";HWE_P=";
+				buffer.AddReadble(hwe_p[0]);
+				for(U32 p = 1; p < hwe_p.size(); ++p){
+					buffer += ",";
+					buffer.AddReadble(hwe_p[p]);
+				}
 			}
 
 			if(target_flag_set & 512){
 				// Classify
-				stream << ";VT=";
-				stream << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(i), 1)];
+				buffer += ";VT=";
+				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(individual), 1)];
 
-				for(U32 p = 2; p < objects.meta->at(i).n_alleles; ++p){
-					stream << '|' << TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(i), p)];
+				for(U32 p = 2; p < objects.meta->at(individual).n_alleles; ++p){
+					buffer += ',';
+					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(individual), p)];
 				}
 			}
 
 			if(target_flag_set & 1024){
-				if(objects.meta->at(i).n_alleles != 2) stream << ";MULTI_ALLELIC";
+				if(objects.meta->at(individual).n_alleles != 2) buffer += ";MULTI_ALLELIC";
 			}
 
-			stream.put('\n');
+			//stream.put('\n');
 			objects.genotype_summary->clear();
-			++n_variants_parsed;
-		}
-		return(n_variants_parsed);
+			//++n_variants_parsed;
+		//}
+		//return(n_variants_parsed);
 	}
 
 	U64 countVariants(std::ostream& stream = std::cout){
