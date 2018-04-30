@@ -1,10 +1,11 @@
 #ifndef INDEX_INDEX_H_
 #define INDEX_INDEX_H_
-#include <bitset>
 
-#include "index_entry_container.h"
+#include <algorithm>
+
 #include "index_meta_container.h"
 #include "variant_index.h"
+#include "variant_index_linear.h"
 
 namespace tachyon{
 namespace index{
@@ -13,15 +14,15 @@ class Index{
 private:
 	typedef Index                 self_type;
     typedef std::size_t           size_type;
-	typedef IndexEntryContainer   container_type;
+	typedef VariantIndex          container_type;
 	typedef IndexMetaContainer    container_meta_type;
 	typedef IndexEntry            entry_type;
 	typedef IndexIndexEntry       entry_meta_type;
-	typedef VariantIndex          variant_index_type;
+	typedef VariantIndexBin       bin_type;
 
 public:
 	Index(){}
-	Index(const self_type& other) : index_(other.index_), index_meta_(other.index_meta_), variant_index_(other.variant_index_){}
+	Index(const self_type& other) : index_meta_(other.index_meta_), index_(other.index_){}
 	~Index(){}
 
 	/**<
@@ -30,26 +31,29 @@ public:
 	 * index entries all belonging to the same contig.
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
-	bool buildSuperIndex(void){
+	bool buildMetaIndex(void){
+		// This criterion should never be satisfied
 		if(this->index_.size() == 0)
 			return false;
 
-		entry_meta_type indexindex;
-		indexindex(this->index_[0]); // Start reference
-		for(U32 i = 1; i < this->index_.size(); ++i){
-			if(indexindex == this->index_[i]) // If the blocks share the same contig identifier
-				indexindex += this->index_[i];
-			else { // Otherwise push one entry onto the chain and start a new reference
-				this->index_meta_ += indexindex;
-				indexindex(this->index_[i]);
+		for(U32 c = 0; c < this->index_.size(); ++c){ // foreach contig
+			if(this->index_.linear_at(c).size() == 0){
+				this->index_meta_ += entry_meta_type();
+				continue;
 			}
-		}
 
-		if(this->index_meta_.size() == 0){
+			entry_meta_type indexindex;
+			indexindex(this->index_.linear_at(c)[0]); // Start reference
+			for(U32 i = 1; i < this->index_.linear_at(c).size(); ++i){
+				if(indexindex == this->index_.linear_at(c)[i]) // If the blocks share the same contig identifier
+					indexindex += this->index_.linear_at(c)[i];
+				else { // Otherwise push one entry onto the chain and start a new reference
+					this->index_meta_ += indexindex;
+					indexindex(this->index_.linear_at(c)[i]);
+				}
+			}
+
 			this->index_meta_ += indexindex;
-		}
-		else if(indexindex != this->index_meta_.back()){
-			this->index_meta_.back() = indexindex;
 		}
 
 		return true;
@@ -60,8 +64,8 @@ public:
 	const size_t size(void) const{ return(this->index_.size()); }
 	const size_t sizeMeta(void) const{ return(this->index_meta_.size()); }
 
-	inline void operator+=(const entry_type& entry){ this->index_ += entry; }
-	inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
+	//inline void operator+=(const entry_type& entry){ this->index_ += entry; }
+	//inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
 
 	// Accessors
 	inline container_type& getIndex(void){ return(this->index_); }
@@ -93,18 +97,49 @@ public:
 	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& position) const{
 		if(contig_id > this->getMetaIndex().size()) std::vector<entry_type>();
 
+		// Linear index: overlapping blocks
 		std::vector<entry_type> overlapping_blocks;
 		for(U32 i = 0; i < this->getIndex().size(); ++i){
 			// Interval overlap?
 			// [a, b] overlaps with [x, y] iff b > x and a < y.
-			if(position >= this->getIndex()[i].minPosition && position <= this->getIndex()[i].maxPosition){
-				overlapping_blocks.push_back(this->getIndex()[i]);
+			if(position >= this->getIndex().linear_at(contig_id)[i].minPosition && position <= this->getIndex().linear_at(contig_id)[i].maxPosition){
+				overlapping_blocks.push_back(this->getIndex().linear_at(contig_id)[i]);
 			}
 		}
+		// Sort overlapping block
+		std::sort(overlapping_blocks.begin(), overlapping_blocks.end());
+
+		// Merge block-range
+
 
 		// We also need to know possible overlaps in the quad-tree:
 		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
-		// this->variant_index_[contig_id].possibleBins(position, position);
+		std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(position, position);
+		std::vector<U32> b;
+		for(U32 i = 0; i < possible_chunks.size(); ++i){
+			if(possible_chunks[i].size() == 0){
+				std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> empty..." << std::endl;
+				continue;
+			}
+			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i][0];
+			b.push_back(possible_chunks[i][0]);
+			for(U32 j = 1; j < possible_chunks[i].size(); ++j){
+				std::cerr << ',' << possible_chunks[i][j];
+				b.push_back(possible_chunks[i][j]);
+			}
+			std::cerr << std::endl;
+		}
+		std::sort(b.begin(), b.end());
+		U32 prev = b[0];
+		std::cerr << 0 << ": " << b[0] << std::endl;
+		for(U32 i = 1; i < b.size(); ++i){
+			if(prev != b[i]){
+				std::cerr << i << ": " << b[i] << std::endl;
+				// Use linear index to see if it overlaps or not
+				std::cerr << this->index_.linear_at(contig_id)[b[i]].minPosition << "->" << this->index_.linear_at(contig_id)[b[i]].maxPosition << std::endl;
+			}
+			prev = b[i];
+		}
 
 		return(overlapping_blocks);
 	}
@@ -117,9 +152,12 @@ public:
 	 * @return
 	 */
 	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& start_pos, const U64& end_pos) const{
-		if(contig_id > this->getMetaIndex().size()) std::vector<entry_type>();
+		if(this->getMetaIndex().at(contig_id).n_blocks == 0)
+			return(std::vector<entry_type>());
+
 
 		std::vector<entry_type> overlapping_blocks;
+		/*
 		for(U32 i = 0; i < this->getIndex().size(); ++i){
 			// Interval overlap?
 			// [a, b] overlaps with [x, y] iff b > x and a < y.
@@ -127,28 +165,59 @@ public:
 				overlapping_blocks.push_back(this->getIndex()[i]);
 			}
 		}
+		*/
+
+		// We also need to know possible overlaps in the quad-tree:
+		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
+		std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(start_pos, end_pos);
+		std::vector<U32> b;
+		std::cerr << "possible: " << possible_chunks.size() << std::endl;
+		for(U32 i = 0; i < possible_chunks.size(); ++i){
+			if(possible_chunks[i].size() == 0){
+				std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> empty..." << std::endl;
+				continue;
+			}
+			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i][0];
+			b.push_back(possible_chunks[i][0]);
+			for(U32 j = 1; j < possible_chunks[i].size(); ++j){
+				std::cerr << ',' << possible_chunks[i][j];
+				b.push_back(possible_chunks[i][j]);
+			}
+			std::cerr << std::endl;
+		}
+		std::sort(b.begin(), b.end());
+		U32 prev = b[0];
+		std::cerr << 0 << ": " << b[0] << std::endl;
+		for(U32 i = 1; i < b.size(); ++i){
+			if(prev != b[i]){
+				std::cerr << i << ": " << b[i] << std::endl;
+				// Use linear index to see if this interval could possibly overlap
+				std::cerr << this->index_.linear_at(contig_id)[b[i]].minPosition << "->" << this->index_.linear_at(contig_id)[b[i]].maxPosition << std::endl;
+			}
+			prev = b[i];
+		}
+
 		return(overlapping_blocks);
 	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+		//stream << entry.index_;
 		stream << entry.index_;
 		stream << entry.index_meta_;
-		stream << entry.variant_index_;
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		//stream >> entry.index_;
 		stream >> entry.index_;
 		stream >> entry.index_meta_;
-		stream >> entry.variant_index_;
 		return(stream);
 	}
 
 public:
-	container_type      index_;
 	container_meta_type index_meta_;
-	variant_index_type  variant_index_;
+	container_type      index_;
 };
 
 }

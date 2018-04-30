@@ -1,6 +1,8 @@
 #ifndef INDEX_VARIANT_INDEX_H_
 #define INDEX_VARIANT_INDEX_H_
 
+#include "variant_index_linear.h"
+
 namespace tachyon{
 namespace index{
 
@@ -16,7 +18,7 @@ private:
 
 public:
     VariantIndexBin() :
-    	blockID_(0),
+    	binID_(0),
 		n_variants_(0),
 		n_blocks_(0),
 		n_capacity_(100),
@@ -26,7 +28,7 @@ public:
 	}
 
     VariantIndexBin(const self_type& other) :
-    	blockID_(other.blockID_),
+    	binID_(other.binID_),
 		n_variants_(other.n_variants_),
 		n_blocks_(other.n_blocks_),
 		n_capacity_(other.n_capacity_),
@@ -39,7 +41,7 @@ public:
     VariantIndexBin& operator=(const self_type& other){
     	delete [] this->blocks_;
 		this->blocks_     = new value_type[other.capacity()];
-    	this->blockID_     = other.blockID_;
+    	this->binID_      = other.binID_;
     	this->n_blocks_   = other.n_blocks_;
     	this->n_capacity_ = other.n_capacity_;
     	for(U32 i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
@@ -138,7 +140,7 @@ public:
 
 private:
     friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
-		stream.write(reinterpret_cast<const char*>(&bin.blockID_),     sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&bin.binID_),     sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_),   sizeof(size_type));
 		for(U32 i = 0; i < bin.size(); ++i)
@@ -149,7 +151,7 @@ private:
 
     friend std::istream& operator>>(std::istream& stream, self_type& bin){
     	delete [] bin.blocks_;
- 		stream.read(reinterpret_cast<char*>(&bin.blockID_),     sizeof(U32));
+ 		stream.read(reinterpret_cast<char*>(&bin.binID_),     sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&bin.n_blocks_),   sizeof(size_type));
 		bin.n_capacity_ = bin.size() + 64;
@@ -162,7 +164,7 @@ private:
 	}
 
 public:
-	U32       blockID_;
+	U32       binID_;
 	U32       n_variants_; // number of variants belonging to this bin
 	size_type n_blocks_;
 	size_type n_capacity_;
@@ -181,51 +183,79 @@ private:
 
 public:
     VariantIndexContig() :
+    	contigID_(0),
     	l_contig_(0),
 		l_contig_rounded_(0),
 		n_bins_(0),
 		n_capacity_(0),
 		n_levels_(0),
+		n_sites_(0),
 		bins_cumsum_(nullptr),
 		bins_(nullptr)
 	{
 
 	}
 
-    VariantIndexContig(const U64 l_contig, const BYTE n_levels) :
+    VariantIndexContig(const U32 contigID, const U64 l_contig, const BYTE n_levels) :
+    	contigID_(contigID),
     	l_contig_(l_contig),
 		l_contig_rounded_(0),
 		n_bins_(0),
 		n_capacity_(0),
 		n_levels_(n_levels),
+		n_sites_(0),
 		bins_cumsum_(nullptr),
 		bins_(nullptr)
     {
     	this->l_contig_rounded_ = this->roundLengthClosestBase4_(this->l_contig_);
     	if(this->n_levels_ != 0){
     		this->calculateCumulativeSums_();
-    		this->n_capacity_ = this->bins_cumsum_[this->n_levels_ - 1] + 64;
-    		this->n_bins_     = this->bins_cumsum_[this->n_levels_ - 1];
+    		this->n_capacity_ = this->bins_cumsum_[this->n_levels_] + 64;
+    		this->n_bins_     = this->bins_cumsum_[this->n_levels_];
     		this->bins_       = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
     		for(U32 i = 0; i < this->size(); ++i){
     			new( &this->bins_[i] ) value_type(  );
-    			this->bins_[i].blockID_ = i;
+    			this->bins_[i].binID_ = i;
     		}
     	}
     }
 
     VariantIndexContig(const self_type& other) :
+    	contigID_(other.contigID_),
     	l_contig_(other.l_contig_),
 		l_contig_rounded_(other.l_contig_rounded_),
 		n_bins_(other.n_bins_),
 		n_capacity_(other.n_capacity_),
 		n_levels_(other.n_levels_),
+		n_sites_(other.n_sites_),
 		bins_cumsum_(nullptr),
 		bins_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
     	this->calculateCumulativeSums_();
     	for(U32 i = 0; i < this->size(); ++i)
     		new( &this->bins_[i] ) value_type( other.bins_[i] );
+    }
+
+    void operator=(const self_type& other){
+    	// Clean previous
+    	for(std::size_t i = 0; i < this->size(); ++i)
+			(this->bins_ + i)->~VariantIndexBin();
+
+		::operator delete[](static_cast<void*>(this->bins_));
+		delete [] this->bins_cumsum_;
+
+    	this->contigID_ = other.contigID_;
+    	this->l_contig_ = other.l_contig_;
+    	this->l_contig_rounded_ = other.l_contig_rounded_;
+    	this->n_bins_ = other.n_bins_;
+    	this->n_capacity_ = other.n_capacity_;
+    	this->n_levels_ = other.n_levels_;
+    	this->bins_cumsum_ = nullptr;
+    	this->calculateCumulativeSums_();
+
+    	this->bins_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+		for(U32 i = 0; i < this->size(); ++i)
+			new( &this->bins_[i] ) value_type( other.bins_[i] );
     }
 
 
@@ -286,6 +316,7 @@ public:
 	inline const bool empty(void) const{ return(this->n_bins_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_bins_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
+	inline const size_type& size_sites(void) const{ return(this->n_sites_); }
 
 	// Iterator
 	inline iterator begin(){ return iterator(&this->bins_[0]); }
@@ -295,6 +326,10 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->bins_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->bins_[this->n_bins_]); }
 
+	// Accessor
+	inline U32& getContigID(void){ return(this->contigID_); }
+	inline const U32& getContigID(void) const{ return(this->contigID_); }
+
 	/**<
 	 * Add a target interval tuple (from,to,block_ID)
 	 * @param fromPosition From position of interval
@@ -303,7 +338,7 @@ public:
 	 * @return
 	 */
 	inline const S32 Add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
-		for(S32 i = this->n_levels_ - 1; i != 0; --i){
+		for(S32 i = this->n_levels_; i != 0; --i){
 			U32 binFrom = S64(fromPosition/(this->l_contig_rounded_ / pow(4,i)));
 			U32 binTo   = S64(toPosition/(this->l_contig_rounded_ / pow(4,i)));
 			/**
@@ -311,29 +346,37 @@ public:
 			 * completely contained: in this case we deposit the interval there
 			 **/
 			if(binFrom == binTo){
-				//std::cerr << fromPosition << "->" << toPosition << ", adding to " << binFrom << " level " << i << " cum : " << this->bins_cumsum_[i-1]+binFrom << "/" << this->size() << std::endl;
-
+				//if(i != this->n_levels_) std::cerr << fromPosition << "->" << toPosition << ", adding to " << binFrom << " level " << i << " cum : " << this->bins_cumsum_[i-1]+binFrom << "/" << this->size() << std::endl;
+				++this->n_sites_;
 				this->bins_[this->bins_cumsum_[i - 1]+binFrom].Add(yon_block_id);
 				return(this->bins_cumsum_[i - 1]+binFrom);
 			}
 		}
 		this->bins_[0].Add(yon_block_id);
+		++this->n_sites_;
 		return(0);
 	}
 
 	/**<
-	 * Computes the possible chunks an interval might overlap
+	 * Computes the possible bins an interval might overlap
 	 * @param from_position From position of interval
 	 * @param to_position   To position of interval
-	 * @return              Returns a vector of viable overlapping chunks
+	 * @return              Returns a vector of viable overlapping bins
 	 */
-	std::vector<U32> possibleBins(const U64& from_position, const U64& to_position) const{
-		std::vector<U32> overlapping_chunks;
-		overlapping_chunks.push_back(0); // level 0
-		for(S32 i = this->n_levels_ - 1; i != 0; --i){
+	std::vector<value_type> possibleBins(const U64& from_position, const U64& to_position) const{
+		std::vector<value_type> overlapping_chunks;
+		//overlapping_chunks.push_back(this->at(0)); // level 0
+		for(S32 i = this->n_levels_; i != 0; --i){
 			U32 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
 			U32 binTo   = S64(to_position/(this->l_contig_rounded_ / pow(4,i)));
-			if(binFrom == binTo) overlapping_chunks.push_back(this->bins_cumsum_[i - 1] + binFrom);
+
+			std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << "<>" << binTo << "/" << this->size() << std::endl;
+
+			// Overlap from cumpos + (binFrom, binTo)
+			// All these chunks could potentially hold intervals overlapping
+			// the desired coordinates
+			for(U32 j = binFrom; j <= binTo; ++j)
+				overlapping_chunks.push_back(this->at(this->bins_cumsum_[i - 1] + j));
 		}
 		return(overlapping_chunks);
 	}
@@ -356,21 +399,35 @@ private:
     	if(this->n_levels_ == 0) return;
 
     	delete [] this->bins_cumsum_;
-    	this->bins_cumsum_ = new U32[this->n_levels_];
+    	this->bins_cumsum_ = new U32[this->n_levels_ + 1]; // inclusive last
 
     	U32 total = 0;
-    	for(U32 i = 0; i < this->n_levels_; ++i){
+    	for(U32 i = 0; i <= this->n_levels_; ++i){
     		total += pow(4,i);
     		this->bins_cumsum_[i] = total - 1; // remove 0 to start relative zero
     	}
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const self_type& contig){
+    	stream.write(reinterpret_cast<const char*>(&contig.contigID_),         sizeof(U32));
     	stream.write(reinterpret_cast<const char*>(&contig.l_contig_),         sizeof(U64));
     	stream.write(reinterpret_cast<const char*>(&contig.l_contig_rounded_), sizeof(U64));
     	stream.write(reinterpret_cast<const char*>(&contig.n_bins_),           sizeof(size_type));
     	stream.write(reinterpret_cast<const char*>(&contig.n_levels_),         sizeof(BYTE));
-    	for(U32 i = 0; i < contig.size(); ++i) stream << contig.bins_[i];
+    	stream.write(reinterpret_cast<const char*>(&contig.n_sites_),          sizeof(size_type));
+
+    	size_type n_items_written = 0;
+    	for(U32 i = 0; i < contig.size(); ++i){
+    		if(contig.bins_[i].size()) ++n_items_written;
+    	}
+    	std::cerr << "ites written: " << n_items_written << std::endl;
+    	stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(size_type));
+
+    	for(U32 i = 0; i < contig.size(); ++i){
+    		// If bins[i] contains data
+    		if(contig.bins_[i].size())
+    			stream << contig.bins_[i];
+    	}
     	return(stream);
     }
 
@@ -382,33 +439,46 @@ private:
 
 			::operator delete[](static_cast<void*>(contig.bins_));
     	}
+
 		delete [] contig.bins_cumsum_;
 		contig.bins_cumsum_ = nullptr;
 
+		stream.read(reinterpret_cast<char*>(&contig.contigID_),         sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&contig.l_contig_),         sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&contig.l_contig_rounded_), sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&contig.n_bins_),           sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&contig.n_levels_),         sizeof(BYTE));
+		stream.read(reinterpret_cast<char*>(&contig.n_sites_),          sizeof(size_type));
 		contig.n_capacity_ = contig.n_bins_ + 64;
+		size_type n_items_written = 0;
+		stream.read(reinterpret_cast<char*>(&n_items_written), sizeof(size_type));
 
 		// Allocate new
 		contig.bins_ = static_cast<pointer>(::operator new[](contig.capacity()*sizeof(value_type)));
 		for(U32 i = 0; i < contig.size(); ++i){
 			new( &contig.bins_[i] ) value_type(  );
-			contig.bins_[i].blockID_ = i;
+			contig.bins_[i].binID_ = i;
 		}
 		contig.calculateCumulativeSums_();
 
-		for(U32 i = 0; i < contig.size(); ++i) stream >> contig.bins_[i];
+		// Load data accordingly
+		for(U32 i = 0; i < n_items_written; ++i){
+			value_type temp;
+			stream >> temp;
+			std::cerr << "loading: " << temp.size() << " entries" << std::endl;
+			contig.bins_[temp.binID_] = temp;
+		}
 		return(stream);
 	}
 
 private:
+    U32       contigID_;
 	U64       l_contig_;         // as described in header
 	U64       l_contig_rounded_; // rounded up to next base-4
 	size_type n_bins_;
 	size_type n_capacity_;
 	BYTE      n_levels_;    // 7 by default
+	size_type n_sites_;
 	U32*      bins_cumsum_; // 1, 1+4, 1+4+16, 1+4+16+64, ...
 	pointer   bins_;        // bin information
 };
@@ -418,32 +488,43 @@ private:
 	typedef VariantIndex       self_type;
     typedef std::size_t        size_type;
     typedef VariantIndexContig value_type;
+    typedef VariantIndexLinear linear_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
+    typedef IndexEntry         linear_entry_type;
 
 public:
 	VariantIndex() :
 		n_contigs_(0),
 		n_capacity_(1000),
-		contigs_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
-	{}
+		contigs_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)))),
+		linear_(static_cast<linear_type*>(::operator new[](this->capacity()*sizeof(linear_type))))
+	{
+
+	}
 
 	VariantIndex(const self_type& other) :
 		n_contigs_(other.n_contigs_),
 		n_capacity_(other.n_capacity_),
-		contigs_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+		contigs_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)))),
+		linear_(static_cast<linear_type*>(::operator new[](this->capacity()*sizeof(linear_type))))
 	{
-		for(U32 i = 0; i < this->size(); ++i)
+		for(U32 i = 0; i < this->size(); ++i){
 			new( &this->contigs_[i] ) value_type( other.contigs_[i] );
+			new( &this->linear_[i] )  linear_type( other.linear_[i] );
+		}
 	}
 
 	~VariantIndex(){
-		for(std::size_t i = 0; i < this->size(); ++i)
+		for(std::size_t i = 0; i < this->size(); ++i){
 			(this->contigs_ + i)->~VariantIndexContig();
+			(this->linear_ + i)->~VariantIndexLinear();
+		}
 
 		::operator delete[](static_cast<void*>(this->contigs_));
+		::operator delete[](static_cast<void*>(this->linear_));
 	}
 
 	class iterator{
@@ -492,6 +573,9 @@ public:
 	inline reference back(void){ return(this->contigs_[this->n_contigs_ - 1]); }
 	inline const_reference back(void) const{ return(this->contigs_[this->n_contigs_ - 1]); }
 
+	inline linear_type& linear_at(const size_type& contig_id){ return(this->linear_[contig_id]); }
+	inline const linear_type& linear_at(const size_type& contig_id) const{ return(this->linear_[contig_id]); }
+
 	// Capacity
 	inline const bool empty(void) const{ return(this->n_contigs_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_contigs_); }
@@ -511,75 +595,122 @@ public:
 	 * @param n_levels Number of desired 4^N levels
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& add(const U64& l_contig, const BYTE& n_levels){
+	inline self_type& add(const U32& contigID, const U64& l_contig, const BYTE& n_levels){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();
 
-		new( &this->contigs_[this->n_contigs_++] ) value_type( l_contig, n_levels );
+		new( &this->contigs_[this->n_contigs_] ) value_type( contigID, l_contig, n_levels );
+		new( &this->linear_[this->n_contigs_] ) linear_type( contigID );
+		++this->n_contigs_;
 		return(*this);
 	}
 
 	/**<
-	 * Overloaded operator for pushing back an index entry
-	 * @param index_entry Target index entry
-	 * @return            Returns a reference to self
+	 * Add index entry to the linear index given a contig id
+	 * @param contigID Target linear index at position contigID
+	 * @param entry    Target index entry to push back onto the linear index vector
+	 * @return         Returns a reference of self
 	 */
-	inline self_type& operator+=(const const_reference index_entry){
-		if(this->size() + 1 >= this->n_capacity_)
-			this->resize();
-
-		new( &this->contigs_[this->n_contigs_++] ) value_type( index_entry );
+	inline self_type& add(const U32& contigID, const linear_entry_type& entry){
+		this->linear_[contigID] += entry;
 		return(*this);
 	}
-	inline self_type& add(const const_reference index_entry){ return(*this += index_entry); }
 
+	/**<
+	 * Resizes the index to accept more contigs than currently allocated
+	 * memory for. Resizes for the quad-tree index and the linear index
+	 */
 	void resize(void){
 		pointer temp = this->contigs_;
+		linear_type* temp_linear = this->linear_;
 
 		this->n_capacity_ *= 2;
 		this->contigs_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+		this->linear_  = static_cast<linear_type*>(::operator new[](this->capacity()*sizeof(linear_type)));
+
 
 		// Lift over values from old addresses
-		for(U32 i = 0; i < this->size(); ++i)
+		for(U32 i = 0; i < this->size(); ++i){
 			new( &this->contigs_[i] ) value_type( temp[i] );
+			new( &this->linear_[i] )  linear_type( temp_linear[i] );
+		}
 
 		// Clear temp
-		for(std::size_t i = 0; i < this->size(); ++i)
+		for(std::size_t i = 0; i < this->size(); ++i){
 			(temp + i)->~VariantIndexContig();
+			(temp_linear + i)->~VariantIndexLinear();
+		}
 
 		::operator delete[](static_cast<void*>(temp));
+		::operator delete[](static_cast<void*>(temp_linear));
 	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& index){
 		stream.write(reinterpret_cast<const char*>(&index.n_contigs_), sizeof(size_type));
-		for(U32 i = 0; i < index.size(); ++i) stream << index.contigs_[i];
+		size_type n_items_written = 0;
+		for(U32 i = 0; i < index.size(); ++i){
+			if(index.contigs_[i].size_sites()) ++n_items_written;
+		}
+		stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(size_type));
+
+		for(U32 i = 0; i < index.size(); ++i){
+			// Write if contig[i] contains data
+			if(index.contigs_[i].size_sites())
+				stream << index.contigs_[i];
+		}
+
+		// Write linear index
+		for(U32 i = 0; i < index.size(); ++i) stream << index.linear_[i];
+
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& index){
 		// Clear old data
 		if(index.size()){
-			for(std::size_t i = 0; i < index.size(); ++i)
+			for(std::size_t i = 0; i < index.size(); ++i){
 				(index.contigs_ + i)->~VariantIndexContig();
+				(index.linear_ + i)->~VariantIndexLinear();
+			}
 
 			::operator delete[](static_cast<void*>(index.contigs_));
+			::operator delete[](static_cast<void*>(index.linear_));
 		}
 
 		stream.read(reinterpret_cast<char*>(&index.n_contigs_), sizeof(size_type));
-		index.n_capacity_ = index.n_contigs_ + 64;
+		index.n_capacity_ = index.size() + 64;
+		size_type n_items_written = 0;
+		stream.read(reinterpret_cast<char*>(&n_items_written), sizeof(size_type));
 
 		// Allocate new data
 		index.contigs_ = static_cast<pointer>(::operator new[](index.capacity()*sizeof(value_type)));
-		for(U32 i = 0; i < index.size(); ++i) new( &index.contigs_[i] ) value_type( );
-		for(U32 i = 0; i < index.size(); ++i) stream >> index.contigs_[i]; // Read
+		index.linear_ = static_cast<linear_type*>(::operator new[](index.capacity()*sizeof(linear_type)));
+		for(U32 i = 0; i < index.size(); ++i) {
+			new( &index.contigs_[i] ) value_type( );
+			new( &index.linear_[i] ) linear_type( );
+		}
+
+		// Load data and update accordingly
+		for(U32 i = 0; i < n_items_written; ++i){
+			value_type temp;
+			stream >> temp; // Read
+			std::cerr << "loading data: " << temp.getContigID() << std::endl;
+			index.at(temp.getContigID()) = temp;
+		}
+
+		// Load linear index
+		for(U32 i = 0; i < index.size(); ++i) stream >> index.linear_[i];
+		exit(1);
+
 		return(stream);
 	}
 
 private:
-	size_type n_contigs_; // number of contigs
-	size_type n_capacity_;
-	pointer   contigs_;
+	size_type    n_contigs_; // number of contigs
+	size_type    n_capacity_;
+	pointer      contigs_;
+	linear_type* linear_;
 };
 
 }

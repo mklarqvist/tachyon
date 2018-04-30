@@ -79,8 +79,10 @@ public:
 		delete [] this->format_fields;
 
 		this->contigs = new contig_type[this->header_magic.getNumberContigs()];
-		for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i)
+		for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i){
 			this->contigs[i] = vcf_header.contigs[i];
+			this->contigs[i].contigID = i;
+		}
 
 		this->samples = new sample_type[this->header_magic.getNumberSamples()];
 		for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)

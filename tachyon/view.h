@@ -37,11 +37,13 @@ void view_usage(void){
 	"  -i FILE   input YON file (required)\n"
 	"  -o FILE   output file (- for stdout; default: -)\n"
 	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
+	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
+	"  -r STRING interval string\n"
+	"  -R STRING path to file with interval strings\n"
 	"  -m        filtered data can match ANY number of requested fields\n"
 	"  -M        filtered data must match ALL requested fields\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
@@ -288,6 +290,14 @@ int view(int argc, char** argv){
 
 	if(showHeader) reader.getSettings().show_vcf_header = true;
 	else reader.getSettings().show_vcf_header = false;
+
+	tachyon::core::HeaderContig* contig = nullptr;
+	if(!reader.header.getContig("20",contig)){
+		std::cerr << "cant find: " << "20" << std::endl;
+		return(1);
+	}
+	reader.index.findOverlap(contig->contigID, 1000000, 2100000);
+	return(1);
 
 	// Temp
 	//while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);

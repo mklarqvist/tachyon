@@ -1,14 +1,14 @@
-#ifndef INDEX_INDEX_ENTRY_CONTAINER_H_
-#define INDEX_INDEX_ENTRY_CONTAINER_H_
+#ifndef INDEX_VARIANT_INDEX_LINEAR_H_
+#define INDEX_VARIANT_INDEX_LINEAR_H_
 
 #include "index_entry.h"
 
 namespace tachyon{
 namespace index{
 
-class IndexEntryContainer{
+class VariantIndexLinear{
 private:
-	typedef IndexEntryContainer  self_type;
+	typedef VariantIndexLinear   self_type;
     typedef std::size_t          size_type;
     typedef IndexEntry           value_type;
     typedef value_type&          reference;
@@ -17,13 +17,22 @@ private:
     typedef const value_type*    const_pointer;
 
 public:
-    IndexEntryContainer() :
+    VariantIndexLinear() :
+    	contig_id_(0),
 		n_entries(0),
 		n_capacity(1000),
 		__entries(new value_type[this->n_capacity])
 	{}
 
-    IndexEntryContainer(const self_type& other) :
+    VariantIndexLinear(const U32 contig_id) :
+		contig_id_(contig_id),
+		n_entries(0),
+		n_capacity(1000),
+		__entries(new value_type[this->n_capacity])
+	{}
+
+    VariantIndexLinear(const self_type& other) :
+    	contig_id_(other.contig_id_),
     	n_entries(other.n_entries),
 		n_capacity(other.n_capacity),
 		__entries(new value_type[this->n_capacity])
@@ -31,7 +40,7 @@ public:
     	for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
     }
 
-	~IndexEntryContainer(){
+	~VariantIndexLinear(){
 		delete [] this->__entries;
 	}
 
@@ -98,7 +107,6 @@ public:
 		if(this->size() + 1 == this->n_capacity)
 			this->resize();
 
-
 		this->__entries[this->n_entries++] = index_entry;
 		return(*this);
 	}
@@ -119,6 +127,7 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+		stream.write(reinterpret_cast<const char*>(&entry.contig_id_), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_entries), sizeof(size_type));
 		for(U32 i = 0; i < entry.size(); ++i) stream << entry[i];
 
@@ -126,6 +135,7 @@ private:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		stream.read(reinterpret_cast<char*>(&entry.contig_id_), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_entries), sizeof(size_type));
 
 		if(entry.size() > entry.capacity()){
@@ -141,6 +151,7 @@ private:
 	}
 
 private:
+	U32 contig_id_;
 	size_type n_entries;
 	size_type n_capacity;
 	pointer   __entries;
@@ -152,4 +163,4 @@ private:
 
 
 
-#endif /* INDEX_INDEX_ENTRY_CONTAINER_H_ */
+#endif /* INDEX_VARIANT_INDEX_LINEAR_H_ */

@@ -94,14 +94,16 @@ bool VariantImporter::BuildBCF(void){
 		double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
 
 		if(used / bins_lowest < 2500){
-			for(S32 i = n_levels-1; i != 0; --i){
+			for(S32 i = n_levels; i != 0; --i){
 				if(used/pow(4,i) > 2500){
 					n_levels = i;
 					break;
 				}
 			}
 		}
-		this->writer->index.variant_index_.add(contig_length, n_levels);
+
+		this->writer->index.index_.add(i, contig_length, n_levels);
+		//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
 		//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
 		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
 	}
@@ -280,7 +282,8 @@ bool VariantImporter::BuildBCF(void){
 		this->index_entry.minPosition     = reader.front().body->POS;
 		this->index_entry.maxPosition     = reader.back().body->POS;
 		this->index_entry.n_variants      = reader.size();
-		this->writer->index += this->index_entry;
+		this->writer->index.index_.linear_at(index_entry.contigID) += this->index_entry; // Todo: beautify
+		//this->writer->index += this->index_entry;
 
 		this->index_entry.reset();
 		++this->writer->n_blocks_written;
@@ -313,11 +316,17 @@ bool VariantImporter::BuildBCF(void){
 	footer.n_variants         = this->writer->n_variants_written;
 	assert(footer.n_blocks == this->writer->index.size());
 
-
+	U64 last_pos = this->writer->stream->tellp();
 	this->writer->writeIndex(); // Write index
+	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	last_pos = this->writer->stream->tellp();
 	checksums.finalize();       // Finalize SHA-512 digests
 	*this->writer->stream << checksums;
+	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	last_pos = this->writer->stream->tellp();
 	*this->writer->stream << footer;
+	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+
 	this->writer->stream->flush();
 
 	std::vector<std::string> usage_statistics_names = {
@@ -460,7 +469,7 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
 				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
-				index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
+				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
 
 				// index_bin= reg2bin(entry.body->POS, end);
 				break;
@@ -486,9 +495,9 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 		if(longest){
 			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
-			index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
+			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
 		} else { // fallback if all others fail
-			index_bin = this->writer->index.variant_index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
+			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS);
 			//index_bin = 0;
 		}

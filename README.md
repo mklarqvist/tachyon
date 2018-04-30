@@ -7,34 +7,46 @@
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-Tachyon is an open source software library for storing and querying sequence variant data in a lossless and bit-exact representation. Tachyon efficiently stores data fields by column and implicitly represent genotypic data by exploiting intrinsic genetic properties. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium and identity-by-state in large-scale cohorts.
+Tachyon is an open source software library for storing and querying sequence variant data in an (optionally) lossless and bit-exact representation. Tachyon stores data fields in a custom column-oriented database-like structure that allows for extremely efficient field-specific queries (see [benchmarks](BENCHMARKS.md)). In general, Tachyon is 10- to several 100-folds faster for virtually all queries compared to current record-centric approaches. Depending on the content of your input file, Tachyon can be 2- to 1000-fold smaller on disk compared to `BCF`. We have benchmarked Tachyon on population-scaled datasets of 10 million whole-genome sequenced individuals. Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating linkage-disequilibrium and identity-by-state in large-scale cohorts.
 
-### Author
-Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)  
-Department of Genetics, University of Cambridge  
-Wellcome Trust Sanger Institute
+## Highlights of Tachyon
+* **Self-indexing**: Tachyon always builds the best possible quad-tree, linear, and meta-index given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
+* **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. This approach guarantees file integrity when compressing/decompressing and encrypting/decrypting.
+* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl].
+* **Compression**: Tachyon files are generally many fold (in many cases many 10- to 100-folds) smaller than the current standard file-format.
+* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries. This memory layout enables extremely rapid field-specific queries.  
+* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
+* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF` and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
-## Status
+---
+
+## Table of contents
+- [Project status](#project-status)
+- [Getting started](#getting-started)
+    - [Dependencies](#dependencies)
+    - [Building from source](#building-from-source)
+- [Workflow example: using the CLI](#workflow-example-using-the-cli)
+    - [`import`: Importing `VCF`/`BCF`](#import-importing-vcfbcf)
+    - [`view`: Viewing, converting, and slicing `YON` files](#view-viewing-converting-and-slicing-yon-files)
+    - [Field-slicing](#field-slicing)
+    - [Searching for genomic regions](#searching-for-genomic-regions)
+    - [Annotating meta-data](#annotating-meta-data)
+- [C++ API Examples](#c-api-examples)
+    - [Standard containers](#standard-containers)
+    - [Genotype containers / objects](#genotype-containers--objects)
+    - [Math objects](#math-objects)
+- [Author](#author)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+---
+
+## Project status
 Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
 **Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
 
 Current limitations imposed during development:
 * Importing is restricted to `BCF`
 * Output is restricted to `VCF`, `JSON`, and custom field slicing
-
-## Introduction
-Tachyon (`YON`) is a command line interface and a user-friendly C++ API for querying population-scaled sequence variant data. Tachyon stores data fields in a custom column-oriented database-like structure that allows for extremely efficient field-specific queries (see [benchmarks](BENCHMARKS.md)). In general, Tachyon is 10- to several 100-folds faster for virtually all queries compared to current record-centric approaches. Depending on the content of your input file, Tachyon can be 2- to 1000-fold smaller on disk compared to `BCF`.  
-
----
-
-### Highlights of Tachyon
-* **Self-indexing**: Tachyon always builds the best possible index and super-index (indexing of the index for even faster queries) given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
-* **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. Guaranteed file integrity when compressing/decompressing and encrypting/decrypting.
-* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl]
-* **Compression**: Tachyon files are generally many fold (in many cases many 2-1000-fold) smaller than the current standard file-formats/
-* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries.  
-* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
-* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF` and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
 ---
 
@@ -45,7 +57,7 @@ You will need to have installed the following dependencies:
 * [openssl][openssl]: An open-source library for encryption/decryption
 
 ### Building from source
-Assuming the dependencies are installed then building is trivial:
+If the required dependencies listed above are installed then building is trivial. Note the added `--recursive` flag to the clone request. This flag is required to additionally clone the latest third-party dependencies.
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon/build
@@ -54,7 +66,7 @@ make
 
 ## Workflow example: using the CLI
 ### `import`: Importing `VCF`/`BCF`
-Import a `bcf` file to `yon` with a block-size of `-c` number of variants and/or `-C` number of base-pairs. If both `-c` and `-C` are set then the block breaks whenever either condition is satisfied.
+Import a `bcf` file to `yon` with a block-size of `-c` number of variants and/or `-C` number of base-pairs. If both `-c` and `-C` are set then the block breaks whenever either condition is satisfied. **Please note that importing VCF files are currently disabled**
 ```bash
 tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000
 ```
@@ -91,6 +103,7 @@ Output
 Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889
 ```
 
+### Field-slicing
 Listing a specific `INFO` field with output data still adhering to the `VCF` specification:
 ```bash
 tachyon view -i example_dataset.yon -GH -f "INFO=AC"
@@ -231,6 +244,18 @@ Contig110_arrow	672	A	T	10	0.217	46	0.967	72	0.8113	54.73	-0.0525	11	0.239	31.05
 Output all available `INFO` fields and the `FORMAT` field `DP` and `FILTERS`
 ```bash
 tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -F CUSTOM -cd';' -V
+```
+
+### Searching for genomic regions
+Slicing intervals either as a contig, contig with a single position, or interval with a contig:
+```bash
+tachyon view -i example_dataset.yon -r "Contig110_arrow"
+```
+```bash
+tachyon view -i example_dataset.yon -r "Contig110_arrow:672"
+```
+```bash
+tachyon view -i example_dataset.yon -r "Contig110_arrow:672-1500"
 ```
 
 ### Annotating meta-data
@@ -620,6 +645,11 @@ legend("topright",legend = names(colors),fill=colors,cex=.6)
 ```
 Generated output  
 ![screenshot](examples/1kgp3_chr20_ibs.png)
+
+### Author
+Marcus D. R. Klarqvist (<mk819@cam.ac.uk>)  
+Department of Genetics, University of Cambridge  
+Wellcome Trust Sanger Institute
 
 ### Acknowledgements
 [James Bonfield](https://github.com/jkbonfield), Wellcome Trust Sanger Institute  
