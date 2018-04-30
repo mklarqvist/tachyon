@@ -72,11 +72,11 @@ bool VariantImporter::BuildBCF(void){
 	this->encoder.setSamples(this->header->samples);
 	this->block.ppa_manager.setSamples(this->header->samples);
 	// temp
-	permutation_type haploid_permuter;
+	//permutation_type haploid_permuter;
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.manager_haploid = &haploid_permuter;
+	//this->permutator.manager_haploid = &haploid_permuter;
 	this->permutator.setSamples(this->header->samples);
-	haploid_permuter.setSamples(this->header->samples*2);
+	//haploid_permuter.setSamples(this->header->samples*2);
 
 	if(this->outputPrefix.size() == 0) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;

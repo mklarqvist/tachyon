@@ -41,7 +41,7 @@ void view_usage(void){
 	"  -m        filtered data can match ANY number of requested fields\n"
 	"  -M        filtered data must match ALL requested fields\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -F STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
@@ -70,7 +70,7 @@ int view(int argc, char** argv){
 		{"filterAny",   no_argument, 0,  'm' },
 		{"filterAll",   no_argument, 0,  'M' },
 		{"delimiter",   optional_argument, 0,  'd' },
-		{"output-type", optional_argument, 0,  'F' },
+		{"output-type", optional_argument, 0,  'O' },
 		{"vector-output", no_argument, 0,  'V' },
 		{"annotate-genotype", no_argument, 0,  'X' },
 		{"noHeader",    no_argument, 0,  'H' },
@@ -101,7 +101,7 @@ int view(int argc, char** argv){
 
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:F:cGshHmMVX?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:cGshHmMVX?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -154,7 +154,7 @@ int view(int argc, char** argv){
 			output_FORMAT_as_vector = true;
 			break;
 
-		case 'F':
+		case 'O':
 			output_type = std::string(optarg);
 			break;
 

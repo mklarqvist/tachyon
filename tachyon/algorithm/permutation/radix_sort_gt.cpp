@@ -7,25 +7,26 @@ namespace algorithm {
 RadixSortGT::RadixSortGT() :
 	n_samples(0),
 	position(0),
-	position_haploid(0),
+	//position_haploid(0),
 	GT_array(nullptr),
-	GT_array_haploid(nullptr),
+	//GT_array_haploid(nullptr),
 	bins(new U32*[9]),
-	bins_haploid(new U32*[2]),
-	manager(nullptr),
-	manager_haploid(nullptr)
+	//bins_haploid(new U32*[2]),
+	manager(nullptr)
+	//manager_haploid(nullptr)
 {
+	for(U32 i = 0; i < 9; ++i) bins[i] = nullptr;
 	memset(&p_i, 0, sizeof(U32)*9);
-	memset(&p_i_h, 0, sizeof(U32)*2);
+	//memset(&p_i_h, 0, sizeof(U32)*2);
 }
 
 RadixSortGT::~RadixSortGT(){
 	delete [] this->GT_array;
-	delete [] this->GT_array_haploid;
+	//delete [] this->GT_array_haploid;
 	for(U32 i = 0; i < 9; ++i) delete [] this->bins[i];
-	for(U32 i = 0; i < 2; ++i) delete [] this->bins_haploid[i];
+	//for(U32 i = 0; i < 2; ++i) delete [] this->bins_haploid[i];
 	delete [] this->bins;
-	delete [] this->bins_haploid;
+	//delete [] this->bins_haploid;
 }
 
 void RadixSortGT::setSamples(const U64 n_samples){
@@ -33,11 +34,11 @@ void RadixSortGT::setSamples(const U64 n_samples){
 
 	// Delete previous
 	delete [] this->GT_array;
-	delete [] this->GT_array_haploid;
+	//delete [] this->GT_array_haploid;
 
 	// Set new
 	this->GT_array = new BYTE[this->n_samples];
-	this->GT_array_haploid = new BYTE[this->n_samples*2];
+	//this->GT_array_haploid = new BYTE[this->n_samples*2];
 
 	// Reset
 	for(U32 i = 0; i < 9; ++i){
@@ -45,13 +46,15 @@ void RadixSortGT::setSamples(const U64 n_samples){
 		memset(this->bins[i], 0, sizeof(U32)*n_samples);
 	}
 
+	/*
 	for(U32 i = 0; i < 2; ++i){
 		this->bins_haploid[i] = new U32[n_samples*2];
 		memset(this->bins_haploid[i], 0, sizeof(U32)*n_samples*2);
 	}
+	*/
 
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
-	memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
+	//memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
 
 	this->manager->setSamples(n_samples);
 	this->manager->setSamples(n_samples*2);
@@ -59,14 +62,14 @@ void RadixSortGT::setSamples(const U64 n_samples){
 
 void RadixSortGT::reset(void){
 	this->position = 0;
-	this->position_haploid = 0;
+	//this->position_haploid = 0;
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
-	memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
+	//memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
 	memset(&p_i, 0, sizeof(U32)*9);
-	memset(&p_i_h, 0, sizeof(U32)*2);
+	//memset(&p_i_h, 0, sizeof(U32)*2);
 
 	this->manager->reset();
-	this->manager_haploid->reset();
+	//this->manager_haploid->reset();
 }
 
 bool RadixSortGT::build(const bcf_reader_type& reader){
@@ -83,11 +86,10 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 		if(!this->update(reader[i]))
 			continue;
 
-		this->updateHaploid(reader[i]);
-
+		//this->updateHaploid(reader[i]);
 	}
 
-	this->printHaplotypeSort(reader);
+	//this->printHaplotypeSort(reader);
 	//for(U32 i = 0; i < this->n_samples*2; ++i){
 	//	std::cerr << (*this->manager_haploid)[i] << ",";
 	//}
@@ -211,6 +213,7 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	return true;
 }
 
+/*
 bool RadixSortGT::updateHaploid(const bcf_entry_type& entry){
 	// Check again because we might use it
 	// iteratively at some point in time
@@ -281,6 +284,7 @@ bool RadixSortGT::updateHaploid(const bcf_entry_type& entry){
 
 	return true;
 }
+*/
 
 
 } /* namespace IO */

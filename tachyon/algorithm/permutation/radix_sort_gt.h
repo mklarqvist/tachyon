@@ -34,11 +34,12 @@ public:
 	// of BCF entries loaded in it
 	bool build(const bcf_reader_type& reader);
 	bool update(const bcf_entry_type& entry);
-	bool updateHaploid(const bcf_entry_type& entry);
+	//bool updateHaploid(const bcf_entry_type& entry);
 
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
 
+	/*
 	void test(const bcf_entry_type& entry, std::vector<containers::GenotypeSummary>& summaries){
 		if(entry.hasGenotypes == false) return;
 
@@ -62,7 +63,9 @@ public:
 			//++this->vectorB_[alleleB];
 		}
 	}
+	*/
 
+	/*
 	void printHaplotypeSort(const bcf_reader_type& reader) const{
 		std::vector< std::vector< BYTE > > output_vector(reader.size(), std::vector<BYTE>(this->n_samples*2));
 		U32 n_end = 0;
@@ -117,6 +120,7 @@ public:
 
 		exit(1);
 	}
+	*/
 
 	void calculateDifference(const std::vector<containers::GenotypeSummary>& summaries){
 		float** rows = new float*[this->n_samples];
@@ -210,15 +214,15 @@ public:
 public:
 	U64           n_samples; // total number of entries in file
 	U32           position;  // number of entries parsed
-	U32           position_haploid;  // number of entries parsed
+	//U32           position_haploid;  // number of entries parsed
 	U32           p_i[9];    // number of entries in bin i
-	U32           p_i_h[2];
+	//U32           p_i_h[2];
 	BYTE*         GT_array;  // packed genotype array
-	BYTE*         GT_array_haploid;
+	//BYTE*         GT_array_haploid;
 	U32**         bins;      // bin i
-	U32**         bins_haploid;
+	//U32**         bins_haploid;
 	manager_type* manager;   // permutation manager
-	manager_type* manager_haploid;
+	//manager_type* manager_haploid;
 };
 
 class GenotypeNearestNeighbour{

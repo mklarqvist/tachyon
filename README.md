@@ -16,7 +16,7 @@ Wellcome Trust Sanger Institute
 
 ## Status
 Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
-** Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
+**Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
 
 Current limitations imposed during development:
 * Importing is restricted to `BCF`
@@ -233,22 +233,22 @@ Output all available `INFO` fields and the `FORMAT` field `DP` and `FILTERS`
 tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -F CUSTOM -cd';' -V
 ```
 
-### Decorating output data
-It is possible to annotate the output data with a series of standard INFO fields computed directly from the genotypic vectors or from the reference/alternative allele data:
+### Annotating meta-data
+It is possible to annotate data with a series of `INFO` fields computed directly from the genotypic vectors or from the reference/alternative allele data:
 
 | Field           | Length | Type    | Description                                 |
 |-----------------|--------|---------|---------------------------------------------|
-| `FS_A`          | A      | Float   | PHRED-scaled Fisher's exact test P-value for allelic strand bias |
-| `AN`            | A      | Integer | Total number of alleles in called genotypes |
-| `NM`            | A      | Integer | Total number of missing alleles in called genotypes |
-| `NPM`           | A      | Integer | Total number of samples with non-reference (compared to largest) ploidy |
-| `AC`            | A      | Integer | Total number of alleles |
-| `AC_FWD`        | A      | Integer | Total number of alleles on the FORWARD strand |
-| `AC_REV`        | A      | Integer | Total number of alleles on the REVERSE strand |
-| `AF`            | A      | Float   | Allele frequency of allele |
-| `HWE_P`         | A      | Float   | Hardy-Weinberg equilibrium P-value |
-| `VT`            | 1      | String  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
-| `MULTI_ALLELIC` | 0      | Flag    | Indicates if a site is multi-allelic |
+| `FS_A`          | `A`      | `Float`   | PHRED-scaled Fisher's exact test P-value for allelic strand bias |
+| `AN`            | `A`      | `Integer` | Total number of alleles in called genotypes |
+| `NM`            | `A`      | `Integer` | Total number of missing alleles in called genotypes |
+| `NPM`           | `A`      | `Integer` | Total number of samples with non-reference (compared to largest) ploidy |
+| `AC`            | `A`      | `Integer` | Total number of alleles |
+| `AC_FWD`        | `A`      | `Integer` | Total number of alleles on the *forward* strand |
+| `AC_REV`        | `A`      | `Integer` | Total number of alleles on the *reverse* strand |
+| `AF`            | `A`      | `Float`   | Allele frequency of allele |
+| `HWE_P`         | `A`      | `Float`   | Hardy-Weinberg equilibrium P-value |
+| `VT`            | 1      | `String`  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
+| `MULTI_ALLELIC` | 0      | `Flag`    | Indicates if a site is multi-allelic (number of alternative alleles > 1) |
 
 Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
 

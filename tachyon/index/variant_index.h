@@ -16,7 +16,7 @@ private:
 
 public:
     VariantIndexBin() :
-    	blockID(0),
+    	blockID_(0),
 		n_variants_(0),
 		n_blocks_(0),
 		n_capacity_(100),
@@ -26,7 +26,7 @@ public:
 	}
 
     VariantIndexBin(const self_type& other) :
-    	blockID(other.blockID),
+    	blockID_(other.blockID_),
 		n_variants_(other.n_variants_),
 		n_blocks_(other.n_blocks_),
 		n_capacity_(other.n_capacity_),
@@ -39,7 +39,7 @@ public:
     VariantIndexBin& operator=(const self_type& other){
     	delete [] this->blocks_;
 		this->blocks_     = new value_type[other.capacity()];
-    	this->blockID     = other.blockID;
+    	this->blockID_     = other.blockID_;
     	this->n_blocks_   = other.n_blocks_;
     	this->n_capacity_ = other.n_capacity_;
     	for(U32 i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
@@ -138,7 +138,7 @@ public:
 
 private:
     friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
-		stream.write(reinterpret_cast<const char*>(&bin.blockID),     sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&bin.blockID_),     sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_),   sizeof(size_type));
 		for(U32 i = 0; i < bin.size(); ++i)
@@ -149,7 +149,7 @@ private:
 
     friend std::istream& operator>>(std::istream& stream, self_type& bin){
     	delete [] bin.blocks_;
- 		stream.read(reinterpret_cast<char*>(&bin.blockID),     sizeof(U32));
+ 		stream.read(reinterpret_cast<char*>(&bin.blockID_),     sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&bin.n_blocks_),   sizeof(size_type));
 		bin.n_capacity_ = bin.size() + 64;
@@ -162,7 +162,7 @@ private:
 	}
 
 public:
-	U32       blockID;
+	U32       blockID_;
 	U32       n_variants_; // number of variants belonging to this bin
 	size_type n_blocks_;
 	size_type n_capacity_;
@@ -209,7 +209,7 @@ public:
     		this->bins_       = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
     		for(U32 i = 0; i < this->size(); ++i){
     			new( &this->bins_[i] ) value_type(  );
-    			this->bins_[i].blockID = i;
+    			this->bins_[i].blockID_ = i;
     		}
     	}
     }
@@ -295,10 +295,21 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->bins_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->bins_[this->n_bins_]); }
 
+	/**<
+	 * Add a target interval tuple (from,to,block_ID)
+	 * @param fromPosition From position of interval
+	 * @param toPosition   To position of interval
+	 * @param yon_block_id Tachyon block ID (generally a cumulative integer)
+	 * @return
+	 */
 	inline const S32 Add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
 		for(S32 i = this->n_levels_ - 1; i != 0; --i){
 			U32 binFrom = S64(fromPosition/(this->l_contig_rounded_ / pow(4,i)));
-			U32 binTo = S64(toPosition/(this->l_contig_rounded_ / pow(4,i)));
+			U32 binTo   = S64(toPosition/(this->l_contig_rounded_ / pow(4,i)));
+			/**
+			 * If both ends of the interval map into the same chunk we know the interval is
+			 * completely contained: in this case we deposit the interval there
+			 **/
 			if(binFrom == binTo){
 				//std::cerr << fromPosition << "->" << toPosition << ", adding to " << binFrom << " level " << i << " cum : " << this->bins_cumsum_[i-1]+binFrom << "/" << this->size() << std::endl;
 
@@ -310,11 +321,37 @@ public:
 		return(0);
 	}
 
+	/**<
+	 * Computes the possible chunks an interval might overlap
+	 * @param from_position From position of interval
+	 * @param to_position   To position of interval
+	 * @return              Returns a vector of viable overlapping chunks
+	 */
+	std::vector<U32> possibleBins(const U64& from_position, const U64& to_position) const{
+		std::vector<U32> overlapping_chunks;
+		overlapping_chunks.push_back(0); // level 0
+		for(S32 i = this->n_levels_ - 1; i != 0; --i){
+			U32 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
+			U32 binTo   = S64(to_position/(this->l_contig_rounded_ / pow(4,i)));
+			if(binFrom == binTo) overlapping_chunks.push_back(this->bins_cumsum_[i - 1] + binFrom);
+		}
+		return(overlapping_chunks);
+	}
+
 private:
+	/**<
+	 * Round target integer up to the closest number divisible by 4
+	 * @param length Input integer start value
+	 * @return       Return a target integer divisible by 4
+	 */
     inline U64 roundLengthClosestBase4_(const U64& length) const{
 		return( ( pow(4,this->n_levels_) - (length % (U64)pow(4,this->n_levels_)) ) + length );
     }
 
+    /**<
+     * Pre-calculate the cumulative distribution of 4^(0:levels-1).
+     * These values are used to find the array offset for levels > 0
+     */
     void calculateCumulativeSums_(void){
     	if(this->n_levels_ == 0) return;
 
@@ -358,7 +395,7 @@ private:
 		contig.bins_ = static_cast<pointer>(::operator new[](contig.capacity()*sizeof(value_type)));
 		for(U32 i = 0; i < contig.size(); ++i){
 			new( &contig.bins_[i] ) value_type(  );
-			contig.bins_[i].blockID = i;
+			contig.bins_[i].blockID_ = i;
 		}
 		contig.calculateCumulativeSums_();
 
@@ -468,6 +505,12 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->contigs_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
 
+	/**<
+	 * Add a contig with n_levels to the chain
+	 * @param l_contig Length of contig
+	 * @param n_levels Number of desired 4^N levels
+	 * @return         Returns a reference of self
+	 */
 	inline self_type& add(const U64& l_contig, const BYTE& n_levels){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();
@@ -476,6 +519,11 @@ public:
 		return(*this);
 	}
 
+	/**<
+	 * Overloaded operator for pushing back an index entry
+	 * @param index_entry Target index entry
+	 * @return            Returns a reference to self
+	 */
 	inline self_type& operator+=(const const_reference index_entry){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();

@@ -26,7 +26,8 @@ public:
 
 	/**<
 	 * Builds the meta-index of index entries when
-	 * the input data is sorted
+	 * the input data is sorted. This index corresponds to
+	 * index entries all belonging to the same contig.
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
 	bool buildSuperIndex(void){
@@ -34,11 +35,11 @@ public:
 			return false;
 
 		entry_meta_type indexindex;
-		indexindex(this->index_[0]);
+		indexindex(this->index_[0]); // Start reference
 		for(U32 i = 1; i < this->index_.size(); ++i){
-			if(indexindex == this->index_[i])
+			if(indexindex == this->index_[i]) // If the blocks share the same contig identifier
 				indexindex += this->index_[i];
-			else {
+			else { // Otherwise push one entry onto the chain and start a new reference
 				this->index_meta_ += indexindex;
 				indexindex(this->index_[i]);
 			}
@@ -62,10 +63,72 @@ public:
 	inline void operator+=(const entry_type& entry){ this->index_ += entry; }
 	inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
 
+	// Accessors
 	inline container_type& getIndex(void){ return(this->index_); }
 	inline const container_type& getIndex(void) const{ return(this->index_); }
 	inline container_meta_type& getMetaIndex(void){ return(this->index_meta_); }
 	inline const container_meta_type& getMetaIndex(void) const{ return(this->index_meta_); }
+
+	// Overlap
+	// Answer to the questions:
+	// 1) Overlapping bins given a contig
+	// 2) Overlapping bins given a contig and a single position
+	// 3) Overlapping bins given a contig and a start and end position
+	/**<
+	 * Return interval of YON blocks overlapping target contig ID
+	 * @param contig_id
+	 * @return
+	 */
+	inline const entry_meta_type& findOverlap(const U32& contig_id) const{
+		//if(contig_id > this->getMetaIndex().size()) return;
+		return(this->getMetaIndex()[contig_id]);
+	}
+
+	/**<
+	 * Return interval of YON blocks overlapping target tuple (contigID, position, position)
+	 * @param contig_id
+	 * @param position
+	 * @return
+	 */
+	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& position) const{
+		if(contig_id > this->getMetaIndex().size()) std::vector<entry_type>();
+
+		std::vector<entry_type> overlapping_blocks;
+		for(U32 i = 0; i < this->getIndex().size(); ++i){
+			// Interval overlap?
+			// [a, b] overlaps with [x, y] iff b > x and a < y.
+			if(position >= this->getIndex()[i].minPosition && position <= this->getIndex()[i].maxPosition){
+				overlapping_blocks.push_back(this->getIndex()[i]);
+			}
+		}
+
+		// We also need to know possible overlaps in the quad-tree:
+		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
+		// this->variant_index_[contig_id].possibleBins(position, position);
+
+		return(overlapping_blocks);
+	}
+
+	/**<
+	 * Return interval of YON blocks overlapping target tuple (contigID, start_pos, end_pos)
+	 * @param contig_id
+	 * @param start_pos
+	 * @param end_pos
+	 * @return
+	 */
+	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& start_pos, const U64& end_pos) const{
+		if(contig_id > this->getMetaIndex().size()) std::vector<entry_type>();
+
+		std::vector<entry_type> overlapping_blocks;
+		for(U32 i = 0; i < this->getIndex().size(); ++i){
+			// Interval overlap?
+			// [a, b] overlaps with [x, y] iff b > x and a < y.
+			if(end_pos >= this->getIndex()[i].minPosition && start_pos <= this->getIndex()[i].maxPosition){
+				overlapping_blocks.push_back(this->getIndex()[i]);
+			}
+		}
+		return(overlapping_blocks);
+	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
