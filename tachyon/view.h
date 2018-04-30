@@ -274,6 +274,7 @@ int view(int argc, char** argv){
 		}
 	}
 
+	// If user is triggering annotation
 	if(annotateGenotypes){
 		reader.getSettings().annotate_extra = true;
 		reader.getSettings().loadGenotypes(true);

@@ -34,6 +34,7 @@ public:
 	// of BCF entries loaded in it
 	bool build(const bcf_reader_type& reader);
 	bool update(const bcf_entry_type& entry);
+	bool updateHaploid(const bcf_entry_type& entry);
 
 	inline const U64& getSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
@@ -60,6 +61,61 @@ public:
 			//++this->vectorA_[alleleA];
 			//++this->vectorB_[alleleB];
 		}
+	}
+
+	void printHaplotypeSort(const bcf_reader_type& reader) const{
+		std::vector< std::vector< BYTE > > output_vector(reader.size(), std::vector<BYTE>(this->n_samples*2));
+		U32 n_end = 0;
+
+		for(U32 i = 0; i < reader.size(); ++i){
+			if(reader[i].hasGenotypes == false) continue;
+			if(reader[i].gt_support.hasEOV || reader[i].gt_support.ploidy != 2 || reader[i].gt_support.hasMissing) continue;
+			if(!reader[i].isBiallelic()) continue;
+
+			U32 internal_pos = reader[i].formatID[0].l_offset;
+			for(U32 j = 0; j < 2*this->n_samples; ++j){
+				const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&reader[i].data[internal_pos++]);
+				this->GT_array_haploid[j] = (fmt_type_value1 >> 1) - 1;
+			}
+
+
+			for(U32 j = 0; j < 2*this->n_samples; ++j){
+				//std::cout << (int)this->GT_array_haploid[(*this->manager_haploid)[j]];
+				output_vector[i][j] = this->GT_array_haploid[(*this->manager_haploid)[j]];
+			}
+
+			for(U32 j = 0; j < 2*this->n_samples; ++j){
+				std::cout << (int)output_vector[i][j];
+			}
+			std::cout << std::endl;
+
+			++n_end;
+		}
+
+		// Go from right to left
+
+		std::vector< BYTE > current_ref(n_end); // reference haplotype at the moment
+		std::cerr << "n_end: " << n_end << std::endl;
+		for(U32 i = 0; i < n_end; ++i){
+			current_ref[i] = output_vector.back()[i];
+		}
+
+
+		U32 n_switches = 0;
+		for(U32 j = 0; j < 2*this->n_samples; ++j){
+			for(S32 i = n_end - 2; i != 0; --i){
+				if(current_ref[i] != output_vector[i][j]){
+					std::cerr << i << ";" << (int)j << " ";
+					current_ref[i] = output_vector[i][j];
+					++n_switches;
+				}
+			}
+		}
+		std::cerr << std::endl;
+		std::cerr << "switches: " << n_switches << "/" << n_end*2*this->n_samples << ": " << (double)(n_end*2*this->n_samples)/n_switches << "-fold" << std::endl;
+
+
+		exit(1);
 	}
 
 	void calculateDifference(const std::vector<containers::GenotypeSummary>& summaries){
@@ -154,10 +210,15 @@ public:
 public:
 	U64           n_samples; // total number of entries in file
 	U32           position;  // number of entries parsed
+	U32           position_haploid;  // number of entries parsed
 	U32           p_i[9];    // number of entries in bin i
+	U32           p_i_h[2];
 	BYTE*         GT_array;  // packed genotype array
+	BYTE*         GT_array_haploid;
 	U32**         bins;      // bin i
+	U32**         bins_haploid;
 	manager_type* manager;   // permutation manager
+	manager_type* manager_haploid;
 };
 
 class GenotypeNearestNeighbour{

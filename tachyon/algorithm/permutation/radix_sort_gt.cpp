@@ -7,17 +7,25 @@ namespace algorithm {
 RadixSortGT::RadixSortGT() :
 	n_samples(0),
 	position(0),
+	position_haploid(0),
 	GT_array(nullptr),
+	GT_array_haploid(nullptr),
 	bins(new U32*[9]),
-	manager(nullptr)
+	bins_haploid(new U32*[2]),
+	manager(nullptr),
+	manager_haploid(nullptr)
 {
 	memset(&p_i, 0, sizeof(U32)*9);
+	memset(&p_i_h, 0, sizeof(U32)*2);
 }
 
 RadixSortGT::~RadixSortGT(){
 	delete [] this->GT_array;
-	for(U32 i = 0; i < 9; ++i)
-		delete [] this->bins[i];
+	delete [] this->GT_array_haploid;
+	for(U32 i = 0; i < 9; ++i) delete [] this->bins[i];
+	for(U32 i = 0; i < 2; ++i) delete [] this->bins_haploid[i];
+	delete [] this->bins;
+	delete [] this->bins_haploid;
 }
 
 void RadixSortGT::setSamples(const U64 n_samples){
@@ -25,9 +33,11 @@ void RadixSortGT::setSamples(const U64 n_samples){
 
 	// Delete previous
 	delete [] this->GT_array;
+	delete [] this->GT_array_haploid;
 
 	// Set new
 	this->GT_array = new BYTE[this->n_samples];
+	this->GT_array_haploid = new BYTE[this->n_samples*2];
 
 	// Reset
 	for(U32 i = 0; i < 9; ++i){
@@ -35,17 +45,28 @@ void RadixSortGT::setSamples(const U64 n_samples){
 		memset(this->bins[i], 0, sizeof(U32)*n_samples);
 	}
 
+	for(U32 i = 0; i < 2; ++i){
+		this->bins_haploid[i] = new U32[n_samples*2];
+		memset(this->bins_haploid[i], 0, sizeof(U32)*n_samples*2);
+	}
+
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
+	memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
 
 	this->manager->setSamples(n_samples);
+	this->manager->setSamples(n_samples*2);
 }
 
 void RadixSortGT::reset(void){
 	this->position = 0;
+	this->position_haploid = 0;
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
+	memset(this->GT_array_haploid, 0, sizeof(BYTE)*n_samples*2);
 	memset(&p_i, 0, sizeof(U32)*9);
+	memset(&p_i_h, 0, sizeof(U32)*2);
 
 	this->manager->reset();
+	this->manager_haploid->reset();
 }
 
 bool RadixSortGT::build(const bcf_reader_type& reader){
@@ -62,7 +83,15 @@ bool RadixSortGT::build(const bcf_reader_type& reader){
 		if(!this->update(reader[i]))
 			continue;
 
+		this->updateHaploid(reader[i]);
+
 	}
+
+	this->printHaplotypeSort(reader);
+	//for(U32 i = 0; i < this->n_samples*2; ++i){
+	//	std::cerr << (*this->manager_haploid)[i] << ",";
+	//}
+	//std::cerr << std::endl;
 
 	//this->calculateDifference(summary);
 
@@ -178,6 +207,77 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 
 	// Keep track of how many entries we've iterated over
 	++this->position;
+
+	return true;
+}
+
+bool RadixSortGT::updateHaploid(const bcf_entry_type& entry){
+	// Check again because we might use it
+	// iteratively at some point in time
+	// i.e. not operating through the
+	// build() function
+	// Have to have genotypes available
+	if(entry.hasGenotypes == false)
+		return false;
+
+	if(entry.gt_support.hasEOV || entry.gt_support.ploidy != 2 || entry.gt_support.hasMissing)
+		return false;
+
+	// Has to be biallelic
+	// otherwise skip
+	if(!entry.isBiallelic())
+		return false;
+
+	// Update GT_array
+	if(entry.formatID[0].primitive_type != 1){
+		std::cerr << "unexpected primitive: " << (int)entry.formatID[0].primitive_type << std::endl;
+		return false;
+	}
+
+	U32 internal_pos = entry.formatID[0].l_offset;
+	for(U32 i = 0; i < 2*this->n_samples; ++i){
+		const SBYTE& fmt_type_value1 = *reinterpret_cast<const SBYTE* const>(&entry.data[internal_pos++]);
+		this->GT_array_haploid[i] = (fmt_type_value1 >> 1) - 1;
+		//std::cerr << (int)fmt_type_value1 - 2  << ",";
+	}
+	//std::cerr << std::endl;
+
+	// Build PPA
+	U32 target_ID = 0;
+	for(U32 j = 0; j < this->n_samples*2; ++j){
+		// Determine correct bin
+		switch(this->GT_array_haploid[(*this->manager_haploid)[j]]){
+		case 0:  target_ID = 0; break;
+		case 1:  target_ID = 1; break;
+		default: std::cerr << "illegal in radix: " << (int)this->GT_array_haploid[(*this->manager_haploid)[j]] << " at " << j << " with " << (*this->manager_haploid)[j] << std::endl; exit(1);
+		}
+
+		// Update bin i at position i with ppa[j]
+		this->bins_haploid[target_ID][this->p_i_h[target_ID]] = (*this->manager_haploid)[j];
+		++this->p_i_h[target_ID];
+	} // end loop over individuals at position i
+	//delete [] debug;
+
+	// Update PPA data
+	// Copy data in sorted order
+	U32 cum_pos = 0;
+	for(U32 i = 0; i < 2; ++i){
+		// Copy data in bin i to current position
+		//std::cerr << i << '\t' << cum_pos*sizeof(U32) << '\t' << this->p_i[i] << '\t';
+		memcpy(&this->manager_haploid->PPA[cum_pos*sizeof(U32)], this->bins_haploid[i], this->p_i_h[i]*sizeof(U32));
+
+		// Update cumulative position and reset
+		cum_pos += this->p_i_h[i];
+		this->p_i_h[i] = 0;
+	}
+	//std::cerr << std::endl;
+	// Make sure the cumulative position
+	// equals the number of samples in the
+	// dataset
+	assert(cum_pos == this->n_samples*2);
+
+	// Keep track of how many entries we've iterated over
+	++this->position_haploid;
 
 	return true;
 }

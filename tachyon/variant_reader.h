@@ -481,7 +481,7 @@ public:
 			if(settings.load_set_membership) this->printFILTER(output_buffer, p, objects);
 			else output_buffer += '.';
 
-			if(settings.load_info || settings.load_format || this->block.n_info_loaded) output_buffer += '\t';
+			if(settings.load_info || settings.load_format || this->block.n_info_loaded || this->settings.annotate_extra) output_buffer += '\t';
 			else {
 				output_buffer += '\n';
 				continue;
