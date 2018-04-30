@@ -288,6 +288,7 @@ bool VariantImporter::BuildBCF(void){
 		this->index_entry.reset();
 		++this->writer->n_blocks_written;
 		this->writer->n_variants_written += reader.size();
+		++this->writer->index.number_blocks;
 
 		if(!SILENT){
 			std::cerr << utility::timestamp("PROGRESS") <<
@@ -469,7 +470,7 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
 				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
-				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.size());
+				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.current_block_number());
 
 				// index_bin= reg2bin(entry.body->POS, end);
 				break;
@@ -495,9 +496,9 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 		if(longest){
 			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
-			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.size());
+			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.current_block_number());
 		} else { // fallback if all others fail
-			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.size());
+			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.current_block_number());
 			//index_bin = reg2bin(entry.body->POS, entry.body->POS);
 			//index_bin = 0;
 		}

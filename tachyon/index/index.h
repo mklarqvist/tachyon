@@ -21,8 +21,8 @@ private:
 	typedef VariantIndexBin       bin_type;
 
 public:
-	Index(){}
-	Index(const self_type& other) : index_meta_(other.index_meta_), index_(other.index_){}
+	Index() : number_blocks(0){}
+	Index(const self_type& other) : number_blocks(other.number_blocks), index_meta_(other.index_meta_), index_(other.index_){}
 	~Index(){}
 
 	/**<
@@ -156,6 +156,7 @@ public:
 			return(std::vector<entry_type>());
 
 
+
 		std::vector<entry_type> overlapping_blocks;
 		/*
 		for(U32 i = 0; i < this->getIndex().size(); ++i){
@@ -200,6 +201,9 @@ public:
 		return(overlapping_blocks);
 	}
 
+	inline const U64& current_block_number(void) const{ return(this->number_blocks); }
+	inline void operator++(void){ ++this->number_blocks; }
+
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		//stream << entry.index_;
@@ -216,6 +220,7 @@ private:
 	}
 
 public:
+	U64 number_blocks;
 	container_meta_type index_meta_;
 	container_type      index_;
 };

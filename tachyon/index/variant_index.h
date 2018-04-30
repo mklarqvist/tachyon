@@ -420,7 +420,6 @@ private:
     	for(U32 i = 0; i < contig.size(); ++i){
     		if(contig.bins_[i].size()) ++n_items_written;
     	}
-    	std::cerr << "ites written: " << n_items_written << std::endl;
     	stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(size_type));
 
     	for(U32 i = 0; i < contig.size(); ++i){
@@ -465,9 +464,10 @@ private:
 		for(U32 i = 0; i < n_items_written; ++i){
 			value_type temp;
 			stream >> temp;
-			std::cerr << "loading: " << temp.size() << " entries" << std::endl;
+			//std::cerr << "loading: " << temp.size() << " entries" << std::endl;
 			contig.bins_[temp.binID_] = temp;
 		}
+		std::cerr << std::endl;
 		return(stream);
 	}
 
@@ -695,13 +695,11 @@ private:
 		for(U32 i = 0; i < n_items_written; ++i){
 			value_type temp;
 			stream >> temp; // Read
-			std::cerr << "loading data: " << temp.getContigID() << std::endl;
 			index.at(temp.getContigID()) = temp;
 		}
 
 		// Load linear index
 		for(U32 i = 0; i < index.size(); ++i) stream >> index.linear_[i];
-		exit(1);
 
 		return(stream);
 	}
