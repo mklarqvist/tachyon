@@ -213,7 +213,7 @@ struct DataBlockSettings{
 				if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
 					std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
 					for(U32 j = 0; j < ind.size(); ++j){
-						ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
+						ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), std::string("$1")); // remove excess white space
 						//std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 						if(std::regex_match(ind[j], field_identifier_regex)){
 							const core::HeaderMapEntry* map = header.getInfoField(ind[j]);

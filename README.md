@@ -290,7 +290,9 @@ The contingency table, or matrix, for the Fisher's exact test (`FS_A` ) for stra
 | Forward strand | A             | B                 |
 | Reverse strand | C             | D                 |
 
-If the site is not biallelic then each individual allele is computed separately. Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
+In the biallelic case, only one P-value is reported becuase of symmetry. If the site is not biallelic then each individual allele is computed separately. 
+
+Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
 
 ```bash
 tachyon view -i example_dataset.yon -GHX
