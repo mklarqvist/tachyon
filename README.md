@@ -1,12 +1,12 @@
-[![Release](https://img.shields.io/badge/Release-beta_0.1-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
+[![Release](https://img.shields.io/badge/Release-beta_0.1-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-# Tachyon
 <div align="center">
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
+# Exploring population-scale sequence variant data
 Tachyon, or `YON` for short, is an open source software library for storing and rapidly querying sequence variant data in an (optionally) lossless and bit-exact representation. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets. We have benchmarked Tachyon on population-scaled datasets up to 10 million whole-genome sequenced individuals (see [benchmarks](BENCHMARKS.md)). Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating all-vs-all linkage-disequilibrium and identity-by-state in large-scale cohorts.
 
 ## Highlights of Tachyon
@@ -70,6 +70,14 @@ Import a `bcf` file to `yon` with a block-size of `-c` number of variants and/or
 ```bash
 tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000
 ```
+
+Tachyon can protect your sensitive identifying information with high-grade encryption. By default, each data field is encrypted separately in each block with different keys using AES-256. Simply pass the `-e` flag and the best practices will be used.
+```bash
+tachyon import -i examples/example_dataset.bcf -o example_dataset.yon -c 2000 -e
+```
+This will produce two output files:
+* example_dataset.yon
+* example_dataset.kyon
 
 ### `view`: Viewing, converting, and slicing `YON` files
 Printing a `yon` file as a bit-exact copy of the input `VCF`
@@ -275,7 +283,14 @@ It is possible to annotate data with a series of `INFO` fields computed directly
 | `VT`            | 1      | `String`  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
 | `MULTI_ALLELIC` | 0      | `Flag`    | Indicates if a site is multi-allelic (number of alternative alleles > 1) |
 
-Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
+The contingency table, or matrix, for the Fisher's exact test (`FS_A` ) for strand bias looks like this:
+
+|                | Target allele | *Not* target allele |
+|----------------|---------------|-------------------|
+| Forward strand | A             | B                 |
+| Reverse strand | C             | D                 |
+
+If the site is not biallelic then each individual allele is computed separately. Using the example dataset, we can compute those fields that are not already available by passing the flag `-X`
 
 ```bash
 tachyon view -i example_dataset.yon -GHX
