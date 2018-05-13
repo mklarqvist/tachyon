@@ -88,7 +88,7 @@ public:
 	}
 
 	std::ostream& print(std::ostream& stream) const{
-		stream << blockID << '\t' << contigID << '\t' << n_variants << '\t' << byte_offset << '-' << byte_offset_end << '\t' << minPosition << '-' << maxPosition << '\t' << minBin << '-' << maxBin;
+		stream << blockID << '\t' << contigID << '\t' << n_variants << "\tOffset: " << byte_offset << '-' << byte_offset_end << " Position: " << minPosition << '-' << maxPosition << " Bins: " << minBin << '-' << maxBin;
 		return(stream);
 	}
 

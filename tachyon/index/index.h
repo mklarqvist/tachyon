@@ -117,10 +117,6 @@ public:
 		std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(position, position);
 		std::vector<U32> b;
 		for(U32 i = 0; i < possible_chunks.size(); ++i){
-			if(possible_chunks[i].size() == 0){
-				std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> empty..." << std::endl;
-				continue;
-			}
 			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i][0];
 			b.push_back(possible_chunks[i][0]);
 			for(U32 j = 1; j < possible_chunks[i].size(); ++j){
@@ -155,50 +151,73 @@ public:
 		if(this->getMetaIndex().at(contig_id).n_blocks == 0)
 			return(std::vector<entry_type>());
 
-
-
 		std::vector<entry_type> overlapping_blocks;
-		/*
-		for(U32 i = 0; i < this->getIndex().size(); ++i){
-			// Interval overlap?
-			// [a, b] overlaps with [x, y] iff b > x and a < y.
-			if(end_pos >= this->getIndex()[i].minPosition && start_pos <= this->getIndex()[i].maxPosition){
-				overlapping_blocks.push_back(this->getIndex()[i]);
-			}
-		}
-		*/
 
 		// We also need to know possible overlaps in the quad-tree:
 		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
+
+		// Retrieve vector of bins that might contain the data
 		std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(start_pos, end_pos);
-		std::vector<U32> b;
-		std::cerr << "possible: " << possible_chunks.size() << std::endl;
+		std::vector<U32> target_bins;
+
+		//std::cerr << "possible: " << possible_chunks.size() << std::endl;
 		for(U32 i = 0; i < possible_chunks.size(); ++i){
-			if(possible_chunks[i].size() == 0){
-				std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> empty..." << std::endl;
-				continue;
-			}
-			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i][0];
-			b.push_back(possible_chunks[i][0]);
-			for(U32 j = 1; j < possible_chunks[i].size(); ++j){
-				std::cerr << ',' << possible_chunks[i][j];
-				b.push_back(possible_chunks[i][j]);
+			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i].size() << ": ";
+			for(U32 j = 0; j < possible_chunks[i].size(); ++j){
+				// Perform check
+				// [a, b] overlaps with [x, y] iff b > x and a < y.
+				//const U64 a = this->getIndex().linear_at(contig_id)[possible_chunks[i][j]].minPosition;
+				//const U64 b = this->getIndex().linear_at(contig_id)[possible_chunks[i][j]].maxPosition;
+				//const U64 x = start_pos;
+				//const U64 y = end_pos;
+
+				if(this->getIndex().linear_at(contig_id)[possible_chunks[i][j]].minPosition < end_pos &&
+				   this->getIndex().linear_at(contig_id)[possible_chunks[i][j]].maxPosition > start_pos)
+				{
+					std::cerr << "overlap: " << possible_chunks[i][j] << ", ";
+					target_bins.push_back(possible_chunks[i][j]);
+
+				} else
+					std::cerr << "miss: " << possible_chunks[i][j] << ", ";
+
+
+
 			}
 			std::cerr << std::endl;
 		}
-		std::sort(b.begin(), b.end());
-		U32 prev = b[0];
-		std::cerr << 0 << ": " << b[0] << std::endl;
-		for(U32 i = 1; i < b.size(); ++i){
-			if(prev != b[i]){
-				std::cerr << i << ": " << b[i] << std::endl;
-				// Use linear index to see if this interval could possibly overlap
-				std::cerr << this->index_.linear_at(contig_id)[b[i]].minPosition << "->" << this->index_.linear_at(contig_id)[b[i]].maxPosition << std::endl;
+
+		// Return nothing if all empty
+		if(target_bins.size() == 0)
+			return(std::vector<entry_type>());
+
+		// Sort to dedupe
+		std::sort(target_bins.begin(), target_bins.end());
+
+		// Debug
+		for(U32 i = 0; i < target_bins.size(); ++i){
+			std::cerr << target_bins[i] << ", ";
+		}
+		std::cerr << std::endl;
+
+		// Dedupe
+		std::vector<entry_type> target_bins_unique;
+		target_bins_unique.push_back(this->getIndex().linear_at(contig_id)[target_bins[0]]);
+
+		for(U32 i = 1; i < target_bins.size(); ++i){
+			if(target_bins[i] != target_bins_unique.back().blockID){
+				target_bins_unique.push_back(this->getIndex().linear_at(contig_id)[target_bins[i]]);
+				//std::cerr << target_bins[i] << "!=" << target_bins_unique.back().blockID << std::endl;
+				//std::cerr << std::endl;
 			}
-			prev = b[i];
 		}
 
-		return(overlapping_blocks);
+		// Debug
+		for(U32 i = 0; i < target_bins_unique.size(); ++i){
+			target_bins_unique[i].print(std::cerr);
+			std::cerr << std::endl;
+		}
+
+		return(target_bins_unique);
 	}
 
 	inline const U64& current_block_number(void) const{ return(this->number_blocks); }

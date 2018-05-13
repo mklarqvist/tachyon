@@ -309,6 +309,26 @@ struct DataBlockSettings{
 		return true;
 	}
 
+	bool parseIntervals(void){
+		if(this->interval_strings.size() == 0)
+			return true;
+
+		for(U32 i = 0; i < this->interval_strings.size(); ++i){
+			if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+$") )){
+				std::cerr << "chromosome onlu" << std::endl;
+			} else if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?$") )){
+				std::cerr << "chromosome pos" << std::endl;
+			} else if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?\\-[0-9]+([eE]{1}[0-9]{1})?$") )){
+				std::cerr << "chromosome pos - pos" << std::endl;
+			} else {
+				std::cerr << "unknwon" << std::endl;
+				//return false;
+			}
+		}
+
+		return true;
+	}
+
 
 public:
 	bool show_vcf_header;
@@ -348,6 +368,10 @@ public:
 	//
 	std::vector<map_type> load_info_ID_loaded;
 	std::vector<map_type> load_format_ID_loaded;
+
+	// blocks to load
+	std::vector<std::string> interval_strings;
+	std::vector<U32> blocks_numbers;
 };
 
 }

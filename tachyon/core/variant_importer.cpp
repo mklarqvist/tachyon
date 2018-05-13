@@ -193,6 +193,7 @@ bool VariantImporter::BuildBCF(void){
 			}
 		}
 #endif
+		this->block.header.blockID     = this->writer->n_blocks_written;
 		this->block.header.contigID    = reader.front().body->CHROM;
 		this->block.header.minPosition = reader.front().body->POS;
 		this->block.header.maxPosition = reader.back().body->POS;

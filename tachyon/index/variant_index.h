@@ -49,6 +49,8 @@ public:
     	return(*this);
     }
 
+    inline bool operator<(const self_type& other) const{ return(this->binID_ < other.binID_); }
+
     ~VariantIndexBin(){ delete [] this->blocks_; }
 
     class iterator{
@@ -363,20 +365,26 @@ public:
 	 * @param to_position   To position of interval
 	 * @return              Returns a vector of viable overlapping bins
 	 */
-	std::vector<value_type> possibleBins(const U64& from_position, const U64& to_position) const{
+	std::vector<value_type> possibleBins(const U64& from_position, const U64& to_position, const bool filter = true) const{
 		std::vector<value_type> overlapping_chunks;
 		//overlapping_chunks.push_back(this->at(0)); // level 0
 		for(S32 i = this->n_levels_; i != 0; --i){
 			U32 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
 			U32 binTo   = S64(to_position/(this->l_contig_rounded_ / pow(4,i)));
 
-			std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << "<>" << binTo << "/" << this->size() << std::endl;
+			//std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << "<>" << binTo << "/" << this->size() << std::endl;
 
 			// Overlap from cumpos + (binFrom, binTo)
 			// All these chunks could potentially hold intervals overlapping
 			// the desired coordinates
-			for(U32 j = binFrom; j <= binTo; ++j)
-				overlapping_chunks.push_back(this->at(this->bins_cumsum_[i - 1] + j));
+			for(U32 j = binFrom; j <= binTo; ++j){
+				if(filter == false)
+					overlapping_chunks.push_back(this->at(this->bins_cumsum_[i - 1] + j));
+				else {
+					if(this->at(this->bins_cumsum_[i - 1] + j).size())
+						overlapping_chunks.push_back(this->at(this->bins_cumsum_[i - 1] + j));
+				}
+			}
 		}
 		return(overlapping_chunks);
 	}

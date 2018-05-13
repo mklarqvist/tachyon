@@ -555,16 +555,15 @@ public:
 
 		U32 n_records_returned = 0;
 
-		if(settings.output_json) output_buffer += "\"block\":{";
+		if(settings.output_json) output_buffer += "\"block\":[";
 		for(U32 position = 0; position < objects.meta->size(); ++position){
 			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 			//	continue;
 			if(settings.output_json){
 				if(position != 0) output_buffer += ",\n";
 
-				output_buffer += "\"obj-";
-				output_buffer.AddReadble(position);
-				output_buffer += "\":{";
+
+				output_buffer += "{";
 			}
 			++n_records_returned;
 
@@ -584,7 +583,7 @@ public:
 				std::cout.flush();
 			}
 		}
-		if(settings.output_json) output_buffer += "}";
+		if(settings.output_json) output_buffer += "]";
 
 		// Flush buffer
 		std::cout.write(output_buffer.data(), output_buffer.size());
