@@ -16,6 +16,44 @@
 
 namespace tachyon {
 
+/**<
+ * Settings for VariantImporter class
+ */
+struct VariantImporterSettings{
+public:
+	VariantImporterSettings() :
+		permute_genotypes(true),
+		encrypt_data(false),
+		checkpoint_n_snps(1000),
+		checkpoint_bases(10e6),
+		n_threads(std::thread::hardware_concurrency()),
+		info_end_key(-1),
+		info_svlen_key(-1),
+		compression_level(10)
+	{}
+
+	~VariantImporterSettings() = default;
+
+	inline void setInputFile(const std::string& input_name){ this->input_file = input_name; }
+	inline void setOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
+	inline void setThreads(const U32 n_threads){ this->n_threads = n_threads; }
+	inline void setPermute(const bool yes){ this->permute_genotypes = yes; }
+	inline void setEncrypt(const bool yes){ this->encrypt_data = yes; }
+	inline void setCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
+
+public:
+	bool permute_genotypes;   // permute GT flag
+	bool encrypt_data;        // encryption flag
+	U32 checkpoint_n_snps;    // number of variants until checkpointing
+	U32 checkpoint_bases;  // number of bases until checkpointing
+	U32 n_threads;            // number of parallel importer threads
+	S32 info_end_key;         // key mapping to the INFO field END
+	S32 info_svlen_key;       // key mapping to the INFO field SVLEN
+	U32 compression_level;    // compression level sent to ZSTD
+	std::string input_file;   // input file name
+	std::string output_prefix;// output file prefix
+};
+
 class VariantImporter {
 private:
 	typedef VariantImporter                 self_type;
@@ -37,14 +75,16 @@ private:
 	typedef containers::VariantBlock        block_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;
+	typedef VariantImporterSettings         settings_type;
 
 public:
+	VariantImporter();
+	VariantImporter(const settings_type& settings);
+
 	VariantImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
 	~VariantImporter();
 	bool Build();
 
-	inline void setPermute(const bool yes){ this->permute = yes; }
-	inline void setEncrypt(const bool yes){ this->encrypt = yes; }
 	void setWriterTypeFile(void){ this->writer = new writer_file_type; }
 	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
@@ -55,15 +95,8 @@ private:
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
 private:
+	settings_type settings_; // internal settings
 	bool GT_available_;
-	bool permute;            // permute GT flag
-	bool encrypt;            // encryption flag
-	U32 checkpoint_n_snps;   // number of variants until checkpointing
-	double checkpoint_bases; // number of bases until checkpointing
-	U32 n_threads_;
-
-	S32 info_end_key_;
-	S32 info_svlen_key_;
 
 	// Stats
 	import_stats_type stats_basic;
@@ -71,8 +104,6 @@ private:
 	import_stats_type stats_format;
 
 	// Read/write fields
-	std::string inputFile;   // input file name
-	std::string outputPrefix;// output file prefix
 	writer_interface_type* writer;      // writer
 
 	index_entry_type  index_entry; // streaming index entry
@@ -84,10 +115,6 @@ private:
 
 	// Data container
 	block_type block;
-
-	// temp
-	//algorithm::GenotypeNearestNeighbour* nn;
-
 };
 
 

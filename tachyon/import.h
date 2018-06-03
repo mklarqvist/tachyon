@@ -58,9 +58,9 @@ int import(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",               required_argument, 0, 'i' },
 		{"output",              optional_argument, 0, 'o' },
-		{"fastq",               no_argument,       0, 'f' },
 		{"checkpoint-variants", optional_argument, 0, 'c' },
 		{"checkpoint-bases",    optional_argument, 0, 'C' },
+		{"compression-level",    optional_argument, 0, 'L' },
 		{"permute",             no_argument,       0, 'p' },
 		{"encrypt",             no_argument,       0, 'e' },
 		{"no-permute",          no_argument,       0, 'P' },
@@ -68,48 +68,47 @@ int import(int argc, char** argv){
 		{0,0,0,0}
 	};
 
-	std::string input;
-	std::string output;
 	SILENT = 0;
-	S32 checkpoint_n_variants = 1000;
-	double checkpoint_bp_window = 5e6;
-	bool permute = true;
-	bool encrypt = false;
-	bool isFASTQ = false;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:C:sepPf?", long_options, &option_index)) != -1){
+	tachyon::VariantImporterSettings settings;
+
+	while ((c = getopt_long(argc, argv, "i:o:c:C:L:sepP?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
 		case 'i':
-			input = std::string(optarg);
+			settings.input_file = std::string(optarg);
 			break;
 		case 'o':
-			output = std::string(optarg);
-			break;
-		case 'f':
-			isFASTQ = true;
+			settings.output_prefix = std::string(optarg);
 			break;
 		case 'e':
-			encrypt = true;
+			settings.encrypt_data = true;
 			break;
 		case 'c':
-			checkpoint_n_variants = atoi(optarg);
-			if(checkpoint_n_variants <= 0){
+			settings.checkpoint_n_snps = atoi(optarg);
+			if(settings.checkpoint_n_snps <= 0){
 				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
 		case 'C':
-			checkpoint_bp_window = atof(optarg);
-			if(checkpoint_bp_window <= 0){
+			settings.checkpoint_bases = atof(optarg);
+			if(settings.checkpoint_bases <= 0){
 				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
-		case 'p': permute = true;  break;
-		case 'P': permute = false; break;
+		case 'L':
+			settings.compression_level = atoi(optarg);
+			if(settings.compression_level <= 0){
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set compression level to <= 0..." << std::endl;
+				return(1);
+			}
+			break;
+		case 'p': settings.permute_genotypes = true;  break;
+		case 'P': settings.permute_genotypes = false; break;
 		case 's':
 			SILENT = 1;
 			break;
@@ -121,7 +120,7 @@ int import(int argc, char** argv){
 		}
 	}
 
-	if(input.length() == 0){
+	if(settings.input_file.length() == 0){
 		import_usage();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
@@ -133,20 +132,9 @@ int import(int argc, char** argv){
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
-	if(isFASTQ){
-		tachyon::ReadImporter importer;
-		if(!importer.open("/home/mklarqvist/Downloads/test.fastq")){
-			std::cerr << "bad" << std::endl;
-			return(1);
-		}
-	} else {
-		tachyon::VariantImporter importer(input, output, checkpoint_n_variants, checkpoint_bp_window);
-		importer.setPermute(permute);
-		importer.setEncrypt(encrypt);
-
-		if(!importer.Build())
-			return 1;
-	}
+	tachyon::VariantImporter importer(settings);
+	if(!importer.Build())
+		return 1;
 
 	return 0;
 }

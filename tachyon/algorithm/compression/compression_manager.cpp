@@ -6,10 +6,10 @@ namespace algorithm{
 CompressionManager::CompressionManager(){}
 CompressionManager::~CompressionManager(){}
 
-bool CompressionManager::compress(variant_block_type& block){
-	const BYTE zstd_compression_level = 20;
+bool CompressionManager::compress(variant_block_type& block, const BYTE general_level, const BYTE float_level){
+	const BYTE zstd_compression_level = general_level;
 	zstd_codec.setCompressionLevel(zstd_compression_level);
-	zstd_codec.setCompressionLevelData(3);
+	zstd_codec.setCompressionLevelData(float_level);
 	if(block.header.controller.hasGTPermuted)            zstd_codec.compress(block.ppa_manager);
 	zstd_codec.setCompressionLevel(zstd_compression_level);
 	if(block.meta_contig_container.header.n_entries)     zstd_codec.compress(block.meta_contig_container);
@@ -57,7 +57,7 @@ bool CompressionManager::compress(variant_block_type& block){
 	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
 		if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
-			zstd_codec.setCompressionLevelData(3);
+			zstd_codec.setCompressionLevelData(float_level);
 			zstd_codec.setCompressionLevelStrides(zstd_compression_level);
 			//zpaq_codec.compress(block.info_containers[i]);
 			//zstd_codec.compress(block.info_containers[i]);
@@ -77,7 +77,7 @@ bool CompressionManager::compress(variant_block_type& block){
 	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
 		if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
-			zstd_codec.setCompressionLevelData(3);
+			zstd_codec.setCompressionLevelData(float_level);
 			zstd_codec.setCompressionLevelStrides(zstd_compression_level);
 			//zpaq_codec.compress(block.format_containers[i]);
 			//zstd_codec.compress(block.format_containers[i]);

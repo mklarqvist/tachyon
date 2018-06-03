@@ -292,6 +292,7 @@ int view(int argc, char** argv){
 	else reader.getSettings().show_vcf_header = false;
 
 	// Todo: pass to settings
+	/*
 	reader.getSettings().interval_strings.push_back("Contig110_arrow");
 	reader.getSettings().interval_strings.push_back("Contig110_arrow:1e6");
 	reader.getSettings().interval_strings.push_back("Contig110_arrow:1e6-2e6");
@@ -305,6 +306,7 @@ int view(int argc, char** argv){
 	}
 	reader.index.findOverlap(contig->contigID, 1e6, 4.1e6);
 	//return(1);
+	*/
 
 	// Temp
 	//while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);

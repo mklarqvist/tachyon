@@ -22,7 +22,7 @@ public:
 	CompressionManager();
 	~CompressionManager();
 
-	bool compress(variant_block_type& block);
+	bool compress(variant_block_type& block, const BYTE general_level = 6, const BYTE float_level = 3);
 	bool decompress(variant_block_type& block);
 	bool decompress(algorithm::PermutationManager& permutation_manager);
 

@@ -471,6 +471,7 @@ public:
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTERDummy;
 
+		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
 			if(this->settings.custom_output_format)
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->settings.custom_output_controller);
@@ -488,7 +489,6 @@ public:
 			}
 
 			(this->*print_info)(output_buffer, '\t', p, objects);
-			if(output_buffer.back() != ';') output_buffer += ';';
 			if(this->settings.annotate_extra)
 				this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
 			output_buffer += this->settings.custom_delimiter_char;
@@ -769,6 +769,8 @@ public:
 			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
 			return;
 		}
+
+		if(buffer.back() != ';' && buffer.back() != '\t') buffer += ';';
 
 		//objects_type objects;
 		//this->loadObjects(objects);

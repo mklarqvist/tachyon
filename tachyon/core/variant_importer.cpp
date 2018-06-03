@@ -11,23 +11,13 @@ namespace tachyon {
 
 #define IMPORT_ASSERT 1
 
-VariantImporter::VariantImporter(std::string inputFile,
-		                         std::string outputPrefix,
-                                   const U32 checkpoint_n_snps,
-                                const double checkpoint_bases) :
-	GT_available_(false),
-	permute(true),
-	encrypt(false),
-	checkpoint_n_snps(checkpoint_n_snps),
-	checkpoint_bases(checkpoint_bases),
-	n_threads_(std::thread::hardware_concurrency()),
-	info_end_key_(-1),
-	info_svlen_key_(-1),
-	inputFile(inputFile),
-	outputPrefix(outputPrefix),
-	writer(nullptr),
-	header(nullptr)
+VariantImporter::VariantImporter(const settings_type& settings) :
+		settings_(settings),
+		GT_available_(false),
+		writer(nullptr),
+		header(nullptr)
 {
+
 }
 
 VariantImporter::~VariantImporter(){
@@ -35,9 +25,9 @@ VariantImporter::~VariantImporter(){
 }
 
 bool VariantImporter::Build(){
-	std::ifstream temp(this->inputFile, std::ios::binary | std::ios::in);
+	std::ifstream temp(this->settings_.input_file, std::ios::binary | std::ios::in);
 	if(!temp.good()){
-		std::cerr << utility::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->inputFile << ")..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IMPORT")  << "Failed to open file (" << this->settings_.input_file << ")..." << std::endl;
 		return false;
 	}
 	char tempData[2];
@@ -58,7 +48,7 @@ bool VariantImporter::Build(){
 
 bool VariantImporter::BuildBCF(void){
 	bcf_reader_type reader;
-	if(!reader.open(this->inputFile)){
+	if(!reader.open(this->settings_.input_file)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
 		return false;
 	}
@@ -78,10 +68,10 @@ bool VariantImporter::BuildBCF(void){
 	this->permutator.setSamples(this->header->samples);
 	//haploid_permuter.setSamples(this->header->samples*2);
 
-	if(this->outputPrefix.size() == 0) this->writer = new writer_stream_type;
+	if(this->settings_.output_prefix.size() == 0) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
 
-	if(!this->writer->open(this->outputPrefix)){
+	if(!this->writer->open(this->settings_.output_prefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
@@ -115,9 +105,13 @@ bool VariantImporter::BuildBCF(void){
 	header.literals += "\n##tachyon_importVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 	header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
-	header.literals += "\n##tachyon_importCommand=import -i " + this->inputFile + " -o " + this->outputPrefix + " -c " + std::to_string(this->checkpoint_n_snps) + " -C " + std::to_string(this->checkpoint_bases);
-	if(this->encrypt) header.literals += " -k";
-	if(this->permute) header.literals += " -P";
+	header.literals += "\n##tachyon_importCommand=import -i " + this->settings_.input_file +
+	                   " -o " + this->settings_.output_prefix +
+					   " -c " + std::to_string(this->settings_.checkpoint_n_snps) +
+					   " -C " + std::to_string(this->settings_.checkpoint_bases) +
+					   " -L " + std::to_string(this->settings_.compression_level);
+	if(this->settings_.encrypt_data) header.literals += " -k";
+	if(this->settings_.permute_genotypes) header.literals += " -P";
 	else header.literals += " -p";
 	header.header_magic.l_literals = header.literals.size();
 
@@ -140,23 +134,23 @@ bool VariantImporter::BuildBCF(void){
 	// Search for END field in the header
 	for(U32 i = 0; i < this->header->info_map.size(); ++i){
 		if(this->header->info_map[i].ID == "END"){
-			this->info_end_key_ = this->header->info_map[i].IDX;
-			std::cerr << "Found END at: " << this->header->info_map[i].IDX << std::endl;
+			this->settings_.info_end_key = this->header->info_map[i].IDX;
+			//std::cerr << "Found END at: " << this->header->info_map[i].IDX << std::endl;
 		}
 	}
 
 	// Search for END field in the header
 	for(U32 i = 0; i < this->header->info_map.size(); ++i){
 		if(this->header->info_map[i].ID == "SVLEN"){
-			this->info_svlen_key_ = this->header->info_map[i].IDX;
-			std::cerr << "Found SVLEN at: " << this->header->info_map[i].IDX << std::endl;
+			this->settings_.info_svlen_key = this->header->info_map[i].IDX;
+			//std::cerr << "Found SVLEN at: " << this->header->info_map[i].IDX << std::endl;
 		}
 	}
 
 	this->block.header.controller.hasGT = this->GT_available_;
 
 	// Resize containers
-	const U32 resize_to = this->checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
+	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
 	// Digest controller
@@ -179,7 +173,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	while(true){
-		if(!reader.getVariants(this->checkpoint_n_snps, this->checkpoint_bases)){
+		if(!reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}
 
@@ -198,7 +192,7 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.minPosition = reader.front().body->POS;
 		this->block.header.maxPosition = reader.back().body->POS;
 		this->block.header.controller.hasGT         = this->GT_available_;
-		this->block.header.controller.hasGTPermuted = this->permute;
+		this->block.header.controller.hasGTPermuted = this->settings_.permute_genotypes;
 		// if there is 0 or 1 samples then GT data is never permuted
 		if(header.getSampleNumber() <= 1)
 			this->block.header.controller.hasGTPermuted = false;
@@ -241,7 +235,7 @@ bool VariantImporter::BuildBCF(void){
 		this->block.finalize();
 
 		// Perform compression using standard parameters
-		if(!this->compression_manager.compress(this->block)){
+		if(!this->compression_manager.compress(this->block, this->settings_.compression_level, 6)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
@@ -250,7 +244,7 @@ bool VariantImporter::BuildBCF(void){
 		checksums += this->block;
 
 		// Encryption
-		if(this->encrypt){
+		if(this->settings_.encrypt_data){
 			this->block.header.controller.anyEncrypted = true;
 			if(!encryptionManager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
@@ -277,6 +271,7 @@ bool VariantImporter::BuildBCF(void){
 		// Write EOB
 		this->writer->stream->write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
 
+		// Update index
 		this->index_entry.blockID         = this->block.header.blockID;
 		this->index_entry.byte_offset_end = this->writer->stream->tellp();
 		this->index_entry.contigID        = reader.front().body->CHROM;
@@ -284,9 +279,8 @@ bool VariantImporter::BuildBCF(void){
 		this->index_entry.maxPosition     = reader.back().body->POS;
 		this->index_entry.n_variants      = reader.size();
 		this->writer->index.index_.linear_at(index_entry.contigID) += this->index_entry; // Todo: beautify
-		//this->writer->index += this->index_entry;
-
 		this->index_entry.reset();
+
 		++this->writer->n_blocks_written;
 		this->writer->n_variants_written += reader.size();
 		++this->writer->index.number_blocks;
@@ -344,7 +338,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	// If we are writing to a file
-	if(this->outputPrefix.size()){
+	if(this->settings_.output_prefix.size()){
 		std::ofstream writer_stats;
 		writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
 		writer_stats.open(wstats->basePath + wstats->baseName + "_yon_stats.txt", std::ios::out);
@@ -386,8 +380,8 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	// Write keychain
-	if(this->encrypt){
-		if(this->outputPrefix.size()){
+	if(this->settings_.encrypt_data){
+		if(this->settings_.output_prefix.size()){
 			std::ofstream writer_keychain;
 			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(this->writer);
 			writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
@@ -437,7 +431,7 @@ bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_
 		}
 	}
 	*/
-	this->encoder.EncodeParallel(bcf_reader, meta_entries, this->block, this->permutator.manager->get(), this->n_threads_);
+	this->encoder.EncodeParallel(bcf_reader, meta_entries, this->block, this->permutator.manager->get(), this->settings_.n_threads);
 
 	return true;
 }
@@ -463,11 +457,11 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 	// Has END position?
 	S32 index_bin = -1;
 
-	if(this->info_end_key_ != -1){
+	if(this->settings_.info_end_key != -1){
 		// Linear search: this is not optimal but probably still faster
 		// than generating a new hash table for each record
 		for(U32 i = 0; i < entry.infoPointer; ++i){
-			if(entry.infoID[i].mapID == this->info_end_key_){
+			if(entry.infoID[i].mapID == this->settings_.info_end_key){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
 				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
