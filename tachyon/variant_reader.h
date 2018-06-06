@@ -21,7 +21,6 @@
 #include "core/genotype_object.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
-//#include "math/fisher.h"
 #include "math/fisher_math.h"
 #include "math/square_matrix.h"
 #include "math/basic_vector_math.h"
@@ -29,6 +28,56 @@
 #include "index/index.h"
 
 namespace tachyon{
+
+struct VariantReaderSettings{
+public:
+	VariantReaderSettings() :
+		drop_format(false),
+		header_only(false),
+		show_header(true),
+		custom_delimiter(false),
+		custom_delimiter_char(0),
+		custom_output_format(false),
+		filter_any(false),
+		filter_all(false),
+		annotate_genotypes(false),
+		output_FORMAT_as_vector(false)
+	{}
+	~VariantReaderSettings() = default;
+
+	std::string get_settings_string(void) const{
+		return(std::string(
+		"##tachyon_viewCommandSettings={"
+		"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
+		",\"output\":" + (this->output.length() ? "\"" + this->output + "\"" : "null") +
+		",\"keychain_file\":" + (this->keychain_file.length() ? "\"" + this->keychain_file + "\"" : "null") +
+		",\"annotate_genotypes\":" + (this->annotate_genotypes ? "true" : "false") +
+		",\"drop_format\":" + (this->drop_format ? "true" : "false") +
+		"}; timestamp=" + tachyon::utility::datetime()
+ 		));
+	}
+
+public:
+	bool drop_format;
+	bool header_only;
+	bool show_header;
+	bool custom_delimiter;
+	char custom_delimiter_char;
+	bool custom_output_format;
+	bool filter_any;
+	bool filter_all;
+	bool annotate_genotypes;
+	bool output_FORMAT_as_vector;
+	std::string input;
+	std::string output;
+	std::string keychain_file;
+	std::string output_type;
+	std::vector<std::string> load_strings;
+
+	std::string sample_names_file;
+	std::vector<std::string> sample_names;
+
+};
 
 struct VariantReaderObjects{
 public:
@@ -91,7 +140,8 @@ class VariantReader{
 	typedef core::VariantHeader                    header_type;
 	typedef core::Footer                           footer_type;
 	typedef algorithm::CompressionManager          codec_manager_type;
-	typedef core::DataBlockSettings                settings_type;
+	typedef core::DataBlockSettings                block_settings_type;
+	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
 	typedef encryption::Keychain                   keychain_type;
@@ -121,7 +171,16 @@ public:
 	 * prior to each read of a `block` and can be freely modified
 	 * before each call. Modifying the settings after a read block
 	 * has been invoked has no effect on the loaded `block` data.
-	 * @return
+	 * @return A reference instance of the block settings object
+	 */
+	inline block_settings_type& getBlockSettings(void){ return(this->block_settings); }
+
+	/**<
+	 * Retrieve current settings for the variant reader. This settings
+	 * object controls the parsing/output of the reader itself. This is
+	 * unlike the `block_settings_type` that controls the `DataBlock`
+	 * parsing.
+	 * @return A reference instance of the settings object
 	 */
 	inline settings_type& getSettings(void){ return(this->settings); }
 
@@ -263,7 +322,7 @@ public:
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
 	inline bool open(const std::string& filename){
-		this->input_file = filename;
+		this->settings.input = filename;
 		return(this->open());
 	}
 
@@ -315,7 +374,7 @@ public:
 	/**<
 	 * Seeks to a specific YON block without loading anything.
 	 * This allows the user to seek to a specific block and
-	 * change the settings (i.e. what fields to load) and
+	 * change the block_settings (i.e. what fields to load) and
 	 * then invoke nextBlock() for example.
 	 * @param blockID
 	 * @return
@@ -327,21 +386,21 @@ public:
 	 * @return
 	 */
 	bool parseSettings(void){
-		settings.load_info_ID_loaded.clear();
-		settings.load_format_ID_loaded.clear();
+		block_settings.load_info_ID_loaded.clear();
+		block_settings.load_format_ID_loaded.clear();
 
 		// Map INFO
-		if(settings.load_info == false){ // prevent double load
+		if(block_settings.load_info == false){ // prevent double load
 			U32 info_matches = 0;
-			for(U32 i = 0; i < settings.info_list.size(); ++i){
-				const S32 global_key = this->has_info_field(settings.info_list[i]);
+			for(U32 i = 0; i < block_settings.info_list.size(); ++i){
+				const S32 global_key = this->has_info_field(block_settings.info_list[i]);
 				if(global_key >= 0){
 					S32 local_key = -1;
 					for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
 						if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
 							local_key = i;
-							this->settings.info_ID_list.push_back(i);
-							settings.load_info_ID_loaded.push_back(
+							this->block_settings.info_ID_list.push_back(i);
+							block_settings.load_info_ID_loaded.push_back(
 														core::SettingsMap(
 																info_matches++, // iterator value
 																i,              // local index id
@@ -359,17 +418,17 @@ public:
 		}
 
 		// Map FORMAT
-		if(settings.load_format == false){ // prevent double load
+		if(this->block_settings.load_format == false){ // prevent double load
 			U32 format_matches = 0;
-			for(U32 i = 0; i < settings.format_list.size(); ++i){
-				const S32 global_key = this->has_format_field(settings.format_list[i]);
+			for(U32 i = 0; i < this->block_settings.format_list.size(); ++i){
+				const S32 global_key = this->has_format_field(this->block_settings.format_list[i]);
 				if(global_key >= 0){
 					S32 local_key = -1;
 					for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
 						if(this->block.footer.format_offsets[i].data_header.global_key == global_key){
 							local_key = i;
-							this->settings.format_ID_list.push_back(i);
-							settings.load_format_ID_loaded.push_back(
+							this->block_settings.format_ID_list.push_back(i);
+							block_settings.load_format_ID_loaded.push_back(
 														core::SettingsMap(
 																format_matches++, // iterator value
 																i,              // local index id
@@ -404,7 +463,7 @@ public:
 	const U64 outputVCF(void){
 		U64 n_variants = 0;
 
-		if(this->settings.annotate_extra){
+		if(this->block_settings.annotate_extra){
 			// fixme
 			// if special
 			// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"
@@ -426,12 +485,12 @@ public:
 		this->header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 				  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 
-		this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
-
+		this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
+		this->header.literals += this->getSettings().get_settings_string();
 
 		// Output VCF header
-		if(this->settings.show_vcf_header){
-			this->header.writeVCFHeaderString(std::cout, this->settings.load_format || this->settings.format_list.size());
+		if(this->block_settings.show_vcf_header){
+			this->header.writeVCFHeaderString(std::cout, this->block_settings.load_format || this->block_settings.format_list.size());
 		}
 
 		// While there are YON blocks
@@ -462,36 +521,36 @@ public:
 		// Reserve memory for output buffer
 		// This is much faster than writing directly to ostream because of syncing
 		io::BasicBuffer output_buffer(256000);
-		if(this->settings.load_format) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
+		if(this->block_settings.load_format) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
 
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 
 		print_format_function print_format = &self_type::printFORMATDummy;
-		if(this->settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
-		else if(settings.load_format) print_format = &self_type::printFORMATVCF;
+		if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
+		else if(block_settings.load_format) print_format = &self_type::printFORMATVCF;
 		print_info_function   print_info   = &self_type::printINFOVCF;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
-			if(this->settings.custom_output_format)
-				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->settings.custom_output_controller);
+			if(this->block_settings.custom_output_format)
+				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->block_settings.custom_output_controller);
 			else
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
 
 			// Filter options
-			if(settings.load_set_membership) (this->*print_filter)(output_buffer, p, objects);
+			if(block_settings.load_set_membership) (this->*print_filter)(output_buffer, p, objects);
 			else output_buffer += '.';
 
-			if(settings.load_info || settings.load_format || this->block.n_info_loaded || this->settings.annotate_extra) output_buffer += '\t';
+			if(block_settings.load_info || block_settings.load_format || this->block.n_info_loaded || this->block_settings.annotate_extra) output_buffer += '\t';
 			else {
 				output_buffer += '\n';
 				continue;
 			}
 
 			(this->*print_info)(output_buffer, '\t', p, objects);
-			if(this->settings.annotate_extra) this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
+			if(this->block_settings.annotate_extra) this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
 			(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
 			output_buffer += '\n';
 
@@ -524,7 +583,7 @@ public:
 
 		// Todo: move to function
 		U32 info_match_limit = 1; // any match
-		//info_match_limit = this->settings.info_list.size(); // all match
+		//info_match_limit = this->block_settings.info_list.size(); // all match
 
 		// Function pointer to use
 		print_format_function print_format = &self_type::printFORMATDummy;
@@ -532,34 +591,34 @@ public:
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTERDummy;
 
-		if(settings.output_json) print_meta = &utility::to_json_string;
+		if(block_settings.output_json) print_meta = &utility::to_json_string;
 
-		if(settings.load_format || this->block.n_format_loaded){
-			if(settings.output_json){
+		if(block_settings.load_format || this->block.n_format_loaded){
+			if(block_settings.output_json){
 				print_format = &self_type::printFORMATCustomVectorJSON;
 			} else {
-				if(settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
+				if(block_settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
 				else print_format = &self_type::printFORMATCustom;
 			}
 		}
 
-		if(settings.load_info || this->block.n_info_loaded){
-			if(settings.output_json) print_info = &self_type::printINFOCustomJSON;
+		if(block_settings.load_info || this->block.n_info_loaded){
+			if(block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
 			else print_info = &self_type::printINFOCustom;
 		}
 
-		if(settings.custom_output_controller.show_filter){
-			if(settings.output_json) print_filter = &self_type::printFILTERJSON;
+		if(this->block_settings.custom_output_controller.show_filter){
+			if(block_settings.output_json) print_filter = &self_type::printFILTERJSON;
 			else print_filter = &self_type::printFILTERCustom;
 		}
 
 		U32 n_records_returned = 0;
 
-		if(settings.output_json) output_buffer += "\"block\":[";
+		if(block_settings.output_json) output_buffer += "\"block\":[";
 		for(U32 position = 0; position < objects.meta->size(); ++position){
 			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 			//	continue;
-			if(settings.output_json){
+			if(block_settings.output_json){
 				if(position != 0) output_buffer += ",\n";
 
 
@@ -567,12 +626,12 @@ public:
 			}
 			++n_records_returned;
 
-			(*print_meta)(output_buffer, this->settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->settings.custom_output_controller);
+			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->block_settings.custom_output_controller);
 			(this->*print_filter)(output_buffer, position, objects);
-			(this->*print_info)(output_buffer, this->settings.custom_delimiter_char, position, objects);
-			(this->*print_format)(output_buffer, this->settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
+			(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
+			(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
 
-			if(settings.output_json) output_buffer += "}";
+			if(block_settings.output_json) output_buffer += "}";
 			else output_buffer += '\n';
 			//output_buffer += "}";
 
@@ -583,7 +642,7 @@ public:
 				std::cout.flush();
 			}
 		}
-		if(settings.output_json) output_buffer += "]";
+		if(block_settings.output_json) output_buffer += "]";
 
 		// Flush buffer
 		std::cout.write(output_buffer.data(), output_buffer.size());
@@ -648,7 +707,7 @@ public:
 		buffer_type temp(meta.size() * 1000);
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(temp, this->settings.custom_delimiter_char, meta[p], this->header);
+			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->header);
 			//utility::to_vcf_string(std::cout, meta[p], this->header);
 			temp += '\n';
 			//if(temp.size() > 65536){
@@ -749,7 +808,7 @@ public:
 	}
 
 	void getGenotypeSummary(buffer_type& buffer, const U32& position, objects_type& objects) const{
-		if(this->settings.load_alleles == false || this->settings.load_genotypes_all == false || this->settings.load_controller == false || this->settings.load_set_membership == false){
+		if(this->block_settings.load_alleles == false || this->block_settings.load_genotypes_all == false || this->block_settings.load_controller == false || this->block_settings.load_set_membership == false){
 			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
 			return;
 		}
@@ -778,7 +837,7 @@ public:
 			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(position));
 
 
-			//utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta, this->header);
+			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->header);
 
 			if(target_flag_set & 1){
 				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta->at(position), *objects.genotype_summary, true);
@@ -935,21 +994,21 @@ public:
 	}
 
 public:
-	std::string        input_file;
-	std::ifstream      stream;
-	U64                filesize;
+	std::ifstream       stream;
+	U64                 filesize;
 
 	// Actual data
-	block_entry_type   block;
+	block_entry_type    block;
 
 	// Supportive objects
-	settings_type      settings;
-	header_type        header;
-	footer_type        footer;
-	index_type         index;
-	checksum_type      checksums;
-	codec_manager_type codec_manager;
-	keychain_type      keychain;
+	block_settings_type block_settings;
+	settings_type       settings;
+	header_type         header;
+	footer_type         footer;
+	index_type          index;
+	checksum_type       checksums;
+	codec_manager_type  codec_manager;
+	keychain_type       keychain;
 };
 
 }
