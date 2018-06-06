@@ -475,7 +475,7 @@ private:
 			//std::cerr << "loading: " << temp.size() << " entries" << std::endl;
 			contig.bins_[temp.binID_] = temp;
 		}
-		std::cerr << std::endl;
+		//std::cerr << std::endl;
 		return(stream);
 	}
 

@@ -170,6 +170,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 
 	U32 retrieved_variants = 0;
 	bool is_new = true;
+	bool filter_invariant = false;
 
 	while(retrieved_variants < n_variants){
 	//for(U32 i = 0; i < n_variants; ++i){
@@ -186,7 +187,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 		}
 
 
-		if(this->entries[this->n_entries].gt_support.invariant == true){
+		if(filter_invariant && this->entries[this->n_entries].gt_support.invariant == true){
 			//std::cerr << "not getting " << std::endl;
 			//((this->entries + this->n_entries)->~BCFEntry());
 			//&this->entries[this->n_entries] = static_cast<pointer>(::operator new[](sizeof(value_type)));

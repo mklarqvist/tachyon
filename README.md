@@ -20,8 +20,17 @@ Tachyon, or `YON` for short, is an open source software library for storing and 
 
 ---
 
+## Project status
+Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
+**Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
+
+Current limitations imposed during development:
+* Importing is restricted to `BCF`
+* Output is restricted to `VCF`, `JSON`, and custom field slicing
+
+---
+
 ## Table of contents
-- [Project status](#project-status)
 - [Getting started](#getting-started)
     - [Dependencies](#dependencies)
     - [Building from source](#building-from-source)
@@ -38,16 +47,6 @@ Tachyon, or `YON` for short, is an open source software library for storing and 
 - [Author](#author)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
----
-
-## Project status
-Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
-**Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
-
-Current limitations imposed during development:
-* Importing is restricted to `BCF`
-* Output is restricted to `VCF`, `JSON`, and custom field slicing
-
 ---
 
 ## Getting started

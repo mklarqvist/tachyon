@@ -174,6 +174,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	while(true){
+		// Retrieve BCF records
 		if(!reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}

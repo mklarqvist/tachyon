@@ -73,10 +73,8 @@ public:
 	std::string keychain_file;
 	std::string output_type;
 	std::vector<std::string> load_strings;
-
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
-
 };
 
 struct VariantReaderObjects{
@@ -531,6 +529,7 @@ public:
 		print_info_function   print_info   = &self_type::printINFOVCF;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
+
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){

@@ -185,9 +185,8 @@ public:
 		this->filterPointer = 0;
 		this->n_filter      = 0;
 		this->filter_start  = 0;
-		this->ploidy = 0;
-		this->hasGenotypes = false;
-
+		this->ploidy        = 0;
+		this->hasGenotypes  = false;
 	}
 
 	inline const U32& size(void) const{ return(this->l_data); }
