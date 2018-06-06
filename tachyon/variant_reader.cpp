@@ -351,7 +351,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// Preprocess step:
 	// Cycle over INFO patterns and see if any of the custom FIELDS are set
 	// FS_A, AN, NM, NPM, AC, AC_FW, AC_REV, AF, HWE_P, VT, MULTI_ALLELIC
-	std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"};
+	std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"};
 	U16 execute_mask = 0;
 
 	// Step 1: Find INFO
@@ -528,6 +528,8 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 			const U32& n_format_keys = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].n_keys;
 			const U32* format_keys   = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].local_keys;
 			if(n_format_keys){
+				if(buffer.back() != delimiter) buffer += delimiter;
+
 				// Print key map
 				buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
 				for(U32 i = 1; i < n_format_keys; ++i){
@@ -538,29 +540,48 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 
 				// Todo: print if no GT data
 				// Begin print FORMAT data for each sample
-				if(this->settings.load_ppa && this->block.header.controller.hasGTPermuted){
-					objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber(), this->block.ppa_manager);
-				} else {
-					objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber());
-				}
+				if(this->block.header.controller.hasGT){
+					if(this->settings.load_ppa && this->block.header.controller.hasGTPermuted){
+						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber(), this->block.ppa_manager);
+					} else {
+						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber());
+					}
 
-				buffer << genotypes_unpermuted[0];
-				for(U32 i = 1; i < n_format_keys; ++i){
-					buffer += ':';
-					objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, 0);
-				}
-
-				for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
-					buffer += delimiter;
-					buffer << genotypes_unpermuted[s];
+					buffer << genotypes_unpermuted[0];
 					for(U32 i = 1; i < n_format_keys; ++i){
-						buffer  += ':';
-						objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, s);
+						buffer += ':';
+						objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, 0);
+					}
+
+					for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
+						buffer += delimiter;
+						buffer << genotypes_unpermuted[s];
+						for(U32 i = 1; i < n_format_keys; ++i){
+							buffer  += ':';
+							objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, s);
+						}
+					}
+				} else { // No genotype data available
+					objects.format_fields[format_keys[0]]->to_vcf_string(buffer, position, 0);
+					for(U32 i = 1; i < n_format_keys; ++i){
+						buffer += ':';
+						objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, 0);
+					}
+
+					for(U64 s = 1; s < this->header.getSampleNumber(); ++s){
+						buffer += delimiter;
+						objects.format_fields[format_keys[0]]->to_vcf_string(buffer, position, s);
+						for(U32 i = 1; i < n_format_keys; ++i){
+							buffer  += ':';
+							objects.format_fields[format_keys[i]]->to_vcf_string(buffer, position, s);
+						}
 					}
 				}
+
 			} else { // have no keys
+				if(buffer.back() != delimiter) buffer += delimiter;
 				buffer += ".";
-				buffer += delimiter;
+				//buffer += delimiter;
 			}
 		}
 	}
@@ -716,9 +737,9 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 
 	if(settings.load_info || this->block.n_info_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta->at(position).info_pattern_id];
-		if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
-
 		if(targetKeys.size()){
+			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
+
 			// First
 			outputBuffer += objects.info_field_names[targetKeys[0]];
 			if(objects.info_fields[targetKeys[0]]->emptyPosition(position) == false){
@@ -814,6 +835,40 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 			}
 		}
 	}
+}
+
+TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_entry_type& meta, const U32& allele) const{
+	const S32 ref_size = meta.alleles[0].size();
+	const S32 diff = ref_size - meta.alleles[allele].size();
+	//std::cerr << diff << ",";
+	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<') return(YON_VARIANT_CLASS_SV);
+	else if(diff == 0){
+		if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
+			if(meta.alleles[allele].allele[0] == 'A' || meta.alleles[allele].allele[0] == 'T' || meta.alleles[allele].allele[0] == 'G' || meta.alleles[allele].allele[0] == 'C')
+				return(YON_VARIANT_CLASS_SNP);
+			else return(YON_VARIANT_CLASS_UNKNOWN);
+		}
+		else if(ref_size != 1){
+			U32 characters_identical = 0;
+			const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+
+			for(U32 c = 0; c < length_shortest; ++c){
+				characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
+			}
+
+			if(characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
+			else return(YON_VARIANT_CLASS_CLUMPED);
+		}
+	} else {
+		const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+		U32 characters_non_standard = 0;
+		for(U32 c = 0; c < length_shortest; ++c){
+			characters_non_standard += (meta.alleles[allele].allele[c] != 'A' && meta.alleles[allele].allele[c] != 'T' && meta.alleles[allele].allele[c] != 'C' && meta.alleles[allele].allele[c] !='G');
+		}
+		if(characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
+		else return(YON_VARIANT_CLASS_INDEL);
+	}
+	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
 }

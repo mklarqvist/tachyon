@@ -24,6 +24,7 @@ public:
 	VariantImporterSettings() :
 		permute_genotypes(true),
 		encrypt_data(false),
+		drop_empty_sites(false),
 		checkpoint_n_snps(1000),
 		checkpoint_bases(10e6),
 		n_threads(std::thread::hardware_concurrency()),
@@ -44,6 +45,7 @@ public:
 public:
 	bool permute_genotypes;   // permute GT flag
 	bool encrypt_data;        // encryption flag
+	bool drop_empty_sites;    // drop sites with no variant data
 	U32 checkpoint_n_snps;    // number of variants until checkpointing
 	U32 checkpoint_bases;  // number of bases until checkpointing
 	U32 n_threads;            // number of parallel importer threads
@@ -90,7 +92,7 @@ public:
 
 private:
 	bool BuildBCF();  // import a BCF file
-	bool add(meta_type& meta, bcf_entry_type& line); // Import a BCF line
+	bool addSite(meta_type& meta, bcf_entry_type& line); // Import a BCF line
 	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 

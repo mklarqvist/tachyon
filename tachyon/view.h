@@ -47,7 +47,29 @@ void view_usage(void){
 	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
-	"  -s        Hide all program messages\n";
+	"  -s        Hide all program messages\n\n"
+
+	"Subset options:\n"
+	"  -a, --trim-alt-alleles        trim alternate alleles not seen in the subset\n"
+	"  -I, --no-update               do not (re)calculate INFO fields for the subset (currently INFO/AC and INFO/AN)\n"
+	"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
+	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n"
+	"      --force-samples           only warn about unknown subset samples\n\n"
+
+	"Filter options:\n"
+    "  -c/C, --min-ac/--max-ac <int>[:<type>]      minimum/maximum count for non-reference (nref), 1st alternate (alt1), least frequent\n"
+    "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
+    "  -f,   --apply-filters <list>                require at least one of the listed FILTER strings (e.g. \"PASS,.\")\n"
+    "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
+    "  -i/e, --include/--exclude <expr>            select/exclude sites for which the expression is true (see man page for details)\n"
+    "  -k/n, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
+    "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT (e.g. -m2 -M2 for biallelic sites)\n"
+    "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
+    "  -q/Q, --min-af/--max-af <float>[:<type>]    minimum/maximum frequency for non-reference (nref), 1st alternate (alt1), least frequent\n"
+    "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
+    "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
+    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n"
+    "  -x/X, --private/--exclude-private           select/exclude sites where the non-reference alleles are exclusive (private) to the subset samples\n";
 }
 
 int view(int argc, char** argv){

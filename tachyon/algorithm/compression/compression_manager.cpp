@@ -7,11 +7,10 @@ CompressionManager::CompressionManager(){}
 CompressionManager::~CompressionManager(){}
 
 bool CompressionManager::compress(variant_block_type& block, const BYTE general_level, const BYTE float_level){
-	const BYTE zstd_compression_level = general_level;
-	zstd_codec.setCompressionLevel(zstd_compression_level);
+	zstd_codec.setCompressionLevel(general_level);
 	zstd_codec.setCompressionLevelData(float_level);
 	if(block.header.controller.hasGTPermuted)            zstd_codec.compress(block.ppa_manager);
-	zstd_codec.setCompressionLevel(zstd_compression_level);
+	zstd_codec.setCompressionLevel(general_level);
 	if(block.meta_contig_container.header.n_entries)     zstd_codec.compress(block.meta_contig_container);
 	if(block.meta_positions_container.header.n_entries)  zstd_codec.compress(block.meta_positions_container);
 	if(block.meta_refalt_container.header.n_entries)     zstd_codec.compress(block.meta_refalt_container);
@@ -58,13 +57,13 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 		if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 			zstd_codec.setCompressionLevelData(float_level);
-			zstd_codec.setCompressionLevelStrides(zstd_compression_level);
+			zstd_codec.setCompressionLevelStrides(general_level);
 			//zpaq_codec.compress(block.info_containers[i]);
 			//zstd_codec.compress(block.info_containers[i]);
 			//zstd_codec.compress(block.info_containers[i]);
 		}
 		else {
-			zstd_codec.setCompressionLevel(zstd_compression_level);
+			zstd_codec.setCompressionLevel(general_level);
 			//zstd_codec.compress(block.info_containers[i]);
 			//zpaq_codec.compress(block.info_containers[i]);
 			//zstd_codec.compress(block.info_containers[i]);
@@ -78,12 +77,12 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 		if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 			zstd_codec.setCompressionLevelData(float_level);
-			zstd_codec.setCompressionLevelStrides(zstd_compression_level);
+			zstd_codec.setCompressionLevelStrides(general_level);
 			//zpaq_codec.compress(block.format_containers[i]);
 			//zstd_codec.compress(block.format_containers[i]);
 		}
 		else {
-			zstd_codec.setCompressionLevel(zstd_compression_level);
+			zstd_codec.setCompressionLevel(general_level);
 			//zstd_codec.compress(block.format_containers[i]);
 			//zpaq_codec.compress(block.format_containers[i]);
 		}

@@ -112,6 +112,7 @@ public:
 		hasMissing(false),
 		hasEOV(false),
 		mixedPhasing(false),
+		invariant(false),
 		ploidy(0),
 		phase(0),
 		n_missing(0),
@@ -123,6 +124,7 @@ public:
 		hasMissing(other.hasMissing),
 		hasEOV(other.hasEOV),
 		mixedPhasing(other.mixedPhasing),
+		invariant(other.invariant),
 		ploidy(other.ploidy),
 		phase(other.phase),
 		n_missing(other.n_missing),
@@ -135,6 +137,7 @@ public:
 		this->hasMissing   = other.hasMissing;
 		this->hasEOV       = other.hasEOV;
 		this->mixedPhasing = other.mixedPhasing;
+		this->invariant    = other.invariant;
 		this->ploidy       = other.ploidy;
 		this->phase        = other.phase;
 		this->n_missing    = other.n_missing;
@@ -146,6 +149,7 @@ public:
 	bool hasMissing;
 	bool hasEOV;
 	bool mixedPhasing;
+	bool invariant;
 	U32  ploidy;
 	BYTE phase;
 	U32  n_missing;
@@ -181,6 +185,9 @@ public:
 		this->filterPointer = 0;
 		this->n_filter      = 0;
 		this->filter_start  = 0;
+		this->ploidy = 0;
+		this->hasGenotypes = false;
+
 	}
 
 	inline const U32& size(void) const{ return(this->l_data); }
@@ -217,7 +224,10 @@ public:
 
 		BYTE first_phase = 0;
 
+		// TODO other BCF primitives
 		if(this->formatID[0].primitive_type == YON_BCF_PRIMITIVE_TYPES::BCF_BYTE){
+			// First
+			bool invariant = true;
 			for(U32 p = 0; p < ploidy; ++p){
 				const BYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
 				if((ref >> 1) == 0){
@@ -228,6 +238,7 @@ public:
 					++this->gt_support.n_eov;
 				}
 				if(p + 1 == ploidy) first_phase = ref & 1;
+				if(ref >> 1 != 1) invariant = false;
 				internal_data_offset += sizeof(BYTE);
 			}
 			++current_sample;
@@ -254,12 +265,14 @@ public:
 						}
 					}
 					internal_data_offset += sizeof(BYTE);
+					if(ref >> 1 != 1) invariant = false;
 				}
 			}
 
 			if(this->gt_support.mixedPhasing == false){
 				this->gt_support.phase = first_phase;
 			}
+			this->gt_support.invariant = invariant;
 		}
 		return true;
 	}

@@ -168,18 +168,34 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 	if(this->state == bcf_reader_state::BCF_EOF)
 		return false;
 
-	for(U32 i = 0; i < n_variants; ++i){
+	U32 retrieved_variants = 0;
+	bool is_new = true;
+
+	while(retrieved_variants < n_variants){
+	//for(U32 i = 0; i < n_variants; ++i){
 		if(this->current_pointer == this->bgzf_controller.buffer.size()){
 			if(!this->nextBlock()){
 				return(this->size() > 0);
 			}
 		}
 
-		new( &this->entries[this->n_entries] ) value_type( this->header.samples * 2 );
+		if(is_new) new( &this->entries[this->n_entries] ) value_type( this->header.samples * 2 );
 		if(!this->nextVariant(this->entries[this->n_entries])){
 			std::cerr << "failed to get next" << std::endl;
 			return false;
 		}
+
+
+		if(this->entries[this->n_entries].gt_support.invariant == true){
+			//std::cerr << "not getting " << std::endl;
+			//((this->entries + this->n_entries)->~BCFEntry());
+			//&this->entries[this->n_entries] = static_cast<pointer>(::operator new[](sizeof(value_type)));
+			this->entries[this->n_entries].reset();
+			is_new = false;
+			continue;
+		}
+		is_new = true;
+		++retrieved_variants;
 
 		// Check position
 		if(this->n_entries == 0){

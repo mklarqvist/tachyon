@@ -404,30 +404,33 @@ public:
 	const U64 outputVCF(void){
 		U64 n_variants = 0;
 
+		if(this->settings.annotate_extra){
+			// fixme
+			// if special
+			// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"
+			if(this->header.getInfoField("FS_A") == false) this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+			if(this->header.getInfoField("AN") == false) this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+			if(this->header.getInfoField("NM") == false) this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+			if(this->header.getInfoField("NPM") == false) this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC") == false) this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC_FWD") == false) this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC_REV") == false) this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+			if(this->header.getInfoField("HWE_P") == false) this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+			if(this->header.getInfoField("VT") == false) this->header.literals += "\n##INFO=<ID=VT,Number=1,Type=String>";
+			if(this->header.getInfoField("AF") == false) this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+			if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
+			if(this->header.getInfoField("F_PIC") == false) this->header.literals += "\n##INFO=<ID=F_PIC,Number=1,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
+		}
+
+		this->header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		this->header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+				  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
+
+		this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
+
+
 		// Output VCF header
 		if(this->settings.show_vcf_header){
-			this->header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-			this->header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-					  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
-
-			this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE;
-
-			if(this->settings.annotate_extra){
-				// fixme
-				// if special
-				// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"
-				if(this->header.getInfoField("FS_A") == false) this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
-				if(this->header.getInfoField("AN") == false) this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
-				if(this->header.getInfoField("NM") == false) this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
-				if(this->header.getInfoField("NPM") == false) this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
-				if(this->header.getInfoField("AC") == false) this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
-				if(this->header.getInfoField("AC_FWD") == false) this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
-				if(this->header.getInfoField("AC_REV") == false) this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
-				if(this->header.getInfoField("HWE_P") == false) this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
-				if(this->header.getInfoField("VT") == false) this->header.literals += "\n##INFO=<ID=VT,Number=1,Type=String>";
-				if(this->header.getInfoField("AF") == false) this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
-				if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
-			}
 			this->header.writeVCFHeaderString(std::cout, this->settings.load_format || this->settings.format_list.size());
 		}
 
@@ -467,9 +470,8 @@ public:
 		if(this->settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
 		else if(settings.load_format) print_format = &self_type::printFORMATVCF;
 		print_info_function   print_info   = &self_type::printINFOVCF;
-
 		print_meta_function   print_meta   = &utility::to_vcf_string;
-		print_filter_function print_filter = &self_type::printFILTERDummy;
+		print_filter_function print_filter = &self_type::printFILTER;
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
@@ -479,7 +481,7 @@ public:
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
 
 			// Filter options
-			if(settings.load_set_membership) this->printFILTER(output_buffer, p, objects);
+			if(settings.load_set_membership) (this->*print_filter)(output_buffer, p, objects);
 			else output_buffer += '.';
 
 			if(settings.load_info || settings.load_format || this->block.n_info_loaded || this->settings.annotate_extra) output_buffer += '\t';
@@ -489,9 +491,7 @@ public:
 			}
 
 			(this->*print_info)(output_buffer, '\t', p, objects);
-			if(this->settings.annotate_extra)
-				this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
-			output_buffer += this->settings.custom_delimiter_char;
+			if(this->settings.annotate_extra) this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
 			(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
 			output_buffer += '\n';
 
@@ -616,44 +616,28 @@ public:
 	void printINFOCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	void printINFOCustomJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 
+	// Calculations
+	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
+
 	// Filters
+	// Todo: filter parameterse in class
+
+	// Does not require genotypes
 	void filterRegions(void) const; // Filter by target intervals
 	void filterFILTER(void) const;  // Filter by desired FILTER values
 
-	// Calculations
-	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const{
-		const S32 ref_size = meta.alleles[0].size();
-		const S32 diff = ref_size - meta.alleles[allele].size();
-		//std::cerr << diff << ",";
-		if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<') return(YON_VARIANT_CLASS_SV);
-		else if(diff == 0){
-			if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
-				if(meta.alleles[allele].allele[0] == 'A' || meta.alleles[allele].allele[0] == 'T' || meta.alleles[allele].allele[0] == 'G' || meta.alleles[allele].allele[0] == 'C')
-					return(YON_VARIANT_CLASS_SNP);
-				else return(YON_VARIANT_CLASS_UNKNOWN);
-			}
-			else if(ref_size != 1){
-				U32 characters_identical = 0;
-				const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+	//
+	void filterINFO(const U32 filter_id); // custoom filter. e.g. AC<1024
 
-				for(U32 c = 0; c < length_shortest; ++c){
-					characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
-				}
-
-				if(characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
-				else return(YON_VARIANT_CLASS_CLUMPED);
-			}
-		} else {
-			const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
-			U32 characters_non_standard = 0;
-			for(U32 c = 0; c < length_shortest; ++c){
-				characters_non_standard += (meta.alleles[allele].allele[c] != 'A' && meta.alleles[allele].allele[c] != 'T' && meta.alleles[allele].allele[c] != 'C' && meta.alleles[allele].allele[c] !='G');
-			}
-			if(characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
-			else return(YON_VARIANT_CLASS_INDEL);
-		}
-		return(YON_VARIANT_CLASS_UNKNOWN);
-	}
+	// Requires genotypes
+	bool filterAlleleFrequency();
+	bool filterKnownNovel();
+	bool filterUniformMatchPhase();
+	bool filterUncalled();
+	bool filterVariantClassification();
+	bool filterSampleList();
+	bool filterUnseenAlternativeAlleles();
+	bool filterPloidy();
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
@@ -764,7 +748,7 @@ public:
 		return(strand_bias_p_values);
 	}
 
-	void getGenotypeSummary(buffer_type& buffer, const U32& individual, objects_type& objects) const{
+	void getGenotypeSummary(buffer_type& buffer, const U32& position, objects_type& objects) const{
 		if(this->settings.load_alleles == false || this->settings.load_genotypes_all == false || this->settings.load_controller == false || this->settings.load_set_membership == false){
 			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
 			return;
@@ -777,7 +761,7 @@ public:
 		//U32 n_variants_parsed = 0;
 
 		//for(U32 i = 0; i < objects.genotypes->size(); ++i){
-			if(objects.meta->at(individual).isDiploid() == false){
+			if(objects.meta->at(position).isDiploid() == false){
 				std::cerr << "is not diploid" << std::endl;
 				return;
 			}
@@ -785,18 +769,19 @@ public:
 			// If set membership is -1 then calculate all fields
 			// Set target FLAG set to all ones; update with actual values if they exist
 			U16 target_flag_set = 65535;
-			if(objects.meta->at(individual).getInfoPatternID() != -1)
-				target_flag_set = objects.additional_info_execute_flag_set[objects.meta->at(individual).getInfoPatternID()];
+			if(objects.meta->at(position).getInfoPatternID() != -1)
+				target_flag_set = objects.additional_info_execute_flag_set[objects.meta->at(position).getInfoPatternID()];
 
 			// Get genotype summary data
-			objects.genotypes->at(individual).getSummary(*objects.genotype_summary);
-			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(individual));
-			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(individual));
+			objects.genotypes->at(position).getSummary(*objects.genotype_summary);
+			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(position));
+			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(position));
+
 
 			//utility::to_vcf_string(stream, this->settings.custom_delimiter_char, meta, this->header);
 
 			if(target_flag_set & 1){
-				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta->at(individual), *objects.genotype_summary, true);
+				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta->at(position), *objects.genotype_summary, true);
 				buffer += "FS_A=";
 				buffer.AddReadble(allele_bias[0]);
 				for(U32 p = 1; p < allele_bias.size(); ++p){
@@ -827,7 +812,7 @@ public:
 			if(target_flag_set & 16){
 				buffer += ";AC=";
 				buffer.AddReadble(objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p]);
 				}
@@ -836,7 +821,7 @@ public:
 			if(target_flag_set & 32){
 				buffer += ";AC_FWD=";
 				buffer.AddReadble(objects.genotype_summary->vectorA_[2]);
-				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p]);
 				}
@@ -845,7 +830,7 @@ public:
 			if(target_flag_set & 64){
 				buffer += ";AC_REV=";
 				buffer.AddReadble(objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta->at(individual).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorB_[2+p]);
 				}
@@ -872,16 +857,30 @@ public:
 			if(target_flag_set & 512){
 				// Classify
 				buffer += ";VT=";
-				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(individual), 1)];
+				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(position), 1)];
 
-				for(U32 p = 2; p < objects.meta->at(individual).n_alleles; ++p){
+				for(U32 p = 2; p < objects.meta->at(position).n_alleles; ++p){
 					buffer += ',';
-					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(individual), p)];
+					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(position), p)];
 				}
 			}
 
 			if(target_flag_set & 1024){
-				if(objects.meta->at(individual).n_alleles != 2) buffer += ";MULTI_ALLELIC";
+				if(objects.meta->at(position).n_alleles != 2) buffer += ";MULTI_ALLELIC";
+			}
+
+			// Population inbreeding coefficient: F = (Hexp - Hobs) /Hexp
+			if(target_flag_set & 2048){
+				// Allele frequency of A
+				const double p = ((double)2*objects.genotype_summary->matrix_[2][2] + objects.genotype_summary->matrix_[2][3] + objects.genotype_summary->matrix_[3][2]) / (2*objects.genotype_summary->genotypeCount());
+				// Genotype frequency of heterozyotes
+				const double pg = ((double)objects.genotype_summary->matrix_[2][3] + objects.genotype_summary->matrix_[3][2]) / objects.genotype_summary->genotypeCount();
+				// Expected heterozygosity
+				const double exp = 2*p*(1-p);
+				// Population inbreeding coefficient: F
+				const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
+				buffer += ";F_PIC=";
+				buffer.AddReadble(f_pic);
 			}
 
 			//stream.put('\n');

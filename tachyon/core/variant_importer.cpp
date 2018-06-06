@@ -104,7 +104,7 @@ bool VariantImporter::BuildBCF(void){
 	core::VariantHeader header(*this->header);
 	header.literals += "\n##tachyon_importVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 	header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
+	                +  SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 	header.literals += "\n##tachyon_importCommand=import -i " + this->settings_.input_file +
 	                   " -o " + this->settings_.output_prefix +
 					   " -c " + std::to_string(this->settings_.checkpoint_n_snps) +
@@ -147,6 +147,7 @@ bool VariantImporter::BuildBCF(void){
 		}
 	}
 
+	// Set flag if genotypes are available
 	this->block.header.controller.hasGT = this->GT_available_;
 
 	// Resize containers
@@ -214,7 +215,7 @@ bool VariantImporter::BuildBCF(void){
 		// Load meta data
 		for(U32 i = 0; i < reader.size(); ++i){
 			new( meta_entries + i ) meta_type( reader[i], this->block.header.minPosition );
-			if(!this->add(meta_entries[i], reader[i])){
+			if(!this->addSite(meta_entries[i], reader[i])){
 				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
 				return false;
 			}
@@ -436,7 +437,7 @@ bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_
 	return true;
 }
 
-bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
+bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->header->getContig(entry.body->CHROM).name << ':' << entry.body->POS+1 << " > reported max size of contig (" << this->header->getContig(entry.body->CHROM).bp_length << ")..." << std::endl;
@@ -448,8 +449,6 @@ bool VariantImporter::add(meta_type& meta, bcf_entry_type& entry){
 		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
 		return false;
 	}
-
-
 
 	// Add meta
 	//this->block += meta;
