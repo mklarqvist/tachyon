@@ -252,12 +252,13 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(std::vector<tachyon
 		BYTE alleleB     = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 
 		// 0 is missing, 1 is EOV
-		if(this->at(i) == 0)      alleleA = -1;
-		else if(this->at(i) == 1) alleleA = -2;
-		else {
-			alleleA -= 2;
-			alleleB -= 2;
-		}
+		if(alleleA == 0)      alleleA = -1;
+		else if(alleleA == 1) alleleA = -2;
+		else alleleA -= 2;
+
+		if(alleleB == 0)      alleleB = -1;
+		else if(alleleB == 1) alleleB = -2;
+		else alleleB -= 2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;

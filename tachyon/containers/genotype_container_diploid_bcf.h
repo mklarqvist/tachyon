@@ -148,12 +148,30 @@ void GenotypeContainerDiploidBCF<T>::getObjects(std::vector<core::GTObject>& obj
 	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
 
 	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
+	//std::cerr << std::bitset<32>((1 << (U32)shift) - 1) << std::endl;
+	//std::cerr << std::bitset<32>(((1 << (U32)shift) - 1) << shift) << std::endl;
 
 	for(U32 i = 0; i < this->n_entries; ++i){
 		delete [] entries[i].alleles;
 		entries[i].alleles = new std::pair<char,char>[2];
-		entries[i].alleles[0].first  = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
-		entries[i].alleles[1].first  = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
+		BYTE alleleA     = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
+		BYTE alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
+
+		//if(this->getMeta().position+1 == 155791)
+		//std::cerr << std::bitset<32>(this->at(i)) << " " << std::bitset<32>(alleleA) << " " << std::bitset<32>(alleleB) << std::endl;
+
+
+		// 0 is missing, 1 is EOV
+		if(alleleA == 0)      alleleA = -1;
+		else if(alleleA == 1) alleleA = -2;
+		else alleleA -= 2;
+
+		if(alleleB == 0)      alleleB = -1;
+		else if(alleleB == 1) alleleB = -2;
+		else alleleB -= 2;
+
+		entries[i].alleles[0].first  = alleleA;
+		entries[i].alleles[1].first  = alleleB;
 		entries[i].alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
 		entries[i].alleles[1].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
 		entries[i].n_objects = 1;

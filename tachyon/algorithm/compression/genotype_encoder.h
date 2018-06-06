@@ -242,16 +242,36 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
 	// Start of GT byte stream
 	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 
+	const U64 lookup[9] = {0, 0x81, 0x8001, 0, 0x80000000, 0, 0};
+	const U64& targetLookup = lookup[sizeof(BCF_GT_TYPE)];
+	assert(targetLookup != 0);
+
 	// Pack genotypes as
 	// allele A | allele B | phasing information
 	U32 ppa_pos = 0;
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy){
-		const BCF_GT_TYPE& allele1 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos]]);
-		const BCF_GT_TYPE& allele2 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos] + sizeof(BCF_GT_TYPE)]);
+		BCF_GT_TYPE allele1 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos]]);
+		BCF_GT_TYPE allele2 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos] + sizeof(BCF_GT_TYPE)]);
+		const bool phasing = allele2 & 1;
 
-		const YON_RLE_TYPE packed = ((allele2 >> 1) << (shift_size + 1)) |
-				                    ((allele1 >> 1) << 1) |
-									 (allele2 &  1);
+		if(bcf_entry.body->POS+1 ==155791){
+			std::cerr << std::bitset<32>(allele1) << " " << std::bitset<32>(allele2) << std::endl;
+		}
+
+		if((allele1 >> 1) == 0)  allele1 = 0;
+		else if(allele1 == targetLookup) allele1 = 1;
+		else allele1 = ((allele1 >> 1) - 1) + 2;
+		if((allele2 >> 1) == 0)  allele2 = 0;
+		else if(allele2 == targetLookup) allele2 = 1;
+		else allele2 = ((allele2 >> 1) - 1) + 2;
+
+		const YON_RLE_TYPE packed = (allele1 << (shift_size + 1)) |
+				                    (allele2 << 1) |
+									(phasing &  1);
+
+		if(bcf_entry.body->POS+1 ==155791){
+			std::cerr << std::bitset<32>(packed) << std::endl;
+		}
 		simple.AddLiteral(packed);
 		++ppa_pos;
 	}

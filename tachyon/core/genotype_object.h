@@ -11,9 +11,11 @@ namespace core{
 #define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD)     ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
 #define YON_GT_DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) (((A) & (mask)) << (shift)) | ((B) & (mask))
 
-#define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> (SHIFT)) & ((1 << (SHIFT)) - 1))
-#define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       ((PRIMITIVE) & ((1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> ((SHIFT) + 1)) & ((1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & ((1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
+
+//const BYTE YON_GT_VCF_ADJUST[3] = {}
 
 struct GTObject{
 private:

@@ -91,9 +91,9 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 
 		// BCF-style cost
 		U32 costBCFStyle = this->n_samples; // cost for BCF-style encoding
-		if(bcf_entry.body->n_allele + 1 < 8)          costBCFStyle *= sizeof(SBYTE);
-		else if(bcf_entry.body->n_allele + 1 < 128)   costBCFStyle *= sizeof(S16);
-		else if(bcf_entry.body->n_allele + 1 < 32768) costBCFStyle *= sizeof(S32);
+		if(bcf_entry.body->n_allele + 2 < 8)          costBCFStyle *= sizeof(SBYTE);
+		else if(bcf_entry.body->n_allele + 2 < 128)   costBCFStyle *= sizeof(S16);
+		else if(bcf_entry.body->n_allele + 2 < 32768) costBCFStyle *= sizeof(S32);
 
 		// RLE is cheaper
 		if(cost.word_width * cost.n_runs < costBCFStyle){
@@ -142,19 +142,19 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 
 
 			U64 n_runs = this->n_samples;
-			if(bcf_entry.body->n_allele + 1 < 8){
+			if(bcf_entry.body->n_allele + 2 < 8){
 				meta.controller.gt_primtive_type = YON_GT_BYTE;
 				this->EncodeDiploidBCF<BYTE>(bcf_entry, block.gt_simple8_container, n_runs, ppa);
 				++block.gt_simple8_container;
 				++this->stats_.diploid_bcf_counts[0];
 			}
-			else if(bcf_entry.body->n_allele + 1 < 128){
+			else if(bcf_entry.body->n_allele + 2 < 128){
 				meta.controller.gt_primtive_type = YON_GT_U16;
 				this->EncodeDiploidBCF<U16> (bcf_entry, block.gt_simple16_container, n_runs, ppa);
 				++block.gt_simple16_container;
 				++this->stats_.diploid_bcf_counts[1];
 			}
-			else if(bcf_entry.body->n_allele + 1 < 32768){
+			else if(bcf_entry.body->n_allele + 2 < 32768){
 				meta.controller.gt_primtive_type = YON_GT_U32;
 				this->EncodeDiploidBCF<U32> (bcf_entry, block.gt_simple32_container, n_runs, ppa);
 				++block.gt_simple32_container;
@@ -178,19 +178,19 @@ bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 
 		U64 n_runs = this->n_samples*bcf_entry.gt_support.ploidy;
 
-		if(bcf_entry.body->n_allele + 1 < 8){
+		if(bcf_entry.body->n_allele + 2 < 8){
 			this->EncodeBCFStyle<BYTE>(bcf_entry, block.gt_simple8_container, n_runs);
 			++block.gt_simple8_container;
 			meta.controller.gt_primtive_type = YON_GT_BYTE;
 			++this->stats_.bcf_counts[0];
 		}
-		else if(bcf_entry.body->n_allele + 1 < 128){
+		else if(bcf_entry.body->n_allele + 2 < 128){
 			this->EncodeBCFStyle<U16> (bcf_entry, block.gt_simple16_container, n_runs);
 			++block.gt_simple16_container;
 			meta.controller.gt_primtive_type = YON_GT_U16;
 			++this->stats_.bcf_counts[1];
 		}
-		else if(bcf_entry.body->n_allele + 1 < 32768){
+		else if(bcf_entry.body->n_allele + 2 < 32768){
 			this->EncodeBCFStyle<U32> (bcf_entry, block.gt_simple32_container, n_runs);
 			++block.gt_simple32_container;
 			meta.controller.gt_primtive_type = YON_GT_U32;
