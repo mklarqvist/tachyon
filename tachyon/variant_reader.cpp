@@ -280,14 +280,14 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	//
 	// This vector stores the number of INFO fields having set membership with this
 	// particular hash pattern
-	objects.info_keep = std::vector<U32>(this->block.footer.n_info_patterns, 0);
+	objects.info_keep   = std::vector<U32>(this->block.footer.n_info_patterns, 0);
 	objects.format_keep = std::vector<U32>(this->block.footer.n_format_patterns, 0);
 
 	// This vector of vectors keeps the local INFO identifiers for the matched global
 	// identifiers in a given hash pattern
 	//
 	// For example: x[5] contains the local IDs for loaded INFO streams for pattern ID 5
-	objects.local_match_keychain_info = std::vector< std::vector<U32> >(this->block.footer.n_info_patterns);
+	objects.local_match_keychain_info   = std::vector< std::vector<U32> >(this->block.footer.n_info_patterns);
 	objects.local_match_keychain_format = std::vector< std::vector<U32> >(this->block.footer.n_format_patterns);
 
 	// If loading all INFO values then return them in the ORIGINAL order
@@ -517,10 +517,10 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 }
 
 void VariantReader::printFORMATVCF(buffer_type& buffer,
-					const char& delimiter,
-					const U32& position,
-					const objects_type& objects,
-					std::vector<core::GTObject>& genotypes_unpermuted) const
+	                                const char& delimiter,
+	                                 const U32& position,
+	                        const objects_type& objects,
+	               std::vector<core::GTObject>& genotypes_unpermuted) const
 {
 	if(block_settings.load_format && this->block.n_format_loaded){
 		if(this->block.n_format_loaded){
@@ -541,9 +541,9 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				// Begin print FORMAT data for each sample
 				if(this->block.header.controller.hasGT){
 					if(this->block_settings.load_ppa && this->block.header.controller.hasGTPermuted){
-						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber(), this->block.ppa_manager);
+						objects.genotypes->at(position).getObjects(this->header.getSampleNumber(), genotypes_unpermuted, this->block.ppa_manager);
 					} else {
-						objects.genotypes->at(position).getObjects(genotypes_unpermuted, this->header.getSampleNumber());
+						objects.genotypes->at(position).getObjects(this->header.getSampleNumber(), genotypes_unpermuted);
 					}
 
 					buffer << genotypes_unpermuted[0];

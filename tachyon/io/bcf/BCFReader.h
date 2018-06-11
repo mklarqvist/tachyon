@@ -129,6 +129,7 @@ public:
 	bool getVariants(const U32 n_variants, const double bp_window, bool across_contigs = false); // get N number of variants into buffer
 
 	inline const bool hasCarryOver(void) const{ return(this->n_carry_over); }
+	inline void setFilterInvariantSites(const bool yes){ this->skip_invariant_sites; }
 
 private:
 	/**<
@@ -155,6 +156,7 @@ public:
 	size_type            n_carry_over;
 	pointer              entries;
 	U64                  b_data_read;
+	bool                 skip_invariant_sites;
 };
 
 }

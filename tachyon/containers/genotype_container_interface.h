@@ -65,10 +65,9 @@ public:
     virtual std::vector<gt_object> getLiteralObjects(void) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
+	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const =0;
+	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const =0;
 	virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
-	virtual void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const =0;
-	virtual void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const =0;
-
     virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 
     // Capacity

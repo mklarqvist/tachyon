@@ -254,10 +254,6 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
 		BCF_GT_TYPE allele2 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos] + sizeof(BCF_GT_TYPE)]);
 		const bool phasing = allele2 & 1;
 
-		if(bcf_entry.body->POS+1 ==155791){
-			std::cerr << std::bitset<32>(allele1) << " " << std::bitset<32>(allele2) << std::endl;
-		}
-
 		if((allele1 >> 1) == 0)  allele1 = 0;
 		else if(allele1 == targetLookup) allele1 = 1;
 		else allele1 = ((allele1 >> 1) - 1) + 2;

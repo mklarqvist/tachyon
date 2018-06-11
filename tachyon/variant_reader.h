@@ -521,7 +521,12 @@ public:
 		io::BasicBuffer output_buffer(256000);
 		if(this->block_settings.load_format) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
 
+		// Todo: in cases of non-diploid
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
+		for(U32 i = 0; i < this->header.getSampleNumber(); ++i){
+			//std::cerr << i << "/" << this->header.getSampleNumber() << std::endl;
+			genotypes_unpermuted[i].alleles = new std::pair<char,char>;
+		}
 
 		print_format_function print_format = &self_type::printFORMATDummy;
 		if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
@@ -681,21 +686,23 @@ public:
 	// Todo: filter parameterse in class
 
 	// Does not require genotypes
-	void filterRegions(void) const; // Filter by target intervals
-	void filterFILTER(void) const;  // Filter by desired FILTER values
+	bool filterRegions(void) const; // Filter by target intervals
+	bool filterFILTER(void) const;  // Filter by desired FILTER values
 
 	//
-	void filterINFO(const U32 filter_id); // custoom filter. e.g. AC<1024
+	bool filterINFO(const U32 filter_id); // custoom filter. e.g. AC<1024
+
+
+	bool filterUniformMatchPhase();
+	bool filterUncalled();
+	bool filterPloidy();
+	bool filterSampleList();
+	bool filterKnownNovel();
 
 	// Requires genotypes
 	bool filterAlleleFrequency();
-	bool filterKnownNovel();
-	bool filterUniformMatchPhase();
-	bool filterUncalled();
 	bool filterVariantClassification();
-	bool filterSampleList();
 	bool filterUnseenAlternativeAlleles();
-	bool filterPloidy();
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->

@@ -47,26 +47,22 @@ bool VariantImporter::Build(){
 }
 
 bool VariantImporter::BuildBCF(void){
-	bcf_reader_type reader;
-	if(!reader.open(this->settings_.input_file)){
+	bcf_reader_type bcf_reader;
+	if(!bcf_reader.open(this->settings_.input_file)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
 		return false;
 	}
 
-	encryption::EncryptionDecorator encryptionManager;
+	encryption::EncryptionDecorator encryption_manager;
 	encryption::Keychain keychain;
 
-	this->header = &reader.header;
+	this->header = &bcf_reader.header;
 
 	// Spawn RLE controller and update PPA controller
 	this->encoder.setSamples(this->header->samples);
 	this->block.ppa_manager.setSamples(this->header->samples);
-	// temp
-	//permutation_type haploid_permuter;
 	this->permutator.manager = &this->block.ppa_manager;
-	//this->permutator.manager_haploid = &haploid_permuter;
 	this->permutator.setSamples(this->header->samples);
-	//haploid_permuter.setSamples(this->header->samples*2);
 
 	if(this->settings_.output_prefix.size() == 0) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
@@ -105,11 +101,8 @@ bool VariantImporter::BuildBCF(void){
 	header.literals += "\n##tachyon_importVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 	header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 	                +  SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
-	header.literals += "\n##tachyon_importCommand=import -i " + this->settings_.input_file +
-	                   " -o " + this->settings_.output_prefix +
-					   " -c " + std::to_string(this->settings_.checkpoint_n_snps) +
-					   " -C " + std::to_string(this->settings_.checkpoint_bases) +
-					   " -L " + std::to_string(this->settings_.compression_level);
+	header.literals += "\n" + this->settings_.getInterpretedString();
+
 	if(this->settings_.encrypt_data) header.literals += " -k";
 	if(this->settings_.permute_genotypes) header.literals += " -P";
 	else header.literals += " -p";
@@ -127,7 +120,7 @@ bool VariantImporter::BuildBCF(void){
 	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
-			reader.map_gt_id = this->header->format_map[i].IDX;
+			bcf_reader.map_gt_id = this->header->format_map[i].IDX;
 		}
 	}
 
@@ -158,9 +151,9 @@ bool VariantImporter::BuildBCF(void){
 	algorithm::VariantDigitalDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
 
 	// Start import
-	U32 previousFirst    = 0;
-	U32 previousLast     = 0;
-	S32 previousContigID = -1;
+	U32 previous_first     = 0;
+	U32 previous_last      = 0;
+	S32 previous_contig_ID = -1;
 
 	// Begin import
 	// Get BCF entries
@@ -173,26 +166,27 @@ bool VariantImporter::BuildBCF(void){
 		"Elapsed " << "Contig:from->to" << std::endl;
 	}
 
+	bcf_reader.setFilterInvariantSites(this->settings_.drop_invariant_sites);
 	while(true){
 		// Retrieve BCF records
-		if(!reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
+		if(!bcf_reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}
 
 		// Debug assertion
 #if IMPORT_ASSERT == 1
-		if(reader.front().body->CHROM == previousContigID){
-			if(!(reader.front().body->POS >= previousFirst && reader.front().body->POS >= previousLast)){
-				std::cerr << utility::timestamp("ERROR","IMPORT") << reader.front().body->POS << '/' << previousFirst << '/' << previousLast << std::endl;
-				std::cerr << reader[reader.n_entries].body->POS << std::endl;
+		if(bcf_reader.front().body->CHROM == previous_contig_ID){
+			if(!(bcf_reader.front().body->POS >= previous_first && bcf_reader.front().body->POS >= previous_last)){
+				std::cerr << utility::timestamp("ERROR","IMPORT") << bcf_reader.front().body->POS << '/' << previous_first << '/' << previous_last << std::endl;
+				std::cerr << bcf_reader[bcf_reader.n_entries].body->POS << std::endl;
 				exit(1);
 			}
 		}
 #endif
 		this->block.header.blockID     = this->writer->n_blocks_written;
-		this->block.header.contigID    = reader.front().body->CHROM;
-		this->block.header.minPosition = reader.front().body->POS;
-		this->block.header.maxPosition = reader.back().body->POS;
+		this->block.header.contigID    = bcf_reader.front().body->CHROM;
+		this->block.header.minPosition = bcf_reader.front().body->POS;
+		this->block.header.maxPosition = bcf_reader.back().body->POS;
 		this->block.header.controller.hasGT         = this->GT_available_;
 		this->block.header.controller.hasGTPermuted = this->settings_.permute_genotypes;
 		// if there is 0 or 1 samples then GT data is never permuted
@@ -201,7 +195,7 @@ bool VariantImporter::BuildBCF(void){
 
 		// Permute GT if GT is available and the appropriate flag is triggered
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
-			if(!this->permutator.build(reader)){
+			if(!this->permutator.build(bcf_reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
@@ -211,29 +205,29 @@ bool VariantImporter::BuildBCF(void){
 		// Start new
 		// Perform parsing of BCF entries in memory
 		// Split out RLE compression and importing other INFO/FORMAT
-		meta_type* meta_entries = static_cast<meta_type*>(::operator new[](reader.size() * sizeof(meta_type)));
+		meta_type* meta_entries = static_cast<meta_type*>(::operator new[](bcf_reader.size() * sizeof(meta_type)));
 
 		// Load meta data
-		for(U32 i = 0; i < reader.size(); ++i){
-			new( meta_entries + i ) meta_type( reader[i], this->block.header.minPosition );
-			if(!this->addSite(meta_entries[i], reader[i])){
+		for(U32 i = 0; i < bcf_reader.size(); ++i){
+			new( meta_entries + i ) meta_type( bcf_reader[i], this->block.header.minPosition );
+			if(!this->addSite(meta_entries[i], bcf_reader[i])){
 				std::cerr << utility::timestamp("ERROR","IMPORT") << "Failed to add BCF entry..." << std::endl;
 				return false;
 			}
 		}
 		// Add genotypes in parallel
-		this->addGenotypes(reader, meta_entries);
+		this->addGenotypes(bcf_reader, meta_entries);
 		// Overload
-		for(U32 i = 0; i < reader.size(); ++i) this->block += meta_entries[i];
+		for(U32 i = 0; i < bcf_reader.size(); ++i) this->block += meta_entries[i];
 
 		// Clean up
-		for(std::size_t i = 0; i < reader.size(); ++i) (meta_entries + i)->~MetaEntry();
+		for(std::size_t i = 0; i < bcf_reader.size(); ++i) (meta_entries + i)->~MetaEntry();
 		::operator delete[](static_cast<void*>(meta_entries));
 		//\////////////////////////////////////////////////
 
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
-		this->block.header.n_variants       = reader.size();
+		this->block.header.n_variants       = bcf_reader.size();
 		this->block.finalize();
 
 		// Perform compression using standard parameters
@@ -248,7 +242,7 @@ bool VariantImporter::BuildBCF(void){
 		// Encryption
 		if(this->settings_.encrypt_data){
 			this->block.header.controller.anyEncrypted = true;
-			if(!encryptionManager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
+			if(!encryption_manager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
 			}
 		}
@@ -276,33 +270,33 @@ bool VariantImporter::BuildBCF(void){
 		// Update index
 		this->index_entry.blockID         = this->block.header.blockID;
 		this->index_entry.byte_offset_end = this->writer->stream->tellp();
-		this->index_entry.contigID        = reader.front().body->CHROM;
-		this->index_entry.minPosition     = reader.front().body->POS;
-		this->index_entry.maxPosition     = reader.back().body->POS;
-		this->index_entry.n_variants      = reader.size();
+		this->index_entry.contigID        = bcf_reader.front().body->CHROM;
+		this->index_entry.minPosition     = bcf_reader.front().body->POS;
+		this->index_entry.maxPosition     = bcf_reader.back().body->POS;
+		this->index_entry.n_variants      = bcf_reader.size();
 		this->writer->index.index_.linear_at(index_entry.contigID) += this->index_entry; // Todo: beautify
 		this->index_entry.reset();
 
 		++this->writer->n_blocks_written;
-		this->writer->n_variants_written += reader.size();
+		this->writer->n_variants_written += bcf_reader.size();
 		++this->writer->index.number_blocks;
 
 		if(!SILENT){
 			std::cerr << utility::timestamp("PROGRESS") <<
 			std::setfill(' ') << std::setw(10) << this->writer->n_variants_written << ' ' <<
 			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(this->writer->stream->tellp()) << '\t' <<
-			std::setfill(' ') << std::setw(8)  << (double)reader.stream.tellg()/reader.filesize*100 << "%" << ' ' <<
+			std::setfill(' ') << std::setw(8)  << (double)bcf_reader.stream.tellg()/bcf_reader.filesize*100 << "%" << ' ' <<
 			timer.ElapsedString() << ' ' <<
-			header.contigs[reader.front().body->CHROM].name << ":" << reader.front().body->POS+1 << "->" << reader.back().body->POS+1 << std::endl;
+			header.contigs[bcf_reader.front().body->CHROM].name << ":" << bcf_reader.front().body->POS+1 << "->" << bcf_reader.back().body->POS+1 << std::endl;
 		}
 
 		// Reset and update
 		this->block.clear();
 		this->permutator.reset();
 		this->writer->stream->flush();
-		previousContigID = reader.front().body->CHROM;
-		previousFirst    = reader.front().body->POS;
-		previousLast     = reader.back().body->POS;
+		previous_contig_ID = bcf_reader.front().body->CHROM;
+		previous_first    = bcf_reader.front().body->POS;
+		previous_last     = bcf_reader.back().body->POS;
 		this->index_entry.reset();
 	}
 	// Done importing
@@ -353,8 +347,8 @@ bool VariantImporter::BuildBCF(void){
 			for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   writer_stats << "INFO_" << header.info_fields[i].ID << '\t' << this->stats_info[i] << std::endl;
 			for(U32 i = 0; i < header.header_magic.n_format_values; ++i) writer_stats << "FORMAT_" << header.format_fields[i].ID << '\t' << this->stats_format[i] << std::endl;
 
-			writer_stats << "BCF\t" << reader.filesize << "\t" << reader.b_data_read << '\t' << (float)reader.b_data_read/reader.filesize << std::endl;
-			writer_stats << "YON\t" << this->writer->stream->tellp() << "\t" << total_uncompressed << '\t' << (float)reader.b_data_read/this->writer->stream->tellp() << std::endl;
+			writer_stats << "BCF\t" << bcf_reader.filesize << "\t" << bcf_reader.b_data_read << '\t' << (float)bcf_reader.b_data_read/bcf_reader.filesize << std::endl;
+			writer_stats << "YON\t" << this->writer->stream->tellp() << "\t" << total_uncompressed << '\t' << (float)bcf_reader.b_data_read/this->writer->stream->tellp() << std::endl;
 			writer_stats.close();
 		} else {
 			std::cerr << utility::timestamp("ERROR", "SUPPORT")  << "Failed to open: " << (wstats->basePath + wstats->baseName + "_yon_stats.txt") << "... Continuing..." << std::endl;

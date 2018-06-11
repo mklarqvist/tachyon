@@ -36,9 +36,12 @@ void import_usage(void){
 	"  -i FILE  input BCF file (required)\n"
 	"  -o FILE  output file prefix (required)\n"
 	"  -c INT   Import checkpoint size in number of variants (default: 1000)\n"
-	"  -C FLOAT Import checkpoint size in bases (defaukt: 5 Mb)\n"
+	"  -C FLOAT Import checkpoint size in bases (default: 5 Mb)\n"
+	"  -L INT   Compression level 1-20 (default: 6)\n"
+	"  -t INT   Number of compression threads (default: all available)\n"
 	"  -p/-P    Permute/Do not permute diploid genotypes\n"
 	"  -e       Encrypt data (default AES-256)\n"
+	"  -d       Drop invariant sites (all REF or ALT)\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -60,7 +63,7 @@ int import(int argc, char** argv){
 		{"output",              optional_argument, 0, 'o' },
 		{"checkpoint-variants", optional_argument, 0, 'c' },
 		{"checkpoint-bases",    optional_argument, 0, 'C' },
-		{"compression-level",    optional_argument, 0, 'L' },
+		{"compression-level",   optional_argument, 0, 'L' },
 		{"permute",             no_argument,       0, 'p' },
 		{"encrypt",             no_argument,       0, 'e' },
 		{"no-permute",          no_argument,       0, 'P' },

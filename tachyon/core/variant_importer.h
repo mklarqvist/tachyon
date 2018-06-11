@@ -24,16 +24,25 @@ public:
 	VariantImporterSettings() :
 		permute_genotypes(true),
 		encrypt_data(false),
-		drop_empty_sites(false),
+		drop_invariant_sites(false),
 		checkpoint_n_snps(1000),
 		checkpoint_bases(10e6),
 		n_threads(std::thread::hardware_concurrency()),
 		info_end_key(-1),
 		info_svlen_key(-1),
-		compression_level(10)
+		compression_level(6)
 	{}
 
 	~VariantImporterSettings() = default;
+
+	std::string getInterpretedString(void) const{
+		return(std::string("##tachyon_importInterpretedCommand=input_file=" + this->input_file +
+		   ";output_prefix=" + this->output_prefix +
+		   ";checkpoint_snps=" + std::to_string(this->checkpoint_n_snps) +
+		   ";checkpoint_bases=" + std::to_string(this->checkpoint_bases) +
+		   ";compression_level=" + std::to_string(this->compression_level)
+		));
+	}
 
 	inline void setInputFile(const std::string& input_name){ this->input_file = input_name; }
 	inline void setOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
@@ -45,9 +54,9 @@ public:
 public:
 	bool permute_genotypes;   // permute GT flag
 	bool encrypt_data;        // encryption flag
-	bool drop_empty_sites;    // drop sites with no variant data
+	bool drop_invariant_sites;// drop sites that are invariant
 	U32 checkpoint_n_snps;    // number of variants until checkpointing
-	U32 checkpoint_bases;  // number of bases until checkpointing
+	U32 checkpoint_bases;     // number of bases until checkpointing
 	U32 n_threads;            // number of parallel importer threads
 	S32 info_end_key;         // key mapping to the INFO field END
 	S32 info_svlen_key;       // key mapping to the INFO field SVLEN

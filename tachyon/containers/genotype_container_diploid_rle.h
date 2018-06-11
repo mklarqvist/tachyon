@@ -40,9 +40,9 @@ public:
     std::vector<gt_object> getLiteralObjects(void) const;
     std::vector<gt_object> getObjects(const U64& n_samples) const;
     std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
-    void getLiteralObjects(std::vector<gt_object>& objects) const;
-	void getObjects(std::vector<gt_object>& objects, const U64& n_samples) const;
-	void getObjects(std::vector<gt_object>& objects, const U64& n_samples, const permutation_type& ppa_manager) const;
+    void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
+	void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
+	void getLiteralObjects(std::vector<gt_object>& objects) const;
 
     gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
@@ -173,7 +173,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 			entries[cum_pos].alleles[0].second = phasing;
 			entries[cum_pos].alleles[1].second = phasing;
 			entries[cum_pos].n_objects = 1;
-			entries[cum_pos].n_alleles = 2;
+			entries[cum_pos].n_ploidy = 2;
 		}
 	}
 	//assert(cum_pos == n_samples);
@@ -193,8 +193,8 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		SBYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		SBYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		if(alleleA == 2) alleleA = -1;
-		if(alleleB == 2) alleleB = -1;
+		if(alleleA == 2) alleleA = -2;
+		if(alleleB == 2) alleleB = -2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
@@ -207,7 +207,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
 			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
-			entries[ppa_manager[cum_pos]].n_alleles = 2;
+			entries[ppa_manager[cum_pos]].n_ploidy = 2;
 		}
 	}
 
@@ -223,66 +223,66 @@ void GenotypeContainerDiploidRLE<T>::getLiteralObjects(std::vector<tachyon::core
 		entries[i](this->at(i), this->__meta);
 }
 
+// Todo
 template <class T>
-void GenotypeContainerDiploidRLE<T>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples) const{
+void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples, std::vector<core::GTObject>& objects) const{
 	if(objects.size() < n_samples) objects.resize(n_samples);
-	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
+	core::GTObjectDiploidRLE* entries = reinterpret_cast<core::GTObjectDiploidRLE*>(&objects[0]);
 
 	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
 	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
-	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		const BYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		S32 alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		S32 alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		if(alleleA == 2) alleleA = -2;
+		if(alleleB == 2) alleleB = -2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
 		else    phasing = this->__meta.getControllerPhase();
 
-		for(U32 j = 0; j < length; ++j, cum_pos++){
-			delete [] entries[cum_pos].alleles;
-			entries[cum_pos].alleles = new std::pair<char,char>[2];
-			entries[cum_pos].alleles[0].first  = alleleA;
-			entries[cum_pos].alleles[1].first  = alleleB;
-			entries[cum_pos].alleles[0].second = phasing;
-			entries[cum_pos].alleles[1].second = phasing;
-			entries[cum_pos].n_objects = 1;
-			entries[cum_pos].n_alleles = 2;
-		}
+		entries[i](length, alleleA, alleleB, phasing);
 	}
 }
 
+// Todo
 template <class T>
-void GenotypeContainerDiploidRLE<T>::getObjects(std::vector<tachyon::core::GTObject>& objects, const U64& n_samples, const permutation_type& ppa_manager) const{
-	if(objects.size() != n_samples) objects.resize(n_samples);
+void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
+	                          std::vector<core::GTObject>& objects,
+	                               const permutation_type& ppa_manager) const{
+	if(objects.size() != n_samples){
+		objects.resize(n_samples);
+		for(U32 i = 0; i < n_samples; ++i)
+			objects[i].alleles = new std::pair<char,char>[2];
+	}
 	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
 
 	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
 	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
+	S32 alleleA, alleleB;
+	U32 length;
+	BYTE phasing = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
-		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		SBYTE alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		SBYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		if(alleleA == 2) alleleA = -1;
-		if(alleleB == 2) alleleB = -1;
+		length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		alleleA -= core::YON_GT_RLE_CORRECTION[alleleA];
+		alleleB -= core::YON_GT_RLE_CORRECTION[alleleB];
 
-		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			delete [] entries[ppa_manager[cum_pos]].alleles;
-			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
 			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
 			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
 			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
 			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
-			entries[ppa_manager[cum_pos]].n_alleles = 2;
+			entries[ppa_manager[cum_pos]].n_ploidy  = 2;
 		}
 	}
 }
