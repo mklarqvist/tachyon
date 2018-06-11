@@ -160,13 +160,19 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 	if(objects.size() < n_samples) objects.resize(n_samples);
 	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
 
-	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
+	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 
 	for(U32 i = 0; i < this->n_entries; ++i){
 		S32 alleleA     = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
 		S32 alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
 		alleleA -= 2; alleleB -= 2;
-		entries[i](1, alleleA, alleleB, YON_GT_DIPLOID_BCF_PHASE(this->at(i)));
+
+		entries[i].alleles[0].allele  = alleleA;
+		entries[i].alleles[1].allele  = alleleB;
+		entries[i].alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].alleles[1].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].n_objects = 1;
+		entries[i].n_ploidy = 2;
 	}
 }
 
@@ -178,12 +184,17 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 
-	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		S32 alleleA     = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
 		S32 alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
 		alleleA -= 2; alleleB -= 2;
-		entries[ppa_manager[cum_pos]](1, alleleA, alleleB, YON_GT_DIPLOID_BCF_PHASE(this->at(i)));
+
+		entries[ppa_manager[i]].alleles[0].allele  = alleleA;
+		entries[ppa_manager[i]].alleles[1].allele  = alleleB;
+		entries[ppa_manager[i]].alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[i]].alleles[1].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[i]].n_objects = 1;
+		entries[ppa_manager[i]].n_ploidy = 2;
 	}
 }
 

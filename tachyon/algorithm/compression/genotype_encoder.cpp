@@ -587,7 +587,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 			//std::cerr << "eov" << std::endl;
 		} else {
 			// Add 1 to value
-			allele1 = (((allele1 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele1 & 1);
+			allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV;
 		}
 
 		if((allele2 >> 1) == 0){
@@ -597,9 +597,10 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 			allele2 = 1;
 			//std::cerr << "eov" << std::endl;
 		} else {
-			allele2 = (((allele2 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele2 & 1);
+			allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV;
 		}
 		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+		//const U32 internal = ((allele2) << ((shift) + (add))) | ((allele1) << (add)) | ((allele2) & (add));
 
 		if(ref != internal){
 			ref = internal;

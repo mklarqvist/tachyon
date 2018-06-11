@@ -50,7 +50,7 @@ void VariantBlock::clear(void){
 	this->meta_info_map_ids.reset();
 	this->meta_format_map_ids.reset();
 	this->meta_filter_map_ids.reset();
-	this->gt_support_data_container.reset(); // data (1: diploid-rle, 2: diploid-other, 3: diploid-bcf, 4: other-ploidy-bcf), strides (n_objects OR ploidy for case 4)
+	this->gt_support_data_container.reset();
 	this->gt_rle8_container.reset();
 	this->gt_rle16_container.reset();
 	this->gt_rle32_container.reset();
