@@ -167,11 +167,11 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[cum_pos].alleles = new std::pair<char,char>[2];
-			entries[cum_pos].alleles[0].first  = alleleA;
-			entries[cum_pos].alleles[1].first  = alleleB;
-			entries[cum_pos].alleles[0].second = phasing;
-			entries[cum_pos].alleles[1].second = phasing;
+			entries[cum_pos].alleles = new core::GTObjectAllele[2];
+			entries[cum_pos].alleles[0].allele  = alleleA;
+			entries[cum_pos].alleles[1].allele  = alleleB;
+			entries[cum_pos].alleles[0].phase = phasing;
+			entries[cum_pos].alleles[1].phase = phasing;
 			entries[cum_pos].n_objects = 1;
 			entries[cum_pos].n_ploidy = 2;
 		}
@@ -201,11 +201,11 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getObjects(
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
-			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
-			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
-			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
-			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles = new core::GTObjectAllele[2];
+			entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].allele  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].phase = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].phase = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
 			entries[ppa_manager[cum_pos]].n_ploidy = 2;
 		}
@@ -226,36 +226,10 @@ void GenotypeContainerDiploidRLE<T>::getLiteralObjects(std::vector<tachyon::core
 // Todo
 template <class T>
 void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples, std::vector<core::GTObject>& objects) const{
-	if(objects.size() < n_samples) objects.resize(n_samples);
-	core::GTObjectDiploidRLE* entries = reinterpret_cast<core::GTObjectDiploidRLE*>(&objects[0]);
-
-	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
-	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
-
-	for(U32 i = 0; i < this->n_entries; ++i){
-		const U32  length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		S32 alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		S32 alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		if(alleleA == 2) alleleA = -2;
-		if(alleleB == 2) alleleB = -2;
-
-		BYTE phasing = 0;
-		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta.getControllerPhase();
-
-		entries[i](length, alleleA, alleleB, phasing);
-	}
-}
-
-// Todo
-template <class T>
-void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
-	                          std::vector<core::GTObject>& objects,
-	                               const permutation_type& ppa_manager) const{
 	if(objects.size() != n_samples){
 		objects.resize(n_samples);
 		for(U32 i = 0; i < n_samples; ++i)
-			objects[i].alleles = new std::pair<char,char>[2];
+			objects[i].alleles = new core::GTObjectAllele[2];
 	}
 	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
 
@@ -277,10 +251,50 @@ void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
-			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
-			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
-			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[cum_pos].alleles[0].allele  = alleleA;
+			entries[cum_pos].alleles[1].allele  = alleleB;
+			entries[cum_pos].alleles[0].phase = phasing;
+			entries[cum_pos].alleles[1].phase = phasing;
+			entries[cum_pos].n_objects = 1;
+			entries[cum_pos].n_ploidy  = 2;
+		}
+	}
+}
+
+// Todo
+template <class T>
+void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
+	                          std::vector<core::GTObject>& objects,
+	                               const permutation_type& ppa_manager) const{
+	if(objects.size() != n_samples){
+		objects.resize(n_samples);
+		for(U32 i = 0; i < n_samples; ++i)
+			objects[i].alleles = new core::GTObjectAllele[2];
+	}
+	tachyon::core::GTObjectDiploidRLE* entries = reinterpret_cast<tachyon::core::GTObjectDiploidRLE*>(&objects[0]);
+
+	const BYTE shift = this->__meta.isAnyGTMissing()   ? 2 : 1;
+	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+
+	U32 cum_pos = 0;
+	S32 alleleA, alleleB;
+	U32 length;
+	BYTE phasing = 0;
+	for(U32 i = 0; i < this->n_entries; ++i){
+		length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
+		alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		alleleA -= core::YON_GT_RLE_CORRECTION[alleleA];
+		alleleB -= core::YON_GT_RLE_CORRECTION[alleleB];
+
+		if(add) phasing = this->at(i) & 1;
+		else    phasing = this->__meta.getControllerPhase();
+
+		for(U32 j = 0; j < length; ++j, cum_pos++){
+			entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].allele  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].phase = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].phase = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
 			entries[ppa_manager[cum_pos]].n_ploidy  = 2;
 		}

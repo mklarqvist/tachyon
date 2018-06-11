@@ -102,15 +102,15 @@ std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64
 	const BYTE shift    = (sizeof(T)*8 - 1) / 2;
 
 	for(U32 i = 0; i < this->n_entries; ++i){
-		entries[i].alleles = new std::pair<char,char>[2];
+		entries[i].alleles = new core::GTObjectAllele[2];
 		S32 alleleA     = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
 		S32 alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
 		alleleA -= 2; alleleB -= 2;
 
-		entries[i].alleles[0].first  = alleleA;
-		entries[i].alleles[1].first  = alleleB;
-		entries[i].alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
-		entries[i].alleles[1].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].alleles[0].allele  = alleleA;
+		entries[i].alleles[1].allele  = alleleB;
+		entries[i].alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[i].alleles[1].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
 		entries[i].n_objects = 1;
 		entries[i].n_ploidy = 2;
 	}
@@ -127,15 +127,16 @@ std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getObjects(const U64
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
-		entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
+		delete entries[ppa_manager[cum_pos]].alleles;
+		entries[ppa_manager[cum_pos]].alleles = new core::GTObjectAllele[2];
 		S32 alleleA     = YON_GT_DIPLOID_BCF_A(this->at(i), shift);
 		S32 alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
 		alleleA -= 2; alleleB -= 2;
 
-		entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
-		entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
-		entries[ppa_manager[cum_pos]].alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
-		entries[ppa_manager[cum_pos]].alleles[1].second = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
+		entries[ppa_manager[cum_pos]].alleles[1].allele  = alleleB;
+		entries[ppa_manager[cum_pos]].alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[cum_pos]].alleles[1].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
 		entries[ppa_manager[cum_pos]].n_objects = 1;
 		entries[ppa_manager[cum_pos]].n_ploidy = 2;
 	}

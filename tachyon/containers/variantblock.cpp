@@ -181,6 +181,7 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	if(settings.load_ppa){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
+			this->ppa_manager.header = this->footer.offset_ppa;
 			stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
 			stream >> this->ppa_manager;
 		}
@@ -331,8 +332,8 @@ const U64 VariantBlock::__determineCompressedSize(void) const{
 
 void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		stats_basic[1].cost_uncompressed += this->ppa_manager.getObjectSize();
-		stats_basic[1].cost_compressed   += this->ppa_manager.c_length;
+		stats_basic[1].cost_uncompressed += this->ppa_manager.header.data_header.uLength;
+		stats_basic[1].cost_compressed   += this->ppa_manager.header.data_header.cLength;
 	}
 
 	stats_basic[2]  += this->meta_contig_container;
@@ -378,6 +379,7 @@ bool VariantBlock::write(std::ostream& stream,
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
 
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
+		this->footer.offset_ppa = this->ppa_manager.header;
 		this->footer.offset_ppa.data_header.offset = (U64)stream.tellp() - start_pos;
 		stream << this->ppa_manager;
 	}

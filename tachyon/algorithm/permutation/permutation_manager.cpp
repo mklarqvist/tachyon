@@ -4,17 +4,11 @@ namespace tachyon{
 namespace algorithm{
 
 PermutationManager::PermutationManager() :
-	n_samples(0),
-	u_length(0),
-	c_length(0),
-	crc(0)
+	n_samples(0)
 {}
 
 PermutationManager::PermutationManager(const U32 n_samples) :
 	n_samples(n_samples),
-	u_length(0),
-	c_length(0),
-	crc(0),
 	PPA(sizeof(U32)*n_samples)
 {}
 
@@ -33,17 +27,15 @@ void PermutationManager::reset(void){
 	for(U32 i = 0; i < this->n_samples; ++i)
 		(*this)[i] = i;
 
+	this->header.reset();
 	this->PPA.n_chars = this->n_samples*sizeof(U32);
-	this->u_length = 0;
-	this->c_length = 0;
-	this->crc      = 0;
 }
 
 bool PermutationManager::generateCRC(void){
 	// Checksum for main buffer
 	U32 crc = crc32(0, NULL, 0);
 	crc = crc32(crc, (Bytef*)this->PPA.buffer, this->n_samples*sizeof(U32));
-	this->crc = crc;
+	this->header.data_header.crc = crc;
 	return true;
 }
 

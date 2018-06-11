@@ -16,10 +16,21 @@ namespace core{
 
 const SBYTE YON_GT_RLE_CORRECTION[3] = {0, 0, -4};
 
+struct GTObjectAllele{
+public:
+	GTObjectAllele() : phase(0), allele(0){}
+	~GTObjectAllele() = default;
+
+public:
+	BYTE  phase;
+	SBYTE allele;
+};
+
 struct GTObject{
 private:
     typedef GTObject             self_type;
-    typedef std::pair<char,char> value_type;
+    typedef GTObjectAllele       allele_type;
+    typedef allele_type          value_type;
     typedef value_type&          reference;
     typedef const value_type&    const_reference;
     typedef value_type*          pointer;
@@ -136,18 +147,18 @@ public:
 
     friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
     	if(entry.n_ploidy){
-    		if(entry.alleles[0].first == -1){
+    		if(entry.alleles[0].allele == -1){
     			stream.put('.');
     			return(stream);
     		}
-    		if(entry.alleles[0].first == -2) stream.put('.');
-    		else stream << (int)entry.alleles[0].first;
+    		if(entry.alleles[0].allele == -2) stream.put('.');
+    		else stream << (int)entry.alleles[0].allele;
 
     		for(U32 i = 1; i < entry.n_ploidy; ++i){
-    			if(entry.alleles[i].first == -1) break;
-    			stream << (entry.alleles[i].second ? '|' : '/');
-    			if(entry.alleles[i].first == -2) stream.put('.');
-    			else stream << (int)entry.alleles[i].first;
+    			if(entry.alleles[i].allele == -1) break;
+    			stream << (entry.alleles[i].phase ? '|' : '/');
+    			if(entry.alleles[i].allele == -2) stream.put('.');
+    			else stream << (int)entry.alleles[i].allele;
     		}
     	}
     	return(stream);
@@ -155,27 +166,27 @@ public:
 
     friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
 		if(entry.n_ploidy){
-			if(entry.alleles[0].first == -1){
+			if(entry.alleles[0].allele == -1){
 				buffer += '.';
 				return(buffer);
 			}
-			if(entry.alleles[0].first == -2) buffer += '.';
-			else buffer.AddReadble(entry.alleles[0].first);
+			if(entry.alleles[0].allele == -2) buffer += '.';
+			else buffer.AddReadble(entry.alleles[0].allele);
 
 			for(U32 i = 1; i < entry.n_ploidy; ++i){
-				if(entry.alleles[i].first == -1) break;
-				buffer += (entry.alleles[i].second ? '|' : '/');
-				if(entry.alleles[i].first == -2) buffer += '.';
-				else buffer.AddReadble(entry.alleles[i].first);
+				if(entry.alleles[i].allele == -1) break;
+				buffer += (entry.alleles[i].phase ? '|' : '/');
+				if(entry.alleles[i].allele == -2) buffer += '.';
+				else buffer.AddReadble(entry.alleles[i].allele);
 			}
 		}
 		return(buffer);
 	}
 
 public:
-    BYTE      n_ploidy;
-    size_type n_objects;
-    pointer   alleles;
+    BYTE      n_ploidy; // ploidy of objects
+    size_type n_objects;// number of objects
+    pointer   alleles;  // alleleic data -> length = n_ploidy
 };
 
 struct GTObjectDiploidRLE : public GTObject{
@@ -202,13 +213,13 @@ public:
 		if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy  = 2;
-			this->alleles    = new std::pair<char,char>[2];
+			this->alleles    = new core::GTObjectAllele[2];
 		}
 
 		this->n_objects         = n_entries;
-		this->alleles[0].first  = alleleA;
-		this->alleles[1].first  = alleleB;
-		this->alleles[0].second = phase;
+		this->alleles[0].allele  = alleleA;
+		this->alleles[1].allele  = alleleB;
+		this->alleles[0].phase = phase;
 	}
 
 private:
@@ -218,17 +229,17 @@ private:
     	if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy  = 2;
-			this->alleles    = new std::pair<char,char>[2];
+			this->alleles   = new core::GTObjectAllele[2];
     	}
 		const BYTE shift = meta_entry.isAnyGTMissing()   ? 2 : 1;
 		const BYTE add   = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
-		if(add) this->alleles[0].second = gt_primitive & 1;
-		else    this->alleles[0].second = meta_entry.getControllerPhase();
+		if(add) this->alleles[0].phase = gt_primitive & 1;
+		else    this->alleles[0].phase = meta_entry.getControllerPhase();
 
 		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
-		this->alleles[0].first = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
-		this->alleles[1].first = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
+		this->alleles[0].allele = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
+		this->alleles[1].allele = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
 	}
 };
 
@@ -256,13 +267,13 @@ public:
 		if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy  = 2;
-			this->alleles    = new std::pair<char,char>[2];
+			this->alleles   = new core::GTObjectAllele[2];
 		}
 
 		this->n_objects         = n_entries;
-		this->alleles[0].first  = alleleA;
-		this->alleles[1].first  = alleleB;
-		this->alleles[0].second = phase;
+		this->alleles[0].allele  = alleleA;
+		this->alleles[1].allele  = alleleB;
+		this->alleles[0].phase = phase;
 	}
 
 private:
@@ -272,17 +283,17 @@ private:
     	if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy     = 2;
-			this->alleles       = new std::pair<char,char>[2];
+			this->alleles      = new core::GTObjectAllele[2];
     	}
 		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + 1 + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
 		const BYTE add      = meta_entry.isGTMixedPhasing() ? 1 : 0;
 
-		if(add) this->alleles[0].second = gt_primitive & 1;
-		else    this->alleles[0].second = meta_entry.getControllerPhase();
+		if(add) this->alleles[0].phase = gt_primitive & 1;
+		else    this->alleles[0].phase = meta_entry.getControllerPhase();
 
 		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
-		this->alleles[0].first = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
-		this->alleles[1].first = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
+		this->alleles[0].allele = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
+		this->alleles[1].allele = YON_GT_RLE_ALLELE_B(gt_primitive, shift, add);
 	}
 };
 
@@ -310,13 +321,13 @@ public:
 		if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy  = 2;
-			this->alleles    = new std::pair<char,char>[2];
+			this->alleles   = new core::GTObjectAllele[2];
 		}
 
 		this->n_objects         = n_entries;
-		this->alleles[0].first  = alleleA;
-		this->alleles[1].first  = alleleB;
-		this->alleles[0].second = phase;
+		this->alleles[0].allele  = alleleA;
+		this->alleles[1].allele  = alleleB;
+		this->alleles[0].phase = phase;
 	}
 
 private:
@@ -326,14 +337,14 @@ private:
     	if(this->alleles == nullptr || this->n_ploidy != 2){
 			delete [] this->alleles;
 			this->n_ploidy     = 2;
-			this->alleles       = new std::pair<char,char>[2];
+			this->alleles      = new core::GTObjectAllele[2];
     	}
 		const BYTE shift    = (sizeof(T)*8 - 1) / 2;
 
-		this->alleles[0].second = YON_GT_DIPLOID_BCF_PHASE(gt_primitive);
+		this->alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(gt_primitive);
 		this->n_objects         = 1;
-		this->alleles[0].first  = YON_GT_DIPLOID_BCF_A(gt_primitive, shift);
-		this->alleles[1].first  = YON_GT_DIPLOID_BCF_B(gt_primitive, shift);
+		this->alleles[0].allele  = YON_GT_DIPLOID_BCF_A(gt_primitive, shift);
+		this->alleles[1].allele  = YON_GT_DIPLOID_BCF_B(gt_primitive, shift);
 	}
 };
 

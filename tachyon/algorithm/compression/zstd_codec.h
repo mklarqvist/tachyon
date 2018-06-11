@@ -172,9 +172,9 @@ public:
 		this->buffer.reset();
 		this->buffer.resize(n_samples*sizeof(U32) + 65536);
 
-		U32 crc          = crc32(0, NULL, 0);
-		manager.crc      = crc32(crc, (Bytef*)manager.PPA.data(), manager.PPA.size());
-		manager.u_length = manager.PPA.size();
+		U32 crc = crc32(0, NULL, 0);
+		manager.header.data_header.crc     = crc32(crc, (Bytef*)manager.PPA.data(), manager.PPA.size());
+		manager.header.data_header.uLength = manager.PPA.size();
 
 		//const U32 in = manager.PPA.n_chars;
 		const int p_ret = permuteIntBits(manager.PPA.data(),
@@ -215,7 +215,8 @@ public:
 		}
 		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
 		manager.PPA.n_chars = ret;
-		manager.c_length    = ret;
+		manager.header.data_header.uLength = this->buffer.n_chars;
+		manager.header.data_header.cLength = ret;
 
 		return true;
 	}

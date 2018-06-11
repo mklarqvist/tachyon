@@ -164,6 +164,17 @@ public:
 		return(results);
 	}
 
+	std::vector<double> calculateInbreedingCoefficient(const meta_type& meta) const{
+		// Allele frequency of A
+		const double p = ((double)2*this->matrix_[2][2] + this->matrix_[2][3] + this->matrix_[3][2]) / (2*this->genotypeCount());
+		// Genotype frequency of heterozygotes
+		const double pg = ((double)this->matrix_[2][3] + this->matrix_[3][2]) / this->genotypeCount();
+		// Expected heterozygosity
+		const double exp = 2*p*(1-p);
+		// Population inbreeding coefficient: F
+		const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
+	}
+
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidRLE<T>& gt_rle_container){
 		const BYTE shift = gt_rle_container.getMeta().isAnyGTMissing()    ? 2 : 1;
@@ -208,7 +219,8 @@ public:
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidBCF<T>& gt_diploid_bcf_container){
-
+		std::cerr << "not implemented" << std::endl;
+		exit(1);
 	}
 
 	inline void operator+=(const bcf::BCFEntry& entry){

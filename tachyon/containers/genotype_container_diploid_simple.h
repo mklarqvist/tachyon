@@ -175,11 +175,11 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[cum_pos].alleles = new std::pair<char,char>[2];
-			entries[cum_pos].alleles[0].first  = alleleA;
-			entries[cum_pos].alleles[1].first  = alleleB;
-			entries[cum_pos].alleles[0].second = phasing;
-			entries[cum_pos].alleles[1].second = phasing;
+			entries[cum_pos].alleles = new core::GTObjectAllele[2];
+			entries[cum_pos].alleles[0].allele  = alleleA;
+			entries[cum_pos].alleles[1].allele  = alleleB;
+			entries[cum_pos].alleles[0].phase = phasing;
+			entries[cum_pos].alleles[1].phase = phasing;
 			entries[cum_pos].n_objects = 1;
 			entries[cum_pos].n_ploidy = 2;
 		}
@@ -208,11 +208,11 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[ppa_manager[cum_pos]].alleles = new std::pair<char,char>[2];
-			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
-			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
-			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
-			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles = new core::GTObjectAllele[2];
+			entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].allele  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].phase = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].phase = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
 			entries[ppa_manager[cum_pos]].n_ploidy = 2;
 		}
@@ -241,8 +241,8 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		S32 alleleA     = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		S32 alleleB     = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 		alleleA -= 2; alleleB -= 2;
 
 		BYTE phasing = 0;
@@ -250,14 +250,14 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			delete [] entries[cum_pos].alleles;
-			entries[cum_pos].alleles = new std::pair<char,char>[2];
-			entries[cum_pos].alleles[0].first  = alleleA;
-			entries[cum_pos].alleles[1].first  = alleleB;
-			entries[cum_pos].alleles[0].second = phasing;
-			entries[cum_pos].alleles[1].second = phasing;
+			//delete [] entries[cum_pos].alleles;
+			//entries[cum_pos].alleles = new core::GTObjectAllele[2];
+			entries[cum_pos].alleles[0].allele  = alleleA;
+			entries[cum_pos].alleles[1].allele  = alleleB;
+			entries[cum_pos].alleles[0].phase = phasing;
+			entries[cum_pos].alleles[1].phase = phasing;
 			entries[cum_pos].n_objects = 1;
-			entries[cum_pos].n_ploidy = 2;
+			entries[cum_pos].n_ploidy  = 2;
 		}
 	}
 }
@@ -267,7 +267,7 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	if(objects.size() != n_samples){
 		objects.resize(n_samples);
 		for(U32 i = 0; i < n_samples; ++i)
-			objects[i].alleles = new std::pair<char,char>[2];
+			objects[i].alleles = new core::GTObjectAllele[2];
 	}
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
 
@@ -287,10 +287,10 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 		else    phasing = this->__meta.getControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
-			entries[ppa_manager[cum_pos]].alleles[0].first  = alleleA;
-			entries[ppa_manager[cum_pos]].alleles[1].first  = alleleB;
-			entries[ppa_manager[cum_pos]].alleles[0].second = phasing;
-			entries[ppa_manager[cum_pos]].alleles[1].second = phasing;
+			entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
+			entries[ppa_manager[cum_pos]].alleles[1].allele  = alleleB;
+			entries[ppa_manager[cum_pos]].alleles[0].phase = phasing;
+			entries[ppa_manager[cum_pos]].alleles[1].phase = phasing;
 			entries[ppa_manager[cum_pos]].n_objects = 1;
 			entries[ppa_manager[cum_pos]].n_ploidy = 2;
 		}

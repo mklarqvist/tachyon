@@ -525,7 +525,7 @@ public:
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 		for(U32 i = 0; i < this->header.getSampleNumber(); ++i){
 			//std::cerr << i << "/" << this->header.getSampleNumber() << std::endl;
-			genotypes_unpermuted[i].alleles = new std::pair<char,char>;
+			genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
 		}
 
 		print_format_function print_format = &self_type::printFORMATDummy;
@@ -740,9 +740,9 @@ public:
 			// Vector of genotype objects (high level unpermuted - original)
 			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
 
-			std::cout << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
+			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			for(U32 i = 1; i < objects_true.size(); ++i){
-				std::cout << '\t' << (int)objects_true[i].alleles[0].first << (objects_true[i].alleles[1].second ? '/' : '|') << (int)objects_true[i].alleles[1].first;
+				std::cout << '\t' << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			}
 			std::cout << std::endl;
 		}
