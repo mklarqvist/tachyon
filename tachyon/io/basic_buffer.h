@@ -249,7 +249,7 @@ public:
 		return *this;
 	}
 
-	inline self_type& operator+=(const U16 value){
+	inline self_type& operator+=(const U16& value){
 		if(this->n_chars + sizeof(U16) >= this->width)
 			this->resize(this->width*2);
 

@@ -392,14 +392,14 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 			else if(bcf_entry.body->n_allele + 2 < 128){
 				meta.controller.gt_primtive_type = YON_GT_U16;
 				slave.gt_primitive = YON_GT_U16;
-				this->EncodeDiploidBCF<U16> (bcf_entry, slave.container, n_runs, ppa);
+				this->EncodeDiploidBCF<U16>(bcf_entry, slave.container, n_runs, ppa);
 				//++block.gt_simple16_container;
 				//++this->stats_.diploid_bcf_counts[1];
 			}
 			else if(bcf_entry.body->n_allele + 2 < 32768){
 				meta.controller.gt_primtive_type = YON_GT_U32;
 				slave.gt_primitive = YON_GT_U32;
-				this->EncodeDiploidBCF<U32> (bcf_entry, slave.container, n_runs, ppa);
+				this->EncodeDiploidBCF<U32>(bcf_entry, slave.container, n_runs, ppa);
 				//++block.gt_simple32_container;
 				//++this->stats_.diploid_bcf_counts[2];
 			}
@@ -413,7 +413,7 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 		}
 	}
 	else {
-		std::cerr << "other bcf style: n_alleles: " << bcf_entry.body->n_allele << ",ploidy: " << bcf_entry.gt_support.ploidy << std::endl;
+		//std::cerr << "other bcf style: n_alleles: " << bcf_entry.body->n_allele << ",ploidy: " << bcf_entry.gt_support.ploidy << std::endl;
 		meta.controller.gt_compression_type = YON_GT_BCF_STYLE;
 		//block.gt_support_data_container.Add((U32)this->n_samples*bcf_entry.gt_support.ploidy);
 
@@ -459,8 +459,8 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const{
 	// Setup
 	const BYTE ploidy = 2;
-	const BYTE shift    = bcf_entry.gt_support.hasMissing    ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
-	const BYTE add      = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
+	const BYTE shift  = bcf_entry.gt_support.hasMissing    ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
+	const BYTE add    = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
 	U32 n_runs_byte = 0; U32 run_length_byte = 1;
 	U32 n_runs_u16  = 0; U32 run_length_u16  = 1;
 	U32 n_runs_u32  = 0; U32 run_length_u32  = 1;
@@ -529,7 +529,7 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	const BYTE ploidy    = 2;
 
 	// Assess RLE cost
-	const BYTE shift = ceil(log2(bcf_entry.body->n_allele + bcf_entry.gt_support.hasMissing + bcf_entry.gt_support.hasEOV + 1));
+	const BYTE shift = ceil(log2(bcf_entry.body->n_allele + 2 + 1));
 	const BYTE add   = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
 
 	// Run limits
@@ -557,11 +557,11 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 	const bool phase = allele2 & 1;
 	if((allele1 >> 1) == 0)  allele1 = 0;
 	else if(allele1 == 0x81) allele1 = 1;
-	else allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV + add;
+	else allele1 = (allele1 >> 1) + 1;
 
 	if((allele2 >> 1) == 0)  allele2 = 0;
 	else if(allele2 == 0x81) allele2 = 1;
-	else allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV + add;
+	else allele2 = (allele2 >> 1) + 1;
 	U32 ref = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
 
 	U32 ppa_pos = 1;
@@ -572,11 +572,11 @@ const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEnAllelic
 
 		if((allele1 >> 1) == 0)  allele1 = 0;
 		else if(allele1 == 0x81) allele1 = 1;
-		else allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV + add;
+		else allele1 = (allele1 >> 1) + 1;
 
 		if((allele2 >> 1) == 0)  allele2 = 0;
 		else if(allele2 == 0x81) allele2 = 1;
-		else allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV + add;
+		else allele2 = (allele2 >> 1) + 1;
 
 		const U32 internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
 

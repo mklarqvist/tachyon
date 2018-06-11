@@ -166,8 +166,8 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		S32 alleleA     = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		S32 alleleB     = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 		alleleA -= 2; alleleB -= 2;
 
 		BYTE phasing = 0;
@@ -194,14 +194,13 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 
 	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
 	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
-	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
-		S32 alleleA    = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
-		S32 alleleB    = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		alleleA -= subtract; alleleB -= subtract;
+		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
+		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
+		alleleA -= 2; alleleB -= 2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
@@ -231,7 +230,8 @@ void GenotypeContainerDiploidSimple<return_type>::getLiteralObjects(std::vector<
 }
 
 template <class return_type>
-void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_samples, std::vector<tachyon::core::GTObject>& objects) const{
+void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_samples,
+	                              std::vector<tachyon::core::GTObject>& objects) const{
 	if(objects.size() != n_samples){
 		objects.resize(n_samples);
 		for(U32 i = 0; i < n_samples; ++i)
@@ -239,16 +239,15 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	}
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
 
-	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
 	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
-	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		alleleA -= subtract; alleleB -= subtract;
+		alleleA -= 2; alleleB -= 2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
@@ -260,13 +259,15 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 			entries[cum_pos].alleles[0].phase = phasing;
 			entries[cum_pos].alleles[1].phase = phasing;
 			entries[cum_pos].n_objects = 1;
-			entries[cum_pos].n_ploidy  = this->__meta.isMixedPloidy();
+			entries[cum_pos].n_ploidy  = 2;
 		}
 	}
 }
 
 template <class return_type>
-void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_samples, std::vector<tachyon::core::GTObject>& objects, const permutation_type& ppa_manager) const{
+void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_samples,
+	                              std::vector<tachyon::core::GTObject>& objects,
+	                                            const permutation_type& ppa_manager) const{
 	if(objects.size() != n_samples){
 		objects.resize(n_samples);
 		for(U32 i = 0; i < n_samples; ++i)
@@ -274,16 +275,15 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	}
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
 
-	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
 	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
-	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		alleleA -= subtract; alleleB -= subtract;
+		alleleA -= 2; alleleB -= 2;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;

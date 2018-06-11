@@ -88,13 +88,13 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple8 += lengths[gt_offset]*sizeof(BYTE);
 				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U16>( &simple16[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U16>( &simple16[offset_simple16], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple16 += lengths[gt_offset]*sizeof(U16);
 				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U32>( &simple32[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple32 += lengths[gt_offset]*sizeof(U32);
 				} else if(meta[i].getGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
-					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U64>( &simple64[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
+					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				}  else {
 					std::cerr << "unknwn type" << std::endl;
@@ -105,7 +105,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 			else {
 				std::cerr << "not implemented" << std::endl;
 				new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( );
-				//exit(1);
+				exit(1);
 			}
 
 			// Increment offset

@@ -157,7 +157,11 @@ void GenotypeContainerDiploidBCF<T>::getLiteralObjects(std::vector<core::GTObjec
 // Todo
 template <class T>
 void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vector<core::GTObject>& objects) const{
-	if(objects.size() < n_samples) objects.resize(n_samples);
+	if(objects.size() != n_samples){
+		objects.resize(n_samples);
+		for(U32 i = 0; i < n_samples; ++i)
+			objects[i].alleles = new core::GTObjectAllele[2];
+	}
 	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
@@ -179,7 +183,11 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 // Todo
 template <class T>
 void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vector<core::GTObject>& objects, const permutation_type& ppa_manager) const{
-	if(objects.size() < n_samples) objects.resize(n_samples);
+	if(objects.size() != n_samples){
+		objects.resize(n_samples);
+		for(U32 i = 0; i < n_samples; ++i)
+			objects[i].alleles = new core::GTObjectAllele[2];
+	}
 	core::GTObjectDiploidBCF* entries = reinterpret_cast<core::GTObjectDiploidBCF*>(&objects[0]);
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
@@ -189,10 +197,10 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 		S32 alleleB     = YON_GT_DIPLOID_BCF_B(this->at(i), shift);
 		alleleA -= 2; alleleB -= 2;
 
-		entries[ppa_manager[i]].alleles[0].allele  = alleleA;
-		entries[ppa_manager[i]].alleles[1].allele  = alleleB;
-		entries[ppa_manager[i]].alleles[0].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
-		entries[ppa_manager[i]].alleles[1].phase = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[i]].alleles[0].allele = alleleA;
+		entries[ppa_manager[i]].alleles[1].allele = alleleB;
+		entries[ppa_manager[i]].alleles[0].phase  = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
+		entries[ppa_manager[i]].alleles[1].phase  = YON_GT_DIPLOID_BCF_PHASE(this->at(i));
 		entries[ppa_manager[i]].n_objects = 1;
 		entries[ppa_manager[i]].n_ploidy = 2;
 	}

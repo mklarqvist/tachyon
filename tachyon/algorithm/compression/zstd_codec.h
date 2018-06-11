@@ -295,6 +295,7 @@ public:
 			n_samples = 100;
 			manager.PPA.resize(n_samples*sizeof(U32));
 		}
+
 		this->buffer.resize(n_samples*sizeof(U32) + 65536);
 		size_t ret = ZSTD_decompress(this->buffer.data(),
 			    					 this->buffer.capacity(),
@@ -308,7 +309,7 @@ public:
 			exit(1);
 		}
 
-		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
+		//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << manager.PPA.size() << " and out: " << ret << std::endl;
 		//manager.PPA.n_chars = ret;
 		//manager.c_length    = ret;
 
@@ -317,6 +318,7 @@ public:
 											ret,
 											manager.PPA.data());
 
+		//std::cerr << "ret: " << up_ret << std::endl;
 		//memcpy(manager.PPA.buffer, this->buffer.data(), up_ret);
 		manager.PPA.n_chars = up_ret;
 		return true;
