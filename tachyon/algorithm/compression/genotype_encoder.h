@@ -16,7 +16,7 @@ namespace algorithm{
 
 #define ENCODER_GT_DEBUG 0
 #define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)          (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
-#define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((A) & (ADD))
+#define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
 
 struct GenotypeEncoderStatistics{
 	GenotypeEncoderStatistics(){}
@@ -360,40 +360,34 @@ bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
 	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
 	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
 	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
+	const bool phase = allele2 & 1;
 
-	if((allele1 >> 1) == 0) allele1 = 0;
+	if((allele1 >> 1) == 0)  allele1 = 0;
 	else if(allele1 == 0x81) allele1 = 1;
-	else {
-		allele1 = (((allele1 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele1 & 1);
-	}
+	else allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV + add;
 
-	if((allele2 >> 1) == 0) allele2 = 0;
+	if((allele2 >> 1) == 0)  allele2 = 0;
 	else if(allele2 == 0x81) allele2 = 1;
-	else {
-		allele2 = (((allele2 >> 1) + bcf_entry.gt_support.hasEOV) << 1) | (allele2 & 1);
-	}
+	else allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV + add;
 
-	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
 
 	U32 ppa_pos = 1;
 	U64 n_runs = 0;
 	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
 		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
 		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
+		const bool phase = allele2 & 1;
 
-		if((allele1 >> 1) == 0) allele1 = 0;
+		if((allele1 >> 1) == 0)  allele1 = 0;
 		else if(allele1 == 0x81) allele1 = 1;
-		else {
-			allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV;
-		}
+		else allele1 = (allele1 >> 1) + bcf_entry.gt_support.hasEOV + add;
 
-		if((allele2 >> 1) == 0) allele2 = 0;
+		if((allele2 >> 1) == 0)  allele2 = 0;
 		else if(allele2 == 0x81) allele2 = 1;
-		else {
-			allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV;
-		}
+		else allele2 = (allele2 >> 1) + bcf_entry.gt_support.hasEOV + add;
 
-		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add);
+		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
 
 
 		if(packed != packed_internal || length == run_limit){

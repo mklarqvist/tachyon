@@ -276,14 +276,14 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 
 	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
 	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
-	//const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
+	const BYTE subtract = this->__meta.isMixedPloidy()    ? 2 : 1;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
 		const U32 length = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		S32 alleleA      = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		S32 alleleB      = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		alleleA -= 2; alleleB -= 2;
+		alleleA -= subtract; alleleB -= subtract;
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;

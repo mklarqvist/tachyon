@@ -208,74 +208,8 @@ public:
 
 	void SetRefAlt(void);
 
-	//
-	bool assessGenotypes(const U64 n_samples){
-		if(this->hasGenotypes == false)
-			return false;
-
-		const BYTE ploidy = this->formatID[0].l_stride;
-		// Todo: other primitives
-		U64 current_sample = 0;
-		const char* const internal_data = &this->data[this->formatID[0].l_offset];
-		U32 internal_data_offset = 0;
-		this->gt_support.ploidy = ploidy;
-		this->gt_support.hasGenotypes = true;
-
-		BYTE first_phase = 0;
-
-		// TODO other BCF primitives
-		if(this->formatID[0].primitive_type == YON_BCF_PRIMITIVE_TYPES::BCF_BYTE){
-			// First
-			bool invariant = true;
-			for(U32 p = 0; p < ploidy; ++p){
-				const BYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
-				if((ref >> 1) == 0){
-					this->gt_support.hasMissing = true;
-					++this->gt_support.n_missing;
-				} else if(ref == 0x81){
-					//std::cerr << "hit first" << std::endl;
-					this->gt_support.hasEOV = true;
-					++this->gt_support.n_eov;
-				}
-				if(p + 1 == ploidy) first_phase = ref & 1;
-				if(ref >> 1 != 1) invariant = false;
-				internal_data_offset += sizeof(BYTE);
-			}
-			++current_sample;
-
-			for(U32 i = ploidy; i < n_samples*ploidy; i+=ploidy, ++current_sample){
-				// retrieve ploidy primitives
-				for(U32 p = 0; p < ploidy; ++p){
-					const BYTE& ref  = *reinterpret_cast<const BYTE* const>(&internal_data[internal_data_offset]);
-					if((ref >> 1) == 0){
-						//std::cerr << "is missing" << std::endl;
-						this->gt_support.hasMissing = true;
-						++this->gt_support.n_missing;
-					} else if(ref == 0x81){
-						//std::cerr << "is vector eof" << std::endl;
-						this->gt_support.hasEOV = true;
-						++this->gt_support.n_eov;
-					}
-
-					if(p + 1 == ploidy){
-						if(first_phase != (ref & 1)){
-							//std::cerr << "triggering mixed phase" << std::endl;
-							this->gt_support.mixedPhasing = true;
-							this->gt_support.phase = 0;
-						}
-					}
-					internal_data_offset += sizeof(BYTE);
-					if(ref >> 1 != 1) invariant = false;
-				}
-			}
-
-			if(this->gt_support.mixedPhasing == false){
-				this->gt_support.phase = first_phase;
-			}
-			this->gt_support.invariant = invariant;
-		}
-		return true;
-	}
+	//s
+	bool assessGenotypes(const U64 n_samples);
 
 	inline const bool& good(void) const{ return(this->isGood); }
 
