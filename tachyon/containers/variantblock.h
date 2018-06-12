@@ -27,7 +27,7 @@ class VariantBlock{
 	typedef HashContainer                   hash_container_type;
 	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef core::DataBlockSettings         settings_type;
+	typedef DataBlockSettings               settings_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;

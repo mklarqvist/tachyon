@@ -45,7 +45,41 @@ public:
 	{}
 	~VariantReaderSettings() = default;
 
-	std::string get_settings_string(void) const{
+	/**<
+	 * Validates the regex patterns of the given interval strings.
+	 * Note that this function only checks if the strings have correct
+	 * syntax and does NOT parse or check the existence of these regions
+	 * @return Returns TRUE if all strings are valid interval strings or FALSE otherwise
+	 */
+	bool validateIntervalStrings(void){
+		if(this->interval_strings.size() == 0)
+			return true;
+
+		for(U32 i = 0; i < this->interval_strings.size(); ++i){
+			// scrub whitespace
+			//this->interval_strings[i].erase(remove_if(this->interval_strings[i].begin(), this->interval_strings[i].end(), isspace), this->interval_strings[i].end());
+			this->interval_strings[i] = utility::remove_whitespace(this->interval_strings[i]);
+
+			if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
+				std::cerr << "chromosome onlu" << std::endl;
+			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
+				std::cerr << "chromosome pos" << std::endl;
+			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
+				std::cerr << "chromosome pos - pos" << std::endl;
+			} else {
+				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << this->interval_strings[i] << std::endl;
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**<
+	 * Construct a string with the internal interpreted parameters
+	 * @return Returns a string
+	 */
+	inline std::string get_settings_string(void) const{
 		return(std::string(
 		"##tachyon_viewCommandSettings={"
 		"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
@@ -72,7 +106,7 @@ public:
 	std::string output;
 	std::string keychain_file;
 	std::string output_type;
-	std::vector<std::string> load_strings;
+	std::vector<std::string> interval_strings;
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
 };
@@ -138,7 +172,7 @@ class VariantReader{
 	typedef core::VariantHeader                    header_type;
 	typedef core::Footer                           footer_type;
 	typedef algorithm::CompressionManager          codec_manager_type;
-	typedef core::DataBlockSettings                block_settings_type;
+	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
@@ -156,7 +190,7 @@ class VariantReader{
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 	typedef void (self_type::*print_info_function)(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	typedef void (self_type::*print_filter_function)(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const core::SettingsCustomOutput& controller);
+	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const SettingsCustomOutput& controller);
 
 public:
 	VariantReader();
@@ -399,7 +433,7 @@ public:
 							local_key = i;
 							this->block_settings.info_ID_list.push_back(i);
 							block_settings.load_info_ID_loaded.push_back(
-														core::SettingsMap(
+														SettingsMap(
 																info_matches++, // iterator value
 																i,              // local index id
 																&this->block.footer.info_offsets[i]) // offset
@@ -427,7 +461,7 @@ public:
 							local_key = i;
 							this->block_settings.format_ID_list.push_back(i);
 							block_settings.load_format_ID_loaded.push_back(
-														core::SettingsMap(
+														SettingsMap(
 																format_matches++, // iterator value
 																i,              // local index id
 																&this->block.footer.format_offsets[i]) // offset
@@ -703,6 +737,78 @@ public:
 	bool filterAlleleFrequency();
 	bool filterVariantClassification();
 	bool filterUnseenAlternativeAlleles();
+
+	/**<
+	 * Parse interval strings. These strings have to match the regular expression
+	 * patterns
+	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
+	 * @return Returns TRUE if successful or FALSE otherwise
+	 */
+	bool parseIntervals(void){
+		if(this->getSettings().validateIntervalStrings() == false)
+			return(false);
+
+		std::vector<std::string>& intervals = this->getSettings().interval_strings;
+		for(U32 i = 0; i < intervals.size(); ++i){
+			// scrub whitespace
+			intervals[i] = utility::remove_whitespace(intervals[i]);
+			core::HeaderContig* contig = nullptr;
+
+			if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_ONLY )){
+				std::cerr << "chromosome only" << std::endl;
+				if(!this->header.getContig(intervals[i],contig)){
+					std::cerr << "cant find contig: " << intervals[i] << std::endl;
+					return(false);
+				}
+
+			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_POSITION )){
+				std::cerr << "chromosome pos" << std::endl;
+				std::vector<std::string> substrings = utility::split(intervals[i], ':');
+				if(substrings[0].size() == 0 || substrings[1].size() == 0){
+					std::cerr << "illegal form" << std::endl;
+					return false;
+				}
+
+				if(!this->header.getContig(substrings[0],contig)){
+					std::cerr << "cant find contig: " << substrings[0] << std::endl;
+					return(false);
+				}
+
+
+			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_RANGE )){
+				std::cerr << "chromosome pos - pos" << std::endl;
+				std::vector<std::string> substrings = utility::split(intervals[i], ':');
+				if(substrings[0].size() == 0 || substrings[1].size() == 0){
+					std::cerr << "illegal form" << std::endl;
+					return false;
+				}
+
+				if(!this->header.getContig(substrings[0],contig)){
+					std::cerr << "cant find contig: " << substrings[0] << std::endl;
+					return(false);
+				}
+
+				std::vector<std::string> position_strings = utility::split(substrings[1], '-');
+				if(position_strings[0].size() == 0 || position_strings[1].size() == 0){
+					std::cerr << "illegal form" << std::endl;
+					return false;
+				}
+
+			} else {
+				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << intervals[i] << std::endl;
+				return false;
+			}
+		}
+
+		tachyon::core::HeaderContig* contig = nullptr;
+		if(!this->header.getContig("20",contig)){
+			std::cerr << "cant find: " << "20" << std::endl;
+			return(1);
+		}
+		this->index.findOverlap(contig->contigID, 1e6, 4.2e6);
+
+		return true;
+	}
 
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->

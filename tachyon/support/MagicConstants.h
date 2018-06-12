@@ -2,6 +2,8 @@
 #define MAGICCONSTANTS_H_
 
 #include <string>
+#include <regex>
+
 #include "../support/type_definitions.h"
 
 extern int SILENT;
@@ -21,17 +23,19 @@ const std::string TACHYON_LIB_VERSION = std::to_string(TACHYON_VERSION_MAJOR) + 
 
 /*------   Basics   ------*/
 const std::string PROGRAM_NAME  = "tachyon";
-const std::string OUTPUT_SUFFIX = "yon"; // yonder
+const std::string OUTPUT_SUFFIX = "yon";
 const std::string FILE_HEADER   = "TACHYON\1";
 const U32 FILE_HEADER_LENGTH    = 8;
 
-/*------   Genotype packing   ------*/
-const BYTE ALLELE_PACK_WIDTH = 2; // bit / allele
-const BYTE SNP_PACK_WIDTH    = ALLELE_PACK_WIDTH * 2; // bits / genotype
+/*------   Regular expression patterns  ------*/
+const std::regex YON_REGEX_CONTIG_ONLY     = std::regex("^[A-Za-z0-9\\-_]+$");
+const std::regex YON_REGEX_CONTIG_POSITION = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?$");
+const std::regex YON_REGEX_CONTIG_RANGE    = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?\\-[0-9]+([eE]{1}[0-9]{1})?$");
+const std::regex YON_REGEX_PACKED_ALLELES  = std::regex("^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$");
 
 /*------   Hot meta biallelic packing   ------*/
 // Encoding for bases
-const char* const REF_ALT_LOOKUP = "ATGC.XNID";
+const char* const REF_ALT_LOOKUP = "ATGC.XN";
 const BYTE REF_ALT_A = 0;
 const BYTE REF_ALT_T = 1;
 const BYTE REF_ALT_G = 2;
@@ -39,8 +43,7 @@ const BYTE REF_ALT_C = 3;
 const BYTE REF_ALT_MISSING = 4;
 const BYTE REF_ALT_NON_REF = 5;
 const BYTE REF_ALT_N = 6;
-const BYTE REF_ALT_INSERTION = 7;
-const BYTE REF_ALT_DELETION = 8;
+
 
 //                                     A  T  G  C  N
 const BYTE TRANSITION_MAP_BASE_A[5] = {0, 0, 1, 0, 0}; // A->G

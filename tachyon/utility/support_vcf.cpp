@@ -824,7 +824,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const SettingsCustomOutput& controller){
 	if(controller.show_contig){
 		buffer += header.getContig(meta_entry.contigID).name;
 		buffer += delimiter;
@@ -869,12 +869,12 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const SettingsCustomOutput& controller){
 	return(utility::to_json_string(buffer, meta_entry, header, controller));
 }
 
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const core::SettingsCustomOutput& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const SettingsCustomOutput& controller){
 	bool add = false;
 	if(controller.show_contig){
 		buffer += "\"contig\":\"";

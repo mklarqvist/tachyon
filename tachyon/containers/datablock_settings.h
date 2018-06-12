@@ -6,7 +6,6 @@
 #include "../core/header/variant_header.h"
 
 namespace tachyon{
-namespace core{
 
 /**<
  * Supportive structure for Block
@@ -213,7 +212,8 @@ struct DataBlockSettings{
 				if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
 					std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
 					for(U32 j = 0; j < ind.size(); ++j){
-						ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), std::string("$1")); // remove excess white space
+						ind[j] = utility::remove_excess_whitespace(ind[j]);
+						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), std::string("$1")); // remove excess white space
 						//std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 						if(std::regex_match(ind[j], field_identifier_regex)){
 							const core::HeaderMapEntry* map = header.getInfoField(ind[j]);
@@ -309,27 +309,6 @@ struct DataBlockSettings{
 		return true;
 	}
 
-	bool parseIntervals(void){
-		if(this->interval_strings.size() == 0)
-			return true;
-
-		for(U32 i = 0; i < this->interval_strings.size(); ++i){
-			if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+$") )){
-				std::cerr << "chromosome onlu" << std::endl;
-			} else if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?$") )){
-				std::cerr << "chromosome pos" << std::endl;
-			} else if (std::regex_match (this->interval_strings[i], std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?\\-[0-9]+([eE]{1}[0-9]{1})?$") )){
-				std::cerr << "chromosome pos - pos" << std::endl;
-			} else {
-				std::cerr << "unknwon" << std::endl;
-				//return false;
-			}
-		}
-
-		return true;
-	}
-
-
 public:
 	bool show_vcf_header;
 	bool load_contig;
@@ -359,7 +338,6 @@ public:
 
 	SettingsCustomOutput custom_output_controller;
 
-	std::vector<std::string> samples_list;
 	std::vector<std::string> info_list;
 	std::vector<std::string> format_list;
 	std::vector<U32> info_ID_list;
@@ -370,11 +348,9 @@ public:
 	std::vector<map_type> load_format_ID_loaded;
 
 	// blocks to load
-	std::vector<std::string> interval_strings;
 	std::vector<U32> blocks_numbers;
 };
 
-}
 }
 
 #endif /* CORE_BLOCKENTRYSETTINGS_H_ */

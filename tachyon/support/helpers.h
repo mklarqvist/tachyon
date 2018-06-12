@@ -23,6 +23,9 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 std::vector<std::string> split(const std::string &s, char delim, const bool keepEmpty = false);
 std::vector<std::string> splitLastOf(const std::string& s, const char delim, const bool includeLast = false);
 
+std::string remove_whitespace(std::string& string);
+std::string remove_excess_whitespace(const std::string& string);
+
 std::string timestamp(const std::string type);
 std::string timestamp(const std::string type, const std::string type2);
 inline void flushErrPointer(std::ostream& stream){ stream << "\33[2K\r\033[0m"; }

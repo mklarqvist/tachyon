@@ -97,6 +97,7 @@ int view(int argc, char** argv){
 		{"output-type", optional_argument, 0,  'O' },
 		{"vector-output", no_argument, 0,  'V' },
 		{"annotate-genotype", no_argument, 0,  'X' },
+		{"region",   optional_argument, 0,  'R' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -106,11 +107,13 @@ int view(int argc, char** argv){
 	};
 
 	tachyon::VariantReaderSettings settings;
+	tachyon::DataBlockSettings block_settings;
+	std::vector<std::string> interpret_commands;
 
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:cGshHmMVX?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:R:cGshHmMVX?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -125,7 +128,7 @@ int view(int argc, char** argv){
 			settings.keychain_file = std::string(optarg);
 			break;
 		case 'f':
-			settings.load_strings.push_back(std::string(optarg));
+			interpret_commands.push_back(std::string(optarg));
 			break;
 		case 'G':
 			settings.drop_format = true;
@@ -135,6 +138,9 @@ int view(int argc, char** argv){
 			break;
 		case 'c':
 			settings.custom_output_format = true;
+			break;
+		case 'R':
+			settings.interval_strings.push_back(std::string(optarg));
 			break;
 		case 'd':
 			settings.custom_delimiter = true;
@@ -225,8 +231,8 @@ int view(int argc, char** argv){
 	}
 
 	// User provided '-f' string(s)
-	if(settings.load_strings.size()){
-		if(!reader.getBlockSettings().parseCommandString(settings.load_strings, reader.header, settings.custom_output_format)){
+	if(interpret_commands.size()){
+		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.header, settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -301,11 +307,11 @@ int view(int argc, char** argv){
 	else reader.getBlockSettings().show_vcf_header = false;
 
 	// Todo: pass to settings
-	/*
-	reader.getSettings().interval_strings.push_back("Contig110_arrow");
-	reader.getSettings().interval_strings.push_back("Contig110_arrow:1e6");
-	reader.getSettings().interval_strings.push_back("Contig110_arrow:1e6-2e6");
-	reader.getSettings().parseIntervals();
+
+	reader.getSettings().interval_strings.push_back("20");
+	reader.getSettings().interval_strings.push_back(" 20:1e6   ");
+	reader.getSettings().interval_strings.push_back(" 20: 1e6 -2e6");
+	if(reader.getSettings().validateIntervalStrings() == false) return(1);
 	//return(1);
 
 	tachyon::core::HeaderContig* contig = nullptr;
@@ -313,9 +319,9 @@ int view(int argc, char** argv){
 		std::cerr << "cant find: " << "20" << std::endl;
 		return(1);
 	}
-	reader.index.findOverlap(contig->contigID, 1e6, 4.1e6);
+	reader.index.findOverlap(contig->contigID, 1e6, 4.2e6);
 	//return(1);
-	*/
+
 
 	// Temp
 	//while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);

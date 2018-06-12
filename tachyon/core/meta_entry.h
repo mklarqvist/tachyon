@@ -80,70 +80,21 @@ public:
 	inline const S32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
 	inline const S32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
 
-	inline const bool isReferenceNONREF(void) const{
-		// If the variant site is not biallelic
-		if(this->isBiallelic() == false)
-			return false;
-
-		int found = 0;
-		if((this->alleles[0].l_allele == 9) && (strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0)){
-			++found;
-		}
-
-		if((this->alleles[1].l_allele == 9) && (strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0)){
-			++found;
-		}
-
-		if(found == 2) return true;
-		if(found == 1){
-			if(this->alleles[0].l_allele == 1 && this->alleles[1].l_allele == 9) return true;
-			if(this->alleles[0].l_allele == 9 && this->alleles[1].l_allele == 1) return true;
-			return false;
-		}
-		return(false);
-	}
 	/**<
-	 *
-	 * @return
+	 * Check if it is possible to pack the REF and ALT allele strings into
+	 * a single BYTE. The input allelic data has to be diploid, biallelic and
+	 * match the regular expression pattern "^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$"
+	 * @return Returns TRUE if it is possible to bitpack data or FALSE otherwise
 	 */
-	inline const BYTE packedRefAltByte(void) const{
-		// <NON_REF>
-		BYTE ref_alt = 0; // start out with nonsense
+	const bool usePackedRefAlt(void) const;
 
-		if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
-			ref_alt ^= constants::REF_ALT_NON_REF << 4;
-		} else {
-			switch(this->alleles[0].allele[0]){
-			case 'A': ref_alt ^= constants::REF_ALT_A << 4; break;
-			case 'T': ref_alt ^= constants::REF_ALT_T << 4; break;
-			case 'G': ref_alt ^= constants::REF_ALT_G << 4; break;
-			case 'C': ref_alt ^= constants::REF_ALT_C << 4; break;
-			case 'N': ref_alt ^= constants::REF_ALT_N << 4; break;
-			default:
-				std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
-				std::cerr << std::string(this->alleles[0].allele , this->alleles[0].l_allele) << std::endl;
-				std::cerr << std::string(this->alleles[1].allele , this->alleles[1].l_allele) << std::endl;
-				exit(1);
-			}
-		}
-
-		if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
-			ref_alt ^= constants::REF_ALT_NON_REF << 0;
-		} else {
-			switch(this->alleles[1].allele[0]){
-			case 'A': ref_alt ^= constants::REF_ALT_A << 0; break;
-			case 'T': ref_alt ^= constants::REF_ALT_T << 0; break;
-			case 'G': ref_alt ^= constants::REF_ALT_G << 0; break;
-			case 'C': ref_alt ^= constants::REF_ALT_C << 0; break;
-			case 'N': ref_alt ^= constants::REF_ALT_N << 0; break;
-			case '.': ref_alt ^= constants::REF_ALT_MISSING << 0; break;
-			default:
-				std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
-				exit(1);
-			}
-		}
-		return(ref_alt);
-	}
+	/**<
+	 * Bitpack biallelic, diploid REF and ALT data into a single BYTE. Failure
+	 * to check for validity beforehand with `usePackedRefAlt` may result in
+	 * errors.
+	 * @return Returns a bitpacked BYTE
+	 */
+	const BYTE packRefAltByte(void) const;
 
 public:
 	// Markup: populate from streams

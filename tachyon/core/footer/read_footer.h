@@ -7,8 +7,6 @@
 namespace tachyon{
 namespace core{
 
-#define YON_FOOTER_LENGTH (constants::TACHYON_FILE_EOF_LENGTH + sizeof(U64)*3 + sizeof(U16))
-
 struct ReadFooter{
 public:
 	typedef ReadFooter self_type;

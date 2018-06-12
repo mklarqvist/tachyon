@@ -372,7 +372,8 @@ void GenotypeContainerDiploidRLE<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 		const BYTE alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
 		const BYTE targetA = references[alleleA];
 		const BYTE targetB = references[alleleB];
-		const BYTE insertion_add = (references[alleleA] == constants::REF_ALT_INSERTION) + (references[alleleB] == constants::REF_ALT_INSERTION);
+		//const BYTE insertion_add = (references[alleleA] == constants::REF_ALT_INSERTION) + (references[alleleB] == constants::REF_ALT_INSERTION);
+		const BYTE insertion_add = 0;
 
 		for(U32 j = 0; j < length; ++j, cum_position++){
 			objects[cum_position].n_insertions += insertion_add;

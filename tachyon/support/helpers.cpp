@@ -8,6 +8,15 @@
 namespace tachyon{
 namespace utility{
 
+std::string remove_whitespace(std::string& string){
+	string.erase(remove_if(string.begin(), string.end(), isspace), string.end());
+	return(string);
+}
+
+std::string remove_excess_whitespace(const std::string& string){
+	return(std::regex_replace(string, std::regex("^ +| +$|( ) +"), std::string("$1")));
+}
+
 int isBigEndian(){
 	union {
 		uint32_t i;

@@ -439,7 +439,6 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 		return false;
 	}
 
-	//meta_type meta(entry, this->block.header.minPosition);
 	if(!this->parseBCFBody(meta, entry)){
 		std::cerr << utility::timestamp("ERROR","ENCODER") << "Failed to encode BCF body..." << std::endl;
 		return false;
@@ -458,10 +457,7 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 			if(entry.infoID[i].mapID == this->settings_.info_end_key){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
-				//reg2bin2(entry.body->POS, end, used_contig_length, 7);
 				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.current_block_number());
-
-				// index_bin= reg2bin(entry.body->POS, end);
 				break;
 			}
 		}
@@ -473,29 +469,18 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 			// Regex pattern ^[ATGC]{1,}$
 			std::regex txt_regex("^[ATGC]{1,}$");
 			if(std::regex_match(meta.alleles[i].toString(), txt_regex)){
-				//std::cerr << "regex match: " << meta.alleles[i].toString() << std::endl;
 				if(meta.alleles[i].l_allele > longest) longest = meta.alleles[i].l_allele;
 			} else {
 				//std::cerr << "POS=" << entry.body->POS+1 << " no regex match: " << meta.alleles[i].toString() << std::endl;
 			}
-			// alt = <> or
-			//meta.alleles[i].l_allele
 		}
 
 		if(longest){
-			//if(longest > 3) std::cerr << "longest: " << longest << std::endl;
-			//index_bin = reg2bin(entry.body->POS, entry.body->POS + longest);
 			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.current_block_number());
 		} else { // fallback if all others fail
 			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.current_block_number());
-			//index_bin = reg2bin(entry.body->POS, entry.body->POS);
-			//index_bin = 0;
 		}
 	}
-
-	//if(index_bin <= 5) std::cerr << "POS=" << entry.body->POS << " to bin=" << index_bin << std::endl;
-
-	//index_bin = reg2bin(entry.body->POS, entry.body->POS);
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
 	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
 

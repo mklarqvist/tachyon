@@ -382,7 +382,8 @@ void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_obje
 		const BYTE targetA = references[alleleA];
 		const BYTE targetB = references[alleleB];
 		assert(targetA < 9 && targetB < 9);
-		const BYTE insertion_add = (targetA == constants::REF_ALT_INSERTION) + (targetB == constants::REF_ALT_INSERTION);
+		//const BYTE insertion_add = (targetA == constants::REF_ALT_INSERTION) + (targetB == constants::REF_ALT_INSERTION);
+		const BYTE insertion_add = 0;
 
 		for(U32 j = 0; j < length; ++j, cum_position++){
 			objects[cum_position].n_insertions += insertion_add;

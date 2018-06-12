@@ -27,7 +27,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry) :
 {
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isBiallelicSNV() || this->isReferenceNONREF())
+	if(this->isBiallelicSNV())
 		this->controller.simple_snv = true;
 
 	for(U32 i = 0; i < this->n_alleles; ++i){
@@ -55,7 +55,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isBiallelicSNV() || this->isReferenceNONREF())
+	if(this->isBiallelicSNV())
 		this->controller.simple_snv = true;
 }
 
@@ -80,6 +80,57 @@ MetaEntry::~MetaEntry(){
 
 	::operator delete[](static_cast<void*>(this->alleles));
 };
+
+const bool MetaEntry::usePackedRefAlt(void) const{
+	if(this->isBiallelic() == false || this->isDiploid() == false)
+		return false;
+
+	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), constants::YON_REGEX_PACKED_ALLELES) &&
+	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), constants::YON_REGEX_PACKED_ALLELES)){
+		return true;
+	}
+	return false;
+}
+
+const BYTE MetaEntry::packRefAltByte(void) const{
+	assert(this->usePackedRefAlt());
+	BYTE ref_alt = 0; // start out with empty
+
+	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+		ref_alt ^= constants::REF_ALT_NON_REF << 4;
+	} else {
+		switch(this->alleles[0].allele[0]){
+		case 'A': ref_alt ^= constants::REF_ALT_A << 4; break;
+		case 'T': ref_alt ^= constants::REF_ALT_T << 4; break;
+		case 'G': ref_alt ^= constants::REF_ALT_G << 4; break;
+		case 'C': ref_alt ^= constants::REF_ALT_C << 4; break;
+		case 'N': ref_alt ^= constants::REF_ALT_N << 4; break;
+		case '.': ref_alt ^= constants::REF_ALT_MISSING << 4; break;
+		default:
+			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV reference..." << std::endl;
+			std::cerr << std::string(this->alleles[0].allele , this->alleles[0].l_allele) << std::endl;
+			std::cerr << std::string(this->alleles[1].allele , this->alleles[1].l_allele) << std::endl;
+			exit(1);
+		}
+	}
+
+	if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+		ref_alt ^= constants::REF_ALT_NON_REF << 0;
+	} else {
+		switch(this->alleles[1].allele[0]){
+		case 'A': ref_alt ^= constants::REF_ALT_A << 0; break;
+		case 'T': ref_alt ^= constants::REF_ALT_T << 0; break;
+		case 'G': ref_alt ^= constants::REF_ALT_G << 0; break;
+		case 'C': ref_alt ^= constants::REF_ALT_C << 0; break;
+		case 'N': ref_alt ^= constants::REF_ALT_N << 0; break;
+		case '.': ref_alt ^= constants::REF_ALT_MISSING << 0; break;
+		default:
+			std::cerr << utility::timestamp("ERROR", "BCF") << "Illegal SNV alt..." << std::endl;
+			exit(1);
+		}
+	}
+	return(ref_alt);
+}
 
 }
 }

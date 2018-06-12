@@ -242,7 +242,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
 			++this->n_info_loaded;
-			settings.load_info_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.info_offsets[i]));
+			settings.load_info_ID_loaded.push_back(SettingsMap(i,i,&this->footer.info_offsets[i]));
 		}
 	}
 	// If we have supplied a list of identifiers
@@ -271,7 +271,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
 			++this->n_format_loaded;
-			settings.load_format_ID_loaded.push_back(core::SettingsMap(i,i,&this->footer.format_offsets[i]));
+			settings.load_format_ID_loaded.push_back(SettingsMap(i,i,&this->footer.format_offsets[i]));
 		}
 		//std::cerr << this->end_compressed_data_ << '/' << (U64)stream.tellg() << std::endl;
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
@@ -413,7 +413,6 @@ bool VariantBlock::write(std::ostream& stream,
 	// writing footer
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 
-
 	// Update stats
 	this->updateOutputStatistics(stats_basic, stats_info, stats_format);
 
@@ -430,9 +429,9 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	++this->meta_contig_container;
 
 	// Ref-alt data
-	if(meta_entry.isBiallelicSNV() || meta_entry.isReferenceNONREF()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+	if(meta_entry.usePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
 		meta_entry.controller.alleles_packed = true;
-		const BYTE ref_alt = meta_entry.packedRefAltByte();
+		const BYTE ref_alt = meta_entry.packRefAltByte();
 		this->meta_refalt_container.AddLiteral(ref_alt);
 		++this->meta_refalt_container;
 	}
