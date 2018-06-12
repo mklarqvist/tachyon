@@ -368,11 +368,22 @@ public:
 	std::vector<value_type> possibleBins(const U64& from_position, const U64& to_position, const bool filter = true) const{
 		std::vector<value_type> overlapping_chunks;
 		//overlapping_chunks.push_back(this->at(0)); // level 0
-		for(S32 i = this->n_levels_; i != 0; --i){
-			U32 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
-			U32 binTo   = S64(to_position/(this->l_contig_rounded_ / pow(4,i)));
 
-			//std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << "<>" << binTo << "/" << this->size() << std::endl;
+		// If end position are out-of-bounds then trucated it to maximum
+		// allowed value
+		U64 used_to_posititon = to_position;
+		if(used_to_posititon > this->l_contig_rounded_){
+			//std::cerr << "out of bounds" << std::endl;
+			//std::cerr << to_position << "->" << this->l_contig_rounded_ << std::endl;
+			used_to_posititon = this->l_contig_rounded_;
+		}
+
+		for(S32 i = this->n_levels_; i != 0; --i){
+			S64 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
+			S64 binTo   = S64(used_to_posititon/(this->l_contig_rounded_ / pow(4,i)));
+
+			//std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << " -> " << binTo << "/" << this->size() << std::endl;
+			//std::cerr << "limit: " << this->bins_cumsum_[i] << std::endl;
 
 			// Overlap from cumpos + (binFrom, binTo)
 			// All these chunks could potentially hold intervals overlapping

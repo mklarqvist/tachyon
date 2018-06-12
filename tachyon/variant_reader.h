@@ -745,12 +745,19 @@ public:
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	bool parseIntervals(void){
+		// Intervals pass expression tests
 		if(this->getSettings().validateIntervalStrings() == false)
 			return(false);
 
+		// Data reference
 		std::vector<std::string>& intervals = this->getSettings().interval_strings;
+
+		// No intervals to parse
+		if(intervals.size() == 0)
+			return true;
+
+		// Parse each interval
 		for(U32 i = 0; i < intervals.size(); ++i){
-			// scrub whitespace
 			intervals[i] = utility::remove_whitespace(intervals[i]);
 			core::HeaderContig* contig = nullptr;
 
@@ -760,6 +767,8 @@ public:
 					std::cerr << "cant find contig: " << intervals[i] << std::endl;
 					return(false);
 				}
+
+				std::cerr << "Parsed: " << intervals[i] << std::endl;
 
 			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_POSITION )){
 				std::cerr << "chromosome pos" << std::endl;
@@ -774,6 +783,8 @@ public:
 					return(false);
 				}
 
+				U64 position = atof(substrings[1].data());
+				std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
 			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_RANGE )){
 				std::cerr << "chromosome pos - pos" << std::endl;
@@ -793,6 +804,12 @@ public:
 					std::cerr << "illegal form" << std::endl;
 					return false;
 				}
+				U64 position_from = atof(position_strings[0].data());
+				U64 position_to   = atof(position_strings[1].data());
+				if(position_from > position_to) std::swap(position_from, position_to);
+
+				std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
+				this->index.findOverlap(contig->contigID, position_from, position_to);
 
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << intervals[i] << std::endl;
@@ -800,12 +817,8 @@ public:
 			}
 		}
 
-		tachyon::core::HeaderContig* contig = nullptr;
-		if(!this->header.getContig("20",contig)){
-			std::cerr << "cant find: " << "20" << std::endl;
-			return(1);
-		}
-		this->index.findOverlap(contig->contigID, 1e6, 4.2e6);
+
+		exit(1);
 
 		return true;
 	}

@@ -29,8 +29,8 @@ const U32 FILE_HEADER_LENGTH    = 8;
 
 /*------   Regular expression patterns  ------*/
 const std::regex YON_REGEX_CONTIG_ONLY     = std::regex("^[A-Za-z0-9\\-_]+$");
-const std::regex YON_REGEX_CONTIG_POSITION = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?$");
-const std::regex YON_REGEX_CONTIG_RANGE    = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([eE]{1}[0-9]{1})?\\-[0-9]+([eE]{1}[0-9]{1})?$");
+const std::regex YON_REGEX_CONTIG_POSITION = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([\\.]{1}[0-9]+){0,1}([eE]{1}[0-9]{1})?$");
+const std::regex YON_REGEX_CONTIG_RANGE    = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([\\.]{1}[0-9]+){0,1}([eE]{1}[0-9]{1})?\\-[0-9]+([\\.]{1}[0-9]+){0,1}([eE]{1}[0-9]{1})?$");
 const std::regex YON_REGEX_PACKED_ALLELES  = std::regex("^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$");
 
 /*------   Hot meta biallelic packing   ------*/

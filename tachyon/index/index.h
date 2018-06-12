@@ -148,22 +148,24 @@ public:
 	 * @return
 	 */
 	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& start_pos, const U64& end_pos) const{
-		if(this->getMetaIndex().at(contig_id).n_blocks == 0)
+		if(contig_id > this->getMetaIndex().size())
 			return(std::vector<entry_type>());
 
-		std::vector<entry_type> overlapping_blocks;
+		if(this->getMetaIndex().at(contig_id).n_blocks == 0)
+			return(std::vector<entry_type>());
 
 		// We also need to know possible overlaps in the quad-tree:
 		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
 
 		// Retrieve vector of bins that might contain the data
 		// The possibleBins function does not check if they exist
+		std::cerr << "here: " << contig_id << std::endl;
 		std::vector<bin_type> possible_bins = this->index_[contig_id].possibleBins(start_pos, end_pos);
 		std::vector<U32> yon_blocks;
 
 		// Check if possible bins exists in the linear index
 		for(U32 i = 0; i < possible_bins.size(); ++i){
-			//std::cerr << "bin: " << possible_bins[i].binID_ << " -> " << possible_bins[i].size() << ": ";
+			//std::cerr << "bin: " << possible_bins[i].binID_ << " -> " << possible_bins[i].size() << std::endl;
 
 			// Cycle over the YON blocks this bin have data mapping to
 			for(U32 j = 0; j < possible_bins[i].size(); ++j){
