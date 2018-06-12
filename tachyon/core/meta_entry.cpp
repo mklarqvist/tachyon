@@ -25,15 +25,29 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry) :
 	name(bcf_entry.ID, bcf_entry.l_ID),
 	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
 {
+	// Fix for the special case when ALT is not encoded
+	if(this->n_alleles == 1){
+		::operator delete[](static_cast<void*>(this->alleles));
+		this->n_alleles = 2;
+		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
+
+		new( &this->alleles[0] ) allele_type( );
+		this->alleles[0](bcf_entry.alleles[0].data, bcf_entry.alleles[0].length);
+		new( &this->alleles[1] ) allele_type( );
+		this->alleles[1].allele = new char[1];
+		this->alleles[1].allele[0] = '.';
+		this->alleles[1].l_allele = 1;
+	} else {
+		for(U32 i = 0; i < this->n_alleles; ++i){
+			new( &this->alleles[i] ) allele_type( );
+			this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+		}
+	}
+
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = bcf_entry.isSimple();
 	if(this->isBiallelicSNV())
 		this->controller.simple_snv = true;
-
-	for(U32 i = 0; i < this->n_alleles; ++i){
-		new( &this->alleles[i] ) allele_type( );
-		this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
-	}
 }
 
 MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset) :
@@ -48,9 +62,23 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 	name(bcf_entry.ID, bcf_entry.l_ID),
 	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
 {
-	for(U32 i = 0; i < this->n_alleles; ++i){
-		new( &this->alleles[i] ) allele_type( );
-		this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+	// Fix for the special case when ALT is not encoded
+	if(this->n_alleles == 1){
+		::operator delete[](static_cast<void*>(this->alleles));
+		this->n_alleles = 2;
+		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
+
+		new( &this->alleles[0] ) allele_type( );
+		this->alleles[0](bcf_entry.alleles[0].data, bcf_entry.alleles[0].length);
+		new( &this->alleles[1] ) allele_type( );
+		this->alleles[1].allele = new char[1];
+		this->alleles[1].allele[0] = '.';
+		this->alleles[1].l_allele = 1;
+	} else {
+		for(U32 i = 0; i < this->n_alleles; ++i){
+			new( &this->alleles[i] ) allele_type( );
+			this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+		}
 	}
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
