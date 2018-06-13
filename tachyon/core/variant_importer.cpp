@@ -186,7 +186,7 @@ bool VariantImporter::BuildBCF(void){
 		this->block.header.blockID     = this->writer->n_blocks_written;
 		this->block.header.contigID    = bcf_reader.front().body->CHROM;
 		this->block.header.minPosition = bcf_reader.front().body->POS;
-		this->block.header.maxPosition = bcf_reader.back().body->POS;
+		this->block.header.maxPosition = bcf_reader.back().body->POS; // correct only for SNVs
 		this->block.header.controller.hasGT         = this->GT_available_;
 		this->block.header.controller.hasGTPermuted = this->settings_.permute_genotypes;
 		// if there is 0 or 1 samples then GT data is never permuted
@@ -272,7 +272,7 @@ bool VariantImporter::BuildBCF(void){
 		this->index_entry.byte_offset_end = this->writer->stream->tellp();
 		this->index_entry.contigID        = bcf_reader.front().body->CHROM;
 		this->index_entry.minPosition     = bcf_reader.front().body->POS;
-		this->index_entry.maxPosition     = bcf_reader.back().body->POS;
+		//this->index_entry.maxPosition     = bcf_reader.back().body->POS;
 		this->index_entry.n_variants      = bcf_reader.size();
 		this->writer->index.index_.linear_at(index_entry.contigID) += this->index_entry; // Todo: beautify
 		this->index_entry.reset();
@@ -450,12 +450,14 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 	// Has END position?
 	S32 index_bin = -1;
 
+	S64 end_position_used = entry.body->POS;
 	if(this->settings_.info_end_key != -1){
 		// Linear search: this is not optimal but probably still faster
 		// than generating a new hash table for each record
 		for(U32 i = 0; i < entry.infoPointer; ++i){
 			if(entry.infoID[i].mapID == this->settings_.info_end_key){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
+				end_position_used = end;
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
 				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.current_block_number());
 				break;
@@ -475,14 +477,17 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 			}
 		}
 
-		if(longest){
+		if(longest > 1){
 			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.current_block_number());
+			end_position_used = entry.body->POS + longest;
 		} else { // fallback if all others fail
 			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.current_block_number());
 		}
 	}
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
 	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
+	if(end_position_used > this->index_entry.maxPosition)
+		this->index_entry.maxPosition = end_position_used;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;

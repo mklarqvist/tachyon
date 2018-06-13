@@ -397,6 +397,8 @@ public:
 				}
 			}
 		}
+		overlapping_chunks.push_back(this->at(0));
+
 		return(overlapping_chunks);
 	}
 
