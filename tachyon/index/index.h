@@ -83,9 +83,12 @@ public:
 	 * @param contig_id
 	 * @return
 	 */
-	inline const entry_meta_type& findOverlap(const U32& contig_id) const{
-		//if(contig_id > this->getMetaIndex().size()) return;
-		return(this->getMetaIndex()[contig_id]);
+	inline std::vector<entry_type> findOverlap(const U32& contig_id) const{
+		if(contig_id > this->getMetaIndex().size())
+			return(std::vector<entry_type>());
+
+		// Todo
+		return(std::vector<entry_type>());
 	}
 
 	/**<
@@ -94,50 +97,8 @@ public:
 	 * @param position
 	 * @return
 	 */
-	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& position) const{
-		if(contig_id > this->getMetaIndex().size()) std::vector<entry_type>();
-
-		// Linear index: overlapping blocks
-		std::vector<entry_type> overlapping_blocks;
-		for(U32 i = 0; i < this->getIndex().size(); ++i){
-			// Interval overlap?
-			// [a, b] overlaps with [x, y] iff b > x and a < y.
-			if(position >= this->getIndex().linear_at(contig_id)[i].minPosition && position <= this->getIndex().linear_at(contig_id)[i].maxPosition){
-				overlapping_blocks.push_back(this->getIndex().linear_at(contig_id)[i]);
-			}
-		}
-		// Sort overlapping block
-		std::sort(overlapping_blocks.begin(), overlapping_blocks.end());
-
-		// Merge block-range
-
-
-		// We also need to know possible overlaps in the quad-tree:
-		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
-		std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(position, position);
-		std::vector<U32> b;
-		for(U32 i = 0; i < possible_chunks.size(); ++i){
-			std::cerr << "chunk: " << possible_chunks[i].binID_ << " -> " << possible_chunks[i][0];
-			b.push_back(possible_chunks[i][0]);
-			for(U32 j = 1; j < possible_chunks[i].size(); ++j){
-				std::cerr << ',' << possible_chunks[i][j];
-				b.push_back(possible_chunks[i][j]);
-			}
-			std::cerr << std::endl;
-		}
-		std::sort(b.begin(), b.end());
-		U32 prev = b[0];
-		std::cerr << 0 << ": " << b[0] << std::endl;
-		for(U32 i = 1; i < b.size(); ++i){
-			if(prev != b[i]){
-				std::cerr << i << ": " << b[i] << std::endl;
-				// Use linear index to see if it overlaps or not
-				std::cerr << this->index_.linear_at(contig_id)[b[i]].minPosition << "->" << this->index_.linear_at(contig_id)[b[i]].maxPosition << std::endl;
-			}
-			prev = b[i];
-		}
-
-		return(overlapping_blocks);
+	inline std::vector<entry_type> findOverlap(const U32& contig_id, const U64& position) const{
+		return(this->findOverlap(contig_id, position, position));
 	}
 
 	/**<
@@ -159,14 +120,11 @@ public:
 
 		// Retrieve vector of bins that might contain the data
 		// The possibleBins function does not check if they exist
-		std::cerr << "here: " << contig_id << std::endl;
 		std::vector<bin_type> possible_bins = this->index_[contig_id].possibleBins(start_pos, end_pos);
 		std::vector<U32> yon_blocks;
 
 		// Check if possible bins exists in the linear index
 		for(U32 i = 0; i < possible_bins.size(); ++i){
-			//std::cerr << "bin: " << possible_bins[i].binID_ << " -> " << possible_bins[i].size() << std::endl;
-
 			// Cycle over the YON blocks this bin have data mapping to
 			for(U32 j = 0; j < possible_bins[i].size(); ++j){
 				// Check [a, b] overlaps with [x, y] iff b > x and a < y.
@@ -177,13 +135,9 @@ public:
 				if(this->getIndex().linear_at(contig_id)[possible_bins[i][j]].minPosition < end_pos &&
 				   this->getIndex().linear_at(contig_id)[possible_bins[i][j]].maxPosition > start_pos)
 				{
-					//std::cerr << "overlap: " << possible_bins[i][j] << ", ";
 					yon_blocks.push_back(possible_bins[i][j]);
 				}
-				//else
-				//	std::cerr << "miss: " << possible_bins[i][j] << ", ";
 			}
-			//std::cerr << std::endl;
 		}
 
 		// Return nothing if all empty
@@ -193,12 +147,6 @@ public:
 		// Sort to dedupe
 		std::sort(yon_blocks.begin(), yon_blocks.end());
 
-		// Debug
-		//for(U32 i = 0; i < yon_blocks.size(); ++i){
-		//	std::cerr << yon_blocks[i] << ", ";
-		//}
-		//std::cerr << std::endl;
-
 		// Dedupe
 		std::vector<entry_type> yon_blocks_deduped;
 		yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[0]]);
@@ -206,16 +154,14 @@ public:
 		for(U32 i = 1; i < yon_blocks.size(); ++i){
 			if(yon_blocks[i] != yon_blocks_deduped.back().blockID){
 				yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[i]]);
-				//std::cerr << target_bins[i] << "!=" << yon_blocks_deduped.back().blockID << std::endl;
-				//std::cerr << std::endl;
 			}
 		}
 
 		// Debug
-		for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
-			yon_blocks_deduped[i].print(std::cerr);
-			std::cerr << std::endl;
-		}
+		//for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
+		//	yon_blocks_deduped[i].print(std::cerr);
+		//	std::cerr << std::endl;
+		//}
 
 		return(yon_blocks_deduped);
 	}
@@ -225,14 +171,12 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		//stream << entry.index_;
 		stream << entry.index_;
 		stream << entry.index_meta_;
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		//stream >> entry.index_;
 		stream >> entry.index_;
 		stream >> entry.index_meta_;
 		return(stream);

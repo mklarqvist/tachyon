@@ -156,6 +156,61 @@ bool VariantReader::nextBlock(){
 	return true;
 }
 
+bool VariantReader::getBlock(const index_entry_type& index_entry){
+	// If the stream is faulty then return
+	if(!this->stream.good()){
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+		return false;
+	}
+
+	// Reset and re-use
+	this->block.clear();
+
+	// Seek to target block ID with the help of the index
+	this->stream.seekg(index_entry.byte_offset);
+	if(this->stream.good() == false){
+		std::cerr << utility::timestamp("ERROR", "IO") << "Failed to seek to given offset using target index entry!" << std::endl;
+		return(false);
+	}
+
+	if(!this->block.readHeaderFooter(this->stream))
+		return false;
+
+	if(!this->codec_manager.zstd_codec.decompress(this->block.footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+		return(false);
+	}
+	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
+	this->parseSettings();
+
+	// Attempts to read a YON block with the provided
+	if(!this->block.read(this->stream, this->block_settings))
+		return false;
+
+	// encryption manager ascertainment
+	if(this->block.header.controller.anyEncrypted){
+		if(this->keychain.size() == 0){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
+			return false;
+		}
+
+		encryption::EncryptionDecorator e;
+		if(!e.decryptAES256(this->block, this->keychain)){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
+			return false;
+		}
+	}
+
+	// Internally decompress available data
+	if(!this->codec_manager.decompress(this->block)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
+		return false;
+	}
+
+	// All passed
+	return true;
+}
+
 VariantReader::block_entry_type VariantReader::getBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
@@ -443,6 +498,69 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 		}
 	}
 	return(ret);
+}
+
+bool VariantReader::parseSettings(void){
+	block_settings.load_info_ID_loaded.clear();
+	block_settings.load_format_ID_loaded.clear();
+
+	// Map INFO
+	if(block_settings.load_info == false){ // prevent double load
+		U32 info_matches = 0;
+		for(U32 i = 0; i < block_settings.info_list.size(); ++i){
+			const S32 global_key = this->has_info_field(block_settings.info_list[i]);
+			if(global_key >= 0){
+				S32 local_key = -1;
+				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
+						local_key = i;
+						this->block_settings.info_ID_list.push_back(i);
+						block_settings.load_info_ID_loaded.push_back(
+													SettingsMap(
+															info_matches++, // iterator value
+															i,              // local index id
+															&this->block.footer.info_offsets[i]) // offset
+															);
+						break;
+					}
+				}
+
+				//if(local_key == -1){
+					//std::cerr << "could not find local" << std::endl;
+				//}
+			}
+		}
+	}
+
+	// Map FORMAT
+	if(this->block_settings.load_format == false){ // prevent double load
+		U32 format_matches = 0;
+		for(U32 i = 0; i < this->block_settings.format_list.size(); ++i){
+			const S32 global_key = this->has_format_field(this->block_settings.format_list[i]);
+			if(global_key >= 0){
+				S32 local_key = -1;
+				for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
+					if(this->block.footer.format_offsets[i].data_header.global_key == global_key){
+						local_key = i;
+						this->block_settings.format_ID_list.push_back(i);
+						block_settings.load_format_ID_loaded.push_back(
+													SettingsMap(
+															format_matches++, // iterator value
+															i,              // local index id
+															&this->block.footer.format_offsets[i]) // offset
+															);
+						break;
+					}
+				}
+
+				//if(local_key == -1){
+					//std::cerr << "could not find local" << std::endl;
+				//}
+			}
+		}
+	}
+
+	return(true);
 }
 
 

@@ -43,16 +43,16 @@ public:
 	}
 
 	bool operator!=(const self_type& other) const{
-		if(this->blockID         != other.blockID) return false;
-		if(this->contigID        != other.contigID) return false;
-		if(this->n_variants      != other.n_variants) return false;
-		if(this->byte_offset     != other.byte_offset) return false;
-		if(this->byte_offset_end != other.byte_offset_end) return false;
-		if(this->minPosition     != other.minPosition) return false;
-		if(this->maxPosition     != other.maxPosition) return false;
-		if(this->minBin          != other.minBin) return false;
-		if(this->maxBin          != other.maxBin) return false;
-		return true;
+		if(this->blockID         != other.blockID)         return true;
+		if(this->contigID        != other.contigID)        return true;
+		if(this->n_variants      != other.n_variants)      return true;
+		if(this->byte_offset     != other.byte_offset)     return true;
+		if(this->byte_offset_end != other.byte_offset_end) return true;
+		if(this->minPosition     != other.minPosition)     return true;
+		if(this->maxPosition     != other.maxPosition)     return true;
+		if(this->minBin          != other.minBin)          return true;
+		if(this->maxBin          != other.maxBin)          return true;
+		return false;
 	}
 
 	inline bool operator==(const self_type& other) const{ return(!(*this != other)); }

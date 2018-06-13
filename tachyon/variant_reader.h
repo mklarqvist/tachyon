@@ -31,6 +31,10 @@ namespace tachyon{
 
 struct VariantReaderSettings{
 public:
+	typedef VariantReaderSettings self_type;
+	typedef index::IndexEntry     index_entry_type;
+
+public:
 	VariantReaderSettings() :
 		drop_format(false),
 		header_only(false),
@@ -61,11 +65,11 @@ public:
 			this->interval_strings[i] = utility::remove_whitespace(this->interval_strings[i]);
 
 			if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
-				std::cerr << "chromosome onlu" << std::endl;
+				//std::cerr << "chromosome onlu" << std::endl;
 			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
-				std::cerr << "chromosome pos" << std::endl;
+				//std::cerr << "chromosome pos" << std::endl;
 			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
-				std::cerr << "chromosome pos - pos" << std::endl;
+				//std::cerr << "chromosome pos - pos" << std::endl;
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << this->interval_strings[i] << std::endl;
 				return false;
@@ -91,6 +95,10 @@ public:
  		));
 	}
 
+	inline const bool hasBlockList(void) const{ return(this->yon_blocks_list.size()); }
+	inline std::vector<index_entry_type>& getBlockList(void){ return(this->yon_blocks_list); }
+	inline const std::vector<index_entry_type>& getBlockList(void) const{ return(this->yon_blocks_list); }
+
 public:
 	bool drop_format;
 	bool header_only;
@@ -109,6 +117,7 @@ public:
 	std::vector<std::string> interval_strings;
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
+	std::vector<index_entry_type> yon_blocks_list;
 };
 
 struct VariantReaderObjects{
@@ -175,6 +184,7 @@ class VariantReader{
 	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
+	typedef index::IndexEntry                      index_entry_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
 	typedef encryption::Keychain                   keychain_type;
 	typedef core::MetaEntry                        meta_entry_type;
@@ -397,6 +407,12 @@ public:
 	bool nextBlock(void);
 
 	/**<
+	 * Get the target YON block
+	 * @return Returns TRUE if successful or FALSE otherwise
+	 */
+	bool getBlock(const index_entry_type& index_entry);
+
+	/**<
 	 * Get the current YON block in-order as a copy
 	 * @return Returns a YON block. The container has a size of 0 upon fail/empty
 	 */
@@ -417,68 +433,7 @@ public:
 	 *
 	 * @return
 	 */
-	bool parseSettings(void){
-		block_settings.load_info_ID_loaded.clear();
-		block_settings.load_format_ID_loaded.clear();
-
-		// Map INFO
-		if(block_settings.load_info == false){ // prevent double load
-			U32 info_matches = 0;
-			for(U32 i = 0; i < block_settings.info_list.size(); ++i){
-				const S32 global_key = this->has_info_field(block_settings.info_list[i]);
-				if(global_key >= 0){
-					S32 local_key = -1;
-					for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-						if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
-							local_key = i;
-							this->block_settings.info_ID_list.push_back(i);
-							block_settings.load_info_ID_loaded.push_back(
-														SettingsMap(
-																info_matches++, // iterator value
-																i,              // local index id
-																&this->block.footer.info_offsets[i]) // offset
-																);
-							break;
-						}
-					}
-
-					if(local_key == -1){
-						//std::cerr << "could not find local" << std::endl;
-					}
-				}
-			}
-		}
-
-		// Map FORMAT
-		if(this->block_settings.load_format == false){ // prevent double load
-			U32 format_matches = 0;
-			for(U32 i = 0; i < this->block_settings.format_list.size(); ++i){
-				const S32 global_key = this->has_format_field(this->block_settings.format_list[i]);
-				if(global_key >= 0){
-					S32 local_key = -1;
-					for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-						if(this->block.footer.format_offsets[i].data_header.global_key == global_key){
-							local_key = i;
-							this->block_settings.format_ID_list.push_back(i);
-							block_settings.load_format_ID_loaded.push_back(
-														SettingsMap(
-																format_matches++, // iterator value
-																i,              // local index id
-																&this->block.footer.format_offsets[i]) // offset
-																);
-							break;
-						}
-					}
-
-					if(local_key == -1){
-						//std::cerr << "could not find local" << std::endl;
-					}
-				}
-			}
-		}
-
-		return(true);
-	}
+	bool parseSettings(void);
 
 	/**<
 	 * Primary construction function for generating the appropriate instances of
@@ -498,19 +453,19 @@ public:
 		if(this->block_settings.annotate_extra){
 			// fixme
 			// if special
-			// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC"
-			if(this->header.getInfoField("FS_A") == false) this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
-			if(this->header.getInfoField("AN") == false) this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
-			if(this->header.getInfoField("NM") == false) this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
-			if(this->header.getInfoField("NPM") == false) this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
-			if(this->header.getInfoField("AC") == false) this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
-			if(this->header.getInfoField("AC_FWD") == false) this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
-			if(this->header.getInfoField("AC_REV") == false) this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
-			if(this->header.getInfoField("HWE_P") == false) this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
-			if(this->header.getInfoField("VT") == false) this->header.literals += "\n##INFO=<ID=VT,Number=1,Type=String>";
-			if(this->header.getInfoField("AF") == false) this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+			// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"
+			if(this->header.getInfoField("FS_A") == false)          this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+			if(this->header.getInfoField("AN") == false)            this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+			if(this->header.getInfoField("NM") == false)            this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+			if(this->header.getInfoField("NPM") == false)           this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC") == false)            this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC_FWD") == false)        this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+			if(this->header.getInfoField("AC_REV") == false)        this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+			if(this->header.getInfoField("HWE_P") == false)         this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+			if(this->header.getInfoField("VT") == false)            this->header.literals += "\n##INFO=<ID=VT,Number=A,Type=String>";
+			if(this->header.getInfoField("AF") == false)            this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
 			if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
-			if(this->header.getInfoField("F_PIC") == false) this->header.literals += "\n##INFO=<ID=F_PIC,Number=1,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
+			if(this->header.getInfoField("F_PIC") == false)         this->header.literals += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
 		}
 
 		this->header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
@@ -523,6 +478,22 @@ public:
 		// Output VCF header
 		if(this->block_settings.show_vcf_header){
 			this->header.writeVCFHeaderString(std::cout, this->block_settings.load_format || this->block_settings.format_list.size());
+		}
+
+		// If seek is active for targetted intervals
+		if(this->getSettings().interval_strings.size()){
+			if(this->getSettings().getBlockList().size()){
+				for(U32 i = 0; i < this->getSettings().getBlockList().size(); ++i){
+					if(this->getBlock(this->getSettings().getBlockList()[i]) == false){
+						return(0);
+					}
+					n_variants += this->outputBlockVCF();
+				}
+
+				return(n_variants);
+			} else { // Provided intervals but no matching YON blocks
+				return(0);
+			}
 		}
 
 		// While there are YON blocks
@@ -558,7 +529,6 @@ public:
 		// Todo: in cases of non-diploid
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 		for(U32 i = 0; i < this->header.getSampleNumber(); ++i){
-			//std::cerr << i << "/" << this->header.getSampleNumber() << std::endl;
 			genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
 		}
 
@@ -569,7 +539,6 @@ public:
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
 
-
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
 			if(this->block_settings.custom_output_format)
@@ -578,15 +547,7 @@ public:
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
 
 			// Filter options
-			if(block_settings.load_set_membership) (this->*print_filter)(output_buffer, p, objects);
-			else output_buffer += '.';
-
-			if(block_settings.load_info || block_settings.load_format || this->block.n_info_loaded || this->block_settings.annotate_extra) output_buffer += '\t';
-			else {
-				output_buffer += '\n';
-				continue;
-			}
-
+			(this->*print_filter)(output_buffer, p, objects);
 			(this->*print_info)(output_buffer, '\t', p, objects);
 			if(this->block_settings.annotate_extra) this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
 			(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
@@ -756,6 +717,9 @@ public:
 		if(intervals.size() == 0)
 			return true;
 
+		// Blocks to load
+		std::vector<index_entry_type>& blocks_to_load = this->getSettings().getBlockList();
+
 		// Parse each interval
 		for(U32 i = 0; i < intervals.size(); ++i){
 			intervals[i] = utility::remove_whitespace(intervals[i]);
@@ -786,6 +750,9 @@ public:
 				U64 position = atof(substrings[1].data());
 				std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
+				std::vector<index_entry_type> target_blocks = this->index.findOverlap(contig->contigID, position);
+				blocks_to_load.insert( blocks_to_load.end(), target_blocks.begin(), target_blocks.end() );
+
 			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_RANGE )){
 				std::cerr << "chromosome pos - pos" << std::endl;
 				std::vector<std::string> substrings = utility::split(intervals[i], ':');
@@ -809,7 +776,9 @@ public:
 				if(position_from > position_to) std::swap(position_from, position_to);
 
 				std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
-				this->index.findOverlap(contig->contigID, position_from, position_to);
+
+				std::vector<index_entry_type> target_blocks = this->index.findOverlap(contig->contigID, position_from, position_to);
+				blocks_to_load.insert( blocks_to_load.end(), target_blocks.begin(), target_blocks.end() );
 
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << intervals[i] << std::endl;
@@ -817,8 +786,29 @@ public:
 			}
 		}
 
+		if(blocks_to_load.size() == 0)
+			return true;
 
-		exit(1);
+		// Dedupe
+		std::sort(blocks_to_load.begin(), blocks_to_load.end());
+		std::vector<index_entry_type> blocks_to_load_deduped;
+		blocks_to_load_deduped.push_back(blocks_to_load[0]);
+		for(U32 i = 1; i < blocks_to_load.size(); ++i){
+			if(blocks_to_load_deduped.back() != blocks_to_load[i]){
+				blocks_to_load_deduped.push_back(blocks_to_load[i]);
+			}
+		}
+
+		// Debug
+		//std::cerr << "size: " << blocks_to_load_deduped.size() << std::endl;
+		//for(U32 i = 0; i < blocks_to_load_deduped.size(); ++i){
+		//	std::cerr << i << "\t";
+		//	blocks_to_load_deduped[i].print(std::cerr);
+		//	std::cerr << std::endl;
+		//}
+
+		// Assign deduped vector to settings reference
+		blocks_to_load = blocks_to_load_deduped;
 
 		return true;
 	}

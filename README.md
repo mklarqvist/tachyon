@@ -279,8 +279,9 @@ It is possible to annotate data with a series of `INFO` fields computed directly
 | `AC_REV`        | `A`      | `Integer` | Total number of alleles on the *reverse* strand |
 | `AF`            | `A`      | `Float`   | Allele frequency of allele |
 | `HWE_P`         | `A`      | `Float`   | Hardy-Weinberg equilibrium P-value |
-| `VT`            | 1      | `String`  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
-| `MULTI_ALLELIC` | 0      | `Flag`    | Indicates if a site is multi-allelic (number of alternative alleles > 1) |
+| `VT`            | `A`      | `String`  | Variant classification (SNP, MNP, INDEL, CLUMPED, SV, UNKNOWN) |
+| `MULTI_ALLELIC` | 0        | `Flag`    | Indicates if a site is multi-allelic (number of alternative alleles > 1) |
+| `F_PIC`         | `A`      | `Float`   | Population inbreeding coefficient (F-statistic) |
 
 The contingency table, or matrix, for the Fisher's exact test (`FS_A` ) for strand bias looks like this:
 
