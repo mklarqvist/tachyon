@@ -158,10 +158,10 @@ public:
 		}
 
 		// Debug
-		for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
-			yon_blocks_deduped[i].print(std::cerr);
-			std::cerr << std::endl;
-		}
+		//for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
+		//	yon_blocks_deduped[i].print(std::cerr);
+		//	std::cerr << std::endl;
+		//}
 
 		return(yon_blocks_deduped);
 	}

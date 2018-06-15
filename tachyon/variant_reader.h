@@ -100,14 +100,14 @@ public:
 	inline const std::vector<index_entry_type>& getBlockList(void) const{ return(this->yon_blocks_list); }
 
 public:
-	bool drop_format;
-	bool header_only;
-	bool show_header;
-	bool custom_delimiter;
-	char custom_delimiter_char;
-	bool custom_output_format;
-	bool filter_any;
-	bool filter_all;
+	bool drop_format; // drop FORMAT fields
+	bool header_only; // show only the VCF header
+	bool show_header; // show the VCF header
+	bool custom_delimiter; // output uses a custom delimiter
+	char custom_delimiter_char; // what is the custom delimiter
+	bool custom_output_format;  // output has a custom format
+	bool filter_any;  // filter output
+	bool filter_all;  // filter
 	bool annotate_genotypes;
 	bool output_FORMAT_as_vector;
 	std::string input;
@@ -173,6 +173,123 @@ public:
 	genotype_summary_type*   genotype_summary;
 	info_interface_type**    info_fields;
 	format_interface_type**  format_fields;
+};
+
+// Forward declare
+// Required for VariantReaderFilter
+class VariantReader;
+
+struct VariantReaderFilters{
+public:
+	typedef VariantReaderFilters self_type;
+	typedef VariantReaderObjects objects_type;
+	typedef bool (self_type::*filter_function)(const objects_type& objects, const U32& position) const;
+
+public:
+	VariantReaderFilters() :
+		target_intervals(false),
+		filter_target_ploidy(false),
+		filter_n_alt_alleles(false),
+		n_ploidy(2),
+		n_alt_alleles(1),
+		mixed_phasing_only(false),
+		given_phase_only(false),
+		remove_uncalled_only(false),
+		keep_uncalled_only(false),
+		remove_unseen_alts(false)
+	{
+
+	}
+
+	~VariantReaderFilters() = default;
+
+	// Has mixed phasing
+	inline bool filterMixedPhasing(const objects_type& objects, const U32& position) const{
+		assert(objects.meta != nullptr);
+		return(objects.meta->at(position).isGTMixedPhasing() == true);
+	}
+
+	// GT data matches this
+	inline bool filterUniformMatchPhase(const objects_type& objects,
+												 const U32& position,
+												const bool& target_phase) const
+	{
+		assert(objects.meta != nullptr);
+		return(objects.meta->at(position).isGTMixedPhasing() == false &&
+			   objects.meta->at(position).controller.gt_phase == target_phase);
+	}
+
+	bool filterUncalled(const objects_type& objects, const U32& position) const;
+	bool filterPloidy(const objects_type& objects, const U32& position) const;
+	bool filterSampleList(const objects_type& objects, const U32& position) const;
+	bool filterKnownNovel(const objects_type& objects, const U32& position) const;
+	bool filterAlleleFrequency(const objects_type& objects, const U32& position) const;
+	bool filterVariantClassification(const objects_type& objects, const U32& position) const;
+	bool filterUnseenAlternativeAlleles(const objects_type& objects, const U32& position) const;
+	bool filterRegions(const objects_type& objects) const; // Filter by target intervals
+	bool filterFILTER(const objects_type& objects) const;  // Filter by desired FILTER values
+	bool filterINFO(const objects_type& objects) const;    // custom filter. e.g. AC<1024
+
+	inline bool filterAlternativeAlleles(const objects_type& object, const U32& position) const{
+		// Remove one to total count as REF is counted here
+		// Recast as signed integer to avoid possible underflowing issues
+		return((S16)object.meta->at(position).getNumberAlleles() - 1 >= this->n_alt_alleles);
+	}
+
+	inline bool filterHasMissingGenotypes(const objects_type& object, const U32& position) const{
+		return(object.meta->at(position).controller.gt_anyMissing == this->target_filter_has_missing);
+	}
+
+	/**<
+	 * Constructs the filter pointer vector given the fields that have been set
+	 * @return Returns TRUE if passing construction or FALSE otherwise
+	 */
+	bool build(void){
+		this->filters.clear();
+		if(this->filter_n_alt_alleles) this->filters.push_back(&self_type::filterAlternativeAlleles);
+		if(this->mixed_phasing_only)   this->filters.push_back(&self_type::filterMixedPhasing);
+		if(this->filter_has_missing)   this->filters.push_back(&self_type::filterHasMissingGenotypes);
+		return true;
+	}
+
+	/**<
+	 * Iteratively apply filters in the filter pointer vector
+	 * @param objects  Target objects container structure
+	 * @param position Target position (relative loci) in the container
+	 * @return         Returns TRUE if passes filtering or FALSE otherwise
+	 */
+	bool filter(const objects_type& objects, const U32 position) const{
+		for(U32 i = 0 ; i < this->filters.size(); ++i){
+			if((this->*(this->filters[i]))(objects, position) == false)
+				return false;
+		}
+		return true;
+	}
+
+private:
+	template <class FilterType> inline bool __filterLesser(const FilterType& target, const FilterType& limit) const;
+	template <class FilterType> inline bool __filterLesserEqual(const FilterType& target, const FilterType& limit) const;
+	template <class FilterType> inline bool __filterGreater(const FilterType& target, const FilterType& limit) const;
+	template <class FilterType> inline bool __filterGreaterEqual(const FilterType& target, const FilterType& limit) const;
+	template <class FilterType> inline bool __filterEqual(const FilterType& target, const FilterType& limit) const;
+	template <class FilterType> inline bool __filterNotEqual(const FilterType& target, const FilterType& limit) const;
+
+public:
+	bool target_intervals;
+	// std::vector<intervals> intervals;
+	bool filter_target_ploidy;
+	bool filter_n_alt_alleles;
+	BYTE n_ploidy;
+	BYTE n_alt_alleles;
+	bool filter_has_missing;
+	bool target_filter_has_missing;
+
+	bool mixed_phasing_only;
+	bool given_phase_only;
+	bool remove_uncalled_only;
+	bool keep_uncalled_only;
+	bool remove_unseen_alts;
+	std::vector<filter_function> filters;
 };
 
 class VariantReader{
@@ -521,6 +638,14 @@ public:
 		objects_type objects;
 		this->loadObjects(objects);
 
+		// Todo
+		VariantReaderFilters filters;
+		//filters.filter_n_alt_alleles = true;
+		//filters.n_alt_alleles = 4;
+		filters.filter_has_missing = true;
+		filters.target_filter_has_missing = true;
+		filters.build();
+
 		// Reserve memory for output buffer
 		// This is much faster than writing directly to ostream because of syncing
 		io::BasicBuffer output_buffer(256000);
@@ -541,6 +666,11 @@ public:
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
+			if(filters.filter(objects, p) == false){
+				//std::cerr << "failed filter" << std::endl;
+				continue;
+			}
+
 			if(this->block_settings.custom_output_format)
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->block_settings.custom_output_controller);
 			else
@@ -581,7 +711,7 @@ public:
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
 
 		// Todo: move to function
-		U32 info_match_limit = 1; // any match
+		//U32 info_match_limit = 1; // any match
 		//info_match_limit = this->block_settings.info_list.size(); // all match
 
 		// Function pointer to use
@@ -676,28 +806,6 @@ public:
 
 	// Calculations
 	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
-
-	// Filters
-	// Todo: filter parameterse in class
-
-	// Does not require genotypes
-	bool filterRegions(void) const; // Filter by target intervals
-	bool filterFILTER(void) const;  // Filter by desired FILTER values
-
-	//
-	bool filterINFO(const U32 filter_id); // custoom filter. e.g. AC<1024
-
-
-	bool filterUniformMatchPhase();
-	bool filterUncalled();
-	bool filterPloidy();
-	bool filterSampleList();
-	bool filterKnownNovel();
-
-	// Requires genotypes
-	bool filterAlleleFrequency();
-	bool filterVariantClassification();
-	bool filterUnseenAlternativeAlleles();
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression

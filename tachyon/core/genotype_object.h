@@ -14,7 +14,8 @@ namespace core{
 #define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & ((1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
 
-const SBYTE YON_GT_RLE_CORRECTION[3] = {0, 0, -4};
+const SBYTE YON_GT_RLE_CORRECTION[3] = {0, 0, 4};
+const SBYTE YON_GT_RLE_RECODE[3] = {0,1,-2};
 
 struct GTObjectAllele{
 public:

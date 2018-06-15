@@ -284,8 +284,10 @@ void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
 		length  = YON_GT_RLE_LENGTH(this->at(i), shift, add);
 		alleleA = YON_GT_RLE_ALLELE_A(this->at(i), shift, add);
 		alleleB = YON_GT_RLE_ALLELE_B(this->at(i), shift, add);
-		alleleA -= core::YON_GT_RLE_CORRECTION[alleleA];
-		alleleB -= core::YON_GT_RLE_CORRECTION[alleleB];
+		//alleleA -= core::YON_GT_RLE_CORRECTION[alleleA];
+		//alleleB -= core::YON_GT_RLE_CORRECTION[alleleB];
+		alleleA  = core::YON_GT_RLE_RECODE[alleleA];
+		alleleB  = core::YON_GT_RLE_RECODE[alleleB];
 
 		if(add) phasing = this->at(i) & 1;
 		else    phasing = this->__meta.getControllerPhase();

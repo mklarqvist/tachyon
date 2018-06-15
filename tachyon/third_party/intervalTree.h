@@ -117,19 +117,20 @@ public:
       , right(nullptr)
     {
         --depth;
-        const auto minmaxStop = std::minmax_element(ivals.begin(), ivals.end(),
-                                                    IntervalStopCmp());
-        const auto minmaxStart = std::minmax_element(ivals.begin(), ivals.end(),
-                                                     IntervalStartCmp());
+        const auto minmaxStop = std::minmax_element(ivals.begin(), ivals.end(), IntervalStopCmp());
+        const auto minmaxStart = std::minmax_element(ivals.begin(), ivals.end(), IntervalStartCmp());
+
         if (!ivals.empty()) {
             center = (minmaxStart.first->start + minmaxStop.second->stop) / 2;
         }
+
         if (leftextent == 0 && rightextent == 0) {
             // sort intervals by start
             std::sort(ivals.begin(), ivals.end(), IntervalStartCmp());
         } else {
             assert(std::is_sorted(ivals.begin(), ivals.end(), IntervalStartCmp()));
         }
+
         if (depth == 0 || (ivals.size() < minbucket && ivals.size() < maxbucket)) {
             std::sort(ivals.begin(), ivals.end(), IntervalStartCmp());
             intervals = std::move(ivals);
@@ -241,16 +242,11 @@ public:
                         });
         return result;
     }
+
     bool empty() const {
-        if (left && !left->empty()) {
-            return false;
-        }
-        if (!intervals.empty()) {
-            return false;
-        }
-        if (right && !right->empty()) {
-            return false;
-        }
+        if (left && !left->empty()) return false;
+        if (!intervals.empty()) return false;
+        if (right && !right->empty()) return false;
         return true;
     }
 
@@ -267,26 +263,23 @@ public:
 
     std::pair<Scalar, Scalar> extentBruitForce() const {
         struct Extent {
-            std::pair<Scalar, Scalar> x = {std::numeric_limits<Scalar>::max(),
-                                                       std::numeric_limits<Scalar>::min() };
-            void operator()(const interval & interval) {
-                x.first  = std::min(x.first,  interval.start);
-                x.second = std::max(x.second, interval.stop);
-            }
-                                                                };
-                                            Extent extent;
+			std::pair<Scalar, Scalar> x = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::min() };
+				void operator()(const interval & interval) {
+				x.first  = std::min(x.first,  interval.start);
+				x.second = std::max(x.second, interval.stop);
+			}
+		};
+		Extent extent;
 
         visit_all([&](const interval & interval) { extent(interval); });
         return extent.x;
-                                            }
+    }
 
     // Check all constraints.
     // If first is false, second is invalid.
     std::pair<bool, std::pair<Scalar, Scalar>> is_valid() const {
-        const auto minmaxStop = std::minmax_element(intervals.begin(), intervals.end(),
-                                                    IntervalStopCmp());
-        const auto minmaxStart = std::minmax_element(intervals.begin(), intervals.end(),
-                                                     IntervalStartCmp());
+        const auto minmaxStop  = std::minmax_element(intervals.begin(), intervals.end(), IntervalStopCmp());
+        const auto minmaxStart = std::minmax_element(intervals.begin(), intervals.end(), IntervalStartCmp());
 
         std::pair<bool, std::pair<Scalar, Scalar>> result = {true, { std::numeric_limits<Scalar>::max(),
                                                                      std::numeric_limits<Scalar>::min() }};
@@ -294,6 +287,7 @@ public:
             result.second.first   = std::min(result.second.first,  minmaxStart.first->start);
             result.second.second  = std::min(result.second.second, minmaxStop.second->stop);
         }
+
         if (left) {
             auto valid = left->is_valid();
             result.first &= valid.first;
@@ -305,6 +299,7 @@ public:
                 return result;
             }
         }
+
         if (right) {
             auto valid = right->is_valid();
             result.first &= valid.first;
@@ -316,9 +311,11 @@ public:
                 return result;
             }
         }
+
         if (!std::is_sorted(intervals.begin(), intervals.end(), IntervalStartCmp())) {
             result.first = false;
         }
+
         return result;
     }
 

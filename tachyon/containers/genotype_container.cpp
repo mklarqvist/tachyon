@@ -58,7 +58,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<U64>( &rle64[offset_rle64], lengths[gt_offset], this->__meta_container[i] );
 					offset_rle64 += lengths[gt_offset]*sizeof(U64);
 				} else {
-					std::cerr << "unknwn type" << std::endl;
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
 					exit(1);
 				}
 
@@ -78,7 +78,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					new( &this->__iterators[i] ) GenotypeContainerDiploidSimple<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				} else {
-					std::cerr << "unknwn type" << std::endl;
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
 					exit(1);
 				}
 			}
@@ -97,13 +97,13 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					new( &this->__iterators[i] ) GenotypeContainerDiploidBCF<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
 					offset_simple64 += lengths[gt_offset]*sizeof(U64);
 				}  else {
-					std::cerr << "unknwn type" << std::endl;
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
 					exit(1);
 				}
 			}
 			// Case other potential encodings
 			else {
-				std::cerr << "not implemented" << std::endl;
+				std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding family..." << std::endl;
 				new( &this->__iterators[i] ) GenotypeContainerDiploidRLE<BYTE>( );
 				exit(1);
 			}
