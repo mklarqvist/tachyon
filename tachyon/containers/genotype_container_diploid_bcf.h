@@ -221,6 +221,7 @@ GenotypeSummary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
 
 template <class T>
 GenotypeSummary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
+	gt_summary_object.clear();
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }

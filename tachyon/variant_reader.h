@@ -175,28 +175,93 @@ public:
 	format_interface_type**  format_fields;
 };
 
-// Forward declare
-// Required for VariantReaderFilter
-class VariantReader;
+template <class ValueClass>
+struct VariantReaderFiltersTuple{
+public:
+	typedef VariantReaderFiltersTuple<ValueClass> self_type;
+	typedef bool (self_type::*filter_function)(const ValueClass& target, const ValueClass& limit) const;
+
+public:
+	VariantReaderFiltersTuple() :
+		filter(false),
+		r_value(0),
+		comparator(&self_type::__filterGreaterEqual)
+	{}
+
+	VariantReaderFiltersTuple(const ValueClass& r_value) :
+		filter(true),
+		r_value(r_value),
+		comparator(&self_type::__filterGreaterEqual)
+	{}
+
+	VariantReaderFiltersTuple(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator) :
+		filter(true),
+		r_value(r_value),
+		comparator(nullptr)
+	{
+		switch(comparator){
+		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
+		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
+		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
+		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
+		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
+		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		}
+	}
+
+	void operator()(const ValueClass& r_value){
+		this->filter = true;
+		this->r_value = r_value;
+	}
+
+	void operator()(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+		this->filter  = true;
+		this->r_value = r_value;
+
+		switch(comparator){
+		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
+		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
+		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
+		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
+		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
+		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		}
+	}
+
+	~VariantReaderFiltersTuple() = default;
+
+	inline bool applyFilter(const ValueClass& l_value) const{ return((this->*comparator)(l_value, r_value)); }
+
+	// Comparator functions
+	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const{return(target < limit);}
+	inline bool __filterLesserEqual(const ValueClass& target, const ValueClass& limit) const{return(target <= limit);}
+	inline bool __filterGreater(const ValueClass& target, const ValueClass& limit) const{return(target > limit);}
+	inline bool __filterGreaterEqual(const ValueClass& target, const ValueClass& limit) const{return(target >= limit);}
+	inline bool __filterEqual(const ValueClass& target, const ValueClass& limit) const{return(target == limit);}
+	inline bool __filterNotEqual(const ValueClass& target, const ValueClass& limit) const{return(target != limit);}
+
+public:
+	bool            filter;
+	ValueClass      r_value;
+	filter_function comparator;
+};
 
 struct VariantReaderFilters{
 public:
 	typedef VariantReaderFilters self_type;
 	typedef VariantReaderObjects objects_type;
 	typedef bool (self_type::*filter_function)(const objects_type& objects, const U32& position) const;
+	typedef bool (self_type::*family_filter_function)(void) const;
+
+	typedef bool (self_type::*filter_float)(const float& target, const float& limit) const;
+	typedef bool (self_type::*filter_integer)(const S32& target, const S32& limit) const;
+
+	// example:
+	// TACHYON_COMPARATOR_TYPE::YON_CMP_EQUAL
 
 public:
 	VariantReaderFilters() :
-		target_intervals(false),
-		filter_target_ploidy(false),
-		filter_n_alt_alleles(false),
-		n_ploidy(2),
-		n_alt_alleles(1),
-		mixed_phasing_only(false),
-		given_phase_only(false),
-		remove_uncalled_only(false),
-		keep_uncalled_only(false),
-		remove_unseen_alts(false)
+		target_intervals(false)
 	{
 
 	}
@@ -211,19 +276,33 @@ public:
 
 	// GT data matches this
 	inline bool filterUniformMatchPhase(const objects_type& objects,
-												 const U32& position,
-												const bool& target_phase) const
+												 const U32& position) const
 	{
 		assert(objects.meta != nullptr);
 		return(objects.meta->at(position).isGTMixedPhasing() == false &&
-			   objects.meta->at(position).controller.gt_phase == target_phase);
+			   objects.meta->at(position).controller.gt_phase == this->filter_uniform_phase.r_value);
 	}
 
 	bool filterUncalled(const objects_type& objects, const U32& position) const;
 	bool filterPloidy(const objects_type& objects, const U32& position) const;
 	bool filterSampleList(const objects_type& objects, const U32& position) const;
+
+	// Use custom AVL tree for position
 	bool filterKnownNovel(const objects_type& objects, const U32& position) const;
-	bool filterAlleleFrequency(const objects_type& objects, const U32& position) const;
+
+	// BCFtools calculate this as the SUM of all ALT counts
+	// We filter based on ANY ALT frequency OPERATOR the target frequency
+	bool filterAlleleFrequency(const objects_type& objects, const U32& position) const{
+		const std::vector<double> af = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(position));
+		for(U32 i = 1; i < af.size(); ++i){
+			if(this->filter_af.applyFilter(af[i]))
+				return true;
+			//if((this->*(this->allele_frequency_comparator))(af[i], this->allele_frequency))
+			//	return(true);
+		}
+		return(false);
+	}
+
 	bool filterVariantClassification(const objects_type& objects, const U32& position) const;
 	bool filterUnseenAlternativeAlleles(const objects_type& objects, const U32& position) const;
 	bool filterRegions(const objects_type& objects) const; // Filter by target intervals
@@ -233,11 +312,13 @@ public:
 	inline bool filterAlternativeAlleles(const objects_type& object, const U32& position) const{
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
-		return((S16)object.meta->at(position).getNumberAlleles() - 1 >= this->n_alt_alleles);
+		return(this->filter_n_alts.applyFilter(object.meta->at(position).getNumberAlleles() - 1));
+
+		//return((this->*(this->n_alt_alleles_comparator))((S32)object.meta->at(position).getNumberAlleles() - 1, this->n_alt_alleles));
 	}
 
 	inline bool filterHasMissingGenotypes(const objects_type& object, const U32& position) const{
-		return(object.meta->at(position).controller.gt_anyMissing == this->target_filter_has_missing);
+		return(this->filter_missing.applyFilter(object.meta->at(position).controller.gt_anyMissing));
 	}
 
 	/**<
@@ -246,9 +327,11 @@ public:
 	 */
 	bool build(void){
 		this->filters.clear();
-		if(this->filter_n_alt_alleles) this->filters.push_back(&self_type::filterAlternativeAlleles);
-		if(this->mixed_phasing_only)   this->filters.push_back(&self_type::filterMixedPhasing);
-		if(this->filter_has_missing)   this->filters.push_back(&self_type::filterHasMissingGenotypes);
+		if(this->filter_n_alts.filter)    this->filters.push_back(&self_type::filterAlternativeAlleles);
+		//if(this->mixed_phasing_only)      this->filters.push_back(&self_type::filterMixedPhasing);
+		if(this->filter_missing.filter)   this->filters.push_back(&self_type::filterHasMissingGenotypes);
+		if(this->filter_af.filter) this->filters.push_back(&self_type::filterAlleleFrequency);
+		if(this->filter_uniform_phase.filter) this->filters.push_back(&self_type::filterUniformMatchPhase);
 		return true;
 	}
 
@@ -260,36 +343,42 @@ public:
 	 */
 	bool filter(const objects_type& objects, const U32 position) const{
 		for(U32 i = 0 ; i < this->filters.size(); ++i){
-			if((this->*(this->filters[i]))(objects, position) == false)
+			// Todo: invoke this only when necessary AND possible
+			objects.genotypes->at(position).getSummary(*objects.genotype_summary);
+			if((this->*(this->filters[i]))(objects, position) == false){
 				return false;
+			}
 		}
 		return true;
 	}
 
-private:
-	template <class FilterType> inline bool __filterLesser(const FilterType& target, const FilterType& limit) const;
-	template <class FilterType> inline bool __filterLesserEqual(const FilterType& target, const FilterType& limit) const;
-	template <class FilterType> inline bool __filterGreater(const FilterType& target, const FilterType& limit) const;
-	template <class FilterType> inline bool __filterGreaterEqual(const FilterType& target, const FilterType& limit) const;
-	template <class FilterType> inline bool __filterEqual(const FilterType& target, const FilterType& limit) const;
-	template <class FilterType> inline bool __filterNotEqual(const FilterType& target, const FilterType& limit) const;
+public:
+	// Cannot template this
+	inline bool __filterLesser(const float& target, const float& limit) const{return(target < limit);}
+	inline bool __filterLesserEqual(const float& target, const float& limit) const{return(target <= limit);}
+	inline bool __filterGreater(const float& target, const float& limit) const{return(target > limit);}
+	inline bool __filterGreaterEqual(const float& target, const float& limit) const{return(target >= limit);}
+	inline bool __filterEqual(const float& target, const float& limit) const{return(target == limit);}
+	inline bool __filterNotEqual(const float& target, const float& limit) const{return(target != limit);}
+
+	inline bool __filterLesser(const S32& target, const S32& limit) const{return(target < limit);}
+	inline bool __filterLesserEqual(const S32& target, const S32& limit) const{return(target <= limit);}
+	inline bool __filterGreater(const S32& target, const S32& limit) const{return(target > limit);}
+	inline bool __filterGreaterEqual(const S32& target, const S32& limit) const{return(target >= limit);}
+	inline bool __filterEqual(const S32& target, const S32& limit) const{return(target == limit);}
+	inline bool __filterNotEqual(const S32& target, const S32& limit) const{return(target != limit);}
 
 public:
 	bool target_intervals;
 	// std::vector<intervals> intervals;
-	bool filter_target_ploidy;
-	bool filter_n_alt_alleles;
-	BYTE n_ploidy;
-	BYTE n_alt_alleles;
-	bool filter_has_missing;
-	bool target_filter_has_missing;
 
-	bool mixed_phasing_only;
-	bool given_phase_only;
-	bool remove_uncalled_only;
-	bool keep_uncalled_only;
-	bool remove_unseen_alts;
 	std::vector<filter_function> filters;
+	std::vector<family_filter_function> family_filters;
+
+	VariantReaderFiltersTuple<bool>  filter_uniform_phase;
+	VariantReaderFiltersTuple<SBYTE> filter_n_alts;
+	VariantReaderFiltersTuple<bool>  filter_missing;
+	VariantReaderFiltersTuple<float> filter_af;
 };
 
 class VariantReader{
@@ -640,10 +729,12 @@ public:
 
 		// Todo
 		VariantReaderFilters filters;
-		//filters.filter_n_alt_alleles = true;
-		//filters.n_alt_alleles = 4;
-		filters.filter_has_missing = true;
-		filters.target_filter_has_missing = true;
+
+		//filters.filter_af(0.9, YON_CMP_GREATER_EQUAL);
+		//filters.filter_n_alts(5, YON_CMP_GREATER_EQUAL);
+		//filters.filter_uniform_phase(true);
+		filters.filter_missing(false);
+
 		filters.build();
 
 		// Reserve memory for output buffer

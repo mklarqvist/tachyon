@@ -315,6 +315,7 @@ GenotypeSummary GenotypeContainerDiploidSimple<return_type>::getSummary(void) co
 
 template <class return_type>
 GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary& gt_summary_object) const{
+	gt_summary_object.clear();
 	gt_summary_object += *this;
 	return(gt_summary_object);
 }

@@ -149,17 +149,17 @@ public:
 	}
 
 	std::vector<double> calculateAlleleFrequency(const meta_type& meta) const{
-		const BYTE n_limit = meta.n_alleles + 2 > this->n_alleles_ ? this->n_alleles_ - 2: meta.n_alleles;
+		const BYTE n_limit = meta.n_alleles + 2 > this->n_alleles_
+		                   ? this->n_alleles_ - 2
+		                   : meta.n_alleles;
 		std::vector<double> results(n_limit, 0);
 
 		U64 n_total = 0;
 		for(U32 i = 0; i < n_limit; ++i){
 			results[i] = this->vectorA_[2+i] + this->vectorB_[2+i];
-			n_total += results[i];
+			n_total   += results[i];
 		}
-
-		for(U32 i = 0; i < n_limit; ++i)
-			results[i] /= n_total;
+		for(U32 i = 0; i < n_limit; ++i) results[i] /= n_total;
 
 		return(results);
 	}
@@ -181,9 +181,10 @@ public:
 		const BYTE add   = gt_rle_container.getMeta().isGTMixedPhasing()  ? 1 : 0;
 
 		for(U32 i = 0; i < gt_rle_container.size(); ++i){
-			const U64 length   = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
+			const U64 length  = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
 			const BYTE alleleA = YON_GT_RLE_ALLELE_A(gt_rle_container.at(i), shift, add);
 			const BYTE alleleB = YON_GT_RLE_ALLELE_B(gt_rle_container.at(i), shift, add);
+
 			this->matrix_[TACHYON_GT_SUMMARY_REMAP[alleleA]][TACHYON_GT_SUMMARY_REMAP[alleleB]] += length;
 			this->vectorA_[TACHYON_GT_SUMMARY_REMAP[alleleA]] += length;
 			this->vectorB_[TACHYON_GT_SUMMARY_REMAP[alleleB]] += length;
@@ -192,9 +193,9 @@ public:
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidSimple<T>& gt_simple_container){
-		const BYTE shift = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 1 + gt_simple_container.getMeta().isAnyGTMissing() + gt_simple_container.getMeta().isMixedPloidy())); // Bits occupied per allele, 1 value for missing
-		const BYTE add   = gt_simple_container.getMeta().isGTMixedPhasing() ? 1 : 0;
-		const BYTE matrix_add = !gt_simple_container.getMeta().isMixedPloidy();
+		const BYTE shift    = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
+		const BYTE add      = gt_simple_container.getMeta().isGTMixedPhasing() ? 1 : 0;
+		//const BYTE matrix_add = !gt_simple_container.getMeta().isMixedPloidy();
 
 		if(gt_simple_container.getMeta().n_alleles + 2 > this->n_alleles_){
 			std::cerr << "too many alleles: " << gt_simple_container.getMeta().n_alleles + 2 << "/" << (int)this->n_alleles_ << std::endl;
@@ -202,15 +203,9 @@ public:
 		}
 
 		for(U32 i = 0; i < gt_simple_container.size(); ++i){
-			const U64 length = YON_GT_RLE_LENGTH(gt_simple_container.at(i), shift, add);
-			BYTE alleleA     = YON_GT_RLE_ALLELE_A(gt_simple_container.at(i), shift, add);
-			BYTE alleleB     = YON_GT_RLE_ALLELE_B(gt_simple_container.at(i), shift, add);
-
-			//std::cerr << "adding: " << (int)alleleA << "+" << (alleleA > 0 ? matrix_add : 0) << "/" << (int)alleleB << "+" << (alleleB > 0 ? matrix_add : 0) << ": " << (int)matrix_add << std::endl;
-
-			alleleA += alleleA > 0 ? matrix_add : 0;
-			alleleB += alleleB > 0 ? matrix_add : 0;
-
+			const U64 length   = YON_GT_RLE_LENGTH(gt_simple_container.at(i), shift, add);
+			const BYTE alleleA = YON_GT_RLE_ALLELE_A(gt_simple_container.at(i), shift, add);
+			const BYTE alleleB = YON_GT_RLE_ALLELE_B(gt_simple_container.at(i), shift, add);
 			this->matrix_[alleleA][alleleB] += length;
 			this->vectorA_[alleleA] += length;
 			this->vectorB_[alleleB] += length;
