@@ -53,7 +53,7 @@ public:
 	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
 	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
 	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
-	inline const bool isAnyGTSpecial(void) const{ return(this->controller.gt_anyNA); }
+	inline const bool isAnyGTMixedPloidy(void) const{ return(this->controller.gt_anyNA); }
 	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
 	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
 

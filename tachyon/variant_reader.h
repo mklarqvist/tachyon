@@ -253,9 +253,6 @@ public:
 	typedef bool (self_type::*filter_function)(const objects_type& objects, const U32& position) const;
 	typedef bool (self_type::*family_filter_function)(void) const;
 
-	typedef bool (self_type::*filter_float)(const float& target, const float& limit) const;
-	typedef bool (self_type::*filter_integer)(const S32& target, const S32& limit) const;
-
 	// example:
 	// TACHYON_COMPARATOR_TYPE::YON_CMP_EQUAL
 
@@ -270,25 +267,35 @@ public:
 
 	// Has mixed phasing
 	inline bool filterMixedPhasing(const objects_type& objects, const U32& position) const{
-		assert(objects.meta != nullptr);
-		return(objects.meta->at(position).isGTMixedPhasing() == true);
+		//assert(objects.meta != nullptr);
+		return(this->filter_mixed_phase.applyFilter(objects.meta->at(position).isGTMixedPhasing()));
+	}
+
+	inline bool filterMixedPloidy(const objects_type& objects, const U32& position) const{
+		//assert(objects.meta != nullptr);
+		return(this->filter_mixed_ploidy.applyFilter(objects.meta->at(position).isAnyGTMixedPloidy()));
+	}
+
+	inline bool filterKnownNovel(const objects_type& objects, const U32& position) const{
+		//assert(objects.meta != nullptr);
+		return(this->filter_known_novel.applyFilter(objects.meta->at(position).name.size() != 0));
 	}
 
 	// GT data matches this
 	inline bool filterUniformMatchPhase(const objects_type& objects,
 												 const U32& position) const
 	{
-		assert(objects.meta != nullptr);
+		//assert(objects.meta != nullptr);
 		return(objects.meta->at(position).isGTMixedPhasing() == false &&
 			   objects.meta->at(position).controller.gt_phase == this->filter_uniform_phase.r_value);
 	}
 
 	bool filterUncalled(const objects_type& objects, const U32& position) const;
 	bool filterPloidy(const objects_type& objects, const U32& position) const;
+
+	// Requires additional data
 	bool filterSampleList(const objects_type& objects, const U32& position) const;
 
-	// Use custom AVL tree for position
-	bool filterKnownNovel(const objects_type& objects, const U32& position) const;
 
 	// BCFtools calculate this as the SUM of all ALT counts
 	// We filter based on ANY ALT frequency OPERATOR the target frequency
@@ -297,8 +304,6 @@ public:
 		for(U32 i = 1; i < af.size(); ++i){
 			if(this->filter_af.applyFilter(af[i]))
 				return true;
-			//if((this->*(this->allele_frequency_comparator))(af[i], this->allele_frequency))
-			//	return(true);
 		}
 		return(false);
 	}
@@ -313,12 +318,19 @@ public:
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
 		return(this->filter_n_alts.applyFilter(object.meta->at(position).getNumberAlleles() - 1));
+	}
 
-		//return((this->*(this->n_alt_alleles_comparator))((S32)object.meta->at(position).getNumberAlleles() - 1, this->n_alt_alleles));
+	inline bool filterAlleleCount(const objects_type& object, const U32& position) const{
+		for(U32 i = 1; i < object.meta->at(position).n_alleles; ++i){
+			if(this->filter_ac.applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i])){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	inline bool filterHasMissingGenotypes(const objects_type& object, const U32& position) const{
-		return(this->filter_missing.applyFilter(object.meta->at(position).controller.gt_anyMissing));
+		return(this->filter_missing.applyFilter(object.genotype_summary->matrix_[0][0] == 0));
 	}
 
 	/**<
@@ -327,11 +339,14 @@ public:
 	 */
 	bool build(void){
 		this->filters.clear();
-		if(this->filter_n_alts.filter)    this->filters.push_back(&self_type::filterAlternativeAlleles);
-		//if(this->mixed_phasing_only)      this->filters.push_back(&self_type::filterMixedPhasing);
-		if(this->filter_missing.filter)   this->filters.push_back(&self_type::filterHasMissingGenotypes);
-		if(this->filter_af.filter) this->filters.push_back(&self_type::filterAlleleFrequency);
+		if(this->filter_n_alts.filter)        this->filters.push_back(&self_type::filterAlternativeAlleles);
+		if(this->filter_mixed_phase.filter)   this->filters.push_back(&self_type::filterMixedPhasing);
+		if(this->filter_mixed_ploidy.filter)  this->filters.push_back(&self_type::filterMixedPloidy);
+		if(this->filter_missing.filter)       this->filters.push_back(&self_type::filterHasMissingGenotypes);
+		if(this->filter_af.filter)            this->filters.push_back(&self_type::filterAlleleFrequency);
+		if(this->filter_ac.filter)            this->filters.push_back(&self_type::filterAlleleCount);
 		if(this->filter_uniform_phase.filter) this->filters.push_back(&self_type::filterUniformMatchPhase);
+		if(this->filter_known_novel.filter)   this->filters.push_back(&self_type::filterKnownNovel);
 		return true;
 	}
 
@@ -353,32 +368,19 @@ public:
 	}
 
 public:
-	// Cannot template this
-	inline bool __filterLesser(const float& target, const float& limit) const{return(target < limit);}
-	inline bool __filterLesserEqual(const float& target, const float& limit) const{return(target <= limit);}
-	inline bool __filterGreater(const float& target, const float& limit) const{return(target > limit);}
-	inline bool __filterGreaterEqual(const float& target, const float& limit) const{return(target >= limit);}
-	inline bool __filterEqual(const float& target, const float& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const float& target, const float& limit) const{return(target != limit);}
-
-	inline bool __filterLesser(const S32& target, const S32& limit) const{return(target < limit);}
-	inline bool __filterLesserEqual(const S32& target, const S32& limit) const{return(target <= limit);}
-	inline bool __filterGreater(const S32& target, const S32& limit) const{return(target > limit);}
-	inline bool __filterGreaterEqual(const S32& target, const S32& limit) const{return(target >= limit);}
-	inline bool __filterEqual(const S32& target, const S32& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const S32& target, const S32& limit) const{return(target != limit);}
-
-public:
 	bool target_intervals;
 	// std::vector<intervals> intervals;
-
-	std::vector<filter_function> filters;
+	std::vector<filter_function>        filters;
 	std::vector<family_filter_function> family_filters;
 
 	VariantReaderFiltersTuple<bool>  filter_uniform_phase;
 	VariantReaderFiltersTuple<SBYTE> filter_n_alts;
 	VariantReaderFiltersTuple<bool>  filter_missing;
+	VariantReaderFiltersTuple<bool>  filter_mixed_phase;
+	VariantReaderFiltersTuple<bool>  filter_mixed_ploidy;
+	VariantReaderFiltersTuple<bool>  filter_known_novel;
 	VariantReaderFiltersTuple<float> filter_af;
+	VariantReaderFiltersTuple<S32>   filter_ac;
 };
 
 class VariantReader{
@@ -401,6 +403,7 @@ class VariantReader{
 	typedef containers::InfoContainerInterface     info_interface_type;
 	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::GenotypeSummary            genotype_summary_type;
+	typedef VariantReaderFilters                   variant_filter_type;
 
 	// Function pointers
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
@@ -431,6 +434,8 @@ public:
 	 * @return A reference instance of the settings object
 	 */
 	inline settings_type& getSettings(void){ return(this->settings); }
+
+	inline variant_filter_type& getFilterSettings(void){ return(this->variant_filters); }
 
 	/**<
 	 * Checks if a FORMAT `field` is set in the header and then checks
@@ -723,19 +728,18 @@ public:
 	 *
 	 * @return
 	 */
-	const U32 outputBlockVCF(void) const{
+	const U32 outputBlockVCF(void){
 		objects_type objects;
 		this->loadObjects(objects);
 
 		// Todo
-		VariantReaderFilters filters;
+		//this->variant_filters.filter_af(0.9, YON_CMP_GREATER_EQUAL);
+		//this->variant_filters.filter_n_alts(5, YON_CMP_GREATER_EQUAL);
+		//this->variant_filters.filter_uniform_phase(true);
+		//this->variant_filters.filter_missing(false);
+		//this->variant_filters.filter_mixed_ploidy(true);
 
-		//filters.filter_af(0.9, YON_CMP_GREATER_EQUAL);
-		//filters.filter_n_alts(5, YON_CMP_GREATER_EQUAL);
-		//filters.filter_uniform_phase(true);
-		filters.filter_missing(false);
-
-		filters.build();
+		this->variant_filters.build();
 
 		// Reserve memory for output buffer
 		// This is much faster than writing directly to ostream because of syncing
@@ -757,7 +761,7 @@ public:
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
-			if(filters.filter(objects, p) == false){
+			if(this->variant_filters.filter(objects, p) == false){
 				//std::cerr << "failed filter" << std::endl;
 				continue;
 			}
@@ -1317,6 +1321,8 @@ public:
 	// Supportive objects
 	block_settings_type block_settings;
 	settings_type       settings;
+	variant_filter_type variant_filters;
+
 	header_type         header;
 	footer_type         footer;
 	index_type          index;

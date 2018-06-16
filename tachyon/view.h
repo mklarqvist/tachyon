@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2017-2018 Genome Research Ltd.
+Copyright (C) 2017-current Genome Research Ltd.
 Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include <regex>
 
+#include "support/enums.h"
 #include "utility.h"
 #include "variant_reader.h"
 
@@ -41,10 +42,8 @@ void view_usage(void){
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
 	"  -R STRING path to file with interval strings\n"
-	"  -m        filtered data can match ANY number of requested fields\n"
-	"  -M        filtered data must match ALL requested fields\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -c        custom output format (ignores VCF/BCF specification rules)\n"
+	"  -y        custom output format (ignores VCF/BCF specification rules)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
 	"  -s        Hide all program messages\n\n"
@@ -59,13 +58,12 @@ void view_usage(void){
 	"Filter options:\n"
     "  -c/C, --min-ac/--max-ac <int>[:<type>]      minimum/maximum count for non-reference (nref), 1st alternate (alt1), least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
-    "  -f,   --apply-filters <list>                require at least one of the listed FILTER strings (e.g. \"PASS,.\")\n"
     "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
-    "  -i/e, --include/--exclude <expr>            select/exclude sites for which the expression is true (see man page for details)\n"
-    "  -k/n, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
+    "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT (e.g. -m2 -M2 for biallelic sites)\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
-    "  -q/Q, --min-af/--max-af <float>[:<type>]    minimum/maximum frequency for non-reference (nref), 1st alternate (alt1), least frequent\n"
+	"  -j,   --mixed-phasing                       select sites with both phased and unphased samples\n"
+	"  -q/Q, --min-af/--max-af <float>[:<type>]    minimum/maximum frequency for non-reference (nref), 1st alternate (alt1), least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
     "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n"
@@ -91,8 +89,6 @@ int view(int argc, char** argv){
 		{"output",      optional_argument, 0,  'o' },
 		{"keychain",    optional_argument, 0,  'k' },
 		{"filter",      optional_argument, 0,  'f' },
-		{"filterAny",   no_argument, 0,  'm' },
-		{"filterAll",   no_argument, 0,  'M' },
 		{"delimiter",   optional_argument, 0,  'd' },
 		{"output-type", optional_argument, 0,  'O' },
 		{"vector-output", no_argument, 0,  'V' },
@@ -101,19 +97,33 @@ int view(int argc, char** argv){
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
-		{"customFormat",no_argument, 0,  'c' },
+		{"customFormat",no_argument, 0,  'y' },
 		{"silent",      no_argument, 0,  's' },
+		{"af-min",      optional_argument, 0,  'q' },
+		{"af-max",      optional_argument, 0,  'Q' },
+		{"ac-min",      optional_argument, 0,  'c' },
+		{"ac-max",      optional_argument, 0,  'C' },
+		{"alleles-min",      optional_argument, 0,  'm' },
+		{"alleles-max",      optional_argument, 0,  'M' },
+		{"known",      no_argument, 0,  'z' },
+		{"novel",      no_argument, 0,  'Z' },
+		{"phased",      no_argument, 0,  'p' },
+		{"exclude-phased",      no_argument, 0,  'P' },
+		{"mixed-phase",      no_argument, 0,  'j' },
+		{"uncalled",      no_argument, 0,  'u' },
+		{"exclude-uncalled",      no_argument, 0,  'U' },
 		{0,0,0,0}
 	};
 
 	tachyon::VariantReaderSettings settings;
 	tachyon::DataBlockSettings block_settings;
+	tachyon::VariantReaderFilters filters;
 	std::vector<std::string> interpret_commands;
 
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:R:cGshHmMVX?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:R:yGshHVX?q:Q:m:M:pPuUc:C:jzZ", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -127,6 +137,51 @@ int view(int argc, char** argv){
 		case 'k':
 			settings.keychain_file = std::string(optarg);
 			break;
+		case 'q':
+			filters.filter_af(atof(optarg));
+			break;
+		case 'Q':
+			filters.filter_af(atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			break;
+
+		case 'm':
+			filters.filter_n_alts(atoi(optarg));
+			break;
+		case 'M':
+			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			break;
+
+		case 'c':
+			filters.filter_ac(atoi(optarg));
+			break;
+		case 'C':
+			filters.filter_ac(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			break;
+
+		case 'p':
+			filters.filter_uniform_phase(true);
+			break;
+		case 'P':
+			filters.filter_uniform_phase(false);
+			break;
+		case 'j':
+			filters.filter_mixed_phase(true);
+			break;
+
+		case 'u':
+			filters.filter_missing(true);
+			break;
+		case 'U':
+			filters.filter_missing(false);
+			break;
+
+		case 'z':
+			filters.filter_known_novel(true);
+			break;
+		case 'Z':
+			filters.filter_known_novel(false);
+			break;
+
 		case 'f':
 			interpret_commands.push_back(std::string(optarg));
 			break;
@@ -136,7 +191,7 @@ int view(int argc, char** argv){
 		case 's':
 			SILENT = 1;
 			break;
-		case 'c':
+		case 'y':
 			settings.custom_output_format = true;
 			break;
 		case 'R':
@@ -299,6 +354,8 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().load_alleles = true;
 		reader.getBlockSettings().load_positons = true;;
 	}
+
+	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();

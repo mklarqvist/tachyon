@@ -30,7 +30,7 @@ enum TACHYON_ENCRYPTION{YON_ENCRYPTION_NONE,
 					    YON_ENCRYPTION_AES_256_GCM,
 					    YON_ENCRYPTION_RSA_4096};
 
-}
+
 
 /**<
  * For genotype encodings: describes what encoding
@@ -87,5 +87,7 @@ enum TACHYON_COMPARATOR_TYPE{
 	YON_CMP_EQUAL,
 	YON_CMP_NOT_EQUAL
 };
+
+}
 
 #endif /* SUPPORT_ENUMS_H_ */
