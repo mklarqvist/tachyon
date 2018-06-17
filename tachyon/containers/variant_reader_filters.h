@@ -88,6 +88,7 @@ public:
 
 public:
 	VariantReaderFilters() :
+		require_genotypes(false),
 		target_intervals(false)
 	{
 
@@ -108,7 +109,7 @@ public:
 
 	inline bool filterKnownNovel(const objects_type& objects, const U32& position) const{
 		//assert(objects.meta != nullptr);
-		return(this->filter_known_novel.applyFilter(objects.meta->at(position).name.size() != 0));
+		return(this->filter_known_novel.applyFilter(objects.meta->at(position).name.size() == 0));
 	}
 
 	// GT data matches this
@@ -187,9 +188,10 @@ public:
 	 * @return         Returns TRUE if passes filtering or FALSE otherwise
 	 */
 	bool filter(const objects_type& objects, const U32 position) const{
-		for(U32 i = 0 ; i < this->filters.size(); ++i){
-			// Todo: invoke this only when necessary AND possible
+		if(this->require_genotypes)
 			objects.genotypes->at(position).getSummary(*objects.genotype_summary);
+
+		for(U32 i = 0 ; i < this->filters.size(); ++i){
 			if((this->*(this->filters[i]))(objects, position) == false){
 				return false;
 			}
@@ -198,6 +200,7 @@ public:
 	}
 
 public:
+	bool require_genotypes;
 	bool target_intervals;
 	// std::vector<intervals> intervals;
 	std::vector<filter_function>        filters;

@@ -139,9 +139,11 @@ int view(int argc, char** argv){
 			break;
 		case 'q':
 			filters.filter_af(atof(optarg));
+			filters.require_genotypes = true;
 			break;
 		case 'Q':
 			filters.filter_af(atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.require_genotypes = true;
 			break;
 
 		case 'm':
@@ -153,33 +155,36 @@ int view(int argc, char** argv){
 
 		case 'c':
 			filters.filter_ac(atoi(optarg));
+			filters.require_genotypes = true;
 			break;
 		case 'C':
 			filters.filter_ac(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.require_genotypes = true;
 			break;
 
 		case 'p':
-			filters.filter_uniform_phase(true);
+			filters.filter_uniform_phase(true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'P':
-			filters.filter_uniform_phase(false);
+			filters.filter_uniform_phase(false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'j':
-			filters.filter_mixed_phase(true);
+			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
 			break;
 
 		case 'u':
-			filters.filter_missing(true);
+			filters.filter_missing(true, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.filter_missing(false);
+			filters.filter_missing(false, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
 			break;
-
 		case 'z':
-			filters.filter_known_novel(true);
+			filters.filter_known_novel(true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'Z':
-			filters.filter_known_novel(false);
+			filters.filter_known_novel(false, tachyon::YON_CMP_EQUAL);
 			break;
 
 		case 'f':
