@@ -85,33 +85,33 @@ int view(int argc, char** argv){
 
 	int option_index = 0;
 	static struct option long_options[] = {
-		{"input",       required_argument, 0,  'i' },
-		{"output",      optional_argument, 0,  'o' },
-		{"keychain",    optional_argument, 0,  'k' },
-		{"filter",      optional_argument, 0,  'f' },
-		{"delimiter",   optional_argument, 0,  'd' },
-		{"output-type", optional_argument, 0,  'O' },
-		{"vector-output", no_argument, 0,  'V' },
-		{"annotate-genotype", no_argument, 0,  'X' },
-		{"region",   optional_argument, 0,  'r' },
-		{"noHeader",    no_argument, 0,  'H' },
-		{"onlyHeader",  no_argument, 0,  'h' },
-		{"dropFormat",  no_argument, 0,  'G' },
-		{"customFormat",no_argument, 0,  'y' },
-		{"silent",      no_argument, 0,  's' },
-		{"af-min",      optional_argument, 0,  'q' },
-		{"af-max",      optional_argument, 0,  'Q' },
-		{"ac-min",      optional_argument, 0,  'c' },
-		{"ac-max",      optional_argument, 0,  'C' },
-		{"alleles-min",      optional_argument, 0,  'm' },
-		{"alleles-max",      optional_argument, 0,  'M' },
-		{"known",      no_argument, 0,  'z' },
-		{"novel",      no_argument, 0,  'Z' },
-		{"phased",      no_argument, 0,  'p' },
-		{"exclude-phased",      no_argument, 0,  'P' },
-		{"mixed-phase",      no_argument, 0,  'j' },
-		{"uncalled",      no_argument, 0,  'u' },
-		{"exclude-uncalled",      no_argument, 0,  'U' },
+		{"input",         required_argument, 0,  'i' },
+		{"output",        optional_argument, 0,  'o' },
+		{"keychain",      optional_argument, 0,  'k' },
+		{"filter",        optional_argument, 0,  'f' },
+		{"delimiter",     optional_argument, 0,  'd' },
+		{"output-type",   optional_argument, 0,  'O' },
+		{"vector-output", no_argument,       0,  'V' },
+		{"annotate-genotype", no_argument,   0,  'X' },
+		{"region",        optional_argument, 0,  'r' },
+		{"noHeader",      no_argument, 0,  'H' },
+		{"onlyHeader",    no_argument, 0,  'h' },
+		{"dropFormat",    no_argument, 0,  'G' },
+		{"customFormat",  no_argument, 0,  'y' },
+		{"silent",        no_argument, 0,  's' },
+		{"af-min",        optional_argument, 0,  'q' },
+		{"af-max",        optional_argument, 0,  'Q' },
+		{"ac-min",        optional_argument, 0,  'c' },
+		{"ac-max",        optional_argument, 0,  'C' },
+		{"alleles-min",   optional_argument, 0,  'm' },
+		{"alleles-max",   optional_argument, 0,  'M' },
+		{"known",         no_argument,    0,  'z' },
+		{"novel",         no_argument,    0,  'Z' },
+		{"phased",        no_argument,    0,  'p' },
+		{"exclude-phased",no_argument,    0,  'P' },
+		{"mixed-phase",   no_argument,    0,  'j' },
+		{"uncalled",      no_argument,    0,  'u' },
+		{"exclude-uncalled", no_argument, 0,  'U' },
 		{0,0,0,0}
 	};
 
@@ -145,14 +145,12 @@ int view(int argc, char** argv){
 			filters.filter_af(atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
-
 		case 'm':
 			filters.filter_n_alts(atoi(optarg));
 			break;
 		case 'M':
 			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
-
 		case 'c':
 			filters.filter_ac(atoi(optarg));
 			filters.require_genotypes = true;
@@ -161,7 +159,6 @@ int view(int argc, char** argv){
 			filters.filter_ac(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
-
 		case 'p':
 			filters.filter_uniform_phase(true, tachyon::YON_CMP_EQUAL);
 			break;
@@ -171,7 +168,6 @@ int view(int argc, char** argv){
 		case 'j':
 			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
 			break;
-
 		case 'u':
 			filters.filter_missing(true, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
@@ -186,7 +182,6 @@ int view(int argc, char** argv){
 		case 'Z':
 			filters.filter_known_novel(false, tachyon::YON_CMP_EQUAL);
 			break;
-
 		case 'f':
 			interpret_commands.push_back(std::string(optarg));
 			break;
@@ -228,11 +223,9 @@ int view(int argc, char** argv){
 		case 'V':
 			settings.output_FORMAT_as_vector = true;
 			break;
-
 		case 'O':
 			settings.output_type = std::string(optarg);
 			break;
-
 		case 'X':
 			settings.annotate_genotypes = true;
 			break;
@@ -280,7 +273,9 @@ int view(int argc, char** argv){
 	if(settings.header_only){
 		reader.header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 		reader.header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-				  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + tachyon::utility::datetime();
+		                       +  SSLeay_version(SSLEAY_VERSION) + ","
+		                       + "ZSTD-" + ZSTD_versionString()
+		                       + "; timestamp=" + tachyon::utility::datetime();
 
 		reader.header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
 		reader.header.literals += reader.getSettings().get_settings_string();
@@ -301,14 +296,14 @@ int view(int argc, char** argv){
 
 		if(settings.drop_format){
 			reader.getBlockSettings().loadGenotypes(false);
-			reader.getBlockSettings().load_ppa    = false;
-			reader.getBlockSettings().load_format = false;
+			reader.getBlockSettings().ppa(false, false);
+			reader.getBlockSettings().format_all(false, false);
 		}
 	}
 
 	if(settings.custom_delimiter){
 		if(settings.custom_output_format == false){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -c when using a custom separator" << std::endl;
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -y when using a custom separator" << std::endl;
 			return(1);
 		}
 		reader.getBlockSettings().setCustomDelimiter(settings.custom_delimiter_char);
@@ -355,9 +350,9 @@ int view(int argc, char** argv){
 	if(settings.annotate_genotypes){
 		reader.getBlockSettings().annotate_extra = true;
 		reader.getBlockSettings().loadGenotypes(true);
-		reader.getBlockSettings().load_set_membership = true;
-		reader.getBlockSettings().load_alleles = true;
-		reader.getBlockSettings().load_positons = true;;
+		reader.getBlockSettings().set_membership(true, true);
+		reader.getBlockSettings().alleles(true, true);
+		reader.getBlockSettings().positions(true, true);
 	}
 
 	reader.getFilterSettings() = filters;
@@ -368,25 +363,20 @@ int view(int argc, char** argv){
 	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
 	else reader.getBlockSettings().show_vcf_header = false;
 
-	// Todo: pass to settings
-
-	//reader.getSettings().interval_strings.push_back("20");
-	//reader.getSettings().interval_strings.push_back(" 20:1e6   ");
-	//reader.getSettings().interval_strings.push_back(" 20: 1e6 -2e6");
 	if(reader.getSettings().validateIntervalStrings() == false) return(1);
-	//return(1);
 	if(reader.parseIntervals() == false) return(1);
-
-	// Temp
-	//while(reader.nextBlock()) reader.getGenotypeSummary(std::cout);
-	//return(0);
 
 	U64 n_variants = 0;
 	if(settings.custom_output_format) n_variants = reader.outputCustom();
 	else n_variants = reader.outputVCF();
 
 	//std::cerr << "Blocks: " << n_blocks << std::endl;
-	std::cerr << "Variants: " << tachyon::utility::ToPrettyString(n_variants) << " genotypes: " << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t' << timer.ElapsedString() << '\t' << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count())) << std::endl;
+	std::cerr << "Variants: "
+	          << tachyon::utility::ToPrettyString(n_variants) << " genotypes: "
+	          << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t'
+	          << timer.ElapsedString() << '\t'
+	          << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count()))
+	          << std::endl;
 
 	return 0;
 }

@@ -179,7 +179,7 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 }
 
 bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
-	if(settings.load_ppa){
+	if(settings.ppa.load){
 		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
 			this->ppa_manager.header = this->footer.offset_ppa;
 			stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
@@ -187,57 +187,57 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 		}
 	}
 
-	if(settings.load_contig){
+	if(settings.contig.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_contig, this->meta_contig_container);
 	}
 
-	if(settings.load_positons){
+	if(settings.positions.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_position, this->meta_positions_container);
 	}
 
-	if(settings.load_controller){
+	if(settings.controller.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
 	}
 
-	if(settings.load_quality){
+	if(settings.quality.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_quality, this->meta_quality_container);
 	}
 
-	if(settings.load_names){
+	if(settings.names.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_names, this->meta_names_container);
 	}
 
-	if(settings.load_alleles){
+	if(settings.alleles.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
 		this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
 	}
 
-	if(settings.load_genotypes_rle){
+	if(settings.genotypes_rle.load || settings.genotypes_all.load){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
 		this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
 		this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
 		this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
 	}
 
-	if(settings.load_genotypes_simple){
+	if(settings.genotypes_simple.load || settings.genotypes_all.load){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
 		this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
 	}
 
-	if(settings.load_genotypes_support){
+	if(settings.genotypes_support.load || settings.genotypes_all.load){
 		this->__loadContainerSeek(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
 	}
 
-	if(settings.load_set_membership){
+	if(settings.set_membership.load || settings.genotypes_all.load){
 		this->__loadContainerSeek(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
 		this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
 		this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
 	}
 
 	// Load all info
-	if(settings.load_info && this->footer.n_info_streams){
+	if(settings.info_all.load && this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
@@ -266,7 +266,7 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 	} // end case load_info_ID
 
 	// Load all FORMAT data
-	if(settings.load_format && this->footer.n_format_streams){
+	if(settings.format_all.load && this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);

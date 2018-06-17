@@ -131,13 +131,13 @@ int stats(int argc, char** argv){
 	tachyon::algorithm::Timer timer, timer2;
 	timer.Start(); timer2.Start();
 
-	reader.getBlockSettings().load_contig = true;
-	reader.getBlockSettings().load_positons = true;
-	reader.getBlockSettings().load_controller = true;
-	reader.getBlockSettings().load_set_membership = true;
+	reader.getBlockSettings().contig(true, true);
+	reader.getBlockSettings().positions(true, true);
+	reader.getBlockSettings().controller(true, true);
+	reader.getBlockSettings().set_membership(true, true);
 	reader.getBlockSettings().loadGenotypes(true);
-	reader.getBlockSettings().load_ppa = true;
-	reader.getBlockSettings().load_alleles = true;
+	reader.getBlockSettings().ppa(true, true);
+	reader.getBlockSettings().alleles(true, true);
 
 	U32 block_counter = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());

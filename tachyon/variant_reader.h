@@ -58,7 +58,7 @@ class VariantReader{
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 	typedef void (self_type::*print_info_function)(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	typedef void (self_type::*print_filter_function)(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const SettingsCustomOutput& controller);
+	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const block_settings_type& controller);
 
 public:
 	VariantReader();
@@ -337,7 +337,7 @@ public:
 
 		// Output VCF header
 		if(this->block_settings.show_vcf_header){
-			this->header.writeVCFHeaderString(std::cout, this->block_settings.load_format || this->block_settings.format_list.size());
+			this->header.writeVCFHeaderString(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
 		}
 
 		// If seek is active for targetted intervals
@@ -393,7 +393,7 @@ public:
 		// Reserve memory for output buffer
 		// This is much faster than writing directly to ostream because of syncing
 		io::BasicBuffer output_buffer(256000);
-		if(this->block_settings.load_format) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
+		if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
 
 		// Todo: in cases of non-diploid
 		std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
@@ -403,7 +403,7 @@ public:
 
 		print_format_function print_format = &self_type::printFORMATDummy;
 		if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
-		else if(block_settings.load_format) print_format = &self_type::printFORMATVCF;
+		else if(block_settings.format_all.display) print_format = &self_type::printFORMATVCF;
 		print_info_function   print_info   = &self_type::printINFOVCF;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
@@ -416,7 +416,7 @@ public:
 			}
 
 			if(this->block_settings.custom_output_format)
-				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->block_settings.custom_output_controller);
+				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->block_settings);
 			else
 				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
 
@@ -466,7 +466,7 @@ public:
 
 		if(block_settings.output_json) print_meta = &utility::to_json_string;
 
-		if(block_settings.load_format || this->block.n_format_loaded){
+		if(block_settings.format_all.display || this->block.n_format_loaded){
 			if(block_settings.output_json){
 				print_format = &self_type::printFORMATCustomVectorJSON;
 			} else {
@@ -475,12 +475,12 @@ public:
 			}
 		}
 
-		if(block_settings.load_info || this->block.n_info_loaded){
+		if(block_settings.info_all.display || this->block.n_info_loaded){
 			if(block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
 			else print_info = &self_type::printINFOCustom;
 		}
 
-		if(this->block_settings.custom_output_controller.show_filter){
+		if(block_settings.display_filter){
 			if(block_settings.output_json) print_filter = &self_type::printFILTERJSON;
 			else print_filter = &self_type::printFILTERCustom;
 		}
@@ -499,7 +499,7 @@ public:
 			}
 			++n_records_returned;
 
-			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->block_settings.custom_output_controller);
+			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->block_settings);
 			(this->*print_filter)(output_buffer, position, objects);
 			(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
 			(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
@@ -775,7 +775,7 @@ public:
 	}
 
 	void getGenotypeSummary(buffer_type& buffer, const U32& position, objects_type& objects) const{
-		if(this->block_settings.load_alleles == false || this->block_settings.load_genotypes_all == false || this->block_settings.load_controller == false || this->block_settings.load_set_membership == false){
+		if(this->block_settings.alleles.load == false || this->block_settings.genotypes_all.load == false || this->block_settings.controller.load == false || this->block_settings.set_membership.load == false){
 			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
 			return;
 		}
