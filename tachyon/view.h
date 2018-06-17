@@ -93,7 +93,7 @@ int view(int argc, char** argv){
 		{"output-type", optional_argument, 0,  'O' },
 		{"vector-output", no_argument, 0,  'V' },
 		{"annotate-genotype", no_argument, 0,  'X' },
-		{"region",   optional_argument, 0,  'R' },
+		{"region",   optional_argument, 0,  'r' },
 		{"noHeader",    no_argument, 0,  'H' },
 		{"onlyHeader",  no_argument, 0,  'h' },
 		{"dropFormat",  no_argument, 0,  'G' },
@@ -123,7 +123,7 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:R:yGshHVX?q:Q:m:M:pPuUc:C:jzZ", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jzZ", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -194,7 +194,7 @@ int view(int argc, char** argv){
 		case 'y':
 			settings.custom_output_format = true;
 			break;
-		case 'R':
+		case 'r':
 			settings.interval_strings.push_back(std::string(optarg));
 			break;
 		case 'd':
