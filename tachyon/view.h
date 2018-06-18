@@ -44,30 +44,29 @@ void view_usage(void){
 	"  -R STRING path to file with interval strings\n"
 	"  -d CHAR   output delimiter (-c must be triggered)\n"
 	"  -y        custom output format (ignores VCF/BCF specification rules)\n"
+	"  -V        custom output data as vectors instead of per sample (valid only with -y)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
 	"  -s        Hide all program messages\n\n"
 
 	"Subset options:\n"
-	"  -a, --trim-alt-alleles        trim alternate alleles not seen in the subset\n"
-	"  -I, --no-update               do not (re)calculate INFO fields for the subset\n"
 	"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
 	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n"
 	"      --force-samples           only warn about unknown subset samples\n\n"
 
 	"Filter options:\n"
-    "  -c/C, --min-ac/--max-ac <int>[:<type>]      minimum/maximum count for non-reference (nref), 1st alternate (alt1), least frequent\n"
+	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression match for the reference allele -a or for any alternative alleles -A\n"
+    "  -c/C, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
-    "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT (e.g. -m2 -M2 for biallelic sites)\n"
+    "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
 	"  -j,   --mixed-phasing                       select sites with both phased and unphased samples\n"
-	"  -q/Q, --min-af/--max-af <float>[:<type>]    minimum/maximum frequency for non-reference (nref), 1st alternate (alt1), least frequent\n"
+	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
-    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n"
-    "  -x/X, --private/--exclude-private           select/exclude sites where the non-reference alleles are exclusive (private) to the subset samples\n";
+    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n";
 }
 
 int view(int argc, char** argv){
@@ -112,18 +111,20 @@ int view(int argc, char** argv){
 		{"mixed-phase",   no_argument,    0,  'j' },
 		{"uncalled",      no_argument,    0,  'u' },
 		{"exclude-uncalled", no_argument, 0,  'U' },
+		{"ref-match",   optional_argument, 0,  'a' },
+		{"alt-match",   optional_argument, 0,  'A' },
 		{0,0,0,0}
 	};
 
 	tachyon::VariantReaderSettings settings;
-	tachyon::DataBlockSettings block_settings;
-	tachyon::VariantReaderFilters filters;
-	std::vector<std::string> interpret_commands;
+	tachyon::DataBlockSettings     block_settings;
+	tachyon::VariantReaderFilters  filters;
+	std::vector<std::string>       interpret_commands;
 
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jzZ", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jzZa:A:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -151,6 +152,14 @@ int view(int argc, char** argv){
 		case 'M':
 			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
+
+		case 'a':
+			filters.filter_ref_allele(optarg, tachyon::YON_CMP_REGEX);
+			break;
+		case 'A':
+			filters.filter_alt_allele(optarg, tachyon::YON_CMP_REGEX);
+			break;
+
 		case 'c':
 			filters.filter_ac(atoi(optarg));
 			filters.require_genotypes = true;

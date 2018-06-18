@@ -568,7 +568,7 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
 {
-	if(this->block.footer.n_filter_streams){
+	if(this->block_settings.display_filter && this->block.footer.n_filter_streams){
 		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].n_keys;
 		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
@@ -591,7 +591,7 @@ void VariantReader::printFILTERCustom(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
 {
-	if(this->block.footer.n_filter_streams){
+	if(this->block_settings.display_filter && this->block.footer.n_filter_streams){
 		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].n_keys;
 		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
@@ -640,7 +640,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 	                        const objects_type& objects,
 	               std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display && this->block.n_format_loaded){
+	if(this->block_settings.format_all.display && this->block.n_format_loaded){
 		if(this->block.n_format_loaded){
 			const U32& n_format_keys = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].n_keys;
 			const U32* format_keys   = this->block.footer.format_bit_vectors[objects.meta->at(position).format_pattern_id].local_keys;

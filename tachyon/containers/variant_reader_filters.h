@@ -76,6 +76,82 @@ public:
 	filter_function comparator;
 };
 
+template <>
+struct VariantReaderFiltersTuple<std::string>{
+public:
+	typedef VariantReaderFiltersTuple<std::string> self_type;
+	typedef bool (self_type::*filter_function)(const std::string& target, const std::string& limit) const;
+
+public:
+	VariantReaderFiltersTuple() :
+		filter(false),
+		comparator(&self_type::__filterGreaterEqual)
+	{}
+
+	VariantReaderFiltersTuple(const std::string& r_value) :
+		filter(true),
+		r_value(r_value),
+		comparator(&self_type::__filterGreaterEqual)
+	{}
+
+	VariantReaderFiltersTuple(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator) :
+		filter(true),
+		r_value(r_value),
+		comparator(nullptr)
+	{
+		switch(comparator){
+		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
+		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
+		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
+		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
+		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
+		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		case(YON_CMP_REGEX):         this->comparator = &self_type::__filterRegex;        break;
+		}
+	}
+
+	void operator()(const std::string& r_value){
+		this->filter = true;
+		this->r_value = r_value;
+	}
+
+	void operator()(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+		this->filter  = true;
+		this->r_value = r_value;
+
+		switch(comparator){
+		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
+		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
+		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
+		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
+		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
+		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		case(YON_CMP_REGEX):         this->comparator = &self_type::__filterRegex;        break;
+		}
+	}
+
+	~VariantReaderFiltersTuple() = default;
+
+	inline bool applyFilter(const std::string& l_value) const{ return((this->*comparator)(l_value, this->r_value)); }
+
+	// Comparator functions
+	inline bool __filterLesser(const std::string& target, const std::string& limit) const{return(target.size() < limit.size());}
+	inline bool __filterLesserEqual(const std::string& target, const std::string& limit) const{return(target.size() <= limit.size());}
+	inline bool __filterGreater(const std::string& target, const std::string& limit) const{return(target.size() > limit.size());}
+	inline bool __filterGreaterEqual(const std::string& target, const std::string& limit) const{return(target.size() >= limit.size());}
+	inline bool __filterEqual(const std::string& target, const std::string& limit) const{return(target == limit);}
+	inline bool __filterNotEqual(const std::string& target, const std::string& limit) const{return(target != limit);}
+
+	inline bool __filterRegex(const std::string& target, const std::string& limit) const{
+		return(std::regex_match(target, std::regex(limit)));
+	}
+
+public:
+	bool            filter;
+	std::string     r_value;
+	filter_function comparator;
+};
+
 struct VariantReaderFilters{
 public:
 	typedef VariantReaderFilters self_type;
@@ -113,8 +189,7 @@ public:
 	}
 
 	// GT data matches this
-	inline bool filterUniformMatchPhase(const objects_type& objects,
-												 const U32& position) const
+	inline bool filterUniformMatchPhase(const objects_type& objects, const U32& position) const
 	{
 		//assert(objects.meta != nullptr);
 		return(objects.meta->at(position).isGTMixedPhasing() == false &&
@@ -164,6 +239,18 @@ public:
 		return(this->filter_missing.applyFilter(object.genotype_summary->matrix_[0][0] == 0));
 	}
 
+	inline bool filterReferenceAllele(const objects_type& object, const U32& position) const{
+		return(this->filter_ref_allele.applyFilter(object.meta->at(position).alleles[0].toString()));
+	}
+
+	inline bool filterAlternativeAllele(const objects_type& object, const U32& position) const{
+		for(U32 i = 1; i < object.meta->at(position).n_alleles; ++i){
+			if(this->filter_alt_allele.applyFilter(object.meta->at(position).alleles[i].toString()))
+				return true;
+		}
+		return false;
+	}
+
 	/**<
 	 * Constructs the filter pointer vector given the fields that have been set
 	 * @return Returns TRUE if passing construction or FALSE otherwise
@@ -178,6 +265,8 @@ public:
 		if(this->filter_ac.filter)            this->filters.push_back(&self_type::filterAlleleCount);
 		if(this->filter_uniform_phase.filter) this->filters.push_back(&self_type::filterUniformMatchPhase);
 		if(this->filter_known_novel.filter)   this->filters.push_back(&self_type::filterKnownNovel);
+		if(this->filter_ref_allele.filter)    this->filters.push_back(&self_type::filterReferenceAllele);
+		if(this->filter_alt_allele.filter)    this->filters.push_back(&self_type::filterAlternativeAllele);
 		return true;
 	}
 
@@ -214,6 +303,9 @@ public:
 	VariantReaderFiltersTuple<bool>  filter_known_novel;
 	VariantReaderFiltersTuple<float> filter_af;
 	VariantReaderFiltersTuple<S32>   filter_ac;
+
+	VariantReaderFiltersTuple<std::string>   filter_ref_allele;
+	VariantReaderFiltersTuple<std::string>   filter_alt_allele;
 };
 
 

@@ -141,6 +141,9 @@ public:
 
 	self_type& loadAllINFO(const bool set = true){
 		this->info_all(set, set);
+		this->contig.load = set;
+		this->positions.load = set;
+		this->set_membership.load = set;
 		return(*this);
 	}
 
@@ -165,7 +168,7 @@ public:
 		this->genotypes_all(set, set);
 		this->genotypes_rle(set, set);
 		this->genotypes_simple(set, set);
-		this->genotypes_other.load = set;
+		this->genotypes_other(set, set);
 		this->genotypes_support.load = set;
 		return(*this);
 	}
@@ -232,9 +235,18 @@ public:
 							allGood = false;
 						}
 					}
-				} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0){
-					this->info_all(true, true);
+				} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0 && partitions[p].size() == 4){
+					this->loadAllINFO(true);
+				} else if(strncasecmp(partitions[p].data(), "FORMAT", 6) == 0 && partitions[p].size() == 6){
+					this->format_all(true, true);
 					this->set_membership(true, true);
+					this->loadGenotypes(true);
+					this->set_membership.load = true;
+					this->positions.load = true;
+					this->contig.load = true;
+					this->ppa.load = true;
+					this->controller.load = true;
+
 				} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 					std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
 					for(U32 j = 0; j < ind.size(); ++j){

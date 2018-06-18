@@ -380,18 +380,12 @@ public:
 	const U32 outputBlockVCF(void){
 		objects_type objects;
 		this->loadObjects(objects);
-
-		// Todo
-		//this->variant_filters.filter_af(0.9, YON_CMP_GREATER_EQUAL);
-		//this->variant_filters.filter_n_alts(5, YON_CMP_GREATER_EQUAL);
-		//this->variant_filters.filter_uniform_phase(true);
-		//this->variant_filters.filter_missing(false);
-		//this->variant_filters.filter_mixed_ploidy(true);
-
+		//this->variant_filters.filter_ref_allele("A", YON_CMP_EQUAL);
+		//this->variant_filters.filter_alt_allele("[A]{2,}", YON_CMP_REGEX);
 		this->variant_filters.build();
 
 		// Reserve memory for output buffer
-		// This is much faster than writing directly to ostream because of syncing
+		// This is much faster than writing directly to ostream because of synchronisation
 		io::BasicBuffer output_buffer(256000);
 		if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
 
@@ -403,22 +397,20 @@ public:
 
 		print_format_function print_format = &self_type::printFORMATDummy;
 		if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
-		else if(block_settings.format_all.display) print_format = &self_type::printFORMATVCF;
+		else if(block_settings.format_all.display)     print_format = &self_type::printFORMATVCF;
 		print_info_function   print_info   = &self_type::printINFOVCF;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta->size(); ++p){
-			if(this->variant_filters.filter(objects, p) == false){
-				//std::cerr << "failed filter" << std::endl;
+			if(this->variant_filters.filter(objects, p) == false)
 				continue;
-			}
 
 			if(this->block_settings.custom_output_format)
-				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header, this->block_settings);
+				utility::to_vcf_string(output_buffer, '\t', objects.meta->at(p), this->header, this->block_settings);
 			else
-				utility::to_vcf_string(output_buffer, '\t', (*objects.meta)[p], this->header);
+				utility::to_vcf_string(output_buffer, '\t', objects.meta->at(p), this->header);
 
 			// Filter options
 			(this->*print_filter)(output_buffer, p, objects);
@@ -491,15 +483,14 @@ public:
 		for(U32 position = 0; position < objects.meta->size(); ++position){
 			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 			//	continue;
+
 			if(block_settings.output_json){
 				if(position != 0) output_buffer += ",\n";
-
-
 				output_buffer += "{";
 			}
 			++n_records_returned;
 
-			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, (*objects.meta)[position], this->header, this->block_settings);
+			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, objects.meta->at(position), this->header, this->block_settings);
 			(this->*print_filter)(output_buffer, position, objects);
 			(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
 			(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
@@ -892,7 +883,7 @@ public:
 			}
 
 			if(target_flag_set & 1024){
-				if(objects.meta->at(position).n_alleles != 2) buffer += ";MULTI_ALLELIC";
+				if(objects.meta->at(position).n_alleles > 2) buffer += ";MULTI_ALLELIC";
 			}
 
 			// Population inbreeding coefficient: F = (Hexp - Hobs) /Hexp
@@ -909,11 +900,7 @@ public:
 				buffer.AddReadble(f_pic);
 			}
 
-			//stream.put('\n');
 			objects.genotype_summary->clear();
-			//++n_variants_parsed;
-		//}
-		//return(n_variants_parsed);
 	}
 
 	U64 countVariants(std::ostream& stream = std::cout){
