@@ -177,9 +177,9 @@ public:
 		this->ppa(set, set);
 		this->loadGenotypes(set);
 		this->format_all(set, set);
-		this->contig(set, set);
-		this->positions(set, set);
-		this->set_membership(set, set);
+		this->contig.load = set;
+		this->positions.load = set;
+		this->set_membership.load = set;
 		return(*this);
 	}
 
@@ -194,9 +194,9 @@ public:
 	}
 
 	self_type& loadFORMAT(const U32 field_id){
-		this->contig(true, true);
-		this->positions(true, true);
-		this->set_membership(true, true);
+		this->contig.load = true;
+		this->positions.load = true;
+		this->set_membership.load = true;
 		this->format_ID_list.push_back(field_id);
 		return(*this);
 	}

@@ -55,7 +55,8 @@ void view_usage(void){
 	"      --force-samples           only warn about unknown subset samples\n\n"
 
 	"Filter options:\n"
-	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression match for the reference allele -a or for any alternative alleles -A\n"
+	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression pattern for the reference allele -a or for any alternative alleles -A\n"
+	"  -n,   --name-match <REGEX>                  regular expression pattern for the locus name\n"
     "  -c/C, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
@@ -63,6 +64,7 @@ void view_usage(void){
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
 	"  -j,   --mixed-phasing                       select sites with both phased and unphased samples\n"
+	"  -J,   --mixed-ploidy                        select sites with mixed ploidy\n"
 	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
@@ -113,6 +115,8 @@ int view(int argc, char** argv){
 		{"exclude-uncalled", no_argument, 0,  'U' },
 		{"ref-match",   optional_argument, 0,  'a' },
 		{"alt-match",   optional_argument, 0,  'A' },
+		{"name-match",  optional_argument, 0,  'n' },
+		{"mixed-ploidy",no_argument,       0,  'J' },
 		{0,0,0,0}
 	};
 
@@ -124,9 +128,10 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jzZa:A:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
+			std::cerr << "here" << std::endl;
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
 		case 'i':
@@ -152,14 +157,15 @@ int view(int argc, char** argv){
 		case 'M':
 			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
-
 		case 'a':
 			filters.filter_ref_allele(optarg, tachyon::YON_CMP_REGEX);
 			break;
 		case 'A':
 			filters.filter_alt_allele(optarg, tachyon::YON_CMP_REGEX);
 			break;
-
+		case 'n':
+			filters.filter_name(optarg, tachyon::YON_CMP_REGEX);
+			break;
 		case 'c':
 			filters.filter_ac(atoi(optarg));
 			filters.require_genotypes = true;
@@ -176,6 +182,10 @@ int view(int argc, char** argv){
 			break;
 		case 'j':
 			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
+			break;
+		case 'J':
+			filters.filter_mixed_ploidy(true, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
 			break;
 		case 'u':
 			filters.filter_missing(true, tachyon::YON_CMP_EQUAL);
@@ -240,6 +250,7 @@ int view(int argc, char** argv){
 			break;
 
 		default:
+			std::cerr << "here default" << std::endl;
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}

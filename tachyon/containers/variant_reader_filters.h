@@ -91,12 +91,14 @@ public:
 	VariantReaderFiltersTuple(const std::string& r_value) :
 		filter(true),
 		r_value(r_value),
+		r_value_regex(std::regex(r_value)),
 		comparator(&self_type::__filterGreaterEqual)
 	{}
 
 	VariantReaderFiltersTuple(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator) :
 		filter(true),
 		r_value(r_value),
+		r_value_regex(std::regex(r_value)),
 		comparator(nullptr)
 	{
 		switch(comparator){
@@ -113,11 +115,13 @@ public:
 	void operator()(const std::string& r_value){
 		this->filter = true;
 		this->r_value = r_value;
+		this->r_value_regex = std::regex(r_value);
 	}
 
 	void operator()(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
 		this->filter  = true;
 		this->r_value = r_value;
+		this->r_value_regex = std::regex(r_value);
 
 		switch(comparator){
 		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
@@ -143,12 +147,13 @@ public:
 	inline bool __filterNotEqual(const std::string& target, const std::string& limit) const{return(target != limit);}
 
 	inline bool __filterRegex(const std::string& target, const std::string& limit) const{
-		return(std::regex_match(target, std::regex(limit)));
+		return(std::regex_search(target, this->r_value_regex, std::regex_constants::match_any));
 	}
 
 public:
 	bool            filter;
 	std::string     r_value;
+	std::regex      r_value_regex;
 	filter_function comparator;
 };
 
@@ -180,7 +185,7 @@ public:
 
 	inline bool filterMixedPloidy(const objects_type& objects, const U32& position) const{
 		//assert(objects.meta != nullptr);
-		return(this->filter_mixed_ploidy.applyFilter(objects.meta->at(position).isAnyGTMixedPloidy()));
+		return(this->filter_mixed_ploidy.applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]) != 0));
 	}
 
 	inline bool filterKnownNovel(const objects_type& objects, const U32& position) const{
@@ -240,6 +245,7 @@ public:
 	}
 
 	inline bool filterReferenceAllele(const objects_type& object, const U32& position) const{
+		//std::cerr << object.meta->at(position).alleles[0].toString() << std::endl;
 		return(this->filter_ref_allele.applyFilter(object.meta->at(position).alleles[0].toString()));
 	}
 
@@ -251,11 +257,15 @@ public:
 		return false;
 	}
 
+	inline bool filterName(const objects_type& object, const U32& position) const{
+		//std::cerr << "here: " << object.meta->at(position).name << " rvalue " << this->filter_name.r_value << std::endl;
+		return(this->filter_name.applyFilter(object.meta->at(position).name));
+	}
+
 	/**<
 	 * Constructs the filter pointer vector given the fields that have been set
-	 * @return Returns TRUE if passing construction or FALSE otherwise
 	 */
-	bool build(void){
+	void build(void){
 		this->filters.clear();
 		if(this->filter_n_alts.filter)        this->filters.push_back(&self_type::filterAlternativeAlleles);
 		if(this->filter_mixed_phase.filter)   this->filters.push_back(&self_type::filterMixedPhasing);
@@ -267,7 +277,7 @@ public:
 		if(this->filter_known_novel.filter)   this->filters.push_back(&self_type::filterKnownNovel);
 		if(this->filter_ref_allele.filter)    this->filters.push_back(&self_type::filterReferenceAllele);
 		if(this->filter_alt_allele.filter)    this->filters.push_back(&self_type::filterAlternativeAllele);
-		return true;
+		if(this->filter_name.filter)          this->filters.push_back(&self_type::filterName);
 	}
 
 	/**<
@@ -306,6 +316,7 @@ public:
 
 	VariantReaderFiltersTuple<std::string>   filter_ref_allele;
 	VariantReaderFiltersTuple<std::string>   filter_alt_allele;
+	VariantReaderFiltersTuple<std::string>   filter_name;
 };
 
 
