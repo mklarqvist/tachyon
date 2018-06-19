@@ -26,9 +26,9 @@
 #include "math/basic_vector_math.h"
 #include "utility/support_vcf.h"
 #include "index/index.h"
-#include "containers/variant_reader_settings.h"
-#include "containers/variant_reader_objects.h"
-#include "containers/variant_reader_filters.h"
+#include "core/variant_reader_settings.h"
+#include "core/variant_reader_objects.h"
+#include "core/variant_reader_filters.h"
 
 namespace tachyon{
 
@@ -403,14 +403,14 @@ public:
 		print_filter_function print_filter = &self_type::printFILTER;
 
 		// Cycling over loaded meta objects
-		for(U32 p = 0; p < objects.meta->size(); ++p){
+		for(U32 p = 0; p < objects.meta_container->size(); ++p){
 			if(this->variant_filters.filter(objects, p) == false)
 				continue;
 
 			if(this->block_settings.custom_output_format)
-				utility::to_vcf_string(output_buffer, '\t', objects.meta->at(p), this->header, this->block_settings);
+				utility::to_vcf_string(output_buffer, '\t', objects.meta_container->at(p), this->header, this->block_settings);
 			else
-				utility::to_vcf_string(output_buffer, '\t', objects.meta->at(p), this->header);
+				utility::to_vcf_string(output_buffer, '\t', objects.meta_container->at(p), this->header);
 
 			// Filter options
 			(this->*print_filter)(output_buffer, p, objects);
@@ -430,7 +430,7 @@ public:
 		output_buffer.reset();
 		std::cout.flush();
 
-		return(objects.meta->size());
+		return(objects.meta_container->size());
 	}
 
 	/**<
@@ -480,7 +480,7 @@ public:
 		U32 n_records_returned = 0;
 
 		if(block_settings.output_json) output_buffer += "\"block\":[";
-		for(U32 position = 0; position < objects.meta->size(); ++position){
+		for(U32 position = 0; position < objects.meta_container->size(); ++position){
 			//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 			//	continue;
 
@@ -490,7 +490,7 @@ public:
 			}
 			++n_records_returned;
 
-			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, objects.meta->at(position), this->header, this->block_settings);
+			(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, objects.meta_container->at(position), this->header, this->block_settings);
 			(this->*print_filter)(output_buffer, position, objects);
 			(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
 			(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
@@ -778,7 +778,7 @@ public:
 		//U32 n_variants_parsed = 0;
 
 		//for(U32 i = 0; i < objects.genotypes->size(); ++i){
-			if(objects.meta->at(position).isDiploid() == false){
+			if(objects.meta_container->at(position).isDiploid() == false){
 				std::cerr << "is not diploid" << std::endl;
 				return;
 			}
@@ -786,19 +786,19 @@ public:
 			// If set membership is -1 then calculate all fields
 			// Set target FLAG set to all ones; update with actual values if they exist
 			U16 target_flag_set = 65535;
-			if(objects.meta->at(position).getInfoPatternID() != -1)
-				target_flag_set = objects.additional_info_execute_flag_set[objects.meta->at(position).getInfoPatternID()];
+			if(objects.meta_container->at(position).getInfoPatternID() != -1)
+				target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).getInfoPatternID()];
 
 			// Get genotype summary data
-			objects.genotypes->at(position).getSummary(*objects.genotype_summary);
-			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta->at(position));
-			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta->at(position));
+			objects.genotype_container->at(position).getSummary(*objects.genotype_summary);
+			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta_container->at(position));
+			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
 
 
 			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->header);
 
 			if(target_flag_set & 1){
-				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta->at(position), *objects.genotype_summary, true);
+				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta_container->at(position), *objects.genotype_summary, true);
 				buffer += "FS_A=";
 				buffer.AddReadble(allele_bias[0]);
 				for(U32 p = 1; p < allele_bias.size(); ++p){
@@ -829,7 +829,7 @@ public:
 			if(target_flag_set & 16){
 				buffer += ";AC=";
 				buffer.AddReadble(objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p]);
 				}
@@ -838,7 +838,7 @@ public:
 			if(target_flag_set & 32){
 				buffer += ";AC_FWD=";
 				buffer.AddReadble(objects.genotype_summary->vectorA_[2]);
-				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p]);
 				}
@@ -847,7 +847,7 @@ public:
 			if(target_flag_set & 64){
 				buffer += ";AC_REV=";
 				buffer.AddReadble(objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta->at(position).n_alleles; ++p){
+				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
 					buffer += ",";
 					buffer.AddReadble(objects.genotype_summary->vectorB_[2+p]);
 				}
@@ -874,16 +874,16 @@ public:
 			if(target_flag_set & 512){
 				// Classify
 				buffer += ";VT=";
-				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(position), 1)];
+				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta_container->at(position), 1)];
 
-				for(U32 p = 2; p < objects.meta->at(position).n_alleles; ++p){
+				for(U32 p = 2; p < objects.meta_container->at(position).n_alleles; ++p){
 					buffer += ',';
-					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta->at(position), p)];
+					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta_container->at(position), p)];
 				}
 			}
 
 			if(target_flag_set & 1024){
-				if(objects.meta->at(position).n_alleles > 2) buffer += ";MULTI_ALLELIC";
+				if(objects.meta_container->at(position).n_alleles > 2) buffer += ";MULTI_ALLELIC";
 			}
 
 			// Population inbreeding coefficient: F = (Hexp - Hobs) /Hexp

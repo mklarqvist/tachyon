@@ -188,11 +188,11 @@ int view(int argc, char** argv){
 			filters.require_genotypes = true;
 			break;
 		case 'u':
-			filters.filter_missing(true, tachyon::YON_CMP_EQUAL);
+			filters.filter_missing(0, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.filter_missing(false, tachyon::YON_CMP_EQUAL);
+			filters.filter_missing(0, tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'z':
