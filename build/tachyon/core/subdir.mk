@@ -6,20 +6,17 @@
 CPP_SRCS += \
 ../tachyon/core/meta_allele.cpp \
 ../tachyon/core/meta_entry.cpp \
-../tachyon/core/variant_import_writer.cpp \
-../tachyon/core/variant_importer.cpp 
+../tachyon/core/variant_import_writer.cpp 
 
 OBJS += \
 ./tachyon/core/meta_allele.o \
 ./tachyon/core/meta_entry.o \
-./tachyon/core/variant_import_writer.o \
-./tachyon/core/variant_importer.o 
+./tachyon/core/variant_import_writer.o 
 
 CPP_DEPS += \
 ./tachyon/core/meta_allele.d \
 ./tachyon/core/meta_entry.d \
-./tachyon/core/variant_import_writer.d \
-./tachyon/core/variant_importer.d 
+./tachyon/core/variant_import_writer.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

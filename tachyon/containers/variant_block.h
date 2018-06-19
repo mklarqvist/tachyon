@@ -52,9 +52,9 @@ public:
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
-	inline U32 AddFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
-	inline U32 AddFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
-	inline U32 AddFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
+	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
+	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
+	inline U32 addFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
 
 	inline const S32 getPatternsINFO(const U64& hash_pattern) const{
 		U32 mapID = 0;

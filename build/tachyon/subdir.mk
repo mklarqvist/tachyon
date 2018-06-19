@@ -5,14 +5,17 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../tachyon/main.cpp \
+../tachyon/variant_importer.cpp \
 ../tachyon/variant_reader.cpp 
 
 OBJS += \
 ./tachyon/main.o \
+./tachyon/variant_importer.o \
 ./tachyon/variant_reader.o 
 
 CPP_DEPS += \
 ./tachyon/main.d \
+./tachyon/variant_importer.d \
 ./tachyon/variant_reader.d 
 
 

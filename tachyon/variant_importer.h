@@ -1,18 +1,18 @@
-#ifndef CORE_VARIANT_IMPORTER_H_
-#define CORE_VARIANT_IMPORTER_H_
+#ifndef VARIANT_IMPORTER_H_
+#define VARIANT_IMPORTER_H_
 
-#include "../algorithm/compression/compression_manager.h"
-#include "../algorithm/compression/genotype_encoder.h"
-#include "../algorithm/permutation/radix_sort_gt.h"
-#include "../support/type_definitions.h"
-#include "../support/helpers.h"
-#include "../io/bcf/BCFReader.h"
-#include "../containers/variant_block.h"
-#include "../index/index_entry.h"
-#include "../index/index_index_entry.h"
-#include "variant_importer_container_stats.h"
-#include "../algorithm/timer.h"
-#include "variant_import_writer.h"
+#include "algorithm/compression/compression_manager.h"
+#include "algorithm/compression/genotype_encoder.h"
+#include "algorithm/permutation/radix_sort_gt.h"
+#include "support/type_definitions.h"
+#include "support/helpers.h"
+#include "io/bcf/BCFReader.h"
+#include "containers/variant_block.h"
+#include "index/index_entry.h"
+#include "index/index_index_entry.h"
+#include "core/variant_importer_container_stats.h"
+#include "algorithm/timer.h"
+#include "core/variant_import_writer.h"
 
 namespace tachyon {
 
@@ -131,4 +131,4 @@ private:
 
 } /* namespace Tachyon */
 
-#endif /* CORE_VARIANT_IMPORTER_H_ */
+#endif /* VARIANT_IMPORTER_H_ */

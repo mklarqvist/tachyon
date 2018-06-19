@@ -1,11 +1,11 @@
 #include <fstream>
 #include <regex>
 
-#include "footer/footer.h"
-#include "../containers/checksum_container.h"
 #include "variant_importer.h"
-#include "../algorithm/digest/variant_digest_manager.h"
-#include "../algorithm/encryption/encryption_decorator.h"
+#include "core/footer/footer.h"
+#include "containers/checksum_container.h"
+#include "algorithm/digest/variant_digest_manager.h"
+#include "algorithm/encryption/encryption_decorator.h"
 
 namespace tachyon {
 
@@ -498,12 +498,12 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 	for(U32 i = 0; i < entry.filterPointer; ++i){
 		assert(entry.filterID[i].mapID != -1);
-		this->block.AddFieldFILTER(this->header->filter_remap[entry.filterID[i].mapID]);
+		this->block.addFieldFILTER(this->header->filter_remap[entry.filterID[i].mapID]);
 	}
 
 	for(U32 i = 0; i < entry.infoPointer; ++i){
 		assert(entry.infoID[i].mapID != -1);
-		const U32 mapID = this->block.AddFieldINFO(this->header->info_remap[entry.infoID[i].mapID]);
+		const U32 mapID = this->block.addFieldINFO(this->header->info_remap[entry.infoID[i].mapID]);
 
 		stream_container& target_container = this->block.info_containers[mapID];
 
@@ -540,7 +540,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		assert(entry.formatID[i].mapID != -1);
 
 		//const U32 mapID = this->block.format_fields.setGet(this->header->format_remap[entry.formatID[i].mapID]);
-		const U32 mapID = this->block.AddFieldFORMAT(this->header->format_remap[entry.formatID[i].mapID]);
+		const U32 mapID = this->block.addFieldFORMAT(this->header->format_remap[entry.formatID[i].mapID]);
 		U32 internal_pos = entry.formatID[i].l_offset;
 
 		// First value is always genotypes if there are any

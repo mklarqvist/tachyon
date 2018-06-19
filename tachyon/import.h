@@ -23,9 +23,9 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "core/variant_importer.h"
 #include "core/read_importer.h"
 #include "utility.h"
+#include "variant_importer.h"
 
 void import_usage(void){
 	programMessage();

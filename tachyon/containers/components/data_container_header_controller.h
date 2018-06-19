@@ -24,6 +24,7 @@ public:
 		uniform(0),
 		encryption(0)
 	{}
+
 	~DataContainerHeaderController(){}
 
 	inline void clear(){
