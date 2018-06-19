@@ -6,10 +6,10 @@
 namespace tachyon{
 namespace algorithm{
 
-class VariantDigitalDigestManager : public DigitalDigestManager{
+class VariantDigitalDigestManager : public DigestManager{
 private:
 	typedef VariantDigitalDigestManager self_type;
-	typedef DigitalDigestManager        parent_type;
+	typedef DigestManager        parent_type;
 	typedef containers::VariantBlock    variant_block_type;
 
 public:

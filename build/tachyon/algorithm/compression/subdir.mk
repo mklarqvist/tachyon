@@ -6,17 +6,23 @@
 CPP_SRCS += \
 ../tachyon/algorithm/compression/compression_manager.cpp \
 ../tachyon/algorithm/compression/genotype_encoder.cpp \
-../tachyon/algorithm/compression/libzpaq.cpp 
+../tachyon/algorithm/compression/libzpaq.cpp \
+../tachyon/algorithm/compression/uncompressed_codec.cpp \
+../tachyon/algorithm/compression/zstd_codec.cpp 
 
 OBJS += \
 ./tachyon/algorithm/compression/compression_manager.o \
 ./tachyon/algorithm/compression/genotype_encoder.o \
-./tachyon/algorithm/compression/libzpaq.o 
+./tachyon/algorithm/compression/libzpaq.o \
+./tachyon/algorithm/compression/uncompressed_codec.o \
+./tachyon/algorithm/compression/zstd_codec.o 
 
 CPP_DEPS += \
 ./tachyon/algorithm/compression/compression_manager.d \
 ./tachyon/algorithm/compression/genotype_encoder.d \
-./tachyon/algorithm/compression/libzpaq.d 
+./tachyon/algorithm/compression/libzpaq.d \
+./tachyon/algorithm/compression/uncompressed_codec.d \
+./tachyon/algorithm/compression/zstd_codec.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

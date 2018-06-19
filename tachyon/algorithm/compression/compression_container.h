@@ -47,17 +47,10 @@ inline const U32 permuteIntBits(const char* const  data,
 
 		// Foreach bit in U32
 		// Update target T at byte position P with bit J at position K
-		for(U32 j = 0; j < 8; ++j)
-			target[j][p] |= ((d[i] & (1 << j)) >> j) << k;
-
-		for(U32 j = 0; j < 8; ++j)
-			target[j+8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
-
-		for(U32 j = 0; j < 8; ++j)
-			target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
-
-		for(U32 j = 0; j < 8; ++j)
-			target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
+		for(U32 j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
+		for(U32 j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
+		for(U32 j = 0; j < 8; ++j) target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
+		for(U32 j = 0; j < 8; ++j) target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
 	return internal_size;
@@ -193,12 +186,12 @@ protected:
 	typedef algorithm::PermutationManager permutation_type;
 
 public:
-	CompressionContainer(){}
-	virtual ~CompressionContainer(){}
-	virtual const bool compress(permutation_type& manager) =0;
-	virtual const bool compress(container_type& container) =0;
-	virtual const bool compressStrides(container_type& container) =0;
-	virtual const bool decompress(container_type& container) =0;
+	CompressionContainer() = default;
+	virtual ~CompressionContainer() = default;
+	virtual const bool compress(permutation_type& manager)          =0;
+	virtual const bool compress(container_type& container)          =0;
+	virtual const bool compressStrides(container_type& container)   =0;
+	virtual const bool decompress(container_type& container)        =0;
 	virtual const bool decompressStrides(container_type& container) =0;
 
 protected:

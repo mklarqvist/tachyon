@@ -11,9 +11,9 @@
 namespace tachyon{
 namespace algorithm{
 
-class DigitalDigestManager{
+class DigestManager{
 private:
-	typedef DigitalDigestManager self_type;
+	typedef DigestManager     self_type;
 
 protected:
 	typedef DigitalDigestPair value_type;
@@ -25,19 +25,19 @@ protected:
 	typedef const value_type* const_pointer;
 
 public:
-	DigitalDigestManager() :
+	DigestManager() :
 		n_entries_(0),
 		n_capacity_(100),
 		__entries(new value_type[this->n_capacity_])
 	{}
 
-	DigitalDigestManager(const size_type start_capacity) :
+	DigestManager(const size_type start_capacity) :
 		n_entries_(start_capacity),
 		n_capacity_(start_capacity),
 		__entries(new value_type[this->n_capacity_])
 	{}
 
-	DigitalDigestManager(const self_type& other) :
+	DigestManager(const self_type& other) :
 		n_entries_(other.n_entries_),
 		n_capacity_(other.n_capacity_),
 		__entries(new value_type[this->n_capacity_])
@@ -45,7 +45,7 @@ public:
 		for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
 	}
 
-	virtual ~DigitalDigestManager(){ delete [] this->__entries; }
+	virtual ~DigestManager(){ delete [] this->__entries; }
 
 	class iterator{
 	private:

@@ -11,7 +11,13 @@ private:
 	typedef io::BasicBuffer           buffer_type;
 
 public:
-	DigitalDigest(void) : hasInitialized(true), hasFinished(false){ this->initialize(); }
+	DigitalDigest(void) :
+		hasInitialized(true),
+		hasFinished(false)
+	{
+		this->initialize();
+	}
+
 	DigitalDigest(const self_type& other) :
 		hasInitialized(other.hasInitialized),
 		hasFinished(other.hasFinished),
@@ -24,8 +30,8 @@ public:
 
 	DigitalDigest& operator=(const self_type& other){
 		this->hasInitialized = other.hasInitialized;
-		this->hasFinished = other.hasFinished;
-		this->data_context = other.data_context;
+		this->hasFinished    = other.hasFinished;
+		this->data_context   = other.data_context;
 		this->stride_context = other.stride_context;
 		memcpy(&this->data_digest[0],   &other.data_digest[0],   64);
 		memcpy(&this->stride_digest[0], &other.stride_digest[0], 64);
@@ -88,7 +94,7 @@ public:
 	/**<
 	 *
 	 */
-	inline void clear(void){
+	void clear(void){
 		this->hasFinished = false;
 		this->finalize();
 		memset(&this->data_digest[0],   0, 64);
