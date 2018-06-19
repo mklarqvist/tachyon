@@ -1,8 +1,7 @@
-#include "variantblock.h"
-
 #include "../support/helpers.h"
 #include "../support/type_definitions.h"
 #include "../algorithm/compression/compression_container.h"
+#include "variant_block.h"
 
 namespace tachyon{
 namespace containers{

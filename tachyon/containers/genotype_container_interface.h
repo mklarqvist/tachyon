@@ -6,7 +6,7 @@
 #include "../core/genotype_summary.h"
 #include "../core/ts_tv_object.h"
 #include "../math/square_matrix.h"
-#include "datacontainer.h"
+#include "data_container.h"
 
 namespace tachyon{
 namespace containers{

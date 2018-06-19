@@ -3,7 +3,7 @@
 
 #include "../algorithm/digital_digest.h"
 #include "../core/header/variant_header.h"
-#include "variantblock.h"
+#include "variant_block.h"
 
 namespace tachyon{
 namespace containers{

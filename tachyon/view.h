@@ -131,7 +131,6 @@ int view(int argc, char** argv){
 	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
-			std::cerr << "here" << std::endl;
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
 		case 'i':

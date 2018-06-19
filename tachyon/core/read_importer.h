@@ -8,7 +8,7 @@
 #include "../algorithm/OpenHashTable.h"
 #include "../algorithm/compression/compression_container.h"
 #include "../algorithm/timer.h"
-#include "../containers/datacontainer.h"
+#include "../containers/data_container.h"
 #include "../core/header/read_header.h"
 #include "../core/footer/read_footer.h"
 

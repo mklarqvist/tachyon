@@ -5,7 +5,7 @@
 #include "genotype_container_diploid_simple.h"
 #include "genotype_container_diploid_bcf.h"
 #include "meta_container.h"
-#include "variantblock.h"
+#include "variant_block.h"
 
 namespace tachyon{
 namespace containers{

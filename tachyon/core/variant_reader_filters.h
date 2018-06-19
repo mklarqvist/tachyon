@@ -1,161 +1,10 @@
 #ifndef CONTAINERS_VARIANT_READER_FILTERS_H_
 #define CONTAINERS_VARIANT_READER_FILTERS_H_
 
+#include "variant_reader_filters_tuple.h"
 #include "variant_reader_objects.h"
 
 namespace tachyon{
-
-template <class ValueClass>
-struct VariantReaderFiltersTuple{
-public:
-	typedef VariantReaderFiltersTuple<ValueClass> self_type;
-	typedef bool (self_type::*filter_function)(const ValueClass& target, const ValueClass& limit) const;
-
-public:
-	VariantReaderFiltersTuple() :
-		filter(false),
-		r_value(0),
-		comparator(&self_type::__filterGreaterEqual)
-	{}
-
-	VariantReaderFiltersTuple(const ValueClass& r_value) :
-		filter(true),
-		r_value(r_value),
-		comparator(&self_type::__filterGreaterEqual)
-	{}
-
-	VariantReaderFiltersTuple(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator) :
-		filter(true),
-		r_value(r_value),
-		comparator(nullptr)
-	{
-		switch(comparator){
-		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
-		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
-		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
-		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
-		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
-		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
-		}
-	}
-
-	void operator()(const ValueClass& r_value){
-		this->filter = true;
-		this->r_value = r_value;
-	}
-
-	void operator()(const ValueClass& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
-		this->filter  = true;
-		this->r_value = r_value;
-
-		switch(comparator){
-		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
-		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
-		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
-		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
-		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
-		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
-		}
-	}
-
-	~VariantReaderFiltersTuple() = default;
-
-	inline bool applyFilter(const ValueClass& l_value) const{ return((this->*comparator)(l_value, r_value)); }
-
-	// Comparator functions
-	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const{return(target < limit);}
-	inline bool __filterLesserEqual(const ValueClass& target, const ValueClass& limit) const{return(target <= limit);}
-	inline bool __filterGreater(const ValueClass& target, const ValueClass& limit) const{return(target > limit);}
-	inline bool __filterGreaterEqual(const ValueClass& target, const ValueClass& limit) const{return(target >= limit);}
-	inline bool __filterEqual(const ValueClass& target, const ValueClass& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const ValueClass& target, const ValueClass& limit) const{return(target != limit);}
-
-public:
-	bool            filter;
-	ValueClass      r_value;
-	filter_function comparator;
-};
-
-template <>
-struct VariantReaderFiltersTuple<std::string>{
-public:
-	typedef VariantReaderFiltersTuple<std::string> self_type;
-	typedef bool (self_type::*filter_function)(const std::string& target, const std::string& limit) const;
-
-public:
-	VariantReaderFiltersTuple() :
-		filter(false),
-		comparator(&self_type::__filterGreaterEqual)
-	{}
-
-	VariantReaderFiltersTuple(const std::string& r_value) :
-		filter(true),
-		r_value(r_value),
-		r_value_regex(std::regex(r_value)),
-		comparator(&self_type::__filterGreaterEqual)
-	{}
-
-	VariantReaderFiltersTuple(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator) :
-		filter(true),
-		r_value(r_value),
-		r_value_regex(std::regex(r_value)),
-		comparator(nullptr)
-	{
-		switch(comparator){
-		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
-		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
-		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
-		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
-		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
-		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
-		case(YON_CMP_REGEX):         this->comparator = &self_type::__filterRegex;        break;
-		}
-	}
-
-	void operator()(const std::string& r_value){
-		this->filter = true;
-		this->r_value = r_value;
-		this->r_value_regex = std::regex(r_value);
-	}
-
-	void operator()(const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
-		this->filter  = true;
-		this->r_value = r_value;
-		this->r_value_regex = std::regex(r_value);
-
-		switch(comparator){
-		case(YON_CMP_GREATER):       this->comparator = &self_type::__filterGreater;      break;
-		case(YON_CMP_GREATER_EQUAL): this->comparator = &self_type::__filterGreaterEqual; break;
-		case(YON_CMP_LESS):          this->comparator = &self_type::__filterLesser;       break;
-		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
-		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
-		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
-		case(YON_CMP_REGEX):         this->comparator = &self_type::__filterRegex;        break;
-		}
-	}
-
-	~VariantReaderFiltersTuple() = default;
-
-	inline bool applyFilter(const std::string& l_value) const{ return((this->*comparator)(l_value, this->r_value)); }
-
-	// Comparator functions
-	inline bool __filterLesser(const std::string& target, const std::string& limit) const{return(target.size() < limit.size());}
-	inline bool __filterLesserEqual(const std::string& target, const std::string& limit) const{return(target.size() <= limit.size());}
-	inline bool __filterGreater(const std::string& target, const std::string& limit) const{return(target.size() > limit.size());}
-	inline bool __filterGreaterEqual(const std::string& target, const std::string& limit) const{return(target.size() >= limit.size());}
-	inline bool __filterEqual(const std::string& target, const std::string& limit) const{return(target == limit);}
-	inline bool __filterNotEqual(const std::string& target, const std::string& limit) const{return(target != limit);}
-
-	inline bool __filterRegex(const std::string& target, const std::string& limit) const{
-		return(std::regex_search(target, this->r_value_regex, std::regex_constants::match_any));
-	}
-
-public:
-	bool            filter;
-	std::string     r_value;
-	std::regex      r_value_regex;
-	filter_function comparator;
-};
 
 struct VariantReaderFilters{
 public:
@@ -297,8 +146,8 @@ public:
 	}
 
 public:
-	bool require_genotypes;
-	bool target_intervals;
+	bool require_genotypes; // Filtering require genotypes
+	bool target_intervals;  // Filtering require intervals
 	// std::vector<intervals> intervals;
 	std::vector<filter_function>        filters;
 	std::vector<family_filter_function> family_filters;

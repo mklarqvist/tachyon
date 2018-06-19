@@ -1,9 +1,9 @@
 #ifndef CONTAINER_INFOCONTAINER_H_
 #define CONTAINER_INFOCONTAINER_H_
 
-#include "datacontainer.h"
 #include "primitive_container.h"
 #include "../utility/support_vcf.h"
+#include "data_container.h"
 #include "stride_container.h"
 
 namespace tachyon{

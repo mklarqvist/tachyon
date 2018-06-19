@@ -3,9 +3,6 @@
 namespace tachyon{
 namespace algorithm{
 
-CompressionManager::CompressionManager(){}
-CompressionManager::~CompressionManager(){}
-
 bool CompressionManager::compress(variant_block_type& block, const BYTE general_level, const BYTE float_level){
 	zstd_codec.setCompressionLevel(general_level);
 	zstd_codec.setCompressionLevelData(float_level);

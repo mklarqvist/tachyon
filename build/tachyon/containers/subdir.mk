@@ -5,33 +5,33 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../tachyon/containers/checksum_container.cpp \
-../tachyon/containers/datacontainer.cpp \
+../tachyon/containers/data_container.cpp \
 ../tachyon/containers/format_container_string.cpp \
 ../tachyon/containers/genotype_container.cpp \
 ../tachyon/containers/info_container_string.cpp \
 ../tachyon/containers/meta_container.cpp \
 ../tachyon/containers/primitive_group_container_string.cpp \
-../tachyon/containers/variantblock.cpp 
+../tachyon/containers/variant_block.cpp 
 
 OBJS += \
 ./tachyon/containers/checksum_container.o \
-./tachyon/containers/datacontainer.o \
+./tachyon/containers/data_container.o \
 ./tachyon/containers/format_container_string.o \
 ./tachyon/containers/genotype_container.o \
 ./tachyon/containers/info_container_string.o \
 ./tachyon/containers/meta_container.o \
 ./tachyon/containers/primitive_group_container_string.o \
-./tachyon/containers/variantblock.o 
+./tachyon/containers/variant_block.o 
 
 CPP_DEPS += \
 ./tachyon/containers/checksum_container.d \
-./tachyon/containers/datacontainer.d \
+./tachyon/containers/data_container.d \
 ./tachyon/containers/format_container_string.d \
 ./tachyon/containers/genotype_container.d \
 ./tachyon/containers/info_container_string.d \
 ./tachyon/containers/meta_container.d \
 ./tachyon/containers/primitive_group_container_string.d \
-./tachyon/containers/variantblock.d 
+./tachyon/containers/variant_block.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

@@ -7,7 +7,7 @@
 #include "../support/type_definitions.h"
 #include "../support/helpers.h"
 #include "../io/bcf/BCFReader.h"
-#include "../containers/variantblock.h"
+#include "../containers/variant_block.h"
 #include "../index/index_entry.h"
 #include "../index/index_index_entry.h"
 #include "variant_importer_container_stats.h"

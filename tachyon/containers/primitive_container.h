@@ -4,7 +4,7 @@
 #include <typeinfo>
 
 #include "../math/summary_statistics.h"
-#include "variantblock.h"
+#include "variant_block.h"
 
 namespace tachyon{
 namespace containers{

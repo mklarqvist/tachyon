@@ -5,10 +5,10 @@
 #include "../core/variant_importer_container_stats.h"
 #include "../io/vcf/VCFHeader.h"
 #include "datablock_settings.h"
-#include "datacontainer.h"
 #include "../core/meta_entry.h"
 #include "components/variantblock_footer.h"
 #include "components/variantblock_header.h"
+#include "data_container.h"
 
 namespace tachyon{
 namespace containers{

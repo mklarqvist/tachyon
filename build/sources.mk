@@ -24,6 +24,7 @@ CPP_DEPS :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 tachyon/algorithm/compression \
+tachyon/algorithm/encryption \
 tachyon/algorithm/permutation \
 tachyon/containers \
 tachyon/containers/components \

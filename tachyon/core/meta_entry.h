@@ -6,7 +6,7 @@
 #include "../containers/components/variantblock_header.h"
 #include "../containers/components/variantblock_footer.h"
 #include "header/variant_header.h"
-#include "../containers/datacontainer.h"
+#include "../containers/data_container.h"
 #include "meta_allele.h"
 #include "../io/bcf/BCFEntry.h"
 #include "variant_controller.h"

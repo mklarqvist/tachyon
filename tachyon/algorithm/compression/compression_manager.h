@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 #define ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 
-#include "../../containers/variantblock.h"
+#include "../../containers/variant_block.h"
 #include "uncompressed_codec.h"
 #include "zstd_codec.h"
 #include "zpaq_codec.h"
@@ -19,8 +19,8 @@ private:
 	typedef containers::DataContainer container_type;
 
 public:
-	CompressionManager();
-	~CompressionManager();
+	CompressionManager() = default;
+	~CompressionManager() = default;
 
 	bool compress(variant_block_type& block, const BYTE general_level = 6, const BYTE float_level = 3);
 	bool decompress(variant_block_type& block);

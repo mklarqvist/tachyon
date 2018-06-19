@@ -5,7 +5,8 @@
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
 #include "variant_importer.h"
-#include "../algorithm/encryption/EncryptionDecorator.h"
+
+#include "../algorithm/encryption/encryption_decorator.h"
 
 namespace tachyon {
 
@@ -54,7 +55,7 @@ bool VariantImporter::BuildBCF(void){
 	}
 
 	encryption::EncryptionDecorator encryption_manager;
-	encryption::Keychain keychain;
+	encryption::Keychain<> keychain;
 
 	this->header = &bcf_reader.header;
 

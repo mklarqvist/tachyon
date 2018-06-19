@@ -7,7 +7,6 @@
 #include "zstd_errors.h"
 
 #include "algorithm/compression/compression_manager.h"
-#include "algorithm/encryption/EncryptionDecorator.h"
 #include "algorithm/timer.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
@@ -17,7 +16,8 @@
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
 #include "algorithm/digital_digest.h"
-#include "containers/variantblock.h"
+#include "algorithm/encryption/encryption_decorator.h"
+#include "containers/variant_block.h"
 #include "core/genotype_object.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
@@ -43,7 +43,7 @@ class VariantReader{
 	typedef index::Index                           index_type;
 	typedef index::IndexEntry                      index_entry_type;
 	typedef algorithm::VariantDigitalDigestManager checksum_type;
-	typedef encryption::Keychain                   keychain_type;
+	typedef encryption::Keychain<>                 keychain_type;
 	typedef core::MetaEntry                        meta_entry_type;
 	typedef VariantReaderObjects                   objects_type;
 	typedef containers::VariantBlock               block_entry_type;

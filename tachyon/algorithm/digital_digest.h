@@ -5,7 +5,7 @@
 #include <openssl/sha.h>
 
 #include "../io/basic_buffer.h"
-#include "../containers/variantblock.h"
+#include "../containers/variant_block.h"
 
 namespace tachyon{
 namespace algorithm{

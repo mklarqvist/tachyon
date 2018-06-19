@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#include "../support/utility::.h"
+#include "../support/helpers.h"
 #include "../algorithm/spinlock.h"
 #include "../support/MagicConstants.h"
 #include "basic_buffer.h"
@@ -56,7 +56,7 @@ public:
 
 	bool open(void){ return true; }
 	bool open(const std::string output){
-		std::cerr << utility::::timestamp("ERROR", "WRITER") << "Cannot set filename when destination is standard out..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Cannot set filename when destination is standard out..." << std::endl;
 		return false;
 	}
 	void flush(void){ std::cout.flush(); }
@@ -103,24 +103,24 @@ public:
 	}
 
 	bool open(void){
-		std::cerr << utility::::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
 		return false;
 	}
 
 	bool open(const std::string output){
 		if(output.length() == 0){
-			std::cerr << utility::::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "WRITER") << "No output name provided..." << std::endl;
 			return false;
 		}
 
 		this->stream.open(output, std::ios::binary | std::ios::out);
 		if(!this->stream.good()){
-			std::cerr << utility::::timestamp("ERROR", "WRITER") << "Could not open output file: " << output << "..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open output file: " << output << "..." << std::endl;
 			return false;
 		}
 
 		if(!SILENT)
-			std::cerr << utility::::timestamp("LOG", "WRITER") << "Opening output file: " << output << "..." << std::endl;
+			std::cerr << utility::timestamp("LOG", "WRITER") << "Opening output file: " << output << "..." << std::endl;
 
 		return true;
 	}
