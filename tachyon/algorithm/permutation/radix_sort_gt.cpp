@@ -93,8 +93,8 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 	//
 	// Update GT_array
 	if(entry.formatID[0].primitive_type != 1){
-		std::cerr << "unexpected primitive: " << (int)entry.formatID[0].primitive_type << std::endl;
-		return false;
+		std::cerr << utility::timestamp("ERROR","PERMUTE") << "Illegal primitive: " << (int)entry.formatID[0].primitive_type << std::endl;
+		exit(1);
 	}
 
 	U32 internal_pos = entry.formatID[0].l_offset;
@@ -125,7 +125,9 @@ bool RadixSortGT::update(const bcf_entry_type& entry){
 		case 8:  target_ID = 6; break; // 1000: Missing, ref
 		case 9:  target_ID = 7; break; // 1001: Missing, alt
 		case 10: target_ID = 8; break; // 1010: Missing, missing
-		default: std::cerr << "illegal in radix" << std::endl; exit(1);
+		default:
+			std::cerr << utility::timestamp("ERROR","PERMUTE") << "Illegal state in radix sort..." << std::endl;
+			exit(1);
 		}
 
 		// Update bin i at position i with ppa[j]

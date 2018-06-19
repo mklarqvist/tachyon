@@ -7,6 +7,7 @@
 #include "zstd_errors.h"
 
 #include "algorithm/compression/compression_manager.h"
+#include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/timer.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
@@ -15,7 +16,6 @@
 #include "containers/info_container_string.h"
 #include "containers/primitive_group_container.h"
 #include "containers/meta_container.h"
-#include "algorithm/digital_digest.h"
 #include "algorithm/encryption/encryption_decorator.h"
 #include "containers/variant_block.h"
 #include "core/genotype_object.h"

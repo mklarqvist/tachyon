@@ -1,11 +1,10 @@
 #include <fstream>
 #include <regex>
 
-#include "../algorithm/digital_digest.h"
 #include "footer/footer.h"
 #include "../containers/checksum_container.h"
 #include "variant_importer.h"
-
+#include "../algorithm/digest/variant_digest_manager.h"
 #include "../algorithm/encryption/encryption_decorator.h"
 
 namespace tachyon {
