@@ -42,7 +42,7 @@ class VariantReader{
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
 	typedef index::IndexEntry                      index_entry_type;
-	typedef algorithm::VariantDigitalDigestManager checksum_type;
+	typedef algorithm::VariantDigestManager checksum_type;
 	typedef encryption::Keychain<>                 keychain_type;
 	typedef core::MetaEntry                        meta_entry_type;
 	typedef VariantReaderObjects                   objects_type;

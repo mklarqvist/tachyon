@@ -6,9 +6,9 @@
 
 #include "../hash_container.h"
 #include "../../io/basic_buffer.h"
-#include "../components/datablock_bitvector.h"
-#include "../components/datacontainer_header.h"
-#include "../components/datacontainer_header_controller.h"
+#include "../components/data_container_header_controller.h"
+#include "data_block_bitvector.h"
+#include "data_container_header.h"
 
 namespace tachyon{
 namespace containers{

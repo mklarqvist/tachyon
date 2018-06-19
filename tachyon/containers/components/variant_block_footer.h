@@ -1,11 +1,11 @@
-#ifndef CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_
-#define CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_
+#ifndef CONTAINERS_COMPONENTS_VARIANT_BLOCK_FOOTER_H_
+#define CONTAINERS_COMPONENTS_VARIANT_BLOCK_FOOTER_H_
 
 #include "../../io/basic_buffer.h"
 #include "../../algorithm/OpenHashTable.h"
-#include "datablock_bitvector.h"
-#include "datacontainer_header.h"
 #include "../hash_container.h"
+#include "data_block_bitvector.h"
+#include "data_container_header.h"
 
 namespace tachyon{
 namespace containers{
@@ -150,4 +150,4 @@ public:
 
 
 
-#endif /* CONTAINERS_COMPONENTS_VARIANTBLOCK_FOOTER_H_ */
+#endif /* CONTAINERS_COMPONENTS_VARIANT_BLOCK_FOOTER_H_ */

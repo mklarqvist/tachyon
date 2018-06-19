@@ -3,7 +3,7 @@
 namespace tachyon{
 namespace algorithm{
 
-VariantDigitalDigestManager::VariantDigitalDigestManager() :
+VariantDigestManager::VariantDigestManager() :
 	parent_type(100),
 	n_entries_info_(0),
 	n_entries_format_(0),
@@ -14,7 +14,7 @@ VariantDigitalDigestManager::VariantDigitalDigestManager() :
 {
 }
 
-VariantDigitalDigestManager::VariantDigitalDigestManager(const size_type base_capacity) :
+VariantDigestManager::VariantDigestManager(const size_type base_capacity) :
 	parent_type(base_capacity),
 	n_entries_info_(base_capacity),
 	n_entries_format_(base_capacity),
@@ -25,7 +25,7 @@ VariantDigitalDigestManager::VariantDigitalDigestManager(const size_type base_ca
 {
 }
 
-VariantDigitalDigestManager::VariantDigitalDigestManager(const size_type base_capacity, const size_type capacity_info, const size_type capacity_format) :
+VariantDigestManager::VariantDigestManager(const size_type base_capacity, const size_type capacity_info, const size_type capacity_format) :
 	parent_type(base_capacity),
 	n_entries_info_(capacity_info),
 	n_entries_format_(capacity_format),
@@ -36,7 +36,7 @@ VariantDigitalDigestManager::VariantDigitalDigestManager(const size_type base_ca
 {
 }
 
-VariantDigitalDigestManager::VariantDigitalDigestManager(const self_type& other) :
+VariantDigestManager::VariantDigestManager(const self_type& other) :
 	parent_type(other),
 	n_entries_info_(other.n_entries_info_),
 	n_entries_format_(other.n_entries_format_),
@@ -49,18 +49,18 @@ VariantDigitalDigestManager::VariantDigitalDigestManager(const self_type& other)
 	for(U32 i = 0; i < this->n_entries_format_; ++i) this->__entries_format[i] = other.__entries_format[i];
 }
 
-VariantDigitalDigestManager::~VariantDigitalDigestManager(){
+VariantDigestManager::~VariantDigestManager(){
 	delete [] this->__entries_info;
 	delete [] this->__entries_format;
 }
 
-void VariantDigitalDigestManager::finalize(void){
+void VariantDigestManager::finalize(void){
 	parent_type::finalize();
 	for(U32 i = 0; i < this->n_capacity_info_; ++i) this->atINFO(i).finalize();
 	for(U32 i = 0; i < this->n_capacity_format ; ++i) this->atFORMAT(i).finalize();
 }
 
-void VariantDigitalDigestManager::operator+=(const variant_block_type& block){
+void VariantDigestManager::operator+=(const variant_block_type& block){
 	this->at(1)  += block.meta_contig_container;
 	this->at(2)  += block.meta_positions_container;
 	this->at(3)  += block.meta_names_container;

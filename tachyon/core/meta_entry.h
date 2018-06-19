@@ -3,8 +3,8 @@
 
 #include <limits>
 
-#include "../containers/components/variantblock_header.h"
-#include "../containers/components/variantblock_footer.h"
+#include "../containers/components/variant_block_footer.h"
+#include "../containers/components/variant_block_header.h"
 #include "header/variant_header.h"
 #include "../containers/data_container.h"
 #include "meta_allele.h"

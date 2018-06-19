@@ -1,6 +1,7 @@
+#include "variant_block_footer.h"
+
 #include <cassert>
 
-#include "variantblock_footer.h"
 
 namespace tachyon{
 namespace containers{

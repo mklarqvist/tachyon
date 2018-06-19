@@ -19,7 +19,14 @@ struct DataBlockBitvector{
     typedef const value_type*  const_pointer;
 
 public:
-	DataBlockBitvector() : n_keys(0), local_keys(nullptr), bit_bytes(nullptr){}
+	DataBlockBitvector() :
+		n_keys(0),
+		local_keys(nullptr),
+		bit_bytes(nullptr)
+	{
+
+	}
+
 	~DataBlockBitvector(){
 		delete [] this->local_keys;
 		delete [] this->bit_bytes;

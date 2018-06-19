@@ -148,7 +148,7 @@ bool VariantImporter::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	// Digest controller
-	algorithm::VariantDigitalDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
+	algorithm::VariantDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
 
 	// Start import
 	U32 previous_first     = 0;

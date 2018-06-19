@@ -6,18 +6,18 @@
 namespace tachyon{
 namespace algorithm{
 
-class VariantDigitalDigestManager : public DigestManager{
+class VariantDigestManager : public DigestManager{
 private:
-	typedef VariantDigitalDigestManager self_type;
-	typedef DigestManager        parent_type;
-	typedef containers::VariantBlock    variant_block_type;
+	typedef VariantDigestManager      self_type;
+	typedef DigestManager             parent_type;
+	typedef containers::VariantBlock  variant_block_type;
 
 public:
-	VariantDigitalDigestManager();
-	VariantDigitalDigestManager(const size_type base_capacity);
-	VariantDigitalDigestManager(const size_type base_capacity, const size_type capacity_info, const size_type capacity_format);
-	VariantDigitalDigestManager(const self_type& other);
-	~VariantDigitalDigestManager();
+	VariantDigestManager();
+	VariantDigestManager(const size_type base_capacity);
+	VariantDigestManager(const size_type base_capacity, const size_type capacity_info, const size_type capacity_format);
+	VariantDigestManager(const self_type& other);
+	~VariantDigestManager();
 
 	void finalize(void);
 
