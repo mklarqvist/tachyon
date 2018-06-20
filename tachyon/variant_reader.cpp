@@ -583,12 +583,12 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
 {
+	if(outputBuffer.back() != '\t') outputBuffer += '\t';
+
 	if(this->block_settings.display_filter && this->block.footer.n_filter_streams){
 		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
 		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
-			if(outputBuffer.back() != '\t') outputBuffer += '\t';
-
 			// Local key -> global key
 			outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 			for(U32 i = 1; i < n_filter_keys; ++i){
@@ -890,6 +890,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 				objects.info_containers[targetKeys[i]]->to_vcf_string(outputBuffer, position);
 			}
 		} else {
+			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
 			outputBuffer += '.';
 		}
 	}

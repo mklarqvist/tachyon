@@ -10,6 +10,7 @@ namespace tachyon{
 struct DataBlockSettingsPair{
 public:
 	DataBlockSettingsPair() : load(false), display(false){}
+	DataBlockSettingsPair(const bool load, const bool display) : load(load), display(display){}
 	~DataBlockSettingsPair() = default;
 
 	inline void operator()(const bool& load){ this->load = load; this->display = load; }
@@ -152,6 +153,7 @@ public:
 		this->contig.load = true;
 		this->positions.load = true;
 		this->set_membership.load = true;
+		this->controller(true, false);
 		this->info_list.push_back(field_name);
 		return(*this);
 	}
@@ -161,6 +163,7 @@ public:
 		this->contig.load = true;
 		this->positions.load = true;
 		this->set_membership.load = true;
+		this->controller.load = true;
 		return(*this);
 	}
 
@@ -211,7 +214,7 @@ public:
 		this->custom_output_format = customOutputFormat;
 		bool allGood = true;
 
-		std::regex field_identifier_regex("^[A-Z_0-9]{1,}$");
+		std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 		for(U32 i = 0; i < command.size(); ++i){
 			std::vector<std::string> partitions = utility::split(command[i], ';');
 			for(U32 p = 0; p < partitions.size(); ++p){
@@ -221,7 +224,6 @@ public:
 					for(U32 j = 0; j < ind.size(); ++j){
 						ind[j] = utility::remove_excess_whitespace(ind[j]);
 						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), std::string("$1")); // remove excess white space
-						//std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 						if(std::regex_match(ind[j], field_identifier_regex)){
 							const core::HeaderMapEntry* map = header.getInfoField(ind[j]);
 							if(map == false){
@@ -231,7 +233,7 @@ public:
 							}
 							this->loadINFO(ind[j]);
 						} else {
-							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
+							std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
 							allGood = false;
 						}
 					}
