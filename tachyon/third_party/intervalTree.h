@@ -1,4 +1,5 @@
 /*
+
 Copyright (c) 2011 Erik Garrison
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -18,15 +19,24 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 */
-#ifndef THIRD_PARTY_INTERVALTREE_H_
-#define THIRD_PARTY_INTERVALTREE_H_
+/*
+ Tachyon:
+ Modified to work with pointers to intervals
+ Modified interval struct and added contigInterval struct
+ Modified to uses signed 64-bit integers
+ */
+#ifndef __THIRD_PARTY_INTERVAL_TREE_H
+#define __THIRD_PARTY_INTERVAL_TREE_H
 
 #include <vector>
 #include <algorithm>
 #include <iostream>
 #include <memory>
-#include <cassert>
+
+namespace tachyon{
+namespace algorithm{
 
 template <class Scalar, typename Value>
 class Interval {
@@ -55,6 +65,17 @@ template <class Scalar, typename Value>
 std::ostream& operator<<(std::ostream& out, const Interval<Scalar, Value>& i) {
     out << "Interval(" << i.start << ", " << i.stop << "): " << i.value;
     return out;
+}
+
+
+template <class T, typename K>
+static inline S64 intervalStart(const Interval<T,K>& i) {
+    return i.start;
+}
+
+template <class T, typename K>
+static inline S64 intervalStop(const Interval<T,K>& i) {
+    return i.stop;
 }
 
 template <class Scalar, class Value>
@@ -117,20 +138,19 @@ public:
       , right(nullptr)
     {
         --depth;
-        const auto minmaxStop = std::minmax_element(ivals.begin(), ivals.end(), IntervalStopCmp());
-        const auto minmaxStart = std::minmax_element(ivals.begin(), ivals.end(), IntervalStartCmp());
-
+        const auto minmaxStop = std::minmax_element(ivals.begin(), ivals.end(),
+                                                    IntervalStopCmp());
+        const auto minmaxStart = std::minmax_element(ivals.begin(), ivals.end(),
+                                                     IntervalStartCmp());
         if (!ivals.empty()) {
             center = (minmaxStart.first->start + minmaxStop.second->stop) / 2;
         }
-
         if (leftextent == 0 && rightextent == 0) {
             // sort intervals by start
             std::sort(ivals.begin(), ivals.end(), IntervalStartCmp());
         } else {
             assert(std::is_sorted(ivals.begin(), ivals.end(), IntervalStartCmp()));
         }
-
         if (depth == 0 || (ivals.size() < minbucket && ivals.size() < maxbucket)) {
             std::sort(ivals.begin(), ivals.end(), IntervalStartCmp());
             intervals = std::move(ivals);
@@ -242,11 +262,16 @@ public:
                         });
         return result;
     }
-
     bool empty() const {
-        if (left && !left->empty()) return false;
-        if (!intervals.empty()) return false;
-        if (right && !right->empty()) return false;
+        if (left && !left->empty()) {
+            return false;
+        }
+        if (!intervals.empty()) {
+            return false;
+        }
+        if (right && !right->empty()) {
+            return false;
+        }
         return true;
     }
 
@@ -263,23 +288,26 @@ public:
 
     std::pair<Scalar, Scalar> extentBruitForce() const {
         struct Extent {
-			std::pair<Scalar, Scalar> x = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::min() };
-				void operator()(const interval & interval) {
-				x.first  = std::min(x.first,  interval.start);
-				x.second = std::max(x.second, interval.stop);
-			}
-		};
-		Extent extent;
+            std::pair<Scalar, Scalar> x = {std::numeric_limits<Scalar>::max(),
+                                                       std::numeric_limits<Scalar>::min() };
+            void operator()(const interval & interval) {
+                x.first  = std::min(x.first,  interval.start);
+                x.second = std::max(x.second, interval.stop);
+            }
+                                                                };
+                                            Extent extent;
 
         visit_all([&](const interval & interval) { extent(interval); });
         return extent.x;
-    }
+                                            }
 
     // Check all constraints.
     // If first is false, second is invalid.
     std::pair<bool, std::pair<Scalar, Scalar>> is_valid() const {
-        const auto minmaxStop  = std::minmax_element(intervals.begin(), intervals.end(), IntervalStopCmp());
-        const auto minmaxStart = std::minmax_element(intervals.begin(), intervals.end(), IntervalStartCmp());
+        const auto minmaxStop = std::minmax_element(intervals.begin(), intervals.end(),
+                                                    IntervalStopCmp());
+        const auto minmaxStart = std::minmax_element(intervals.begin(), intervals.end(),
+                                                     IntervalStartCmp());
 
         std::pair<bool, std::pair<Scalar, Scalar>> result = {true, { std::numeric_limits<Scalar>::max(),
                                                                      std::numeric_limits<Scalar>::min() }};
@@ -287,7 +315,6 @@ public:
             result.second.first   = std::min(result.second.first,  minmaxStart.first->start);
             result.second.second  = std::min(result.second.second, minmaxStop.second->stop);
         }
-
         if (left) {
             auto valid = left->is_valid();
             result.first &= valid.first;
@@ -299,7 +326,6 @@ public:
                 return result;
             }
         }
-
         if (right) {
             auto valid = right->is_valid();
             result.first &= valid.first;
@@ -311,11 +337,9 @@ public:
                 return result;
             }
         }
-
         if (!std::is_sorted(intervals.begin(), intervals.end(), IntervalStartCmp())) {
             result.first = false;
         }
-
         return result;
     }
 
@@ -352,5 +376,7 @@ private:
     Scalar center;
 };
 
+}
+}
 
-#endif /* THIRD_PARTY_INTERVALTREE_H_ */
+#endif

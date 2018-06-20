@@ -29,10 +29,12 @@
 #include "core/variant_reader_settings.h"
 #include "core/variant_reader_objects.h"
 #include "core/variant_reader_filters.h"
+#include "containers/interval_container.h"
 
 namespace tachyon{
 
 class VariantReader{
+private:
 	typedef VariantReader                          self_type;
 	typedef io::BasicBuffer                        buffer_type;
 	typedef core::VariantHeader                    header_type;
@@ -42,7 +44,7 @@ class VariantReader{
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
 	typedef index::IndexEntry                      index_entry_type;
-	typedef algorithm::VariantDigestManager checksum_type;
+	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef encryption::Keychain<>                 keychain_type;
 	typedef core::MetaEntry                        meta_entry_type;
 	typedef VariantReaderObjects                   objects_type;
@@ -52,12 +54,16 @@ class VariantReader{
 	typedef containers::InfoContainerInterface     info_interface_type;
 	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::GenotypeSummary            genotype_summary_type;
+	typedef containers::IntervalContainer          interval_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
+	typedef algorithm::Interval<U32, S64>          interval_type;
 
 	// Function pointers
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
 	typedef void (self_type::*print_info_function)(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 	typedef void (self_type::*print_filter_function)(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	typedef bool (self_type::*filter_intervals_function)(const meta_entry_type& meta_entry) const;
+
 	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const block_settings_type& controller);
 
 public:
@@ -341,10 +347,13 @@ public:
 		}
 
 		// If seek is active for targetted intervals
-		if(this->getSettings().interval_strings.size()){
-			if(this->getSettings().getBlockList().size()){
-				for(U32 i = 0; i < this->getSettings().getBlockList().size(); ++i){
-					if(this->getBlock(this->getSettings().getBlockList()[i]) == false){
+		if(this->interval_container.hasBlockList()){
+			if(this->interval_container.build(this->header) == false)
+				return false;
+
+			if(this->interval_container.getBlockList().size()){
+				for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
+					if(this->getBlock(this->interval_container.getBlockList()[i]) == false){
 						return(0);
 					}
 					n_variants += this->outputBlockVCF();
@@ -401,11 +410,17 @@ public:
 		print_info_function   print_info   = &self_type::printINFOVCF;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTER;
+		filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
+		if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
 
 		// Cycling over loaded meta objects
 		for(U32 p = 0; p < objects.meta_container->size(); ++p){
 			if(this->variant_filters.filter(objects, p) == false)
 				continue;
+
+			if((this->*filter_intervals)(objects.meta_container->at(p)) == false)
+				continue;
+
 
 			if(this->block_settings.custom_output_format)
 				utility::to_vcf_string(output_buffer, '\t', objects.meta_container->at(p), this->header, this->block_settings);
@@ -455,6 +470,7 @@ public:
 		print_info_function   print_info   = &self_type::printINFODummy;
 		print_meta_function   print_meta   = &utility::to_vcf_string;
 		print_filter_function print_filter = &self_type::printFILTERDummy;
+		filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
 
 		if(block_settings.output_json) print_meta = &utility::to_json_string;
 
@@ -520,6 +536,10 @@ public:
 	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
 	inline void printFORMATDummy(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const{}
 	inline void printINFODummy(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const{}
+	inline bool filterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
+	inline bool filterIntervals(const meta_entry_type& meta_entry) const{
+		return(this->interval_container.find_overlaps(meta_entry).size());
+	}
 
 	// FILTER functions
 	void printFILTER(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
@@ -548,112 +568,8 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool parseIntervals(void){
-		// Intervals pass expression tests
-		if(this->getSettings().validateIntervalStrings() == false)
-			return(false);
-
-		// Data reference
-		std::vector<std::string>& intervals = this->getSettings().interval_strings;
-
-		// No intervals to parse
-		if(intervals.size() == 0)
-			return true;
-
-		// Blocks to load
-		std::vector<index_entry_type>& blocks_to_load = this->getSettings().getBlockList();
-
-		// Parse each interval
-		for(U32 i = 0; i < intervals.size(); ++i){
-			intervals[i] = utility::remove_whitespace(intervals[i]);
-			core::HeaderContig* contig = nullptr;
-
-			if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_ONLY )){
-				std::cerr << "chromosome only" << std::endl;
-				if(!this->header.getContig(intervals[i],contig)){
-					std::cerr << "cant find contig: " << intervals[i] << std::endl;
-					return(false);
-				}
-
-				std::cerr << "Parsed: " << intervals[i] << std::endl;
-
-			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_POSITION )){
-				std::cerr << "chromosome pos" << std::endl;
-				std::vector<std::string> substrings = utility::split(intervals[i], ':');
-				if(substrings[0].size() == 0 || substrings[1].size() == 0){
-					std::cerr << "illegal form" << std::endl;
-					return false;
-				}
-
-				if(!this->header.getContig(substrings[0],contig)){
-					std::cerr << "cant find contig: " << substrings[0] << std::endl;
-					return(false);
-				}
-
-				U64 position = atof(substrings[1].data());
-				std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
-
-				std::vector<index_entry_type> target_blocks = this->index.findOverlap(contig->contigID, position);
-				blocks_to_load.insert( blocks_to_load.end(), target_blocks.begin(), target_blocks.end() );
-
-			} else if (std::regex_match (intervals[i], constants::YON_REGEX_CONTIG_RANGE )){
-				std::cerr << "chromosome pos - pos" << std::endl;
-				std::vector<std::string> substrings = utility::split(intervals[i], ':');
-				if(substrings[0].size() == 0 || substrings[1].size() == 0){
-					std::cerr << "illegal form" << std::endl;
-					return false;
-				}
-
-				if(!this->header.getContig(substrings[0],contig)){
-					std::cerr << "cant find contig: " << substrings[0] << std::endl;
-					return(false);
-				}
-
-				std::vector<std::string> position_strings = utility::split(substrings[1], '-');
-				if(position_strings[0].size() == 0 || position_strings[1].size() == 0){
-					std::cerr << "illegal form" << std::endl;
-					return false;
-				}
-				U64 position_from = atof(position_strings[0].data());
-				U64 position_to   = atof(position_strings[1].data());
-				if(position_from > position_to) std::swap(position_from, position_to);
-
-				std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
-
-				std::vector<index_entry_type> target_blocks = this->index.findOverlap(contig->contigID, position_from, position_to);
-				blocks_to_load.insert( blocks_to_load.end(), target_blocks.begin(), target_blocks.end() );
-
-			} else {
-				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << intervals[i] << std::endl;
-				return false;
-			}
-		}
-
-		if(blocks_to_load.size() == 0)
-			return true;
-
-		// Dedupe
-		std::sort(blocks_to_load.begin(), blocks_to_load.end());
-		std::vector<index_entry_type> blocks_to_load_deduped;
-		blocks_to_load_deduped.push_back(blocks_to_load[0]);
-		for(U32 i = 1; i < blocks_to_load.size(); ++i){
-			if(blocks_to_load_deduped.back() != blocks_to_load[i]){
-				blocks_to_load_deduped.push_back(blocks_to_load[i]);
-			}
-		}
-
-		// Debug
-		//std::cerr << "size: " << blocks_to_load_deduped.size() << std::endl;
-		//for(U32 i = 0; i < blocks_to_load_deduped.size(); ++i){
-		//	std::cerr << i << "\t";
-		//	blocks_to_load_deduped[i].print(std::cerr);
-		//	std::cerr << std::endl;
-		//}
-
-		// Assign deduped vector to settings reference
-		blocks_to_load = blocks_to_load_deduped;
-
-		return true;
+	inline const bool addIntervals(std::vector<std::string>& interval_strings){
+		return(this->interval_container.parseIntervals(interval_strings, this->header, this->index));
 	}
 
 
@@ -955,16 +871,16 @@ public:
 	block_entry_type    block;
 
 	// Supportive objects
-	block_settings_type block_settings;
-	settings_type       settings;
-	variant_filter_type variant_filters;
-
-	header_type         header;
-	footer_type         footer;
-	index_type          index;
-	checksum_type       checksums;
-	codec_manager_type  codec_manager;
-	keychain_type       keychain;
+	block_settings_type     block_settings;
+	settings_type           settings;
+	variant_filter_type     variant_filters;
+	header_type             header;
+	footer_type             footer;
+	index_type              index;
+	checksum_type           checksums;
+	codec_manager_type      codec_manager;
+	keychain_type           keychain;
+	interval_container_type interval_container;
 };
 
 }

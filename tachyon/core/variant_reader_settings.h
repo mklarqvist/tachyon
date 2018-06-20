@@ -2,13 +2,16 @@
 #define CONTAINERS_VARIANT_READER_SETTINGS_H_
 
 #include "../index/index_entry.h"
+#include "../third_party/intervalTree.h"
 
 namespace tachyon{
 
 struct VariantReaderSettings{
 public:
-	typedef VariantReaderSettings self_type;
-	typedef index::IndexEntry     index_entry_type;
+	typedef VariantReaderSettings          self_type;
+	typedef index::IndexEntry              index_entry_type;
+	typedef algorithm::Interval<U32, S64>  interval_type;
+	typedef algorithm::IntervalTree<interval_type, S64> interval_tree_type;
 
 public:
 	VariantReaderSettings() :
@@ -26,36 +29,6 @@ public:
 	~VariantReaderSettings() = default;
 
 	/**<
-	 * Validates the regex patterns of the given interval strings.
-	 * Note that this function only checks if the strings have correct
-	 * syntax and does NOT parse or check the existence of these regions
-	 * @return Returns TRUE if all strings are valid interval strings or FALSE otherwise
-	 */
-	bool validateIntervalStrings(void){
-		if(this->interval_strings.size() == 0)
-			return true;
-
-		for(U32 i = 0; i < this->interval_strings.size(); ++i){
-			// scrub whitespace
-			//this->interval_strings[i].erase(remove_if(this->interval_strings[i].begin(), this->interval_strings[i].end(), isspace), this->interval_strings[i].end());
-			this->interval_strings[i] = utility::remove_whitespace(this->interval_strings[i]);
-
-			if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
-				//std::cerr << "chromosome onlu" << std::endl;
-			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
-				//std::cerr << "chromosome pos" << std::endl;
-			} else if (std::regex_match (this->interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
-				//std::cerr << "chromosome pos - pos" << std::endl;
-			} else {
-				std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << this->interval_strings[i] << std::endl;
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**<
 	 * Construct a string with the internal interpreted parameters
 	 * @return Returns a string
 	 */
@@ -70,10 +43,6 @@ public:
 		"}; timestamp=" + tachyon::utility::datetime()
  		));
 	}
-
-	inline const bool hasBlockList(void) const{ return(this->yon_blocks_list.size()); }
-	inline std::vector<index_entry_type>& getBlockList(void){ return(this->yon_blocks_list); }
-	inline const std::vector<index_entry_type>& getBlockList(void) const{ return(this->yon_blocks_list); }
 
 public:
 	bool drop_format; // drop FORMAT fields
@@ -90,10 +59,8 @@ public:
 	std::string output;
 	std::string keychain_file;
 	std::string output_type;
-	std::vector<std::string> interval_strings;
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
-	std::vector<index_entry_type> yon_blocks_list;
 };
 
 }

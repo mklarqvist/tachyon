@@ -23,7 +23,6 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "core/read_importer.h"
 #include "utility.h"
 #include "variant_importer.h"
 

@@ -14,7 +14,18 @@ private:
 	typedef SummaryStatistics self_type;
 
 public:
-	SummaryStatistics() : total(0), total_squared(0), n_total(0), mean(0), standard_deviation(0), min(std::numeric_limits<double>::max()), max(std::numeric_limits<double>::min()){}
+	SummaryStatistics() :
+		total(0),
+		total_squared(0),
+		n_total(0),
+		mean(0),
+		standard_deviation(0),
+		min(std::numeric_limits<double>::max()),
+		max(std::numeric_limits<double>::min())
+	{
+
+	}
+
 	bool calculate(void){
 		if(this->n_total == 0){
 			this->mean = 0;

@@ -124,6 +124,7 @@ int view(int argc, char** argv){
 	tachyon::DataBlockSettings     block_settings;
 	tachyon::VariantReaderFilters  filters;
 	std::vector<std::string>       interpret_commands;
+	std::vector<std::string>       interval_strings;
 
 	SILENT = 0;
 	std::string temp;
@@ -213,7 +214,7 @@ int view(int argc, char** argv){
 			settings.custom_output_format = true;
 			break;
 		case 'r':
-			settings.interval_strings.push_back(std::string(optarg));
+			interval_strings.push_back(std::string(optarg));
 			break;
 		case 'd':
 			settings.custom_delimiter = true;
@@ -261,10 +262,12 @@ int view(int argc, char** argv){
 	}
 
 	// Print messages
+	/*
 	if(!SILENT){
 		programMessage();
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
 	}
+	*/
 
 	tachyon::VariantReader reader;
 	reader.getSettings() = settings;
@@ -382,20 +385,21 @@ int view(int argc, char** argv){
 	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
 	else reader.getBlockSettings().show_vcf_header = false;
 
-	if(reader.getSettings().validateIntervalStrings() == false) return(1);
-	if(reader.parseIntervals() == false) return(1);
+	if(reader.addIntervals(interval_strings) == false) return(1);
 
 	U64 n_variants = 0;
 	if(settings.custom_output_format) n_variants = reader.outputCustom();
 	else n_variants = reader.outputVCF();
 
 	//std::cerr << "Blocks: " << n_blocks << std::endl;
+	/*
 	std::cerr << "Variants: "
 	          << tachyon::utility::ToPrettyString(n_variants) << " genotypes: "
 	          << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t'
 	          << timer.ElapsedString() << '\t'
 	          << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count()))
 	          << std::endl;
+	*/
 
 	return 0;
 }
