@@ -1003,4 +1003,227 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
+/**<
+ * Outputs
+ * @return
+ */
+const U64 VariantReader::outputVCF(void){
+	U64 n_variants = 0;
+
+	if(this->block_settings.annotate_extra){
+		// fixme
+		// if special
+		// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"
+		if(this->header.getInfoField("FS_A") == false)          this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+		if(this->header.getInfoField("AN") == false)            this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+		if(this->header.getInfoField("NM") == false)            this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+		if(this->header.getInfoField("NPM") == false)           this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC") == false)            this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC_FWD") == false)        this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC_REV") == false)        this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+		if(this->header.getInfoField("HWE_P") == false)         this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+		if(this->header.getInfoField("VT") == false)            this->header.literals += "\n##INFO=<ID=VT,Number=A,Type=String>";
+		if(this->header.getInfoField("AF") == false)            this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+		if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
+		if(this->header.getInfoField("F_PIC") == false)         this->header.literals += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
+	}
+
+	this->header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+	this->header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
+
+	this->header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
+	this->header.literals += this->getSettings().get_settings_string();
+
+	// Output VCF header
+	if(this->block_settings.show_vcf_header){
+		this->header.writeVCFHeaderString(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
+	}
+
+	// If seek is active for targetted intervals
+	if(this->interval_container.hasBlockList()){
+		if(this->interval_container.build(this->header) == false)
+			return false;
+
+		if(this->interval_container.getBlockList().size()){
+			for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
+				if(this->getBlock(this->interval_container.getBlockList()[i]) == false){
+					return(0);
+				}
+				n_variants += this->outputBlockVCF();
+			}
+
+			return(n_variants);
+		} else { // Provided intervals but no matching YON blocks
+			return(0);
+		}
+	}
+
+	// While there are YON blocks
+	while(this->nextBlock()) n_variants += this->outputBlockVCF();
+	return(n_variants);
+}
+
+/**<
+ *
+ * @return
+ */
+const U64 VariantReader::outputCustom(void){
+	U64 n_variants = 0;
+
+	// While there are YON blocks
+	while(this->nextBlock()) n_variants += this->outputBlockCustom();
+	return(n_variants);
+}
+
+/**<
+ *
+ * @return
+ */
+const U32 VariantReader::outputBlockVCF(void){
+	objects_type objects;
+	this->loadObjects(objects);
+	//this->variant_filters.filter_ref_allele("A", YON_CMP_EQUAL);
+	//this->variant_filters.filter_alt_allele("[A]{2,}", YON_CMP_REGEX);
+	this->variant_filters.build();
+
+	// Reserve memory for output buffer
+	// This is much faster than writing directly to ostream because of synchronisation
+	io::BasicBuffer output_buffer(256000);
+	if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->header.getSampleNumber()*2);
+
+	// Todo: in cases of non-diploid
+	std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
+	for(U32 i = 0; i < this->header.getSampleNumber(); ++i){
+		genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
+	}
+
+	print_format_function print_format = &self_type::printFORMATDummy;
+	if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
+	else if(block_settings.format_all.display)     print_format = &self_type::printFORMATVCF;
+	print_info_function   print_info   = &self_type::printINFOVCF;
+	print_meta_function   print_meta   = &utility::to_vcf_string;
+	print_filter_function print_filter = &self_type::printFILTER;
+	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
+	if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
+
+	// Cycling over loaded meta objects
+	for(U32 p = 0; p < objects.meta_container->size(); ++p){
+		if(this->variant_filters.filter(objects, p) == false)
+			continue;
+
+		if((this->*filter_intervals)(objects.meta_container->at(p)) == false)
+			continue;
+
+
+		if(this->block_settings.custom_output_format)
+			utility::to_vcf_string(output_buffer, '\t', objects.meta_container->at(p), this->header, this->block_settings);
+		else
+			utility::to_vcf_string(output_buffer, '\t', objects.meta_container->at(p), this->header);
+
+		// Filter options
+		(this->*print_filter)(output_buffer, p, objects);
+		(this->*print_info)(output_buffer, '\t', p, objects);
+		if(this->block_settings.annotate_extra) this->getGenotypeSummary(output_buffer, p, objects); // Todo: fixme
+		(this->*print_format)(output_buffer, '\t', p, objects, genotypes_unpermuted);
+		output_buffer += '\n';
+
+		if(output_buffer.size() > 65536){
+			std::cout.write(output_buffer.data(), output_buffer.size());
+			output_buffer.reset();
+			std::cout.flush();
+		}
+	}
+
+	std::cout.write(output_buffer.data(), output_buffer.size());
+	output_buffer.reset();
+	std::cout.flush();
+
+	return(objects.meta_container->size());
+}
+
+/**<
+ *
+ * @return
+ */
+const U32 VariantReader::outputBlockCustom(void) const{
+	objects_type objects;
+	this->loadObjects(objects);
+
+	// Reserve memory for output buffer
+	// This is much faster than writing directly to ostream because of syncing
+	io::BasicBuffer output_buffer(256000 + this->header.getSampleNumber()*2);
+	std::vector<core::GTObject> genotypes_unpermuted(this->header.getSampleNumber());
+
+	// Todo: move to function
+	//U32 info_match_limit = 1; // any match
+	//info_match_limit = this->block_settings.info_list.size(); // all match
+
+	// Function pointer to use
+	print_format_function print_format = &self_type::printFORMATDummy;
+	print_info_function   print_info   = &self_type::printINFODummy;
+	print_meta_function   print_meta   = &utility::to_vcf_string;
+	print_filter_function print_filter = &self_type::printFILTERDummy;
+	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
+
+	if(block_settings.output_json) print_meta = &utility::to_json_string;
+
+	if(block_settings.format_all.display || this->block.n_format_loaded){
+		if(block_settings.output_json){
+			print_format = &self_type::printFORMATCustomVectorJSON;
+		} else {
+			if(block_settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
+			else print_format = &self_type::printFORMATCustom;
+		}
+	}
+
+	if(block_settings.info_all.display || this->block.n_info_loaded){
+		if(block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
+		else print_info = &self_type::printINFOCustom;
+	}
+
+	if(block_settings.display_filter){
+		if(block_settings.output_json) print_filter = &self_type::printFILTERJSON;
+		else print_filter = &self_type::printFILTERCustom;
+	}
+
+	U32 n_records_returned = 0;
+
+	if(block_settings.output_json) output_buffer += "\"block\":[";
+	for(U32 position = 0; position < objects.meta_container->size(); ++position){
+		//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
+		//	continue;
+
+		if(block_settings.output_json){
+			if(position != 0) output_buffer += ",\n";
+			output_buffer += "{";
+		}
+		++n_records_returned;
+
+		(*print_meta)(output_buffer, this->block_settings.custom_delimiter_char, objects.meta_container->at(position), this->header, this->block_settings);
+		(this->*print_filter)(output_buffer, position, objects);
+		(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
+		(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
+
+		if(block_settings.output_json) output_buffer += "}";
+		else output_buffer += '\n';
+		//output_buffer += "}";
+
+		// Flush if buffer is large
+		if(output_buffer.size() > 65536){
+			std::cout.write(output_buffer.data(), output_buffer.size());
+			output_buffer.reset();
+			std::cout.flush();
+		}
+	}
+	if(block_settings.output_json) output_buffer += "]";
+
+	// Flush buffer
+	std::cout.write(output_buffer.data(), output_buffer.size());
+	output_buffer.reset();
+	std::cout.flush();
+
+	return(n_records_returned);
+}
+
 }
