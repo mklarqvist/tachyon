@@ -9,6 +9,7 @@ CPP_SRCS += \
 ../tachyon/containers/format_container_string.cpp \
 ../tachyon/containers/genotype_container.cpp \
 ../tachyon/containers/info_container_string.cpp \
+../tachyon/containers/interval_container.cpp \
 ../tachyon/containers/meta_container.cpp \
 ../tachyon/containers/primitive_group_container_string.cpp \
 ../tachyon/containers/variant_block.cpp 
@@ -19,6 +20,7 @@ OBJS += \
 ./tachyon/containers/format_container_string.o \
 ./tachyon/containers/genotype_container.o \
 ./tachyon/containers/info_container_string.o \
+./tachyon/containers/interval_container.o \
 ./tachyon/containers/meta_container.o \
 ./tachyon/containers/primitive_group_container_string.o \
 ./tachyon/containers/variant_block.o 
@@ -29,6 +31,7 @@ CPP_DEPS += \
 ./tachyon/containers/format_container_string.d \
 ./tachyon/containers/genotype_container.d \
 ./tachyon/containers/info_container_string.d \
+./tachyon/containers/interval_container.d \
 ./tachyon/containers/meta_container.d \
 ./tachyon/containers/primitive_group_container_string.d \
 ./tachyon/containers/variant_block.d 

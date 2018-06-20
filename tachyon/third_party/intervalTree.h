@@ -34,6 +34,7 @@ SOFTWARE.
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <cassert>
 
 namespace tachyon{
 namespace algorithm{
