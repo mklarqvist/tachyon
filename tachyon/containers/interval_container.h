@@ -94,6 +94,7 @@ public:
 	inline const bool hasBlockList(void) const{ return(this->block_list_.size()); }
 	inline std::vector<index_entry_type>& getBlockList(void){ return(this->block_list_); }
 	inline const std::vector<index_entry_type>& getBlockList(void) const{ return(this->block_list_); }
+	inline const bool hasIntervals(void) const{ return(this->interval_list_.size()); }
 
     // Interpret
     bool validateIntervalStrings(std::vector<std::string>& interval_strings);

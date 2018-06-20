@@ -142,7 +142,7 @@ public:
 	bool read(std::ifstream& stream, settings_type& settings);
 
 	/**<
-	 *
+	 * Read the header and footer of a block.
 	 * @param stream
 	 * @return
 	 */

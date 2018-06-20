@@ -214,8 +214,16 @@ public:
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidBCF<T>& gt_diploid_bcf_container){
-		std::cerr << "not implemented" << std::endl;
-		exit(1);
+		const BYTE shift = (sizeof(T)*8 - 1) / 2;
+
+		for(U32 i = 0; i < gt_diploid_bcf_container.size(); ++i){
+			const U16 alleleA = YON_GT_DIPLOID_BCF_A(gt_diploid_bcf_container.at(i), shift);
+			const U16 alleleB = YON_GT_DIPLOID_BCF_B(gt_diploid_bcf_container.at(i), shift);
+
+			this->matrix_[alleleA][alleleB] += 1;
+			this->vectorA_[alleleA] += 1;
+			this->vectorB_[alleleB] += 1;
+		}
 	}
 
 	inline void operator+=(const bcf::BCFEntry& entry){

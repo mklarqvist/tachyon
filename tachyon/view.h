@@ -51,8 +51,7 @@ void view_usage(void){
 
 	"Subset options:\n"
 	"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
-	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n"
-	"      --force-samples           only warn about unknown subset samples\n\n"
+	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n\n"
 
 	"Filter options:\n"
 	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression pattern for the reference allele -a or for any alternative alleles -A\n"
@@ -68,7 +67,7 @@ void view_usage(void){
 	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
-    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n";
+    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
 }
 
 int view(int argc, char** argv){

@@ -1041,7 +1041,7 @@ const U64 VariantReader::outputVCF(void){
 	}
 
 	// If seek is active for targetted intervals
-	if(this->interval_container.hasBlockList()){
+	if(this->interval_container.hasIntervals()){
 		if(this->interval_container.build(this->header) == false)
 			return false;
 

@@ -337,10 +337,10 @@ public:
 	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
 	inline void printFORMATDummy(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const{}
 	inline void printINFODummy(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const{}
+
+	// Filter interval intersection and dummy version
 	inline bool filterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
-	inline bool filterIntervals(const meta_entry_type& meta_entry) const{
-		return(this->interval_container.find_overlaps(meta_entry).size());
-	}
+	inline bool filterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.find_overlaps(meta_entry).size()); }
 
 	// FILTER functions
 	void printFILTER(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
