@@ -2,6 +2,7 @@
 #define INDEX_VARIANT_INDEX_H_
 
 #include <cstring>
+#include <cmath>
 
 #include "variant_index_linear.h"
 

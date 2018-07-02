@@ -59,18 +59,18 @@ You will need to have installed the following dependencies:
 If the required dependencies listed above are installed then building is trivial. Note the added `--recursive` flag to the clone request. This flag is required to additionally clone the latest third-party dependencies.
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
-cd tachyon/build
+cd tachyon
 make
 ```
-If you have no super-user powers required to install `zstd` on your machine:
+
+If you have no super-user powers required to install software on your machine:
 ```
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
 git clone https://github.com/facebook/zstd
 cd zstd
 make
-cd lib/
-cd ../build
+cd ..
 make
 ```
 
