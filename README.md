@@ -62,6 +62,16 @@ git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon/build
 make
 ```
+If you have no super-upser powers
+```
+git clone --recursive https://github.com/mklarqvist/tachyon
+cd tachyon
+git clone https://github.com/facebook/zstd
+cd zstd
+make
+cd ../debug
+make
+```
 
 ## Workflow example: using the CLI
 ### `import`: Importing `VCF`/`BCF`

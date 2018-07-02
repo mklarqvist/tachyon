@@ -376,6 +376,13 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions(true, true);
 	}
 
+	if(filters.doRequireGenotypes()){
+		reader.getBlockSettings().loadGenotypes(true);
+		reader.getBlockSettings().set_membership.load = true;
+		reader.getBlockSettings().alleles.load = true;
+		reader.getBlockSettings().positions.load = true;
+	}
+
 	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;

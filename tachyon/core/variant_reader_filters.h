@@ -145,6 +145,12 @@ public:
 		return true;
 	}
 
+	/**<
+	 * Checks if any filter function require genotype data to be loaded and prepared
+	 * @return Returns TRUE if genotype data is required or FALSE otherwise
+	 */
+	inline const bool doRequireGenotypes(void) const{ return(this->require_genotypes); }
+
 public:
 	bool require_genotypes; // Filtering require genotypes
 	bool target_intervals;  // Filtering require intervals
