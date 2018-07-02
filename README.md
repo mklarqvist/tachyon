@@ -62,7 +62,7 @@ git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon/build
 make
 ```
-If you have no super-upser powers
+If you have no super-user powers required to install `zstd` on your machine:
 ```
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
