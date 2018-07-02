@@ -61,7 +61,7 @@ all: tachyon2
 tachyon2: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -Wl,-rpath,../zstd/lib/ -L../zstd/lib -pthread -o "tachyon2" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -Wl,-rpath,"/home/mk21/Repos/tachyon/build/../zstd/lib/" -L../zstd/lib -pthread -o "tachyon2" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
