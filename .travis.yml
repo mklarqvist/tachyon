@@ -141,5 +141,4 @@ before_install:
   - cd ..
 script:
   - git submodule update --recursive
-  - cd build
   - make -j4

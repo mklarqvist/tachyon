@@ -1,6 +1,6 @@
-[submodule "tachyon/third_party/xxhash"]
-	path = tachyon/third_party/xxhash
+[submodule "lib/third_party/xxhash"]
+	path = lib/third_party/xxhash
 	url = https://github.com/Cyan4973/xxHash
-[submodule "tachyon/third_party/zlib"]
-	path = tachyon/third_party/zlib
+[submodule "lib/third_party/zlib"]
+	path = lib/third_party/zlib
 	url = https://github.com/cloudflare/zlib
