@@ -69,7 +69,8 @@ cd tachyon
 git clone https://github.com/facebook/zstd
 cd zstd
 make
-cd ../debug
+cd lib/
+cd ../build
 make
 ```
 
