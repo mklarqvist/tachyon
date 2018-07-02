@@ -1,8 +1,8 @@
 #ifndef ALGORITHM_ENCRYPTION_KEYCHAIN_H_
 #define ALGORITHM_ENCRYPTION_KEYCHAIN_H_
 
-#include "../../containers/variant_block.h"
-#include "../../io/basic_buffer.h"
+#include "containers/variant_block.h"
+#include "io/basic_buffer.h"
 #include "keychain_key.h"
 
 namespace tachyon{

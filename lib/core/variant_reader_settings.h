@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_VARIANT_READER_SETTINGS_H_
 #define CONTAINERS_VARIANT_READER_SETTINGS_H_
 
-#include "../index/index_entry.h"
-#include "../third_party/intervalTree.h"
+#include "third_party/intervalTree.h"
+#include "index/index_entry.h"
 
 namespace tachyon{
 

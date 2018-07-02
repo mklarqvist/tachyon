@@ -1,6 +1,6 @@
 #include "meta_container.h"
-#include "stride_container.h"
 #include "primitive_container.h"
+#include "stride_container.h"
 
 namespace tachyon{
 namespace containers{

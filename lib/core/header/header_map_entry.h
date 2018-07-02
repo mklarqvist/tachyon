@@ -3,9 +3,9 @@
 
 #include <fstream>
 
-#include "../../support/enums.h"
-#include "../../io/basic_buffer.h"
-#include "../../io/vcf/VCFHeaderLine.h"
+#include "support/enums.h"
+#include "io/basic_buffer.h"
+#include "io/vcf/VCFHeaderLine.h"
 
 namespace tachyon{
 namespace core{

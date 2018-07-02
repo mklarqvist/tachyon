@@ -1,7 +1,7 @@
 #ifndef CORE_BASE_HEADERSAMPLE_H_
 #define CORE_BASE_HEADERSAMPLE_H_
 
-#include "../../io/basic_buffer.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace core{

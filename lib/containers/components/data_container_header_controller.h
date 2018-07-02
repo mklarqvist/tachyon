@@ -6,7 +6,8 @@
 #include <cstring>
 #include <iostream>
 #include <cassert>
-#include "../../support/type_definitions.h"
+
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace containers{

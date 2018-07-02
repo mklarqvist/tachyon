@@ -5,10 +5,10 @@
 #include <iostream>
 #include <string>
 
-#include "../support/helpers.h"
-#include "../algorithm/spinlock.h"
-#include "../support/MagicConstants.h"
+#include "algorithm/spinlock.h"
 #include "basic_buffer.h"
+#include "support/helpers.h"
+#include "support/MagicConstants.h"
 
 namespace tachyon {
 namespace io{
@@ -76,7 +76,7 @@ public:
 	}
 
 	inline const size_t writeNoLock(const buffer_type& buffer){
-		std::cout.write(&buffer.data[0], buffer.pointer);
+		std::cout.write(buffer.data(), buffer.size());
 		return(buffer.pointer);
 	}
 
@@ -87,7 +87,7 @@ public:
 		// Note that this threads enter here at random
 		// Extremely unlikely there is every any contention
 		this->lock.lock();
-		std::cout.write(&buffer.data[0], buffer.size());
+		std::cout.write(buffer.data(), buffer.size());
 		this->lock.unlock();
 	}
 };
@@ -135,7 +135,7 @@ public:
 		// Note that this threads enter here at random
 		// Extremely unlikely there is every any contention
 		this->lock.lock();
-		this->stream.write(&buffer.data[0], buffer.size());
+		this->stream.write(buffer.data(), buffer.size());
 		this->lock.unlock();
 	}
 
@@ -153,7 +153,7 @@ public:
 	}
 
 	inline const size_t writeNoLock(const buffer_type& buffer){
-		this->stream.write(&buffer.data[0], buffer.pointer);
+		this->stream.write(buffer.data(), buffer.size());
 		return(buffer.pointer);
 	}
 

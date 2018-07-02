@@ -5,9 +5,9 @@
 #include <vector>
 #include <fstream>
 
-#include "../support/MagicConstants.h"
-#include "../support/helpers.h"
 #include "variant_import_writer.h"
+#include "support/helpers.h"
+#include "support/MagicConstants.h"
 
 namespace tachyon {
 

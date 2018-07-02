@@ -2,7 +2,7 @@
 #define VCF_VCFHEADERCONSTANTS_H_
 
 #include <string>
-#include "../../support/type_definitions.h"
+#include "support/type_definitions.h"
 
 namespace tachyon{
 namespace vcf{

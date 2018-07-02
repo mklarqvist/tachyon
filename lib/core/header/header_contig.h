@@ -2,7 +2,7 @@
 #define CORE_HEADERCONTIG_H_
 
 #include <fstream>
-#include "../../io/basic_buffer.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace core{

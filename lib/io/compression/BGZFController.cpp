@@ -1,9 +1,9 @@
 #include <limits>
 #include <fstream>
 
-#include "../../third_party/zlib/zconf.h"
-#include "../../third_party/zlib/zlib.h"
 #include "BGZFController.h"
+#include "third_party/zlib/zconf.h"
+#include "third_party/zlib/zlib.h"
 
 namespace tachyon {
 namespace io {

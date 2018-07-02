@@ -1,7 +1,7 @@
 #ifndef INDEX_INDEX_INDEX_ENTRY_H_
 #define INDEX_INDEX_INDEX_ENTRY_H_
 
-#include "index_entry.h"
+#include "index/index_entry.h"
 
 namespace tachyon{
 namespace index{

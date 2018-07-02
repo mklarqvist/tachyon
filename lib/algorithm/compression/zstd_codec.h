@@ -1,9 +1,9 @@
 #ifndef ALGORITHM_COMPRESSION_ZSTD_CODEC_H_
 #define ALGORITHM_COMPRESSION_ZSTD_CODEC_H_
 
-#include "compression_container.h"
 #include "zstd.h"
 #include "zstd_errors.h"
+#include "compression_container.h"
 
 namespace tachyon{
 namespace algorithm{

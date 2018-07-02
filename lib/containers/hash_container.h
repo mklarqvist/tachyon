@@ -1,7 +1,7 @@
 #ifndef CORE_HASHCONTAINER_H_
 #define CORE_HASHCONTAINER_H_
 
-#include "../algorithm/OpenHashTable.h"
+#include "algorithm/OpenHashTable.h"
 
 namespace tachyon{
 namespace containers{

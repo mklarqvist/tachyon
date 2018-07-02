@@ -5,10 +5,10 @@
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 
-#include "../../containers/variant_block.h"
-#include "../../support/enums.h"
-
 #include "keychain.h"
+#include "containers/variant_block.h"
+#include "support/enums.h"
+
 
 namespace tachyon{
 namespace encryption{

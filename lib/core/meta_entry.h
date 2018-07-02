@@ -3,13 +3,13 @@
 
 #include <limits>
 
-#include "../containers/components/variant_block_footer.h"
-#include "../containers/components/variant_block_header.h"
-#include "header/variant_header.h"
-#include "../containers/data_container.h"
+#include "containers/components/variant_block_footer.h"
+#include "containers/components/variant_block_header.h"
+#include "core/header/variant_header.h"
 #include "meta_allele.h"
-#include "../io/bcf/BCFEntry.h"
 #include "variant_controller.h"
+#include "io/bcf/BCFEntry.h"
+#include "containers/data_container.h"
 
 namespace tachyon{
 namespace core{

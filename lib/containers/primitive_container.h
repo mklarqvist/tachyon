@@ -3,8 +3,8 @@
 
 #include <typeinfo>
 
-#include "../math/summary_statistics.h"
 #include "variant_block.h"
+#include "math/summary_statistics.h"
 
 namespace tachyon{
 namespace containers{

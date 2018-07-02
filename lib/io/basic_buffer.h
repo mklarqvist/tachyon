@@ -3,8 +3,8 @@
 
 #include <cstddef>
 #include <iostream>
-#include "../support/type_definitions.h"
-#include "../support/helpers.h"
+#include "support/type_definitions.h"
+#include "support/helpers.h"
 
 namespace tachyon {
 namespace io{

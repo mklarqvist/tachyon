@@ -2,8 +2,8 @@
 #define CORE_BLOCKENTRYSETTINGS_H_
 
 #include <regex>
-#include "../support/helpers.h"
-#include "../core/header/variant_header.h"
+#include "support/helpers.h"
+#include "core/header/variant_header.h"
 
 namespace tachyon{
 

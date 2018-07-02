@@ -3,15 +3,15 @@
 
 #include <algorithm>
 
-#include "../../support/helpers.h"
+#include "algorithm/OpenHashTable.h"
+#include "core/header/header_contig.h"
+#include "core/header/header_map_entry.h"
+#include "core/header/header_sample.h"
+#include "io/BasicReader.h"
 #include "VCFHeaderConstants.h"
 #include "VCFHeaderLine.h"
-#include "../basic_buffer.h"
-#include "../BasicReader.h"
-#include "../../algorithm/OpenHashTable.h"
-#include "../../core/header/header_contig.h"
-#include "../../core/header/header_map_entry.h"
-#include "../../core/header/header_sample.h"
+#include "support/helpers.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon {
 namespace vcf{

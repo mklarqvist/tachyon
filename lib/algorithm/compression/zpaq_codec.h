@@ -1,8 +1,8 @@
 #ifndef ALGORITHM_COMPRESSION_ZPAQ_CODEC_H_
 #define ALGORITHM_COMPRESSION_ZPAQ_CODEC_H_
 
-#include "zpaq_wrapper.h"
 #include "compression_container.h"
+#include "zpaq_wrapper.h"
 
 namespace tachyon{
 namespace algorithm{

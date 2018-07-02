@@ -1,7 +1,7 @@
 #ifndef CORE_VARIANT_IMPORTER_CONTAINER_STATS_H_
 #define CORE_VARIANT_IMPORTER_CONTAINER_STATS_H_
 
-#include "../containers/data_container.h"
+#include "containers/data_container.h"
 
 namespace tachyon{
 namespace support{

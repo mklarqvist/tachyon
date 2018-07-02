@@ -8,8 +8,9 @@
 #include <vector>
 #include <algorithm>
 
-#include "../../support/helpers.h"
-#include "../../support/MagicConstants.h"
+#include "io/vcf/VCFHeaderConstants.h"
+#include "support/helpers.h"
+#include "support/MagicConstants.h"
 
 namespace tachyon{
 namespace vcf{
@@ -224,6 +225,9 @@ public:
 	}
 
 	bool isComplex(void){
+		std::cerr << "Not used" << std::endl;
+		exit(1);
+		/*
 		if(strncmp(this->FORMAT, &vcf::constants::GT_ONLY[0], vcf::constants::GT_ONLY.size()) == 0 && this->lFORMAT == 2)
 			this->Complex = false;
 		else {
@@ -234,6 +238,7 @@ public:
 				exit(1);
 			}
 		}
+		*/
 
 		return this->Complex;
 	}
@@ -243,19 +248,19 @@ public:
 		this->ref_alt = 0;
 
 		switch(this->REF[0]){
-		case 'A': this->ref_alt ^= constants::REF_ALT_A << 4; break;
-		case 'T': this->ref_alt ^= constants::REF_ALT_T << 4; break;
-		case 'G': this->ref_alt ^= constants::REF_ALT_G << 4; break;
-		case 'C': this->ref_alt ^= constants::REF_ALT_C << 4; break;
-		case '.': this->ref_alt ^= constants::REF_ALT_N << 4; break;
+		case 'A': this->ref_alt ^= tachyon::constants::REF_ALT_A << 4; break;
+		case 'T': this->ref_alt ^= tachyon::constants::REF_ALT_T << 4; break;
+		case 'G': this->ref_alt ^= tachyon::constants::REF_ALT_G << 4; break;
+		case 'C': this->ref_alt ^= tachyon::constants::REF_ALT_C << 4; break;
+		case '.': this->ref_alt ^= tachyon::constants::REF_ALT_N << 4; break;
 		}
 
 		switch(this->ALT[0]){
-		case 'A': this->ref_alt ^= constants::REF_ALT_A << 0; break;
-		case 'T': this->ref_alt ^= constants::REF_ALT_T << 0; break;
-		case 'G': this->ref_alt ^= constants::REF_ALT_G << 0; break;
-		case 'C': this->ref_alt ^= constants::REF_ALT_C << 0; break;
-		case '.': this->ref_alt ^= constants::REF_ALT_N << 0; break;
+		case 'A': this->ref_alt ^= tachyon::constants::REF_ALT_A << 0; break;
+		case 'T': this->ref_alt ^= tachyon::constants::REF_ALT_T << 0; break;
+		case 'G': this->ref_alt ^= tachyon::constants::REF_ALT_G << 0; break;
+		case 'C': this->ref_alt ^= tachyon::constants::REF_ALT_C << 0; break;
+		case '.': this->ref_alt ^= tachyon::constants::REF_ALT_N << 0; break;
 		}
 	}
 

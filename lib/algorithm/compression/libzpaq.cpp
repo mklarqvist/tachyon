@@ -31,6 +31,7 @@ See libzpaq.h for additional documentation.
 */
 
 #include "libzpaq.h"
+
 #include <string.h>
 #include <string>
 #include <vector>

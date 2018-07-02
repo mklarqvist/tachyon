@@ -4,15 +4,15 @@
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/radix_sort_gt.h"
-#include "support/type_definitions.h"
-#include "support/helpers.h"
-#include "io/bcf/BCFReader.h"
+#include "algorithm/timer.h"
 #include "containers/variant_block.h"
+#include "core/variant_import_writer.h"
+#include "core/variant_importer_container_stats.h"
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
-#include "core/variant_importer_container_stats.h"
-#include "algorithm/timer.h"
-#include "core/variant_import_writer.h"
+#include "io/bcf/BCFReader.h"
+#include "support/helpers.h"
+#include "support/type_definitions.h"
 
 namespace tachyon {
 

@@ -1,6 +1,8 @@
 #ifndef INDEX_VARIANT_INDEX_H_
 #define INDEX_VARIANT_INDEX_H_
 
+#include <cstring>
+
 #include "variant_index_linear.h"
 
 namespace tachyon{

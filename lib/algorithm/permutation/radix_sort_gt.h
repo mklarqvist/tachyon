@@ -1,9 +1,9 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "../../io/bcf/BCFReader.h"
-#include "../../algorithm/permutation/permutation_manager.h"
-#include "../../core/genotype_summary.h"
+#include "io/bcf/BCFReader.h"
+#include "permutation_manager.h"
+#include "core/genotype_summary.h"
 
 namespace tachyon {
 namespace algorithm {

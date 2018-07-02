@@ -1,12 +1,12 @@
 #include <cassert>
 
-#include "../support/type_definitions.h"
-#include "../support/helpers.h"
-#include "../third_party/zlib/zconf.h"
-#include "../third_party/zlib/zlib.h"
-#include "../io/basic_buffer.h"
-#include "../algorithm/OpenHashTable.h"
 #include "data_container.h"
+#include "algorithm/OpenHashTable.h"
+#include "io/basic_buffer.h"
+#include "support/helpers.h"
+#include "support/type_definitions.h"
+#include "third_party/zlib/zconf.h"
+#include "third_party/zlib/zlib.h"
 
 namespace tachyon{
 namespace containers{

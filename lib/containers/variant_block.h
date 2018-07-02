@@ -1,14 +1,14 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
-#include "../algorithm/permutation/permutation_manager.h"
-#include "../core/variant_importer_container_stats.h"
-#include "../io/vcf/VCFHeader.h"
-#include "../core/meta_entry.h"
+#include "algorithm/permutation/permutation_manager.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
 #include "data_block_settings.h"
 #include "data_container.h"
+#include "core/meta_entry.h"
+#include "core/variant_importer_container_stats.h"
+#include "io/vcf/VCFHeader.h"
 
 namespace tachyon{
 namespace containers{

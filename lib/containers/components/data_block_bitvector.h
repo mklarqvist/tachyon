@@ -2,6 +2,9 @@
 #define INDEX_INDEXBLOCKENTRYBITVECTOR_H_
 
 #include <fstream>
+#include <cstring>
+
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace containers{

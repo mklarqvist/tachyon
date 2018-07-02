@@ -5,8 +5,8 @@
 #include <istream>
 #include <cstring>
 
-#include "../../io/basic_buffer.h"
-#include "../../support/MagicConstants.h"
+#include "io/basic_buffer.h"
+#include "support/MagicConstants.h"
 
 namespace tachyon{
 namespace core{

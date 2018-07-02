@@ -1,8 +1,8 @@
 #ifndef BCF_BCFENTRY_H_
 #define BCF_BCFENTRY_H_
 
-#include "../vcf/VCFHeader.h"
-#include "../../third_party/xxhash/xxhash.h"
+#include "io/vcf/VCFHeader.h"
+#include "third_party/xxhash/xxhash.h"
 
 namespace tachyon {
 namespace bcf {

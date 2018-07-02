@@ -1,9 +1,9 @@
 #ifndef CONTAINERS_CHECKSUM_CONTAINER_H_
 #define CONTAINERS_CHECKSUM_CONTAINER_H_
 
-#include "../algorithm/digest/digest_manager.h"
-#include "../core/header/variant_header.h"
-#include "variant_block.h"
+#include "algorithm/digest/digest_manager.h"
+#include "containers/variant_block.h"
+#include "core/header/variant_header.h"
 
 namespace tachyon{
 namespace containers{

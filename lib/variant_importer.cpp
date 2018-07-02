@@ -1,11 +1,12 @@
+#include "variant_importer.h"
+
 #include <fstream>
 #include <regex>
 
-#include "variant_importer.h"
-#include "core/footer/footer.h"
-#include "containers/checksum_container.h"
 #include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption_decorator.h"
+#include "containers/checksum_container.h"
+#include "core/footer/footer.h"
 
 namespace tachyon {
 

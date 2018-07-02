@@ -1,9 +1,9 @@
 #ifndef CORE_TS_TV_OBJECT_H_
 #define CORE_TS_TV_OBJECT_H_
 
-#include "../support/type_definitions.h"
 #include "genotype_summary.h"
 #include "meta_entry.h"
+#include "support/type_definitions.h"
 
 namespace tachyon{
 namespace core{

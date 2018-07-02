@@ -5,11 +5,11 @@
 #include <fstream>
 #include <cstring>
 
-#include "../../support/enums.h"
-#include "../../support/type_definitions.h"
-#include "../../io/basic_buffer.h"
 #include "data_container_header_controller.h"
 #include "data_container_header_object.h"
+#include "io/basic_buffer.h"
+#include "support/enums.h"
+#include "support/type_definitions.h"
 
 namespace tachyon{
 namespace containers{

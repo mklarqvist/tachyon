@@ -1,8 +1,8 @@
 #ifndef COMPRESSIONCONTAINER_H_
 #define COMPRESSIONCONTAINER_H_
 
-#include "../permutation/permutation_manager.h"
-#include "../../containers/data_container.h"
+#include "algorithm/permutation/permutation_manager.h"
+#include "containers/data_container.h"
 
 namespace tachyon{
 namespace algorithm{

@@ -1,7 +1,7 @@
 #include <cassert>
 
-#include "../../support/MagicConstants.h" // for SILENT
 #include "TGZFControllerStream.h"
+#include "support/MagicConstants.h" // for SILENT
 
 namespace tachyon{
 namespace io{

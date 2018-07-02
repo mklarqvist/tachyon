@@ -1,10 +1,10 @@
 #ifndef ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 #define ALGORITHM_COMPRESSION_COMPRESSION_MANAGER_H_
 
-#include "../../containers/variant_block.h"
 #include "uncompressed_codec.h"
-#include "zstd_codec.h"
 #include "zpaq_codec.h"
+#include "zstd_codec.h"
+#include "containers/variant_block.h"
 
 namespace tachyon{
 namespace algorithm{

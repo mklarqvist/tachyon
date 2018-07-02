@@ -1,5 +1,6 @@
-#include <bitset>
 #include "radix_sort_gt.h"
+
+#include <bitset>
 
 namespace tachyon {
 namespace algorithm {

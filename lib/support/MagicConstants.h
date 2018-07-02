@@ -4,7 +4,7 @@
 #include <string>
 #include <regex>
 
-#include "../support/type_definitions.h"
+#include "type_definitions.h"
 
 extern int SILENT;
 

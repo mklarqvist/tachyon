@@ -3,13 +3,13 @@
 
 #include <regex>
 
-#include "../support/MagicConstants.h"
-#include "../support/type_definitions.h"
-#include "../support/helpers.h"
-#include "../third_party/intervalTree.h"
-#include "../index/index.h"
-#include "../core/header/variant_header.h"
-#include "../core/meta_entry.h"
+#include "support/MagicConstants.h"
+#include "support/type_definitions.h"
+#include "support/helpers.h"
+#include "third_party/intervalTree.h"
+#include "index/index.h"
+#include "core/header/variant_header.h"
+#include "core/meta_entry.h"
 
 namespace tachyon{
 namespace containers{

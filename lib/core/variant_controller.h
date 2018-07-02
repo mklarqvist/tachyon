@@ -2,9 +2,9 @@
 #define CORE_BASE_META_HOT_H_
 
 /*======  Dependencies  ======*/
-#include "../io/basic_buffer.h"
-#include "../support/enums.h"
-#include "../support/MagicConstants.h"
+#include "io/basic_buffer.h"
+#include "support/enums.h"
+#include "support/MagicConstants.h"
 
 namespace tachyon{
 namespace core{

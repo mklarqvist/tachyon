@@ -1,9 +1,9 @@
 #ifndef CONTAINERS_GENOTYPE_CONTAINER_H_
 #define CONTAINERS_GENOTYPE_CONTAINER_H_
 
+#include "genotype_container_diploid_bcf.h"
 #include "genotype_container_diploid_rle.h"
 #include "genotype_container_diploid_simple.h"
-#include "genotype_container_diploid_bcf.h"
 #include "meta_container.h"
 #include "variant_block.h"
 

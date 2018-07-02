@@ -1,8 +1,8 @@
 #ifndef CONTAINERS_META_CONTAINER_H_
 #define CONTAINERS_META_CONTAINER_H_
 
-#include "../core/meta_entry.h"
 #include "variant_block.h"
+#include "core/meta_entry.h"
 
 namespace tachyon{
 namespace containers{

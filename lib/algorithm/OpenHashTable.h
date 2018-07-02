@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../support/type_definitions.h"
-#include "../third_party/xxhash/xxhash.h"
+#include "third_party/xxhash/xxhash.h"
+#include "support/type_definitions.h"
 
 namespace tachyon {
 namespace hash {

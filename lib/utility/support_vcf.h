@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include <cmath>
-#include "../support/type_definitions.h"
-#include "../containers/primitive_container.h"
-#include "../core/genotype_object.h"
+#include "support/type_definitions.h"
+#include "containers/primitive_container.h"
+#include "core/genotype_object.h"
 
 namespace tachyon{
 namespace utility{

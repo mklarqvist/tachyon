@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "VCFHeaderConstants.h"
-#include "../../support/helpers.h"
+#include "support/helpers.h"
 
 namespace tachyon{
 namespace vcf{

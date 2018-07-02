@@ -1,7 +1,7 @@
-#include "../support/enums.h"
-#include "genotype_container.h"
-#include "primitive_container.h"
-#include "stride_container.h"
+#include "containers/genotype_container.h"
+#include "containers/primitive_container.h"
+#include "containers/stride_container.h"
+#include "support/enums.h"
 
 namespace tachyon{
 namespace containers{

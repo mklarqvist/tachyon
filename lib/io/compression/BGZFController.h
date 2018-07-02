@@ -1,11 +1,11 @@
 #ifndef BGZFCONTROLLER_H_
 #define BGZFCONTROLLER_H_
 
-#include "../../support/helpers.h"
-#include "../../third_party/zlib/zconf.h"
-#include "../../third_party/zlib/zlib.h"
-#include "../basic_buffer.h"
 #include "GZFHeader.h"
+#include "support/helpers.h"
+#include "third_party/zlib/zconf.h"
+#include "third_party/zlib/zlib.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon {
 namespace io {

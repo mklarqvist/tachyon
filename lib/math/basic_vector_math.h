@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "summary_statistics.h"
-#include "../containers/primitive_container.h"
+#include "containers/primitive_container.h"
 
 namespace tachyon{
 namespace math{

@@ -2,7 +2,7 @@
 #define ALGORITHM_COMPRESSION_ZPAQ_WRAPPER_H_
 
 #include "libzpaq.h"
-#include "../../io/basic_buffer.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace algorithm{

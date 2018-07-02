@@ -1,12 +1,12 @@
 #ifndef CONTAINERS_VARIANT_READER_OBJECTS_H_
 #define CONTAINERS_VARIANT_READER_OBJECTS_H_
 
-#include "../containers/meta_container.h"
-#include "../containers/genotype_container.h"
-#include "../containers/info_container.h"
-#include "../containers/info_container_string.h"
-#include "../containers/format_container.h"
-#include "../containers/format_container_string.h"
+#include "containers/meta_container.h"
+#include "containers/genotype_container.h"
+#include "containers/info_container.h"
+#include "containers/info_container_string.h"
+#include "containers/format_container.h"
+#include "containers/format_container_string.h"
 
 namespace tachyon{
 

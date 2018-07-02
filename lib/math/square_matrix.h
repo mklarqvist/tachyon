@@ -2,7 +2,8 @@
 #define MATH_SQUARE_MATRIX_H_
 
 #include <stdio.h> // size_t
-#include "../support/type_definitions.h"
+
+#include "algorithm/permutation/permutation_manager.h"
 
 namespace tachyon{
 namespace math{

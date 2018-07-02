@@ -4,8 +4,8 @@
 #include <cstring>
 #include <openssl/sha.h>
 
-#include "../../io/basic_buffer.h"
-#include "../../containers/variant_block.h"
+#include "io/basic_buffer.h"
+#include "containers/variant_block.h"
 #include "digest.h"
 
 namespace tachyon{

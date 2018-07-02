@@ -24,9 +24,9 @@ DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 
 #include "import.h"
-#include "view.h"
-#include "utility.h"
 #include "stats.h"
+#include "utility.h"
+#include "view.h"
 
 int main(int argc, char** argv){
 	if(tachyon::utility::isBigEndian()){

@@ -1,6 +1,8 @@
 #ifndef IO_TGZFENTRYITERATOR_H_
 #define IO_TGZFENTRYITERATOR_H_
 
+#include <limits>
+
 #include "TGZFController.h"
 #include "TGZFControllerStream.h"
 

@@ -1,6 +1,9 @@
 #ifndef CONTAINERS_COMPONENTS_DATA_CONTAINER_HEADER_OBJECT_H_
 #define CONTAINERS_COMPONENTS_DATA_CONTAINER_HEADER_OBJECT_H_
 
+#include "io/basic_buffer.h"
+#include "support/enums.h"
+
 namespace tachyon{
 namespace containers{
 

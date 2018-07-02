@@ -1,7 +1,8 @@
+#include "BCFEntry.h"
+
 #include <cassert>
 #include <bitset>
 
-#include "BCFEntry.h"
 
 namespace tachyon {
 namespace bcf {

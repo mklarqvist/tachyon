@@ -4,11 +4,11 @@
 #include <fstream>
 #include <bitset>
 
-#include "../hash_container.h"
-#include "../../io/basic_buffer.h"
-#include "../components/data_container_header_controller.h"
 #include "data_block_bitvector.h"
 #include "data_container_header.h"
+#include "containers/hash_container.h"
+#include "io/basic_buffer.h"
+#include "data_container_header_controller.h"
 
 namespace tachyon{
 namespace containers{

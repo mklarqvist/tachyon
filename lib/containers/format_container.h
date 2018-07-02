@@ -1,11 +1,11 @@
 #ifndef CONTAINERS_FORMAT_CONTAINER_H_
 #define CONTAINERS_FORMAT_CONTAINER_H_
 
-#include "primitive_group_container.h"
-#include "meta_container.h"
-#include "stride_container.h"
-#include "../utility/support_vcf.h"
-#include "data_container.h"
+#include "containers/data_container.h"
+#include "containers/meta_container.h"
+#include "containers/primitive_group_container.h"
+#include "containers/stride_container.h"
+#include "utility/support_vcf.h"
 
 namespace tachyon{
 namespace containers{
