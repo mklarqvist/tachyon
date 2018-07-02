@@ -22,9 +22,9 @@
 # ################################################################
 
 # Version numbers slices from the source header
-LIBVER_MAJOR_SCRIPT:=`sed -n '/const int TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
-LIBVER_MINOR_SCRIPT:=`sed -n '/const int TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
-LIBVER_PATCH_SCRIPT:=`sed -n '/const int TACHYON_VERSION_PATCH = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
+LIBVER_MAJOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
+LIBVER_MINOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
+LIBVER_PATCH_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_RELEASE = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/MagicConstants.h`
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_MAJOR := $(shell echo $(LIBVER_MAJOR_SCRIPT))
@@ -130,13 +130,22 @@ lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
 %.o: %.cpp
 	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 
-# Tool invocations
 tachyon: $(OBJECTS)
-	@echo 'Building target: $@'
 	g++ -Wl,-rpath,"$(PWD)/zstd/lib/" -L"zstd/lib" -pthread -o "tachyon" $(OBJECTS) $(LIBS)
+	$(MAKE) cleanmost
+	$(MAKE) library library=true
 
-# Other Targets
-clean:
+library: $(OBJECTS)
+	@echo 'Building with positional independence...'
+	g++ $(LD_LIB_FLAGS) -pthread -o libtachyon.$(SHARED_EXT).$(LIBVER) $(OBJECTS) $(LIBS)
+	@echo 'Symlinking library...'
+	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) libtachyon.$(SHARED_EXT)
+	ln -sf libtachyon.$(SHARED_EXT) ltachyon.$(SHARED_EXT)
+
+cleanmost:
 	rm -f $(OBJECTS) $(CPP_DEPS)
 
-.PHONY: all clean
+clean: cleanmost
+	rm -f tachyon libtachyon.so libtachyon.so.* ltachyon.so
+
+.PHONY: all clean cleanmost library

@@ -62,8 +62,8 @@ void view_usage(void){
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
-	"  -j,   --mixed-phasing                       select sites with both phased and unphased samples\n"
-	"  -J,   --mixed-ploidy                        select sites with mixed ploidy\n"
+	"  -j/J  --mixed-phasing/--no-mixed-phasing    select sites with both phased and unphased samples\n"
+	"  -w/W  --mixed-ploidy/--no-mixed-ploidy      select sites with mixed ploidy\n"
 	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
@@ -110,12 +110,14 @@ int view(int argc, char** argv){
 		{"phased",        no_argument,    0,  'p' },
 		{"exclude-phased",no_argument,    0,  'P' },
 		{"mixed-phase",   no_argument,    0,  'j' },
+		{"no-mixed-phase",   no_argument,    0,  'J' },
 		{"uncalled",      no_argument,    0,  'u' },
 		{"exclude-uncalled", no_argument, 0,  'U' },
 		{"ref-match",   optional_argument, 0,  'a' },
 		{"alt-match",   optional_argument, 0,  'A' },
 		{"name-match",  optional_argument, 0,  'n' },
-		{"mixed-ploidy",no_argument,       0,  'J' },
+		{"mixed-ploidy",no_argument,       0,  'w' },
+		{"no-mixed-ploidy",no_argument,       0,  'W' },
 		{0,0,0,0}
 	};
 
@@ -183,7 +185,14 @@ int view(int argc, char** argv){
 			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'J':
+			filters.filter_mixed_phase(false, tachyon::YON_CMP_EQUAL);
+			break;
+		case 'w':
 			filters.filter_mixed_ploidy(true, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
+			break;
+		case 'W':
+			filters.filter_mixed_ploidy(false, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'u':

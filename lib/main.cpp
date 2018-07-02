@@ -52,7 +52,7 @@ int main(int argc, char** argv){
 		return(view(argc, argv));
 	} else if(strncmp(&argv[1][0], "stats", 5) == 0){
 		return(stats(argc, argv));
-	}  else if(strncmp(&argv[1][0], "check", 5) == 0){
+	} else if(strncmp(&argv[1][0], "check", 5) == 0){
 		return(0);
 	} else {
 		programMessage();
