@@ -1,6 +1,7 @@
 #ifndef CORE_TACHYON_READER_H_
 #define CORE_TACHYON_READER_H_
 
+#include <regex>
 #include <cmath>
 
 #include "zstd.h"
