@@ -1,4 +1,4 @@
-#include "MagicConstants.h"
+#include "magic_constants.h"
 
 #include <string>
 

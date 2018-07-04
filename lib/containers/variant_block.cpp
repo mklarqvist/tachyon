@@ -254,12 +254,12 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 				return false;
 			}
 
-			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].data_header.uLength << std::endl;
+			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local].data_header.uLength << std::endl;
 
 			// Read data
-			this->info_containers[settings.load_info_ID_loaded[i].iterator_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local];
-			stream >> this->info_containers[settings.load_info_ID_loaded[i].iterator_index];
-			//std::cerr << "into: " << settings.load_info_ID_loaded[i].iterator_index << std::endl;
+			this->info_containers[settings.load_info_ID_loaded[i].load_order_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local];
+			stream >> this->info_containers[settings.load_info_ID_loaded[i].load_order_index];
+			//std::cerr << "into: " << settings.load_info_ID_loaded[i].load_order_index << std::endl;
 			++this->n_info_loaded;
 		}
 	} // end case load_info_ID
@@ -284,12 +284,16 @@ bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
 				return false;
 			}
 
-			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].target_stream_local].data_header.uLength << std::endl;
+			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local].data_header.uLength << std::endl;
+
+			std::cerr << "Iterator index: " << settings.load_format_ID_loaded[i].load_order_index << std::endl;
+			std::cerr << "Local index: " << settings.load_format_ID_loaded[i].stream_id_local << std::endl;
+			std::cerr << "Global key: " << settings.load_format_ID_loaded[i].offset->data_header.global_key << std::endl;
 
 			// Read data
-			this->format_containers[settings.load_format_ID_loaded[i].iterator_index].header = this->footer.format_offsets[settings.load_format_ID_loaded[i].target_stream_local];
-			stream >> this->format_containers[settings.load_format_ID_loaded[i].iterator_index];
-			//std::cerr << "into: " << settings.load_info_ID_loaded[i].iterator_index << std::endl;
+			this->format_containers[settings.load_format_ID_loaded[i].load_order_index].header = this->footer.format_offsets[settings.load_format_ID_loaded[i].stream_id_local];
+			stream >> this->format_containers[settings.load_format_ID_loaded[i].load_order_index];
+			//std::cerr << "into: " << settings.load_info_ID_loaded[i].load_order_index << std::endl;
 			++this->n_format_loaded;
 		}
 	} // end case load_info_ID

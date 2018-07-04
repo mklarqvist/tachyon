@@ -52,6 +52,10 @@ public:
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
+	//
+	inline const U32& getINFOLoaded(void) const{ return(this->n_info_loaded); }
+	inline const U32& getFORMATLoaded(void) const{ return(this->n_format_loaded); }
+
 	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
 	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
 	inline U32 addFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }

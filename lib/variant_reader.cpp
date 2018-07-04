@@ -126,6 +126,8 @@ bool VariantReader::nextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
+
+	// Parse settings
 	this->parseSettings();
 
 	// Attempts to read a YON block with the provided
@@ -516,26 +518,36 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 }
 
 bool VariantReader::parseSettings(void){
-	block_settings.load_info_ID_loaded.clear();
-	block_settings.load_format_ID_loaded.clear();
+	this->block_settings.load_info_ID_loaded.clear();
+	this->block_settings.load_format_ID_loaded.clear();
+	this->block_settings.format_map.clear();
+	this->block_settings.info_map.clear();
+
+	this->block_settings.format_map.resize(this->header.header_magic.n_format_values);
+	this->block_settings.info_map.resize(this->header.header_magic.n_info_values);
 
 	// Map INFO
-	if(block_settings.info_all.load == false){ // prevent double load
+	if(this->block_settings.info_all.load == false){ // prevent double load
 		U32 info_matches = 0;
-		for(U32 i = 0; i < block_settings.info_list.size(); ++i){
-			const S32 global_key = this->has_info_field(block_settings.info_list[i]);
+		for(U32 i = 0; i < this->block_settings.info_list.size(); ++i){
+			const S32 global_key = this->has_info_field(this->block_settings.info_list[i]);
 			if(global_key >= 0){
 				S32 local_key = -1;
 				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
 					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
 						local_key = i;
-						this->block_settings.info_ID_list.push_back(i);
-						block_settings.load_info_ID_loaded.push_back(
+						this->block_settings.info_ID_list.push_back(local_key);
+
+						this->block_settings.info_map[global_key].stream_id_local  = local_key;
+						this->block_settings.info_map[global_key].stream_id_global = global_key;
+						this->block_settings.info_map[global_key].load_order_index = info_matches;
+
+						this->block_settings.load_info_ID_loaded.push_back(
 													SettingsMap(
 															info_matches++, // iterator value
-															i,              // local index id
-															&this->block.footer.info_offsets[i]) // offset
-															);
+															local_key,      // local index id
+															&this->block.footer.info_offsets[local_key]) // offset
+													);
 						break;
 					}
 				}
@@ -544,6 +556,13 @@ bool VariantReader::parseSettings(void){
 					//std::cerr << "could not find local" << std::endl;
 				//}
 			}
+		}
+	} else {
+		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
+			const U32 global_key = this->block.footer.info_offsets[i].data_header.global_key;
+			this->block_settings.info_map[i].stream_id_local  = i;
+			this->block_settings.info_map[i].stream_id_global = global_key;
+			this->block_settings.info_map[i].load_order_index = i;
 		}
 	}
 
@@ -557,13 +576,18 @@ bool VariantReader::parseSettings(void){
 				for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
 					if(this->block.footer.format_offsets[i].data_header.global_key == global_key){
 						local_key = i;
-						this->block_settings.format_ID_list.push_back(i);
-						block_settings.load_format_ID_loaded.push_back(
+						this->block_settings.format_ID_list.push_back(local_key);
+
+						this->block_settings.format_map[global_key].stream_id_local  = local_key;
+						this->block_settings.format_map[global_key].stream_id_global = global_key;
+						this->block_settings.format_map[global_key].load_order_index = format_matches;
+
+						this->block_settings.load_format_ID_loaded.push_back(
 													SettingsMap(
 															format_matches++, // iterator value
-															i,              // local index id
-															&this->block.footer.format_offsets[i]) // offset
-															);
+															local_key,        // local index id
+															&this->block.footer.format_offsets[local_key]) // offset
+													);
 						break;
 					}
 				}
@@ -572,6 +596,13 @@ bool VariantReader::parseSettings(void){
 					//std::cerr << "could not find local" << std::endl;
 				//}
 			}
+		}
+	} else {
+		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
+			const U32 global_key = this->block.footer.format_offsets[i].data_header.global_key;
+			this->block_settings.format_map[i].stream_id_local  = i;
+			this->block_settings.format_map[i].stream_id_global = global_key;
+			this->block_settings.format_map[i].load_order_index = i;
 		}
 	}
 
@@ -1084,8 +1115,6 @@ const U64 VariantReader::outputCustom(void){
 const U32 VariantReader::outputBlockVCF(void){
 	objects_type objects;
 	this->loadObjects(objects);
-	//this->variant_filters.filter_ref_allele("A", YON_CMP_EQUAL);
-	//this->variant_filters.filter_alt_allele("[A]{2,}", YON_CMP_REGEX);
 	this->variant_filters.build();
 
 	// Reserve memory for output buffer
@@ -1099,12 +1128,15 @@ const U32 VariantReader::outputBlockVCF(void){
 		genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
 	}
 
+	// Print functionality
 	print_format_function print_format = &self_type::printFORMATDummy;
 	if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
 	else if(block_settings.format_all.display)     print_format = &self_type::printFORMATVCF;
 	print_info_function   print_info   = &self_type::printINFOVCF;
 	print_meta_function   print_meta   = &utility::to_vcf_string;
 	print_filter_function print_filter = &self_type::printFILTER;
+
+	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
 	if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
 

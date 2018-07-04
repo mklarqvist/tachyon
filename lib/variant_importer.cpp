@@ -311,14 +311,14 @@ bool VariantImporter::BuildBCF(void){
 
 	U64 last_pos = this->writer->stream->tellp();
 	this->writer->writeIndex(); // Write index
-	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
 	checksums.finalize();       // Finalize SHA-512 digests
 	*this->writer->stream << checksums;
-	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
 	*this->writer->stream << footer;
-	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString(this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 
 	this->writer->stream->flush();
 

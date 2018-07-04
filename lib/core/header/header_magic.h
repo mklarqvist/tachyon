@@ -6,7 +6,7 @@
 #include <cstring>
 
 #include "io/basic_buffer.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 
 namespace tachyon{
 namespace core{
@@ -46,7 +46,7 @@ private:
 		//stream.write(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_MINOR),   sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_RELEASE), sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&tachyon::constants::TACHYON_VERSION_PATCH),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&header.controller),      sizeof(U16));
 		stream.write(reinterpret_cast<const char*>(&header.n_samples),       sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&header.n_contigs),       sizeof(U32));
@@ -63,7 +63,7 @@ private:
 		//stream.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		stream.read(reinterpret_cast<char*>(&header.major_version),   sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&header.minor_version),   sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&header.release_version), sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&header.patch_version), sizeof(S32));
 		stream.read(reinterpret_cast<char*>(&header.controller),      sizeof(U16));
 		stream.read(reinterpret_cast<char*>(&header.n_samples),       sizeof(U64));
 		stream.read(reinterpret_cast<char*>(&header.n_contigs),       sizeof(U32));
@@ -80,7 +80,7 @@ private:
 		//buffer.Add(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		buffer += header.major_version;
 		buffer += header.minor_version;
-		buffer += header.release_version;
+		buffer += header.patch_version;
 		buffer += header.controller;
 		buffer += header.n_samples;
 		buffer += header.n_contigs;
@@ -97,7 +97,7 @@ private:
 		//buffer.read(header.magic_string, tachyon::constants::FILE_HEADER_LENGTH);
 		buffer >> header.major_version;
 		buffer >> header.minor_version;
-		buffer >> header.release_version;
+		buffer >> header.patch_version;
 		buffer >> header.controller;
 		buffer >> header.n_samples;
 		buffer >> header.n_contigs;
@@ -114,7 +114,7 @@ public:
 	//char magic_string[tachyon::constants::FILE_HEADER_LENGTH];
 	S32  major_version;
 	S32  minor_version;
-	S32  release_version;
+	S32  patch_version;
 	U16  controller;            // controller
 	U64  n_samples;             // number of samples
 	U32  n_contigs;             // number of contigs

@@ -28,30 +28,34 @@ struct SettingsMap{
 	typedef SettingsMap                     self_type;
 	typedef containers::DataContainerHeader header_type;
 
-	SettingsMap() : iterator_index(0), target_stream_local(-1), offset(nullptr){}
-	SettingsMap(const U32 iterator_index, const S32 target_stream_disk, const header_type* offset) :
-		iterator_index(iterator_index),
-		target_stream_local(target_stream_disk),
+	SettingsMap() : load_order_index(-1), stream_id_local(-1), stream_id_global(-1), offset(nullptr){}
+	SettingsMap(const U32 load_order_index, const S32 target_stream_disk, const header_type* offset) :
+		load_order_index(load_order_index),
+		stream_id_local(target_stream_disk),
+		stream_id_global(offset->data_header.global_key),
 		offset(offset)
 	{}
 
 	~SettingsMap(){}
 
 	SettingsMap(const SettingsMap& other) :
-		iterator_index(other.iterator_index),
-		target_stream_local(other.target_stream_local),
+		load_order_index(other.load_order_index),
+		stream_id_local(other.stream_id_local),
+		stream_id_global(other.stream_id_global),
 		offset(other.offset)
 	{}
 
 	SettingsMap(SettingsMap&& other) :
-		iterator_index(other.iterator_index),
-		target_stream_local(other.target_stream_local),
+		load_order_index(other.load_order_index),
+		stream_id_local(other.stream_id_local),
+		stream_id_global(other.stream_id_global),
 		offset(other.offset)
 	{}
 
 	SettingsMap& operator=(const SettingsMap& other){
-		this->iterator_index = other.iterator_index;
-		this->target_stream_local = other.target_stream_local;
+		this->load_order_index = other.load_order_index;
+		this->stream_id_local = other.stream_id_local;
+		this->stream_id_global = other.stream_id_global;
 		this->offset = other.offset;
 		return *this;
 	}
@@ -59,8 +63,9 @@ struct SettingsMap{
 	SettingsMap& operator=(SettingsMap&& other){
 		if(this!=&other) // prevent self-move
 		{
-			this->iterator_index = other.iterator_index;
-			this->target_stream_local = other.target_stream_local;
+			this->load_order_index = other.load_order_index;
+			this->stream_id_local = other.stream_id_local;
+			this->stream_id_global = other.stream_id_global;
 			this->offset = other.offset;
 		}
 		return *this;
@@ -69,8 +74,9 @@ struct SettingsMap{
 	inline bool operator<(const self_type& other) const{ return(this->offset->data_header.offset < other.offset->data_header.offset); }
 	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
-	U32 iterator_index;        // Incrementor index
-	S32 target_stream_local;   // Local target index
+	S32 load_order_index;  // Incrementor index
+	S32 stream_id_local;   // Local target index
+	S32 stream_id_global;  // Global target index
 	const header_type* offset; // Header object of target data container
 };
 
@@ -81,8 +87,9 @@ struct DataBlockSettings{
 public:
 	typedef DataBlockSettings     self_type;
 	typedef SettingsMap           map_type;
-	typedef core::VariantHeader   header_type;
 	typedef DataBlockSettingsPair pair_type;
+	typedef core::VariantHeader   header_type;
+	typedef core::HeaderMapEntry  header_map_type;
 
 public:
 	DataBlockSettings() :
@@ -173,13 +180,21 @@ public:
 		this->genotypes_simple(set, set);
 		this->genotypes_other(set, set);
 		this->genotypes_support.load = set;
+		this->contig.load = set;
+		this->positions.load = set;
+		this->set_membership.load = set;
+		return(*this);
+	}
+
+	self_type& loadPermutationArray(const bool set){
+		this->ppa.load = set;
 		return(*this);
 	}
 
 	self_type& loadAllFORMAT(const bool set){
 		this->ppa(set, set);
 		this->loadGenotypes(set);
-		this->format_all(set, set);
+		this->format_all.load = set;
 		this->contig.load = set;
 		this->positions.load = set;
 		this->set_membership.load = set;
@@ -210,8 +225,37 @@ public:
 		return(*this);
 	}
 
+	bool parse(const header_type& header){
+		std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
+
+		for(U32 i = 0; i < this->info_list.size(); ++i){
+			std::vector<std::string> ind = utility::split(this->info_list[i], ',');
+			for(U32 j = 0; j < ind.size(); ++j){
+				ind[j] = utility::remove_excess_whitespace(ind[j]);
+				if(std::regex_match(ind[j], field_identifier_regex)){
+					const header_map_type* map = header.getInfoField(ind[j]);
+					if(map == nullptr){
+						std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
+						continue;
+					}
+					this->loadINFO(ind[j]);
+				} else {
+					std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
+					return(false);
+				}
+				this->loadINFO(ind[j]);
+			}
+		}
+
+		for(U32 i = 0; i < this->format_list.size(); ++i){
+
+		}
+
+		return true;
+	}
+
 	bool parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false){
-		this->custom_output_format = customOutputFormat;
+		this->custom_output_format = customOutputFormat; // Todo
 		bool allGood = true;
 
 		std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
@@ -223,10 +267,9 @@ public:
 					std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
 					for(U32 j = 0; j < ind.size(); ++j){
 						ind[j] = utility::remove_excess_whitespace(ind[j]);
-						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), std::string("$1")); // remove excess white space
 						if(std::regex_match(ind[j], field_identifier_regex)){
-							const core::HeaderMapEntry* map = header.getInfoField(ind[j]);
-							if(map == false){
+							const header_map_type* map = header.getInfoField(ind[j]);
+							if(map == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
 								continue;
@@ -252,7 +295,6 @@ public:
 				} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 					std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
 					for(U32 j = 0; j < ind.size(); ++j){
-						//ind[j] = std::regex_replace(ind[j], std::regex("^ +| +$|( ) +"), "$1"); // remove excess white space
 						std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 						if(std::regex_match(ind[j], field_identifier_regex)){
 							// Special case for genotypes
@@ -271,8 +313,8 @@ public:
 							}
 							// Any other FORMAT
 							else {
-								const core::HeaderMapEntry* map = header.getFormatField(ind[j]);
-								if(map == false){
+								const header_map_type* map = header.getFormatField(ind[j]);
+								if(map == nullptr){
 									std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 									allGood = false;
 									continue;
@@ -366,6 +408,8 @@ public:
 	std::vector<U32> format_ID_list;
 
 	//
+	std::vector<map_type> info_map;
+	std::vector<map_type> format_map;
 	std::vector<map_type> load_info_ID_loaded;
 	std::vector<map_type> load_format_ID_loaded;
 

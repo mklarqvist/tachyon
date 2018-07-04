@@ -6,7 +6,7 @@ namespace core{
 HeaderMagic::HeaderMagic() :
 	major_version(tachyon::constants::TACHYON_VERSION_MAJOR),
 	minor_version(tachyon::constants::TACHYON_VERSION_MINOR),
-	release_version(tachyon::constants::TACHYON_VERSION_RELEASE),
+	patch_version(tachyon::constants::TACHYON_VERSION_PATCH),
 	controller(0),
 	n_samples(0),
 	n_contigs(0),
@@ -25,7 +25,7 @@ HeaderMagic::HeaderMagic() :
 HeaderMagic::HeaderMagic(const self_type& other) :
 	major_version(other.major_version),
 	minor_version(other.minor_version),
-	release_version(other.release_version),
+	patch_version(other.patch_version),
 	controller(other.controller),
 	n_samples(other.n_samples),
 	n_contigs(other.n_contigs),

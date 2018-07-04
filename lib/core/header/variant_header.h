@@ -6,7 +6,7 @@
 #include "header_map_entry.h"
 #include "header_sample.h"
 #include "support/type_definitions.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 #include "algorithm/OpenHashTable.h"
 #include "io/vcf/VCFHeader.h"
 #include "io/basic_buffer.h"

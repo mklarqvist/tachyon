@@ -3,7 +3,7 @@
 
 #include <regex>
 
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 #include "support/type_definitions.h"
 #include "support/helpers.h"
 #include "third_party/intervalTree.h"

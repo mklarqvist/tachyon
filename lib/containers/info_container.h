@@ -16,13 +16,14 @@ private:
     typedef std::size_t            size_type;
 
 public:
-    InfoContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0){}
-    InfoContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries){}
+    InfoContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0), n_capacity(0){}
+    InfoContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries), n_capacity(n_entries){}
     virtual ~InfoContainerInterface(){}
 
     // Capacity
 	inline const bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
+	inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const =0;
     virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const =0;
@@ -32,6 +33,7 @@ public:
 protected:
     TACHYON_CORE_TYPE primitive_type;
 	size_t  n_entries;
+	size_t  n_capacity;
 };
 
 template <class return_type>
@@ -281,17 +283,28 @@ void InfoContainer<return_type>::__setup(const data_container_type& container){
 	if(container.buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->size() == 0)
+	// Worst case number of entries
+	this->n_capacity = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+	if(this->capacity() == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 	stride_container_type strides(container);
 
 	U32 current_offset = 0;
-	for(U32 i = 0; i < this->size(); ++i){
-		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
+	U32 i = 0;
+	while(true){
 		new( &this->__containers[i] ) value_type( container, current_offset, strides[i] );
 		current_offset += strides[i] * sizeof(actual_primitive);
+		++this->n_entries;
+		++i;
+
+		// Break condition
+		if(current_offset == container.buffer_data_uncompressed.size())
+			break;
+
+		// Assertion of critical error
+		assert(current_offset < container.buffer_data_uncompressed.size());
 	}
 	assert(current_offset == container.buffer_data_uncompressed.size());
 }
