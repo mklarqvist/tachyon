@@ -8,7 +8,7 @@
 #include <zstd.h>
 
 #include "support/helpers.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 
 // Declare extern
 std::string tachyon::constants::LITERAL_COMMAND_LINE;

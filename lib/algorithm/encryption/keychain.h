@@ -102,7 +102,7 @@ private:
 		stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_RELEASE), sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_PATCH),   sizeof(S32));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
 		for(U32 i = 0; i < keychain.size(); ++i) stream << keychain[i];

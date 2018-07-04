@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include <regex>
 
-#include "MagicConstants.h"
+#include "magic_constants.h"
 #include "type_definitions.h"
 
 namespace tachyon{

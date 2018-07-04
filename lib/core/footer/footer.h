@@ -1,7 +1,7 @@
 #ifndef CORE_FOOTER_FOOTER_H_
 #define CORE_FOOTER_FOOTER_H_
 
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 #include "support/helpers.h"
 
 namespace tachyon{

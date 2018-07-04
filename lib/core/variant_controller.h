@@ -4,7 +4,7 @@
 /*======  Dependencies  ======*/
 #include "io/basic_buffer.h"
 #include "support/enums.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 
 namespace tachyon{
 namespace core{

@@ -148,8 +148,11 @@ public:
 	 */
 	template <class T>
 	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
-		int format_field = this->has_format_field(field_name);
-		if(format_field >= 0) return(new containers::FormatContainer<T>(this->block.format_containers[format_field], this->header.getSampleNumber()));
+		int format_field_global_id = this->has_format_field(field_name);
+		if(format_field_global_id >= 0){
+			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
+			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], this->header.getSampleNumber()));
+		}
 		else return nullptr;
 	}
 
@@ -163,8 +166,11 @@ public:
 	 */
 	template <class T>
 	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		int format_field = this->has_format_field(field_name);
-		if(format_field >= 0){
+		if(meta_container.size() == 0)
+			return new containers::FormatContainer<T>();
+
+		int format_field_global_id = this->has_format_field(field_name);
+		if(format_field_global_id >= 0){
 			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
 			U32 matches = 0;
 			for(U32 i = 0; i < pattern_matches.size(); ++i)
@@ -173,7 +179,9 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			return(new containers::FormatContainer<T>(this->block.format_containers[format_field], meta_container, pattern_matches, this->header.getSampleNumber()));
+			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
+
+			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], meta_container, pattern_matches, this->header.getSampleNumber()));
 		}
 		else return nullptr;
 	}
@@ -185,8 +193,11 @@ public:
 	 */
 	template <class T>
 	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
-		int info_field = this->has_info_field(field_name);
-		if(info_field >= 0) return(new containers::InfoContainer<T>(this->block.info_containers[info_field]));
+		int info_field_global_id = this->has_info_field(field_name);
+		if(info_field_global_id >= 0){
+			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
+			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id]));
+		}
 		else return nullptr;
 	}
 
@@ -200,8 +211,11 @@ public:
 	 */
 	template <class T>
 	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		int info_field = this->has_info_field(field_name);
-		if(info_field >= 0){
+		if(meta_container.size() == 0)
+			return new containers::InfoContainer<T>();
+
+		int info_field_global_id = this->has_info_field(field_name);
+		if(info_field_global_id >= 0){
 			const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
 
 			U32 matches = 0;
@@ -211,7 +225,10 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			return(new containers::InfoContainer<T>(this->block.info_containers[info_field], meta_container, pattern_matches));
+			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
+
+
+			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id], meta_container, pattern_matches));
 		}
 		else return nullptr;
 	}

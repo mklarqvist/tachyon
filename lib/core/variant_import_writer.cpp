@@ -7,7 +7,7 @@
 
 #include "variant_import_writer.h"
 #include "support/helpers.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 
 namespace tachyon {
 

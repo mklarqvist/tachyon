@@ -320,6 +320,10 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 	if(container.buffer_strides_uncompressed.size() == 0)
 		return;
 
+	// Todo: there's no guaranteed that this is correct
+	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
+
+	std::cerr << "entries here: " << this->n_entries << std::endl;
 	if(this->n_entries == 0)
 		return;
 
@@ -369,7 +373,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 template <class return_type>
 template <class actual_primitive>
 void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples, const U32 stride_size){
-		this->n_entries = meta_container.size();
+	this->n_entries = meta_container.size();
 	if(this->n_entries == 0)
 		return;
 
