@@ -139,11 +139,7 @@ before_install:
   - make -j4
   - sudo make install
   - cd ..
-script:
+install:
   - git submodule update --recursive
   - make -j4
   - make examples
-  - lib_example/format_container_balanced examples/example_dataset.yon
-  - lib_example/genotype_container examples/example_dataset.yon
-  - lib_example/info_container_balance_comparison examples/example_dataset.yon
-  - lib_example/meta_container examples/example_dataset.yon

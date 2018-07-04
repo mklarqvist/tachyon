@@ -234,7 +234,7 @@ public:
 				ind[j] = utility::remove_excess_whitespace(ind[j]);
 				if(std::regex_match(ind[j], field_identifier_regex)){
 					const header_map_type* map = header.getInfoField(ind[j]);
-					if(map == false){
+					if(map == nullptr){
 						std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
 						continue;
 					}
@@ -269,7 +269,7 @@ public:
 						ind[j] = utility::remove_excess_whitespace(ind[j]);
 						if(std::regex_match(ind[j], field_identifier_regex)){
 							const header_map_type* map = header.getInfoField(ind[j]);
-							if(map == false){
+							if(map == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
 								continue;
@@ -314,7 +314,7 @@ public:
 							// Any other FORMAT
 							else {
 								const header_map_type* map = header.getFormatField(ind[j]);
-								if(map == false){
+								if(map == nullptr){
 									std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 									allGood = false;
 									continue;
