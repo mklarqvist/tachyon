@@ -24,7 +24,12 @@ DEALINGS IN THE SOFTWARE.
 #include "variant_reader.h"
 
 int main(int argc, char** argv){
-	std::string my_input_file = "../examples/example_dataset.yon"; // Change me to an actual file that exists on your filesystem
+	if(argc < 2){
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Have to provide an input name..." << std::endl;
+		return(1);
+	}
+
+	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
 	if(!reader.open(my_input_file)){

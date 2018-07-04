@@ -47,7 +47,7 @@ DEBUG_FLAGS :=
 endif
 
 # Global build parameters
-INCLUDE_PATH := -I"lib/" -I"$(PWD)/zstd/lib/" -I"$(PWD)/zstd/lib/common/" -I"/usr/local/opt/openssl/lib/" -I"/usr/include/openssl/" -I"/usr/local/include/"
+INCLUDE_PATH := -I"lib/" -I"zstd/lib/" -I"zstd/lib/common/" -I"/usr/local/opt/openssl/lib/" -I"/usr/include/openssl/" -I"/usr/local/include/"
 ZSTD_LIBRARY_PATH := -L"zstd/lib"
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
@@ -61,7 +61,7 @@ endif
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
 SHARED_EXT = so
-LD_LIB_FLAGS := -shared -Wl,-rpath,"$(PWD)/zstd/lib",-soname,libtachyon.$(SHARED_EXT)
+LD_LIB_FLAGS := -shared -Wl,-rpath,"zstd/lib",-soname,libtachyon.$(SHARED_EXT)
 else
 SHARED_EXT = dylib
 LD_LIB_FLAGS := -dynamiclib -install_name libtachyon.$(SHARED_EXT)
@@ -110,7 +110,7 @@ OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
 
 LIB_INCLUDE_PATH   = -I"lib/"
-LIB_EXAMPLE_FLAGS  = -L"$(PWD)" -ltachyon -Wl,-rpath,"$(PWD)"
+LIB_EXAMPLE_FLAGS  = -L"$(PWD)" -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,"$(PWD)"'
 LIB_EXAMPLE_SOURCE = $(wildcard lib_example/*.cpp)
 LIB_EXAMPLE_OUTPUT = $(LIB_EXAMPLE_SOURCE:.cpp=)
 
@@ -137,7 +137,7 @@ lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
 	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 
 tachyon: $(OBJECTS)
-	g++ -Wl,-rpath,"$(PWD)/zstd/lib/" $(ZSTD_LIBRARY_PATH) -pthread -o "tachyon" $(OBJECTS) $(LIBS)
+	g++ '-Wl,-rpath,$$ORIGIN/zstd/lib/,-rpath,"$(PWD)/zstd/lib/"' $(ZSTD_LIBRARY_PATH) -pthread -o "tachyon" $(OBJECTS) $(LIBS)
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
 
