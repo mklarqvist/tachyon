@@ -139,7 +139,7 @@ before_install:
   - make -j4
   - sudo make install
   - cd ..
-install:
+script:
   - git submodule update --recursive
   - make -j4
   - make examples
