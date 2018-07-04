@@ -48,6 +48,7 @@ endif
 
 # Global build parameters
 INCLUDE_PATH := -I"lib/" -I"$(PWD)/zstd/lib/" -I"$(PWD)/zstd/lib/common/" -I"/usr/local/opt/openssl/lib/" -I"/usr/include/openssl/" -I"/usr/local/include/"
+ZSTD_LIBRARY_PATH := -L"zstd/lib"
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
 #OPTFLAGS := -O3 -march=native -mtune=native -ftree-vectorize -pipe -frename-registers -funroll-loops
@@ -60,7 +61,7 @@ endif
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
 SHARED_EXT = so
-LD_LIB_FLAGS := -shared -Wl,-rpath,"./",-soname,libtachyon.$(SHARED_EXT)
+LD_LIB_FLAGS := -shared -Wl,-rpath,"$(PWD)/zstd/lib",-soname,libtachyon.$(SHARED_EXT)
 else
 SHARED_EXT = dylib
 LD_LIB_FLAGS := -dynamiclib -install_name libtachyon.$(SHARED_EXT)
@@ -136,13 +137,13 @@ lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
 	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 
 tachyon: $(OBJECTS)
-	g++ -Wl,-rpath,"$(PWD)/zstd/lib/" -L"zstd/lib" -pthread -o "tachyon" $(OBJECTS) $(LIBS)
+	g++ -Wl,-rpath,"$(PWD)/zstd/lib/" $(ZSTD_LIBRARY_PATH) -pthread -o "tachyon" $(OBJECTS) $(LIBS)
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
 
 library: $(OBJECTS)
 	@echo 'Building with positional independence...'
-	g++ $(LD_LIB_FLAGS) -pthread -o libtachyon.$(SHARED_EXT).$(LIBVER) $(OBJECTS) $(LIBS)
+	g++ $(LD_LIB_FLAGS) $(ZSTD_LIBRARY_PATH) -pthread -o libtachyon.$(SHARED_EXT).$(LIBVER) $(OBJECTS) $(LIBS)
 	@echo 'Symlinking library...'
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) libtachyon.$(SHARED_EXT)
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) ltachyon.$(SHARED_EXT)
@@ -150,7 +151,7 @@ library: $(OBJECTS)
 examples: $(LIB_EXAMPLE_OUTPUT)
 
 lib_example/%: lib_example/%.cpp
-	g++ $(CXXFLAGS) $(LIB_INCLUDE_PATH) -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -o "$@" "$<" $(LIB_EXAMPLE_FLAGS)
+	g++ $(CXXFLAGS) $(INCLUDE_PATH) $(LIB_INCLUDE_PATH) -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -o "$@" "$<" $(LIB_EXAMPLE_FLAGS)
 
 # Clean procedures
 clean_examples:
