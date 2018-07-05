@@ -47,8 +47,33 @@ DEBUG_FLAGS :=
 endif
 
 # Global build parameters
-INCLUDE_PATH := -I"lib/" -I"zstd/lib/" -I"zstd/lib/common/" -I"/usr/local/opt/openssl/lib/" -I"/usr/include/openssl/" -I"/usr/local/include/"
-ZSTD_LIBRARY_PATH := -L"zstd/lib"
+INCLUDE_PATH = -I./lib/
+ZSTD_LIBRARY_PATH = 
+
+# Check if ZSTD is in the current directory
+ifneq ("$(wildcard ./zstd/)","")
+  INCLUDE_PATH += -I./zstd/lib/ -I./zstd/lib/common/ 
+  ZSTD_LIBRARY_PATH = -L./zstd/lib 
+else ifneq ("$(wildcard /usr/local/include/)","")
+  INCLUDE_PATH += -I/usr/local/include/
+  #ZSTD_LIBRARY_PATH = -L/usr/local/lib 
+endif
+
+# Try to deduce where OpenSSL is located
+OPENSSL_LIBRARY_PATH = 
+ifneq ("$(wildcard ./openssl/)","")
+  INCLUDE_PATH += -I./openssl/include/openssl/ 
+  OPENSSL_LIBRARY_PATH = -L./openssl/
+else ifneq ("$(wildcard /usr/local/include/openssl/)","")
+  INCLUDE_PATH += -I/usr/local/include/openssl/
+  #OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
+else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
+  INCLUDE_PATH += -I/usr/include/openssl/
+  OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
+endif
+
+LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) -L/usr/local/lib/
+
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
 #OPTFLAGS := -O3 -march=native -mtune=native -ftree-vectorize -pipe -frename-registers -funroll-loops
@@ -60,15 +85,16 @@ endif
 # OS X linker doesn't support -soname, and use different extension
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
-SHARED_EXT = so
-LD_LIB_FLAGS := -shared -Wl,-rpath,"zstd/lib",-soname,libtachyon.$(SHARED_EXT)
+SHARED_EXT   = so
+LD_LIB_FLAGS = -shared '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/,-soname,libtachyon.$(SHARED_EXT)'
 else
-SHARED_EXT = dylib
-LD_LIB_FLAGS := -dynamiclib -install_name libtachyon.$(SHARED_EXT)
+SHARED_EXT   = dylib
+LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
 endif
 
-CXXFLAGS := -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
-CFLAGS   := -std=c99 $(OPTFLAGS) $(DEBUG_FLAGS)
+CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
+CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
+BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
 
 LIBS := -lzstd -lcrypto
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
@@ -109,41 +135,44 @@ lib/third_party/zlib/zutil.c
 OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
 
-LIB_INCLUDE_PATH   = -I"lib/"
-LIB_EXAMPLE_FLAGS  = -L"$(PWD)" -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,"$(PWD)"'
+LIB_INCLUDE_PATH   = -I./lib/
+LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD)'
 LIB_EXAMPLE_SOURCE = $(wildcard lib_example/*.cpp)
 LIB_EXAMPLE_OUTPUT = $(LIB_EXAMPLE_SOURCE:.cpp=)
 
 # Inject git information
-BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 ifneq ($(BRANCH), master)
-GIT_VERSION := $(shell git describe --abbrev=8 --dirty --always --tags)-$(BRANCH)
+GIT_VERSION = $(shell git describe --abbrev=8 --dirty --always --tags)-$(BRANCH)
 else
-GIT_VERSION := $(shell git describe --abbrev=8 --dirty --always --tags)
+GIT_VERSION = $(shell git describe --abbrev=8 --dirty --always --tags)
 endif
 
-# All Target
+# Default target
 all: tachyon
 
 # Third party rules
 lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
-	gcc $(CFLAGS) -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	gcc $(CFLAGS) -c -o $@ $<
 
 lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
-	gcc $(CFLAGS) -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	gcc $(CFLAGS) -c -o $@ $<
 
 # Generic rules
 %.o: %.cpp
-	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -DVERSION=\"$(GIT_VERSION)\" -o $@ $<
 
 tachyon: $(OBJECTS)
-	g++ '-Wl,-rpath,$$ORIGIN/zstd/lib/,-rpath,"$(PWD)/zstd/lib/"' $(ZSTD_LIBRARY_PATH) -pthread -o "tachyon" $(OBJECTS) $(LIBS)
+	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
+	$(MAKE) examples
 
 library: $(OBJECTS)
-	@echo 'Building with positional independence...'
-	g++ $(LD_LIB_FLAGS) $(ZSTD_LIBRARY_PATH) -pthread -o libtachyon.$(SHARED_EXT).$(LIBVER) $(OBJECTS) $(LIBS)
+	@echo 'Building dynamic library...'
+	g++ $(LD_LIB_FLAGS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o libtachyon.$(SHARED_EXT).$(LIBVER)
+	@echo 'Building static library...'
+	ar crs libtachyon.a $(OBJECTS)
 	@echo 'Symlinking library...'
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) libtachyon.$(SHARED_EXT)
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) ltachyon.$(SHARED_EXT)
@@ -151,7 +180,7 @@ library: $(OBJECTS)
 examples: $(LIB_EXAMPLE_OUTPUT)
 
 lib_example/%: lib_example/%.cpp
-	g++ $(CXXFLAGS) $(INCLUDE_PATH) $(LIB_INCLUDE_PATH) -fmessage-length=0  -DVERSION=\"$(GIT_VERSION)\" -o "$@" "$<" $(LIB_EXAMPLE_FLAGS)
+	g++ $(CXXFLAGS) $(INCLUDE_PATH) $(LIB_INCLUDE_PATH) $(LIB_EXAMPLE_FLAGS) -DVERSION=\"$(GIT_VERSION)\" -o $@ $<
 
 # Clean procedures
 clean_examples:

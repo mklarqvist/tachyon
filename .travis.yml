@@ -140,6 +140,7 @@ before_install:
   - sudo make install
   - cd ..
 script:
+script:
   - git submodule update --recursive
-  - make -j4
-  - make examples
+  - make -j 4
+  
