@@ -68,7 +68,7 @@ make examples
 ```
 
 ### Building without admin privilidges
-If you have no super-user powers required to install software on your machine:
+If you have no super-user (`sudo`) powers required to install software on your machine:
 
 ### Linux/MacOSX
 ```bash
