@@ -86,10 +86,10 @@ endif
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
 SHARED_EXT   = so
-LD_LIB_FLAGS = -shared '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/,-soname,libtachyon.$(SHARED_EXT)'
+LD_LIB_FLAGS = -shared -Wl,-rpath,./zstd/lib,-rpath,./openssl/,-soname,libtachyon.$(SHARED_EXT)
 else
 SHARED_EXT   = dylib
-LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
+LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) -Wl,-rpath,./zstd/lib,-rpath,./openssl/
 endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
