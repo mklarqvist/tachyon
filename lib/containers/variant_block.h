@@ -84,12 +84,6 @@ public:
 	inline void addPatternINFO(const std::vector<U32>& pattern, const U64& hash_pattern){
 		if(!this->info_patterns.set(pattern, hash_pattern)){
 			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-			for(size_t i = 0; i < pattern.size(); ++i){
-				std::cerr << pattern[i] << std::endl;
-			}
 			exit(1);
 		}
 	}
@@ -97,12 +91,6 @@ public:
 	inline void addPatternFORMAT(const std::vector<U32>& pattern, const U64& hash_pattern){
 		if(!this->format_patterns.set(pattern, hash_pattern)){
 			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-			for(size_t i = 0; i < pattern.size(); ++i){
-				std::cerr << pattern[i] << std::endl;
-			}
 			exit(1);
 		}
 	}
@@ -110,12 +98,6 @@ public:
 	inline void addPatternFILTER(const std::vector<U32>& pattern, const U64& hash_pattern){
 		if(!this->filter_patterns.set(pattern, hash_pattern)){
 			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			std::cerr << this->format_patterns.size() << "," << this->format_fields.size() << "\t" << this->info_patterns.size() << "," << this->format_fields.size() << "\t" << this->filter_patterns.size() << "," << this->filter_fields.size() << std::endl;
-
-
-			for(size_t i = 0; i < pattern.size(); ++i){
-				std::cerr << pattern[i] << std::endl;
-			}
 			exit(1);
 		}
 	}

@@ -62,13 +62,13 @@ endif
 # Try to deduce where OpenSSL is located
 OPENSSL_LIBRARY_PATH = 
 ifneq ("$(wildcard ./openssl/)","")
-  INCLUDE_PATH += -I./openssl/include/openssl/ 
+  INCLUDE_PATH += -I./openssl/include/ 
   OPENSSL_LIBRARY_PATH = -L./openssl/
 else ifneq ("$(wildcard /usr/local/include/openssl/)","")
-  INCLUDE_PATH += -I/usr/local/include/openssl/
+  INCLUDE_PATH += -I/usr/local/include/
   #OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
 else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
-  INCLUDE_PATH += -I/usr/include/openssl/
+  INCLUDE_PATH += -I/usr/include/
   OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
 endif
 
