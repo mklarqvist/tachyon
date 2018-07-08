@@ -1046,18 +1046,18 @@ const U64 VariantReader::outputVCF(void){
 		// fixme
 		// if special
 		// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"
-		if(this->header.getInfoField("FS_A") == false)          this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
-		if(this->header.getInfoField("AN") == false)            this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
-		if(this->header.getInfoField("NM") == false)            this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
-		if(this->header.getInfoField("NPM") == false)           this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
-		if(this->header.getInfoField("AC") == false)            this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
-		if(this->header.getInfoField("AC_FWD") == false)        this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
-		if(this->header.getInfoField("AC_REV") == false)        this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
-		if(this->header.getInfoField("HWE_P") == false)         this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
-		if(this->header.getInfoField("VT") == false)            this->header.literals += "\n##INFO=<ID=VT,Number=A,Type=String>";
-		if(this->header.getInfoField("AF") == false)            this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
-		if(this->header.getInfoField("MULTI_ALLELIC") == false) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
-		if(this->header.getInfoField("F_PIC") == false)         this->header.literals += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
+		if(this->header.getInfoField("FS_A") == nullptr)          this->header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+		if(this->header.getInfoField("AN") == nullptr)            this->header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+		if(this->header.getInfoField("NM") == nullptr)            this->header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+		if(this->header.getInfoField("NPM") == nullptr)           this->header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC") == nullptr)            this->header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC_FWD") == nullptr)        this->header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+		if(this->header.getInfoField("AC_REV") == nullptr)        this->header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+		if(this->header.getInfoField("HWE_P") == nullptr)         this->header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+		if(this->header.getInfoField("VT") == nullptr)            this->header.literals += "\n##INFO=<ID=VT,Number=A,Type=String>";
+		if(this->header.getInfoField("AF") == nullptr)            this->header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+		if(this->header.getInfoField("MULTI_ALLELIC") == nullptr) this->header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
+		if(this->header.getInfoField("F_PIC") == nullptr)         this->header.literals += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
 	}
 
 	this->header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
