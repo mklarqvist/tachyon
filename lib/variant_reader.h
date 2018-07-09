@@ -20,6 +20,7 @@
 #include "containers/meta_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/variant_block.h"
+#include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/genotype_object.h"
 #include "core/header/variant_header.h"
@@ -56,6 +57,7 @@ private:
 	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::GenotypeSummary            genotype_summary_type;
 	typedef containers::IntervalContainer          interval_container_type;
+	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
 
@@ -152,7 +154,7 @@ public:
 		int format_field_global_id = this->has_format_field(field_name);
 		if(format_field_global_id >= 0){
 			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
-			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], this->header.getSampleNumber()));
+			return(new containers::FormatContainer<T>(this->variant_container.getBlock().format_containers[target_local_id], this->header.getSampleNumber()));
 		}
 		else return nullptr;
 	}
@@ -182,7 +184,7 @@ public:
 
 			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
 
-			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], meta_container, pattern_matches, this->header.getSampleNumber()));
+			return(new containers::FormatContainer<T>(this->variant_container.getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header.getSampleNumber()));
 		}
 		else return nullptr;
 	}
@@ -197,7 +199,7 @@ public:
 		int info_field_global_id = this->has_info_field(field_name);
 		if(info_field_global_id >= 0){
 			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
-			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id]));
+			return(new containers::InfoContainer<T>(this->variant_container.getBlock().info_containers[target_local_id]));
 		}
 		else return nullptr;
 	}
@@ -229,7 +231,7 @@ public:
 			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
 
 
-			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id], meta_container, pattern_matches));
+			return(new containers::InfoContainer<T>(this->variant_container.getBlock().info_containers[target_local_id], meta_container, pattern_matches));
 		}
 		else return nullptr;
 	}
@@ -396,7 +398,7 @@ public:
 
 
 	U64 timings_meta(){
-		containers::MetaContainer meta(this->block);
+		containers::MetaContainer meta(this->variant_container.getBlock());
 		buffer_type temp(meta.size() * 1000);
 
 		for(U32 p = 0; p < meta.size(); ++p){
@@ -414,8 +416,8 @@ public:
 
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
 		for(U32 i = 0; i < gt.size(); ++i){
 			// All of these functions are in relative terms very expensive!
@@ -425,7 +427,7 @@ public:
 			// Vector of genotype objects (high level permuted)
 			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
 
 			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			for(U32 i = 1; i < objects_true.size(); ++i){
@@ -440,13 +442,13 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].comparePairwise(square_temporary);
 
 		//square /= (U64)2*this->header.getSampleNumber()*gt.size();
-		square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
+		square.addUpperTriagonal(square_temporary, this->variant_container.getBlock().ppa_manager);
 		square_temporary.clear();
 
 		// 2 * (Upper triagonal + diagonal) * number of variants
@@ -456,15 +458,15 @@ public:
 	}
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<core::TsTvObject>& global){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
 		std::vector<core::TsTvObject> objects(this->header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
 		for(U32 i = 0; i < objects.size(); ++i)
-			global[this->block.ppa_manager[i]] += objects[i];
+			global[this->variant_container.getBlock().ppa_manager[i]] += objects[i];
 
 		return(gt.size());
 	}
@@ -639,13 +641,13 @@ public:
 	}
 
 	U64 countVariants(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
+		containers::MetaContainer meta(this->variant_container.getBlock());
 		return(meta.size());
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 		containers::GenotypeSummary gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue
@@ -666,12 +668,12 @@ public:
 
 		core::HeaderMapEntry* entry = nullptr;
 		if(this->header.getInfoField("AF", entry)){
-			containers::InfoContainer<double> it_i(this->block.info_containers[1]);
+			containers::InfoContainer<double> it_i(this->variant_container.getBlock().info_containers[1]);
 			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
 				//if(it_i[i].size() < 3) continue;
-				//it[i].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+				//it[i].toVCFString(stream, this->header, this->variant_container.getBlock().index_entry.contigID, this->variant_container.getBlock().index_entry.minPosition);
 
 				//stream << (int)it_i[i][0];
 				for(U32 j = 0; j < it_i[i].size(); ++j)
@@ -687,7 +689,8 @@ public:
 	U64                 filesize;
 
 	// Actual data
-	block_entry_type    block;
+	//block_entry_type    block;
+	variant_container_type variant_container;
 
 	// Supportive objects
 	block_settings_type     block_settings;

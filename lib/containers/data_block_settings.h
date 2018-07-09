@@ -107,12 +107,7 @@ public:
 	{}
 
 	self_type& loadAll(const bool set = true){
-		this->contig(set, set);
-		this->positions(set, set);
-		this->controller(set, set);
-		this->quality(set, set);
-		this->names(set, set);
-		this->alleles(set, set);
+		this->loadAllMeta(true);
 		this->set_membership(set, set);
 		this->genotypes_all(set, set);
 		this->genotypes_rle(set, set);
@@ -180,9 +175,6 @@ public:
 		this->genotypes_simple(set, set);
 		this->genotypes_other(set, set);
 		this->genotypes_support.load = set;
-		this->contig.load = set;
-		this->positions.load = set;
-		this->set_membership.load = set;
 		return(*this);
 	}
 

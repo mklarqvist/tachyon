@@ -95,6 +95,8 @@ bool VariantReader::open(void){
 		return false;
 	}
 
+	this->variant_container << this->header;
+
 	// Keep track of start position
 	const U64 return_pos = this->stream.tellg();
 	this->stream.seekg(this->footer.offset_end_of_data);
@@ -117,39 +119,42 @@ bool VariantReader::nextBlock(){
 		return false;
 
 	// Reset and re-use
-	this->block.clear();
+	this->variant_container.reset();
 
-	if(!this->block.readHeaderFooter(this->stream))
+	if(!this->variant_container.getBlock().readHeaderFooter(this->stream))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.decompress(this->block.footer_support)){
+	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
+	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
 
 	// Parse settings
 	this->parseSettings();
+	if(this->variant_container.build() == false){
+		return false;
+	}
 
 	// Attempts to read a YON block with the provided
-	if(!this->block.read(this->stream, this->block_settings))
+	if(!this->variant_container.getBlock().read(this->stream, this->block_settings))
 		return false;
 
 	// encryption manager ascertainment
-	if(this->block.header.controller.anyEncrypted){
+	if(this->variant_container.anyEncrypted()){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption::EncryptionDecorator e;
-		if(!e.decryptAES256(this->block, this->keychain)){
+		if(!e.decryptAES256(this->variant_container.getBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->block)){
+	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -166,7 +171,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	}
 
 	// Reset and re-use
-	this->block.clear();
+	this->variant_container.getBlock().clear();
 
 	// Seek to target block ID with the help of the index
 	this->stream.seekg(index_entry.byte_offset);
@@ -175,36 +180,36 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 		return(false);
 	}
 
-	if(!this->block.readHeaderFooter(this->stream))
+	if(!this->variant_container.getBlock().readHeaderFooter(this->stream))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.decompress(this->block.footer_support)){
+	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return(false);
 	}
-	this->block.footer_support.buffer_data_uncompressed >> this->block.footer;
+	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
 	this->parseSettings();
 
 	// Attempts to read a YON block with the provided
-	if(!this->block.read(this->stream, this->block_settings))
+	if(!this->variant_container.getBlock().read(this->stream, this->block_settings))
 		return false;
 
 	// encryption manager ascertainment
-	if(this->block.header.controller.anyEncrypted){
+	if(this->variant_container.getBlock().header.controller.anyEncrypted){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption::EncryptionDecorator e;
-		if(!e.decryptAES256(this->block, this->keychain)){
+		if(!e.decryptAES256(this->variant_container.getBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->block)){
+	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -237,7 +242,7 @@ VariantReader::block_entry_type VariantReader::getBlock(){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->block)){
+	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
 		this->stream.seekg(position);
 		return block;
 	}
@@ -274,22 +279,22 @@ const int VariantReader::has_filter_field(const std::string& field_name) const{
 
 VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// New meta container
-	objects.meta_container = new meta_container_type(this->block);
+	objects.meta_container = new meta_container_type(this->variant_container.getBlock());
 
 	// New genotype containers if aplicable
-	if(this->block.header.controller.hasGT && block_settings.genotypes_all.load){
-		objects.genotype_container = new gt_container_type(this->block, *objects.meta_container);
+	if(this->variant_container.getBlock().header.controller.hasGT && block_settings.genotypes_all.load){
+		objects.genotype_container = new gt_container_type(this->variant_container.getBlock(), *objects.meta_container);
 		objects.genotype_summary   = new objects_type::genotype_summary_type(10);
 	}
 
 	// FORMAT-specific containers
 	// Store as double pointers to avoid memory collisions because
 	// FORMAT containers have different class members
-	objects.n_loaded_format   = this->block.n_format_loaded;
+	objects.n_loaded_format   = this->variant_container.getBlock().n_format_loaded;
 	objects.format_containers = new format_interface_type*[objects.n_loaded_format];
 
-	if(this->block.n_format_loaded){
-		for(U32 i = 0; i < this->block.n_format_loaded; ++i){
+	if(this->variant_container.getBlock().n_format_loaded){
+		for(U32 i = 0; i < this->variant_container.getBlock().n_format_loaded; ++i){
 			// Remap GLOBAL identifier to the LOCAL identifier
 			const U32 global_key = block_settings.load_format_ID_loaded[i].offset->data_header.global_key;
 			// Pattern matches of GLOBAL in LOCAL
@@ -297,14 +302,14 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 			std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
 
 			if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-				objects.format_containers[i] = new containers::FormatContainer<S32>(this->block.format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
+				objects.format_containers[i] = new containers::FormatContainer<S32>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
 				objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
 			} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
 					  this->header.format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->block.format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
+				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
 				objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
 			} else if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-				objects.format_containers[i] = new containers::FormatContainer<float>(this->block.format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
+				objects.format_containers[i] = new containers::FormatContainer<float>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
 				objects.format_field_names.push_back(this->header.format_fields[global_key].ID);
 			} else {
 				objects.format_containers[i] = new containers::FormatContainer<U32>;
@@ -316,11 +321,11 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// INFO-specific containers
 	// Store as double pointers to avoid memory collisions because
 	// INFO containers have different class members
-	objects.n_loaded_info   = this->block.n_info_loaded;
+	objects.n_loaded_info   = this->variant_container.getBlock().n_info_loaded;
 	objects.info_containers = new info_interface_type*[objects.n_loaded_info];
 
-	if(this->block.n_info_loaded){
-		for(U32 i = 0; i < this->block.n_info_loaded; ++i){
+	if(this->variant_container.getBlock().n_info_loaded){
+		for(U32 i = 0; i < this->variant_container.getBlock().n_info_loaded; ++i){
 			// Remap GLOBAL identifier to the LOCAL identifier
 			const U32 global_key = block_settings.load_info_ID_loaded[i].offset->data_header.global_key;
 			// Pattern matches of GLOBAL in LOCAL
@@ -328,14 +333,14 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
 
 			if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-				objects.info_containers[i] = new containers::InfoContainer<S32>(this->block.info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<S32>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
 				objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
 			} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
 					  this->header.info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->block.info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
 				objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
 			} else if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-				objects.info_containers[i] = new containers::InfoContainer<float>(this->block.info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<float>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
 				objects.info_field_names.push_back(this->header.info_fields[global_key].ID);
 			} else {
 				objects.info_containers[i] = new containers::InfoContainer<U32>();
@@ -350,22 +355,22 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	//
 	// This vector stores the number of INFO fields having set membership with this
 	// particular hash pattern
-	objects.info_id_fields_keep   = std::vector<U32>(this->block.footer.n_info_patterns,   0);
-	objects.format_id_fields_keep = std::vector<U32>(this->block.footer.n_format_patterns, 0);
+	objects.info_id_fields_keep   = std::vector<U32>(this->variant_container.getBlock().footer.n_info_patterns,   0);
+	objects.format_id_fields_keep = std::vector<U32>(this->variant_container.getBlock().footer.n_format_patterns, 0);
 
 	// This vector of vectors keeps the local INFO identifiers for the matched global
 	// identifiers in a given hash pattern
 	//
 	// For example: x[5] contains the local IDs for loaded INFO streams for pattern ID 5
-	objects.local_match_keychain_info   = std::vector< std::vector<U32> >(this->block.footer.n_info_patterns);
-	objects.local_match_keychain_format = std::vector< std::vector<U32> >(this->block.footer.n_format_patterns);
+	objects.local_match_keychain_info   = std::vector< std::vector<U32> >(this->variant_container.getBlock().footer.n_info_patterns);
+	objects.local_match_keychain_format = std::vector< std::vector<U32> >(this->variant_container.getBlock().footer.n_format_patterns);
 
 	// If loading all INFO values then return them in the ORIGINAL order
 	if(this->block_settings.info_all.load){
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){ // Number of info patterns
+			for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < block_settings.load_info_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_info_ID_loaded[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_info_ID_loaded[k].offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -375,10 +380,10 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	}
 	// If loading custom INFO fields then return them in the REQUESTED order
 	else {
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){ // i = Number of info patterns
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < block_settings.load_info_ID_loaded.size(); ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->block.footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->block.footer.info_offsets[this->block.footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_info_ID_loaded[k].offset->data_header.global_key){
+				for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
+					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_info_ID_loaded[k].offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -390,10 +395,10 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// For FORMAT
 	// If loading all FORMAT values then return them in the ORIGINAL order
 	if(this->block_settings.format_all.load){
-		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->block.footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // Number of info patterns
+			for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < block_settings.load_format_ID_loaded.size(); ++k){ // Number of loaded INFO identifiers
-					if(this->block.footer.format_offsets[this->block.footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_format_ID_loaded[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_format_ID_loaded[k].offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -403,10 +408,10 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	}
 	// If loading custom FORMAT fields then return them in the REQUESTED order
 	else {
-		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){ // i = Number of info patterns
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < block_settings.load_format_ID_loaded.size(); ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->block.footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->block.footer.format_offsets[this->block.footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_format_ID_loaded[k].offset->data_header.global_key){
+				for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
+					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == block_settings.load_format_ID_loaded[k].offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -432,7 +437,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 			const core::HeaderMapEntry* map = this->header.getInfoField(ADDITIONAL_INFO[i]);
 			// Find local key
 			for(U32 k = 0; k < this->block_settings.load_info_ID_loaded.size(); ++k){
-				if(this->block.info_containers[k].header.getGlobalKey() == map->IDX){
+				if(this->variant_container.getBlock().info_containers[k].header.getGlobalKey() == map->IDX){
 					execute_mask |= 1 << i;
 					additional_local_keys_found.push_back(std::pair<U32,U32>(k,i));
 				}
@@ -444,11 +449,11 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// Cycle over INFO patterns
 	objects.additional_info_execute_flag_set = std::vector< U16 >(1, 65535);
 	if(ADDITIONAL_INFO.size()){
-		objects.additional_info_execute_flag_set.reserve(this->block.footer.n_info_patterns);
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
+		objects.additional_info_execute_flag_set.reserve(this->variant_container.getBlock().footer.n_info_patterns);
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){
 			objects.additional_info_execute_flag_set[i] = (1 << ADDITIONAL_INFO.size()) - 1;
 			for(U32 j = 0; j < additional_local_keys_found.size(); ++j){
-				if(this->block.footer.info_bit_vectors[i][j]){
+				if(this->variant_container.getBlock().footer.info_bit_vectors[i][j]){
 					objects.additional_info_execute_flag_set[i] &= ~(1 << additional_local_keys_found[j].second);
 				}
 			}
@@ -469,8 +474,8 @@ const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std:
 		// Place in array
 		// 0 = false, 1 = true
 		S32 local_key = -1;
-		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-			if(this->block.footer.info_offsets[i].data_header.global_key == global_info_value){
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_streams; ++i){
+			if(this->variant_container.getBlock().footer.info_offsets[i].data_header.global_key == global_info_value){
 				local_key = i;
 			}
 		}
@@ -480,10 +485,10 @@ const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std:
 			return ret;
 		}
 
-		ret.resize(this->block.footer.n_info_patterns, false);
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i){
-			//std::cerr << i << '\t' << this->block.footer.info_bit_vectors[i][local_key] << std::endl;
-			ret[i] = this->block.footer.info_bit_vectors[i][local_key];
+		ret.resize(this->variant_container.getBlock().footer.n_info_patterns, false);
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){
+			//std::cerr << i << '\t' << this->variant_container.getBlock().footer.info_bit_vectors[i][local_key] << std::endl;
+			ret[i] = this->variant_container.getBlock().footer.info_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);
@@ -494,8 +499,8 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 	std::vector<bool> ret;
 	if(global_format_value >= 0){
 		S32 local_key = -1;
-		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-			if(this->block.footer.format_offsets[i].data_header.global_key == global_format_value){
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_streams; ++i){
+			if(this->variant_container.getBlock().footer.format_offsets[i].data_header.global_key == global_format_value){
 				local_key = i;
 			}
 		}
@@ -508,10 +513,10 @@ const std::vector<bool> VariantReader::get_format_field_pattern_matches(const st
 		// Collect all matches
 		// Place in array
 		// 0 = false, 1 = true
-		ret.resize(this->block.footer.n_format_patterns, false);
-		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i){
-			//std::cerr << i << '\t' << this->block.index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
-			ret[i] = this->block.footer.format_bit_vectors[i][local_key];
+		ret.resize(this->variant_container.getBlock().footer.n_format_patterns, false);
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){
+			//std::cerr << i << '\t' << this->variant_container.getBlock().index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
+			ret[i] = this->variant_container.getBlock().footer.format_bit_vectors[i][local_key];
 		}
 	}
 	return(ret);
@@ -533,8 +538,8 @@ bool VariantReader::parseSettings(void){
 			const S32 global_key = this->has_info_field(this->block_settings.info_list[i]);
 			if(global_key >= 0){
 				S32 local_key = -1;
-				for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-					if(this->block.footer.info_offsets[i].data_header.global_key == global_key){
+				for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_streams; ++i){
+					if(this->variant_container.getBlock().footer.info_offsets[i].data_header.global_key == global_key){
 						local_key = i;
 						this->block_settings.info_ID_list.push_back(local_key);
 
@@ -546,7 +551,7 @@ bool VariantReader::parseSettings(void){
 													SettingsMap(
 															info_matches++, // iterator value
 															local_key,      // local index id
-															&this->block.footer.info_offsets[local_key]) // offset
+															&this->variant_container.getBlock().footer.info_offsets[local_key]) // offset
 													);
 						break;
 					}
@@ -558,8 +563,8 @@ bool VariantReader::parseSettings(void){
 			}
 		}
 	} else {
-		for(U32 i = 0; i < this->block.footer.n_info_streams; ++i){
-			const U32 global_key = this->block.footer.info_offsets[i].data_header.global_key;
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_streams; ++i){
+			const U32 global_key = this->variant_container.getBlock().footer.info_offsets[i].data_header.global_key;
 			this->block_settings.info_map[i].stream_id_local  = i;
 			this->block_settings.info_map[i].stream_id_global = global_key;
 			this->block_settings.info_map[i].load_order_index = i;
@@ -573,8 +578,8 @@ bool VariantReader::parseSettings(void){
 			const S32 global_key = this->has_format_field(this->block_settings.format_list[i]);
 			if(global_key >= 0){
 				S32 local_key = -1;
-				for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-					if(this->block.footer.format_offsets[i].data_header.global_key == global_key){
+				for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_streams; ++i){
+					if(this->variant_container.getBlock().footer.format_offsets[i].data_header.global_key == global_key){
 						local_key = i;
 						this->block_settings.format_ID_list.push_back(local_key);
 
@@ -586,7 +591,7 @@ bool VariantReader::parseSettings(void){
 													SettingsMap(
 															format_matches++, // iterator value
 															local_key,        // local index id
-															&this->block.footer.format_offsets[local_key]) // offset
+															&this->variant_container.getBlock().footer.format_offsets[local_key]) // offset
 													);
 						break;
 					}
@@ -598,8 +603,8 @@ bool VariantReader::parseSettings(void){
 			}
 		}
 	} else {
-		for(U32 i = 0; i < this->block.footer.n_format_streams; ++i){
-			const U32 global_key = this->block.footer.format_offsets[i].data_header.global_key;
+		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_streams; ++i){
+			const U32 global_key = this->variant_container.getBlock().footer.format_offsets[i].data_header.global_key;
 			this->block_settings.format_map[i].stream_id_local  = i;
 			this->block_settings.format_map[i].stream_id_global = global_key;
 			this->block_settings.format_map[i].load_order_index = i;
@@ -616,15 +621,15 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 {
 	if(outputBuffer.back() != '\t') outputBuffer += '\t';
 
-	if(this->block_settings.display_filter && this->block.footer.n_filter_streams){
-		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
+		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
 			// Local key -> global key
-			outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
 			}
 		} else
 			outputBuffer += '.';
@@ -637,17 +642,17 @@ void VariantReader::printFILTERCustom(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
 {
-	if(this->block_settings.display_filter && this->block.footer.n_filter_streams){
-		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
+		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
 			if(outputBuffer.back() != this->block_settings.custom_delimiter_char) outputBuffer += this->block_settings.custom_delimiter_char;
 
 			// Local key -> global key
-			outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
 			}
 		} else
 			outputBuffer += '.';
@@ -661,19 +666,19 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 					 const U32& position,
 					 const objects_type& objects) const
 {
-	if(this->block.footer.n_filter_streams){
-		const U32& n_filter_keys = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->block.footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+	if(this->variant_container.getBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
+		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
 		if(n_filter_keys){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
 			// Local key -> global key
 			outputBuffer += "\"FILTER-";
-			outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
 			outputBuffer += "\":true";
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ',';
 				outputBuffer += "\"FILTER-";
-				outputBuffer += this->header.filter_fields[this->block.footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
 				outputBuffer += "\":true";
 			}
 		}
@@ -686,26 +691,26 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 	                        const objects_type& objects,
 	               std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(this->block_settings.format_all.display && this->block.n_format_loaded){
-		if(this->block.n_format_loaded){
-			const U32& n_format_keys = this->block.footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].n_keys;
-			const U32* format_keys   = this->block.footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].local_keys;
+	if(this->block_settings.format_all.display && this->variant_container.getBlock().n_format_loaded){
+		if(this->variant_container.getBlock().n_format_loaded){
+			const U32& n_format_keys = this->variant_container.getBlock().footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].n_keys;
+			const U32* format_keys   = this->variant_container.getBlock().footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].local_keys;
 			if(n_format_keys){
 				if(buffer.back() != delimiter) buffer += delimiter;
 
 				// Print key map
-				buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[0]].data_header.global_key].ID;
+				buffer += this->header.format_fields[this->variant_container.getBlock().footer.format_offsets[format_keys[0]].data_header.global_key].ID;
 				for(U32 i = 1; i < n_format_keys; ++i){
 					buffer += ':';
-					buffer += this->header.format_fields[this->block.footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+					buffer += this->header.format_fields[this->variant_container.getBlock().footer.format_offsets[format_keys[i]].data_header.global_key].ID;
 				}
 				buffer += delimiter;
 
 				// Todo: print if no GT data
 				// Begin print FORMAT data for each sample
-				if(this->block.header.controller.hasGT){
-					if(this->block_settings.ppa.load && this->block.header.controller.hasGTPermuted){
-						objects.genotype_container->at(position).getObjects(this->header.getSampleNumber(), genotypes_unpermuted, this->block.ppa_manager);
+				if(this->variant_container.getBlock().header.controller.hasGT){
+					if(this->block_settings.ppa.load && this->variant_container.getBlock().header.controller.hasGTPermuted){
+						objects.genotype_container->at(position).getObjects(this->header.getSampleNumber(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
 					} else {
 						objects.genotype_container->at(position).getObjects(this->header.getSampleNumber(), genotypes_unpermuted);
 					}
@@ -761,7 +766,7 @@ void VariantReader::printFORMATCustom(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || this->block.n_format_loaded){
+	if(block_settings.format_all.display || this->variant_container.getBlock().n_format_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -809,7 +814,7 @@ void VariantReader::printFORMATCustomVector(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || this->block.n_format_loaded){
+	if(block_settings.format_all.display || this->variant_container.getBlock().n_format_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -850,7 +855,7 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || this->block.n_format_loaded){
+	if(block_settings.format_all.display || this->variant_container.getBlock().n_format_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
@@ -894,11 +899,11 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 				  const objects_type& objects) const
 {
 	// Check if any INFO data exists at all
-	if(this->block.footer.n_info_patterns == 0){
+	if(this->variant_container.getBlock().footer.n_info_patterns == 0){
 		return;
 	}
 
-	if(block_settings.info_all.display || this->block.n_info_loaded){
+	if(block_settings.info_all.display || this->variant_container.getBlock().n_info_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -913,7 +918,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ";";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
-				if(this->header.info_fields[this->block.footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->header.info_fields[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
 					continue;
 				}
 				if(objects.info_containers[targetKeys[i]]->emptyPosition(position)) continue;
@@ -939,13 +944,13 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 					 const U32& position,
 					 const objects_type& objects) const
 {
-	if(block_settings.info_all.display || this->block.n_info_loaded){
+	if(block_settings.info_all.display || this->variant_container.getBlock().n_info_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
 
 			// Check if this target container is a FLAG
-			if(this->header.info_fields[this->block.info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+			if(this->header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += objects.info_field_names[targetKeys[0]];
 			} else {
 				// Check if the positon is empty
@@ -956,7 +961,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += delimiter;
-				if(this->header.info_fields[this->block.info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 					outputBuffer +=objects.info_field_names[targetKeys[i]];
 					continue;
 				}
@@ -972,7 +977,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 						 const U32& position,
 						 const objects_type& objects) const
 {
-	if(block_settings.info_all.display || this->block.n_info_loaded){
+	if(block_settings.info_all.display || this->variant_container.getBlock().n_info_loaded){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
@@ -980,7 +985,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 			outputBuffer += "\"INFO-";
 			outputBuffer += objects.info_field_names[targetKeys[0]];
 			outputBuffer += "\":";
-			if(this->header.info_fields[this->block.info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+			if(this->header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += "true";
 			} else {
 				objects.info_containers[targetKeys[0]]->to_json_string(outputBuffer, position);
@@ -991,7 +996,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 				outputBuffer += "\"INFO-";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
 				outputBuffer += "\":";
-				if(this->header.info_fields[this->block.info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += "true";
 					continue;
 				}
@@ -1201,7 +1206,7 @@ const U32 VariantReader::outputBlockCustom(void) const{
 
 	if(block_settings.output_json) print_meta = &utility::to_json_string;
 
-	if(block_settings.format_all.display || this->block.n_format_loaded){
+	if(block_settings.format_all.display || this->variant_container.getBlock().n_format_loaded){
 		if(block_settings.output_json){
 			print_format = &self_type::printFORMATCustomVectorJSON;
 		} else {
@@ -1210,7 +1215,7 @@ const U32 VariantReader::outputBlockCustom(void) const{
 		}
 	}
 
-	if(block_settings.info_all.display || this->block.n_info_loaded){
+	if(block_settings.info_all.display || this->variant_container.getBlock().n_info_loaded){
 		if(block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
 		else print_info = &self_type::printINFOCustom;
 	}

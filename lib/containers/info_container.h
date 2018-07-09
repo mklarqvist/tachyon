@@ -324,6 +324,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	U32 current_offset = 0;
 	U32 stride_offset = 0;
+
 	for(U32 i = 0; i < this->size(); ++i){
 		// There are no INFO fields
 		if(meta_container[i].getInfoPatternID() == -1){

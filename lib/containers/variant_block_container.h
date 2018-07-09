@@ -72,6 +72,13 @@ public:
 	inline bool operator<(const self_type& other) const{ return(this->offset->data_header.offset < other.offset->data_header.offset); }
 	inline bool operator>(const self_type& other) const{ return(!((*this) < other)); }
 
+	void operator()(const U32& load_order_index, const U32& stream_id_local, const S32& stream_id_global, const header_type* offset){
+		this->load_order_index = load_order_index;
+		this->stream_id_local = stream_id_local;
+		this->stream_id_global = stream_id_global;
+		this->offset = offset;
+	}
+
 public:
 	S32 load_order_index;      // Loaded order index
 	S32 stream_id_local;       // Local target index
@@ -92,14 +99,23 @@ private:
 	typedef const value_type*           const_pointer;
 
 public:
-	VariantBlockMapperContainer();
-	VariantBlockMapperContainer(const size_type& start_capacity);
-	~VariantBlockMapperContainer();
+	VariantBlockMapperContainer(){}
+	~VariantBlockMapperContainer(){}
 
-	reference operator[](const U32& position){ return(this->values_[position]); }
-	const_reference operator[](const U32& position) const{ return(this->values_[position]); }
-	pointer operator[](const U32& position){ return(&this->values_[position]); }
-	const_pointer operator[](const U32& position) const{ return(&this->values_[position]); }
+    // Capacity
+	inline const bool       empty(void) const{ return(this->values_.empty()); }
+	inline const size_type& size(void) const{ return(this->size()); }
+
+	// Element access
+	inline pointer         data(void){ return(&this->values_[0]); }
+	inline const_pointer   data(void) const{ return(&this->values_[0]); }
+	inline reference       operator[](const U32& position){ return(this->values_[position]); }
+	inline const_reference operator[](const U32& position) const{ return(this->values_[position]); }
+	inline reference       at(const U32& position){ return(this->values_[position]); }
+	inline const_reference at(const U32& position) const{ return(this->values_[position]); }
+
+	inline void clear(void){ this->values_.clear(); }
+	inline void resize(const size_t& new_size){ this->values_.resize(new_size); }
 
 private:
 	std::vector<value_type> values_;
@@ -123,13 +139,62 @@ private:
 	typedef const value_type*           const_pointer;
 	typedef VariantBlockMapperEntry     map_type;
 	typedef VariantBlockFooter          block_footer_type;
+	 typedef core::VariantHeader        header_type;
 
 public:
-	VariantBlockMapper();
-	VariantBlockMapper(const block_footer_type& block_footer);
-	~VariantBlockMapper();
+	VariantBlockMapper() :
+		n_format_fields(0),
+		n_info_fields(0)
+	{
 
-	bool update(const block_footer_type& block_footer);
+	}
+
+	VariantBlockMapper(const size_t n_format_fields, const size_t n_info_fields) :
+		n_format_fields(n_format_fields),
+		n_info_fields(n_info_fields)
+	{
+
+	}
+
+	~VariantBlockMapper(){}
+
+	self_type& operator<<(const header_type& header){
+		this->n_format_fields = header.header_magic.n_format_values;
+		this->n_info_fields   = header.header_magic.n_info_values;
+		return(*this);
+	}
+
+	/**<
+	 * Update the current mapper object with the provided block footer
+	 * @param block_footer Target block footer used for mapping
+	 * @return             Returns TRUE if successful or FALSE otherwise
+	 */
+	bool update(const block_footer_type& block_footer){
+		this->format_container_global_.clear();
+		this->format_container_global_.resize(this->n_format_fields);
+		this->format_container_local_.clear();
+		this->format_container_local_.resize(block_footer.n_format_streams);
+
+		for(U32 i = 0; i < block_footer.n_format_streams; ++i){
+			// Set global -> local mapping
+			this->format_container_global_[block_footer.format_offsets[i].data_header.global_key](i, i, block_footer.format_offsets[i].data_header.global_key, &block_footer.format_offsets[i]);
+			// Set local -> global mapping
+			this->format_container_local_[i](i, i, block_footer.format_offsets[i].data_header.global_key, &block_footer.format_offsets[i]);
+		}
+
+		this->info_container_global_.clear();
+		this->info_container_global_.resize(this->n_info_fields);
+		this->info_container_local_.clear();
+		this->info_container_local_.resize(block_footer.n_info_streams);
+		for(U32 i = 0; i < block_footer.n_info_streams; ++i){
+			// Set global -> local mapping
+			this->info_container_global_[block_footer.info_offsets[i].data_header.global_key](i, i, block_footer.info_offsets[i].data_header.global_key, &block_footer.info_offsets[i]);
+			// Set local -> global mapping
+			this->info_container_local_[i](i, i, block_footer.info_offsets[i].data_header.global_key, &block_footer.info_offsets[i]);
+		}
+
+		return true;
+	}
 
 	inline bool isLoadedFormatGlobal(const U32& key) const;
 	inline bool isLoadedInfoGlobal(const U32& key) const;
@@ -141,6 +206,8 @@ public:
 	map_type& getLocalInfo(const U32& key);
 
 private:
+	size_type n_format_fields;
+	size_type n_info_fields;
 	value_type info_container_global_;  // Global -> local mapping
 	value_type info_container_local_;   // Local -> global mapping
 	value_type info_container_loaded_;  // Loaded order -> local
@@ -163,6 +230,7 @@ private:
     typedef VariantBlockHeader    block_header_type;
     typedef VariantBlockFooter    block_footer_type;
     typedef VariantBlockMapper    block_mapper_type;
+    typedef core::VariantHeader   header_type;
 	typedef containers::VariantBlock             block_entry_type;
 	typedef containers::MetaContainer            meta_container_type;
 	typedef containers::GenotypeContainer        gt_container_type;
@@ -173,11 +241,41 @@ private:
 	typedef HashContainer                        hash_container_type;
 
 public:
-	VariantBlockContainer(void);
-	~VariantBlockContainer(void);
+	VariantBlockContainer()
+	{
+
+	}
+
+	VariantBlockContainer(const header_type& header) :
+		mapper_(header.header_magic.n_format_values, header.header_magic.n_info_values)
+	{
+
+	}
+
+	~VariantBlockContainer(void){}
+
+	self_type& operator<<(const header_type& header){
+		this->mapper_ << header;
+		return(*this);
+	}
+
+	void reset(void){
+		this->block_.clear();
+		// Todo: reset hashes
+	}
+
+	bool build(){
+		if(this->mapper_.update(this->block_.footer) == false){
+			std::cerr << utility::timestamp("ERROR") << "Failed to build mapper..." << std::endl;
+			return false;
+		}
+		return(true);
+	}
 
 	inline block_type& getBlock(void){ return(this->block_); }
 	inline const block_type& getBlock(void) const{ return(this->block_); }
+
+	inline const bool anyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
 
 private:
 	block_mapper_type    mapper_; // global -> local, local -> global, loaded or not, primitive type
