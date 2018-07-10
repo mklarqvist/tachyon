@@ -281,7 +281,7 @@ bool DataBlockSettings::parseSettings(const header_type& header){
 
 	this->format_ID_list.clear();
 	for(U32 i = 0; i < this->format_list.size(); ++i){
-		const core::HeaderMapEntry* map_entry = header.getFormatField(this->info_list[i]);
+		const core::HeaderMapEntry* map_entry = header.getFormatField(this->format_list[i]);
 		if(map_entry == nullptr) continue;
 		const S32 global_key = map_entry->IDX;
 		if(global_key >= 0){
