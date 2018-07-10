@@ -215,5 +215,89 @@ bool VariantHeader::buildHashTables(void){
 	return true;
 }
 
+void VariantHeader::operator=(const vcf_header_type& vcf_header){
+	this->header_magic.n_contigs       = vcf_header.contigs.size();
+	this->header_magic.n_samples       = vcf_header.sampleNames.size();
+	this->header_magic.n_info_values   = vcf_header.info_map.size();
+	this->header_magic.n_format_values = vcf_header.format_map.size();
+	this->header_magic.n_filter_values = vcf_header.filter_map.size();
+
+	if(vcf_header.literal_lines.size()){
+		this->literals += vcf_header.literal_lines[0];
+		for(U32 i = 1; i < vcf_header.literal_lines.size(); ++i)
+			this->literals += "\n" + vcf_header.literal_lines[i];
+	}
+
+	this->header_magic.l_literals     = this->literals.size();
+
+	// Cleanup previous
+	delete [] this->contigs;
+	delete [] this->samples;
+	delete [] this->info_fields;
+	delete [] this->filter_fields;
+	delete [] this->format_fields;
+
+	this->contigs = new contig_type[this->header_magic.getNumberContigs()];
+	for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i){
+		this->contigs[i] = vcf_header.contigs[i];
+		this->contigs[i].contigID = i;
+	}
+
+	this->samples = new sample_type[this->header_magic.getNumberSamples()];
+	for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)
+		this->samples[i] = vcf_header.sampleNames[i];
+
+	this->info_fields = new map_entry_type[this->header_magic.n_info_values];
+	for(U32 i = 0; i < this->header_magic.n_info_values; ++i){
+		this->info_fields[i] = vcf_header.info_map[i];
+		this->info_fields[i].IDX = i; // update idx to local
+	}
+
+	this->format_fields = new map_entry_type[this->header_magic.n_format_values];
+	for(U32 i = 0; i < this->header_magic.n_format_values; ++i){
+		this->format_fields[i] = vcf_header.format_map[i];
+		this->format_fields[i].IDX = i; // update idx to local
+	}
+
+	this->filter_fields = new map_entry_type[this->header_magic.n_filter_values];
+	for(U32 i = 0; i < this->header_magic.n_filter_values; ++i){
+		this->filter_fields[i] = vcf_header.filter_map[i];
+		this->filter_fields[i].IDX = i; // update idx to local
+	}
+
+	this->buildHashTables();
+}
+
+std::ostream& VariantHeader::writeVCFHeaderString(std::ostream& stream, const bool showFormat) const{
+	stream << this->literals;
+	if(this->literals.size()) stream.put('\n');
+	if(showFormat){
+		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+		if(this->header_magic.n_samples){
+			stream.put('\t');
+			stream << this->samples[0].name;
+			for(U32 i = 1; i < this->header_magic.n_samples; ++i){
+				stream << "\t" << this->samples[i].name;
+			}
+		}
+	} else {
+		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+	}
+	stream.put('\n');
+	return(stream);
+}
+
+std::ostream& VariantHeader::write(std::ostream& stream){
+	stream << this->header_magic;
+	for(U32 i = 0; i < this->header_magic.n_contigs; ++i) stream << this->contigs[i];
+	for(U32 i = 0; i < this->header_magic.n_samples; ++i) stream << this->samples[i];
+	for(U32 i = 0; i < this->header_magic.n_info_values; ++i)   stream << this->info_fields[i];
+	for(U32 i = 0; i < this->header_magic.n_format_values; ++i) stream << this->format_fields[i];
+	for(U32 i = 0; i < this->header_magic.n_filter_values; ++i) stream << this->filter_fields[i];
+
+	stream.write(&this->literals[0], this->literals.size());
+	return(stream);
+}
+
 }
 }

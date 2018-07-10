@@ -282,14 +282,12 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 
 	// FORMAT-specific containers
 	// Store as double pointers to avoid memory collisions because
-	// FORMAT containers have different class members
+	// FORMAT containers have different intrinsic class members
 	objects.n_loaded_format   = this->variant_container.mapper_.format_container_loaded_.size();
 	objects.format_containers = new format_interface_type*[objects.n_loaded_format];
 
 	if(objects.n_loaded_format){
 		for(U32 i = 0; i < objects.n_loaded_format; ++i){
-			// Remap GLOBAL identifier to the LOCAL identifier
-
 			const U32 global_key = this->variant_container.mapper_.format_container_loaded_[i].stream_id_global;
 
 			// Pattern matches of GLOBAL in LOCAL
@@ -321,7 +319,6 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 
 	if(objects.n_loaded_info){
 		for(U32 i = 0; i < objects.n_loaded_info; ++i){
-			// Remap GLOBAL identifier to the LOCAL identifier
 			const U32 global_key = this->variant_container.mapper_.info_container_loaded_[i].stream_id_global;
 
 			// Pattern matches of GLOBAL in LOCAL

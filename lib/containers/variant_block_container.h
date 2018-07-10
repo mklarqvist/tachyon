@@ -127,6 +127,7 @@ private:
  * Global -> local
  * Local  -> global
  * Loaded order -> local
+ * Patterns -> keys
  */
 class VariantBlockMapper {
 private:

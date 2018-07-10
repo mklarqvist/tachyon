@@ -1,9 +1,9 @@
 #ifndef CONTAINERS_INFO_CONTAINER_STRING_H_
 #define CONTAINERS_INFO_CONTAINER_STRING_H_
 
-#include "info_container.h"
 #include "meta_container.h"
 #include "stride_container.h"
+#include "info_container.h"
 
 namespace tachyon{
 namespace containers{

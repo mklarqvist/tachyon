@@ -358,7 +358,7 @@ public:
 	void updateContainer(bool reformat = true);
 
 	/**<
-	 *
+	 * Currently unused
 	 */
 	void deltaEncode(void);
 

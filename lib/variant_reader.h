@@ -27,6 +27,7 @@
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_objects.h"
 #include "core/variant_reader_settings.h"
+#include "core/data_block_settings.h"
 #include "index/index.h"
 #include "math/basic_vector_math.h"
 #include "math/fisher_math.h"

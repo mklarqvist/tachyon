@@ -4,7 +4,7 @@
 #include "algorithm/permutation/permutation_manager.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
-#include "data_block_settings.h"
+#include "core/data_block_settings.h"
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
