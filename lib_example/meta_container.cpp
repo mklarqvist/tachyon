@@ -40,8 +40,8 @@ int main(int argc, char** argv){
 	}
 
 	/**<
-	 *  The `FormatContainer` class stores the data for each variant
-	 *  for each individual as container[variant][sample][data]
+	 *  The `MetaContainer` class stores the site-centric information
+	 *  for each site
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container

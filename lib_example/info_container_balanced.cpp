@@ -40,8 +40,11 @@ int main(int argc, char** argv){
 	}
 
 	/**<
-	 *  The `FormatContainer` class stores the data for each variant
-	 *  for each individual as container[variant][sample][data]
+	 * The `InfoContainer` class stores the data for each variant as
+	 * container[variant][data]. Both `InfoContainer` and `FormatContainer`
+	 * supports variant-balancing of the classes. Balancing refers to filling
+	 * variant sites in the file with empty objects if no target data is present
+	 * at that site.
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container

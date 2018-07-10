@@ -23,7 +23,7 @@ public:
 };
 
 /**<
- * Settings
+ * Load and display Settings for the basic variant data block
  */
 struct DataBlockSettings{
 public:
@@ -48,14 +48,9 @@ public:
 	self_type& loadFORMAT(const std::string& field_name);
 	self_type& loadFORMAT(const U32 field_id);
 	self_type& setCustomDelimiter(const char delimiter);
+
 	bool parse(const header_type& header);
 	bool parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false);
-
-	/**<
-	 *
-	 * @param header
-	 * @return
-	 */
 	bool parseSettings(const header_type& header);
 
 public:

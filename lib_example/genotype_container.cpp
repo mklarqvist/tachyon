@@ -40,8 +40,8 @@ int main(int argc, char** argv){
 	reader.getBlockSettings().loadGenotypes(true).loadAllMeta(true).loadPermutationArray(true);
 
 	/**<
-	 *  The `FormatContainer` class stores the data for each variant
-	 *  for each individual as container[variant][sample][data]
+	 *  The `GenotypeContaier` class stores the genotype information in a site-centric
+	 *  fashion
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
