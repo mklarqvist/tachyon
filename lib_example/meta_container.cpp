@@ -45,7 +45,7 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.block);
+		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
 
 		for(U32 variant = 0; variant < meta.size(); ++variant){
 			// Write the data to `cout` in `VCF` formatting

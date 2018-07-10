@@ -45,10 +45,10 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.block);
+		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
 
 	    // Genotype container
-		tachyon::containers::GenotypeContainer gt(reader.block, meta);
+		tachyon::containers::GenotypeContainer gt(reader.variant_container.getBlock(), meta);
 
 		for(U32 i = 0; i < gt.size(); ++i){
 			// All of these functions are in relative terms very expensive!
@@ -58,7 +58,7 @@ int main(int argc, char** argv){
 			// Vector of genotype objects (high level permuted)
 			std::vector<tachyon::core::GTObject> objects_all = gt[i].getObjects(reader.header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<tachyon::core::GTObject> objects_true = gt[i].getObjects(reader.header.getSampleNumber(), reader.block.ppa_manager);
+			std::vector<tachyon::core::GTObject> objects_true = gt[i].getObjects(reader.header.getSampleNumber(), reader.variant_container.getBlock().ppa_manager);
 
 			// Print the difference
 			std::cout << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
