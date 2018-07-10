@@ -117,20 +117,20 @@ CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 C_SOURCE = \
 lib/third_party/xxhash/xxhash.c \
 lib/third_party/zlib/adler32.c \
-lib/third_party/zlib/compress.c \
 lib/third_party/zlib/crc32.c \
 lib/third_party/zlib/deflate.c \
-lib/third_party/zlib/gzclose.c \
-lib/third_party/zlib/gzlib.c \
-lib/third_party/zlib/gzread.c \
-lib/third_party/zlib/gzwrite.c \
 lib/third_party/zlib/infback.c \
 lib/third_party/zlib/inffast.c \
 lib/third_party/zlib/inflate.c \
 lib/third_party/zlib/inftrees.c \
 lib/third_party/zlib/trees.c \
+lib/third_party/zlib/zutil.c \
+lib/third_party/zlib/compress.c \
 lib/third_party/zlib/uncompr.c \
-lib/third_party/zlib/zutil.c 
+lib/third_party/zlib/gzclose.c \
+lib/third_party/zlib/gzlib.c \
+lib/third_party/zlib/gzread.c \
+lib/third_party/zlib/gzwrite.c \
 
 OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
