@@ -153,7 +153,7 @@ public:
 	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
 		int format_field_global_id = this->has_format_field(field_name);
 		if(format_field_global_id >= 0){
-			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
+			const U32 target_local_id = this->variant_container.mapper_.format_container_global_[format_field_global_id].load_order_index;
 			return(new containers::FormatContainer<T>(this->variant_container.getBlock().format_containers[target_local_id], this->header.getSampleNumber()));
 		}
 		else return nullptr;
@@ -182,7 +182,7 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
+			const U32 target_local_id = this->variant_container.mapper_.format_container_global_[format_field_global_id].load_order_index;
 
 			return(new containers::FormatContainer<T>(this->variant_container.getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header.getSampleNumber()));
 		}
@@ -198,7 +198,7 @@ public:
 	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
 		int info_field_global_id = this->has_info_field(field_name);
 		if(info_field_global_id >= 0){
-			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
+			const U32 target_local_id = this->variant_container.mapper_.info_container_global_[info_field_global_id].load_order_index;
 			return(new containers::InfoContainer<T>(this->variant_container.getBlock().info_containers[target_local_id]));
 		}
 		else return nullptr;
@@ -228,7 +228,7 @@ public:
 			if(matches == 0)
 				return nullptr;
 
-			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
+			const U32 target_local_id = this->variant_container.mapper_.info_container_global_[info_field_global_id].load_order_index;
 
 
 			return(new containers::InfoContainer<T>(this->variant_container.getBlock().info_containers[target_local_id], meta_container, pattern_matches));
@@ -314,12 +314,6 @@ public:
 	 * @return
 	 */
 	bool seek_to_block(const U32& blockID);
-
-	/**<
-	 *
-	 * @return
-	 */
-	bool parseSettings(void);
 
 	/**<
 	 * Primary construction function for generating the appropriate instances of

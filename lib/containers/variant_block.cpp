@@ -11,9 +11,7 @@ VariantBlock::VariantBlock() :
 	format_containers(new container_type[200]),
 	end_block_(0),
 	start_compressed_data_(0),
-	end_compressed_data_(0),
-	n_info_loaded(0),
-	n_format_loaded(0)
+	end_compressed_data_(0)
 {
 	// Base container streams are always of type TYPE_STRUCT
 	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
@@ -73,10 +71,8 @@ void VariantBlock::clear(void){
 	this->filter_patterns.clear();
 
 	this->end_block_        = 0;
-	this->n_info_loaded       = 0;
-	this->n_format_loaded     = 0;
-	this->start_compressed_data_       = 0;
-	this->end_compressed_data_ = 0;
+	this->start_compressed_data_ = 0;
+	this->end_compressed_data_   = 0;
 
 	this->ppa_manager.reset();
 }
@@ -177,126 +173,50 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 	return(stream.good());
 }
 
-bool VariantBlock::read(std::ifstream& stream, settings_type& settings){
-	if(settings.ppa.load){
-		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
-			this->ppa_manager.header = this->footer.offset_ppa;
-			stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
-			stream >> this->ppa_manager;
-		}
+bool VariantBlock::read(std::ifstream& stream){
+	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
+		this->ppa_manager.header = this->footer.offset_ppa;
+		stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
+		stream >> this->ppa_manager;
 	}
 
-	if(settings.contig.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_contig, this->meta_contig_container);
-	}
+	this->__loadContainer(stream, this->footer.offset_meta_contig, this->meta_contig_container);
+	this->__loadContainer(stream, this->footer.offset_meta_position, this->meta_positions_container);
+	this->__loadContainer(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
+	this->__loadContainer(stream, this->footer.offset_meta_quality, this->meta_quality_container);
+	this->__loadContainer(stream, this->footer.offset_meta_names, this->meta_names_container);
+	this->__loadContainer(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
+	this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
+	this->__loadContainer(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
+	this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
+	this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
+	this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
+	this->__loadContainer(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
+	this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
+	this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
+	this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
+	this->__loadContainer(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
+	this->__loadContainer(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
+	this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
+	this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
 
-	if(settings.positions.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_position, this->meta_positions_container);
-	}
-
-	if(settings.controller.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
-	}
-
-	if(settings.quality.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_quality, this->meta_quality_container);
-	}
-
-	if(settings.names.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_names, this->meta_names_container);
-	}
-
-	if(settings.alleles.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
-		this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
-	}
-
-	if(settings.genotypes_rle.load || settings.genotypes_all.load){
-		this->__loadContainerSeek(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
-		this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
-		this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
-		this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
-	}
-
-	if(settings.genotypes_simple.load || settings.genotypes_all.load){
-		this->__loadContainerSeek(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
-		this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
-		this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
-		this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
-	}
-
-	if(settings.genotypes_support.load || settings.genotypes_all.load){
-		this->__loadContainerSeek(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
-	}
-
-	if(settings.set_membership.load || settings.genotypes_all.load){
-		this->__loadContainerSeek(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
-		this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
-		this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
-	}
-
-	// Load all info
-	if(settings.info_all.load && this->footer.n_info_streams){
+	// Load all INFO
+	if(this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
-		for(U32 i = 0; i < this->footer.n_info_streams; ++i){
+		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
-			++this->n_info_loaded;
-			settings.load_info_ID_loaded.push_back(SettingsMap(i,i,&this->footer.info_offsets[i]));
-		}
+
 	}
-	// If we have supplied a list of identifiers
-	else if(settings.load_info_ID_loaded.size()){
-		// Ascertain that random access is linearly forward
-		for(U32 i = 0; i < settings.load_info_ID_loaded.size(); ++i){
-			stream.seekg(this->start_compressed_data_ + settings.load_info_ID_loaded[i].offset->data_header.offset);
-			if(!stream.good()){
-				std::cerr << utility::timestamp("ERROR","IO") << "Failed to seek for INFO field in block!" << std::endl;
-				return false;
-			}
 
-			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local].data_header.uLength << std::endl;
-
-			// Read data
-			this->info_containers[settings.load_info_ID_loaded[i].load_order_index].header = this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local];
-			stream >> this->info_containers[settings.load_info_ID_loaded[i].load_order_index];
-			//std::cerr << "into: " << settings.load_info_ID_loaded[i].load_order_index << std::endl;
-			++this->n_info_loaded;
-		}
-	} // end case load_info_ID
-
-	// Load all FORMAT data
-	if(settings.format_all.load && this->footer.n_format_streams){
+	// Load all FORMAT
+	if(this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
-		for(U32 i = 0; i < this->footer.n_format_streams; ++i){
+		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
-			++this->n_format_loaded;
-			settings.load_format_ID_loaded.push_back(SettingsMap(i,i,&this->footer.format_offsets[i]));
-		}
-		//std::cerr << this->end_compressed_data_ << '/' << (U64)stream.tellg() << std::endl;
+
+		// EOF assertion
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
-	} // If we have supplied a list of identifiers
-	else if(settings.load_format_ID_loaded.size()){
-		// Ascertain that random access is linearly forward
-		for(U32 i = 0; i < settings.load_format_ID_loaded.size(); ++i){
-			stream.seekg(this->start_compressed_data_ + settings.load_format_ID_loaded[i].offset->data_header.offset);
-			if(!stream.good()){
-				std::cerr << utility::timestamp("ERROR","IO") << "Failed to seek for FORMAT field in block!" << std::endl;
-				return false;
-			}
-
-			//std::cerr << this->footer.info_offsets[settings.load_info_ID_loaded[i].stream_id_local].data_header.uLength << std::endl;
-
-			std::cerr << "Iterator index: " << settings.load_format_ID_loaded[i].load_order_index << std::endl;
-			std::cerr << "Local index: " << settings.load_format_ID_loaded[i].stream_id_local << std::endl;
-			std::cerr << "Global key: " << settings.load_format_ID_loaded[i].offset->data_header.global_key << std::endl;
-
-			// Read data
-			this->format_containers[settings.load_format_ID_loaded[i].load_order_index].header = this->footer.format_offsets[settings.load_format_ID_loaded[i].stream_id_local];
-			stream >> this->format_containers[settings.load_format_ID_loaded[i].load_order_index];
-			//std::cerr << "into: " << settings.load_info_ID_loaded[i].load_order_index << std::endl;
-			++this->n_format_loaded;
-		}
-	} // end case load_info_ID
+	}
 
 	stream.seekg(this->end_block_); // seek to end-of-block
 	return(true);

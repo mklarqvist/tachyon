@@ -357,6 +357,35 @@ public:
 		return true;
 	}
 
+	/**<
+	 *
+	 * @param header
+	 * @return
+	 */
+	bool parseSettings(const header_type& header){
+		this->info_ID_list.clear();
+		for(U32 i = 0; i < this->info_list.size(); ++i){
+			const core::HeaderMapEntry* map_entry = header.getInfoField(this->info_list[i]);
+			if(map_entry == nullptr) continue;
+			const S32 global_key = map_entry->IDX;
+			if(global_key >= 0){
+				this->info_ID_list.push_back(global_key);
+			}
+		}
+
+		this->format_ID_list.clear();
+		for(U32 i = 0; i < this->format_list.size(); ++i){
+			const core::HeaderMapEntry* map_entry = header.getFormatField(this->info_list[i]);
+			if(map_entry == nullptr) continue;
+			const S32 global_key = map_entry->IDX;
+			if(global_key >= 0){
+				this->format_ID_list.push_back(global_key);
+			}
+		}
+
+		return true;
+	}
+
 public:
 	bool show_vcf_header;
 
@@ -396,14 +425,9 @@ public:
 
 	std::vector<std::string> info_list;
 	std::vector<std::string> format_list;
+
 	std::vector<U32> info_ID_list;
 	std::vector<U32> format_ID_list;
-
-	//
-	std::vector<map_type> info_map;
-	std::vector<map_type> format_map;
-	std::vector<map_type> load_info_ID_loaded;
-	std::vector<map_type> load_format_ID_loaded;
 
 	// blocks to load
 	std::vector<U32> blocks_numbers;

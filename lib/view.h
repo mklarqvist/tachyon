@@ -392,6 +392,7 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions.load = true;
 	}
 
+	reader.getBlockSettings().parseSettings(reader.header);
 	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;

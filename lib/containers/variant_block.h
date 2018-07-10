@@ -27,14 +27,12 @@ class VariantBlock{
 	typedef HashContainer                   hash_container_type;
 	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef DataBlockSettings               settings_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
 
 public:
 	VariantBlock();
-	VariantBlock(const U32 n_info_fields, const U32 n_format_fields);
 	~VariantBlock();
 
 	/**< @brief Resize base container buffer streams
@@ -53,8 +51,8 @@ public:
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
 	//
-	inline const U32& getINFOLoaded(void) const{ return(this->n_info_loaded); }
-	inline const U32& getFORMATLoaded(void) const{ return(this->n_format_loaded); }
+	//inline const size_t getINFOLoaded(void) const{ return(this->info_loaded.size()); }
+	//inline const size_t getFORMATLoaded(void) const{ return(this->format_loaded.size()); }
 
 	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
 	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
@@ -118,14 +116,13 @@ public:
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
 	}
 
-	/**< @brief Reads one or more separate digital objects from disk
+	/**< @brief Reads all digital objects from disk
 	 * Primary function for reading data from disk. Data
 	 * read in this way is not checked for integrity here.
 	 * @param stream   Input stream
-	 * @param settings Settings record describing reading parameters
 	 * @return         Returns FALSE if there was a problem, TRUE otherwise
 	 */
-	bool read(std::ifstream& stream, settings_type& settings);
+	bool read(std::ifstream& stream);
 
 	/**<
 	 * Read the header and footer of a block.
@@ -152,6 +149,92 @@ public:
 	 */
 	bool operator+=(meta_entry_type& meta_entry);
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
+
+	/**<
+	 * Compares a vector of global INFO identifiers to the identifier set in this
+	 * block and returns the set intersection of keys
+	 * @param info_ids Vector of global INFO keys
+	 * @return         Returns the set intersection of provided keys and local keys
+	 */
+	std::vector<U32> intersectInfoKeys(const std::vector<U32>& info_ids) const{
+		std::vector<U32> info_ids_found;
+		if(info_ids.size() == 0) return(info_ids_found);
+
+		for(U32 i = 0; i < info_ids.size(); ++i){
+			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
+				if(this->footer.info_offsets[j].data_header.global_key == info_ids[i])
+					info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+			}
+		}
+
+		return(info_ids_found);
+	}
+
+	/**<
+	 * Compares a vector of global FORMAT identifiers to the identifier set in this
+	 * block and returns the set intersection of keys
+	 * @param info_ids Vector of global FORMAT keys
+	 * @return         Returns the set intersection of provided keys and local keys
+	 */
+	std::vector<U32> intersectFormatKeys(const std::vector<U32>& format_ids) const{
+		std::vector<U32> format_ids_found;
+		if(format_ids.size() == 0) return(format_ids_found);
+
+		for(U32 i = 0; i < format_ids.size(); ++i){
+			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
+				if(this->footer.info_offsets[j].data_header.global_key == format_ids[i])
+					format_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+			}
+		}
+
+		return(format_ids_found);
+	}
+
+	std::vector<U32> getFormatKeys(void) const{
+		std::vector<U32> ret;
+		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
+			ret.push_back(this->footer.format_offsets[i].data_header.global_key);
+
+		return(ret);
+	}
+
+	std::vector<U32> getInfoKeys(void) const{
+		std::vector<U32> ret;
+		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
+			ret.push_back(this->footer.info_offsets[i].data_header.global_key);
+
+		return(ret);
+	}
+
+	/**<
+	 * Wrapper function to load a data container from packed YON blocks
+	 * @param stream    Input file handler
+	 * @param offset    Header object
+	 * @param container Destination container object
+	 * @return
+	 */
+	inline bool __loadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
+		container.header = offset;
+		stream >> container;
+		assert(container.header == offset);
+		return(stream.good());
+	}
+
+	/**<
+	 * Wrapper function to load a data container from packed YON blocks. Additionally
+	 * performs a (potential) random seek to the start of the data sector before reading.
+	 * @param stream    Input file handler
+	 * @param offset    Header object
+	 * @param container Destination container object
+	 * @return
+	 */
+	inline bool __loadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
+		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
+		container.header = offset;
+		stream >> container;
+		assert(container.header == offset);
+		return(stream.good());
+	}
 
 private:
 	/**< @brief Update base container header data and evaluate output byte streams
@@ -234,36 +317,6 @@ private:
 		stream.write(container.buffer_data.data(), container.buffer_data.size());
 	}
 
-	/**<
-	 * Wrapper function to load a data container from packed YON blocks
-	 * @param stream    Input file handler
-	 * @param offset    Header object
-	 * @param container Destination container object
-	 * @return
-	 */
-	inline bool __loadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
-		container.header = offset;
-		stream >> container;
-		assert(container.header == offset);
-		return(stream.good());
-	}
-
-	/**<
-	 * Wrapper function to load a data container from packed YON blocks. Additionally
-	 * performs a (potential) random seek to the start of the data sector before reading.
-	 * @param stream    Input file handler
-	 * @param offset    Header object
-	 * @param container Destination container object
-	 * @return
-	 */
-	inline bool __loadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
-		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
-		container.header = offset;
-		stream >> container;
-		assert(container.header == offset);
-		return(stream.good());
-	}
-
 public:
 	block_header_type header;
 	block_footer_type footer;
@@ -300,13 +353,9 @@ public:
 
 public:
 	// Utility
-	//size_t n_capacity_info_;
-	//size_t n_capacity_format_;
 	U64 end_block_;
 	U64 start_compressed_data_;
 	U64 end_compressed_data_;
-	U32 n_info_loaded;
-	U32 n_format_loaded;
 	container_type footer_support; // used internally only
 };
 
