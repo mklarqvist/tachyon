@@ -103,6 +103,10 @@ bool VariantReader::open(void){
 	this->stream >> this->index;
 	this->stream >> this->checksums;
 	this->stream.seekg(return_pos);
+
+	// Parse settings
+	this->getBlockSettings().parseSettings(this->header);
+
 	return(this->stream.good());
 }
 
@@ -283,16 +287,16 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// FORMAT-specific containers
 	// Store as double pointers to avoid memory collisions because
 	// FORMAT containers have different intrinsic class members
-	objects.n_loaded_format   = this->variant_container.mapper_.format_container_loaded_.size();
+	objects.n_loaded_format   = this->variant_container.getMapper().getNumberFormatLoaded();
 	objects.format_containers = new format_interface_type*[objects.n_loaded_format];
 
 	if(objects.n_loaded_format){
 		for(U32 i = 0; i < objects.n_loaded_format; ++i){
-			const U32 global_key = this->variant_container.mapper_.format_container_loaded_[i].stream_id_global;
+			const U32 global_key = this->variant_container.getMapper().getLoadedFormat(i).stream_id_global;
 
 			// Pattern matches of GLOBAL in LOCAL
 			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
+			std::vector<bool> matches = this->variant_container.get_format_field_pattern_matches(this->header.format_fields[global_key].ID);
 
 			if(this->header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 				objects.format_containers[i] = new containers::FormatContainer<S32>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->header.getSampleNumber());
@@ -314,16 +318,16 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 	// INFO-specific containers
 	// Store as double pointers to avoid memory collisions because
 	// INFO containers have different class members
-	objects.n_loaded_info   = this->variant_container.mapper_.info_container_loaded_.size();
+	objects.n_loaded_info   = this->variant_container.getMapper().getNumberInfoLoaded();
 	objects.info_containers = new info_interface_type*[objects.n_loaded_info];
 
 	if(objects.n_loaded_info){
 		for(U32 i = 0; i < objects.n_loaded_info; ++i){
-			const U32 global_key = this->variant_container.mapper_.info_container_loaded_[i].stream_id_global;
+			const U32 global_key = this->variant_container.getMapper().getLoadedInfo(i).stream_id_global;
 
 			// Pattern matches of GLOBAL in LOCAL
 			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
+			std::vector<bool> matches = this->variant_container.get_info_field_pattern_matches(this->header.info_fields[global_key].ID);
 
 			if(this->header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
 				objects.info_containers[i] = new containers::InfoContainer<S32>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
@@ -365,7 +369,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 			for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < objects.n_loaded_info; ++k){ // Number of loaded INFO identifiers
 					// Global
-					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.mapper_.info_container_loaded_[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedInfo(k).offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -378,7 +382,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < objects.n_loaded_info; ++k){ // k = Number of loaded INFO identifiers
 				for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.mapper_.info_container_loaded_[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedInfo(k).offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -393,7 +397,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // Number of info patterns
 			for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < objects.n_loaded_format; ++k){ // Number of loaded INFO identifiers
-					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.mapper_.format_container_loaded_[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedFormat(k).offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -406,7 +410,7 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < objects.n_loaded_format; ++k){ // k = Number of loaded INFO identifiers
 				for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.mapper_.format_container_loaded_[k].offset->data_header.global_key){
+					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedFormat(k).offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -460,64 +464,6 @@ VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
 
 	return(objects);
 }
-
-const std::vector<bool> VariantReader::get_info_field_pattern_matches(const std::string& field_name) const{
-	int global_info_value = this->has_info_field(field_name);
-
-	std::vector<bool> ret;
-	if(global_info_value >= 0){
-		// Collect all matches
-		// Place in array
-		// 0 = false, 1 = true
-		S32 local_key = -1;
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_streams; ++i){
-			if(this->variant_container.getBlock().footer.info_offsets[i].data_header.global_key == global_info_value){
-				local_key = i;
-			}
-		}
-
-		if(local_key == -1){
-			//std::cerr << "could not find local" << std::endl;
-			return ret;
-		}
-
-		ret.resize(this->variant_container.getBlock().footer.n_info_patterns, false);
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){
-			//std::cerr << i << '\t' << this->variant_container.getBlock().footer.info_bit_vectors[i][local_key] << std::endl;
-			ret[i] = this->variant_container.getBlock().footer.info_bit_vectors[i][local_key];
-		}
-	}
-	return(ret);
-}
-
-const std::vector<bool> VariantReader::get_format_field_pattern_matches(const std::string& field_name) const{
-	int global_format_value = this->has_format_field(field_name);
-	std::vector<bool> ret;
-	if(global_format_value >= 0){
-		S32 local_key = -1;
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_streams; ++i){
-			if(this->variant_container.getBlock().footer.format_offsets[i].data_header.global_key == global_format_value){
-				local_key = i;
-			}
-		}
-
-		if(local_key == -1){
-			//std::cerr << "could not find local" << std::endl;
-			return ret;
-		}
-
-		// Collect all matches
-		// Place in array
-		// 0 = false, 1 = true
-		ret.resize(this->variant_container.getBlock().footer.n_format_patterns, false);
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){
-			//std::cerr << i << '\t' << this->variant_container.getBlock().index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
-			ret[i] = this->variant_container.getBlock().footer.format_bit_vectors[i][local_key];
-		}
-	}
-	return(ret);
-}
-
 
 void VariantReader::printFILTER(buffer_type& outputBuffer,
 				 const U32& position,

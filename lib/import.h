@@ -29,7 +29,7 @@ DEALINGS IN THE SOFTWARE.
 void import_usage(void){
 	programMessage();
 	std::cerr <<
-	"Brief:  Convert BCF -> YON/\n"
+	"Brief:  Convert BCF -> YON\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input file> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input BCF file (required)\n"

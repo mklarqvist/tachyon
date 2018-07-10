@@ -45,19 +45,21 @@ int main(int argc, char** argv){
 	for(U32 i = 1; i < argc; ++i)
 		tachyon::constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
-	if(strncmp(&argv[1][0], "import", 5) == 0){
-		return(import(argc, argv));
+	const std::string subroutine(argv[1]);
 
-	} else if(strncmp(&argv[1][0], "view", 4) == 0){
+	if(strncmp(subroutine.data(), "import", 6) == 0 && subroutine.size() == 6){
+		return(import(argc, argv));
+	} else if(strncmp(subroutine.data(), "view", 4) == 0 && subroutine.size() == 4){
 		return(view(argc, argv));
-	} else if(strncmp(&argv[1][0], "stats", 5) == 0){
+	} else if(strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5){
 		return(stats(argc, argv));
-	} else if(strncmp(&argv[1][0], "check", 5) == 0){
+	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
+		std::cerr << "Not implemented" << std::endl;
 		return(0);
 	} else {
 		programMessage();
 		programHelpDetailed();
-		std::cerr << tachyon::utility::timestamp("ERROR") << "Illegal command" << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Illegal command: " << subroutine << std::endl;
 		return(1);
 	}
 	return(1);

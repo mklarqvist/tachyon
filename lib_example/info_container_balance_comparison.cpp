@@ -32,12 +32,12 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
+	reader.getBlockSettings().loadINFO("InbreedingCoeff");
+
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
-
-	reader.getBlockSettings().loadINFO("InbreedingCoeff");
 
 	/**<
 	 * The `InfoContainer` class stores the data for each variant as
@@ -51,8 +51,8 @@ int main(int argc, char** argv){
 		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::InfoContainer<U32>* dp_balanced   = reader.get_balanced_info_container<U32>("InbreedingCoeff", meta);
-	    tachyon::containers::InfoContainer<U32>* dp_unbalanced = reader.get_info_container<U32>("InbreedingCoeff");
+	    tachyon::containers::InfoContainer<U32>* dp_balanced   = reader.variant_container.get_balanced_info_container<U32>("InbreedingCoeff", meta);
+	    tachyon::containers::InfoContainer<U32>* dp_unbalanced = reader.variant_container.get_info_container<U32>("InbreedingCoeff");
 
 	    assert(dp_balanced != nullptr);
 	    assert(dp_unbalanced != nullptr);

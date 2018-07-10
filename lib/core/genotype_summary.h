@@ -173,6 +173,8 @@ public:
 		const double exp = 2*p*(1-p);
 		// Population inbreeding coefficient: F
 		const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
+
+		return(std::vector<double>());
 	}
 
 	template <class T>
