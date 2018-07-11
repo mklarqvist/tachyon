@@ -45,11 +45,11 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 		for(U32 variant = 0; variant < meta.size(); ++variant){
 			// Write the data to `cout` in `VCF` formatting
-			tachyon::utility::to_vcf_string(std::cout, '\t', meta[variant], reader.global_header);
+			tachyon::utility::to_vcf_string(std::cout, '\t', meta[variant], reader.getGlobalHeader());
 			std::cout << '\n';
 		}
 		std::cout << '\n';

@@ -26,6 +26,7 @@ public:
 		annotate_genotypes(false),
 		output_FORMAT_as_vector(false)
 	{}
+
 	~VariantReaderSettings() = default;
 
 	/**<

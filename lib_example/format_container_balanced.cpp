@@ -45,10 +45,10 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::FormatContainer<U32>* dp_container = reader.variant_container.get_balanced_format_container<U32>("GQ", meta);
+	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("GQ", meta);
 
 	    if(dp_container != nullptr){
 	        for(U32 variant = 0; variant < dp_container->size(); ++variant){

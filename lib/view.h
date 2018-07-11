@@ -282,17 +282,7 @@ int view(int argc, char** argv){
 
 	// temp
 	if(settings.keychain_file.size()){
-		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
-			return 1;
-		}
-
-		keychain_reader >> reader.keychain;
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
-			return 1;
-		}
+		if(reader.loadKeychainFile(settings.keychain_file) == false) return 1;
 	}
 
 	if(!reader.open(settings.input)){
@@ -301,23 +291,13 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		reader.global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-		                       +  SSLeay_version(SSLEAY_VERSION) + ","
-		                       + "ZSTD-" + ZSTD_versionString()
-		                       + "; timestamp=" + tachyon::utility::datetime();
-
-		reader.global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		reader.global_header.literals += reader.getSettings().get_settings_string();
-
-		std::cout << reader.global_header.literals << std::endl;
-		reader.global_header.writeVCFHeaderString(std::cout, true);
+		reader.printHeaderVCF();
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.global_header, settings.custom_output_format)){
+		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -392,7 +372,7 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions.load = true;
 	}
 
-	reader.getBlockSettings().parseSettings(reader.global_header);
+	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
 	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;

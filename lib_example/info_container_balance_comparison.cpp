@@ -48,11 +48,11 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::InfoContainer<U32>* dp_balanced   = reader.variant_container.get_balanced_info_container<U32>("InbreedingCoeff", meta);
-	    tachyon::containers::InfoContainer<U32>* dp_unbalanced = reader.variant_container.get_info_container<U32>("InbreedingCoeff");
+	    tachyon::containers::InfoContainer<U32>* dp_balanced   = reader.getCurrentBlock().get_balanced_info_container<U32>("InbreedingCoeff", meta);
+	    tachyon::containers::InfoContainer<U32>* dp_unbalanced = reader.getCurrentBlock().get_info_container<U32>("InbreedingCoeff");
 
 	    assert(dp_balanced != nullptr);
 	    assert(dp_unbalanced != nullptr);

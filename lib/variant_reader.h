@@ -74,7 +74,7 @@ public:
 	VariantReader();
 	VariantReader(const std::string& filename);
 	VariantReader(const self_type& other);
-	~VariantReader();
+	virtual ~VariantReader();
 
 	/**<
 	 * Retrieve current settings records. Settings object is used
@@ -100,6 +100,17 @@ public:
 	 * @return A reference instance of the filter object
 	 */
 	inline variant_filter_type& getFilterSettings(void){ return(this->variant_filters); }
+
+	// Basic accessors
+	inline header_type& getGlobalHeader(void){ return(this->global_header); }
+	inline const header_type& getGlobalHeader(void) const{ return(this->global_header); }
+	inline footer_type& getGlobalFooter(void){ return(this->global_footer); }
+	inline const footer_type& getGlobalFooter(void) const{ return(this->global_footer); }
+	inline index_type& getIndex(void){ return(this->index); }
+	inline const index_type& getIndex(void) const{ return(this->index); }
+	inline const size_t getFilesize(void) const{ return(this->filesize); }
+	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
+	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
 
 	/**<
 	 * Checks if a FORMAT `field` is set in the header and then checks
@@ -275,7 +286,7 @@ public:
 	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
 
 	/**<
-	 * Not implementeds
+	 * Not implemented
 	 * Return bit-mask primitive of variant classifications detected
 	 * @param meta Input meta entry for a site
 	 * @return     Returns a primitive interpreted as a boolean presence/absence bit-mask
@@ -292,6 +303,35 @@ public:
 		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
 	}
 
+
+	bool loadKeychainFile(const std::string& path){
+		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
+		if(!keychain_reader.good()){
+			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
+			return false;
+		}
+
+		keychain_reader >> this->keychain;
+		if(!keychain_reader.good()){
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	void printHeaderVCF(std::ostream& stream = std::cout){
+		this->global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		this->global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+		                             +   SSLeay_version(SSLEAY_VERSION) + ","
+		                             +  "ZSTD-" + ZSTD_versionString()
+		                             +  "; timestamp=" + tachyon::utility::datetime();
+
+		this->global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
+		this->global_header.literals += this->getSettings().get_settings_string();
+
+		stream << this->global_header.literals << std::endl;
+		this->global_header.writeVCFHeaderString(stream, true);
+	}
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
@@ -583,13 +623,12 @@ public:
 		return(0);
 	}
 
-public:
-	std::ifstream       stream;
-	U64                 filesize;
+protected:
+	std::ifstream           stream;
+	size_t                  filesize;
 
 	// Actual data
-	//block_entry_type    block;
-	variant_container_type variant_container;
+	variant_container_type  variant_container;
 
 	// Supportive objects
 	block_settings_type     block_settings;

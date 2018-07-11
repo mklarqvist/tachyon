@@ -39,7 +39,7 @@ int main(int argc, char** argv){
 		return(1);
 	}
 
-	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.global_header.getSampleNumber());
+	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.getGlobalHeader().getSampleNumber());
 
 	/**<
 	 *  In this example we will write a simple program to calculate
@@ -47,10 +47,10 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::FormatContainer<U32>* dp_container = reader.variant_container.get_balanced_format_container<U32>("DP", meta);
+	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("DP", meta);
 
 	    if(dp_container != nullptr){
 	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
@@ -64,7 +64,7 @@ int main(int argc, char** argv){
 	}
 
 	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\n";
-	for(U32 i = 0; i < reader.global_header.getSampleNumber(); ++i){
+	for(U32 i = 0; i < reader.getGlobalHeader().getSampleNumber(); ++i){
 		depth_data[i].calculate();
 		std::cout << i << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\n";
 	}

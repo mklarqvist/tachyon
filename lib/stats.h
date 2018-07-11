@@ -99,28 +99,8 @@ int stats(int argc, char** argv){
 
 	// temp
 	if(keychain_file.size()){
-		std::ifstream keychain_reader(keychain_file, std::ios::binary | std::ios::in);
-		if(!keychain_reader.good()){
-			std::cerr << "failed to open: " << keychain_file << std::endl;
+		if(reader.loadKeychainFile(keychain_file) == false)
 			return 1;
-		}
-		char header[tachyon::constants::FILE_HEADER_LENGTH];
-		keychain_reader.read(&header[0], tachyon::constants::FILE_HEADER_LENGTH);
-		if(strncmp(&header[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
-			std::cerr << "ILLEGAL KEY FILE" << std::endl;
-			return 1;
-		}
-
-		S32 major = 0, minor = 0, release = 0;
-		keychain_reader.read(reinterpret_cast<char*>(&major),   sizeof(S32));
-		keychain_reader.read(reinterpret_cast<char*>(&minor),   sizeof(S32));
-		keychain_reader.read(reinterpret_cast<char*>(&release), sizeof(S32));
-
-		keychain_reader >> reader.keychain;
-		if(!keychain_reader.good()){
-			std::cerr << "failed to parse kechain" << std::endl;
-			return 1;
-		}
 	}
 
 	if(!reader.open(input)){
@@ -140,17 +120,17 @@ int stats(int argc, char** argv){
 	reader.getBlockSettings().alleles(true, true);
 
 	U32 block_counter = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.global_header.getSampleNumber());
+	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().getSampleNumber());
 	while(reader.nextBlock()){
 		reader.getTiTVRatios(std::cout, global_titv);
 		//reader.getGenotypeSummary(std::cout);
-		std::cerr << block_counter++ << "/" << reader.index.size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.index.size() << std::endl;
+		std::cerr << block_counter++ << "/" << reader.getIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.getIndex().size() << std::endl;
 		timer.Start();
 	}
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.global_header.samples[i].name << '\t' << global_titv[i] << '\n';
+		std::cout << reader.getGlobalHeader().samples[i].name << '\t' << global_titv[i] << '\n';
 	}
 
 	return 0;
