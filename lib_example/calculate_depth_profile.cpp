@@ -40,6 +40,7 @@ int main(int argc, char** argv){
 	}
 
 	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.getGlobalHeader().getSampleNumber());
+	std::vector<tachyon::math::SummaryStatistics> depth_data_truncated(reader.getGlobalHeader().getSampleNumber());
 
 	/**<
 	 *  In this example we will write a simple program to calculate
@@ -55,18 +56,23 @@ int main(int argc, char** argv){
 	    if(dp_container != nullptr){
 	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
 	            for(U32 sample = 0; sample < dp_container->at(variant).size(); ++sample){
-	               if(dp_container->at(variant).at(sample).size())
-	            		depth_data[sample] += dp_container->at(variant).at(sample)[0];
+	               if(dp_container->at(variant).at(sample).size()){
+	            		depth_data[sample].addNonzero(dp_container->at(variant).at(sample)[0]);
+	            		depth_data_truncated[sample].addNonzero(dp_container->at(variant).at(sample)[0] > 100 ? 100 : dp_container->at(variant).at(sample)[0]);
+
+	               }
 	            }
 	        }
 	    }
 	    delete dp_container;
 	}
 
-	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\n";
+	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\tMeanTrunc\tSDTrunc\tMinTrunc\tMaxTrunc\tNTrunc\n";
 	for(U32 i = 0; i < reader.getGlobalHeader().getSampleNumber(); ++i){
 		depth_data[i].calculate();
-		std::cout << i << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\n";
+		depth_data_truncated[i].calculate();
+		std::cout << reader.getGlobalHeader().samples[i].name << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\t"
+		          << depth_data_truncated[i].mean << "\t" << depth_data_truncated[i].getStandardDeviation() << "\t" << depth_data_truncated[i].min << "\t" << depth_data_truncated[i].max << "\t" << depth_data_truncated[i].getCount() << "\n";
 	}
 	std::cout.flush();
 

@@ -268,7 +268,7 @@ void VariantHeader::operator=(const vcf_header_type& vcf_header){
 	this->buildHashTables();
 }
 
-std::ostream& VariantHeader::writeVCFHeaderString(std::ostream& stream, const bool showFormat) const{
+std::ostream& VariantHeader::writeHeaderVCF(std::ostream& stream, const bool showFormat) const{
 	stream << this->literals;
 	if(this->literals.size()) stream.put('\n');
 	if(showFormat){

@@ -7,10 +7,24 @@
 
 namespace tachyon{
 
-struct VariantReaderFiltersTupleInterface{
+struct VariantReaderFiltersTupleInterface {
 public:
 	VariantReaderFiltersTupleInterface() : filter(false){}
 	VariantReaderFiltersTupleInterface(const bool filter) : filter(filter){}
+	virtual ~VariantReaderFiltersTupleInterface(){}
+
+	bool applyFilter(const bool& l_value)  const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const BYTE& l_value)  const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const U16& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const U32& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const U64& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const SBYTE& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const S16& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const S32& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const S64& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const float& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const double& l_value)const{ std::cerr << "in virtual" << std::endl; return false; };
+	bool applyFilter(const std::string& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
 
 public:
 	bool filter;
@@ -21,6 +35,9 @@ struct VariantReaderFiltersTuple : public VariantReaderFiltersTupleInterface{
 public:
 	typedef VariantReaderFiltersTuple<ValueClass> self_type;
 	typedef bool (self_type::*filter_function)(const ValueClass& target, const ValueClass& limit) const;
+
+	// Bring forward interface function into scope to overload
+	using VariantReaderFiltersTupleInterface::applyFilter;
 
 public:
 	VariantReaderFiltersTuple() :
@@ -74,7 +91,10 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const ValueClass& l_value) const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const ValueClass& l_value) const{
+		std::cerr << "Overloaded" << std::endl;
+		return((this->*comparator)(l_value, r_value));
+	}
 
 	// Comparator functions
 	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const{return(target < limit);}
@@ -148,7 +168,10 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const std::string& l_value) const{ return((this->*comparator)(l_value, this->r_value)); }
+	inline bool applyFilter(const std::string& l_value) const{
+		std::cerr << "Overloaded" << std::endl;
+		return((this->*comparator)(l_value, this->r_value));
+	}
 
 	// Comparator functions
 	inline bool __filterLesser(const std::string& target, const std::string& limit) const{return(target.size() < limit.size());}

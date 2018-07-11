@@ -940,7 +940,7 @@ const U64 VariantReader::outputVCF(void){
 
 	// Output VCF header
 	if(this->block_settings.show_vcf_header){
-		this->global_header.writeVCFHeaderString(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
+		this->global_header.writeHeaderVCF(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
 	}
 
 	// If seek is active for targetted intervals

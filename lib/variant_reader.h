@@ -330,7 +330,7 @@ public:
 		this->global_header.literals += this->getSettings().get_settings_string();
 
 		stream << this->global_header.literals << std::endl;
-		this->global_header.writeVCFHeaderString(stream, true);
+		this->global_header.writeHeaderVCF(stream, true);
 	}
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->

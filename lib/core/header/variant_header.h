@@ -15,8 +15,8 @@ namespace tachyon{
 namespace core{
 
 /**<
- * This class describes data mandatory data in the
- * Tachyon header
+ * This class describes data that is mandatory in the Tachyon
+ * file-format
  */
 class VariantHeader{
 private:
@@ -85,7 +85,7 @@ public:
 		return(false);
 	}
 
-	std::ostream& writeVCFHeaderString(std::ostream& stream, const bool showFormat = true) const;
+	std::ostream& writeHeaderVCF(std::ostream& stream, const bool showFormat = true) const;
 
 private:
 	bool buildHashTables(void);

@@ -63,6 +63,17 @@ public:
 		if(value > this->max) this->max = value;
 	}
 
+	template <class T>
+	void addNonzero(const T& value){
+		if(value != 0){
+			this->total         += value;
+			this->total_squared += value*value;
+			this->n_total       += 1;
+			if(value < this->min) this->min = value;
+			if(value > this->max) this->max = value;
+		}
+	}
+
 	void reset(void){
 		this->total         = 0;
 		this->total_squared = 0;

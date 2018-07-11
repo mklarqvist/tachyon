@@ -123,12 +123,13 @@ int view(int argc, char** argv){
 
 	tachyon::VariantReaderSettings settings;
 	tachyon::DataBlockSettings     block_settings;
-	tachyon::VariantReaderFilters  filters;
 	std::vector<std::string>       interpret_commands;
 	std::vector<std::string>       interval_strings;
 
 	SILENT = 0;
 	std::string temp;
+	tachyon::VariantReader reader;
+	tachyon::VariantReaderFilters& filters = reader.getFilterSettings();
 
 	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:wW", long_options, &option_index)) != -1){
 		switch (c){
@@ -153,7 +154,8 @@ int view(int argc, char** argv){
 			filters.require_genotypes = true;
 			break;
 		case 'm':
-			filters.filter_n_alts(atoi(optarg));
+			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
+			//filters.filter_n_alts(atoi(optarg));
 			break;
 		case 'M':
 			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
@@ -277,7 +279,7 @@ int view(int argc, char** argv){
 	}
 	*/
 
-	tachyon::VariantReader reader;
+
 	reader.getSettings() = settings;
 
 	// temp
@@ -373,7 +375,6 @@ int view(int argc, char** argv){
 	}
 
 	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
-	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();
