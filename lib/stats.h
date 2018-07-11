@@ -140,7 +140,7 @@ int stats(int argc, char** argv){
 	reader.getBlockSettings().alleles(true, true);
 
 	U32 block_counter = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.header.getSampleNumber());
+	std::vector<tachyon::core::TsTvObject> global_titv(reader.global_header.getSampleNumber());
 	while(reader.nextBlock()){
 		reader.getTiTVRatios(std::cout, global_titv);
 		//reader.getGenotypeSummary(std::cout);
@@ -150,7 +150,7 @@ int stats(int argc, char** argv){
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.header.samples[i].name << '\t' << global_titv[i] << '\n';
+		std::cout << reader.global_header.samples[i].name << '\t' << global_titv[i] << '\n';
 	}
 
 	return 0;

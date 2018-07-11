@@ -34,12 +34,12 @@ public:
 
 	inline bool filterMixedPloidy(const objects_type& objects, const U32& position) const{
 		//assert(objects.meta != nullptr);
-		return(this->filter_mixed_ploidy.applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]) != 0));
+		return(this->filter_mixed_ploidy.applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
 	}
 
 	inline bool filterKnownNovel(const objects_type& objects, const U32& position) const{
 		//assert(objects.meta != nullptr);
-		return(this->filter_known_novel.applyFilter(objects.meta_container->at(position).name.size() == 0));
+		return(this->filter_known_novel.applyFilter(objects.meta_container->at(position).name.size()));
 	}
 
 	// GT data matches this

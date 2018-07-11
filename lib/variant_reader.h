@@ -94,14 +94,18 @@ public:
 	 */
 	inline settings_type& getSettings(void){ return(this->settings); }
 
+	/**<
+	 * Retrieve the current filter settings for the variant reader. This
+	 * object controls the pointers to filter applied to each variant.
+	 * @return A reference instance of the filter object
+	 */
 	inline variant_filter_type& getFilterSettings(void){ return(this->variant_filters); }
 
 	/**<
 	 * Checks if a FORMAT `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name FORMAT field name to search for (e.g. "GL")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
@@ -110,9 +114,8 @@ public:
 	/**<
 	 * Checks if a INFO `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name INFO field name to search for (e.g. "AC")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
@@ -121,9 +124,8 @@ public:
 	/**<
 	 * Checks if a FILTER `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name FILTER field name to search for (e.g. "PASS")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
@@ -158,21 +160,21 @@ public:
 	bool operator[](const U32 position);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param position
 	 * @return
 	 */
 	bool seektoBlock(const U32 position);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param chromosome_name
 	 * @return
 	 */
 	bool seekToBlockChromosome(const std::string& chromosome_name);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param chromosome_name
 	 * @param from_bp_position
 	 * @param to_bp_position
@@ -194,9 +196,9 @@ public:
 
 	/**<
 	 * Get the current YON block in-order as a copy
-	 * @return Returns a YON block. The container has a size of 0 upon fail/empty
+	 * @return Returns a YON block container. The container has a size of 0 upon fail/empty
 	 */
-	block_entry_type getBlock(void);
+	variant_container_type getBlock(void);
 
 
 	/**<
@@ -218,7 +220,8 @@ public:
 	objects_type& loadObjects(objects_type& objects) const;
 
 	/**<
-	 * Outputs
+	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
+	 * Decides internally what function to invoke.
 	 * @return
 	 */
 	const U64 outputVCF(void);
@@ -239,7 +242,7 @@ public:
 	 *
 	 * @return
 	 */
-	const U32 outputBlockCustom(void) const;
+	const U32 outputBlockCustom(void);
 
 	// Dummy functions as interfaces for function pointers
 	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
@@ -272,13 +275,21 @@ public:
 	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
 
 	/**<
+	 * Not implemented yet
+	 * Return bit-mask primitive of variant classifications detected
+	 * @param meta Input meta entry for a site
+	 * @return     Returns a primitive interpreted as a boolean presence/absence bit-mask
+	 */
+	BYTE classifyVariant(const meta_entry_type& meta) const;
+
+	/**<
 	 * Parse interval strings. These strings have to match the regular expression
 	 * patterns
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	inline const bool addIntervals(std::vector<std::string>& interval_strings){
-		return(this->interval_container.parseIntervals(interval_strings, this->header, this->index));
+		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
 	}
 
 
@@ -290,8 +301,8 @@ public:
 		buffer_type temp(meta.size() * 1000);
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->header);
-			//utility::to_vcf_string(std::cout, meta[p], this->header);
+			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->global_header);
+			//utility::to_vcf_string(std::cout, meta[p], this->global_header);
 			temp += '\n';
 			//if(temp.size() > 65536){
 			//	std::cout.write(temp.data(), temp.size());
@@ -313,9 +324,9 @@ public:
 			// Vector of literal genotype representations (lower level)
 			//std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
 			// Vector of genotype objects (high level permuted)
-			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
+			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->global_header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
 
 			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			for(U32 i = 1; i < objects_true.size(); ++i){
@@ -335,21 +346,21 @@ public:
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].comparePairwise(square_temporary);
 
-		//square /= (U64)2*this->header.getSampleNumber()*gt.size();
+		//square /= (U64)2*this->global_header.getSampleNumber()*gt.size();
 		square.addUpperTriagonal(square_temporary, this->variant_container.getBlock().ppa_manager);
 		square_temporary.clear();
 
 		// 2 * (Upper triagonal + diagonal) * number of variants
-		const U64 updates = 2*((this->header.getSampleNumber()*this->header.getSampleNumber() - this->header.getSampleNumber())/2 + this->header.getSampleNumber()) * gt.size();
+		const U64 updates = 2*((this->global_header.getSampleNumber()*this->global_header.getSampleNumber() - this->global_header.getSampleNumber())/2 + this->global_header.getSampleNumber()) * gt.size();
 		std::cerr << utility::timestamp("DEBUG") << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-		return((U64)2*this->header.getSampleNumber()*gt.size());
+		return((U64)2*this->global_header.getSampleNumber()*gt.size());
 	}
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<core::TsTvObject>& global){
 		containers::MetaContainer meta(this->variant_container.getBlock());
 		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
-		std::vector<core::TsTvObject> objects(this->header.getSampleNumber());
+		std::vector<core::TsTvObject> objects(this->global_header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
@@ -420,7 +431,7 @@ public:
 			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
 
 
-			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->header);
+			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->global_header);
 
 			if(target_flag_set & 1){
 				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta_container->at(position), *objects.genotype_summary, true);
@@ -555,13 +566,13 @@ public:
 		//return true;
 
 		core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getInfoField("AF", entry)){
+		if(this->global_header.getInfoField("AF", entry)){
 			containers::InfoContainer<double> it_i(this->variant_container.getBlock().info_containers[1]);
 			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
 				//if(it_i[i].size() < 3) continue;
-				//it[i].toVCFString(stream, this->header, this->variant_container.getBlock().index_entry.contigID, this->variant_container.getBlock().index_entry.minPosition);
+				//it[i].toVCFString(stream, this->global_header, this->variant_container.getBlock().index_entry.contigID, this->variant_container.getBlock().index_entry.minPosition);
 
 				//stream << (int)it_i[i][0];
 				for(U32 j = 0; j < it_i[i].size(); ++j)
@@ -584,8 +595,8 @@ public:
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
-	header_type             header;
-	footer_type             footer;
+	header_type             global_header;
+	footer_type             global_footer;
 	index_type              index;
 	checksum_type           checksums;
 	codec_manager_type      codec_manager;

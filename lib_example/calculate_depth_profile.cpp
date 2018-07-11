@@ -32,28 +32,43 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
-	reader.getBlockSettings().loadAllMeta(true);
+	reader.getBlockSettings().loadFORMAT("DP");
 
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
 
+	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.global_header.getSampleNumber());
+
 	/**<
-	 *  The `MetaContainer` class stores the site-centric information
-	 *  for each site
+	 *  In this example we will write a simple program to calculate
+	 *  the depth profile for each individual in a file
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
 		tachyon::containers::MetaContainer meta(reader.variant_container.getBlock());
 
-		for(U32 variant = 0; variant < meta.size(); ++variant){
-			// Write the data to `cout` in `VCF` formatting
-			tachyon::utility::to_vcf_string(std::cout, '\t', meta[variant], reader.global_header);
-			std::cout << '\n';
-		}
-		std::cout << '\n';
+	    // FORMAT container with U32 return type primitive
+	    tachyon::containers::FormatContainer<U32>* dp_container = reader.variant_container.get_balanced_format_container<U32>("DP", meta);
+
+	    if(dp_container != nullptr){
+	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
+	            for(U32 sample = 0; sample < dp_container->at(variant).size(); ++sample){
+	               if(dp_container->at(variant).at(sample).size())
+	            		depth_data[sample] += dp_container->at(variant).at(sample)[0];
+	            }
+	        }
+	    }
+	    delete dp_container;
 	}
+
+	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\n";
+	for(U32 i = 0; i < reader.global_header.getSampleNumber(); ++i){
+		depth_data[i].calculate();
+		std::cout << i << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\n";
+	}
+	std::cout.flush();
 
 	return(0);
 }

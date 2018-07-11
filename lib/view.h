@@ -130,7 +130,7 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	std::string temp;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:wW", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -301,23 +301,23 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		reader.header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+		reader.global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		reader.global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 		                       +  SSLeay_version(SSLEAY_VERSION) + ","
 		                       + "ZSTD-" + ZSTD_versionString()
 		                       + "; timestamp=" + tachyon::utility::datetime();
 
-		reader.header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		reader.header.literals += reader.getSettings().get_settings_string();
+		reader.global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
+		reader.global_header.literals += reader.getSettings().get_settings_string();
 
-		std::cout << reader.header.literals << std::endl;
-		reader.header.writeVCFHeaderString(std::cout, true);
+		std::cout << reader.global_header.literals << std::endl;
+		reader.global_header.writeVCFHeaderString(std::cout, true);
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.header, settings.custom_output_format)){
+		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.global_header, settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -392,7 +392,7 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions.load = true;
 	}
 
-	reader.getBlockSettings().parseSettings(reader.header);
+	reader.getBlockSettings().parseSettings(reader.global_header);
 	reader.getFilterSettings() = filters;
 
 	tachyon::algorithm::Timer timer;
