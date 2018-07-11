@@ -275,7 +275,7 @@ public:
 	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
 
 	/**<
-	 * Not implemented yet
+	 * Not implementeds
 	 * Return bit-mask primitive of variant classifications detected
 	 * @param meta Input meta entry for a site
 	 * @return     Returns a primitive interpreted as a boolean presence/absence bit-mask

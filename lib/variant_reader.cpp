@@ -215,36 +215,52 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	return true;
 }
 
-VariantReader::block_entry_type VariantReader::getBlock(){
+containers::VariantBlockContainer VariantReader::getBlock(){
 	// If the stream is faulty then return
 	if(!this->stream.good()){
-		std::cerr << utility::timestamp("ERROR") << "Corrupted!" << std::endl;
-		return block_entry_type();
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+		return variant_container_type();
 	}
 
 	// If the current position is the EOF then
 	// exit the function
 	if((U64)this->stream.tellg() == this->global_footer.offset_end_of_data)
-		return block_entry_type();
+		return variant_container_type();
 
+	// Reset and re-use
+	containers::VariantBlockContainer block;
 
-	block_entry_type block;
-	const size_t position = this->stream.tellg();
+	if(!block.getBlock().readHeaderFooter(this->stream))
+		return variant_container_type();
 
-	// Attempts to read a YON block with the provided
-	// settings
-	if(!block.read(this->stream)){
-		this->stream.seekg(position);
-		return block;
+	if(!this->codec_manager.zstd_codec.decompress(block.getBlock().footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+	}
+	block.getBlock().footer_support.buffer_data_uncompressed >> block.getBlock().footer;
+
+	// Attempts to read a YON block with the settings provided
+	if(!block.readBlock(this->stream, this->getBlockSettings()))
+		return variant_container_type();
+
+	// encryption manager ascertainment
+	if(block.anyEncrypted()){
+		if(this->keychain.size() == 0){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
+			return variant_container_type();
+		}
+
+		encryption::EncryptionDecorator e;
+		if(!e.decryptAES256(block.getBlock(), this->keychain)){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
+			return variant_container_type();
+		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
-		this->stream.seekg(position);
-		return block;
+	if(!this->codec_manager.decompress(block.getBlock())){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
+		return variant_container_type();
 	}
-
-	this->stream.seekg(position);
 
 	// All passed
 	return block;
