@@ -986,8 +986,6 @@ const U64 VariantReader::outputCustom(void){
 const U32 VariantReader::outputBlockVCF(void){
 	objects_type objects;
 	this->loadObjects(objects);
-	this->variant_filters.build();
-
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
@@ -1054,7 +1052,6 @@ const U32 VariantReader::outputBlockVCF(void){
 const U32 VariantReader::outputBlockCustom(void){
 	objects_type objects;
 	this->loadObjects(objects);
-	this->variant_filters.build();
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of syncing

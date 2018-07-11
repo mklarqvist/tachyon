@@ -13,18 +13,19 @@ public:
 	VariantReaderFiltersTupleInterface(const bool filter) : filter(filter){}
 	virtual ~VariantReaderFiltersTupleInterface(){}
 
-	bool applyFilter(const bool& l_value)  const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const BYTE& l_value)  const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const U16& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const U32& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const U64& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const SBYTE& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const S16& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const S32& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const S64& l_value)   const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const float& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const double& l_value)const{ std::cerr << "in virtual" << std::endl; return false; };
-	bool applyFilter(const std::string& l_value) const{ std::cerr << "in virtual" << std::endl; return false; };
+	// Not possible to have a templated pure virtual functionality
+	virtual bool applyFilter(const bool& l_value)  const =0;
+	virtual bool applyFilter(const BYTE& l_value)  const =0;
+	virtual bool applyFilter(const U16& l_value)   const =0;
+	virtual bool applyFilter(const U32& l_value)   const =0;
+	virtual bool applyFilter(const U64& l_value)   const =0;
+	virtual bool applyFilter(const SBYTE& l_value) const =0;
+	virtual bool applyFilter(const S16& l_value)   const =0;
+	virtual bool applyFilter(const S32& l_value)   const =0;
+	virtual bool applyFilter(const S64& l_value)   const =0;
+	virtual bool applyFilter(const float& l_value) const =0;
+	virtual bool applyFilter(const double& l_value)const =0;
+	virtual bool applyFilter(const std::string& l_value) const =0;
 
 public:
 	bool filter;
@@ -91,10 +92,18 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const ValueClass& l_value) const{
-		std::cerr << "Overloaded" << std::endl;
-		return((this->*comparator)(l_value, r_value));
-	}
+	inline bool applyFilter(const bool& l_value)  const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const BYTE& l_value)  const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const U16& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const U32& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const U64& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const SBYTE& l_value) const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const S16& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const S32& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const S64& l_value)   const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const float& l_value) const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const double& l_value)const{ return((this->*comparator)(l_value, r_value)); }
+	inline bool applyFilter(const std::string& l_value) const{ return(false); }
 
 	// Comparator functions
 	inline bool __filterLesser(const ValueClass& target, const ValueClass& limit) const{return(target < limit);}
@@ -168,10 +177,18 @@ public:
 
 	~VariantReaderFiltersTuple() = default;
 
-	inline bool applyFilter(const std::string& l_value) const{
-		std::cerr << "Overloaded" << std::endl;
-		return((this->*comparator)(l_value, this->r_value));
-	}
+	inline bool applyFilter(const bool& l_value)  const{ return false; }
+	inline bool applyFilter(const BYTE& l_value)  const{ return false; }
+	inline bool applyFilter(const U16& l_value)   const{ return false; }
+	inline bool applyFilter(const U32& l_value)   const{ return false; }
+	inline bool applyFilter(const U64& l_value)   const{ return false; }
+	inline bool applyFilter(const SBYTE& l_value) const{ return false; }
+	inline bool applyFilter(const S16& l_value)   const{ return false; }
+	inline bool applyFilter(const S32& l_value)   const{ return false; }
+	inline bool applyFilter(const S64& l_value)   const{ return false; }
+	inline bool applyFilter(const float& l_value) const{ return false; }
+	inline bool applyFilter(const double& l_value)const{ return false; }
+	inline bool applyFilter(const std::string& l_value) const{ return((this->*comparator)(l_value, r_value)); }
 
 	// Comparator functions
 	inline bool __filterLesser(const std::string& target, const std::string& limit) const{return(target.size() < limit.size());}

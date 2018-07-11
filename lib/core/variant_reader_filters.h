@@ -31,8 +31,7 @@ public:
 	typedef const value_type*    const_pointer;
 	typedef std::ptrdiff_t       difference_type;
 	typedef std::size_t          size_type;
-	//typedef bool (self_type::*filter_function)(const objects_type& objects, const U32& position) const;
-	typedef bool (self_type::*filter_function)(const_reference pair, const objects_type& objects, const U32& position) const;
+	typedef bool (self_type::*filter_function)(const_pointer pair, const objects_type& objects, const U32& position) const;
 	typedef bool (self_type::*family_filter_function)(void) const;
 
 public:
@@ -48,9 +47,9 @@ public:
 
 	~VariantReaderFilters(){
 		if(this->filter_data_ != nullptr){
-			for(U32 i = 0; i < this->n_capacity_; ++i){
-				delete [] this->filter_data_[i];
-			}
+			for(U32 i = 0; i < this->n_filters_; ++i)
+				delete this->filter_data_[i];
+
 			delete [] this->filter_data_;
 		}
 	}
@@ -107,105 +106,78 @@ public:
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
 	// Has mixed phasing
-	inline bool filterMixedPhasing(const_reference& pair, const objects_type& objects, const U32& position) const{
-		//assert(objects.meta != nullptr);
-		return(pair.applyFilter(objects.meta_container->at(position).isGTMixedPhasing()));
+	inline bool filterMixedPhasing(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter(objects.meta_container->at(position).isGTMixedPhasing()));
 	}
 
-	inline bool filterMixedPloidy(const_reference& pair, const objects_type& objects, const U32& position) const{
-		//assert(objects.meta != nullptr);
-		return(pair.applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
+	inline bool filterMixedPloidy(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
 	}
 
-	inline bool filterKnownNovel(const_reference& pair, const objects_type& objects, const U32& position) const{
-		//assert(objects.meta != nullptr);
-		return(pair.applyFilter((U32)objects.meta_container->at(position).name.size()));
+	inline bool filterKnownNovel(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter((U32)objects.meta_container->at(position).name.size()));
 	}
 
 	// GT data matches this
-	inline bool filterUniformMatchPhase(const_reference& pair, const objects_type& objects, const U32& position) const
+	inline bool filterUniformMatchPhase(const_pointer pair, const objects_type& objects, const U32& position) const
 	{
-		//assert(objects.meta != nullptr);
-		return(objects.meta_container->at(position).isGTMixedPhasing() == false &&
-			   objects.meta_container->at(position).controller.gt_phase == this->filter_uniform_phase.r_value);
+		if(objects.meta_container->at(position).isGTMixedPhasing() == true) return false;
+		return(pair->applyFilter(objects.meta_container->at(position).controller.gt_phase));
 	}
 
-	bool filterPloidy(const_reference& pair, const objects_type& objects, const U32& position) const;
-
-
-	bool filterSampleList(const_reference& pair, const objects_type& objects, const U32& position) const;
-
+	bool filterPloidy(const_pointer pair, const objects_type& objects, const U32& position) const;
+	bool filterSampleList(const_pointer pair, const objects_type& objects, const U32& position) const;
 
 	// BCFtools calculate this as the SUM of all ALT counts
 	// We filter based on ANY ALT frequency OPERATOR the target frequency
-	bool filterAlleleFrequency(const_reference& pair, const objects_type& objects, const U32& position) const{
+	bool filterAlleleFrequency(const_pointer pair, const objects_type& objects, const U32& position) const{
 		const std::vector<double> af = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
 		for(U32 i = 1; i < af.size(); ++i){
-			if(this->filter_af.applyFilter(af[i]))
+			if(pair->applyFilter(af[i]))
 				return true;
 		}
 		return(false);
 	}
 
-	bool filterVariantClassification(const_reference& pair, const objects_type& object, const U32& position) const;
-	bool filterUnseenAlternativeAlleles(const_reference& pair, const objects_type& object, const U32& position) const;
-	bool filterFILTER(const_reference& pair, const objects_type& object, const U32& position) const;  // Filter by desired FILTER values
-	bool filterINFO(const_reference& pair, const objects_type& object, const U32& position) const;    // custom filter. e.g. AC<1024
+	bool filterVariantClassification(const_pointer pair, const objects_type& object, const U32& position) const;
+	bool filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const;
+	bool filterFILTER(const_pointer pair, const objects_type& object, const U32& position) const;  // Filter by desired FILTER values
+	bool filterINFO(const_pointer pair, const objects_type& object, const U32& position) const;    // custom filter. e.g. AC<1024
 
-	inline bool filterAlternativeAlleles(const_reference& pair, const objects_type& object, const U32& position) const{
+	inline bool filterAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const{
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
-		return(pair.applyFilter(object.meta_container->at(position).getNumberAlleles() - 1));
+		return(pair->applyFilter(object.meta_container->at(position).getNumberAlleles() - 1));
 	}
 
-	inline bool filterAlleleCount(const_reference& pair, const objects_type& object, const U32& position) const{
+	inline bool filterAlleleCount(const_pointer pair, const objects_type& object, const U32& position) const{
 		for(U32 i = 1; i < object.meta_container->at(position).n_alleles; ++i){
-			if(pair.applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i])){
+			if(pair->applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i])){
 				return true;
 			}
 		}
 		return false;
 	}
 
-	inline bool filterHasMissingGenotypes(const_reference& pair, const objects_type& object, const U32& position) const{
-		return(pair.applyFilter(object.genotype_summary->vectorA_[1]));
+	inline bool filterHasMissingGenotypes(const_pointer pair, const objects_type& object, const U32& position) const{
+		return(pair->applyFilter(object.genotype_summary->vectorA_[1]));
 	}
 
-	inline bool filterReferenceAllele(const_reference& pair, const objects_type& object, const U32& position) const{
+	inline bool filterReferenceAllele(const_pointer pair, const objects_type& object, const U32& position) const{
 		//std::cerr << object.meta->at(position).alleles[0].toString() << std::endl;
-		return(pair.applyFilter(object.meta_container->at(position).alleles[0].toString()));
+		return(pair->applyFilter(object.meta_container->at(position).alleles[0].toString()));
 	}
 
-	inline bool filterAlternativeAllele(const_reference& pair, const objects_type& object, const U32& position) const{
+	inline bool filterAlternativeAllele(const_pointer pair, const objects_type& object, const U32& position) const{
 		for(U32 i = 1; i < object.meta_container->at(position).n_alleles; ++i){
-			if(pair.applyFilter(object.meta_container->at(position).alleles[i].toString()))
+			if(pair->applyFilter(object.meta_container->at(position).alleles[i].toString()))
 				return true;
 		}
 		return false;
 	}
 
-	inline bool filterName(const_reference& pair, const objects_type& object, const U32& position) const{
-		return(pair.applyFilter(object.meta_container->at(position).name));
-	}
-
-	/**<
-	 * Constructs the filter pointer vector given the fields that have been set
-	 */
-	void build(void){
-		/*
-		this->filters.clear();
-		if(this->filter_n_alts.filter)        this->filters.push_back(&self_type::filterAlternativeAlleles);
-		if(this->filter_mixed_phase.filter)   this->filters.push_back(&self_type::filterMixedPhasing);
-		if(this->filter_mixed_ploidy.filter)  this->filters.push_back(&self_type::filterMixedPloidy);
-		if(this->filter_missing.filter)       this->filters.push_back(&self_type::filterHasMissingGenotypes);
-		if(this->filter_af.filter)            this->filters.push_back(&self_type::filterAlleleFrequency);
-		if(this->filter_ac.filter)            this->filters.push_back(&self_type::filterAlleleCount);
-		if(this->filter_uniform_phase.filter) this->filters.push_back(&self_type::filterUniformMatchPhase);
-		if(this->filter_known_novel.filter)   this->filters.push_back(&self_type::filterKnownNovel);
-		if(this->filter_ref_allele.filter)    this->filters.push_back(&self_type::filterReferenceAllele);
-		if(this->filter_alt_allele.filter)    this->filters.push_back(&self_type::filterAlternativeAllele);
-		if(this->filter_name.filter)          this->filters.push_back(&self_type::filterName);
-		*/
+	inline bool filterName(const_pointer pair, const objects_type& object, const U32& position) const{
+		return(pair->applyFilter(object.meta_container->at(position).name));
 	}
 
 	/**<
@@ -219,7 +191,6 @@ public:
 		if(this->require_genotypes)
 			objects.genotype_container->at(position).getSummary(*objects.genotype_summary);
 
-		//std::cerr << "have: " << this->filters.size() << " filters" << std::endl;
 		for(U32 i = 0 ; i < this->filters.size(); ++i){
 			if((this->*(this->filters[i]))(this->filter_data_[i], objects, position) == false){
 				return false;
@@ -235,28 +206,11 @@ public:
 	inline const bool doRequireGenotypes(void) const{ return(this->require_genotypes); }
 
 public:
-	//
-	size_type n_filters_;      // number of filters
-	size_type n_capacity_;     // capacity
-
-	//
+	size_type n_filters_;   // number of filters
+	size_type n_capacity_;  // capacity
 	bool require_genotypes; // Filtering require genotypes
 	bool target_intervals;  // Filtering require intervals
-	std::vector<filter_function>        filters;
-	//std::vector<family_filter_function> family_filters;
-
-	VariantReaderFiltersTuple<bool>  filter_uniform_phase;
-	VariantReaderFiltersTuple<SBYTE> filter_n_alts;
-	VariantReaderFiltersTuple<S64>   filter_missing;
-	VariantReaderFiltersTuple<bool>  filter_mixed_phase;
-	VariantReaderFiltersTuple<bool>  filter_mixed_ploidy;
-	VariantReaderFiltersTuple<bool>  filter_known_novel;
-	VariantReaderFiltersTuple<float> filter_af;
-	VariantReaderFiltersTuple<S32>   filter_ac;
-	VariantReaderFiltersTuple<std::string> filter_ref_allele;
-	VariantReaderFiltersTuple<std::string> filter_alt_allele;
-	VariantReaderFiltersTuple<std::string> filter_name;
-
+	std::vector<filter_function> filters;
 	value_type** filter_data_; // actual tuples stored here -> have to be double-pointer because of different payloads
 };
 

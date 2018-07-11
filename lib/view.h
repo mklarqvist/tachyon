@@ -146,70 +146,69 @@ int view(int argc, char** argv){
 			settings.keychain_file = std::string(optarg);
 			break;
 		case 'q':
-			filters.filter_af(atof(optarg));
+			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'Q':
-			filters.filter_af(atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'm':
 			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
-			//filters.filter_n_alts(atoi(optarg));
 			break;
 		case 'M':
-			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'a':
-			filters.filter_ref_allele(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_REFERENCE_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'A':
-			filters.filter_alt_allele(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_ALT_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'n':
-			filters.filter_name(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_NAME, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'c':
-			filters.filter_ac(atoi(optarg));
+			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
 			filters.require_genotypes = true;
 			break;
 		case 'C':
-			filters.filter_ac(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'p':
-			filters.filter_uniform_phase(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'P':
-			filters.filter_uniform_phase(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'j':
-			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'J':
-			filters.filter_mixed_phase(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'w':
-			filters.filter_mixed_ploidy(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'W':
-			filters.filter_mixed_ploidy(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'u':
-			filters.filter_missing(0, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.filter_missing(0, tachyon::YON_CMP_GREATER);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'z':
-			filters.filter_known_novel(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'Z':
-			filters.filter_known_novel(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'f':
 			interpret_commands.push_back(std::string(optarg));
