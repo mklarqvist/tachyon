@@ -60,13 +60,15 @@ void view_usage(void){
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
+	"  -q/Q, --min-quality/--max-quality           minimum/maximum quality value\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
 	"  -j/J  --mixed-phasing/--no-mixed-phasing    select sites with both phased and unphased samples\n"
 	"  -w/W  --mixed-ploidy/--no-mixed-ploidy      select sites with mixed ploidy\n"
-	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
+	"  -l/L, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
+	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n"
     "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
 }
 
@@ -99,8 +101,8 @@ int view(int argc, char** argv){
 		{"dropFormat",    no_argument, 0,  'G' },
 		{"customFormat",  no_argument, 0,  'y' },
 		{"silent",        no_argument, 0,  's' },
-		{"af-min",        optional_argument, 0,  'q' },
-		{"af-max",        optional_argument, 0,  'Q' },
+		{"af-min",        optional_argument, 0,  'l' },
+		{"af-max",        optional_argument, 0,  'L' },
 		{"ac-min",        optional_argument, 0,  'c' },
 		{"ac-max",        optional_argument, 0,  'C' },
 		{"alleles-min",   optional_argument, 0,  'm' },
@@ -118,6 +120,10 @@ int view(int argc, char** argv){
 		{"name-match",  optional_argument, 0,  'n' },
 		{"mixed-ploidy",no_argument,       0,  'w' },
 		{"no-mixed-ploidy",no_argument,       0,  'W' },
+		{"remove-unseen",no_argument,       0,  'e' },
+		{"keep-unseen",no_argument,       0,  'E' },
+		{"min-quality",optional_argument,       0,  'q' },
+		{"max-quality",optional_argument,       0,  'Q' },
 		{0,0,0,0}
 	};
 
@@ -131,7 +137,7 @@ int view(int argc, char** argv){
 	tachyon::VariantReader reader;
 	tachyon::VariantReaderFilters& filters = reader.getFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:wW", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -145,13 +151,19 @@ int view(int argc, char** argv){
 		case 'k':
 			settings.keychain_file = std::string(optarg);
 			break;
-		case 'q':
+		case 'l':
 			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
-		case 'Q':
+		case 'L':
 			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
+			break;
+		case 'q':
+			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
+			break;
+		case 'Q':
+			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'm':
 			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
@@ -197,11 +209,11 @@ int view(int argc, char** argv){
 			filters.require_genotypes = true;
 			break;
 		case 'u':
-			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'z':
@@ -256,6 +268,14 @@ int view(int argc, char** argv){
 			break;
 		case 'X':
 			settings.annotate_genotypes = true;
+			break;
+		case 'e':
+			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
+			break;
+		case 'E':
+			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
 			break;
 
 		default:

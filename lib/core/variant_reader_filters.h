@@ -17,7 +17,9 @@ enum TACHYON_FILTER_FUNCTION{
 	YON_FILTER_KNOWN_NOVEL,
 	YON_FILTER_REFERENCE_ALLELE,
 	YON_FILTER_ALT_ALLELE,
-	YON_FILTER_NAME
+	YON_FILTER_NAME,
+	YON_FILTER_UNSEEN_ALT,
+	YON_FILTER_QUALITY
 };
 
 struct VariantReaderFilters{
@@ -99,6 +101,12 @@ public:
 		case(YON_FILTER_NAME):
 			this->filters.push_back(&self_type::filterName);
 			break;
+		case(YON_FILTER_UNSEEN_ALT):
+			this->filters.push_back(&self_type::filterUnseenAlternativeAlleles);
+			break;
+		case(YON_FILTER_QUALITY):
+			this->filters.push_back(&self_type::filterQuality);
+			break;
 		}
 	}
 
@@ -116,6 +124,10 @@ public:
 
 	inline bool filterKnownNovel(const_pointer pair, const objects_type& objects, const U32& position) const{
 		return(pair->applyFilter((U32)objects.meta_container->at(position).name.size()));
+	}
+
+	inline bool filterQuality(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter(objects.meta_container->at(position).quality));
 	}
 
 	// GT data matches this
@@ -140,7 +152,15 @@ public:
 	}
 
 	bool filterVariantClassification(const_pointer pair, const objects_type& object, const U32& position) const;
-	bool filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const;
+
+	bool filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const{
+		for(U32 i = 0; i < object.meta_container->at(position).n_alleles; ++i){
+			if(pair->applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i] == 0))
+				return true;
+		}
+		return false;
+	}
+
 	bool filterFILTER(const_pointer pair, const objects_type& object, const U32& position) const;  // Filter by desired FILTER values
 	bool filterINFO(const_pointer pair, const objects_type& object, const U32& position) const;    // custom filter. e.g. AC<1024
 
