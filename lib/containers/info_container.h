@@ -6,35 +6,10 @@
 #include "stride_container.h"
 #include "meta_container.h"
 #include "utility/support_vcf.h"
+#include "info_container_interface.h"
 
 namespace tachyon{
 namespace containers{
-
-class InfoContainerInterface{
-private:
-    typedef InfoContainerInterface self_type;
-    typedef std::size_t            size_type;
-
-public:
-    InfoContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0), n_capacity(0){}
-    InfoContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries), n_capacity(n_entries){}
-    virtual ~InfoContainerInterface(){}
-
-    // Capacity
-	inline const bool empty(void) const{ return(this->n_entries == 0); }
-	inline const size_type& size(void) const{ return(this->n_entries); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity); }
-
-    virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const =0;
-    virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const =0;
-    virtual io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position) const =0;
-    virtual const bool emptyPosition(const U32& position) const =0;
-
-protected:
-    TACHYON_CORE_TYPE primitive_type;
-	size_t  n_entries;
-	size_t  n_capacity;
-};
 
 template <class return_type>
 class InfoContainer : public InfoContainerInterface{
@@ -324,6 +299,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	U32 current_offset = 0;
 	U32 stride_offset = 0;
+
 	for(U32 i = 0; i < this->size(); ++i){
 		// There are no INFO fields
 		if(meta_container[i].getInfoPatternID() == -1){

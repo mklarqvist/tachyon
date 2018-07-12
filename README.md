@@ -7,7 +7,7 @@
 </div>
 
 # Exploring population-scale sequence variant data
-Tachyon, or `YON` for short, is an open source software library for storing and rapidly querying sequence variant data in an (optionally) lossless and bit-exact representation. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets. We have benchmarked Tachyon on population-scaled datasets up to 10 million whole-genome sequenced individuals (see [benchmarks](BENCHMARKS.md)). Most genotype-specific algorithms were originally developed for [Tomahawk][tomahawk] for the purpose of calculating all-vs-all linkage-disequilibrium and identity-by-state in large-scale cohorts.
+Tachyon, or `YON` for short, is an open source software library for storing and rapidly querying sequence variant data in an (optionally) lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets. We have benchmarked Tachyon on population-scaled datasets up to 10 million whole-genome sequenced individuals (see [benchmarks](docs/benchmarks.md)). Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.
 
 ## Highlights of Tachyon
 * **Self-indexing**: Tachyon always builds the best possible quad-tree, linear, and meta-index given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
@@ -56,25 +56,49 @@ You will need to have installed the following dependencies:
 * [openssl][openssl]: An open-source library for encryption/decryption
 
 ### Building from source
-If the required dependencies listed above are installed then building is trivial. Note the added `--recursive` flag to the clone request. This flag is required to additionally clone the latest third-party dependencies.
+If the required external dependencies listed above are installed then building is trivial. Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies.
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
 make
 ```
-Tachyon comes bundled with several API-examples in the `lib_example` directory. Build them with
+Tachyon comes bundled with several API-examples in the `lib_example` directory. They are built by default but should you want to rebuild them execute the command:
 ```bash
 make examples
 ```
 
-If you have no super-user powers required to install software on your machine:
-```
+### Building without admin privilidges
+If you have no super-user (`sudo`) powers required to install software on your machine:
+
+### Linux/MacOSX
+```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
+# If you do NOT have ZSTD available
 git clone https://github.com/facebook/zstd
 cd zstd
 make
 cd ..
+# If you do NOT have OpenSSL installed
+git clone git://git.openssl.org/openssl.git
+cd openssl
+./config
+make
+cd ..
+# Build Tachyon
+make
+```
+### MacOSX
+Installation using [Homebrew](https://brew.sh/):
+```bash
+brew update
+# If you do NOT have OpenSSL installed
+brew install openssl
+# If you do NOT have ZSTD installed
+brew install zstd
+# Install Tachyon
+git clone --recursive https://github.com/mklarqvist/tachyon
+cd tachyon
 make
 ```
 

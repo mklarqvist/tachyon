@@ -32,24 +32,24 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
+	reader.getBlockSettings().loadAllMeta(true);
+
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
 
-	reader.getBlockSettings().loadAllMeta(true);
-
 	/**<
-	 *  The `FormatContainer` class stores the data for each variant
-	 *  for each individual as container[variant][sample][data]
+	 *  The `MetaContainer` class stores the site-centric information
+	 *  for each site
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.block);
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 		for(U32 variant = 0; variant < meta.size(); ++variant){
 			// Write the data to `cout` in `VCF` formatting
-			tachyon::utility::to_vcf_string(std::cout, '\t', meta[variant], reader.header);
+			tachyon::utility::to_vcf_string(std::cout, '\t', meta[variant], reader.getGlobalHeader());
 			std::cout << '\n';
 		}
 		std::cout << '\n';

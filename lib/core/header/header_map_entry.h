@@ -19,65 +19,18 @@ private:
 	typedef HeaderMapEntry self_type;
 
 public:
-	HeaderMapEntry() :
-		IDX(0),
-		primitive_type(0)
-	{}
+	HeaderMapEntry();
+	HeaderMapEntry(const std::string& id, const S32& idx);
+	HeaderMapEntry(const std::string& id, const S32& idx, const S32& primitive_type);
+	HeaderMapEntry(const std::string& id);
+	HeaderMapEntry(const self_type& other);
+	HeaderMapEntry(self_type&& other);
+	HeaderMapEntry& operator=(const self_type& other);
+	HeaderMapEntry& operator=(HeaderMapEntry&& other);
+	~HeaderMapEntry() = default;
 
-	HeaderMapEntry(const std::string& id, const S32& idx) :
-		IDX(idx),
-		primitive_type(0),
-		ID(id)
-	{}
-
-	HeaderMapEntry(const std::string& id, const S32& idx, const S32& primitive_type) :
-		IDX(idx),
-		primitive_type(primitive_type),
-		ID(id)
-	{}
-
-	HeaderMapEntry(const std::string& id) :
-		IDX(0),
-		primitive_type(0),
-		ID(id)
-	{}
-
-	HeaderMapEntry(const self_type& other) :
-		IDX(other.IDX),
-		primitive_type(other.primitive_type),
-		ID(other.ID)
-	{}
-
-	HeaderMapEntry(self_type&& other) :
-		IDX(other.IDX),
-		primitive_type(other.primitive_type),
-		ID(other.ID)
-	{}
-
-	HeaderMapEntry& operator=(const self_type& other){
-		this->IDX = other.IDX;
-		this->primitive_type = other.primitive_type;
-		this->ID  = other.ID;
-		return(*this);
-	}
-
-	HeaderMapEntry& operator=(HeaderMapEntry&& other){
-		this->IDX = other.IDX;
-		this->primitive_type = other.primitive_type;
-		this->ID  = other.ID;
-		return(*this);
-	}
-
-	~HeaderMapEntry(){}
-
-	inline const bool operator<(const self_type& other) const{
-		return(this->IDX < other.IDX);
-	}
-
-	inline const bool operator>(const self_type& other) const{
-		return(!this->operator<(other));
-	}
-
+	inline const bool operator<(const self_type& other) const{ return(this->IDX < other.IDX); }
+	inline const bool operator>(const self_type& other) const{ return(!this->operator<(other));}
 	inline const TACHYON_VARIANT_HEADER_FIELD_TYPE getType(void) const{ return(TACHYON_VARIANT_HEADER_FIELD_TYPE(this->primitive_type)); }
 
 private:

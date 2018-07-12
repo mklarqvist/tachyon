@@ -32,12 +32,12 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
+	reader.getBlockSettings().loadFORMAT("GQ");
+
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
-
-	reader.getBlockSettings().loadFORMAT("GQ");
 
 	/**<
 	 *  The `FormatContainer` class stores the data for each variant
@@ -45,10 +45,10 @@ int main(int argc, char** argv){
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.block);
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::FormatContainer<U32>* dp_container = reader.get_balanced_format_container<U32>("GQ", meta);
+	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("GQ", meta);
 
 	    if(dp_container != nullptr){
 	        for(U32 variant = 0; variant < dp_container->size(); ++variant){

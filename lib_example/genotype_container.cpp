@@ -40,15 +40,15 @@ int main(int argc, char** argv){
 	reader.getBlockSettings().loadGenotypes(true).loadAllMeta(true).loadPermutationArray(true);
 
 	/**<
-	 *  The `FormatContainer` class stores the data for each variant
-	 *  for each individual as container[variant][sample][data]
+	 *  The `GenotypeContaier` class stores the genotype information in a site-centric
+	 *  fashion
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.block);
+		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // Genotype container
-		tachyon::containers::GenotypeContainer gt(reader.block, meta);
+		tachyon::containers::GenotypeContainer gt(reader.getCurrentBlock().getBlock(), meta);
 
 		for(U32 i = 0; i < gt.size(); ++i){
 			// All of these functions are in relative terms very expensive!
@@ -56,29 +56,29 @@ int main(int argc, char** argv){
 			// Vector of literal genotype representations (lower level)
 			std::vector<tachyon::core::GTObject> objects     = gt[i].getLiteralObjects();
 			// Vector of genotype objects (high level permuted)
-			std::vector<tachyon::core::GTObject> objects_all = gt[i].getObjects(reader.header.getSampleNumber());
+			std::vector<tachyon::core::GTObject> objects_all = gt[i].getObjects(reader.getGlobalHeader().getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<tachyon::core::GTObject> objects_true = gt[i].getObjects(reader.header.getSampleNumber(), reader.block.ppa_manager);
+			std::vector<tachyon::core::GTObject> objects_true = gt[i].getObjects(reader.getGlobalHeader().getSampleNumber(), reader.getCurrentBlock().getBlock().ppa_manager);
 
 			// Print the difference
 			std::cout << objects.size() << '\t' << objects_all.size() << '\t' << objects_true.size() << std::endl;
 
 			// Dump data
-			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.header);
+			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.getGlobalHeader());
 			std::cout << objects[0].n_objects << ":" << objects[0];
 			for(U32 sample = 1; sample < objects.size(); ++sample){
 				std::cout << '\t' << objects[sample].n_objects << ":" << objects[sample];
 			}
 			std::cout << '\n';
 
-			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.header);
+			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.getGlobalHeader());
 			std::cout << objects_all[0];
 			for(U32 sample = 1; sample < objects_all.size(); ++sample){
 				std::cout << '\t' << objects_all[sample];
 			}
 			std::cout << '\n';
 
-			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.header);
+			tachyon::utility::to_vcf_string(std::cout, '\t', gt[i].getMeta(), reader.getGlobalHeader());
 			std::cout << objects_true[0];
 			for(U32 sample = 1; sample < objects_true.size(); ++sample){
 				std::cout << '\t' << objects_true[sample];

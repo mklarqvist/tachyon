@@ -60,13 +60,15 @@ void view_usage(void){
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
+	"  -q/Q, --min-quality/--max-quality           minimum/maximum quality value\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
     "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
 	"  -j/J  --mixed-phasing/--no-mixed-phasing    select sites with both phased and unphased samples\n"
 	"  -w/W  --mixed-ploidy/--no-mixed-ploidy      select sites with mixed ploidy\n"
-	"  -q/Q, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
+	"  -l/L, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
+	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n"
     "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
 }
 
@@ -99,8 +101,8 @@ int view(int argc, char** argv){
 		{"dropFormat",    no_argument, 0,  'G' },
 		{"customFormat",  no_argument, 0,  'y' },
 		{"silent",        no_argument, 0,  's' },
-		{"af-min",        optional_argument, 0,  'q' },
-		{"af-max",        optional_argument, 0,  'Q' },
+		{"af-min",        optional_argument, 0,  'l' },
+		{"af-max",        optional_argument, 0,  'L' },
 		{"ac-min",        optional_argument, 0,  'c' },
 		{"ac-max",        optional_argument, 0,  'C' },
 		{"alleles-min",   optional_argument, 0,  'm' },
@@ -118,19 +120,24 @@ int view(int argc, char** argv){
 		{"name-match",  optional_argument, 0,  'n' },
 		{"mixed-ploidy",no_argument,       0,  'w' },
 		{"no-mixed-ploidy",no_argument,       0,  'W' },
+		{"remove-unseen",no_argument,       0,  'e' },
+		{"keep-unseen",no_argument,       0,  'E' },
+		{"min-quality",optional_argument,       0,  'q' },
+		{"max-quality",optional_argument,       0,  'Q' },
 		{0,0,0,0}
 	};
 
 	tachyon::VariantReaderSettings settings;
 	tachyon::DataBlockSettings     block_settings;
-	tachyon::VariantReaderFilters  filters;
 	std::vector<std::string>       interpret_commands;
 	std::vector<std::string>       interval_strings;
 
 	SILENT = 0;
 	std::string temp;
+	tachyon::VariantReader reader;
+	tachyon::VariantReaderFilters& filters = reader.getFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?q:Q:m:M:pPuUc:C:jJzZa:A:n:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -144,70 +151,76 @@ int view(int argc, char** argv){
 		case 'k':
 			settings.keychain_file = std::string(optarg);
 			break;
-		case 'q':
-			filters.filter_af(atof(optarg));
+		case 'l':
+			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
+			break;
+		case 'L':
+			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.require_genotypes = true;
+			break;
+		case 'q':
+			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
 			break;
 		case 'Q':
-			filters.filter_af(atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
-			filters.require_genotypes = true;
+			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'm':
-			filters.filter_n_alts(atoi(optarg));
+			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
 			break;
 		case 'M':
-			filters.filter_n_alts(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'a':
-			filters.filter_ref_allele(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_REFERENCE_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'A':
-			filters.filter_alt_allele(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_ALT_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'n':
-			filters.filter_name(optarg, tachyon::YON_CMP_REGEX);
+			filters.add(tachyon::YON_FILTER_NAME, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'c':
-			filters.filter_ac(atoi(optarg));
+			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
 			filters.require_genotypes = true;
 			break;
 		case 'C':
-			filters.filter_ac(atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'p':
-			filters.filter_uniform_phase(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'P':
-			filters.filter_uniform_phase(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'j':
-			filters.filter_mixed_phase(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'J':
-			filters.filter_mixed_phase(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'w':
-			filters.filter_mixed_ploidy(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'W':
-			filters.filter_mixed_ploidy(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'u':
-			filters.filter_missing(0, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.filter_missing(0, tachyon::YON_CMP_GREATER);
+			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'z':
-			filters.filter_known_novel(true, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'Z':
-			filters.filter_known_novel(false, tachyon::YON_CMP_EQUAL);
+			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'f':
 			interpret_commands.push_back(std::string(optarg));
@@ -256,6 +269,14 @@ int view(int argc, char** argv){
 		case 'X':
 			settings.annotate_genotypes = true;
 			break;
+		case 'e':
+			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
+			break;
+		case 'E':
+			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.require_genotypes = true;
+			break;
 
 		default:
 			std::cerr << "here default" << std::endl;
@@ -277,22 +298,12 @@ int view(int argc, char** argv){
 	}
 	*/
 
-	tachyon::VariantReader reader;
+
 	reader.getSettings() = settings;
 
 	// temp
 	if(settings.keychain_file.size()){
-		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
-			return 1;
-		}
-
-		keychain_reader >> reader.keychain;
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
-			return 1;
-		}
+		if(reader.loadKeychainFile(settings.keychain_file) == false) return 1;
 	}
 
 	if(!reader.open(settings.input)){
@@ -301,23 +312,13 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		reader.header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-		                       +  SSLeay_version(SSLEAY_VERSION) + ","
-		                       + "ZSTD-" + ZSTD_versionString()
-		                       + "; timestamp=" + tachyon::utility::datetime();
-
-		reader.header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		reader.header.literals += reader.getSettings().get_settings_string();
-
-		std::cout << reader.header.literals << std::endl;
-		reader.header.writeVCFHeaderString(std::cout, true);
+		reader.printHeaderVCF();
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.header, settings.custom_output_format)){
+		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -392,7 +393,7 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions.load = true;
 	}
 
-	reader.getFilterSettings() = filters;
+	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();

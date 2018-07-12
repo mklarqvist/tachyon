@@ -32,37 +32,49 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
-	reader.getBlockSettings().loadINFO("DP");
+	reader.getBlockSettings().loadFORMAT("DP");
 
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
 
+	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.getGlobalHeader().getSampleNumber());
+	std::vector<tachyon::math::SummaryStatistics> depth_data_truncated(reader.getGlobalHeader().getSampleNumber());
+
 	/**<
-	 * The `InfoContainer` class stores the data for each variant as
-	 * container[variant][data]. Both `InfoContainer` and `FormatContainer`
-	 * supports variant-balancing of the classes. Balancing refers to filling
-	 * variant sites in the file with empty objects if no target data is present
-	 * at that site.
+	 *  In this example we will write a simple program to calculate
+	 *  the depth profile for each individual in a file
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
 		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::InfoContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_info_container<U32>("DP", meta);
+	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("DP", meta);
 
 	    if(dp_container != nullptr){
 	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
-	            // Write the data to `cout` in `VCF` formatting
-	            tachyon::utility::to_vcf_string(std::cout, dp_container->at(variant));
-	            std::cout << '\n';
+	            for(U32 sample = 0; sample < dp_container->at(variant).size(); ++sample){
+	               if(dp_container->at(variant).at(sample).size()){
+	            		depth_data[sample].addNonzero(dp_container->at(variant).at(sample)[0]);
+	            		depth_data_truncated[sample].addNonzero(dp_container->at(variant).at(sample)[0] > 100 ? 100 : dp_container->at(variant).at(sample)[0]);
+
+	               }
+	            }
 	        }
-	        std::cout << '\n';
 	    }
 	    delete dp_container;
 	}
+
+	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\tMeanTrunc\tSDTrunc\tMinTrunc\tMaxTrunc\tNTrunc\n";
+	for(U32 i = 0; i < reader.getGlobalHeader().getSampleNumber(); ++i){
+		depth_data[i].calculate();
+		depth_data_truncated[i].calculate();
+		std::cout << reader.getGlobalHeader().samples[i].name << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\t"
+		          << depth_data_truncated[i].mean << "\t" << depth_data_truncated[i].getStandardDeviation() << "\t" << depth_data_truncated[i].min << "\t" << depth_data_truncated[i].max << "\t" << depth_data_truncated[i].getCount() << "\n";
+	}
+	std::cout.flush();
 
 	return(0);
 }

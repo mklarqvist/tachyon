@@ -141,5 +141,8 @@ before_install:
   - cd ..
 script:
   - git submodule update --recursive
-  - make -j4
-  - make examples
+  - cd lib/third_party/zlib
+  - ./configure
+  - cd ../../../
+  - make -j 4
+  

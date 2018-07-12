@@ -20,12 +20,14 @@
 #include "containers/meta_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/variant_block.h"
+#include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/genotype_object.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_objects.h"
 #include "core/variant_reader_settings.h"
+#include "core/data_block_settings.h"
 #include "index/index.h"
 #include "math/basic_vector_math.h"
 #include "math/fisher_math.h"
@@ -56,6 +58,7 @@ private:
 	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::GenotypeSummary            genotype_summary_type;
 	typedef containers::IntervalContainer          interval_container_type;
+	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
 
@@ -71,7 +74,7 @@ public:
 	VariantReader();
 	VariantReader(const std::string& filename);
 	VariantReader(const self_type& other);
-	~VariantReader();
+	virtual ~VariantReader();
 
 	/**<
 	 * Retrieve current settings records. Settings object is used
@@ -91,14 +94,29 @@ public:
 	 */
 	inline settings_type& getSettings(void){ return(this->settings); }
 
+	/**<
+	 * Retrieve the current filter settings for the variant reader. This
+	 * object controls the pointers to filter applied to each variant.
+	 * @return A reference instance of the filter object
+	 */
 	inline variant_filter_type& getFilterSettings(void){ return(this->variant_filters); }
+
+	// Basic accessors
+	inline header_type& getGlobalHeader(void){ return(this->global_header); }
+	inline const header_type& getGlobalHeader(void) const{ return(this->global_header); }
+	inline footer_type& getGlobalFooter(void){ return(this->global_footer); }
+	inline const footer_type& getGlobalFooter(void) const{ return(this->global_footer); }
+	inline index_type& getIndex(void){ return(this->index); }
+	inline const index_type& getIndex(void) const{ return(this->index); }
+	inline const size_t getFilesize(void) const{ return(this->filesize); }
+	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
+	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
 
 	/**<
 	 * Checks if a FORMAT `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name FORMAT field name to search for (e.g. "GL")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
@@ -107,9 +125,8 @@ public:
 	/**<
 	 * Checks if a INFO `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name INFO field name to search for (e.g. "AC")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
@@ -118,121 +135,13 @@ public:
 	/**<
 	 * Checks if a FILTER `field` is set in the header and then checks
 	 * if that field exists in the current block. If it does return
-	 * the local key. If the field is not described in the header at
-	 * all then return -2. If it exists in the header but not in the
-	 * loaded block then return -1.
+	 * the GLOBAL key. If the field is not described in the header at
+	 * all then return -2.
 	 * @param field_name FILTER field name to search for (e.g. "PASS")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
 	const int has_filter_field(const std::string& field_name) const;
 
-	/**<
-	 * Calculates which INFO pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name INFO field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const;
-
-	/**<
-	 * Calculates which FORMAT pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name FORMAT field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const;
-
-	/**<
-	 * Factory function for FORMAT container given an input `field` name
-	 * @param field_name FORMAT field name to create a container for
-	 * @return           Returns an instance of a `FormatContainer` if successful or a nullpointer otherwise
-	 */
-	template <class T>
-	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
-		int format_field_global_id = this->has_format_field(field_name);
-		if(format_field_global_id >= 0){
-			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
-			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], this->header.getSampleNumber()));
-		}
-		else return nullptr;
-	}
-
-	/**<
-	 * Factory function for balanced FORMAT container given an input `field` name.
-	 * Balances the container such that variants that do not have the given field
-	 * will have an empty container placed instead.
-	 * @param field_name     FORMAT field name to create a container for
-	 * @param meta_container Container for meta objects used to balance the FORMAT container
-	 * @return               Returns an instance of a balanced `FormatContainer` if successful or a nullpointer otherwise
-	 */
-	template <class T>
-	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		if(meta_container.size() == 0)
-			return new containers::FormatContainer<T>();
-
-		int format_field_global_id = this->has_format_field(field_name);
-		if(format_field_global_id >= 0){
-			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
-			U32 matches = 0;
-			for(U32 i = 0; i < pattern_matches.size(); ++i)
-				matches += pattern_matches[i];
-
-			if(matches == 0)
-				return nullptr;
-
-			const U32 target_local_id = this->block_settings.format_map[format_field_global_id].load_order_index;
-
-			return(new containers::FormatContainer<T>(this->block.format_containers[target_local_id], meta_container, pattern_matches, this->header.getSampleNumber()));
-		}
-		else return nullptr;
-	}
-
-	/**<
-	 * Factory function for INFO container given an input `field` name
-	 * @param field_name INFO field name to create a container for
-	 * @return           Returns an instance of a `InfoContainer` if successful or a nullpointer otherwise
-	 */
-	template <class T>
-	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
-		int info_field_global_id = this->has_info_field(field_name);
-		if(info_field_global_id >= 0){
-			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
-			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id]));
-		}
-		else return nullptr;
-	}
-
-	/**<
-	 * Factory function for balanced INFO container given an input `field` name.
-	 * Balances the container such that variants that do not have the given field
-	 * will have an empty container placed instead.
-	 * @param field_name     INFO field name to create a container for
-	 * @param meta_container Container for meta objects used to balance the INFO container
-	 * @return               Returns an instance of a balanced `InfoContainer` if successful or a nullpointer otherwise
-	 */
-	template <class T>
-	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		if(meta_container.size() == 0)
-			return new containers::InfoContainer<T>();
-
-		int info_field_global_id = this->has_info_field(field_name);
-		if(info_field_global_id >= 0){
-			const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
-
-			U32 matches = 0;
-			for(U32 i = 0; i < pattern_matches.size(); ++i)
-				matches += pattern_matches[i];
-
-			if(matches == 0)
-				return nullptr;
-
-			const U32 target_local_id = this->block_settings.info_map[info_field_global_id].load_order_index;
-
-
-			return(new containers::InfoContainer<T>(this->block.info_containers[target_local_id], meta_container, pattern_matches));
-		}
-		else return nullptr;
-	}
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -262,21 +171,21 @@ public:
 	bool operator[](const U32 position);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param position
 	 * @return
 	 */
 	bool seektoBlock(const U32 position);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param chromosome_name
 	 * @return
 	 */
 	bool seekToBlockChromosome(const std::string& chromosome_name);
 
 	/**<
-	 *
+	 * Not implemented
 	 * @param chromosome_name
 	 * @param from_bp_position
 	 * @param to_bp_position
@@ -298,9 +207,9 @@ public:
 
 	/**<
 	 * Get the current YON block in-order as a copy
-	 * @return Returns a YON block. The container has a size of 0 upon fail/empty
+	 * @return Returns a YON block container. The container has a size of 0 upon fail/empty
 	 */
-	block_entry_type getBlock(void);
+	variant_container_type getBlock(void);
 
 
 	/**<
@@ -314,12 +223,6 @@ public:
 	bool seek_to_block(const U32& blockID);
 
 	/**<
-	 *
-	 * @return
-	 */
-	bool parseSettings(void);
-
-	/**<
 	 * Primary construction function for generating the appropriate instances of
 	 * iterators / containers
 	 * @param objects Target objects
@@ -328,7 +231,8 @@ public:
 	objects_type& loadObjects(objects_type& objects) const;
 
 	/**<
-	 * Outputs
+	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
+	 * Decides internally what function to invoke.
 	 * @return
 	 */
 	const U64 outputVCF(void);
@@ -349,7 +253,7 @@ public:
 	 *
 	 * @return
 	 */
-	const U32 outputBlockCustom(void) const;
+	const U32 outputBlockCustom(void);
 
 	// Dummy functions as interfaces for function pointers
 	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
@@ -382,26 +286,63 @@ public:
 	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
 
 	/**<
+	 * Not implemented
+	 * Return bit-mask primitive of variant classifications detected
+	 * @param meta Input meta entry for a site
+	 * @return     Returns a primitive interpreted as a boolean presence/absence bit-mask
+	 */
+	BYTE classifyVariant(const meta_entry_type& meta) const;
+
+	/**<
 	 * Parse interval strings. These strings have to match the regular expression
 	 * patterns
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	inline const bool addIntervals(std::vector<std::string>& interval_strings){
-		return(this->interval_container.parseIntervals(interval_strings, this->header, this->index));
+		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
 	}
 
+
+	bool loadKeychainFile(const std::string& path){
+		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
+		if(!keychain_reader.good()){
+			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
+			return false;
+		}
+
+		keychain_reader >> this->keychain;
+		if(!keychain_reader.good()){
+			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	void printHeaderVCF(std::ostream& stream = std::cout){
+		this->global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		this->global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+		                             +   SSLeay_version(SSLEAY_VERSION) + ","
+		                             +  "ZSTD-" + ZSTD_versionString()
+		                             +  "; timestamp=" + tachyon::utility::datetime();
+
+		this->global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
+		this->global_header.literals += this->getSettings().get_settings_string();
+
+		stream << this->global_header.literals << std::endl;
+		this->global_header.writeHeaderVCF(stream, true);
+	}
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
 
 	U64 timings_meta(){
-		containers::MetaContainer meta(this->block);
+		containers::MetaContainer meta(this->variant_container.getBlock());
 		buffer_type temp(meta.size() * 1000);
 
 		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->header);
-			//utility::to_vcf_string(std::cout, meta[p], this->header);
+			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->global_header);
+			//utility::to_vcf_string(std::cout, meta[p], this->global_header);
 			temp += '\n';
 			//if(temp.size() > 65536){
 			//	std::cout.write(temp.data(), temp.size());
@@ -414,8 +355,8 @@ public:
 
 
 	U64 iterate_genotypes(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
 		for(U32 i = 0; i < gt.size(); ++i){
 			// All of these functions are in relative terms very expensive!
@@ -423,9 +364,9 @@ public:
 			// Vector of literal genotype representations (lower level)
 			//std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
 			// Vector of genotype objects (high level permuted)
-			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->header.getSampleNumber());
+			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->global_header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->header.getSampleNumber(), this->block.ppa_manager);
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
 
 			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			for(U32 i = 1; i < objects_true.size(); ++i){
@@ -440,31 +381,31 @@ public:
 		algorithm::Timer timer;
 		timer.Start();
 
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].comparePairwise(square_temporary);
 
-		//square /= (U64)2*this->header.getSampleNumber()*gt.size();
-		square.addUpperTriagonal(square_temporary, this->block.ppa_manager);
+		//square /= (U64)2*this->global_header.getSampleNumber()*gt.size();
+		square.addUpperTriagonal(square_temporary, this->variant_container.getBlock().ppa_manager);
 		square_temporary.clear();
 
 		// 2 * (Upper triagonal + diagonal) * number of variants
-		const U64 updates = 2*((this->header.getSampleNumber()*this->header.getSampleNumber() - this->header.getSampleNumber())/2 + this->header.getSampleNumber()) * gt.size();
+		const U64 updates = 2*((this->global_header.getSampleNumber()*this->global_header.getSampleNumber() - this->global_header.getSampleNumber())/2 + this->global_header.getSampleNumber()) * gt.size();
 		std::cerr << utility::timestamp("DEBUG") << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-		return((U64)2*this->header.getSampleNumber()*gt.size());
+		return((U64)2*this->global_header.getSampleNumber()*gt.size());
 	}
 
 	U64 getTiTVRatios(std::ostream& stream, std::vector<core::TsTvObject>& global){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
-		std::vector<core::TsTvObject> objects(this->header.getSampleNumber());
+		std::vector<core::TsTvObject> objects(this->global_header.getSampleNumber());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
 		for(U32 i = 0; i < objects.size(); ++i)
-			global[this->block.ppa_manager[i]] += objects[i];
+			global[this->variant_container.getBlock().ppa_manager[i]] += objects[i];
 
 		return(gt.size());
 	}
@@ -530,7 +471,7 @@ public:
 			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
 
 
-			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->header);
+			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->global_header);
 
 			if(target_flag_set & 1){
 				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta_container->at(position), *objects.genotype_summary, true);
@@ -639,13 +580,13 @@ public:
 	}
 
 	U64 countVariants(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
+		containers::MetaContainer meta(this->variant_container.getBlock());
 		return(meta.size());
 	}
 
 	U64 iterateMeta(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->block);
-		containers::GenotypeContainer gt(this->block, meta);
+		containers::MetaContainer meta(this->variant_container.getBlock());
+		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 		containers::GenotypeSummary gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue
@@ -665,13 +606,13 @@ public:
 		//return true;
 
 		core::HeaderMapEntry* entry = nullptr;
-		if(this->header.getInfoField("AF", entry)){
-			containers::InfoContainer<double> it_i(this->block.info_containers[1]);
+		if(this->global_header.getInfoField("AF", entry)){
+			containers::InfoContainer<double> it_i(this->variant_container.getBlock().info_containers[1]);
 			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;
 			for(U32 i = 0; i < it_i.size(); ++i){
 				//if(it_i[i].size() < 3) continue;
-				//it[i].toVCFString(stream, this->header, this->block.index_entry.contigID, this->block.index_entry.minPosition);
+				//it[i].toVCFString(stream, this->global_header, this->variant_container.getBlock().index_entry.contigID, this->variant_container.getBlock().index_entry.minPosition);
 
 				//stream << (int)it_i[i][0];
 				for(U32 j = 0; j < it_i[i].size(); ++j)
@@ -682,19 +623,19 @@ public:
 		return(0);
 	}
 
-public:
-	std::ifstream       stream;
-	U64                 filesize;
+protected:
+	std::ifstream           stream;
+	size_t                  filesize;
 
 	// Actual data
-	block_entry_type    block;
+	variant_container_type  variant_container;
 
 	// Supportive objects
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
-	header_type             header;
-	footer_type             footer;
+	header_type             global_header;
+	footer_type             global_footer;
 	index_type              index;
 	checksum_type           checksums;
 	codec_manager_type      codec_manager;

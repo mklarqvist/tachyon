@@ -9,6 +9,7 @@ namespace containers{
 
 VariantBlockHeader::VariantBlockHeader() :
 	l_offset_footer(0),
+	blockID(0),
 	contigID(-1),
 	minPosition(0),
 	maxPosition(0),
