@@ -8,7 +8,7 @@
 #include "support/type_definitions.h"
 #include "support/magic_constants.h"
 #include "algorithm/OpenHashTable.h"
-#include "io/vcf/VCFHeader.h"
+#include "io/vcf/vcf_header.h"
 #include "io/basic_buffer.h"
 
 namespace tachyon{

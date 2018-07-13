@@ -10,7 +10,7 @@
 #include "core/variant_importer_container_stats.h"
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
-#include "io/bcf/BCFReader.h"
+#include "io/bcf/bcf_reader.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
 

@@ -8,7 +8,7 @@
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
-#include "io/vcf/VCFHeader.h"
+#include "io/vcf/vcf_header.h"
 
 namespace tachyon{
 namespace containers{

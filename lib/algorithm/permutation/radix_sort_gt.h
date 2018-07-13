@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "io/bcf/BCFReader.h"
+#include "io/bcf/bcf_reader.h"
 #include "permutation_manager.h"
 #include "core/genotype_summary.h"
 

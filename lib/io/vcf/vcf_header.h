@@ -9,7 +9,7 @@
 #include "core/header/header_sample.h"
 #include "io/BasicReader.h"
 #include "VCFHeaderConstants.h"
-#include "VCFHeaderLine.h"
+#include "vcf_header_line.h"
 #include "support/helpers.h"
 #include "io/basic_buffer.h"
 

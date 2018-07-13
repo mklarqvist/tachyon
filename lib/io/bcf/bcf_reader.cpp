@@ -1,4 +1,4 @@
-#include "io/bcf/BCFReader.h"
+#include "io/bcf/bcf_reader.h"
 
 namespace tachyon{
 namespace bcf{

@@ -8,7 +8,7 @@
 #include "core/header/variant_header.h"
 #include "meta_allele.h"
 #include "variant_controller.h"
-#include "io/bcf/BCFEntry.h"
+#include "io/bcf/bcf_entry.h"
 #include "containers/data_container.h"
 
 namespace tachyon{

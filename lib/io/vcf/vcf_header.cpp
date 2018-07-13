@@ -1,4 +1,4 @@
-#include "VCFHeader.h"
+#include "vcf_header.h"
 
 namespace tachyon {
 namespace vcf{

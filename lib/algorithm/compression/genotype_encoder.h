@@ -7,7 +7,7 @@
 #include <thread>
 
 #include "core/genotype_summary.h"
-#include "io/bcf/BCFReader.h"
+#include "io/bcf/bcf_reader.h"
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
 

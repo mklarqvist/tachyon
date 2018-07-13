@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include "BCFEntry.h"
+#include "bcf_entry.h"
 #include "io/compression/BGZFController.h"
 
 
