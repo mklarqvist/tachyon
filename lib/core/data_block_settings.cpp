@@ -49,6 +49,7 @@ DataBlockSettings& DataBlockSettings::loadAllMeta(const bool set){
 DataBlockSettings& DataBlockSettings::loadAllFILTER(const bool set){
 	this->set_membership(set, set);
 	this->display_filter = true;
+	this->controller.load     = true;
 	return(*this);
 }
 
@@ -57,13 +58,14 @@ DataBlockSettings& DataBlockSettings::loadAllINFO(const bool set){
 	this->contig.load = set;
 	this->positions.load = set;
 	this->set_membership.load = set;
+	this->controller.load     = true;
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadINFO(const std::string& field_name){
 	if(field_name.size() == 0) return(*this);
-	this->contig.load = true;
-	this->positions.load = true;
+	this->contig.load         = true;
+	this->positions.load      = true;
 	this->set_membership.load = true;
 	this->controller(true, false);
 	this->info_list.push_back(field_name);
@@ -72,10 +74,10 @@ DataBlockSettings& DataBlockSettings::loadINFO(const std::string& field_name){
 
 DataBlockSettings& DataBlockSettings::loadINFO(const U32 field_id){
 	this->info_ID_list.push_back(field_id);
-	this->contig.load = true;
-	this->positions.load = true;
+	this->contig.load         = true;
+	this->positions.load      = true;
 	this->set_membership.load = true;
-	this->controller.load = true;
+	this->controller.load     = true;
 	return(*this);
 }
 

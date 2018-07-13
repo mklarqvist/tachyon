@@ -170,7 +170,7 @@ Contig110_arrow	19575	.	A	C	.	basic_filtering	AC=2
 
 Listing this output in a custom tab-delimited format
 ```bash
-tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT" -c -d'\t'
+tachyon view -i example_dataset.yon -GH -f "INFO=AC;REF;ALT" -y -d'\t'
 ```
 Output (first five lines)
 ```
@@ -183,7 +183,7 @@ G	C	2
 
 Listing `CHROM`, `POS`, and all `INFO` fields
 ```bash
-tachyon view -i example_dataset.yon -GH -f "CHROM;POS;INFO" -c -d'|'
+tachyon view -i example_dataset.yon -GH -f "CHROM;POS;INFO" -y -d'|'
 ```
 Output
 ```
@@ -192,7 +192,7 @@ Contig110_arrow|672|10|0.217|46|0.967|72|0.8113|54.73|-0.0525|11|0.239|31.05|1.3
 
 Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in VCF 
 ```bash
-tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F vcf -H
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -H -O vcf
 ```
 Output
 ```
@@ -201,7 +201,7 @@ Contig110_arrow	672	.	A	T	.	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.
 
 Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in JSON
 ```bash
-tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F JSON
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -O json
 ```
 Output
 ```json
@@ -270,7 +270,7 @@ Output
 
 Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in a custom output format with a tab-delimiter. No restrictions are placed on the output format
 ```bash
-tachyon view -i example_dataset.yon -f "pos;info;format=dp,pl" -F CUSTOM -cd'\t'
+tachyon view -i example_dataset.yon -f "pos;info;format=dp,pl" -O custom -yd'\t'
 ```
 Output
 ```
@@ -280,7 +280,7 @@ Output
 Listing all available `INFO` fields and the `FORMAT` fields `DP` and `PL` in a custom output format with a tab-delimiter and
 all `FORMAT` data are printed as vectors of samples instead of per-sample
 ```bash
-tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -F CUSTOM -cd'\t' -V
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp,pl" -O custom -yd'\t' -V
 ```
 Output
 ```
@@ -289,7 +289,7 @@ Contig110_arrow	672	A	T	10	0.217	46	0.967	72	0.8113	54.73	-0.0525	11	0.239	31.05
 
 Output all available `INFO` fields and the `FORMAT` field `DP` and `FILTERS`
 ```bash
-tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -F CUSTOM -cd';' -V
+tachyon view -i example_dataset.yon -f "chrom;pos;ref;alt;info;format=dp;filter" -O custom -yd';' -V
 ```
 
 ### Searching for genomic regions
@@ -356,7 +356,6 @@ Wellcome Trust Sanger Institute
 
 ### License
 Tachyon is licensed under [MIT](LICENSE)
-
 
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd

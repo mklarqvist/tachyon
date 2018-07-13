@@ -628,7 +628,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 			if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += objects.info_field_names[targetKeys[0]];
 			} else {
-				// Check if the positon is empty
+				// Check if the position is empty
 				if(objects.info_containers[targetKeys[0]]->emptyPosition(position) == false){
 					objects.info_containers[targetKeys[0]]->to_vcf_string(outputBuffer, position);
 				}
@@ -637,7 +637,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += delimiter;
 				if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
-					outputBuffer +=objects.info_field_names[targetKeys[i]];
+					outputBuffer += objects.info_field_names[targetKeys[i]];
 					continue;
 				}
 				if(objects.info_containers[targetKeys[i]]->emptyPosition(position)) continue;
@@ -876,24 +876,24 @@ const U32 VariantReader::outputBlockCustom(void){
 	print_info_function   print_info   = &self_type::printINFODummy;
 	print_meta_function   print_meta   = &utility::to_vcf_string;
 	print_filter_function print_filter = &self_type::printFILTERDummy;
-	if(block_settings.output_json) print_meta = &utility::to_json_string;
+	if(this->block_settings.output_json) print_meta = &utility::to_json_string;
 
-	if(block_settings.format_all.display || objects.n_loaded_format){
-		if(block_settings.output_json){
+	if(this->block_settings.format_all.display || objects.n_loaded_format){
+		if(this->block_settings.output_json){
 			print_format = &self_type::printFORMATCustomVectorJSON;
 		} else {
-			if(block_settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
+			if(this->block_settings.output_format_vector) print_format = &self_type::printFORMATCustomVector;
 			else print_format = &self_type::printFORMATCustom;
 		}
 	}
 
-	if(block_settings.info_all.display || objects.n_loaded_info){
-		if(block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
+	if(this->block_settings.info_all.display || objects.n_loaded_info){
+		if(this->block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
 		else print_info = &self_type::printINFOCustom;
 	}
 
-	if(block_settings.display_filter){
-		if(block_settings.output_json) print_filter = &self_type::printFILTERJSON;
+	if(this->block_settings.display_filter){
+		if(this->block_settings.output_json) print_filter = &self_type::printFILTERJSON;
 		else print_filter = &self_type::printFILTERCustom;
 	}
 
@@ -904,7 +904,7 @@ const U32 VariantReader::outputBlockCustom(void){
 	if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
 
 
-	if(block_settings.output_json) output_buffer += "\"block\":[";
+	if(this->block_settings.output_json) output_buffer += "\"block\":[";
 	for(U32 position = 0; position < objects.meta_container->size(); ++position){
 		if(this->variant_filters.filter(objects, position) == false)
 			continue;
@@ -915,7 +915,7 @@ const U32 VariantReader::outputBlockCustom(void){
 		//if(info_keep[objects.meta->at(p).getInfoPatternID()] < info_match_limit)
 		//	continue;
 
-		if(block_settings.output_json){
+		if(this->block_settings.output_json){
 			if(position != 0) output_buffer += ",\n";
 			output_buffer += "{";
 		}
@@ -926,7 +926,7 @@ const U32 VariantReader::outputBlockCustom(void){
 		(this->*print_info)(output_buffer, this->block_settings.custom_delimiter_char, position, objects);
 		(this->*print_format)(output_buffer, this->block_settings.custom_delimiter_char, position, objects, genotypes_unpermuted);
 
-		if(block_settings.output_json) output_buffer += "}";
+		if(this->block_settings.output_json) output_buffer += "}";
 		else output_buffer += '\n';
 		//output_buffer += "}";
 
@@ -937,7 +937,7 @@ const U32 VariantReader::outputBlockCustom(void){
 			std::cout.flush();
 		}
 	}
-	if(block_settings.output_json) output_buffer += "]";
+	if(this->block_settings.output_json) output_buffer += "]";
 
 	// Flush buffer
 	std::cout.write(output_buffer.data(), output_buffer.size());
