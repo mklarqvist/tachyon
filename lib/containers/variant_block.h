@@ -181,9 +181,9 @@ public:
 		if(format_ids.size() == 0) return(format_ids_found);
 
 		for(U32 i = 0; i < format_ids.size(); ++i){
-			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
-				if(this->footer.info_offsets[j].data_header.global_key == format_ids[i])
-					format_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+			for(U32 j = 0; j < this->footer.n_format_streams; ++j){
+				if(this->footer.format_offsets[j].data_header.global_key == format_ids[i])
+					format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
 			}
 		}
 

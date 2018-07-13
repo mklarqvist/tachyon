@@ -279,7 +279,6 @@ int view(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << "here default" << std::endl;
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}

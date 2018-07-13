@@ -139,9 +139,9 @@ public:
 
 		core::HeaderMapEntry* match = nullptr;
 		int format_field_global_id = -2;
-		if(this->header_->getFormatField(field_name, match)){
+		if(this->header_->getFormatField(field_name, match))
 			format_field_global_id = match->IDX;
-		} else return nullptr;
+		else return nullptr;
 
 		if(format_field_global_id >= 0){
 			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
@@ -149,11 +149,11 @@ public:
 			for(U32 i = 0; i < pattern_matches.size(); ++i)
 				matches += pattern_matches[i];
 
-			if(matches == 0)
-				return nullptr;
+			if(matches == 0) return nullptr;
 
 			const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
-			if(target_local_id < 0) return nullptr;
+			if(target_local_id < 0)
+				return nullptr;
 
 			return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header_->getSampleNumber()));
 		}
