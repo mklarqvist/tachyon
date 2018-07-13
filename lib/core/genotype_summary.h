@@ -33,7 +33,7 @@ struct GenotypeSummaryObject{
 };
 
 struct GenotypeSummary{
-	typedef U64 value_type;
+	typedef U64             value_type;
 	typedef core::MetaEntry meta_type;
 
 public:

@@ -23,6 +23,7 @@
 #include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/genotype_object.h"
+#include "core/variant_site_annotation.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_objects.h"
@@ -42,6 +43,7 @@ private:
 	typedef io::BasicBuffer                        buffer_type;
 	typedef core::VariantHeader                    header_type;
 	typedef core::Footer                           footer_type;
+	typedef core::MetaEntry                        meta_entry_type;
 	typedef algorithm::CompressionManager          codec_manager_type;
 	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
@@ -49,16 +51,16 @@ private:
 	typedef index::IndexEntry                      index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef encryption::Keychain<>                 keychain_type;
-	typedef core::MetaEntry                        meta_entry_type;
 	typedef VariantReaderObjects                   objects_type;
 	typedef containers::VariantBlock               block_entry_type;
 	typedef containers::MetaContainer              meta_container_type;
 	typedef containers::GenotypeContainer          gt_container_type;
 	typedef containers::InfoContainerInterface     info_interface_type;
 	typedef containers::FormatContainerInterface   format_interface_type;
-	typedef containers::GenotypeSummary            genotype_summary_type;
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
+	typedef containers::GenotypeSummary            genotype_summary_type;
+	typedef containers::VariantSiteAnnotation      site_annotation_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
 
@@ -221,14 +223,6 @@ public:
 	 * @return
 	 */
 	bool seek_to_block(const U32& blockID);
-
-	/**<
-	 * Primary construction function for generating the appropriate instances of
-	 * iterators / containers
-	 * @param objects Target objects
-	 * @return        Returns reference to input target objects
-	 */
-	objects_type& loadObjects(objects_type& objects) const;
 
 	/**<
 	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.

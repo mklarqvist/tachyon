@@ -10,7 +10,9 @@
 #include "containers/format_container_string.h"
 #include "containers/interval_container.h"
 #include "containers/hash_container.h"
+#include "core/variant_site_annotation.h"
 #include "variant_block_mapper.h"
+#include "core/variant_reader_objects.h"
 
 namespace tachyon {
 namespace containers {
@@ -28,16 +30,18 @@ private:
     typedef VariantBlockHeader    block_header_type;
     typedef VariantBlockFooter    block_footer_type;
     typedef VariantBlockMapper    block_mapper_type;
-    typedef core::VariantHeader   header_type;
+    typedef core::VariantHeader   global_header_type;
 	typedef containers::VariantBlock             block_entry_type;
 	typedef containers::MetaContainer            meta_container_type;
 	typedef containers::GenotypeContainer        gt_container_type;
 	typedef containers::InfoContainerInterface   info_interface_type;
 	typedef containers::FormatContainerInterface format_interface_type;
 	typedef containers::GenotypeSummary          genotype_summary_type;
+	typedef containers::VariantSiteAnnotation    site_annotation_type;
 	typedef containers::IntervalContainer        interval_container_type;
 	typedef HashContainer                        hash_container_type;
 	typedef DataBlockSettings                    block_settings_type;
+	typedef VariantReaderObjects                 objects_type;
 
 public:
 	VariantBlockContainer() :
@@ -46,7 +50,7 @@ public:
 
 	}
 
-	VariantBlockContainer(const header_type& header) :
+	VariantBlockContainer(const global_header_type& header) :
 		mapper_(header.header_magic.n_format_values, header.header_magic.n_info_values),
 		header_(&header)
 	{
@@ -55,7 +59,7 @@ public:
 
 	~VariantBlockContainer(void){}
 
-	self_type& operator<<(const header_type& header){
+	self_type& operator<<(const global_header_type& header){
 		this->header_ = &header;
 		this->mapper_ << header;
 		return(*this);
@@ -225,12 +229,23 @@ public:
 	inline const bool hasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
 	inline const bool hasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
+	bool loadObjects(block_settings_type& block_settings) const;
+
+	/**<
+	 * Primary construction function for generating the appropriate instances of
+	 * iterators / containers
+	 * @param objects Target objects
+	 * @return        Returns reference to input target objects
+	 */
+	objects_type& loadObjects(objects_type& objects, block_settings_type& block_settings) const;
+
 private:
 	block_mapper_type    mapper_; // global -> local, local -> global, loaded or not, primitive type
 	block_type           block_;
 	hash_container_type  h_tables_format_;
 	hash_container_type  h_tables_info_;
-	const header_type*   header_;
+	site_annotation_type annotations_;
+	const global_header_type* header_;
 };
 
 }

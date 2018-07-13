@@ -38,7 +38,7 @@ void RadixSortGT::setSamples(const U64 n_samples){
 	}
 	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
 
-	this->manager->setSamples(n_samples);
+	//this->manager->setSamples(n_samples);
 	this->manager->setSamples(n_samples*2);
 }
 

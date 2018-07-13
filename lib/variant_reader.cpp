@@ -290,197 +290,6 @@ const int VariantReader::has_filter_field(const std::string& field_name) const{
 	return(-2);
 }
 
-VariantReaderObjects& VariantReader::loadObjects(objects_type& objects) const{
-	// New meta container
-	objects.meta_container = new meta_container_type(this->variant_container.getBlock());
-
-	// New genotype containers if aplicable
-	if(this->variant_container.getBlock().header.controller.hasGT && block_settings.genotypes_all.load){
-		objects.genotype_container = new gt_container_type(this->variant_container.getBlock(), *objects.meta_container);
-		objects.genotype_summary   = new objects_type::genotype_summary_type(10);
-	}
-
-	// FORMAT-specific containers
-	// Store as double pointers to avoid memory collisions because
-	// FORMAT containers have different intrinsic class members
-	objects.n_loaded_format   = this->variant_container.getMapper().getNumberFormatLoaded();
-	objects.format_containers = new format_interface_type*[objects.n_loaded_format];
-
-	if(objects.n_loaded_format){
-		for(U32 i = 0; i < objects.n_loaded_format; ++i){
-			const U32 global_key = this->variant_container.getMapper().getLoadedFormat(i).stream_id_global;
-
-			// Pattern matches of GLOBAL in LOCAL
-			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->variant_container.get_format_field_pattern_matches(this->global_header.format_fields[global_key].ID);
-
-			if(this->global_header.format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-				objects.format_containers[i] = new containers::FormatContainer<S32>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->global_header.getSampleNumber());
-				objects.format_field_names.push_back(this->global_header.format_fields[global_key].ID);
-			} else if(this->global_header.format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-					  this->global_header.format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->global_header.getSampleNumber());
-				objects.format_field_names.push_back(this->global_header.format_fields[global_key].ID);
-			} else if(this->global_header.format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-				objects.format_containers[i] = new containers::FormatContainer<float>(this->variant_container.getBlock().format_containers[i], *objects.meta_container, matches, this->global_header.getSampleNumber());
-				objects.format_field_names.push_back(this->global_header.format_fields[global_key].ID);
-			} else {
-				objects.format_containers[i] = new containers::FormatContainer<U32>;
-				objects.format_field_names.push_back(this->global_header.format_fields[global_key].ID);
-			}
-		}
-	}
-
-	// INFO-specific containers
-	// Store as double pointers to avoid memory collisions because
-	// INFO containers have different class members
-	objects.n_loaded_info   = this->variant_container.getMapper().getNumberInfoLoaded();
-	objects.info_containers = new info_interface_type*[objects.n_loaded_info];
-
-	if(objects.n_loaded_info){
-		for(U32 i = 0; i < objects.n_loaded_info; ++i){
-			const U32 global_key = this->variant_container.getMapper().getLoadedInfo(i).stream_id_global;
-
-			// Pattern matches of GLOBAL in LOCAL
-			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->variant_container.get_info_field_pattern_matches(this->global_header.info_fields[global_key].ID);
-
-			if(this->global_header.info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-				objects.info_containers[i] = new containers::InfoContainer<S32>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->global_header.info_fields[global_key].ID);
-			} else if(this->global_header.info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-					  this->global_header.info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->global_header.info_fields[global_key].ID);
-			} else if(this->global_header.info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-				objects.info_containers[i] = new containers::InfoContainer<float>(this->variant_container.getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->global_header.info_fields[global_key].ID);
-			} else {
-				objects.info_containers[i] = new containers::InfoContainer<U32>();
-				objects.info_field_names.push_back(this->global_header.info_fields[global_key].ID);
-			}
-		}
-	}
-
-
-	// If we want to drop records that do not have all/any of the fields we desire
-	// then we create a vector of size N_PATTERNS and set those that MATCH to TRUE
-	// this allows for filtering in O(1)-time
-	//
-	// This vector stores the number of INFO fields having set membership with this
-	// particular hash pattern
-	objects.info_id_fields_keep   = std::vector<U32>(this->variant_container.getBlock().footer.n_info_patterns,   0);
-	objects.format_id_fields_keep = std::vector<U32>(this->variant_container.getBlock().footer.n_format_patterns, 0);
-
-	// This vector of vectors keeps the local INFO identifiers for the matched global
-	// identifiers in a given hash pattern
-	//
-	// For example: x[5] contains the local IDs for loaded INFO streams for pattern ID 5
-	objects.local_match_keychain_info   = std::vector< std::vector<U32> >(this->variant_container.getBlock().footer.n_info_patterns);
-	objects.local_match_keychain_format = std::vector< std::vector<U32> >(this->variant_container.getBlock().footer.n_format_patterns);
-
-	// If loading all INFO values then return them in the ORIGINAL order
-	if(this->block_settings.info_all.load){
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-				for(U32 k = 0; k < objects.n_loaded_info; ++k){ // Number of loaded INFO identifiers
-					// Global
-					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedInfo(k).offset->data_header.global_key){
-						objects.local_match_keychain_info[i].push_back(k);
-						++objects.info_id_fields_keep[i];
-					}
-				}
-			}
-		}
-	}
-	// If loading custom INFO fields then return them in the REQUESTED order
-	else {
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){ // i = Number of info patterns
-			for(U32 k = 0; k < objects.n_loaded_info; ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->variant_container.getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->variant_container.getBlock().footer.info_offsets[this->variant_container.getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedInfo(k).offset->data_header.global_key){
-						objects.local_match_keychain_info[i].push_back(k);
-						++objects.info_id_fields_keep[i];
-					}
-				}
-			}
-		}
-	}
-
-	// For FORMAT
-	// If loading all FORMAT values then return them in the ORIGINAL order
-	if(this->block_settings.format_all.load){
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
-				for(U32 k = 0; k < objects.n_loaded_format; ++k){ // Number of loaded INFO identifiers
-					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedFormat(k).offset->data_header.global_key){
-						objects.local_match_keychain_format[i].push_back(k);
-						++objects.format_id_fields_keep[i];
-					}
-				}
-			}
-		}
-	}
-	// If loading custom FORMAT fields then return them in the REQUESTED order
-	else {
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_format_patterns; ++i){ // i = Number of info patterns
-			for(U32 k = 0; k < objects.n_loaded_format; ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->variant_container.getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->variant_container.getBlock().footer.format_offsets[this->variant_container.getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->variant_container.getMapper().getLoadedFormat(k).offset->data_header.global_key){
-						objects.local_match_keychain_format[i].push_back(k);
-						++objects.format_id_fields_keep[i];
-					}
-				}
-			}
-		}
-	}
-
-
-	// If we want to compute additional genotypic summary statistics (triggered by -X flag)
-	// then we need to make sure we don't accidentally add annotations to fields that already
-	// exists (e.g. if INFO=AC already exists)
-	//
-	// Preprocessing step:
-	// Cycle over INFO patterns and see if any of the custom FIELDS are set
-	// FS_A, AN, NM, NPM, AC, AC_FW, AC_REV, AF, HWE_P, VT, MULTI_ALLELIC
-	std::vector<std::string> ADDITIONAL_INFO = {"FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"};
-	U16 execute_mask = 0;
-
-	// Step 1: Find INFO
-	std::vector< std::pair<U32, U32> > additional_local_keys_found;
-	for(U32 i = 0; i < ADDITIONAL_INFO.size(); ++i){
-		if(this->global_header.has_info_field(ADDITIONAL_INFO[i])){
-			const core::HeaderMapEntry* map = this->global_header.getInfoField(ADDITIONAL_INFO[i]);
-			// Find local key
-			for(U32 k = 0; k < objects.n_loaded_info; ++k){
-				if(this->variant_container.getBlock().info_containers[k].header.getGlobalKey() == map->IDX){
-					execute_mask |= 1 << i;
-					additional_local_keys_found.push_back(std::pair<U32,U32>(k,i));
-				}
-			}
-		}
-	}
-
-	// Step 2: Cycle over patterns to find existing INFO fields
-	// Cycle over INFO patterns
-	objects.additional_info_execute_flag_set = std::vector< U16 >(1, 65535);
-	if(ADDITIONAL_INFO.size()){
-		objects.additional_info_execute_flag_set.reserve(this->variant_container.getBlock().footer.n_info_patterns);
-		for(U32 i = 0; i < this->variant_container.getBlock().footer.n_info_patterns; ++i){
-			objects.additional_info_execute_flag_set[i] = (1 << ADDITIONAL_INFO.size()) - 1;
-			for(U32 j = 0; j < additional_local_keys_found.size(); ++j){
-				if(this->variant_container.getBlock().footer.info_bit_vectors[i][j]){
-					objects.additional_info_execute_flag_set[i] &= ~(1 << additional_local_keys_found[j].second);
-				}
-			}
-		}
-	}
-
-	//
-
-	return(objects);
-}
-
 void VariantReader::printFILTER(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
@@ -985,7 +794,7 @@ const U64 VariantReader::outputCustom(void){
  */
 const U32 VariantReader::outputBlockVCF(void){
 	objects_type objects;
-	this->loadObjects(objects);
+	this->getCurrentBlock().loadObjects(objects, this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
@@ -1051,7 +860,7 @@ const U32 VariantReader::outputBlockVCF(void){
  */
 const U32 VariantReader::outputBlockCustom(void){
 	objects_type objects;
-	this->loadObjects(objects);
+	this->getCurrentBlock().loadObjects(objects, this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of syncing
