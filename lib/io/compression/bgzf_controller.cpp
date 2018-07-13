@@ -1,7 +1,7 @@
 #include <limits>
 #include <fstream>
 
-#include "BGZFController.h"
+#include "bgzf_controller.h"
 #include "third_party/zlib/zconf.h"
 #include "third_party/zlib/zlib.h"
 

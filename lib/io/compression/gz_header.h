@@ -1,7 +1,7 @@
 #ifndef TGZFHEADER_H_
 #define TGZFHEADER_H_
 
-#include "GZFConstants.h"
+#include "gz_constants.h"
 
 namespace tachyon{
 namespace io{

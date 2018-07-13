@@ -10,7 +10,7 @@
 
 #include "io/vcf/VCFHeaderConstants.h"
 #include "support/helpers.h"
-#include "support/MagicConstants.h"
+#include "support/magic_constants.h"
 
 namespace tachyon{
 namespace vcf{

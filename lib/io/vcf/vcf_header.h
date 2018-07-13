@@ -7,7 +7,7 @@
 #include "core/header/header_contig.h"
 #include "core/header/header_map_entry.h"
 #include "core/header/header_sample.h"
-#include "io/BasicReader.h"
+#include "io/basic_reader.h"
 #include "VCFHeaderConstants.h"
 #include "vcf_header_line.h"
 #include "support/helpers.h"

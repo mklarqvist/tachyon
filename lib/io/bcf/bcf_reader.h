@@ -4,7 +4,7 @@
 #include <cassert>
 
 #include "bcf_entry.h"
-#include "io/compression/BGZFController.h"
+#include "io/compression/bgzf_controller.h"
 
 
 namespace tachyon {
