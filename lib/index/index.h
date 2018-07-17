@@ -87,8 +87,12 @@ public:
 		if(contig_id > this->getMetaIndex().size())
 			return(std::vector<entry_type>());
 
-		// Todo
-		return(std::vector<entry_type>());
+		std::vector<entry_type> yon_blocks;
+		for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
+			yon_blocks.push_back(this->getIndex().linear_at(contig_id).at(i));
+		}
+
+		return(yon_blocks);
 	}
 
 	/**<
@@ -115,6 +119,9 @@ public:
 		if(this->getMetaIndex().at(contig_id).n_blocks == 0)
 			return(std::vector<entry_type>());
 
+		const U32 block_offset_start = this->getIndex().linear_at(contig_id).at(0).blockID;
+
+
 		// We also need to know possible overlaps in the quad-tree:
 		// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
 
@@ -127,15 +134,17 @@ public:
 		for(U32 i = 0; i < possible_bins.size(); ++i){
 			// Cycle over the YON blocks this bin have data mapping to
 			for(U32 j = 0; j < possible_bins[i].size(); ++j){
+				const U32 used_bins = possible_bins[i][j] - block_offset_start;
+
 				// Check [a, b] overlaps with [x, y] iff b > x and a < y.
 				// a = this->getIndex().linear_at(contig_id)[possible_bins[i][j]].minPosition;
 				// b = this->getIndex().linear_at(contig_id)[possible_bins[i][j]].maxPosition;
 				// x = start_pos;
 				// y = end_pos;
-				if(this->getIndex().linear_at(contig_id)[possible_bins[i][j]].minPosition < end_pos &&
-				   this->getIndex().linear_at(contig_id)[possible_bins[i][j]].maxPosition > start_pos)
+				if(this->getIndex().linear_at(contig_id)[used_bins].minPosition < end_pos &&
+				   this->getIndex().linear_at(contig_id)[used_bins].maxPosition > start_pos)
 				{
-					yon_blocks.push_back(possible_bins[i][j]);
+					yon_blocks.push_back(used_bins);
 				}
 			}
 		}

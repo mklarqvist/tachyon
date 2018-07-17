@@ -298,6 +298,11 @@ public:
 	}
 
 
+	/**<
+	 *
+	 * @param path
+	 * @return
+	 */
 	bool loadKeychainFile(const std::string& path){
 		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
 		if(!keychain_reader.good()){
@@ -313,6 +318,10 @@ public:
 		return true;
 	}
 
+	/**<
+	 *
+	 * @param stream
+	 */
 	void printHeaderVCF(std::ostream& stream = std::cout){
 		this->global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 		this->global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
@@ -615,6 +624,129 @@ public:
 			stream << '\n';
 		}
 		return(0);
+	}
+
+	/**<
+	 * Construct Occ matrix from a target input file
+	 * @param file
+	 * @return
+	 */
+	bool loadGroups(const std::string& file){
+		/*
+		if(this->Occ.size() != 0){
+			std::cerr << "groups already loaded" << std::endl;
+			return false;
+		}
+
+		if(file.size() == 0){
+			std::cerr << "No file set" << std::endl;
+			return false;
+		}
+
+		// Open stream
+		std::ifstream stream(file);
+		if(!stream.good()){
+			std::cerr << "bad file" << std::endl;
+			return false;
+		}
+
+		this->group_htable = new hash_table(10000);
+
+
+		std::string line;
+		std::vector< std::vector< S32 > > groupings(this->samples);
+
+		S32* sampleID = nullptr;
+		S32* groupID_lookup = nullptr;
+		S32 groupID = 0;
+		U32 n_lines = 0;
+
+		while(getline(stream, line)){
+			// Empty lines
+			if(line.size() == 0)
+				break;
+
+			// Assert correct format
+			// Count tabs until out-of-range
+			size_t prev_pos = 0;
+			size_t pos = line.find('\t', prev_pos + 1);
+
+			if(pos == std::string::npos){
+				std::cerr << "illegal: has no data for sample (" << n_lines << ")" << std::endl;
+				return(false);
+			}
+
+			// Make sure the sample name exists in this file
+			const std::string sampleName = std::string(&line[prev_pos], pos - prev_pos);
+			if(!this->totempole.sampleHashTable->GetItem(&sampleName[0], &sampleName, sampleID, sampleName.length())){
+				std::cerr << "sample does not exist" << std::endl;
+				return false;
+			}
+
+			// Cycle over lines
+			prev_pos = pos + 1;
+			while(prev_pos != std::string::npos){
+				pos = line.find('\t', prev_pos + 1);
+				if(pos == std::string::npos){
+					pos = line.size();
+				}
+
+				const std::string group = std::string(&line[prev_pos], pos - prev_pos);
+				if(!this->group_htable->GetItem(&group[0], &group, groupID_lookup, group.length())){
+					this->group_htable->SetItem(&group[0], &group, groupID, group.length());
+					this->groups.push_back(GroupPair(group));
+
+					groupings[*sampleID].push_back(groupID);
+					++groupID;
+				} else {
+					groupings[*sampleID].push_back(*groupID_lookup);
+					++this->groups[*groupID_lookup];
+				}
+
+				if(pos == line.size())
+					break;
+
+				prev_pos = pos + 1;
+			}
+
+			++n_lines;
+		}
+
+		if(groupID == 0){
+			std::cerr << "no data loaded" << std::endl;
+			return false;
+		}
+
+		this->Occ = occ_matrix(this->samples + 1, std::vector< U64 >(groupID, 0));
+		occ_vector* prev = &Occ[0];
+
+		for(U32 i = 0; i < this->samples; ++i){
+			// Propagate previous vector counts
+			for(U32 j = 0; j < groupID; ++j)
+				this->Occ[i + 1][j] = prev->at(j);
+
+			// Update
+			for(U32 j = 0; j < groupings[i].size(); ++j)
+				this->Occ[i + 1][groupings[i][j]] = prev->at(groupings[i][j]) + 1;
+
+			prev = &this->Occ[i + 1];
+		}
+
+		for(U32 i = 0; i < this->groups.size(); ++i)
+			std::cerr << i << '\t' << this->groups[i].name << '\t' << this->groups[i].n_entries << std::endl;
+
+		// Temp
+		// Dump
+		/*
+		for(U32 i = 0; i < this->Occ.size(); ++i){
+			for(U32 j = 0; j < this->Occ[0].size(); ++j){
+				std::cout << this->Occ[i][j] << '\t';
+			}
+			std::cout << std::endl;
+		}
+		*/
+
+		return true;
 	}
 
 protected:

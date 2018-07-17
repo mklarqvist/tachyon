@@ -55,10 +55,10 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 	// Append given interval strings to internal vector of strings
 	this->interval_strings_.insert( this->interval_strings_.end(), interval_strings.begin(), interval_strings.end() );
 
-	// Assert that interval list data is of length n_contigs_;
+	// Assert that interval list data is of length n_contigs_
+	// Note that this will truncate previous entries if resizing occurs
 	if(this->interval_list_.size() != header.getContigNumber())
 		this->interval_list_ = std::vector< std::vector< interval_type > >(header.getContigNumber());
-
 
 	// Parse each interval
 	for(U32 i = 0; i < interval_strings.size(); ++i){
@@ -74,6 +74,8 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 			}
 
 			std::cerr << "Parsed: " << interval_strings[i] << std::endl;
+			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID);
+			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->contigID].push_back(interval_type(0, contig->bp_length, contig->contigID));
 
 		}
@@ -97,8 +99,6 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID, position);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->contigID].push_back(interval_type(position, position, contig->contigID));
-
-
 		}
 		// Chromosome:position-position
 		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){

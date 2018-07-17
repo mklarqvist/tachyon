@@ -143,6 +143,17 @@ public:
     	}
     }
 
+    std::ostream& print(std::ostream& stream){
+    	stream << this->binID_ << "\t" << this->n_variants_ << "\t" << this->n_blocks_ << "\t";
+    	if(this->size()){
+    		stream << "yon-blocks ids: " << this->blocks_[0];
+    		for(U32 i = 1; i < this->size(); ++i)
+    			stream << ',' << this->blocks_[i];
+    	}
+
+		return(stream);
+	}
+
 private:
     friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
 		stream.write(reinterpret_cast<const char*>(&bin.binID_),     sizeof(U32));
@@ -385,7 +396,7 @@ public:
 			S64 binFrom = S64(from_position/(this->l_contig_rounded_ / pow(4,i)));
 			S64 binTo   = S64(used_to_posititon/(this->l_contig_rounded_ / pow(4,i)));
 
-			//std::cerr << i << "/" << (int)this->n_levels_ << ": " << this->bins_cumsum_[i-1] << " + " << binFrom << " -> " << binTo << "/" << this->size() << std::endl;
+			//std::cerr << i << "/" << (int)this->n_levels_ << ": level offset " << this->bins_cumsum_[i-1] << "; (from, to) " << binFrom << " -> " << binTo << " out of " << this->size() << std::endl;
 			//std::cerr << "limit: " << this->bins_cumsum_[i] << std::endl;
 
 			// Overlap from cumpos + (binFrom, binTo)
@@ -401,6 +412,7 @@ public:
 			}
 		}
 		overlapping_chunks.push_back(this->at(0));
+
 
 		return(overlapping_chunks);
 	}

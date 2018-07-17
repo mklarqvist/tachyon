@@ -110,6 +110,7 @@ public:
 		this->__entries[this->n_entries++] = index_entry;
 		return(*this);
 	}
+
 	inline self_type& add(const const_reference index_entry){ return(*this += index_entry); }
 
 	void resize(void){
