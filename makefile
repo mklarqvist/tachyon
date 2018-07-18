@@ -105,6 +105,7 @@ CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 			 $(wildcard lib/containers/components/*.cpp) \
 			 $(wildcard lib/core/header/*.cpp) \
 			 $(wildcard lib/core/*.cpp) \
+			 $(wildcard lib/index/*.cpp) \
 			 $(wildcard lib/io/*.cpp) \
 			 $(wildcard lib/io/bcf/*.cpp) \
 			 $(wildcard lib/io/compression/*.cpp) \
