@@ -99,7 +99,7 @@ public:
 	 * @param yon_block_id Tachyon block ID (generally a cumulative integer)
 	 * @return
 	 */
-	const S32 Add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id);
+	const S32 add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id);
 
 	/**<
 	 * Computes the possible bins an interval might overlap

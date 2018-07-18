@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "variant_index_contig.h"
 
 namespace tachyon{
@@ -87,7 +89,7 @@ VariantIndexContig::~VariantIndexContig(){
 	::operator delete[](static_cast<void*>(this->bins_));
 }
 
-const S32 VariantIndexContig::Add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
+const S32 VariantIndexContig::add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
 	for(S32 i = this->n_levels_; i != 0; --i){
 		U32 binFrom = S64(fromPosition/(this->l_contig_rounded_ / pow(4,i)));
 		U32 binTo   = S64(toPosition/(this->l_contig_rounded_ / pow(4,i)));
@@ -98,11 +100,11 @@ const S32 VariantIndexContig::Add(const U64& fromPosition, const U64& toPosition
 		if(binFrom == binTo){
 			//if(i != this->n_levels_) std::cerr << fromPosition << "->" << toPosition << ", adding to " << binFrom << " level " << i << " cum : " << this->bins_cumsum_[i-1]+binFrom << "/" << this->size() << std::endl;
 			++this->n_sites_;
-			this->bins_[this->bins_cumsum_[i - 1]+binFrom].Add(yon_block_id);
+			this->bins_[this->bins_cumsum_[i - 1]+binFrom].add(yon_block_id);
 			return(this->bins_cumsum_[i - 1]+binFrom);
 		}
 	}
-	this->bins_[0].Add(yon_block_id);
+	this->bins_[0].add(yon_block_id);
 	++this->n_sites_;
 	return(0);
 }

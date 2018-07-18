@@ -128,7 +128,7 @@ public:
 	 * Update
 	 * @param variant_block_number
 	 */
-    void Add(const U32& variant_block_number){
+    void add(const U32& variant_block_number){
 		if(this->size() + 1 >= this->capacity())
 			this->resize();
 
@@ -144,9 +144,9 @@ public:
     }
 
     std::ostream& print(std::ostream& stream){
-    	stream << this->binID_ << "\t" << this->n_variants_ << "\t" << this->n_blocks_ << "\t";
+    	stream << "ID: " << this->binID_ << ", variants: " << this->n_variants_ << ", associated blocks: " << this->n_blocks_;
     	if(this->size()){
-    		stream << "yon-blocks ids: " << this->blocks_[0];
+    		stream << ", yon-blocks ids: " << this->blocks_[0];
     		for(U32 i = 1; i < this->size(); ++i)
     			stream << ',' << this->blocks_[i];
     	}

@@ -460,7 +460,7 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 				const U32 end = entry.getInteger(entry.infoID[i].primitive_type, entry.infoID[i].l_offset);
 				end_position_used = end;
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << entry.body->POS+1 << " BIN=" << reg2bin(entry.body->POS, end)  << std::endl;
-				index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, end, (U32)this->writer->index.current_block_number());
+				index_bin = this->writer->index.index_[meta.contigID].add(entry.body->POS, end, (U32)this->writer->index.current_block_number());
 				break;
 			}
 		}
@@ -479,10 +479,10 @@ bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 		}
 
 		if(longest > 1){
-			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.current_block_number());
+			index_bin = this->writer->index.index_[meta.contigID].add(entry.body->POS, entry.body->POS + longest, (U32)this->writer->index.current_block_number());
 			end_position_used = entry.body->POS + longest;
 		} else { // fallback if all others fail
-			index_bin = this->writer->index.index_[meta.contigID].Add(entry.body->POS, entry.body->POS, (U32)this->writer->index.current_block_number());
+			index_bin = this->writer->index.index_[meta.contigID].add(entry.body->POS, entry.body->POS, (U32)this->writer->index.current_block_number());
 		}
 	}
 	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;

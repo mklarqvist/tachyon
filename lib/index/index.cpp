@@ -54,10 +54,10 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 
 	const U32 block_offset_start = this->getIndex().linear_at(contig_id).at(0).blockID;
 
-	std::cerr << "Linear index " << this->getIndex().linear_at(contig_id).size() << std::endl;
-	for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
-		this->getIndex().linear_at(contig_id).at(i).print(std::cerr) << std::endl;
-	}
+	//std::cerr << "Linear index " << this->getIndex().linear_at(contig_id).size() << std::endl;
+	//for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
+	//	this->getIndex().linear_at(contig_id).at(i).print(std::cerr) << std::endl;
+	//}
 
 
 	// We also need to know possible overlaps in the quad-tree:
@@ -67,15 +67,18 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	// The possibleBins function does not check if they exist
 	std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(start_pos, end_pos);
 	std::vector<U32> yon_blocks;
-	std::cerr << "Possible chunks: " << possible_chunks.size() << std::endl;
+	//std::cerr << "Possible chunks: " << possible_chunks.size() << std::endl;
 
 	// Check if possible bins exists in the linear index
 	for(U32 i = 0; i < possible_chunks.size(); ++i){
 		// Cycle over the YON blocks this bin have data mapping to
 		for(U32 j = 0; j < possible_chunks[i].size(); ++j){
 			const U32 used_bins = possible_chunks[i][j] - block_offset_start;
-			std::cerr << i << "/" << possible_chunks[i].size() << "\t";
-			possible_chunks[i].print(std::cerr) << std::endl;
+			//std::cerr << i << "/" << possible_chunks[i].size() << ", used bin: " << used_bins << "\t";
+			//possible_chunks[i].print(std::cerr) << std::endl;
+
+			//std::cerr << "Comparing: " << this->getIndex().linear_at(contig_id)[used_bins].minPosition << "<" << end_pos
+			//		  << " and " << this->getIndex().linear_at(contig_id)[used_bins].maxPosition << ">" << start_pos << std::endl;
 
 			// Check [a, b] overlaps with [x, y] iff b > x and a < y.
 			// a = this->getIndex().linear_at(contig_id)[possible_bins[i][j]].minPosition;
@@ -86,7 +89,11 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 			   this->getIndex().linear_at(contig_id)[used_bins].maxPosition > start_pos)
 			{
 				yon_blocks.push_back(used_bins);
+				//std::cerr << "overlap" << std::endl;
 			}
+			//else {
+			//	std::cerr << "no overlap" << std::endl;
+			//}
 		}
 	}
 
@@ -102,12 +109,13 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[0]]);
 
 	for(U32 i = 1; i < yon_blocks.size(); ++i){
-		if(yon_blocks[i] != yon_blocks_deduped.back().blockID){
+		if(yon_blocks[i] != yon_blocks_deduped.back().blockID - block_offset_start){
 			yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[i]]);
 		}
 	}
 
 	// Debug
+	//std::cerr << "Final\n" << std::endl;
 	//for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
 	//	yon_blocks_deduped[i].print(std::cerr);
 	//	std::cerr << std::endl;
