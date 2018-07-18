@@ -793,8 +793,7 @@ const U64 VariantReader::outputCustom(void){
  * @return
  */
 const U32 VariantReader::outputBlockVCF(void){
-	objects_type objects;
-	this->getCurrentBlock().loadObjects(objects, this->block_settings);
+	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
@@ -859,8 +858,7 @@ const U32 VariantReader::outputBlockVCF(void){
  * @return
  */
 const U32 VariantReader::outputBlockCustom(void){
-	objects_type objects;
-	this->getCurrentBlock().loadObjects(objects, this->block_settings);
+	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of syncing

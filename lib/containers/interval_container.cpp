@@ -50,7 +50,7 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 
 	// No intervals to parse
 	if(interval_strings.size() == 0)
-		return true;
+		return(false);
 
 	// Append given interval strings to internal vector of strings
 	this->interval_strings_.insert( this->interval_strings_.end(), interval_strings.begin(), interval_strings.end() );
@@ -137,7 +137,13 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 	}
 
 	if(this->block_list_.size() == 0)
-		return true;
+		return(false);
+
+	// Ascertain data is sorted according to YON blockID
+	// This has the implication that the traversal of a sliced sorted file
+	// will be sorted as output
+	std::sort(this->block_list_.begin(), this->block_list_.end());
+
 
 	return true;
 }
