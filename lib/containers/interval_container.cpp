@@ -67,13 +67,13 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 
 		// Chromosome only
 		if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
-			std::cerr << "chromosome only" << std::endl;
+			//std::cerr << "chromosome only" << std::endl;
 			if(!header.getContig(interval_strings[i],contig)){
-				std::cerr << "cant find contig: " << interval_strings[i] << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << interval_strings[i] << std::endl;
 				return(false);
 			}
 
-			std::cerr << "Parsed: " << interval_strings[i] << std::endl;
+			//std::cerr << "Parsed: " << interval_strings[i] << std::endl;
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->contigID].push_back(interval_type(0, contig->bp_length, contig->contigID));
@@ -81,20 +81,20 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 		}
 		// Chromosome:position
 		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
-			std::cerr << "chromosome pos" << std::endl;
+			//std::cerr << "chromosome pos" << std::endl;
 			std::vector<std::string> substrings = utility::split(interval_strings[i], ':');
 			if(substrings[0].size() == 0 || substrings[1].size() == 0){
-				std::cerr << "illegal form" << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Illegal form: " << interval_strings[i] << std::endl;
 				return false;
 			}
 
 			if(!header.getContig(substrings[0],contig)){
-				std::cerr << "cant find contig: " << substrings[0] << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << substrings[0] << std::endl;
 				return(false);
 			}
 
 			U64 position = atof(substrings[1].data());
-			std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
+			//std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID, position);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
@@ -102,28 +102,28 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 		}
 		// Chromosome:position-position
 		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
-			std::cerr << "chromosome pos - pos" << std::endl;
+			//std::cerr << "chromosome pos - pos" << std::endl;
 			std::vector<std::string> substrings = utility::split(interval_strings[i], ':');
 			if(substrings[0].size() == 0 || substrings[1].size() == 0){
-				std::cerr << "illegal form" << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Illegal form: " << std::endl;
 				return false;
 			}
 
 			if(!header.getContig(substrings[0],contig)){
-				std::cerr << "cant find contig: " << substrings[0] << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << substrings[0] << std::endl;
 				return(false);
 			}
 
 			std::vector<std::string> position_strings = utility::split(substrings[1], '-');
 			if(position_strings[0].size() == 0 || position_strings[1].size() == 0){
-				std::cerr << "illegal form" << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Illegal form: " << std::endl;
 				return false;
 			}
 			U64 position_from = atof(position_strings[0].data());
 			U64 position_to   = atof(position_strings[1].data());
 			if(position_from > position_to) std::swap(position_from, position_to);
 
-			std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
+			//std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
 
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID, position_from, position_to);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
