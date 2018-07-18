@@ -5,29 +5,41 @@ namespace tachyon{
 namespace io{
 
 BasicReader::BasicReader() :
-		filesize_(0),
-		block_size_(65536),
-		capacity_(this->block_size_*2),
-		end_(0),
-		buffer_(new type[this->capacity_])
+	filesize_(0),
+	block_size_(65536),
+	capacity_(this->block_size_*2),
+	end_(0),
+	buffer_(new type[this->capacity_])
 {}
 
 BasicReader::BasicReader(std::string input) :
-		filename_(input),
-		filesize_(0),
-		block_size_(65536),
-		capacity_(this->block_size_*2),
-		end_(0), buffer_(new type[this->capacity_])
+	filename_(input),
+	filesize_(0),
+	block_size_(65536),
+	capacity_(this->block_size_*2),
+	end_(0),
+	buffer_(new type[this->capacity_])
 {}
 
 BasicReader::BasicReader(std::string input, const size_t block_size) :
-		filename_(input),
-		filesize_(0),
-		block_size_(block_size),
-		capacity_(this->block_size_*2),
-		end_(0),
-		buffer_(new type[this->capacity_])
+	filename_(input),
+	filesize_(0),
+	block_size_(block_size),
+	capacity_(this->block_size_*2),
+	end_(0),
+	buffer_(new type[this->capacity_])
 {}
+
+BasicReader::BasicReader(const self_type& other) :
+	filename_(other.filename_),
+	filesize_(other.filesize_),
+	block_size_(other.block_size_),
+	capacity_(other.capacity_),
+	end_(other.end_),
+	buffer_(new type[this->capacity_])
+{
+	memcpy(this->buffer_, other.buffer_, other.end_);
+}
 
 bool BasicReader::open(std::string filename){
 	// If filename is empty

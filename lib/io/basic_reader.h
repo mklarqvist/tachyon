@@ -26,12 +26,15 @@ class BasicReader {
 	typedef const type   &const_reference;
 	typedef size_t        size_type;
 	typedef ptrdiff_t     difference_type;
+	typedef BasicReader   self_type;
 
 public:
 	BasicReader();
 	BasicReader(std::string input);
+	BasicReader(const self_type& other);
 	BasicReader(std::string input, const size_t block_size);
 	virtual ~BasicReader(){ delete[] this->buffer_; }
+
 	virtual const_reference operator[](const size_t p) const{ return this->buffer_[p]; }
 	virtual reference operator[](const size_t p){ return this->buffer_[p]; }
 
@@ -106,14 +109,14 @@ public:
 	virtual bool read(void);
 	virtual bool read(const uint32_t length);
 	virtual bool readAppend(const uint32_t length);
-	inline const uint64_t& filesize(void){ return this->filesize_; }
-	inline uint64_t tellg(void){ return this->stream_.tellg(); }
+	inline const size_t& filesize(void){ return this->filesize_; }
+	inline size_t tellg(void){ return this->stream_.tellg(); }
 	bool getLine(void); // Read until finding a new line into buffer
 	bool getLine(std::string& data); // Read until finding a new line into string
 
 public:
 	std::string filename_;	// Input file name
-	uint64_t filesize_;		// Input file size
+	size_t filesize_;		// Input file size
 	size_t block_size_;		// Size of block read each iteration
 	size_t capacity_;		// Capacity of buffer
 	size_t end_;			// End pointer of data in buffer

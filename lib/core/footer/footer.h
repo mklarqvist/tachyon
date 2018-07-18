@@ -1,13 +1,15 @@
 #ifndef CORE_FOOTER_FOOTER_H_
 #define CORE_FOOTER_FOOTER_H_
 
+
+#include "support/type_definitions.h"
 #include "support/magic_constants.h"
 #include "support/helpers.h"
 
 namespace tachyon{
 namespace core{
 
-#define YON_FOOTER_LENGTH (constants::TACHYON_FILE_EOF_LENGTH + sizeof(U64)*3 + sizeof(U16))
+#define YON_FOOTER_LENGTH ((constants::TACHYON_FILE_EOF_LENGTH) + sizeof(U64)*3 + sizeof(U16))
 
 struct Footer{
 public:

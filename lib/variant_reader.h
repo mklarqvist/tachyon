@@ -34,6 +34,7 @@
 #include "math/fisher_math.h"
 #include "math/square_matrix.h"
 #include "utility/support_vcf.h"
+#include "io/basic_reader.h"
 
 namespace tachyon{
 
@@ -63,6 +64,7 @@ private:
 	typedef containers::VariantSiteAnnotation      site_annotation_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
+	typedef io::BasicReader                        basic_reader_type;
 
 	// Function pointers
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
@@ -110,7 +112,7 @@ public:
 	inline const footer_type& getGlobalFooter(void) const{ return(this->global_footer); }
 	inline index_type& getIndex(void){ return(this->index); }
 	inline const index_type& getIndex(void) const{ return(this->index); }
-	inline const size_t getFilesize(void) const{ return(this->filesize); }
+	inline const size_t getFilesize(void) const{ return(this->basic_reader.filesize_); }
 	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
 	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
 
@@ -159,6 +161,7 @@ public:
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
 	inline bool open(const std::string& filename){
+		this->basic_reader.filename_ = filename;
 		this->settings.input = filename;
 		return(this->open());
 	}
@@ -750,13 +753,10 @@ public:
 	}
 
 protected:
-	std::ifstream           stream;
-	size_t                  filesize;
-
-	// Actual data
+	basic_reader_type       basic_reader;
+	//std::ifstream           stream;
+	//size_t                  filesize;
 	variant_container_type  variant_container;
-
-	// Supportive objects
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
