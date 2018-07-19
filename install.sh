@@ -27,23 +27,29 @@ function note_build_stage {
 }
 
 if [[ "$1" == "local" ]]; then
-# Build Tachyon
-################################################################################
-note_build_stage "Building Tachyon (local)"
-
-# If you do NOT have ZSTD available
+if [ ! -d zstd ]; then
 git clone https://github.com/facebook/zstd
+fi
 cd zstd
-make -j$(nproc)
-cd ..
-# If you do NOT have OpenSSL installed
-git clone https://github.com/openssl/openssl.git
-cd openssl
-./config
-make -j$(nproc)
-cd ..
+if [ ! -f lib/libzstd.so ]; then
+    make -j$(nproc)
 else
+    echo "ZSTD already built! Skipping..."
+fi
+cd ..
 
+if [ ! -d openssl ]; then
+git clone https://github.com/openssl/openssl.git
+fi
+cd openssl
+if [ ! -f libssl.so ]; then
+    ./config
+    make -j$(nproc)
+else
+    echo "OpenSSL already built! Skipping..."
+fi
+cd ..
+else # Install with sudo
 if [ "$(uname)" == "Darwin" ]; then
     # Update package list
     ################################################################################
