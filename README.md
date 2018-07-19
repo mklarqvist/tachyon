@@ -28,19 +28,25 @@ Current limitations imposed during development:
 * Output is restricted to `VCF`, `JSON`, and custom field slicing
 
 ## Installation
-For Ubuntu 14, Ubuntu 16 and Debian 9 systems, installation is easy: just run
+For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
-source install.sh
+sudo source install.sh
 ```
+
 Note that install.sh extensively depends on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
+If you do not have super-user privileges required to install new packages on your system then run
+```bash
+source install.sh local
+```
+In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
 
 ## Documentation
 
 * Overview.
 * [Getting started](docs/getting_started.md)
 * [Summary of example programs](docs/example_programs.md).
-* [Benchmarks](docs/benchmarks.md)
-* [Building](docs/building.md)
+* [Performance benchmarks](docs/benchmarks.md)
+* [Building and installing](docs/building.md)
 
 ### Contributing
 
