@@ -222,7 +222,7 @@ bool VariantBlock::read(std::ifstream& stream){
 	return(true);
 }
 
-const U64 VariantBlock::__determineCompressedSize(void) const{
+U64 VariantBlock::__determineCompressedSize(void) const{
 	U64 total = 0;
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->ppa_manager.getObjectSize();

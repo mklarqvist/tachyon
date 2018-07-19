@@ -27,7 +27,7 @@ public:
 	void setSamples(const U32 n_samples);
 	void reset(void);
 	bool generateCRC(void);
-	inline const U32 getObjectSize(void) const{ return(sizeof(U64) + this->header.data_header.cLength); }
+	inline U32 getObjectSize(void) const{ return(sizeof(U64) + this->header.data_header.cLength); }
 
 	// Lookup
 	// Convenience function used during import

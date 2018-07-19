@@ -97,12 +97,6 @@ int stats(int argc, char** argv){
 
 	tachyon::VariantReader reader;
 
-	// temp
-	if(keychain_file.size()){
-		if(reader.loadKeychainFile(keychain_file) == false)
-			return 1;
-	}
-
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
 		return 1;
@@ -122,7 +116,7 @@ int stats(int argc, char** argv){
 	U32 block_counter = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().getSampleNumber());
 	while(reader.nextBlock()){
-		reader.getTiTVRatios(std::cout, global_titv);
+		reader.getTiTVRatios(global_titv);
 		//reader.getGenotypeSummary(std::cout);
 		std::cerr << block_counter++ << "/" << reader.getIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.getIndex().size() << std::endl;
 		timer.Start();

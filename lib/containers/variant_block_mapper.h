@@ -24,8 +24,8 @@ public:
 	~VariantBlockMapperContainer() = default;
 
     // Capacity
-	inline const bool       empty(void) const{ return(this->values_.empty()); }
-	inline const size_type  size(void) const{ return(this->values_.size()); }
+	inline bool empty(void) const{ return(this->values_.empty()); }
+	inline size_type  size(void) const{ return(this->values_.size()); }
 
 	// Element access
 	inline pointer         data(void){ return(&this->values_[0]); }
@@ -116,8 +116,8 @@ public:
 	inline const map_type& getGlobalInfo(const U32& key) const{ return(this->info_container_global_[key]); }
 	inline const map_type& getLocalInfo(const U32& key) const{ return(this->info_container_local_[key]); }
 	inline const map_type& getLoadedInfo(const U32& key) const{ return(this->info_container_loaded_[key]); }
-	inline const size_t getNumberFormatLoaded(void) const{ return(this->format_container_loaded_.size()); }
-	inline const size_t getNumberInfoLoaded(void) const{ return(this->info_container_loaded_.size()); }
+	inline size_t getNumberFormatLoaded(void) const{ return(this->format_container_loaded_.size()); }
+	inline size_t getNumberInfoLoaded(void) const{ return(this->info_container_loaded_.size()); }
 
 private:
 	size_type n_format_fields;          // Total number of format fields in the file NOT the block

@@ -42,7 +42,7 @@ public:
 
     inline const U32& capacity(void) const{return(this->__size);}
     inline const U32& size(void) const{return(this->__occupied);}
-    inline const bool empty(void) const{return(this->__occupied == 0);}
+    inline bool empty(void) const{return(this->__occupied == 0);}
 
     inline value_type& operator[](const U32 position){return(*this->__entries[position]);}
     inline const value_type& operator[](const U32 position) const{return(*this->__entries[position]);}

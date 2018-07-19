@@ -100,7 +100,7 @@ public:
 		delete [] old;
 	}
 
-	virtual const size_t size(void) const { return this->end_; } // Virtual -> allowed to overwrite in children classes
+	virtual size_t size(void) const { return this->end_; } // Virtual -> allowed to overwrite in children classes
 	bool good(void) const{ return this->stream_.good(); }
 
 	virtual bool open(void);

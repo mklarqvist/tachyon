@@ -69,7 +69,7 @@ public:
     	};
 
     // Capacity
-	inline const bool       empty(void) const{ return(this->n_entries == 0); }
+	inline bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
 	// Element access
@@ -99,7 +99,7 @@ public:
 	inline const GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
 
 private:
-    template <class intrinsic_primitive> inline const U32 getNative(const buffer_type& buffer, const U32 position) const{
+    template <class intrinsic_primitive> inline U32 getNative(const buffer_type& buffer, const U32 position) const{
     	return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
     }
 

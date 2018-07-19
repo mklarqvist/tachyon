@@ -50,7 +50,7 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 
 	// No intervals to parse
 	if(interval_strings.size() == 0)
-		return(false);
+		return(true);
 
 	// Append given interval strings to internal vector of strings
 	this->interval_strings_.insert( this->interval_strings_.end(), interval_strings.begin(), interval_strings.end() );

@@ -38,9 +38,9 @@ public:
 	bool buildMetaIndex(void);
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->index_.empty()); }
-	const size_t size(void) const{ return(this->index_.size()); }
-	const size_t sizeMeta(void) const{ return(this->index_meta_.size()); }
+	inline bool empty(void) const{ return(this->index_.empty()); }
+	inline size_t size(void) const{ return(this->index_.size()); }
+	inline size_t sizeMeta(void) const{ return(this->index_meta_.size()); }
 
 	//inline void operator+=(const entry_type& entry){ this->index_ += entry; }
 	//inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }

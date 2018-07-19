@@ -17,7 +17,7 @@ ZSTDCodec::~ZSTDCodec(){
 	ZSTD_freeDCtx(this->decompression_context_);
 }
 
-const bool ZSTDCodec::compress(container_type& container){
+bool ZSTDCodec::compress(container_type& container){
 	container.generateCRC();
 
 	if(container.header.n_entries == 0){
@@ -81,7 +81,7 @@ const bool ZSTDCodec::compress(container_type& container){
 	else return true;
 }
 
-const bool ZSTDCodec::compressStrides(container_type& container){
+bool ZSTDCodec::compressStrides(container_type& container){
 	if(container.header.stride_header.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
 		memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 		container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
@@ -128,7 +128,7 @@ const bool ZSTDCodec::compressStrides(container_type& container){
 	return true;
 }
 
-const bool ZSTDCodec::compress(permutation_type& manager){
+bool ZSTDCodec::compress(permutation_type& manager){
 	if(manager.PPA.size() == 0)
 		return true;
 
@@ -191,7 +191,7 @@ const bool ZSTDCodec::compress(permutation_type& manager){
 	return true;
 }
 
-const bool ZSTDCodec::decompress(container_type& container){
+bool ZSTDCodec::decompress(container_type& container){
 	if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
 		return false;
@@ -223,7 +223,7 @@ const bool ZSTDCodec::decompress(container_type& container){
 	return true;
 }
 
-const bool ZSTDCodec::decompressStrides(container_type& container){
+bool ZSTDCodec::decompressStrides(container_type& container){
 	if(container.header.stride_header.controller.encryption != YON_ENCRYPTION_NONE){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
 		return false;
@@ -258,7 +258,7 @@ const bool ZSTDCodec::decompressStrides(container_type& container){
 	return true;
 }
 
-const bool ZSTDCodec::decompress(permutation_type& manager){
+bool ZSTDCodec::decompress(permutation_type& manager){
 	this->buffer.reset();
 	U32 n_samples = manager.n_samples;
 	if(n_samples < 100){

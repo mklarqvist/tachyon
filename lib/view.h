@@ -300,11 +300,6 @@ int view(int argc, char** argv){
 
 	reader.getSettings() = settings;
 
-	// temp
-	if(settings.keychain_file.size()){
-		if(reader.loadKeychainFile(settings.keychain_file) == false) return 1;
-	}
-
 	if(!reader.open(settings.input)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << settings.input << "..." << std::endl;
 		return 1;
@@ -338,7 +333,6 @@ int view(int argc, char** argv){
 		}
 		reader.getBlockSettings().setCustomDelimiter(settings.custom_delimiter_char);
 	}
-
 	reader.getBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
 
 	if(settings.output_type.size()){

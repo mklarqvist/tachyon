@@ -232,6 +232,7 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 				objects.format_containers[i] = new containers::FormatContainer<U32>;
 				objects.format_field_names.push_back(this->header_->format_fields[global_key].ID);
 			}
+			objects.format_container_map[this->header_->format_fields[global_key].ID] = objects.format_containers[i];
 		}
 	}
 
@@ -263,6 +264,7 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 				objects.info_containers[i] = new containers::InfoContainer<U32>();
 				objects.info_field_names.push_back(this->header_->info_fields[global_key].ID);
 			}
+			objects.info_container_map[this->header_->info_fields[global_key].ID] = objects.info_containers[i];
 		}
 	}
 

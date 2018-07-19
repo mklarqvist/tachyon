@@ -17,7 +17,6 @@ typedef BGZFHeader header_type;
 
 public:
 	BGZFController();
-	BGZFController(const char* data, const U32 length);
 	~BGZFController();
 
 	void Clear();

@@ -71,7 +71,7 @@ public:
 	inline const_reference back(void) const{ return(this->__containers[this->__n_objects - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->__n_objects == 0); }
+	inline bool empty(void) const{ return(this->__n_objects == 0); }
 	inline const size_type& size(void) const{ return(this->__n_objects); }
 
 	// Iterator
@@ -112,6 +112,10 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		case(YON_TYPE_64B):    (this->__setup<S64>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
 		}
 	} else {
@@ -122,6 +126,10 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		case(YON_TYPE_64B):    (this->__setup<U64>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
 		}
 	}

@@ -65,6 +65,7 @@ private:
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
 	typedef io::BasicReader                        basic_reader_type;
+	typedef encryption::EncryptionDecorator        encryption_manager_type;
 
 	// Function pointers
 	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
@@ -112,7 +113,7 @@ public:
 	inline const footer_type& getGlobalFooter(void) const{ return(this->global_footer); }
 	inline index_type& getIndex(void){ return(this->index); }
 	inline const index_type& getIndex(void) const{ return(this->index); }
-	inline const size_t getFilesize(void) const{ return(this->basic_reader.filesize_); }
+	inline size_t getFilesize(void) const{ return(this->basic_reader.filesize_); }
 	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
 	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
 
@@ -124,7 +125,7 @@ public:
 	 * @param field_name FORMAT field name to search for (e.g. "GL")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
-	const int has_format_field(const std::string& field_name) const;
+	int has_format_field(const std::string& field_name) const;
 
 	/**<
 	 * Checks if a INFO `field` is set in the header and then checks
@@ -134,7 +135,7 @@ public:
 	 * @param field_name INFO field name to search for (e.g. "AC")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
-	const int has_info_field(const std::string& field_name) const;
+	int has_info_field(const std::string& field_name) const;
 
 	/**<
 	 * Checks if a FILTER `field` is set in the header and then checks
@@ -144,7 +145,7 @@ public:
 	 * @param field_name FILTER field name to search for (e.g. "PASS")
 	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
 	 */
-	const int has_filter_field(const std::string& field_name) const;
+	int has_filter_field(const std::string& field_name) const;
 
 
 	/**<
@@ -163,6 +164,10 @@ public:
 	inline bool open(const std::string& filename){
 		this->basic_reader.filename_ = filename;
 		this->settings.input = filename;
+		if(settings.keychain_file.size()){
+			if(this->loadKeychainFile() == false)
+				return false;
+		}
 		return(this->open());
 	}
 
@@ -232,25 +237,25 @@ public:
 	 * Decides internally what function to invoke.
 	 * @return
 	 */
-	const U64 outputVCF(void);
+	U64 outputVCF(void);
 
 	/**<
 	 *
 	 * @return
 	 */
-	const U64 outputCustom(void);
+	U64 outputCustom(void);
 
 	/**<
 	 *
 	 * @return
 	 */
-	const U32 outputBlockVCF(void);
+	U32 outputBlockVCF(void);
 
 	/**<
 	 *
 	 * @return
 	 */
-	const U32 outputBlockCustom(void);
+	U32 outputBlockCustom(void);
 
 	// Dummy functions as interfaces for function pointers
 	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
@@ -296,7 +301,7 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	inline const bool addIntervals(std::vector<std::string>& interval_strings){
+	inline bool addIntervals(std::vector<std::string>& interval_strings){
 		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
 	}
 
@@ -306,7 +311,7 @@ public:
 	 * @param path
 	 * @return
 	 */
-	bool loadKeychainFile(const std::string& path){
+	bool loadKeychainFile(void){
 		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
 		if(!keychain_reader.good()){
 			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
@@ -375,8 +380,8 @@ public:
 			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
 
 			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
-			for(U32 i = 1; i < objects_true.size(); ++i){
-				std::cout << '\t' << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
+			for(U32 j = 1; j < objects_true.size(); ++j){
+				std::cout << '\t' << (int)objects_true[j].alleles[0].allele << (objects_true[j].alleles[1].phase ? '/' : '|') << (int)objects_true[j].alleles[1].allele;
 			}
 			std::cout << std::endl;
 		}
@@ -402,7 +407,7 @@ public:
 		return((U64)2*this->global_header.getSampleNumber()*gt.size());
 	}
 
-	U64 getTiTVRatios(std::ostream& stream, std::vector<core::TsTvObject>& global){
+	U64 getTiTVRatios(std::vector<core::TsTvObject>& global){
 		containers::MetaContainer meta(this->variant_container.getBlock());
 		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
@@ -585,7 +590,7 @@ public:
 			objects.genotype_summary->clear();
 	}
 
-	U64 countVariants(std::ostream& stream = std::cout){
+	U64 countVariants(void){
 		containers::MetaContainer meta(this->variant_container.getBlock());
 		return(meta.size());
 	}
@@ -740,6 +745,7 @@ public:
 
 		// Temp
 		// Dump
+		 */
 		/*
 		for(U32 i = 0; i < this->Occ.size(); ++i){
 			for(U32 j = 0; j < this->Occ[0].size(); ++j){
@@ -749,7 +755,7 @@ public:
 		}
 		*/
 
-		return true;
+		return(true);
 	}
 
 protected:

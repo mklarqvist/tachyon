@@ -79,7 +79,7 @@ VariantHeader::~VariantHeader(){
 	delete this->htable_filter_fields;
 }
 
-const bool VariantHeader::getContig(const std::string& p, contig_type*& target) const{
+bool VariantHeader::getContig(const std::string& p, contig_type*& target) const{
 	if(this->htable_contigs == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_contigs->GetItem(&p[0], &p, ret, p.size())){
@@ -89,7 +89,7 @@ const bool VariantHeader::getContig(const std::string& p, contig_type*& target) 
 	return false;
 }
 
-const bool VariantHeader::getSample(const std::string& p, sample_type*& target) const{
+bool VariantHeader::getSample(const std::string& p, sample_type*& target) const{
 	if(this->htable_samples == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_samples->GetItem(&p[0], &p, ret, p.size())){
@@ -99,7 +99,7 @@ const bool VariantHeader::getSample(const std::string& p, sample_type*& target) 
 	return false;
 }
 
-const bool VariantHeader::getInfoField(const std::string& p, map_entry_type*& target) const{
+bool VariantHeader::getInfoField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_info_fields== nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_info_fields->GetItem(&p[0], &p, ret, p.size())){
@@ -109,7 +109,7 @@ const bool VariantHeader::getInfoField(const std::string& p, map_entry_type*& ta
 	return false;
 }
 
-const bool VariantHeader::getFormatField(const std::string& p, map_entry_type*& target) const{
+bool VariantHeader::getFormatField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_format_fields == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_format_fields->GetItem(&p[0], &p, ret, p.size())){
@@ -119,7 +119,7 @@ const bool VariantHeader::getFormatField(const std::string& p, map_entry_type*& 
 	return false;
 }
 
-const bool VariantHeader::getFilterField(const std::string& p, map_entry_type*& target) const{
+bool VariantHeader::getFilterField(const std::string& p, map_entry_type*& target) const{
 	if(this->htable_filter_fields == nullptr) return false;
 	S32* ret = nullptr;
 	if(this->htable_filter_fields->GetItem(&p[0], &p, ret, p.size())){

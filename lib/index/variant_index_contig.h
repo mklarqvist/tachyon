@@ -75,7 +75,7 @@ public:
 	inline const_reference back(void) const{ return(this->bins_[this->n_bins_ - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_bins_ == 0); }
+	inline bool empty(void) const{ return(this->n_bins_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_bins_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 	inline const size_type& size_sites(void) const{ return(this->n_sites_); }
@@ -99,7 +99,7 @@ public:
 	 * @param yon_block_id Tachyon block ID (generally a cumulative integer)
 	 * @return
 	 */
-	const S32 add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id);
+	S32 add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id);
 
 	/**<
 	 * Computes the possible bins an interval might overlap

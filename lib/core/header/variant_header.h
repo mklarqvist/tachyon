@@ -37,11 +37,11 @@ public:
 	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }
 	inline const sample_type& getSample(const U32& position) const{ return(this->samples[position]); }
 
-	const bool getContig(const std::string& p, contig_type*& target) const;
-	const bool getSample(const std::string& p, sample_type*& target) const;
-	const bool getInfoField(const std::string& p, map_entry_type*& target) const;
-	const bool getFormatField(const std::string& p, map_entry_type*& target) const;
-	const bool getFilterField(const std::string& p, map_entry_type*& target) const;
+	bool getContig(const std::string& p, contig_type*& target) const;
+	bool getSample(const std::string& p, sample_type*& target) const;
+	bool getInfoField(const std::string& p, map_entry_type*& target) const;
+	bool getFormatField(const std::string& p, map_entry_type*& target) const;
+	bool getFilterField(const std::string& p, map_entry_type*& target) const;
 	const map_entry_type* getInfoField(const std::string& p) const;
 	const map_entry_type* getFormatField(const std::string& p) const;
 	const map_entry_type* getFilterField(const std::string& p) const;
@@ -61,7 +61,7 @@ public:
 	// write
 	std::ostream& write(std::ostream& stream);
 
-	const bool has_format_field(const std::string& field_name) const{
+	bool has_format_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
 		if(this->getFormatField(field_name, match))
 			return true;
@@ -69,7 +69,7 @@ public:
 		return false;
 	}
 
-	const bool has_info_field(const std::string& field_name) const{
+	bool has_info_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
 		if(this->getInfoField(field_name, match))
 			return true;
@@ -77,7 +77,7 @@ public:
 		return false;
 	}
 
-	const bool has_filter_field(const std::string& field_name) const{
+	bool has_filter_field(const std::string& field_name) const{
 		map_entry_type* match = nullptr;
 		if(this->getFilterField(field_name, match))
 			return true;

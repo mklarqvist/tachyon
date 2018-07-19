@@ -80,7 +80,7 @@ public:
     inline const_reference back(void) const{ return(this->__containers[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
     // Iterator
@@ -101,7 +101,8 @@ public:
     	buffer += '"'; buffer += this->at(position); buffer += '"';
     	return(buffer);
     }
-    const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+
+    bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:
     // For mixed strides

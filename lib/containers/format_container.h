@@ -84,7 +84,7 @@ public:
     inline const_reference back(void) const{ return(this->__containers[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
     // Iterator
@@ -111,8 +111,8 @@ public:
 		return(buffer);
 	}
 
-	inline const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
-	inline const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+	inline bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<
@@ -191,6 +191,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -201,6 +205,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
@@ -213,6 +221,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -223,6 +235,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
@@ -300,7 +316,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 	// Todo: there's no guaranteed that this is correct
 	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
 
-	std::cerr << "entries here: " << this->n_entries << std::endl;
+	//std::cerr << "entries here: " << this->n_entries << std::endl;
 	if(this->n_entries == 0)
 		return;
 

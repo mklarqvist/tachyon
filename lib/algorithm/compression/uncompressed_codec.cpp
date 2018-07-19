@@ -3,7 +3,7 @@
 namespace tachyon{
 namespace algorithm{
 
-const bool UncompressedCodec::compress(container_type& container){
+bool UncompressedCodec::compress(container_type& container){
 	container.buffer_data.resize(container.buffer_data_uncompressed.size() + 65536);
 	memcpy(container.buffer_data.data(), container.buffer_data_uncompressed.data(), container.buffer_data_uncompressed.size());
 	container.header.data_header.controller.encoder = YON_ENCODE_NONE;
@@ -12,7 +12,7 @@ const bool UncompressedCodec::compress(container_type& container){
 	return true;
 }
 
-const bool UncompressedCodec::decompress(container_type& container){
+bool UncompressedCodec::decompress(container_type& container){
 	if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
 		return false;
@@ -29,7 +29,7 @@ const bool UncompressedCodec::decompress(container_type& container){
 	return true;
 }
 
-const bool UncompressedCodec::decompressStrides(container_type& container){
+bool UncompressedCodec::decompressStrides(container_type& container){
 	if(container.header.stride_header.controller.encryption != YON_ENCRYPTION_NONE){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Data is encrypted. Provide a valid keychain and decrypt before proceeding..." << std::endl;
 		return false;

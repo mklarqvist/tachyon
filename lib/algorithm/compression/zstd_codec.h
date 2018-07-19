@@ -22,12 +22,12 @@ public:
 	inline void setCompressionLevelData(const S32& c){ this->compression_level_data = c; }
 	inline void setCompressionLevelStrides(const S32& c){ this->compression_level_strides = c; }
 
-	const bool compress(container_type& container);
-	const bool compressStrides(container_type& container);
-	const bool compress(permutation_type& manager);
-	const bool decompress(container_type& container);
-	const bool decompressStrides(container_type& container);
-	const bool decompress(permutation_type& manager);
+	bool compress(container_type& container);
+	bool compressStrides(container_type& container);
+	bool compress(permutation_type& manager);
+	bool decompress(container_type& container);
+	bool decompressStrides(container_type& container);
+	bool decompress(permutation_type& manager);
 
 private:
 	S32 compression_level_data;

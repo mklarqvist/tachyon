@@ -80,7 +80,7 @@ public:
     inline const_reference back(void) const{ return(this->__entries[this->n_entries_ - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries_ == 0); }
+    inline bool empty(void) const{ return(this->n_entries_ == 0); }
     inline const size_type& size(void) const{ return(this->n_entries_); }
 
     // Iterator
@@ -91,10 +91,10 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
 
-	inline const bool hasBlockList(void) const{ return(this->block_list_.size()); }
+	inline bool hasBlockList(void) const{ return(this->block_list_.size()); }
 	inline std::vector<index_entry_type>& getBlockList(void){ return(this->block_list_); }
 	inline const std::vector<index_entry_type>& getBlockList(void) const{ return(this->block_list_); }
-	inline const bool hasIntervals(void) const{ return(this->interval_list_.size()); }
+	inline bool hasIntervals(void) const{ return(this->interval_list_.size()); }
 
     // Interpret
     bool validateIntervalStrings(std::vector<std::string>& interval_strings);

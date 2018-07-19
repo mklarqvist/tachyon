@@ -109,7 +109,7 @@ MetaEntry::~MetaEntry(){
 	::operator delete[](static_cast<void*>(this->alleles));
 };
 
-const bool MetaEntry::usePackedRefAlt(void) const{
+bool MetaEntry::usePackedRefAlt(void) const{
 	if(this->isBiallelic() == false || this->isDiploid() == false)
 		return false;
 
@@ -120,7 +120,7 @@ const bool MetaEntry::usePackedRefAlt(void) const{
 	return false;
 }
 
-const BYTE MetaEntry::packRefAltByte(void) const{
+BYTE MetaEntry::packRefAltByte(void) const{
 	assert(this->usePackedRefAlt());
 	BYTE ref_alt = 0; // start out with empty
 

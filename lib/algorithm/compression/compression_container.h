@@ -20,7 +20,7 @@ namespace algorithm{
  * @param destination Destination char* buffer of permuted data
  * @return TRUE if passing or FALSE otherwise
  */
-inline const U32 permuteIntBits(const char* const  data,
+inline U32 permuteIntBits(const char* const  data,
                                         const U32  size,
                                              char* destination)
 {
@@ -56,7 +56,7 @@ inline const U32 permuteIntBits(const char* const  data,
 	return internal_size;
 }
 
-inline const U32 unpermuteIntBits(char* data,
+inline U32 unpermuteIntBits(char* data,
                              const U32  size,
                                   char* destination)
 {
@@ -99,7 +99,7 @@ inline const U32 unpermuteIntBits(char* data,
 	return size;
 }
 
-inline const U32 permuteByteBits(const char* const  data,
+inline U32 permuteByteBits(const char* const  data,
                                         const U32  size,
                                              char* destination)
 {
@@ -134,7 +134,7 @@ inline const U32 permuteByteBits(const char* const  data,
 	return internal_size;
 }
 
-inline const U32 unpermuteByteBits(char* data,
+inline U32 unpermuteByteBits(char* data,
                              const U32  size,
                                   char* destination)
 {
@@ -188,11 +188,11 @@ protected:
 public:
 	CompressionContainer() = default;
 	virtual ~CompressionContainer() = default;
-	virtual const bool compress(permutation_type& manager)          =0;
-	virtual const bool compress(container_type& container)          =0;
-	virtual const bool compressStrides(container_type& container)   =0;
-	virtual const bool decompress(container_type& container)        =0;
-	virtual const bool decompressStrides(container_type& container) =0;
+	virtual bool compress(permutation_type& manager)          =0;
+	virtual bool compress(container_type& container)          =0;
+	virtual bool compressStrides(container_type& container)   =0;
+	virtual bool decompress(container_type& container)        =0;
+	virtual bool decompressStrides(container_type& container) =0;
 
 protected:
 	buffer_type buffer;

@@ -79,7 +79,7 @@ public:
 	inline const_reference back(void) const{ return(this->entries[this->n_entries - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_entries == 0); }
+	inline bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
@@ -128,8 +128,8 @@ public:
 	 */
 	bool getVariants(const U32 n_variants, const double bp_window, bool across_contigs = false); // get N number of variants into buffer
 
-	inline const bool hasCarryOver(void) const{ return(this->n_carry_over); }
-	inline void setFilterInvariantSites(const bool yes){ this->skip_invariant_sites; }
+	inline bool hasCarryOver(void) const{ return(this->n_carry_over); }
+	inline void setFilterInvariantSites(const bool yes){ this->skip_invariant_sites = yes; }
 
 private:
 	/**<

@@ -351,7 +351,7 @@ void DataContainer::reformatStride(){
 	this->buffer_strides.reset();
 }
 
-const U32 DataContainer::getObjectSize(void) const{
+U32 DataContainer::getObjectSize(void) const{
 	// In case data is encrypted
 	if(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 		return(this->buffer_data.size());
@@ -363,7 +363,7 @@ const U32 DataContainer::getObjectSize(void) const{
 	return(total_size);
 }
 
-const U64 DataContainer::getObjectSizeUncompressed(void) const{
+U64 DataContainer::getObjectSizeUncompressed(void) const{
 	U64 total_size = this->buffer_data_uncompressed.size();
 	if(this->header.data_header.hasMixedStride())
 		total_size += this->buffer_strides_uncompressed.size();

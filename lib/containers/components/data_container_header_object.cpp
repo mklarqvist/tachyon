@@ -77,7 +77,7 @@ void DataContainerHeaderObject::reset(void){
 	this->global_key = -1;
 }
 
-const bool DataContainerHeaderObject::operator==(const self_type& other) const{
+bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	if(this->stride     != other.stride)     return false;
 	if(this->offset     != other.offset)     return false;
 	if(this->cLength    != other.cLength)    return false;
@@ -89,7 +89,7 @@ const bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	return true;
 }
 
-const SBYTE DataContainerHeaderObject::getPrimitiveWidth(void) const{
+SBYTE DataContainerHeaderObject::getPrimitiveWidth(void) const{
 	// We do not care about signedness here
 	switch(this->controller.type){
 	case(YON_TYPE_UNKNOWN):

@@ -11,8 +11,6 @@ namespace io {
 
 BGZFController::BGZFController(){}
 
-BGZFController::BGZFController(const char* data, const U32 length){}
-
 BGZFController::~BGZFController(){ }
 
 void BGZFController::Clear(){ this->buffer.reset(); }

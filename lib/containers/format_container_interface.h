@@ -15,14 +15,14 @@ public:
     virtual ~FormatContainerInterface(){}
 
     // Capacity
-	inline const bool empty(void) const{ return(this->n_entries == 0); }
+	inline bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample_number) const =0;
     virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const =0;
     virtual io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const =0;
-    virtual const bool emptyPosition(const U32& position) const =0;
-    virtual const bool emptyPosition(const U32& position, const U64& sample) const =0;
+    virtual bool emptyPosition(const U32& position) const =0;
+    virtual bool emptyPosition(const U32& position, const U64& sample) const =0;
 
 protected:
     TACHYON_CORE_TYPE primitive_type;

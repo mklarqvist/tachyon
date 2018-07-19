@@ -152,11 +152,12 @@ public:
 	inline const block_type& getBlock(void) const{ return(this->block_); }
 	inline block_mapper_type& getMapper(void){ return(this->mapper_); }
 	inline const block_mapper_type& getMapper(void) const{ return(this->mapper_); }
+	inline objects_type* getObjects(void){ return(this->objects_); }
 
 	// Checkers
-	inline const bool anyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
-	inline const bool hasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
-	inline const bool hasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
+	inline bool anyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
+	inline bool hasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
+	inline bool hasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
 	/**<
 	 * Primary construction function for generating the appropriate instances of
@@ -173,7 +174,8 @@ public:
 		return this->objects_;
 	}
 
-	inline objects_type* getObjects(void){ return(this->objects_); }
+	std::ostream& printVCF(const U32& position) const;
+	std::ostream& printVCFUnfiltered(const U32& position) const;
 
 private:
 	block_mapper_type    mapper_; // global -> local, local -> global, loaded or not, primitive type

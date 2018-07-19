@@ -71,7 +71,7 @@ public:
     virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
     inline const meta_type& getMeta(void) const{ return(this->__meta); }
 

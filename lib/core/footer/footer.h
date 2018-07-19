@@ -54,7 +54,7 @@ public:
 	inline const U16& getController(void) const{ return(this->controller); }
 	inline U16& getController(void){ return(this->controller); }
 
-	inline const bool validate(void) const{
+	inline bool validate(void) const{
 		if(this->offset_end_of_data == 0) return false;
 		if(this->n_blocks  == 0)          return false;
 		if(this->n_variants == 0)         return false;

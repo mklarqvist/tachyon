@@ -21,7 +21,7 @@ namespace algorithm{
 struct GenotypeEncoderStatistics{
 	GenotypeEncoderStatistics(){}
 
-	const U64 getTotal(void) const{
+	U64 getTotal(void) const{
 		U64 total = 0;
 		for(U32 i = 0; i < 4; ++i) total += this->rle_counts[i];
 		for(U32 i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
@@ -246,7 +246,7 @@ bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
 	// Pack genotypes as
 	// allele A | allele B | phasing information
 	U32 ppa_pos = 0;
-	YON_RLE_TYPE temp = 0;
+	//YON_RLE_TYPE temp = 0;
 	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy){
 		BCF_GT_TYPE allele1 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos]]);
 		BCF_GT_TYPE allele2 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos] + sizeof(BCF_GT_TYPE)]);
@@ -445,36 +445,53 @@ struct CalcSlave{
 	typedef core::MetaEntry meta_type;
 	typedef GenotypeEncoderSlaveHelper helper_type;
 
-	CalcSlave(){}
+	CalcSlave() :
+		thread_idx_(0),
+		n_threads_(0),
+		encoder_(nullptr),
+		reader_(nullptr),
+		meta_entries_(nullptr),
+		ppa_(nullptr),
+		helpers_(nullptr)
+	{}
+
 	~CalcSlave(){}
 
-	std::thread* Start(const GenotypeEncoder& encoder, const U32 thread_idx, const U32 n_threads, const bcf_reader_type& reader, meta_type* meta_entries, const U32* const ppa, helper_type* helpers){
-		this->encoder = &encoder;
-		this->thread_idx = thread_idx;
-		this->n_threads = n_threads;
-		this->reader = &reader;
-		this->meta_entries = meta_entries;
-		this->ppa = ppa;
-		this->helpers = helpers;
+	std::thread* Start(const GenotypeEncoder& encoder,
+		               const U32 thread_idx,
+		               const U32 n_threads,
+		               const bcf_reader_type& reader,
+		               meta_type* meta_entries,
+		               const U32* const ppa,
+		               helper_type* helpers)
+	{
+		this->encoder_      = &encoder;
+		this->thread_idx_   = thread_idx;
+		this->n_threads_    = n_threads;
+		this->reader_       = &reader;
+		this->meta_entries_ = meta_entries;
+		this->ppa_          = ppa;
+		this->helpers_      = helpers;
 
 		this->thread = std::thread(&self_type::Run_, this);
 		return(&this->thread);
 	}
 
 private:
-	const GenotypeEncoder* encoder;
-	U32 thread_idx;
-	U32 n_threads;
-	const bcf_reader_type* reader;
-	meta_type* meta_entries;
-	const U32* ppa;
-	helper_type* helpers;
-
 	void Run_(void){
-		for(U32 i = this->thread_idx; i < this->reader->size(); i += this->n_threads){
-			encoder->EncodeParallel((*reader)[i], meta_entries[i], ppa, helpers[i]);
+		for(U32 i = this->thread_idx_; i < this->reader_->size(); i += this->n_threads_){
+			this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
 		}
 	}
+
+private:
+	U32 thread_idx_;
+	U32 n_threads_;
+	const GenotypeEncoder* encoder_;
+	const bcf_reader_type* reader_;
+	meta_type* meta_entries_;
+	const U32* ppa_;
+	helper_type* helpers_;
 
 public:
 	std::thread thread;

@@ -79,7 +79,7 @@ public:
 	inline const linear_type& linear_at(const size_type& contig_id) const{ return(this->linear_[contig_id]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_contigs_ == 0); }
+	inline bool empty(void) const{ return(this->n_contigs_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_contigs_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 

@@ -82,7 +82,7 @@ public:
     inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
     inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
@@ -142,8 +142,8 @@ private:
     void __allocate(const data_container_type& container);
 
     // Todo:
-    const bool determineUniformity(void);
-    const int findSmallestPrimitive(void);
+    bool determineUniformity(void);
+    int findSmallestPrimitive(void);
     // 1) run find smallest primitive
     // 2) invoke stride container ctor with (larger_stride_container)
 
@@ -221,6 +221,12 @@ void StrideContainer<return_primitive>::__setup(const data_container_type& conta
 	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
 	case(YON_TYPE_32B): this->__allocate<U32>(container);  break;
 	case(YON_TYPE_64B): this->__allocate<U64>(container);  break;
+	case(YON_TYPE_FLOAT):
+	case(YON_TYPE_DOUBLE):
+	case(YON_TYPE_BOOLEAN):
+	case(YON_TYPE_CHAR):
+	case(YON_TYPE_STRUCT):
+	case(YON_TYPE_UNKNOWN):
 	default: std::cerr << utility::timestamp("ERROR") << "Illegal stride primitive: " << (int)container.header.stride_header.controller.type << std::endl; exit(1);
 	}
 }

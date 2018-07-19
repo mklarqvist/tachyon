@@ -74,9 +74,9 @@ public:
     inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
-    inline const bool isUniform(void) const{ return(this->__uniform); }
+    inline bool isUniform(void) const{ return(this->__uniform); }
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__entries[0]); }
@@ -139,6 +139,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, 0));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));        break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0));       break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
 		}
 	} else {
@@ -149,6 +153,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_64B):    (this->__setup<U64>(container, 0));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0)); break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
 		}
 	}
@@ -170,6 +178,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, offset));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));        break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));       break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
@@ -180,6 +192,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
+		case(YON_TYPE_BOOLEAN):
+		case(YON_TYPE_CHAR):
+		case(YON_TYPE_STRUCT):
+		case(YON_TYPE_UNKNOWN):
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}

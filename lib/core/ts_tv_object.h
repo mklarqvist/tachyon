@@ -47,7 +47,7 @@ public:
 		return(*this);
 	}
 
-	inline const double getTiTVRatio(void) const{
+	inline double getTiTVRatio(void) const{
 		// Prevent division by 0
 		if(this->n_transversions == 0) return 0;
 		return((double)this->n_transitions / this->n_transversions);

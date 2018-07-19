@@ -89,7 +89,7 @@ VariantIndexContig::~VariantIndexContig(){
 	::operator delete[](static_cast<void*>(this->bins_));
 }
 
-const S32 VariantIndexContig::add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
+S32 VariantIndexContig::add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id){
 	for(S32 i = this->n_levels_; i != 0; --i){
 		U32 binFrom = S64(fromPosition/(this->l_contig_rounded_ / pow(4,i)));
 		U32 binTo   = S64(toPosition/(this->l_contig_rounded_ / pow(4,i)));

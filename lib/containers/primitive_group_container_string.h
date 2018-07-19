@@ -71,7 +71,7 @@ public:
 	inline const_reference back(void) const{ return(this->__strings[this->__n_objects - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->__n_objects == 0); }
+	inline bool empty(void) const{ return(this->__n_objects == 0); }
 	inline const size_type& size(void) const{ return(this->__n_objects); }
 
 	// Iterator

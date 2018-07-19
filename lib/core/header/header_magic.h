@@ -31,8 +31,8 @@ public:
 		return(this->n_contigs > 0 && (this->major_version > 0 || this->minor_version > 0));
 	}
 
-	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
-	inline const bool operator==(const self_type& other) const{
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator==(const self_type& other) const{
 		if(this->n_samples != other.n_samples) return false;
 		if(this->n_contigs != other.n_contigs) return false;
 		return true;

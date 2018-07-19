@@ -65,6 +65,10 @@ public:
 		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
 		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
 		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		case(YON_CMP_REGEX):
+		default:
+			std::cerr << utility::timestamp("ERROR","FILTER") << "Numerical filtering operations do not support regular expression operations..." << std::endl;
+			this->comparator = &self_type::__filterEqual;
 		}
 	}
 
@@ -84,6 +88,7 @@ public:
 		case(YON_CMP_LESS_EQUAL):    this->comparator = &self_type::__filterLesserEqual;  break;
 		case(YON_CMP_EQUAL):         this->comparator = &self_type::__filterEqual;        break;
 		case(YON_CMP_NOT_EQUAL):     this->comparator = &self_type::__filterNotEqual;     break;
+		case(YON_CMP_REGEX):
 		default:
 			std::cerr << utility::timestamp("ERROR","FILTER") << "Numerical filtering operations do not support regular expression operations..." << std::endl;
 			this->comparator = &self_type::__filterEqual;

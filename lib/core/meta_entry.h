@@ -33,44 +33,44 @@ public:
 	~MetaEntry();
 
 	// Check if a field is set
-	inline const bool check_info_field(const datablock_footer_type& block, const U32 info_identifier) const{
+	inline bool check_info_field(const datablock_footer_type& block, const U32 info_identifier) const{
 		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
 	}
 
-	inline const bool check_format_field(const datablock_footer_type& block, const U32 format_identifier) const{
+	inline bool check_format_field(const datablock_footer_type& block, const U32 format_identifier) const{
 		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
 	}
 
-	inline const bool check_filter_field(const datablock_footer_type& block, const U32 filter_identifier) const{
+	inline bool check_filter_field(const datablock_footer_type& block, const U32 filter_identifier) const{
 		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
 	}
 
 	// Boolean checks
 	// Supportive boolean functions
-	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
-	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
-	inline const bool isBiallelicSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
-	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
-	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
-	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
-	inline const bool isAnyGTMixedPloidy(void) const{ return(this->controller.gt_anyNA); }
-	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
-	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
+	inline bool hasGT(void) const{ return(this->controller.gt_available); }
+	inline bool isBiallelic(void) const{ return(this->controller.biallelic); }
+	inline bool isBiallelicSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
+	inline bool isDiploid(void) const{ return(this->controller.diploid); }
+	inline bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+	inline bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
+	inline bool isAnyGTMixedPloidy(void) const{ return(this->controller.gt_anyNA); }
+	inline bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
+	inline bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
 
-	inline const TACHYON_GT_ENCODING getGenotypeEncoding(void) const{ return(TACHYON_GT_ENCODING(this->controller.gt_compression_type)); }
-	inline const TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{ return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type)); }
+	inline TACHYON_GT_ENCODING getGenotypeEncoding(void) const{ return(TACHYON_GT_ENCODING(this->controller.gt_compression_type)); }
+	inline TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{ return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type)); }
 
 	inline const float& getQuality(void){ return(this->quality); }
 	inline const std::string& getName(void){ return(this->name); }
 	inline const U16& getNumberAlleles(void){ return(this->n_alleles); }
-	inline const U32 getContigID(void){ return(this->contigID); }
-	inline const U64 getPosition(void){ return(this->position); }
+	inline U32 getContigID(void){ return(this->contigID); }
+	inline U64 getPosition(void){ return(this->position); }
 
 	inline const float& getQuality(void) const{ return(this->quality); }
 	inline const std::string& getName(void) const{ return(this->name); }
 	inline const U16& getNumberAlleles(void) const{ return(this->n_alleles); }
-	inline const U32 getContigID(void) const{ return(this->contigID); }
-	inline const U64 getPosition(void) const{ return(this->position); }
+	inline U32 getContigID(void) const{ return(this->contigID); }
+	inline U64 getPosition(void) const{ return(this->position); }
 
 	// Set and get for patterns
 	inline S32& getInfoPatternID(void){ return(this->info_pattern_id); }
@@ -86,7 +86,7 @@ public:
 	 * match the regular expression pattern "^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$"
 	 * @return Returns TRUE if it is possible to bitpack data or FALSE otherwise
 	 */
-	const bool usePackedRefAlt(void) const;
+	bool usePackedRefAlt(void) const;
 
 	/**<
 	 * Bitpack biallelic, diploid REF and ALT data into a single BYTE. Failure
@@ -94,7 +94,7 @@ public:
 	 * errors.
 	 * @return Returns a bitpacked BYTE
 	 */
-	const BYTE packRefAltByte(void) const;
+	BYTE packRefAltByte(void) const;
 
 public:
 	// Markup: populate from streams

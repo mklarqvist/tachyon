@@ -96,9 +96,9 @@ private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& key){
 		stream.write(reinterpret_cast<const char*>(&key.field_id), sizeof(U64));
 		stream.write(reinterpret_cast<const char*>(&key.encryption_type), sizeof(BYTE));
-		stream.write((char*)&key.key[0], KeyLength);
-		stream.write((char*)&key.iv[0],  IVLength);
-		stream.write((char*)&key.tag[0], TagLength);
+		stream.write((const char*)&key.key[0], KeyLength);
+		stream.write((const char*)&key.iv[0],  IVLength);
+		stream.write((const char*)&key.tag[0], TagLength);
 		return(stream);
 	}
 

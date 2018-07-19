@@ -97,10 +97,10 @@ public:
     inline const_reference key_back(void) const{ return(this->local_keys[this->n_keys - 1]); }
 
     // Bit access
-    inline const bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+    inline bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_keys == 0); }
+    inline bool empty(void) const{ return(this->n_keys == 0); }
     inline const value_type& size(void) const{ return(this->n_keys); }
 
     // Iterator
@@ -112,7 +112,7 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->local_keys[this->n_keys]); }
 
 	// Utility
-	inline const U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
+	inline U32 getBaseSize(void) const{ return(sizeof(U32) + sizeof(U32)*this->n_keys); }
 
 private:
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){

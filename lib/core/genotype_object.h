@@ -128,7 +128,7 @@ public:
 	};
 
     // Capacity
-    inline const size_t size(void) const{ return(this->n_objects); }
+    inline size_t size(void) const{ return(this->n_objects); }
 
     // Element access
     inline pointer         data(void){ return(this->alleles); }

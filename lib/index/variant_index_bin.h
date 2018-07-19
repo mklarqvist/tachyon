@@ -103,7 +103,7 @@ public:
 	inline const_reference back(void) const{ return(this->blocks_[this->n_blocks_ - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_blocks_ == 0); }
+	inline bool empty(void) const{ return(this->n_blocks_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_blocks_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 

@@ -15,7 +15,7 @@ public:
 	HashContainer() : htable(65536, 250){}
 	~HashContainer(){}
 
-	inline const bool get(const U32& value, U32& ret){
+	inline bool get(const U32& value, U32& ret){
 		U32* ret2 = nullptr;
 		if(this->htable.GetItem(&value, ret2, sizeof(U32))){
 			ret = this->data[*ret2];
@@ -56,7 +56,7 @@ public:
 		}
 	}
 
-	inline const size_t size(void) const{ return(this->data.size()); }
+	inline size_t size(void) const{ return(this->data.size()); }
 	inline const U32& operator[](const U32& p) const{ return(this->data[p]); }
 	inline void clear(void){
 		this->htable.clear();
@@ -77,7 +77,7 @@ public:
 	HashVectorContainer() : htable(65536, 250){}
 	~HashVectorContainer(){}
 
-	inline const bool get(const U64& value, std::vector<U32>& ret) const{
+	inline bool get(const U64& value, std::vector<U32>& ret) const{
 		U32* ret2 = nullptr;
 		if(this->htable.GetItem(&value, ret2, sizeof(U64))){
 			ret = this->data[*ret2];
@@ -86,7 +86,7 @@ public:
 		return false;
 	}
 
-	inline const bool getRaw(const U64& value, U32& ret) const{
+	inline bool getRaw(const U64& value, U32& ret) const{
 		U32* ret2 = nullptr;
 		if(this->htable.GetItem(&value, ret2, sizeof(U64))){
 			ret = *ret2;
@@ -118,7 +118,7 @@ public:
 		}
 	}
 
-	inline const size_t size(void) const{ return(this->data.size()); }
+	inline size_t size(void) const{ return(this->data.size()); }
 	inline const std::vector<U32>& operator[](const U32& p) const{ return(this->data[p]); }
 	inline void clear(void){
 		this->htable.clear();

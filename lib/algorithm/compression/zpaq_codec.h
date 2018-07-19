@@ -20,9 +20,9 @@ public:
 
 	virtual ~ZPAQContainer(){ }
 
-	const bool compress(permutation_type& manager){ return false; }
+	bool compress(permutation_type& manager){ return false; }
 
-	const bool compress(container_type& container, const std::string& command, const bool compress_strides = true){
+	bool compress(container_type& container, const std::string& command, const bool compress_strides = true){
 		container.generateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
@@ -72,11 +72,11 @@ public:
 		} else return true;
 	}
 
-	const bool compress(container_type& container){
+	bool compress(container_type& container){
 		return(this->compress(container, true));
 	}
 
-	const bool compress(container_type& container, const bool compress_strides){
+	bool compress(container_type& container, const bool compress_strides){
 		container.generateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
@@ -127,7 +127,7 @@ public:
 		} else return true;
 	}
 
-	const bool compressStrides(container_type& container, const std::string& command){
+	bool compressStrides(container_type& container, const std::string& command){
 		if(container.header.stride_header.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
 			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 			container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
@@ -159,7 +159,7 @@ public:
 		return true;
 	}
 
-	const bool compressStrides(container_type& container){
+	bool compressStrides(container_type& container){
 		if(container.header.stride_header.controller.uniform || container.buffer_strides_uncompressed.size() < 100){
 			memcpy(container.buffer_strides.data(), container.buffer_strides_uncompressed.data(), container.buffer_strides_uncompressed.size());
 			container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
@@ -191,7 +191,7 @@ public:
 		return true;
 	}
 
-	const bool decompress(container_type& container){
+	bool decompress(container_type& container){
 		if(container.header.data_header.controller.encoder != YON_ENCODE_ZPAQ){
 			return true;
 		}
@@ -208,7 +208,8 @@ public:
 
 		return true;
 	}
-	const bool decompressStrides(container_type& container){
+
+	bool decompressStrides(container_type& container){
 		if(container.header.stride_header.controller.encoder != YON_ENCODE_ZPAQ){
 			return true;
 		}

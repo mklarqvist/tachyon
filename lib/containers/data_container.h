@@ -49,7 +49,7 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline const bool checkStrideSize(const S32 value) const{
+	inline bool checkStrideSize(const S32 value) const{
 		if(this->header.data_header.hasMixedStride() == false)
 			return false;
 
@@ -337,13 +337,13 @@ public:
 	 * object would take on disk if written out
 	 * @return Total size in bytes
 	 */
-	const U32 getObjectSize(void) const;
+	U32 getObjectSize(void) const;
 
 	/**<
 	 *
 	 * @return
 	 */
-	const U64 getObjectSizeUncompressed(void) const;
+	U64 getObjectSizeUncompressed(void) const;
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
@@ -362,8 +362,8 @@ public:
 	 */
 	void deltaEncode(void);
 
-	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
-	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
+	inline TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
+	inline TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
 private:
 	inline bool __checkInteger(void){

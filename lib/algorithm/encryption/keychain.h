@@ -75,7 +75,7 @@ public:
 	inline const_reference back(void) const{ return(this->entries_[this->n_entries_ - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_entries_ == 0); }
+	inline bool empty(void) const{ return(this->n_entries_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
@@ -159,6 +159,9 @@ private:
 
 template <class KeyType>
 Keychain<KeyType>::Keychain() :
+	version_major_(0),
+	version_minor_(0),
+	version_release_(0),
 	n_entries_(0),
 	n_capacity_(100000),
 	entries_(new value_type[this->n_capacity_]),
@@ -168,6 +171,9 @@ Keychain<KeyType>::Keychain() :
 
 template <class KeyType>
 Keychain<KeyType>::Keychain(const U32 start_capacity) :
+	version_major_(0),
+	version_minor_(0),
+	version_release_(0),
 	n_entries_(0),
 	n_capacity_(start_capacity),
 	entries_(new value_type[this->n_capacity_]),
@@ -176,6 +182,9 @@ Keychain<KeyType>::Keychain(const U32 start_capacity) :
 
 template <class KeyType>
 Keychain<KeyType>::Keychain(const self_type& other) :
+	version_major_(other.version_major_),
+	version_minor_(other.version_minor_),
+	version_release_(other.version_release_),
 	n_entries_(other.n_entries_),
 	n_capacity_(other.n_capacity_),
 	entries_(new value_type[this->n_capacity_]),

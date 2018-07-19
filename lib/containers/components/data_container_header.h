@@ -44,7 +44,7 @@ public:
 	}
 
 	// Comparators
-	const bool operator==(const self_type& other) const{
+	bool operator==(const self_type& other) const{
 		if(this->identifier    != other.identifier)    return false;
 		if(this->n_entries     != other.n_entries)     return false;
 		if(this->n_additions   != other.n_additions)   return false;
@@ -53,7 +53,7 @@ public:
 		if(this->stride_header != other.stride_header) return false;
 		return true;
 	}
-	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
 	self_type& operator+=(const self_type& other){
 		this->n_entries     += other.n_entries;
@@ -65,7 +65,7 @@ public:
 	// Accessors
 	inline S32& getGlobalKey(void){ return(this->data_header.global_key); }
 	inline const S32& getGlobalKey(void) const{ return(this->data_header.global_key); }
-	inline const bool hasMixedStride(void) const{ return(this->data_header.hasMixedStride()); }
+	inline bool hasMixedStride(void) const{ return(this->data_header.hasMixedStride()); }
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry){

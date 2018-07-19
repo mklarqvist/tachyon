@@ -16,12 +16,11 @@ public:
 	~HeaderSample(){}
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->name.size() == 0); }
-	inline const size_t size(void) const{ return(this->name.size()); }
+	inline bool empty(void) const{ return(this->name.size() == 0); }
+	inline size_t size(void) const{ return(this->name.size()); }
 
 	// Element access
 	inline char* data(void){ return(&this->name[0]); }
-	inline const char* const data(void) const{ return(&this->name[0]); }
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){

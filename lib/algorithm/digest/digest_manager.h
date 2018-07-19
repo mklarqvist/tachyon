@@ -94,7 +94,7 @@ public:
 	inline const_reference back(void) const{ return(this->__entries[this->n_entries_ - 1]); }
 
 	// Capacity
-	inline const bool empty(void) const{ return(this->n_entries_ == 0); }
+	inline bool empty(void) const{ return(this->n_entries_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 

@@ -148,8 +148,8 @@ bool VariantReader::nextBlock(){
 			return false;
 		}
 
-		encryption::EncryptionDecorator e;
-		if(!e.decryptAES256(this->variant_container.getBlock(), this->keychain)){
+		encryption_manager_type encryption_manager;
+		if(!encryption_manager.decryptAES256(this->variant_container.getBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
@@ -202,8 +202,8 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 			return false;
 		}
 
-		encryption::EncryptionDecorator e;
-		if(!e.decryptAES256(this->variant_container.getBlock(), this->keychain)){
+		encryption_manager_type encryption_manager;
+		if(!encryption_manager.decryptAES256(this->variant_container.getBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
@@ -253,8 +253,8 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 			return variant_container_type();
 		}
 
-		encryption::EncryptionDecorator e;
-		if(!e.decryptAES256(block.getBlock(), this->keychain)){
+		encryption_manager_type encryption_manager;
+		if(!encryption_manager.decryptAES256(block.getBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return variant_container_type();
 		}
@@ -270,7 +270,7 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	return block;
 }
 
-const int VariantReader::has_format_field(const std::string& field_name) const{
+int VariantReader::has_format_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->global_header.getFormatField(field_name, match)){
 		return(match->IDX);
@@ -278,7 +278,7 @@ const int VariantReader::has_format_field(const std::string& field_name) const{
 	return(-2);
 }
 
-const int VariantReader::has_info_field(const std::string& field_name) const{
+int VariantReader::has_info_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->global_header.getInfoField(field_name, match)){
 		return(match->IDX);
@@ -286,7 +286,7 @@ const int VariantReader::has_info_field(const std::string& field_name) const{
 	return(-2);
 }
 
-const int VariantReader::has_filter_field(const std::string& field_name) const{
+int VariantReader::has_filter_field(const std::string& field_name) const{
 	core::HeaderMapEntry* match = nullptr;
 	if(this->global_header.getFilterField(field_name, match)){
 		return(match->IDX);
@@ -574,13 +574,12 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 
 void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 				const char& delimiter,
-				  const U32& position,
-				  const objects_type& objects) const
+				const U32& position,
+				const objects_type& objects) const
 {
 	// Check if any INFO data exists at all
-	if(this->variant_container.getBlock().footer.n_info_patterns == 0){
+	if(this->variant_container.getBlock().footer.n_info_patterns == 0)
 		return;
-	}
 
 	if(block_settings.info_all.display || objects.n_loaded_info){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
@@ -597,10 +596,12 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ";";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
-				if(this->global_header.info_fields[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->global_header.info_fields[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG)
 					continue;
-				}
-				if(objects.info_containers[targetKeys[i]]->emptyPosition(position)) continue;
+
+				if(objects.info_containers[targetKeys[i]]->emptyPosition(position))
+					continue;
+
 				outputBuffer += '=';
 				objects.info_containers[targetKeys[i]]->to_vcf_string(outputBuffer, position);
 			}
@@ -723,7 +724,7 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_en
  * Outputs
  * @return
  */
-const U64 VariantReader::outputVCF(void){
+U64 VariantReader::outputVCF(void){
 	U64 n_variants = 0;
 
 	if(this->block_settings.annotate_extra){
@@ -784,7 +785,7 @@ const U64 VariantReader::outputVCF(void){
  *
  * @return
  */
-const U64 VariantReader::outputCustom(void){
+U64 VariantReader::outputCustom(void){
 	U64 n_variants = 0;
 
 	// While there are YON blocks
@@ -796,7 +797,7 @@ const U64 VariantReader::outputCustom(void){
  *
  * @return
  */
-const U32 VariantReader::outputBlockVCF(void){
+U32 VariantReader::outputBlockVCF(void){
 	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
 
 	// Reserve memory for output buffer
@@ -861,7 +862,7 @@ const U32 VariantReader::outputBlockVCF(void){
  *
  * @return
  */
-const U32 VariantReader::outputBlockCustom(void){
+U32 VariantReader::outputBlockCustom(void){
 	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
 
 	// Reserve memory for output buffer

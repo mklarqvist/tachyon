@@ -53,10 +53,6 @@ public:
 		return(pair->applyFilter(objects.meta_container->at(position).isGTMixedPhasing()));
 	}
 
-	inline bool filterMixedPloidy(const_pointer pair, const objects_type& objects, const U32& position) const{
-		return(pair->applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
-	}
-
 	inline bool filterKnownNovel(const_pointer pair, const objects_type& objects, const U32& position) const{
 		return(pair->applyFilter((U32)objects.meta_container->at(position).name.size()));
 	}
@@ -91,8 +87,14 @@ public:
 		return false;
 	}
 
+	// Unused parameter position available in definition to allow a unified pointer definition
 	inline bool filterHasMissingGenotypes(const_pointer pair, const objects_type& object, const U32& position) const{
 		return(pair->applyFilter(object.genotype_summary->vectorA_[1]));
+	}
+
+	// Unused parameter position available in definition to allow a unified pointer definition
+	inline bool filterMixedPloidy(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
 	}
 
 	inline bool filterReferenceAllele(const_pointer pair, const objects_type& object, const U32& position) const{
@@ -131,7 +133,7 @@ public:
 	 * Checks if any filter function require genotype data to be loaded and prepared
 	 * @return Returns TRUE if genotype data is required or FALSE otherwise
 	 */
-	inline const bool doRequireGenotypes(void) const{ return(this->require_genotypes); }
+	inline bool doRequireGenotypes(void) const{ return(this->require_genotypes); }
 
 public:
 	size_type n_filters_;   // number of filters

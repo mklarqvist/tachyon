@@ -58,21 +58,21 @@ public:
 	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
 	inline U32 addFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
 
-	inline const S32 getPatternsINFO(const U64& hash_pattern) const{
+	inline S32 getPatternsINFO(const U64& hash_pattern) const{
 		U32 mapID = 0;
 		if(this->info_patterns.getRaw(hash_pattern, mapID))
 			return(mapID);
 		else return(-1);
 	}
 
-	inline const S32 getPatternsFORMAT(const U64& hash_pattern) const{
+	inline S32 getPatternsFORMAT(const U64& hash_pattern) const{
 		U32 mapID = 0;
 		if(this->format_patterns.getRaw(hash_pattern, mapID))
 			return(mapID);
 		else return(-1);
 	}
 
-	inline const S32 getPatternsFILTER(const U64& hash_pattern) const{
+	inline S32 getPatternsFILTER(const U64& hash_pattern) const{
 		U32 mapID = 0;
 		if(this->filter_patterns.getRaw(hash_pattern, mapID))
 			return(mapID);
@@ -251,7 +251,7 @@ private:
 	 * block
 	 * @return Returns the sum total disk size
 	 */
-	const U64 __determineCompressedSize(void) const;
+	U64 __determineCompressedSize(void) const;
 
 	/**<
 	 *

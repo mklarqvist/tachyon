@@ -7,7 +7,7 @@
 #include <vector>
 #include <cstring>
 
-#include "VCFHeaderConstants.h"
+#include "vcf_header_constants.h"
 #include "support/helpers.h"
 
 namespace tachyon{
@@ -47,7 +47,7 @@ public:
 	VCFHeaderLine(const char* data, const U32 size);
 	~VCFHeaderLine();
 
-	inline const U32 size(void) const{ return this->pairs.size(); }
+	inline U32 size(void) const{ return this->pairs.size(); }
 	inline const key_value& operator[](const U32 p) const{ return this->pairs[p]; }
 	inline bool isValid(void) const{ return(this->size_ > 2 && (this->data[0] == '#' && this->data[1] == '#')); }
 	inline bool isCONTIG(void) const{

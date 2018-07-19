@@ -20,24 +20,24 @@ struct DataContainerHeaderObject{
 	~DataContainerHeaderObject();
 
 	void reset(void);
-	const bool operator==(const self_type& other) const;
-	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	bool operator==(const self_type& other) const;
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
-	const SBYTE getPrimitiveWidth(void) const;
+	SBYTE getPrimitiveWidth(void) const;
 
 	//
 	inline S32& getStride(void){ return(this->stride); }
 	inline const S32& getStride(void) const{ return(this->stride); }
 
-	inline const bool isUniform(void) const{ return(this->controller.uniform); }
-	inline const bool isSigned(void) const{ return(this->controller.signedness); }
-	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
+	inline bool isUniform(void) const{ return(this->controller.uniform); }
+	inline bool isSigned(void) const{ return(this->controller.signedness); }
+	inline bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
 	inline void setUniform(const bool yes){ this->controller.uniform = yes; }
 	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
 	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
 
-	inline const TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
-	inline const TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Set types
 	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
@@ -45,7 +45,7 @@ struct DataContainerHeaderObject{
 	// Checksum
 	inline U32& getChecksum(void){ return(this->crc); }
 	inline const U32& getChecksum(void) const{ return(this->crc); }
-	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
+	inline bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
 
 private:
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){

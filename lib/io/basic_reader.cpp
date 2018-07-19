@@ -80,8 +80,8 @@ bool BasicReader::open(void){
 	// Reset buffer pointer to 0
 	this->end_ = 0;
 
-	if(!SILENT)
-		std::cerr << utility::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
+	//if(!SILENT)
+	//	std::cerr << utility::timestamp("LOG", "IO") << "Opened file: " << this->filename_ << " (" << this->filesize_ << " b)..." << std::endl;
 
 	return(true);
 }

@@ -100,7 +100,7 @@ public:
 		return(buffer);
     }
 
-    const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+    inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 
 private:
     // For mixed strides
@@ -150,6 +150,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -160,6 +164,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
@@ -172,6 +180,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -182,6 +194,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)data_container.header.data_header.controller.type << std::endl; return;
 			}
 		}
@@ -205,6 +221,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			case(YON_TYPE_64B):    (this->__setup<S64>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -215,6 +235,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			case(YON_TYPE_64B):    (this->__setup<U64>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		}
@@ -227,6 +251,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			case(YON_TYPE_64B):    (this->__setup<S64>(container, container.header.data_header.stride));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
@@ -237,6 +265,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			case(YON_TYPE_64B):    (this->__setup<U64>(container, container.header.data_header.stride));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_CHAR):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 
 			}

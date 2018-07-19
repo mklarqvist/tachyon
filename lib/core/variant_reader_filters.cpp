@@ -5,9 +5,9 @@ namespace tachyon{
 VariantReaderFilters::VariantReaderFilters() :
 	n_filters_(0),
 	n_capacity_(256),
-	filter_data_(new pointer[this->n_capacity_]),
 	require_genotypes(false),
-	target_intervals(false)
+	target_intervals(false),
+	filter_data_(new pointer[this->n_capacity_])
 {
 
 }

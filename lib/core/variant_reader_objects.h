@@ -1,6 +1,8 @@
 #ifndef CONTAINERS_VARIANT_READER_OBJECTS_H_
 #define CONTAINERS_VARIANT_READER_OBJECTS_H_
 
+#include <unordered_map>
+
 #include "containers/meta_container.h"
 #include "containers/genotype_container.h"
 #include "containers/info_container.h"
@@ -11,7 +13,7 @@
 namespace tachyon{
 
 /**<
- * The sole function of this struct is to keep all loaded containers and
+ * The function of this struct is to keep all loaded containers and
  * field identifiers in a single object. Loading the members of this object
  * occurs OUTSIDE this definition.
  */
@@ -62,6 +64,9 @@ public:
 
 	std::vector<std::string> info_field_names;
 	std::vector<std::string> format_field_names;
+
+	std::unordered_map<std::string, info_interface_type*>   info_container_map;
+	std::unordered_map<std::string, format_interface_type*> format_container_map;
 
 	meta_container_type*     meta_container;
 	gt_container_type*       genotype_container;

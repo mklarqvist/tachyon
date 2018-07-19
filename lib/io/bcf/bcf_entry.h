@@ -191,13 +191,13 @@ public:
 
 	inline const U32& size(void) const{ return(this->l_data); }
 	inline const U32& capacity(void) const{ return(this->l_capacity); }
-	inline const U64 sizeBody(void) const{ return(this->body->l_shared + this->body->l_indiv); }
+	inline U64 sizeBody(void) const{ return(this->body->l_shared + this->body->l_indiv); }
 
-	inline const bool isBiallelicSimple(void) const{
+	inline bool isBiallelicSimple(void) const{
 		return((this->body->n_allele == 2) && (this->alleles[0].length == 1 && this->alleles[1].length == 1));
 	}
-	inline const bool isBiallelic(void) const{ return(this->body->n_allele == 2); }
-	inline const bool isSimple(void) const{
+	inline bool isBiallelic(void) const{ return(this->body->n_allele == 2); }
+	inline bool isSimple(void) const{
 		return(this->alleles[0].length == 1 && this->alleles[1].length == 1);
 	}
 
@@ -221,7 +221,7 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	inline const S32 getInteger(const BYTE& key, U32& pos){
+	inline S32 getInteger(const BYTE& key, U32& pos){
 		S32 value = 0;
 		if(key == 1){
 			const SBYTE& ref  = *reinterpret_cast<const SBYTE* const>(&this->data[pos++]);
@@ -273,7 +273,7 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	inline const float getFloat(U32& pos){
+	inline float getFloat(U32& pos){
 		const float& val = *reinterpret_cast<const float* const>(&this->data[pos]);
 		pos += sizeof(float);
 		return val;
@@ -284,13 +284,13 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	inline const char getChar(U32& pos){ return(this->data[pos++]); }
-	inline const char* const getCharPointer(U32& pos){ return(&this->data[pos]); }
+	inline char getChar(U32& pos){ return(this->data[pos++]); }
+	inline char* getCharPointer(U32& pos){ return(&this->data[pos]); }
 
 	// Hash field identifiers
-	inline const U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }
-	inline const U64 hashInfo(void){ return(this->__hashTarget(this->infoID, this->infoPointer)); }
-	inline const U64 hashFormat(void){ return(this->__hashTarget(this->formatID, this->formatPointer)); }
+	inline U64 hashFilter(void){ return(this->__hashTarget(this->filterID, this->filterPointer)); }
+	inline U64 hashInfo(void){ return(this->__hashTarget(this->infoID, this->infoPointer)); }
+	inline U64 hashFormat(void){ return(this->__hashTarget(this->formatID, this->formatPointer)); }
 
 	// Iterators over fields
 	bool nextFilter(S32& value, U32& position);
@@ -304,7 +304,7 @@ private:
 	 * @param n_entries Number of BCFTuples in input
 	 * @return          Returns a 64-bit hash value
 	 */
-	const U64 __hashTarget(const BCFKeyTuple* tuples, const U16& n_entries){
+	U64 __hashTarget(const BCFKeyTuple* tuples, const U16& n_entries){
 		XXH64_state_t* const state = XXH64_createState();
 		if (state==NULL) abort();
 
