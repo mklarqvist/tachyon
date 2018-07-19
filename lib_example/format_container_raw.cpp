@@ -32,44 +32,37 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
-	reader.getBlockSettings().loadFORMAT("DP");
+	reader.getBlockSettings().loadFORMAT("PGT");
 
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
 		return(1);
 	}
 
-	std::vector<tachyon::math::SummaryStatistics> depth_data(reader.getGlobalHeader().getSampleNumber());
-
 	/**<
-	 *  In this example we will write a simple program to calculate
-	 *  the depth profile for each individual in a file
+	 *  The `FormatContainer` class stores the data for each variant
+	 *  for each individual as container[variant][sample][data]
 	 */
 	while(reader.nextBlock()){ // As long as there are YON blocks available
 		// Meta container
 		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("DP", meta);
+	    tachyon::containers::FormatContainer<std::string>* pgt_container = reader.getCurrentBlock().get_format_container<std::string>("PGT");
 
-	    if(dp_container != nullptr){
-	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
-	            for(U32 sample = 0; sample < dp_container->at(variant).size(); ++sample){
-	               if(dp_container->at(variant).at(sample).size()){
-	            		depth_data[sample].addNonzero(dp_container->at(variant).at(sample)[0]);
-	            	}
+	    if(pgt_container != nullptr){
+	        for(U32 variant = 0; variant < pgt_container->size(); ++variant){
+	            for(U32 sample = 0; sample < pgt_container->at(variant).size(); ++sample){
+	                // Write the data to `cout` in `VCF` formatting
+	                tachyon::utility::to_vcf_string(std::cout, pgt_container->at(variant).at(sample)) << ' ';
 	            }
+	            std::cout << '\n';
 	        }
+	        std::cout << '\n';
 	    }
-	    delete dp_container;
-	}
+	    delete pgt_container;
 
-	std::cout << "Sample\tMean\tSD\tMin\tMax\tN\n";
-	for(U32 i = 0; i < reader.getGlobalHeader().getSampleNumber(); ++i){
-		depth_data[i].calculate();
-		std::cout << reader.getGlobalHeader().samples[i].name << "\t" << depth_data[i].mean << "\t" << depth_data[i].getStandardDeviation() << "\t" << depth_data[i].min << "\t" << depth_data[i].max << "\t" << depth_data[i].getCount() << "\n";
 	}
-	std::cout.flush();
 
 	return(0);
 }

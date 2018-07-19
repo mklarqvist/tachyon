@@ -5,7 +5,10 @@ namespace containers{
 
 PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer() : __n_objects(0), __strings(nullptr){}
 
-PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32& n_entries, const U32 strides_each) :
+PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_container_type& container,
+	                                                          const U32& offset,
+	                                                          const U32& n_entries,
+	                                                          const U32 strides_each) :
 	__n_objects(n_entries), // limitation
 	__strings(static_cast<pointer>(::operator new[](this->size()*sizeof(value_type))))
 {

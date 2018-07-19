@@ -10,8 +10,8 @@ private:
     typedef std::size_t              size_type;
 
 public:
-    FormatContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0){}
-    FormatContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries){}
+    FormatContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0), n_capacity(0){}
+    FormatContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries), n_capacity(0){}
     virtual ~FormatContainerInterface(){}
 
     // Capacity
@@ -27,6 +27,7 @@ public:
 protected:
     TACHYON_CORE_TYPE primitive_type;
 	size_t  n_entries;
+	size_t  n_capacity;
 };
 
 }

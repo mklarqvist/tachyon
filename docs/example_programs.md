@@ -8,8 +8,9 @@ lib_example/meta_container examples/example_dataset.yon
 
 Here is a summary of example programs included with Tachyon:
 * `calculate_depth_profile <input.yon>`  
-   If input.vcf is a VCF file in which the variant calls have allele depths (in their 'AD' FORMAT fields), then output.vcf will be the same but with the allele depths summed into the 'AD' INFO field of the variants. This program is a good example of writing out a file with a modified header, as well as demonstrating the variant_utils and variantcall_utils routines for setting and getting INFO and FORMAT information.
+   If the input tachyon file has the FORMAT field DP set, then the output will be a matrix of average, standard deviation, minimum and maximum, and total number of non-zero depth for each individual. This example program demonstrates the power of the `SummaryStatistics` objects.
 * `format_container_balanced <input.yon>`  
+* `format_container_raw <input.yon>`  
 * `genotype_container <input.yon>`  
 * `genotype_likelihoods <input.yon>`  
 * `info_container_balance_comparison <input.yon>`  

@@ -37,7 +37,7 @@ PREFIX := /usr/local
 # If you want to build in debug mode then add DEBUG=true to your build command
 # make DEBUG=true
 ifdef DEBUG
-DEBUG_FLAGS := -g -Wall -Wextra -Wcast-qual -Wcast-align -Wshadow \
+DEBUG_FLAGS := -g -Wall -Wextra -Wcast-qual -Wcast-align \
                   -Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
                   -Wstrict-prototypes -Wundef -Wpointer-arith -Wformat-security \
                   -Wvla -Wformat=2 -Winit-self -Wfloat-equal -Wwrite-strings \
@@ -94,6 +94,7 @@ endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
+CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
 BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
 
 LIBS := -lzstd -lcrypto
@@ -154,10 +155,10 @@ all: tachyon
 
 # Third party rules
 lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
-	gcc $(CFLAGS) -c -o $@ $<
+	gcc $(CFLAGS_VENDOR) -c -o $@ $<
 
 lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
-	gcc $(CFLAGS) -c -o $@ $<
+	gcc $(CFLAGS_VENDOR) -c -o $@ $<
 
 # Generic rules
 %.o: %.cpp

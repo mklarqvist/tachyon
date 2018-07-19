@@ -49,17 +49,25 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 	if(container.buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->n_entries == 0)
+	this->n_capacity = container.buffer_data_uncompressed.size() / n_samples;
+	this->n_entries  = 0;
+
+	if(this->n_capacity == 0)
 		return;
 
-	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	this->__containers = static_cast<pointer>(::operator new[](this->n_capacity*sizeof(value_type)));
 	stride_container_type strides(container);
 
 	U32 current_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	U32 current_position = 0;
+	while(true){
 		//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
-		new( &this->__containers[i] ) value_type( container, current_offset, n_samples, strides[i] );
-		current_offset += strides[i] * n_samples;
+		new( &this->__containers[current_position] ) value_type( container, current_offset, n_samples, strides[current_position] );
+		current_offset += strides[current_position] * n_samples;
+		++this->n_entries;
+		if(current_offset == container.buffer_data_uncompressed.size()) break;
+		assert(current_offset <= container.buffer_data_uncompressed.size());
+		++current_position;
 	}
 	assert(current_offset == container.buffer_data_uncompressed.size());
 }

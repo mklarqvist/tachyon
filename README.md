@@ -1,12 +1,11 @@
 [![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
-[![Release](https://img.shields.io/badge/Release-beta_0.1-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Release](https://img.shields.io/badge/Release-beta_0.1.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <div align="center">
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-# Exploring population-scale sequence variant data
 Tachyon, or `YON` for short, is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
 
 ## Highlights of Tachyon
@@ -86,19 +85,19 @@ make
 * Overview.
 * [Getting started](docs/getting_started.md)
 * [Summary of example programs](docs/example_programs.md).
-* Python API Reference.
+* [Benchmarks](docs/benchmarks.md)
 
 
 ### Contributing
 
-Interested in contributing? See CONTRIBUTING.
+Interested in contributing? Fork and submit a pull request and it will be reviewed.
 
 ### Support
 
-The Genomics team in Google Brain actively supports Nucleus and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and fix it. We encourage including links to snippets of BAM/VCF/etc files that provoke the bug, if possible. Depending on the severity of the issue we may patch Nucleus immediately with the fix or roll it into the next release.
+We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it.
 
 ### Version
-This is Tachyon 0.1.0.Tachyon follows [semantic versioning](https://semver.org/).
+This is Tachyon 0.1.0. Tachyon follows [semantic versioning](https://semver.org/).
 
 ### History
 Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.
