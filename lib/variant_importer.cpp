@@ -65,7 +65,7 @@ bool VariantImporter::BuildBCF(void){
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->samples);
 
-	if(this->settings_.output_prefix.size() == 0) this->writer = new writer_stream_type;
+	if(this->settings_.output_prefix.size() == 0 || (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-")) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
 
 	if(!this->writer->open(this->settings_.output_prefix)){
@@ -73,27 +73,7 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
-	//index::VariantIndex idx;
-	for(U32 i = 0; i < this->header->contigs.size(); ++i){
-		const U64 contig_length = this->header->contigs[i].bp_length;
-		BYTE n_levels = 7;
-		U64 bins_lowest = pow(4,n_levels);
-		double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
-
-		if(used / bins_lowest < 2500){
-			for(S32 i = n_levels; i != 0; --i){
-				if(used/pow(4,i) > 2500){
-					n_levels = i;
-					break;
-				}
-			}
-		}
-
-		this->writer->index.index_.add(i, contig_length, n_levels);
-		//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
-		//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
-		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
-	}
+	this->writer->index += this->header->contigs;
 
 	// Writer MAGIC
 	this->writer->stream->write(&tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH);

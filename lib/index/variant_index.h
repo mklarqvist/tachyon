@@ -8,6 +8,7 @@
 #include "variant_index_bin.h"
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
+#include "core/header/header_contig.h"
 
 namespace tachyon{
 namespace index{
@@ -23,6 +24,7 @@ private:
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
     typedef IndexEntry         linear_entry_type;
+    typedef core::HeaderContig contig_type;
 
 public:
 	VariantIndex();
@@ -90,6 +92,33 @@ public:
 	inline const_iterator end() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
 	inline const_iterator cbegin() const{ return const_iterator(&this->contigs_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
+
+	self_type& add(const std::vector<contig_type>& contigs){
+		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
+			this->resize();
+
+		for(U32 i = 0; i < contigs.size(); ++i){
+			const U64 contig_length = contigs[i].bp_length;
+			BYTE n_levels = 7;
+			U64 bins_lowest = pow(4,n_levels);
+			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
+
+			if(used / bins_lowest < 2500){
+				for(S32 i = n_levels; i != 0; --i){
+					if(used/pow(4,i) > 2500){
+						n_levels = i;
+						break;
+					}
+				}
+			}
+
+			this->add(i, contig_length, n_levels);
+			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
+			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
+			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+		}
+		return(*this);
+	}
 
 	/**<
 	 * Add a contig with n_levels to the chain

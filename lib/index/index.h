@@ -6,19 +6,21 @@
 #include "index_meta_container.h"
 #include "variant_index.h"
 #include "variant_index_linear.h"
+#include "core/header/header_contig.h"
 
 namespace tachyon{
 namespace index{
 
 class Index{
 private:
-	typedef Index                 self_type;
-    typedef std::size_t           size_type;
-	typedef VariantIndex          container_type;
-	typedef IndexMetaContainer    container_meta_type;
-	typedef IndexEntry            entry_type;
-	typedef IndexIndexEntry       entry_meta_type;
-	typedef VariantIndexBin       bin_type;
+	typedef Index              self_type;
+    typedef std::size_t        size_type;
+	typedef VariantIndex       container_type;
+	typedef IndexMetaContainer container_meta_type;
+	typedef IndexEntry         entry_type;
+	typedef IndexIndexEntry    entry_meta_type;
+	typedef VariantIndexBin    bin_type;
+	typedef core::HeaderContig contig_type;
 
 public:
 	Index() : number_blocks(0){}
@@ -84,6 +86,12 @@ public:
 
 	inline const U64& current_block_number(void) const{ return(this->number_blocks); }
 	inline void operator++(void){ ++this->number_blocks; }
+
+	/**<
+	 * Wrapper function for adding a list of contigs to the index
+	 * @param contigs
+	 */
+	void operator+=(const std::vector<contig_type>& contigs){ this->index_.add(contigs); }
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){

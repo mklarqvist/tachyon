@@ -91,8 +91,6 @@ private:
 public:
 	VariantImporter();
 	VariantImporter(const settings_type& settings);
-
-	VariantImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
 	~VariantImporter();
 	bool Build();
 
