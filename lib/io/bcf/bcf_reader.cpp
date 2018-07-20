@@ -181,12 +181,11 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			}
 		}
 
-		if(is_new) new( &this->entries[this->n_entries] ) value_type( this->header.size() * 2 );
+		if(is_new) new( &this->entries[this->n_entries] ) value_type( 2 * (this->header.size() + 10) ); // Start capacity is diploid * (n_samples + 10) + some base level
 		if(!this->nextVariant(this->entries[this->n_entries])){
-			std::cerr << "failed to get next" << std::endl;
+			std::cerr << utility::timestamp("ERROR","BCF") << "Failed to get next entry..." << std::endl;
 			return false;
 		}
-
 
 		if(this->skip_invariant_sites && this->entries[this->n_entries].gt_support.invariant == true){
 			//std::cerr << "not getting " << std::endl;

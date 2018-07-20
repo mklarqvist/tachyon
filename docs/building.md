@@ -50,3 +50,7 @@ git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
 make
 ```
+
+[openssl]:  https://www.openssl.org/
+[zstd]:     https://github.com/facebook/zstd
+[tomahawk]: https://github.com/mklarqvist/tomahawk
