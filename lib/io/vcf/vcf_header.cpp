@@ -5,19 +5,15 @@ namespace vcf{
 
 VCFHeader::VCFHeader() :
 	error_bit(VCF_PASS),
-	samples(0),
-	version(0),
+	n_samples(0),
+	vcf_version(0),
 	info_remap(nullptr),
 	format_remap(nullptr),
-	filter_remap(nullptr),
-	contigsHashTable(nullptr),
-	sampleHashTable(nullptr)
+	filter_remap(nullptr)
 {
 }
 
 VCFHeader::~VCFHeader(){
-	delete this->contigsHashTable;
-	delete this->sampleHashTable;
 	delete [] this->info_remap;
 	delete [] this->format_remap;
 	delete [] this->filter_remap;
@@ -29,9 +25,6 @@ bool VCFHeader::parse(reader_type& stream){
 
 	// Read remainder lines
 	if(!this->parseHeaderLines(stream))
-		return false;
-
-	if(!this->buildContigTable())
 		return false;
 
 	// Copy string literal to header
@@ -56,9 +49,6 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 
 	// Read remainder lines
 	if(!this->parseHeaderLines(data, offset))
-		return false;
-
-	if(!this->buildContigTable())
 		return false;
 
 	// Read samples line
@@ -155,16 +145,6 @@ bool VCFHeader::parse(const char* const data, const U32& length){
 	return true;
 }
 
-void VCFHeader::buildSampleTable(U64 samples){
-	this->samples = samples;
-	delete this->sampleHashTable;
-
-	if(this->samples*2 < 1024)
-		this->sampleHashTable = new hash_table_type(1024);
-	else
-		this->sampleHashTable = new hash_table_type(this->samples * 2);
-}
-
 bool VCFHeader::checkLine(const char* data, const U32 length){
 	header_line_type line(data, length);
 	if(line.Parse()){
@@ -194,6 +174,7 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 				contig.bp_length = std::numeric_limits<U32>::max();
 			}
 			this->contigs.push_back(contig);
+			this->addContig(contig.name, this->contigs.size() - 1);
 		}
 
 		// Also store the line as an object
@@ -206,31 +187,6 @@ bool VCFHeader::checkLine(const char* data, const U32 length){
 
 	std::cerr << utility::timestamp("ERROR","VCF") << "Failed to parse VCF..." << std::endl;
 	return false;
-}
-
-bool VCFHeader::buildContigTable(void){
-	S32* retValue;
-
-	delete this->contigsHashTable;
-
-	if(this->contigs.size() < 1024)
-		this->contigsHashTable = new hash_table_type(1024);
-	else
-		this->contigsHashTable = new hash_table_type(this->contigs.size() * 2);
-
-	if(!SILENT)
-		std::cerr << utility::timestamp("LOG", "VCF") << "Constructing lookup table for " << this->contigs.size() << " contigs..." << std::endl;
-
-	for(U32 i = 0; i < this->contigs.size(); ++i){
-		if(!(*this).getContig(this->contigs[i].name, retValue)){
-			(*this).addContig(this->contigs[i].name, i);
-		} else {
-			std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated contig found (" << this->getContig(*retValue).name << "). Illegal..." << std::endl;
-			this->error_bit = VCF_ERROR_LINES;
-			return false;
-		}
-	}
-	return true;
 }
 
 bool VCFHeader::parseFirstLine(reader_type& stream){
@@ -336,7 +292,7 @@ bool VCFHeader::parseSampleLine(reader_type& stream){
 
 	U32 search_position = vcf::constants::HEADER_COLUMN.size() + 1;
 	U64 delimiters_found = 0;
-	while(true){ // while there is samples in line
+	while(true){ // while there are samples in the string
 		char* found = std::find(&stream[search_position], &stream[stream.size()-1], vcf::constants::VCF_DELIMITER);
 		if(*found != vcf::constants::VCF_DELIMITER)
 			break;
@@ -346,12 +302,10 @@ bool VCFHeader::parseSampleLine(reader_type& stream){
 		++delimiters_found;
 	}
 
-	this->buildSampleTable(delimiters_found);
-
 	// Parse
 	search_position = vcf::constants::HEADER_COLUMN.size() + 1;
 	delimiters_found = 0;
-	S32* retValue;
+	S32 retValue;
 	char* found = 0;
 	while(found != &stream[stream.size()-1]){ // while there are samples in line
 		found = std::find(&stream[search_position], &stream[stream.size()-1], vcf::constants::VCF_DELIMITER);
@@ -386,13 +340,11 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 
 	if(offset+vcf::constants::HEADER_COLUMN.size()+2 == length){
 		//std::cerr << "no samples" << std::endl;
-		this->buildSampleTable(0);
 		return true;
 	}
 
 	offset += vcf::constants::HEADER_COLUMN.size() + 1;
-	U64 delimiters_found = 0;
-	U32 offset_original = offset;
+	S32 retValue;
 
 	while(true){ // while there is samples in line
 		const char* const found = std::strchr(&data[offset], vcf::constants::VCF_DELIMITER);
@@ -400,7 +352,14 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 		if(found == 0 || (*found != vcf::constants::VCF_DELIMITER)){
 			std::string sampleName(&data[offset], (&data[length - 1] - &data[offset]) - 1); // -2 because offset is +1 and newline is +1
 			//std::cerr << sampleName << std::endl;
-			++delimiters_found;
+			if(this->getSample(sampleName, retValue) == false){
+					this->addSample(sampleName);
+				} else {
+					std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
+					this->error_bit = VCF_ERROR_LINES;
+				}
+				break;
+
 			break;
 		}
 
@@ -410,40 +369,14 @@ bool VCFHeader::parseSampleLine(const char* const data, U32& offset, const U32& 
 			continue;
 		}
 
-		offset += found - &data[offset] + 1;
-		++delimiters_found;
-	}
-
-	this->buildSampleTable(delimiters_found);
-
-	offset = offset_original;
-	S32* retValue;
-	while(true){ // while there is samples in line
-		const char* const found = std::strchr(&data[offset], vcf::constants::VCF_DELIMITER);
-		if(found == 0 || (*found != vcf::constants::VCF_DELIMITER)){
-			std::string sampleName(&data[offset], (&data[length - 1] - &data[offset]) - 1); // -2 because offset is +1 and newline is +1
-			if(!this->getSample(sampleName, retValue))
-				this->addSample(sampleName);
-			else {
-				std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
-				this->error_bit = VCF_ERROR_LINES;
-			}
-			break;
-		}
-
-
-		std::string sampleName(&data[offset], (found - &data[offset]));
-		if(sampleName == "FORMAT"){
-			offset += found - &data[offset] + 1;
-			continue;
-		}
-
-		if(!this->getSample(sampleName, retValue))
+		if(this->getSample(sampleName, retValue) == false){
 			this->addSample(sampleName);
+		}
 		else {
 			std::cerr << utility::timestamp("ERROR", "VCF") << "Duplicated sample name in header..." << std::endl;
 			this->error_bit = VCF_ERROR_LINES;
 		}
+
 		offset += found - &data[offset] + 1;
 	}
 

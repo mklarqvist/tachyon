@@ -9,7 +9,7 @@ namespace bcf {
 
 BCFEntry::BCFEntry(void):
 	l_data(0),
-	l_capacity(128144),
+	l_capacity(256000),
 	l_ID(0),
 	ref_alt(0),
 	isGood(false),

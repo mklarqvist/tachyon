@@ -2,6 +2,7 @@
 #define VCF_VCFHEADER_H_
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "algorithm/OpenHashTable.h"
 #include "core/header/header_contig.h"
@@ -33,43 +34,65 @@ public:
 	~VCFHeader();
 
 	inline bool good(void) const{ return(this->error_bit == VCF_PASS); }
-	inline bool valid(void) const{ return(this->version > 0); }
-	inline void setVersion(float version){ this->version = version; }
-	inline const float& getVersion(void) const{ return(this->version); }
+	inline bool valid(void) const{ return(this->vcf_version > 0); }
+	inline void setVersion(float version){ this->vcf_version = version; }
+	inline const float& getVersion(void) const{ return(this->vcf_version); }
 	inline U32 getContigs(void) const{ return this->contigs.size(); }
 	//inline const contig_type& operator[](const U32 p) const{ return(this->contigs[p]); }
 	inline contig_type& getContig(const U32 p){ return this->contigs[p]; }
 	inline U32 getLines(void) const{ return this->lines.size(); }
-	inline const U64& size(void) const{ return this->samples; }
+	inline const U64& size(void) const{ return this->n_samples; }
 
-	inline bool getContig(const std::string& contig, S32*& retValue) const{
-		return(this->contigsHashTable->GetItem(&contig[0], &contig, retValue, contig.size()));
+	inline bool getContig(const std::string& contig, S32& retValue) const{
+		std::unordered_map<std::string,S32>::const_iterator ret = this->htable_contigs.find(contig);
+		if(ret != this->htable_contigs.end()){
+			retValue = ret->second;
+			return(true);
+		}
+		return(false);
 	}
 
-	inline bool getSample(const std::string& sample, S32*& retValue) const{
-		return(this->sampleHashTable->GetItem(&sample[0], &sample, retValue, sample.size()));
+	inline bool getSample(const std::string& sample, S32& retValue) const{
+		std::unordered_map<std::string,S32>::const_iterator ret = this->htable_samples.find(sample);
+		if(ret != this->htable_samples.end()){
+			retValue = ret->second;
+			return(true);
+		}
+		return(false);
 	}
 
 	bool parse(reader_type& stream);
 	bool parse(const char* const data, const U32& length);
 
 private:
-	// These functions are unsafe as they require contigHashTable to be
-	// set prior to calling
-	// no tests are made to check
-	inline void addContig(const std::string& contig, U32 value){
-		this->contigsHashTable->SetItem(&contig[0], &contig, value, contig.size());
+	inline void addContig(const std::string& contig, const U32& value){
+		if(this->contigs.size() == 0){
+			this->htable_contigs[contig] = value;
+			return;
+		}
+
+		if(this->htable_contigs.find(contig) == this->htable_contigs.end()){
+			this->htable_contigs[contig] = value;
+		}
 	}
 
 	inline void addSample(const std::string& sample){
-		this->sampleNames.push_back(header_sample_type(sample));
-		this->sampleHashTable->SetItem(&sample[0], &sample, this->sampleNames.size()-1, sample.size());
+		if(this->n_samples == 0){
+			this->sample_names.push_back(header_sample_type(sample));
+			this->htable_samples[sample] = this->n_samples;
+			++this->n_samples;
+			return;
+		}
+
+		if(this->htable_samples.find(sample) == this->htable_samples.end()){
+			this->sample_names.push_back(header_sample_type(sample));
+			this->htable_samples[sample] = this->n_samples;
+			++this->n_samples;
+		}
 	}
 
 	// Internal overload helpers
 	bool checkLine(const char* data, const U32 length);
-	bool buildContigTable(void);
-	void buildSampleTable(U64 samples);
 	bool parseFirstLine(reader_type& stream);
 	bool parseHeaderLines(reader_type& stream);
 	bool parseSampleLine(reader_type& stream);
@@ -79,15 +102,15 @@ private:
 
 public:
 	VCF_ERROR_TYPE error_bit;               // parse error bit
-	U64 samples;                            // number of samples
-	float version;                          // VCF version
+	U64 n_samples;                          // number of samples
+	float vcf_version;                      // VCF version
 	std::string literal;                    // string copy of header data
 	// Contigs are written to disk as an
 	// object
 	std::vector<contig_type> contigs;       // contigs
 	// Sample names are written to disk as
 	// U32 l_name; char[l_name]
-	std::vector<header_sample_type> sampleNames;   // sample names
+	std::vector<header_sample_type> sample_names;   // sample names
 	std::vector<header_line_type> lines;    // header lines
 	std::vector<std::string> literal_lines; // vcf line literals
 	// These entries are read from disk as
@@ -101,8 +124,10 @@ public:
 	S32* format_remap;
 	S32* filter_remap;
 
-	hash_table_type* contigsHashTable;     // hash table for contig names
-	hash_table_type* sampleHashTable;      // hash table for sample names
+	std::unordered_map<std::string, S32> htable_contigs;
+	std::unordered_map<std::string, S32> htable_samples;
+	//hash_table_type* contigsHashTable;     // hash table for contig names
+	//hash_table_type* sampleHashTable;      // hash table for sample names
 };
 
 }

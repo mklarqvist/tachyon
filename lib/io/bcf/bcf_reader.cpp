@@ -106,7 +106,7 @@ bool BCFReader::nextVariant(reference entry){
 		}
 	}
 
-	if(!entry.parse(this->header.samples)){
+	if(!entry.parse(this->header.size())){
 		std::cerr << "parse error" << std::endl;
 		exit(1);
 	}
@@ -114,7 +114,7 @@ bool BCFReader::nextVariant(reference entry){
 	if(this->entries[this->n_entries].body->n_fmt > 0 && this->map_gt_id != -1){
 		if(this->entries[this->n_entries].formatID[0].mapID == this->map_gt_id){
 			this->entries[this->n_entries].hasGenotypes = true;
-			entry.assessGenotypes(this->header.samples);
+			entry.assessGenotypes(this->header.size());
 		}
 	}
 
@@ -181,7 +181,7 @@ bool BCFReader::getVariants(const U32 n_variants, const double bp_window, bool a
 			}
 		}
 
-		if(is_new) new( &this->entries[this->n_entries] ) value_type( this->header.samples * 2 );
+		if(is_new) new( &this->entries[this->n_entries] ) value_type( this->header.size() * 2 );
 		if(!this->nextVariant(this->entries[this->n_entries])){
 			std::cerr << "failed to get next" << std::endl;
 			return false;

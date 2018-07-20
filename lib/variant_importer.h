@@ -98,7 +98,7 @@ public:
 	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 private:
-	bool BuildBCF();  // import a BCF file
+	bool buildBCF();  // import a BCF file
 	bool addSite(meta_type& meta, bcf_entry_type& line); // Import a BCF line
 	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);

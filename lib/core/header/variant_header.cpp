@@ -217,7 +217,7 @@ bool VariantHeader::buildHashTables(void){
 
 void VariantHeader::operator=(const vcf_header_type& vcf_header){
 	this->header_magic.n_contigs       = vcf_header.contigs.size();
-	this->header_magic.n_samples       = vcf_header.sampleNames.size();
+	this->header_magic.n_samples       = vcf_header.size();
 	this->header_magic.n_info_values   = vcf_header.info_map.size();
 	this->header_magic.n_format_values = vcf_header.format_map.size();
 	this->header_magic.n_filter_values = vcf_header.filter_map.size();
@@ -245,7 +245,7 @@ void VariantHeader::operator=(const vcf_header_type& vcf_header){
 
 	this->samples = new sample_type[this->header_magic.getNumberSamples()];
 	for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)
-		this->samples[i] = vcf_header.sampleNames[i];
+		this->samples[i] = vcf_header.sample_names[i];
 
 	this->info_fields = new map_entry_type[this->header_magic.n_info_values];
 	for(U32 i = 0; i < this->header_magic.n_info_values; ++i){

@@ -36,7 +36,7 @@ bool VariantImporter::Build(){
 	temp.close();
 
 	if((BYTE)tempData[0] == io::constants::GZIP_ID1 && (BYTE)tempData[1] == io::constants::GZIP_ID2){
-		if(!this->BuildBCF()){
+		if(!this->buildBCF()){
 			std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 			return false;
 		}
@@ -47,23 +47,24 @@ bool VariantImporter::Build(){
 	return true;
 }
 
-bool VariantImporter::BuildBCF(void){
+bool VariantImporter::buildBCF(void){
 	bcf_reader_type bcf_reader;
 	if(!bcf_reader.open(this->settings_.input_file)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
 		return false;
 	}
 
+	// Encryption
 	encryption::EncryptionDecorator encryption_manager;
 	encryption::Keychain<> keychain;
 
 	this->header = &bcf_reader.header;
 
 	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header->samples);
-	this->block.ppa_manager.setSamples(this->header->samples);
+	this->encoder.setSamples(this->header->size());
+	this->block.ppa_manager.setSamples(this->header->size());
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header->samples);
+	this->permutator.setSamples(this->header->size());
 
 	if(this->settings_.output_prefix.size() == 0 || (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-")) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
@@ -110,14 +111,6 @@ bool VariantImporter::BuildBCF(void){
 		if(this->header->info_map[i].ID == "END"){
 			this->settings_.info_end_key = this->header->info_map[i].IDX;
 			//std::cerr << "Found END at: " << this->header->info_map[i].IDX << std::endl;
-		}
-	}
-
-	// Search for END field in the header
-	for(U32 i = 0; i < this->header->info_map.size(); ++i){
-		if(this->header->info_map[i].ID == "SVLEN"){
-			this->settings_.info_svlen_key = this->header->info_map[i].IDX;
-			//std::cerr << "Found SVLEN at: " << this->header->info_map[i].IDX << std::endl;
 		}
 	}
 
@@ -534,21 +527,21 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Flags and integers
 		// These are BCF value types
 		if(entry.formatID[i].primitive_type <= 3){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->size(); ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getInteger(entry.formatID[i].primitive_type, internal_pos));
 			}
 		}
 		// Floats
 		else if(entry.formatID[i].primitive_type == bcf::BCF_FLOAT){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->size(); ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
 		else if(entry.formatID[i].primitive_type == bcf::BCF_CHAR){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->size(); ++s){
 				//for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 				target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.formatID[i].l_stride);
 				internal_pos += entry.formatID[i].l_stride;
