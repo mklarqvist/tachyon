@@ -110,6 +110,17 @@ public:
 	float quality;
 	U64   contigID;
 	U64   position;
+	// Todo: Add end_position_longest. This would allow us to directly query
+	//       precomputed end positions.
+	// Todo: Axtend controller to U32 and add fields below or optionally add
+	//       another controller field with variant-identifying information.
+	//       This would support queries on type directly from precomputed
+	//       lookups.
+	// Fields of interest:
+	// isSNV
+	// isComplex
+	// isIndel
+	// isSV
 	std::string  name;
 	allele_type* alleles;
 };
