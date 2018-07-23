@@ -11,6 +11,8 @@
 #include "io/bcf/bcf_entry.h"
 #include "containers/data_container.h"
 
+#include "htslib/vcf.h"
+
 namespace tachyon{
 namespace core{
 
@@ -30,6 +32,7 @@ public:
 	MetaEntry(const self_type& other);
 	MetaEntry(const bcf_entry_type& bcf_entry); // transmute data from bcfentry
 	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset); // transmute from bcfentry with positional offset
+	MetaEntry(const bcf1_t* record, const U64 position_offset);
 	~MetaEntry();
 
 	// Check if a field is set

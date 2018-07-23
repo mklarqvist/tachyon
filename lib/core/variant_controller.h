@@ -120,6 +120,11 @@ struct VariantController{
 		mixed_ploidy:        1, // has mixed ploidy (e.g. X chromosome or CNV)
 		alleles_packed:      1, // are the alleles packed in a BYTE
 		all_snv:             1; // are all ref/alt simple SNVs
+	// Todo: extend to U32 and add
+	// isSNV
+	// isComplex
+	// isIndel
+	// isSV
 };
 
 }

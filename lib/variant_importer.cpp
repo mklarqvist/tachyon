@@ -313,6 +313,7 @@ bool VariantImporter::BuildBCF(void){
 			this->AddRecord(this->vcf_container_, i, m);
 		}
 
+		/*
 		for(U32 i = 0; i < this->filter_patterns_.size(); ++i)
 			std::cerr << "Filter: " << this->filter_patterns_[i].size() << std::endl;
 
@@ -321,6 +322,7 @@ bool VariantImporter::BuildBCF(void){
 
 		for(U32 i = 0; i < this->info_patterns_.size(); ++i)
 			std::cerr << "Info: " << this->info_patterns_[i].size() << std::endl;
+		*/
 
 		this->vcf_container_.clear();
 		this->format_list_.clear();
@@ -475,14 +477,32 @@ bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 p
 		return false;
 	}
 
-	this->AddVcfFilterInfo(container.at(position));
-	this->AddVcfInfo(container.at(position));
-	this->AddVcfFormatInfo(container.at(position));
+	meta_type m(container.at(position), 0); // Transmute a bcf record into a meta structure
+	io::VcfGenotypeSummary s = container.GetGenotypeSummary(position, this->vcf_reader_->vcf_header_.GetNumberSamples());
+	m.controller.diploid = (s.base_ploidy == 2);
+	m.controller.gt_mixed_phasing = s.mixed_phasing;
+	m.controller.gt_phase = s.phase_if_uniform;
+	m.controller.mixed_ploidy = s.n_vector_end != 0;
+
+	this->AddVcfFilterInfo(container.at(position), m);
+	this->AddVcfInfo(container.at(position), m);
+	this->AddVcfFormatInfo(container.at(position), m);
+
+	/*
+	std::cerr << m.contigID << ": " << m.position << "," << m.quality << "," << m.n_alleles << "," << m.name << "\t" << m.info_pattern_id << "," << m.format_pattern_id << "," << m.filter_pattern_id << "\t";
+	const int n_alleles = container.at(position)->n_allele;
+	std::cerr << container.at(position)->d.allele[0] << "\t";
+	std::cerr << container.at(position)->d.allele[1];
+	for(int i = 2; i < n_alleles; ++i){
+		std::cerr << "," << container.at(position)->d.allele[0];
+	}
+	std::cerr << std::endl;
+	*/
 
 	return true;
 }
 
-bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record){
+bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	// Add FILTER indices to the block
 	std::vector<int> filter_ids;
 	const int& n_filter_fields = record->d.n_flt;
@@ -502,24 +522,25 @@ bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record){
 
 	// Hash global IDX pattern if there is any data available
 	if(filter_ids.size()){
-		U64 filter_pattern_hash = HashIdentifiers(filter_ids);
+		U64 filter_pattern_hash = VariantImporter::HashIdentifiers(filter_ids);
 		const hash_map_type::const_iterator it = this->filter_hash_map_.find(filter_pattern_hash); // search for global IDX
 		if(it == this->filter_hash_map_.end()){
+			meta.filter_pattern_id = this->filter_patterns_.size();
 			this->filter_hash_map_[filter_pattern_hash] = this->filter_patterns_.size();
 			this->filter_patterns_.push_back(filter_ids);
+		} else {
+			meta.filter_pattern_id = it->second;
 		}
-
-		//std::cerr << "Filter hash: " << filter_pattern_hash << std::endl;
 
 	}
 
 	return true;
 }
 
-bool VariantImporter::AddVcfInfo(const bcf1_t* record){
+bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	// Add INFO fields to the block
 	std::vector<int> info_ids;
-	const int& n_info_fields = record->n_info;
+	const int n_info_fields = record->n_info;
 	for(U32 i = 0; i < n_info_fields; ++i){
 		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
 		const U32& global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
@@ -574,7 +595,7 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record){
 			assert(data_length == 0 && stride_size == 0);
 			//std::cerr << "FLAG: " << stride_size << "," << data_length << std::endl;
 		} else {
-			std::cerr << "Unknown case: " << (int)info_primitive_type << std::endl;
+			std::cerr << utility::timestamp("ERROR","VCF") << "Unknown case: " << (int)info_primitive_type << std::endl;
 			// BCF_BT_NULL
 			exit(1);
 		}
@@ -586,28 +607,26 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record){
 
 	// Hash global IDX pattern if there is any data available
 	if(info_ids.size()){
-		U64 info_pattern_hash = HashIdentifiers(info_ids);
+		U64 info_pattern_hash = VariantImporter::HashIdentifiers(info_ids);
 		const hash_map_type::const_iterator it = this->info_hash_map_.find(info_pattern_hash); // search for global IDX
 		if(it == this->info_hash_map_.end()){
+			meta.info_pattern_id = this->info_patterns_.size();
 			this->info_hash_map_[info_pattern_hash] = this->info_patterns_.size();
 			this->info_patterns_.push_back(info_ids);
+		} else {
+			meta.info_pattern_id = it->second;
 		}
 	}
 
 	return true;
 }
 
-bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record){
+bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 	// Add FORMAT fields to the block
 	std::vector<int> format_ids;
-	const int& n_format_fields = record->n_fmt;
+	const int n_format_fields = record->n_fmt;
 	for(U32 i = 0; i < n_format_fields; ++i){
 		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
-		if(this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id == "GT"){
-			//std::cerr << "Format = GT. Continue" << std::endl;
-			continue;
-		}
-
 		const U32& global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
 		const reorder_map_type::const_iterator it = this->format_local_map_.find(global_key); // search for global IDX
 		if(it == this->format_local_map_.end()){
@@ -616,6 +635,11 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record){
 		}
 
 		format_ids.push_back(global_key);
+
+		if(this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id == "GT"){
+			//std::cerr << "Format = GT. Continue" << std::endl;
+			continue;
+		}
 
 		//stream_container& target_container = this->block.info_containers[map_id];
 		const int& format_primitive_type = record->d.fmt[i].type;
@@ -665,7 +689,7 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record){
 			//target_container.AddCharacter(data_local, data_length);
 			//std::cerr.write(data_local, data_length);
 		} else {
-			std::cerr << "Unknown case: " << (int)format_primitive_type << std::endl;
+			std::cerr << utility::timestamp("ERROR","VCF") << "Unknown case: " << (int)format_primitive_type << std::endl;
 			// BCF_BT_NULL is not allowed in FORMAT
 			exit(1);
 		}
@@ -677,11 +701,14 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record){
 
 	// Hash global IDX pattern if there is any data available
 	if(format_ids.size()){
-		U64 format_pattern_hash = HashIdentifiers(format_ids);
+		U64 format_pattern_hash = VariantImporter::HashIdentifiers(format_ids);
 		const hash_map_type::const_iterator it = this->format_hash_map_.find(format_pattern_hash); // search for global IDX
 		if(it == this->format_hash_map_.end()){
+			meta.format_pattern_id = this->format_patterns_.size();
 			this->format_hash_map_[format_pattern_hash] = this->format_patterns_.size();
 			this->format_patterns_.push_back(format_ids);
+		} else {
+			meta.format_pattern_id = it->second;
 		}
 	}
 

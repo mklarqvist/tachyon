@@ -115,9 +115,9 @@ private:
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
 	bool AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta);
-	bool AddVcfInfo(const bcf1_t* record);
-	bool AddVcfFormatInfo(const bcf1_t* record);
-	bool AddVcfFilterInfo(const bcf1_t* record);
+	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
+	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
+	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
 
 	/**<
 	* Calculates the 64-bit hash value for the target FORMAT/FILTER/INFO fields
@@ -125,7 +125,7 @@ private:
 	* @param n_entries Number of BCFTuples in input
 	* @return          Returns a 64-bit hash value
 	*/
-	U64 HashIdentifiers(const std::vector<int>& id_vector) const{
+	static U64 HashIdentifiers(const std::vector<int>& id_vector){
 		XXH64_state_t* const state = XXH64_createState();
 		if (state==NULL) abort();
 
