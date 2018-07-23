@@ -5,16 +5,19 @@
 #include "data_container_header.h"
 #include "containers/hash_container.h"
 #include "io/basic_buffer.h"
-#include "algorithm/OpenHashTable.h"
 
 namespace tachyon {
 namespace containers {
 
+// It is possible of getting mapping local indices to global IDX
+// for either  FILTER/FORMAT/INFO fields by iterating over the
+// relevant DataContainerHeader structures and tracking the incremental
+// position they occur at (local IDX) and read the global IDX in the
+// header structure.
 struct VariantBlockFooter {
 private:
 	typedef VariantBlockFooter        self_type;
 	typedef DataBlockBitvector        bit_vector;
-	typedef hash::HashTable<U32, U32> hash_table;
 	typedef std::vector<U32>          id_vector;
 	typedef std::vector< id_vector >  pattern_vector;
 	typedef containers::HashContainer hash_container_type;
@@ -130,11 +133,14 @@ public:
 	U16 n_filter_patterns;
 
 	// Header structures corresponds critical information regarding
-	// the identity and virtual byte offset to the start of each
+	// the global IDX and virtual byte offset to the start of each
 	// compressed and possibly encrypted byte stream. In addition,
 	// this structure details the primitive type of the data in the
 	// stream and its stride size (consecutive elements / entry) for
 	// both the data itself and the stride themselves.
+	// Note that only INFO/FORMAT/FILTER fields have IDX fields. The
+	// other fields do not require dictionary lookup to ascertain
+	// their identity as they are guaranteed to be invariant.
 	header_type  offset_ppa;
 	header_type  offset_meta_contig;
 	header_type  offset_meta_position;

@@ -97,6 +97,7 @@ private:
 	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
 	typedef std::unordered_map<U32, U32>    reorder_map_type;
+	typedef std::unordered_map<U64, U32>    hash_map_type;
 
 public:
 	VariantImporter();
@@ -108,12 +109,39 @@ public:
 	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 private:
-	bool buildBCF();  // import a BCF file
+	bool BuildBCF();  // import a BCF file
 	bool addSite(meta_type& meta, bcf_entry_type& line); // Import a BCF line
 	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
-	bool AddSite(const vcf_container_type& container, const U32 position, meta_type& meta);
+	bool AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta);
+	bool AddVcfInfo(const bcf1_t* record);
+	bool AddVcfFormatInfo(const bcf1_t* record);
+	bool AddVcfFilterInfo(const bcf1_t* record);
+
+	/**<
+	* Calculates the 64-bit hash value for the target FORMAT/FILTER/INFO fields
+	* @param tuples    Input target of BCFTuples
+	* @param n_entries Number of BCFTuples in input
+	* @return          Returns a 64-bit hash value
+	*/
+	U64 HashIdentifiers(const std::vector<int>& id_vector) const{
+		XXH64_state_t* const state = XXH64_createState();
+		if (state==NULL) abort();
+
+		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
+		if (resetResult == XXH_ERROR) abort();
+
+		for(U32 i = 0; i < id_vector.size(); ++i){
+			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
+			if (addResult == XXH_ERROR) abort();
+		}
+
+		U64 hash = XXH64_digest(state);
+		XXH64_freeState(state);
+
+		return hash;
+	}
 
 private:
 	settings_type settings_; // internal settings
@@ -147,6 +175,26 @@ private:
 	reorder_map_type info_reorder_map_;
 	reorder_map_type format_reorder_map_;
 	reorder_map_type contig_reorder_map_;
+
+	// Vectors of GLOBAL IDX fields for INFO/FORMAT/FILTER fields. Maps
+	// from a global IDX to a local IDX corresponding to an incremental
+	// array offset.
+	std::vector<U32> filter_list_;
+	std::vector<U32> info_list_;
+	std::vector<U32> format_list_;
+	reorder_map_type filter_local_map_;
+	reorder_map_type info_local_map_;
+	reorder_map_type format_local_map_;
+
+	// Vector of vectors corresponding to INFO/FORMAT/FILTER patterns of
+	// global IDX observed in the records. These vectors-of-vectors are
+	// hashed to get unique values that corresponds to their identities.
+	std::vector<std::vector<int>> filter_patterns_;
+	std::vector<std::vector<int>> format_patterns_;
+	std::vector<std::vector<int>> info_patterns_;
+	hash_map_type filter_hash_map_;
+	hash_map_type info_hash_map_;
+	hash_map_type format_hash_map_;
 
 	//
 	std::unique_ptr<vcf_reader_type> vcf_reader_;

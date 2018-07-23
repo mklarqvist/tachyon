@@ -79,10 +79,10 @@ bool VariantImporter::BuildBCF(void){
 	this->header = &bcf_reader.header;
 
 	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header->samples);
-	this->block.ppa_manager.setSamples(this->header->samples);
+	this->encoder.setSamples(this->header->n_samples);
+	this->block.ppa_manager.setSamples(this->header->n_samples);
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header->samples);
+	this->permutator.setSamples(this->header->n_samples);
 
 	if(this->settings_.output_prefix.size() == 0 || (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-")) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
@@ -310,10 +310,31 @@ bool VariantImporter::BuildBCF(void){
 		// temp
 		for(U32 i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
 			meta_type m;
-			this->AddSite(this->vcf_container_, i, m);
+			this->AddRecord(this->vcf_container_, i, m);
 		}
 
+		for(U32 i = 0; i < this->filter_patterns_.size(); ++i)
+			std::cerr << "Filter: " << this->filter_patterns_[i].size() << std::endl;
+
+		for(U32 i = 0; i < this->format_patterns_.size(); ++i)
+			std::cerr << "Format: " << this->format_patterns_[i].size() << std::endl;
+
+		for(U32 i = 0; i < this->info_patterns_.size(); ++i)
+			std::cerr << "Info: " << this->info_patterns_[i].size() << std::endl;
+
 		this->vcf_container_.clear();
+		this->format_list_.clear();
+		this->info_list_.clear();
+		this->filter_list_.clear();
+		this->format_local_map_.clear();
+		this->info_local_map_.clear();
+		this->filter_local_map_.clear();
+		this->filter_hash_map_.clear();
+		this->info_hash_map_.clear();
+		this->format_hash_map_.clear();
+		this->filter_patterns_.clear();
+		this->info_patterns_.clear();
+		this->format_patterns_.clear();
 	}
 	// Done importing
 	this->writer->stream->flush();
@@ -448,35 +469,76 @@ bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_
 	return true;
 }
 
-bool VariantImporter::AddSite(const vcf_container_type& container, const U32 position, meta_type& meta){
+bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta){
 	if(container.at(position)->pos > this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->name << ':' << container.at(position)->pos + 1 << " > reported max size of contig (" << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases + 1 << ")..." << std::endl;
 		return false;
 	}
 
+	this->AddVcfFilterInfo(container.at(position));
+	this->AddVcfInfo(container.at(position));
+	this->AddVcfFormatInfo(container.at(position));
+
+	return true;
+}
+
+bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record){
 	// Add FILTER indices to the block
-	const int& n_filter_fields = container.at(position)->d.n_flt;
+	std::vector<int> filter_ids;
+	const int& n_filter_fields = record->d.n_flt;
 	for(U32 i = 0; i < n_filter_fields; ++i){
-		const int filter_key = container.at(position)->d.flt[i];
-		const U32 map_id = this->filter_reorder_map_[filter_key];
+		const int& hts_filter_key = record->d.flt[i]; // htslib IDX value
+		const U32& global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
+		const reorder_map_type::const_iterator it = this->filter_local_map_.find(global_key); // search for global IDX
+		if(it == this->filter_local_map_.end()){
+			this->filter_local_map_[global_key] = this->filter_list_.size(); // local IDX
+			this->filter_list_.push_back(global_key); // store local IDX at the key of the global IDX
+		}
+		filter_ids.push_back(global_key);
+
 		//this->block.addFieldFILTER(this->header->filter_remap[filter_key]);
-		std::cerr << "Filter: " << filter_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetFilter(filter_key)->id << std::endl;
+		//std::cerr << "Filter: " << hts_filter_key << "(" << global_key << "," << this->filter_local_map_[global_key] << ")->" << this->vcf_reader_->vcf_header_.GetFilter(hts_filter_key)->id << std::endl;
 	}
 
-	// Add INFO fields to the block
-	const int& n_info_fields = container.at(position)->n_info;
-	for(U32 i = 0; i < n_info_fields; ++i){
-		const int& info_key = container.at(position)->d.info[i].key;
-		const U32 map_id = this->info_reorder_map_[info_key];
-		std::cerr << "Info: " << info_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetInfo(info_key)->id << " : " << io::BCF_TYPE_LOOKUP[container.at(position)->d.info[i].type] << std::endl;
+	// Hash global IDX pattern if there is any data available
+	if(filter_ids.size()){
+		U64 filter_pattern_hash = HashIdentifiers(filter_ids);
+		const hash_map_type::const_iterator it = this->filter_hash_map_.find(filter_pattern_hash); // search for global IDX
+		if(it == this->filter_hash_map_.end()){
+			this->filter_hash_map_[filter_pattern_hash] = this->filter_patterns_.size();
+			this->filter_patterns_.push_back(filter_ids);
+		}
 
-		stream_container& target_container = this->block.info_containers[map_id];
-		const int& info_primitive_type = container.at(position)->d.info[i].type;
+		//std::cerr << "Filter hash: " << filter_pattern_hash << std::endl;
+
+	}
+
+	return true;
+}
+
+bool VariantImporter::AddVcfInfo(const bcf1_t* record){
+	// Add INFO fields to the block
+	std::vector<int> info_ids;
+	const int& n_info_fields = record->n_info;
+	for(U32 i = 0; i < n_info_fields; ++i){
+		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
+		const U32& global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
+		const reorder_map_type::const_iterator it = this->info_local_map_.find(global_key); // search for global IDX
+		if(it == this->info_local_map_.end()){
+			this->info_local_map_[global_key] = this->info_list_.size(); // local IDX
+			this->info_list_.push_back(global_key); // store local IDX at the key of the global IDX
+		}
+		info_ids.push_back(global_key);
+
+		//std::cerr << "Info: " << hts_info_key << "(" << global_key << "," << this->info_local_map_[global_key] << ")->" << this->vcf_reader_->vcf_header_.GetInfo(hts_info_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
+
+		//stream_container& target_container = this->block.info_containers[map_id];
+		const int& info_primitive_type = record->d.info[i].type;
 
 		int element_stride_size = 0;
-		const int& stride_size      = container.at(position)->d.info[i].len;
-		const uint32_t& data_length = container.at(position)->d.info[i].vptr_len;
-		const uint8_t* data         = container.at(position)->d.info[i].vptr;
+		const int& stride_size      = record->d.info[i].len;
+		const uint32_t& data_length = record->d.info[i].vptr_len;
+		const uint8_t* data         = record->d.info[i].vptr;
 
 		if(info_primitive_type == BCF_BT_INT8){
 			element_stride_size = 1;
@@ -522,31 +584,52 @@ bool VariantImporter::AddSite(const vcf_container_type& container, const U32 pos
 		//target_container.addStride(stride_size);
 	}
 
-	// Add FORMAT fields to the block
-	const int& n_format_fields = container.at(position)->n_fmt;
-	for(U32 i = 0; i < n_format_fields; ++i){
-		const int& format_key = container.at(position)->d.fmt[i].id;
+	// Hash global IDX pattern if there is any data available
+	if(info_ids.size()){
+		U64 info_pattern_hash = HashIdentifiers(info_ids);
+		const hash_map_type::const_iterator it = this->info_hash_map_.find(info_pattern_hash); // search for global IDX
+		if(it == this->info_hash_map_.end()){
+			this->info_hash_map_[info_pattern_hash] = this->info_patterns_.size();
+			this->info_patterns_.push_back(info_ids);
+		}
+	}
 
-		if(this->vcf_reader_->vcf_header_.GetFormat(format_key)->id == "GT"){
-			std::cerr << "Format = GT. Continue" << std::endl;
+	return true;
+}
+
+bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record){
+	// Add FORMAT fields to the block
+	std::vector<int> format_ids;
+	const int& n_format_fields = record->n_fmt;
+	for(U32 i = 0; i < n_format_fields; ++i){
+		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
+		if(this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id == "GT"){
+			//std::cerr << "Format = GT. Continue" << std::endl;
 			continue;
 		}
 
-		const U32 map_id = this->format_reorder_map_[format_key];
+		const U32& global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
+		const reorder_map_type::const_iterator it = this->format_local_map_.find(global_key); // search for global IDX
+		if(it == this->format_local_map_.end()){
+			this->format_local_map_[global_key] = this->format_list_.size(); // local IDX
+			this->format_list_.push_back(global_key); // store local IDX at the key of the global IDX
+		}
+
+		format_ids.push_back(global_key);
 
 		//stream_container& target_container = this->block.info_containers[map_id];
-		const int& format_primitive_type = container.at(position)->d.fmt[i].type;
+		const int& format_primitive_type = record->d.fmt[i].type;
 
 		int element_stride_size = 0;
-		container.at(position)->d.fmt[i].n;
-		const int& stride_size      = container.at(position)->d.fmt[i].n;
-		const uint32_t& data_length = container.at(position)->d.fmt[i].p_len;
-		const uint8_t* data         = container.at(position)->d.fmt[i].p;
+		record->d.fmt[i].n;
+		const int& stride_size      = record->d.fmt[i].n;
+		const uint32_t& data_length = record->d.fmt[i].p_len;
+		const uint8_t* data         = record->d.fmt[i].p;
 
-		std::cerr << "Format: " << format_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetFormat(format_key)->id << " : " << io::BCF_TYPE_LOOKUP[container.at(position)->d.fmt[i].type]
-		<< " stride size: " << stride_size << " data length: " << data_length << "->" << data_length/stride_size << std::endl;
+		//std::cerr << "Format: " << hts_format_key << "(" << global_key << "," << this->format_local_map_[global_key] << ")->" << this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.fmt[i].type]
+		//<< " stride size: " << stride_size << " data length: " << data_length << "->" << data_length/stride_size << std::endl;
 
-		stream_container& target_container = this->block.format_containers[map_id];
+		//stream_container& target_container = this->block.format_containers[map_id];
 
 		if(format_primitive_type == BCF_BT_INT8){
 			element_stride_size = 1;
@@ -589,11 +672,20 @@ bool VariantImporter::AddSite(const vcf_container_type& container, const U32 pos
 		//std::cerr << std::endl;
 
 		//++target_container;
-		//target_container.addStride(entry.formatID[i].l_stride);
+		//target_container.addStride(strie_size);
+	}
+
+	// Hash global IDX pattern if there is any data available
+	if(format_ids.size()){
+		U64 format_pattern_hash = HashIdentifiers(format_ids);
+		const hash_map_type::const_iterator it = this->format_hash_map_.find(format_pattern_hash); // search for global IDX
+		if(it == this->format_hash_map_.end()){
+			this->format_hash_map_[format_pattern_hash] = this->format_patterns_.size();
+			this->format_patterns_.push_back(format_ids);
+		}
 	}
 
 	return true;
-
 }
 
 bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
@@ -717,21 +809,21 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Flags and integers
 		// These are BCF value types
 		if(entry.formatID[i].primitive_type <= 3){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->n_samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getInteger(entry.formatID[i].primitive_type, internal_pos));
 			}
 		}
 		// Floats
 		else if(entry.formatID[i].primitive_type == bcf::BCF_FLOAT){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->n_samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
 		else if(entry.formatID[i].primitive_type == bcf::BCF_CHAR){
-			for(U32 s = 0; s < this->header->samples; ++s){
+			for(U32 s = 0; s < this->header->n_samples; ++s){
 				//for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 				target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.formatID[i].l_stride);
 				internal_pos += entry.formatID[i].l_stride;
