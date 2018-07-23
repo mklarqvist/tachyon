@@ -52,6 +52,21 @@ public:
 	std::vector< std::pair<std::string, std::string> > extra;
 };
 
+struct Contig : public VcfContig {
+public:
+	Contig() : n_blocks(0){}
+	~Contig() = default;
+
+	inline void operator++(void){ ++this->n_blocks; }
+	inline void operator--(void){ --this->n_blocks; }
+	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
+	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
+
+public:
+	// Number of Tachyon blocks associated with this contig
+	uint32_t n_blocks;
+};
+
 // Temp declare
 struct VcfInfo{
 public:
