@@ -105,8 +105,10 @@ public:
 	~VariantImporter();
 	bool Build();
 
-	void setWriterTypeFile(void){ this->writer = new writer_file_type; }
-	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
+	void SetWriterTypeFile(void){ this->writer = new writer_file_type; }
+	void SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+
+	void clear(void);
 
 private:
 	bool BuildBCF();  // import a BCF file

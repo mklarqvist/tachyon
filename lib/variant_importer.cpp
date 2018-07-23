@@ -24,6 +24,22 @@ VariantImporter::~VariantImporter(){
 	delete this->writer;
 }
 
+void VariantImporter::clear(){
+	this->vcf_container_.clear();
+	this->format_list_.clear();
+	this->info_list_.clear();
+	this->filter_list_.clear();
+	this->format_local_map_.clear();
+	this->info_local_map_.clear();
+	this->filter_local_map_.clear();
+	this->filter_hash_map_.clear();
+	this->info_hash_map_.clear();
+	this->format_hash_map_.clear();
+	this->filter_patterns_.clear();
+	this->info_patterns_.clear();
+	this->format_patterns_.clear();
+}
+
 bool VariantImporter::Build(){
 	std::ifstream temp(this->settings_.input_file, std::ios::binary | std::ios::in);
 	if(!temp.good()){
@@ -53,7 +69,6 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
-	// Todo: build remap -> info, format, filter, contig -> local
 	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
 		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
 
@@ -65,7 +80,7 @@ bool VariantImporter::BuildBCF(void){
 
 	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
-	//
+	// END TEMP
 
 	bcf_reader_type bcf_reader;
 	if(!bcf_reader.open(this->settings_.input_file)){
@@ -303,8 +318,8 @@ bool VariantImporter::BuildBCF(void){
 		this->permutator.reset();
 		this->writer->stream->flush();
 		previous_contig_ID = bcf_reader.front().body->CHROM;
-		previous_first    = bcf_reader.front().body->POS;
-		previous_last     = bcf_reader.back().body->POS;
+		previous_first     = bcf_reader.front().body->POS;
+		previous_last      = bcf_reader.back().body->POS;
 		this->index_entry.reset();
 
 		// temp
@@ -324,19 +339,7 @@ bool VariantImporter::BuildBCF(void){
 			std::cerr << "Info: " << this->info_patterns_[i].size() << std::endl;
 		*/
 
-		this->vcf_container_.clear();
-		this->format_list_.clear();
-		this->info_list_.clear();
-		this->filter_list_.clear();
-		this->format_local_map_.clear();
-		this->info_local_map_.clear();
-		this->filter_local_map_.clear();
-		this->filter_hash_map_.clear();
-		this->info_hash_map_.clear();
-		this->format_hash_map_.clear();
-		this->filter_patterns_.clear();
-		this->info_patterns_.clear();
-		this->format_patterns_.clear();
+		this->clear();
 	}
 	// Done importing
 	this->writer->stream->flush();
