@@ -1,8 +1,7 @@
-#include "variant_importer.h"
-
 #include <fstream>
 #include <regex>
 
+#include "variant_importer.h"
 #include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption_decorator.h"
 #include "containers/checksum_container.h"
@@ -36,7 +35,7 @@ bool VariantImporter::Build(){
 	temp.close();
 
 	if((BYTE)tempData[0] == io::constants::GZIP_ID1 && (BYTE)tempData[1] == io::constants::GZIP_ID2){
-		if(!this->buildBCF()){
+		if(!this->BuildBCF()){
 			std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 			return false;
 		}
@@ -47,24 +46,43 @@ bool VariantImporter::Build(){
 	return true;
 }
 
-bool VariantImporter::buildBCF(void){
+bool VariantImporter::BuildBCF(void){
+	// TEMP
+	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
+	if(this->vcf_reader_ == nullptr){
+		return false;
+	}
+
+	// Todo: build remap -> info, format, filter, contig -> local
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
+		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
+		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
+		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
+		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
+	//
+
 	bcf_reader_type bcf_reader;
 	if(!bcf_reader.open(this->settings_.input_file)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
 		return false;
 	}
 
-	// Encryption
 	encryption::EncryptionDecorator encryption_manager;
 	encryption::Keychain<> keychain;
 
 	this->header = &bcf_reader.header;
 
 	// Spawn RLE controller and update PPA controller
-	this->encoder.setSamples(this->header->size());
-	this->block.ppa_manager.setSamples(this->header->size());
+	this->encoder.setSamples(this->header->samples);
+	this->block.ppa_manager.setSamples(this->header->samples);
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header->size());
+	this->permutator.setSamples(this->header->samples);
 
 	if(this->settings_.output_prefix.size() == 0 || (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-")) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
@@ -85,7 +103,7 @@ bool VariantImporter::buildBCF(void){
 	                +  SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 	header.literals += "\n" + this->settings_.getInterpretedString();
 
-	if(this->settings_.encrypt_data) header.literals += " -k";
+	if(this->settings_.encrypt_data)      header.literals += " -k";
 	if(this->settings_.permute_genotypes) header.literals += " -P";
 	else header.literals += " -p";
 	header.header_magic.l_literals = header.literals.size();
@@ -99,7 +117,8 @@ bool VariantImporter::buildBCF(void){
 	*this->writer->stream << header_data.buffer_data;
 
 	// Search for GT field in the header
-	this->GT_available_ = header.has_format_field("GT");
+	this->GT_available_ = this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr;
+	std::cerr << "GT available: " << this->GT_available_ << std::endl;
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
 			bcf_reader.map_gt_id = this->header->format_map[i].IDX;
@@ -114,6 +133,14 @@ bool VariantImporter::buildBCF(void){
 		}
 	}
 
+	// Search for END field in the header
+	for(U32 i = 0; i < this->header->info_map.size(); ++i){
+		if(this->header->info_map[i].ID == "SVLEN"){
+			this->settings_.info_svlen_key = this->header->info_map[i].IDX;
+			//std::cerr << "Found SVLEN at: " << this->header->info_map[i].IDX << std::endl;
+		}
+	}
+
 	// Set flag if genotypes are available
 	this->block.header.controller.hasGT = this->GT_available_;
 
@@ -122,9 +149,11 @@ bool VariantImporter::buildBCF(void){
 	this->block.resize(resize_to);
 
 	// Digest controller
-	algorithm::VariantDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
+	algorithm::VariantDigestManager checksums(25,
+	                                          this->header->info_map.size(),
+	                                          this->header->format_map.size());
 
-	// Start import
+	// Start import parameters
 	U32 previous_first     = 0;
 	U32 previous_last      = 0;
 	S32 previous_contig_ID = -1;
@@ -146,6 +175,11 @@ bool VariantImporter::buildBCF(void){
 		if(!bcf_reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}
+
+		this->vcf_container_.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases, this->vcf_reader_);
+
+		std::cerr << bcf_reader.size() << " and " << this->vcf_container_.sizeWithoutCarryOver() << std::endl;
+		assert(bcf_reader.size() == this->vcf_container_.sizeWithoutCarryOver());
 
 		// Debug assertion
 #if IMPORT_ASSERT == 1
@@ -272,6 +306,14 @@ bool VariantImporter::buildBCF(void){
 		previous_first    = bcf_reader.front().body->POS;
 		previous_last     = bcf_reader.back().body->POS;
 		this->index_entry.reset();
+
+		// temp
+		for(U32 i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
+			meta_type m;
+			this->AddSite(this->vcf_container_, i, m);
+		}
+
+		this->vcf_container_.clear();
 	}
 	// Done importing
 	this->writer->stream->flush();
@@ -406,6 +448,154 @@ bool VariantImporter::addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_
 	return true;
 }
 
+bool VariantImporter::AddSite(const vcf_container_type& container, const U32 position, meta_type& meta){
+	if(container.at(position)->pos > this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases){
+		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->name << ':' << container.at(position)->pos + 1 << " > reported max size of contig (" << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases + 1 << ")..." << std::endl;
+		return false;
+	}
+
+	// Add FILTER indices to the block
+	const int& n_filter_fields = container.at(position)->d.n_flt;
+	for(U32 i = 0; i < n_filter_fields; ++i){
+		const int filter_key = container.at(position)->d.flt[i];
+		const U32 map_id = this->filter_reorder_map_[filter_key];
+		//this->block.addFieldFILTER(this->header->filter_remap[filter_key]);
+		std::cerr << "Filter: " << filter_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetFilter(filter_key)->id << std::endl;
+	}
+
+	// Add INFO fields to the block
+	const int& n_info_fields = container.at(position)->n_info;
+	for(U32 i = 0; i < n_info_fields; ++i){
+		const int& info_key = container.at(position)->d.info[i].key;
+		const U32 map_id = this->info_reorder_map_[info_key];
+		std::cerr << "Info: " << info_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetInfo(info_key)->id << " : " << io::BCF_TYPE_LOOKUP[container.at(position)->d.info[i].type] << std::endl;
+
+		stream_container& target_container = this->block.info_containers[map_id];
+		const int& info_primitive_type = container.at(position)->d.info[i].type;
+
+		int element_stride_size = 0;
+		const int& stride_size      = container.at(position)->d.info[i].len;
+		const uint32_t& data_length = container.at(position)->d.info[i].vptr_len;
+		const uint8_t* data         = container.at(position)->d.info[i].vptr;
+
+		if(info_primitive_type == BCF_BT_INT8){
+			element_stride_size = 1;
+			assert(element_stride_size % data_length == 0);
+			const int8_t* data_local = reinterpret_cast<const int8_t*>(data);
+			//for(U32 j = 0; j < data_length; ++j) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (int)(data_local[j]);
+		} else if(info_primitive_type == BCF_BT_INT16){
+			element_stride_size = 2;
+			assert(element_stride_size % data_length == 0);
+			const int16_t* data_local = reinterpret_cast<const int16_t*>(data);
+			//for(U32 j = 0; j < data_length; j+=2) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+		} else if(info_primitive_type == BCF_BT_INT32){
+			element_stride_size = 4;
+			assert(element_stride_size % data_length == 0);
+			const int32_t* data_local = reinterpret_cast<const int32_t*>(data);
+			//for(U32 j = 0; j < data_length; j+=4) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+		} else if(info_primitive_type == BCF_BT_FLOAT){
+			element_stride_size = 4;
+			assert(element_stride_size % data_length == 0);
+			const float* data_local = reinterpret_cast<const float*>(data);
+			//for(U32 j = 0; j < data_length; j+=4) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+		} else if(info_primitive_type == BCF_BT_CHAR){
+			element_stride_size = 1;
+			const char* data_local = reinterpret_cast<const char*>(data);
+			//target_container.AddCharacter(data_local, data_length);
+			//std::cerr.write(data_local, data_length);
+		} else if(info_primitive_type == BCF_BT_NULL){
+			element_stride_size = 0;
+			assert(data_length == 0 && stride_size == 0);
+			//std::cerr << "FLAG: " << stride_size << "," << data_length << std::endl;
+		} else {
+			std::cerr << "Unknown case: " << (int)info_primitive_type << std::endl;
+			// BCF_BT_NULL
+			exit(1);
+		}
+		//std::cerr << std::endl;
+
+		//++target_container;
+		//target_container.addStride(stride_size);
+	}
+
+	// Add FORMAT fields to the block
+	const int& n_format_fields = container.at(position)->n_fmt;
+	for(U32 i = 0; i < n_format_fields; ++i){
+		const int& format_key = container.at(position)->d.fmt[i].id;
+
+		if(this->vcf_reader_->vcf_header_.GetFormat(format_key)->id == "GT"){
+			std::cerr << "Format = GT. Continue" << std::endl;
+			continue;
+		}
+
+		const U32 map_id = this->format_reorder_map_[format_key];
+
+		//stream_container& target_container = this->block.info_containers[map_id];
+		const int& format_primitive_type = container.at(position)->d.fmt[i].type;
+
+		int element_stride_size = 0;
+		container.at(position)->d.fmt[i].n;
+		const int& stride_size      = container.at(position)->d.fmt[i].n;
+		const uint32_t& data_length = container.at(position)->d.fmt[i].p_len;
+		const uint8_t* data         = container.at(position)->d.fmt[i].p;
+
+		std::cerr << "Format: " << format_key << "(" << map_id << ")->" << this->vcf_reader_->vcf_header_.GetFormat(format_key)->id << " : " << io::BCF_TYPE_LOOKUP[container.at(position)->d.fmt[i].type]
+		<< " stride size: " << stride_size << " data length: " << data_length << "->" << data_length/stride_size << std::endl;
+
+		stream_container& target_container = this->block.format_containers[map_id];
+
+		if(format_primitive_type == BCF_BT_INT8){
+			element_stride_size = 1;
+			assert(element_stride_size % data_length == 0);
+			const int8_t* data_local = reinterpret_cast<const int8_t*>(data);
+			//for(U32 j = 0; j < data_length; ++j) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (int)(data_local[j]);
+			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
+		} else if(format_primitive_type == BCF_BT_INT16){
+			element_stride_size = 2;
+			assert(element_stride_size % data_length == 0);
+			const int16_t* data_local = reinterpret_cast<const int16_t*>(data);
+			//for(U32 j = 0; j < data_length; j+=2) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
+		} else if(format_primitive_type == BCF_BT_INT32){
+			element_stride_size = 4;
+			assert(element_stride_size % data_length == 0);
+			const int32_t* data_local = reinterpret_cast<const int32_t*>(data);
+			//for(U32 j = 0; j < data_length; j+=4) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
+		} else if(format_primitive_type == BCF_BT_FLOAT){
+			element_stride_size = 4;
+			assert(element_stride_size % data_length == 0);
+			const float* data_local = reinterpret_cast<const float*>(data);
+			//for(U32 j = 0; j < data_length; j+=4) target_container.Add(data_local[j]);
+			//for(U32 j = 0; j < data_length/element_stride_size; ++j) std::cerr << "," << (data_local[j]);
+			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
+		} else if(format_primitive_type == BCF_BT_CHAR){
+			element_stride_size = 1;
+			const char* data_local = reinterpret_cast<const char*>(data);
+			//target_container.AddCharacter(data_local, data_length);
+			//std::cerr.write(data_local, data_length);
+		} else {
+			std::cerr << "Unknown case: " << (int)format_primitive_type << std::endl;
+			// BCF_BT_NULL is not allowed in FORMAT
+			exit(1);
+		}
+		//std::cerr << std::endl;
+
+		//++target_container;
+		//target_container.addStride(entry.formatID[i].l_stride);
+	}
+
+	return true;
+
+}
+
 bool VariantImporter::addSite(meta_type& meta, bcf_entry_type& entry){
 	// Assert position is in range
 	if(entry.body->POS + 1 > this->header->getContig(entry.body->CHROM).bp_length){
@@ -527,21 +717,21 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		// Flags and integers
 		// These are BCF value types
 		if(entry.formatID[i].primitive_type <= 3){
-			for(U32 s = 0; s < this->header->size(); ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getInteger(entry.formatID[i].primitive_type, internal_pos));
 			}
 		}
 		// Floats
 		else if(entry.formatID[i].primitive_type == bcf::BCF_FLOAT){
-			for(U32 s = 0; s < this->header->size(); ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 					target_container.Add(entry.getFloat(internal_pos));
 			}
 		}
 		// Chars
 		else if(entry.formatID[i].primitive_type == bcf::BCF_CHAR){
-			for(U32 s = 0; s < this->header->size(); ++s){
+			for(U32 s = 0; s < this->header->samples; ++s){
 				//for(U32 j = 0; j < entry.formatID[i].l_stride; ++j)
 				target_container.AddCharacter(entry.getCharPointer(internal_pos), entry.formatID[i].l_stride);
 				internal_pos += entry.formatID[i].l_stride;

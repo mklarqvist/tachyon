@@ -1,6 +1,8 @@
 #ifndef VARIANT_IMPORTER_H_
 #define VARIANT_IMPORTER_H_
 
+#include <unordered_map>
+
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/radix_sort_gt.h"
@@ -11,6 +13,7 @@
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
 #include "io/bcf/bcf_reader.h"
+#include "io/htslib_integration.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
 
@@ -72,10 +75,16 @@ private:
 	typedef VariantImportWriterFile         writer_file_type;
 	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
+
 	typedef vcf::VCFHeader                  header_type;
 	typedef index::IndexEntry               index_entry_type;
 	typedef bcf::BCFReader                  bcf_reader_type;
 	typedef bcf::BCFEntry                   bcf_entry_type;
+
+	typedef io::VcfReader                   vcf_reader_type;
+	typedef io::VcfHeader                   header_new_type;
+	typedef containers::VcfContainer        vcf_container_type;
+
 	typedef algorithm::CompressionManager   compression_manager_type;
 	typedef algorithm::RadixSortGT          radix_sorter_type;
 	typedef algorithm::PermutationManager   permutation_type;
@@ -87,6 +96,7 @@ private:
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
+	typedef std::unordered_map<U32, U32>    reorder_map_type;
 
 public:
 	VariantImporter();
@@ -102,6 +112,8 @@ private:
 	bool addSite(meta_type& meta, bcf_entry_type& line); // Import a BCF line
 	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
+
+	bool AddSite(const vcf_container_type& container, const U32 position, meta_type& meta);
 
 private:
 	settings_type settings_; // internal settings
@@ -124,6 +136,22 @@ private:
 
 	// Data container
 	block_type block;
+
+	// Map from BCF global FORMAT/INFO/FILTER IDX to local IDX such that
+	// FORMAT maps to [0, f-1], and INFO maps to [0, i-1] and FILTER to
+	// [0,l-1] and where f+i+l = n, where n is the total number of fields.
+	//
+	//                    Global    Local
+	// std::unordered_map<uint32_t, uint32_t> filter_reorder_map_;
+	reorder_map_type filter_reorder_map_;
+	reorder_map_type info_reorder_map_;
+	reorder_map_type format_reorder_map_;
+	reorder_map_type contig_reorder_map_;
+
+	//
+	std::unique_ptr<vcf_reader_type> vcf_reader_;
+	header_new_type    header_new_;
+	vcf_container_type vcf_container_;
 };
 
 

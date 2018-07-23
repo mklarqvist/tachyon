@@ -1,6 +1,8 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
+#include <unordered_map>
+
 #include "algorithm/permutation/permutation_manager.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
@@ -30,6 +32,7 @@ class VariantBlock{
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
+	typedef std::unordered_map<U32, U32>    map_type;
 
 public:
 	VariantBlock();
@@ -49,10 +52,6 @@ public:
 	void clear(void);
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
-
-	//
-	//inline const size_t getINFOLoaded(void) const{ return(this->info_loaded.size()); }
-	//inline const size_t getFORMATLoaded(void) const{ return(this->format_loaded.size()); }
 
 	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
 	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
@@ -109,7 +108,7 @@ public:
 		this->footer.n_info_streams   = this->info_fields.size();
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();
-		this->footer.allocateDiskOffsets(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
+		this->footer.AllocateHeaders(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
 		this->updateContainers();
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
@@ -350,6 +349,15 @@ public:
 	hash_vector_container_type info_patterns;
 	hash_vector_container_type format_patterns;
 	hash_vector_container_type filter_patterns;
+
+	// Supportive hash tables to permit the map from global
+	// IDX fields to local IDX fields. These members are used
+	// exclusively during the importing stage.
+	// Todo: Move out of this definition. They have no place here
+	//       if they are only used once.
+	map_type filter_reorder_map;
+	map_type info_reorder_map;
+	map_type format_reorder_map;
 
 public:
 	// Utility

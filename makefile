@@ -97,7 +97,7 @@ CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
 BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
 
-LIBS := -lzstd -lcrypto
+LIBS := -lzstd -lcrypto -lhts
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 			 $(wildcard lib/algorithm/digest/*.cpp) \
 			 $(wildcard lib/algorithm/encryption/*.cpp) \

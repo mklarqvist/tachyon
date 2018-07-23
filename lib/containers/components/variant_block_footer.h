@@ -7,10 +7,10 @@
 #include "io/basic_buffer.h"
 #include "algorithm/OpenHashTable.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
-struct VariantBlockFooter{
+struct VariantBlockFooter {
 private:
 	typedef VariantBlockFooter        self_type;
 	typedef DataBlockBitvector        bit_vector;
@@ -31,7 +31,7 @@ public:
 	void reset(void);
 
 	// Allocate offset vectors
-	inline void allocateInfoDiskOffsets(const U32 n_info_streams){
+	inline void AllocateInfoHeaders(const U32 n_info_streams){
 		delete [] this->info_offsets;
 		if(n_info_streams == 0){
 			this->info_offsets = nullptr;
@@ -40,7 +40,7 @@ public:
 		this->info_offsets = new header_type[n_info_streams];
 	}
 
-	inline void allocateFormatDiskOffsets(const U32 n_format_streams){
+	inline void AllocateFormatHeaders(const U32 n_format_streams){
 		delete [] this->format_offsets;
 		if(n_format_streams == 0){
 			this->format_offsets = nullptr;
@@ -49,7 +49,7 @@ public:
 		this->format_offsets = new header_type[n_format_streams];
 	}
 
-	inline void allocateFilterDiskOffsets(const U32 n_filter_streams){
+	inline void AllocateFilterHeaders(const U32 n_filter_streams){
 		delete [] this->filter_offsets;
 		if(n_filter_streams == 0){
 			this->filter_offsets = nullptr;
@@ -65,10 +65,13 @@ public:
 	 * @param n_format_streams Number of unique format streams
 	 * @param n_filter_streams Number of unique filter streams
 	 */
-	inline void allocateDiskOffsets(const U32 n_info_streams, const U32 n_format_streams, const U32 n_filter_streams){
-		this->allocateInfoDiskOffsets(n_info_streams);
-		this->allocateFormatDiskOffsets(n_format_streams);
-		this->allocateFilterDiskOffsets(n_filter_streams);
+	inline void AllocateHeaders(const U32 n_info_streams,
+		                        const U32 n_format_streams,
+		                        const U32 n_filter_streams)
+	{
+		this->AllocateInfoHeaders(n_info_streams);
+		this->AllocateFormatHeaders(n_format_streams);
+		this->AllocateFilterHeaders(n_filter_streams);
 	}
 
 	/**<
@@ -79,14 +82,15 @@ public:
 	 * @param patterns Hash container of patterns
 	 * @return         Returns TRUE upon success or FALSE otherwise
 	 */
-	bool constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns);
+	bool constructBitVector(const INDEX_BLOCK_TARGET& target,
+	                        hash_container_type& values,
+	                        hash_vector_container_type& patterns);
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
-
 
 private:
 	/**<
@@ -97,16 +101,27 @@ private:
 	 * @param patterns
 	 * @return
 	 */
-	bool __constructBitVector(bit_vector*& target, header_type* offset, hash_container_type& values, hash_vector_container_type& patterns);
+	bool __constructBitVector(bit_vector*& target,
+	                          header_type* offset,
+	                          hash_container_type& values,
+	                          hash_vector_container_type& patterns);
 
 public:
-	// Not written or read from disk
-	// Used internally only
+	// Utility members. l_*_bitvector stores the byte-length
+	// of each of the bit-vectors described below.
+	// Not written or read from disk. Used internally only
+	// Todo: These should be embedded directly into the bit-vector
+	//       structure.
 	BYTE l_info_bitvector;
 	BYTE l_format_bitvector;
 	BYTE l_filter_bitvector;
 
-	// Counters
+	// Critical values used to track the number of data streams
+	// that is available for each possible type. The n_*_streams
+	// fields corresponds to the number of different byte streams
+	// that are set in this block. The n_*_patterns corresponds
+	// to the number of unique vectors of field identifiers that
+	// occurred in the block.
 	U16 n_info_streams;
 	U16 n_format_streams;
 	U16 n_filter_streams;
@@ -114,7 +129,12 @@ public:
 	U16 n_format_patterns;
 	U16 n_filter_patterns;
 
-	// Headers of the various containers
+	// Header structures corresponds critical information regarding
+	// the identity and virtual byte offset to the start of each
+	// compressed and possibly encrypted byte stream. In addition,
+	// this structure details the primitive type of the data in the
+	// stream and its stride size (consecutive elements / entry) for
+	// both the data itself and the stride themselves.
 	header_type  offset_ppa;
 	header_type  offset_meta_contig;
 	header_type  offset_meta_position;
@@ -139,7 +159,13 @@ public:
 	header_type* format_offsets;
 	header_type* filter_offsets;
 
-	// Bit vectors
+	// Bit-vectors of INFO/FORMAT/FILTER vectors of local IDX
+	// patterns. These bit-vectors are used to quickly check
+	// for the set membership of a given global and/or local IDX.
+	// The bit-vectors internally holds the actual vector of IDX
+	// for internal use. Construction of these bit-vectors are not
+	// critical for basic functionality but critical for the
+	// restoration of a bit-exact output sequence of fields.
 	bit_vector*  info_bit_vectors;
 	bit_vector*  format_bit_vectors;
 	bit_vector*  filter_bit_vectors;
