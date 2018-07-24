@@ -72,7 +72,24 @@ else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
   OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
 endif
 
-LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) -L/usr/local/lib/
+# Try to deduce where HTSLib is located
+HSLIB_LIBRARY_PATH =
+ifneq ("$(wildcard ./htslib/)","")
+  INCLUDE_PATH += -I./htslib/htslib/ 
+  HSLIB_LIBRARY_PATH = -L./htslib/
+else ifneq ("$(wildcard /usr/local/include/htslib/)","")
+  INCLUDE_PATH += -I/usr/local/include/
+  #OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
+endif 
+
+# Sort the include_path vector of strings to remove duplicates. This doesn't have
+# any functional effect but dedupes the vector.
+# Do NOT use equal sign here as the lazy evaluaton will throw a recusion
+# warning.
+INCLUDE_PATH := $(sort $(INCLUDE_PATH))
+
+# Library paths
+LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) $(HSLIB_LIBRARY_PATH) -L/usr/local/lib/
 
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
