@@ -91,7 +91,7 @@ public:
 	 * Wrapper function for adding a list of contigs to the index
 	 * @param contigs
 	 */
-	void operator+=(const std::vector<contig_type>& contigs){ this->index_.add(contigs); }
+	inline void Add(const std::vector<io::VcfContig>& contigs){ this->index_.Add(contigs); }
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){

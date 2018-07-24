@@ -27,6 +27,7 @@ function note_build_stage {
 }
 
 if [[ "$1" == "local" ]]; then
+note_build_stage "Building zstd..."
 if [ ! -d zstd ]; then
 git clone https://github.com/facebook/zstd
 fi
@@ -38,6 +39,7 @@ else
 fi
 cd ..
 
+ note_build_stage "Building OpenSSL..."
 if [ ! -d openssl ]; then
 git clone https://github.com/openssl/openssl.git
 fi
@@ -49,6 +51,19 @@ else
     echo "OpenSSL already built! Skipping..."
 fi
 cd ..
+
+ note_build_stage "Building HtsLib"
+if [ ! -d htslib ]; then
+git clone https://github.com/samtools/htslib.git
+fi
+cd htslib
+if [ ! -f htslib.so ]; then
+    autoheader && autoconf && ./configure && make -j$(nproc)
+else
+    echo "HtsLib already built! Skipping..."
+fi
+cd ..
+
 else # Install with sudo
 if [ "$(uname)" == "Darwin" ]; then
     # Update package list

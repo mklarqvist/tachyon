@@ -6,14 +6,16 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#include <atomic>
 #include <iostream>
 #include <cstring>
+#include <regex>
 
 #include "type_definitions.h"
 
 namespace tachyon{
 namespace utility{
+
+const std::regex YON_VARIANT_STANDARD("^[ATGC]{1,}$");
 
 int isBigEndian(void);
 

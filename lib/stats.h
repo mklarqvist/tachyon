@@ -36,8 +36,7 @@ void stats_usage(void){
 
 int stats(int argc, char** argv){
 	if(argc <= 2){
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		return(1);
 	}
 

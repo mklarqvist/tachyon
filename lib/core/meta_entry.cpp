@@ -119,6 +119,9 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 	}
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
+	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
+	if(this->isBiallelicSNV())
+		this->controller.simple_snv = true;
 }
 
 MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
@@ -153,6 +156,9 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 	}
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
+	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
+	if(this->isBiallelicSNV())
+		this->controller.simple_snv = true;
 }
 
 MetaEntry::MetaEntry(const self_type& other) :

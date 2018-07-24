@@ -100,11 +100,12 @@ public:
 	}
 
 	/**<
+	 * Todo: delete
 	 * Finalize this block before writing to disk. This wrapper function
 	 * calls all necessary functions to construct a valid Tachyon block
 	 * for sequence variant data
 	 */
-	inline void finalize(void){
+	void finalize(void){
 		this->footer.n_info_streams   = this->info_fields.size();
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();
@@ -343,6 +344,7 @@ public:
 	container_type*   format_containers;
 
 	// Use during construction
+	// Todo: Delete these
 	hash_container_type        info_fields;
 	hash_container_type        format_fields;
 	hash_container_type        filter_fields;
@@ -355,9 +357,9 @@ public:
 	// exclusively during the importing stage.
 	// Todo: Move out of this definition. They have no place here
 	//       if they are only used once.
-	map_type filter_reorder_map;
-	map_type info_reorder_map;
-	map_type format_reorder_map;
+	//map_type filter_reorder_map;
+	//map_type info_reorder_map;
+	//map_type format_reorder_map;
 
 public:
 	// Utility

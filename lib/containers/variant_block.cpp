@@ -175,30 +175,30 @@ bool VariantBlock::readHeaderFooter(std::ifstream& stream){
 
 bool VariantBlock::read(std::ifstream& stream){
 	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
-		this->ppa_manager.header = this->footer.offset_ppa;
-		stream.seekg(this->start_compressed_data_ + this->footer.offset_ppa.data_header.offset);
+		this->ppa_manager.header = this->footer.offsets[YON_BLK_PPA];
+		stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
 		stream >> this->ppa_manager;
 	}
 
-	this->__loadContainer(stream, this->footer.offset_meta_contig, this->meta_contig_container);
-	this->__loadContainer(stream, this->footer.offset_meta_position, this->meta_positions_container);
-	this->__loadContainer(stream, this->footer.offset_meta_controllers, this->meta_controller_container);
-	this->__loadContainer(stream, this->footer.offset_meta_quality, this->meta_quality_container);
-	this->__loadContainer(stream, this->footer.offset_meta_names, this->meta_names_container);
-	this->__loadContainer(stream, this->footer.offset_meta_refalt, this->meta_refalt_container);
-	this->__loadContainer(stream, this->footer.offset_meta_alleles, this->meta_alleles_container);
-	this->__loadContainer(stream, this->footer.offset_gt_8b, this->gt_rle8_container);
-	this->__loadContainer(stream, this->footer.offset_gt_16b, this->gt_rle16_container);
-	this->__loadContainer(stream, this->footer.offset_gt_32b, this->gt_rle32_container);
-	this->__loadContainer(stream, this->footer.offset_gt_64b, this->gt_rle64_container);
-	this->__loadContainer(stream, this->footer.offset_gt_simple8, this->gt_simple8_container);
-	this->__loadContainer(stream, this->footer.offset_gt_simple16, this->gt_simple16_container);
-	this->__loadContainer(stream, this->footer.offset_gt_simple32, this->gt_simple32_container);
-	this->__loadContainer(stream, this->footer.offset_gt_simple64, this->gt_simple64_container);
-	this->__loadContainer(stream, this->footer.offset_gt_helper, this->gt_support_data_container);
-	this->__loadContainer(stream, this->footer.offset_meta_info_id, this->meta_info_map_ids);
-	this->__loadContainer(stream, this->footer.offset_meta_filter_id, this->meta_filter_map_ids);
-	this->__loadContainer(stream, this->footer.offset_meta_format_id, this->meta_format_map_ids);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_CONTIG], this->meta_contig_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_POSITION], this->meta_positions_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_CONTROLLER], this->meta_controller_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_QUALITY], this->meta_quality_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_NAMES], this->meta_names_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_REFALT], this->meta_refalt_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ALLELES], this->meta_alleles_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT8], this->gt_rle8_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT16], this->gt_rle16_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT32], this->gt_rle32_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT64], this->gt_rle64_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8], this->gt_simple8_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16], this->gt_simple16_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32], this->gt_simple32_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64], this->gt_simple64_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT], this->gt_support_data_container);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_INFO], this->meta_info_map_ids);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_FILTER], this->meta_filter_map_ids);
+	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_FORMAT], this->meta_format_map_ids);
 
 	// Load all INFO
 	if(this->footer.n_info_streams){
@@ -302,30 +302,30 @@ bool VariantBlock::write(std::ostream& stream,
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
 
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		this->footer.offset_ppa = this->ppa_manager.header;
-		this->footer.offset_ppa.data_header.offset = (U64)stream.tellp() - start_pos;
+		this->footer.offsets[YON_BLK_PPA] = this->ppa_manager.header;
+		this->footer.offsets[YON_BLK_PPA].data_header.offset = (U64)stream.tellp() - start_pos;
 		stream << this->ppa_manager;
 	}
 
-	this->__writeContainer(stream, this->footer.offset_meta_contig,      this->meta_contig_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_position,    this->meta_positions_container, (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_controllers, this->meta_controller_container,(U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_quality,     this->meta_quality_container,   (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_names,       this->meta_names_container,     (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_refalt,      this->meta_refalt_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_alleles,     this->meta_alleles_container,   (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_info_id,     this->meta_info_map_ids,        (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_filter_id,   this->meta_filter_map_ids,      (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_meta_format_id,   this->meta_format_map_ids,      (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_helper,        this->gt_support_data_container,(U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_8b,            this->gt_rle8_container,        (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_16b,           this->gt_rle16_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_32b,           this->gt_rle32_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_64b,           this->gt_rle64_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_simple8,       this->gt_simple8_container,     (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_simple16,      this->gt_simple16_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_simple32,      this->gt_simple32_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offset_gt_simple64,      this->gt_simple64_container,    (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_CONTIG],      this->meta_contig_container,    (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_POSITION],    this->meta_positions_container, (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_CONTROLLER], this->meta_controller_container,(U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_QUALITY],     this->meta_quality_container,   (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_NAMES],       this->meta_names_container,     (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_REFALT],      this->meta_refalt_container,    (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ALLELES],     this->meta_alleles_container,   (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_INFO],     this->meta_info_map_ids,        (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_FILTER],   this->meta_filter_map_ids,      (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_FORMAT],   this->meta_format_map_ids,      (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT],        this->gt_support_data_container,(U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT8],            this->gt_rle8_container,        (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT16],           this->gt_rle16_container,       (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT32],           this->gt_rle32_container,       (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT64],           this->gt_rle64_container,       (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8],       this->gt_simple8_container,     (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16],      this->gt_simple16_container,    (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32],      this->gt_simple32_container,    (U64)stream.tellp() - start_pos);
+	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64],      this->gt_simple64_container,    (U64)stream.tellp() - start_pos);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 		this->__writeContainer(stream, this->footer.info_offsets[i], this->info_containers[i], (U64)stream.tellp() - start_pos);

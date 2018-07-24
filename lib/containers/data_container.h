@@ -110,42 +110,90 @@ public:
 	inline const U32& size(void) const{ return(this->header.n_entries); }
 
 	inline bool Add(const BYTE& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added BYTE" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
 	}
 
 	inline bool Add(const U16& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U16" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
 	}
 
 	inline bool Add(const U32& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()){
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U32" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
 	}
 
 	inline bool Add(const SBYTE& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added SBYTE" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
 	}
 
 	inline bool Add(const S16& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S16" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
 	}
 
 	inline bool Add(const S32& value){
-		if(!this->__checkInteger()) return false;
+		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.controller.signedness = false;
+		}
+		if(!this->__checkInteger()) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S32" << std::endl;
+			exit(1);
+			return false;
+		}
 		this->buffer_data_uncompressed += (S32)value;
 		++this->header.n_additions;
 		return(true);
@@ -158,9 +206,8 @@ public:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)){
-			std::cerr << "Illegal primitive type match u64!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U64" << std::endl;
 			return false;
 		}
 
@@ -177,9 +224,8 @@ public:
 
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)){
-			std::cerr << "Illegal primitive type match s64!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S64" << std::endl;
 			return false;
 		}
 
@@ -196,9 +242,8 @@ public:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)){
-			std::cerr << "Illegal primitive type match float!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added FLOAT" << std::endl;
 			return false;
 		}
 
@@ -214,9 +259,8 @@ public:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)){
-			std::cerr << "Illegal primitive type match double!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added DOUBLE" << std::endl;
 			return false;
 		}
 
@@ -232,9 +276,8 @@ public:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
-			std::cerr << "Illegal primitive type match char!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
 			return false;
 		}
 
@@ -251,9 +294,8 @@ public:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
-			std::cerr << "Illegal primitive type match string!" << std::endl;
-			exit(1);
+		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+			std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
 			return false;
 		}
 
@@ -374,8 +416,7 @@ private:
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
-			std::cerr << "Illegal primitive type match integer!" << std::endl;
-			exit(1);
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type mismatch (integer)!" << std::endl;
 			return false;
 		}
 		return true;
@@ -409,7 +450,7 @@ private:
 	}
 
 public:
-	header_type header; // usually written elsewhere
+	header_type header;
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
 	buffer_type buffer_data_uncompressed;

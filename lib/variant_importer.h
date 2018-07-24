@@ -116,16 +116,27 @@ private:
 	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
 	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
 
+	bool BuildVCF();
+	bool AddRecords(const vcf_container_type& container);
 	bool AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta);
 	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
+	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
+	bool AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
 
 	/**<
-	* Calculates the 64-bit hash value for the target FORMAT/FILTER/INFO fields
-	* @param tuples    Input target of BCFTuples
-	* @param n_entries Number of BCFTuples in input
-	* @return          Returns a 64-bit hash value
+	* Static function that calculates the 64-bit hash value for the target
+	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
+	* int (S32). Example of using this function:
+	*
+	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
+	*
+	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
+	* @return          Returns a 64-bit hash value.
 	*/
 	static U64 HashIdentifiers(const std::vector<int>& id_vector){
 		XXH64_state_t* const state = XXH64_createState();

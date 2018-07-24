@@ -74,8 +74,7 @@ void view_usage(void){
 
 int view(int argc, char** argv){
 	if(argc < 2){
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		return(1);
 	}
 
@@ -292,7 +291,7 @@ int view(int argc, char** argv){
 	// Print messages
 	/*
 	if(!SILENT){
-		programMessage();
+		programHelp();
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
 	}
 	*/

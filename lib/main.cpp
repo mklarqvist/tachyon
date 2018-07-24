@@ -35,8 +35,7 @@ int main(int argc, char** argv){
 	}
 
 	if(argc == 1){
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		return(1);
 	}
 
@@ -57,8 +56,7 @@ int main(int argc, char** argv){
 		std::cerr << "Not implemented" << std::endl;
 		return(0);
 	} else {
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Illegal command: " << subroutine << std::endl;
 		return(1);
 	}

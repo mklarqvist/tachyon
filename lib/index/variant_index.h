@@ -9,6 +9,7 @@
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
 #include "core/header/header_contig.h"
+#include "io/htslib_integration.h"
 
 namespace tachyon{
 namespace index{
@@ -93,12 +94,12 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->contigs_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
 
-	self_type& add(const std::vector<contig_type>& contigs){
+	self_type& Add(const std::vector<io::VcfContig>& contigs){
 		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
 			this->resize();
 
 		for(U32 i = 0; i < contigs.size(); ++i){
-			const U64 contig_length = contigs[i].bp_length;
+			const U64 contig_length = contigs[i].n_bases;
 			BYTE n_levels = 7;
 			U64 bins_lowest = pow(4,n_levels);
 			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;

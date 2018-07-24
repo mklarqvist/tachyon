@@ -16,6 +16,7 @@ VariantBlockFooter::VariantBlockFooter():
 	n_info_patterns(0),
 	n_format_patterns(0),
 	n_filter_patterns(0),
+	offsets(new header_type[YON_BLK_N_STATIC]),
 	info_offsets(nullptr),
 	format_offsets(nullptr),
 	filter_offsets(nullptr),
@@ -25,6 +26,7 @@ VariantBlockFooter::VariantBlockFooter():
 {}
 
 VariantBlockFooter::~VariantBlockFooter(){
+	delete [] this->offsets;
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
 	delete [] this->filter_offsets;
@@ -35,27 +37,10 @@ VariantBlockFooter::~VariantBlockFooter(){
 
 void VariantBlockFooter::reset(void){
 	// Headers of the various containers
-	this->offset_ppa.reset();
-	this->offset_meta_contig.reset();
-	this->offset_meta_position.reset();
-	this->offset_meta_refalt.reset();
-	this->offset_meta_controllers.reset();
-	this->offset_meta_quality.reset();
-	this->offset_meta_names.reset();
-	this->offset_meta_alleles.reset();
-	this->offset_meta_info_id.reset();
-	this->offset_meta_format_id.reset();
-	this->offset_meta_filter_id.reset();
-	this->offset_gt_8b.reset();
-	this->offset_gt_16b.reset();
-	this->offset_gt_32b.reset();
-	this->offset_gt_64b.reset();
-	this->offset_gt_simple8.reset();
-	this->offset_gt_simple16.reset();
-	this->offset_gt_simple32.reset();
-	this->offset_gt_simple64.reset();
-	this->offset_gt_helper.reset();
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		this->offsets[i].reset();
 
+	// Offsets
 	delete [] this->info_offsets;
 	delete [] this->format_offsets;
 	delete [] this->filter_offsets;
@@ -77,6 +62,21 @@ void VariantBlockFooter::reset(void){
 	this->n_info_patterns   = 0;
 	this->n_format_patterns = 0;
 	this->n_filter_patterns = 0;
+}
+
+bool VariantBlockFooter::ConstructInfoBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map){
+	if(keys.size() == 0)
+		return false;
+
+
+}
+
+bool VariantBlockFooter::ConstructFormatBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map){
+
+}
+
+bool VariantBlockFooter::ConstructfilterBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map){
+
 }
 
 bool VariantBlockFooter::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){
@@ -154,26 +154,8 @@ std::ostream& operator<<(std::ostream& stream, const VariantBlockFooter& entry){
 	stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 	stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
 
-	stream << entry.offset_ppa;
-	stream << entry.offset_meta_contig;
-	stream << entry.offset_meta_position;
-	stream << entry.offset_meta_refalt;
-	stream << entry.offset_meta_controllers;
-	stream << entry.offset_meta_quality;
-	stream << entry.offset_meta_names;
-	stream << entry.offset_meta_alleles;
-	stream << entry.offset_meta_info_id;
-	stream << entry.offset_meta_format_id;
-	stream << entry.offset_meta_filter_id;
-	stream << entry.offset_gt_8b;
-	stream << entry.offset_gt_16b;
-	stream << entry.offset_gt_32b;
-	stream << entry.offset_gt_64b;
-	stream << entry.offset_gt_simple8;
-	stream << entry.offset_gt_simple16;
-	stream << entry.offset_gt_simple32;
-	stream << entry.offset_gt_simple64;
-	stream << entry.offset_gt_helper;
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		stream << entry.offsets[i];
 
 	for(U32 i = 0; i < entry.n_info_streams; ++i)   stream << entry.info_offsets[i];
 	for(U32 i = 0; i < entry.n_format_streams; ++i) stream << entry.format_offsets[i];
@@ -219,27 +201,14 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 	entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
 	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
 
-	stream >> entry.offset_ppa;
-	stream >> entry.offset_meta_contig;
-	stream >> entry.offset_meta_position;
-	stream >> entry.offset_meta_refalt;
-	stream >> entry.offset_meta_controllers;
-	stream >> entry.offset_meta_quality;
-	stream >> entry.offset_meta_names;
-	stream >> entry.offset_meta_alleles;
-	stream >> entry.offset_meta_info_id;
-	stream >> entry.offset_meta_format_id;
-	stream >> entry.offset_meta_filter_id;
-	stream >> entry.offset_gt_8b;
-	stream >> entry.offset_gt_16b;
-	stream >> entry.offset_gt_32b;
-	stream >> entry.offset_gt_64b;
-	stream >> entry.offset_gt_simple8;
-	stream >> entry.offset_gt_simple16;
-	stream >> entry.offset_gt_simple32;
-	stream >> entry.offset_gt_simple64;
-	stream >> entry.offset_gt_helper;
+	delete [] entry.offsets;
+	entry.offsets = new DataContainerHeader[YON_BLK_N_STATIC];
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		stream >> entry.offsets[i];
 
+	delete [] entry.info_offsets ;
+	delete [] entry.info_offsets;
+	delete [] entry.filter_offsets;
 	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
 	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];
 	entry.filter_offsets = new DataContainerHeader[entry.n_filter_streams];
@@ -249,6 +218,7 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 
 	if(entry.n_info_patterns){
 		BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
+		delete [] entry.info_bit_vectors;
 		entry.info_bit_vectors = new DataBlockBitvector[entry.n_info_patterns];
 		for(U32 i = 0; i < entry.n_info_patterns; ++i){
 			stream >> entry.info_bit_vectors[i];
@@ -259,6 +229,7 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 
 	if(entry.n_format_patterns){
 		BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
+		delete [] entry.format_bit_vectors;
 		entry.format_bit_vectors = new DataBlockBitvector[entry.n_format_patterns];
 		for(U32 i = 0; i < entry.n_format_patterns; ++i){
 			stream >> entry.format_bit_vectors[i];
@@ -269,6 +240,7 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 
 	if(entry.n_filter_patterns){
 		BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
+		delete [] entry.filter_bit_vectors;
 		entry.filter_bit_vectors = new DataBlockBitvector[entry.n_filter_patterns];
 		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
 			stream >> entry.filter_bit_vectors[i];
@@ -288,26 +260,8 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	buffer += (U16)entry.n_format_patterns;
 	buffer += (U16)entry.n_filter_patterns;
 
-	buffer << entry.offset_ppa;
-	buffer << entry.offset_meta_contig;
-	buffer << entry.offset_meta_position;
-	buffer << entry.offset_meta_refalt;
-	buffer << entry.offset_meta_controllers;
-	buffer << entry.offset_meta_quality;
-	buffer << entry.offset_meta_names;
-	buffer << entry.offset_meta_alleles;
-	buffer << entry.offset_meta_info_id;
-	buffer << entry.offset_meta_format_id;
-	buffer << entry.offset_meta_filter_id;
-	buffer << entry.offset_gt_8b;
-	buffer << entry.offset_gt_16b;
-	buffer << entry.offset_gt_32b;
-	buffer << entry.offset_gt_64b;
-	buffer << entry.offset_gt_simple8;
-	buffer << entry.offset_gt_simple16;
-	buffer << entry.offset_gt_simple32;
-	buffer << entry.offset_gt_simple64;
-	buffer << entry.offset_gt_helper;
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		buffer << entry.offsets[i];
 
 	for(U32 i = 0; i < entry.n_info_streams; ++i)   buffer << entry.info_offsets[i];
 	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer << entry.format_offsets[i];
@@ -353,27 +307,14 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 	entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
 	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
 
-	buffer >> entry.offset_ppa;
-	buffer >> entry.offset_meta_contig;
-	buffer >> entry.offset_meta_position;
-	buffer >> entry.offset_meta_refalt;
-	buffer >> entry.offset_meta_controllers;
-	buffer >> entry.offset_meta_quality;
-	buffer >> entry.offset_meta_names;
-	buffer >> entry.offset_meta_alleles;
-	buffer >> entry.offset_meta_info_id;
-	buffer >> entry.offset_meta_format_id;
-	buffer >> entry.offset_meta_filter_id;
-	buffer >> entry.offset_gt_8b;
-	buffer >> entry.offset_gt_16b;
-	buffer >> entry.offset_gt_32b;
-	buffer >> entry.offset_gt_64b;
-	buffer >> entry.offset_gt_simple8;
-	buffer >> entry.offset_gt_simple16;
-	buffer >> entry.offset_gt_simple32;
-	buffer >> entry.offset_gt_simple64;
-	buffer >> entry.offset_gt_helper;
+	delete [] entry.offsets;
+	entry.offsets = new DataContainerHeader[YON_BLK_N_STATIC];
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		buffer >> entry.offsets[i];
 
+	delete [] entry.info_offsets;
+	delete [] entry.format_offsets;
+	delete [] entry.filter_offsets;
 	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
 	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];
 	entry.filter_offsets = new DataContainerHeader[entry.n_filter_streams];
@@ -383,6 +324,7 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 
 	if(entry.n_info_patterns){
 		BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
+		delete [] entry.info_bit_vectors;
 		entry.info_bit_vectors = new DataBlockBitvector[entry.n_info_patterns];
 		for(U32 i = 0; i < entry.n_info_patterns; ++i){
 			buffer >> entry.info_bit_vectors[i];
@@ -393,6 +335,7 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 
 	if(entry.n_format_patterns){
 		BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
+		delete [] entry.format_bit_vectors;
 		entry.format_bit_vectors = new DataBlockBitvector[entry.n_format_patterns];
 		for(U32 i = 0; i < entry.n_format_patterns; ++i){
 			buffer >> entry.format_bit_vectors[i];
@@ -403,6 +346,7 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 
 	if(entry.n_filter_patterns){
 		BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
+		delete [] entry.filter_bit_vectors;
 		entry.filter_bit_vectors = new DataBlockBitvector[entry.n_filter_patterns];
 		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
 			buffer >> entry.filter_bit_vectors[i];

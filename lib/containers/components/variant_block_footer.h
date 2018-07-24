@@ -1,12 +1,38 @@
 #ifndef CONTAINERS_COMPONENTS_VARIANT_BLOCK_FOOTER_H_
 #define CONTAINERS_COMPONENTS_VARIANT_BLOCK_FOOTER_H_
 
+#include <unordered_map>
+
 #include "data_block_bitvector.h"
 #include "data_container_header.h"
 #include "containers/hash_container.h"
 #include "io/basic_buffer.h"
 
 namespace tachyon {
+
+#define YON_BLK_N_STATIC   21 // Total number of invariant headers
+#define YON_BLK_PPA         0 // Sample permutation array
+#define YON_BLK_META        1
+#define YON_BLK_CONTIG      2
+#define YON_BLK_POSITION    3
+#define YON_BLK_REFALT      4
+#define YON_BLK_CONTROLLER  5 // Set memberships
+#define YON_BLK_QUALITY     6
+#define YON_BLK_NAMES       7
+#define YON_BLK_ALLELES     8
+#define YON_BLK_ID_INFO     9
+#define YON_BLK_ID_FORMAT  10
+#define YON_BLK_ID_FILTER  11
+#define YON_BLK_GT_INT8    12 // Run-length encoded genotypes
+#define YON_BLK_GT_INT16   13
+#define YON_BLK_GT_INT32   14
+#define YON_BLK_GT_INT64   15
+#define YON_BLK_GT_S_INT8  16 // Standard encoded genotypes
+#define YON_BLK_GT_S_INT16 17
+#define YON_BLK_GT_S_INT32 18
+#define YON_BLK_GT_S_INT64 19
+#define YON_BLK_GT_SUPPORT 20 // Genotype support
+
 namespace containers {
 
 // It is possible of getting mapping local indices to global IDX
@@ -89,6 +115,10 @@ public:
 	                        hash_container_type& values,
 	                        hash_vector_container_type& patterns);
 
+	bool ConstructInfoBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
+	bool ConstructFormatBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
+	bool ConstructfilterBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
+
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
@@ -125,10 +155,10 @@ public:
 	// that are set in this block. The n_*_patterns corresponds
 	// to the number of unique vectors of field identifiers that
 	// occurred in the block.
-	U16 n_info_streams;
+	U16 n_info_streams; // streams
 	U16 n_format_streams;
 	U16 n_filter_streams;
-	U16 n_info_patterns;
+	U16 n_info_patterns; // patterns
 	U16 n_format_patterns;
 	U16 n_filter_patterns;
 
@@ -141,26 +171,7 @@ public:
 	// Note that only INFO/FORMAT/FILTER fields have IDX fields. The
 	// other fields do not require dictionary lookup to ascertain
 	// their identity as they are guaranteed to be invariant.
-	header_type  offset_ppa;
-	header_type  offset_meta_contig;
-	header_type  offset_meta_position;
-	header_type  offset_meta_refalt;
-	header_type  offset_meta_controllers;
-	header_type  offset_meta_quality;
-	header_type  offset_meta_names;
-	header_type  offset_meta_alleles;
-	header_type  offset_meta_info_id;
-	header_type  offset_meta_format_id;
-	header_type  offset_meta_filter_id;
-	header_type  offset_gt_8b;
-	header_type  offset_gt_16b;
-	header_type  offset_gt_32b;
-	header_type  offset_gt_64b;
-	header_type  offset_gt_simple8;
-	header_type  offset_gt_simple16;
-	header_type  offset_gt_simple32;
-	header_type  offset_gt_simple64;
-	header_type  offset_gt_helper;
+	header_type* offsets;
 	header_type* info_offsets;
 	header_type* format_offsets;
 	header_type* filter_offsets;
