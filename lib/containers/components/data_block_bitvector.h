@@ -80,7 +80,7 @@ public:
 		this->n_keys = n_keys;
 	}
 
-	inline void allocate(const U32& n_bytes){
+	inline void allocate(const U32 n_bytes){
 		delete [] this->bit_bytes;
 		this->bit_bytes = new BYTE[n_bytes];
 		memset(this->bit_bytes, 0, n_bytes);

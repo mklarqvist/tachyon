@@ -24,19 +24,6 @@ VariantImporter::~VariantImporter(){
 
 void VariantImporter::clear(){
 	this->vcf_container_.clear();
-
-	this->filter_list_.clear();
-	this->info_list_.clear();
-	this->format_list_.clear();
-	this->filter_local_map_.clear();
-	this->info_local_map_.clear();
-	this->format_local_map_.clear();
-	this->filter_patterns_.clear();
-	this->format_patterns_.clear();
-	this->info_patterns_.clear();
-	this->filter_hash_map_.clear();
-	this->info_hash_map_.clear();
-	this->format_hash_map_.clear();
 }
 
 bool VariantImporter::Build(){
@@ -50,8 +37,8 @@ bool VariantImporter::Build(){
 	temp.close();
 
 	if((BYTE)tempData[0] == io::constants::GZIP_ID1 && (BYTE)tempData[1] == io::constants::GZIP_ID2){
-		// if(!this->BuildBCF()){
-		if(!this->BuildVCF()){
+		 if(!this->BuildBCF()){
+		//if(!this->BuildVCF()){
 			std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 			return false;
 		}
@@ -63,6 +50,7 @@ bool VariantImporter::Build(){
 }
 
 bool VariantImporter::BuildVCF(void){
+	// Retrieve a unique VcfReader.
 	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
 	if(this->vcf_reader_ == nullptr){
 		return false;
@@ -116,6 +104,11 @@ bool VariantImporter::BuildVCF(void){
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
+		this->block.footer.AllocateHeaders(
+				this->vcf_reader_->vcf_header_.info_fields_.size(),
+				this->vcf_reader_->vcf_header_.format_fields_.size(),
+				this->vcf_reader_->vcf_header_.filter_fields_.size());
+
 		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
 		// after retrieving a set number of variants or if the interval between
 		// the smallest and largest variant exceeds some distance in base pairs.
@@ -135,19 +128,39 @@ bool VariantImporter::BuildVCF(void){
 
 
 		this->block.header.controller.hasGT  = this->GT_available_; // Todo: if GT is available in a block, not in the header
-		this->block.footer.n_info_patterns   = this->info_patterns_.size();
-		this->block.footer.n_format_patterns = this->format_patterns_.size();
-		this->block.footer.n_filter_patterns = this->filter_patterns_.size();
-		this->block.footer.AllocateHeaders(this->info_local_map_.size(),
-		                                   this->format_local_map_.size(),
-		                                   this->filter_local_map_.size());
+		//this->block.footer.n_info_patterns   = this->info_patterns_.size();
+		//this->block.footer.n_format_patterns = this->format_patterns_.size();
+		//this->block.footer.n_filter_patterns = this->filter_patterns_.size();
 		this->block.UpdateContainers();
-		this->block.footer.ConstructInfoBitVector(this->info_patterns_, this->info_local_map_);
-		this->block.footer.ConstructFormatBitVector(this->format_patterns_, this->format_local_map_);
-		this->block.footer.ConstructFilterBitVector(this->filter_patterns_, this->filter_local_map_);
+		this->block.Finalize();
+
+		// Perform compression using standard parameters
+		if(!this->compression_manager.compress(this->block, this->settings_.compression_level, 6)){
+			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
+			return false;
+		}
+		//this->block.footer.ConstructInfoBitVector(this->info_patterns_, *this->block.info_map);
+		//this->block.footer.ConstructFormatBitVector(this->format_patterns_, *this->block.format_map);
+		//this->block.footer.ConstructFilterBitVector(this->filter_patterns_, *this->block.filter_map);
 
 		// Update checksums container with the available data.
 		checksums += this->block;
+		// Todo: this->index += this->vcf_reader_->variant_reader
+
+
+		for(U32 i = 0; i < this->block.footer.n_filter_patterns; ++i)
+			std::cerr << "Filter-pattern: " << this->block.footer.filter_patterns[i].pattern.size() << std::endl;
+
+		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i)
+			std::cerr << "Format-pattern: " << this->block.footer.format_patterns[i].pattern.size() << std::endl;
+
+		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i)
+			std::cerr << "Info-pattern: " << this->block.footer.info_patterns[i].pattern.size() << std::endl;
+
+		std::cerr << "Info: " << this->block.info_map->size() << std::endl;
+		std::cerr << "Format: " << this->block.format_map->size() << std::endl;
+		std::cerr << "Filter: " << this->block.filter_map->size() << std::endl;
+
 
 		// Clear current data.
 		this->clear();
@@ -219,7 +232,7 @@ bool VariantImporter::BuildBCF(void){
 	header.literals += "\n##tachyon_importVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 	header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 	                +  SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
-	header.literals += "\n" + this->settings_.getInterpretedString();
+	header.literals += "\n" + this->settings_.GetInterpretedString();
 
 	if(this->settings_.encrypt_data)      header.literals += " -k";
 	if(this->settings_.permute_genotypes) header.literals += " -P";
@@ -293,11 +306,6 @@ bool VariantImporter::BuildBCF(void){
 		if(!bcf_reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}
-
-		this->vcf_container_.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases, this->vcf_reader_);
-
-		std::cerr << bcf_reader.size() << " and " << this->vcf_container_.sizeWithoutCarryOver() << std::endl;
-		assert(bcf_reader.size() == this->vcf_container_.sizeWithoutCarryOver());
 
 		// Debug assertion
 		if(bcf_reader.front().body->CHROM == previous_contig_ID){
@@ -422,33 +430,6 @@ bool VariantImporter::BuildBCF(void){
 		previous_contig_ID = bcf_reader.front().body->CHROM;
 		previous_first     = bcf_reader.front().body->POS;
 		previous_last      = bcf_reader.back().body->POS;
-		this->index_entry.reset();
-
-		// temp
-		meta_type* meta_entries_new = static_cast<meta_type*>(::operator new[](this->vcf_container_.sizeWithoutCarryOver() * sizeof(meta_type)));
-		for(U32 i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
-			// Transmute a bcf record into a meta structure
-			new( meta_entries_new + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
-			// Add the record data
-			this->AddRecord(this->vcf_container_, i, meta_entries_new[i]);
-		}
-
-
-		/*
-		for(U32 i = 0; i < this->filter_patterns_.size(); ++i)
-			std::cerr << "Filter: " << this->filter_patterns_[i].size() << std::endl;
-
-		for(U32 i = 0; i < this->format_patterns_.size(); ++i)
-			std::cerr << "Format: " << this->format_patterns_[i].size() << std::endl;
-
-		for(U32 i = 0; i < this->info_patterns_.size(); ++i)
-			std::cerr << "Info: " << this->info_patterns_[i].size() << std::endl;
-		*/
-
-		for(std::size_t i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i) (meta_entries_new + i)->~MetaEntry();
-		::operator delete[](static_cast<void*>(meta_entries_new));
-		this->clear();
-		this->block.clear();
 		this->index_entry.reset();
 	}
 	// Done importing
@@ -637,12 +618,16 @@ bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	for(U32 i = 0; i < n_filter_fields; ++i){
 		const int& hts_filter_key = record->d.flt[i]; // htslib IDX value
 		const U32 global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
+		const U32 target_container = this->block.AddFilter(global_key);
+		/*
 		const reorder_map_type::const_iterator it = this->filter_local_map_.find(global_key); // search for global IDX
 		if(it == this->filter_local_map_.end()){
 			this->filter_local_map_[global_key] = this->filter_list_.size(); // local IDX
 			this->filter_list_.push_back(global_key); // store local IDX at the key of the global IDX
+			// Todo: spawn new object here if required.
 		}
 		const U32 target_container = this->filter_local_map_[global_key];
+		*/
 		assert(target_container < 65536);
 		filter_ids.push_back(global_key);
 	}
@@ -657,12 +642,15 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	for(U32 i = 0; i < n_info_fields; ++i){
 		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
 		const U32 global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
+		const U32 target_container = this->block.AddInfo(global_key);
+		/*
 		const reorder_map_type::const_iterator it = this->info_local_map_.find(global_key); // search for global IDX
 		if(it == this->info_local_map_.end()){
 			this->info_local_map_[global_key] = this->info_list_.size(); // local IDX
 			this->info_list_.push_back(global_key); // store local IDX at the key of the global IDX
 		}
 		const U32 target_container = this->info_local_map_[global_key];
+		*/
 		assert(target_container < 65536);
 		info_ids.push_back(global_key);
 
@@ -725,12 +713,15 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 	for(U32 i = 0; i < n_format_fields; ++i){
 		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
 		const U32 global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
+		const U32 target_container = this->block.AddFormat(global_key);
+		/*
 		const reorder_map_type::const_iterator it = this->format_local_map_.find(global_key); // search for global IDX
 		if(it == this->format_local_map_.end()){
 			this->format_local_map_[global_key] = this->format_list_.size(); // local IDX
 			this->format_list_.push_back(global_key); // store local IDX at the key of the global IDX
 		}
 		const U32 target_container = this->format_local_map_[global_key];
+		*/
 		assert(target_container < 65536);
 		format_ids.push_back(global_key);
 
@@ -796,49 +787,22 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 }
 
 bool VariantImporter::AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta){
-	// Hash global IDX pattern if there is any data available
 	if(pattern.size()){
-		U64 info_pattern_hash = VariantImporter::HashIdentifiers(pattern);
-		const hash_map_type::const_iterator it = this->info_hash_map_.find(info_pattern_hash); // search for global IDX
-		if(it == this->info_hash_map_.end()){
-			meta.info_pattern_id = this->info_patterns_.size();
-			this->info_hash_map_[info_pattern_hash] = this->info_patterns_.size();
-			this->info_patterns_.push_back(pattern);
-		} else {
-			meta.info_pattern_id = it->second;
-		}
+		meta.info_pattern_id = this->block.AddInfoPattern(pattern);
 	}
 	return true;
 }
 
 bool VariantImporter::AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta){
-	// Hash global IDX pattern if there is any data available
 	if(pattern.size()){
-		U64 format_pattern_hash = VariantImporter::HashIdentifiers(pattern);
-		const hash_map_type::const_iterator it = this->format_hash_map_.find(format_pattern_hash); // search for global IDX
-		if(it == this->format_hash_map_.end()){
-			meta.format_pattern_id = this->format_patterns_.size();
-			this->format_hash_map_[format_pattern_hash] = this->format_patterns_.size();
-			this->format_patterns_.push_back(pattern);
-		} else {
-			meta.format_pattern_id = it->second;
-		}
+		meta.format_pattern_id = this->block.AddFormatPattern(pattern);
 	}
 	return true;
 }
 
 bool VariantImporter::AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta){
-	// Hash global IDX pattern if there is any data available
 	if(pattern.size()){
-		U64 filter_pattern_hash = VariantImporter::HashIdentifiers(pattern);
-		const hash_map_type::const_iterator it = this->filter_hash_map_.find(filter_pattern_hash); // search for global IDX
-		if(it == this->filter_hash_map_.end()){
-			meta.filter_pattern_id = this->filter_patterns_.size();
-			this->filter_hash_map_[filter_pattern_hash] = this->filter_patterns_.size();
-			this->filter_patterns_.push_back(pattern);
-		} else {
-			meta.filter_pattern_id = it->second;
-		}
+		meta.filter_pattern_id = this->block.AddFilterPattern(pattern);
 	}
 	return true;
 }

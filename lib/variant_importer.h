@@ -38,7 +38,7 @@ public:
 
 	~VariantImporterSettings() = default;
 
-	std::string getInterpretedString(void) const{
+	std::string GetInterpretedString(void) const{
 		return(std::string("##tachyon_importInterpretedCommand=input_file=" + this->input_file +
 		   ";output_prefix=" + this->output_prefix +
 		   ";checkpoint_snps=" + std::to_string(this->checkpoint_n_snps) +
@@ -47,12 +47,12 @@ public:
 		));
 	}
 
-	inline void setInputFile(const std::string& input_name){ this->input_file = input_name; }
-	inline void setOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
-	inline void setThreads(const U32 n_threads){ this->n_threads = n_threads; }
-	inline void setPermute(const bool yes){ this->permute_genotypes = yes; }
-	inline void setEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void setCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
+	inline void SetInputFile(const std::string& input_name){ this->input_file = input_name; }
+	inline void SetOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
+	inline void SetThreads(const U32 n_threads){ this->n_threads = n_threads; }
+	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
+	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
+	inline void SetCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
 
 public:
 	bool permute_genotypes;   // permute GT flag
@@ -192,22 +192,22 @@ private:
 	// Vectors of GLOBAL IDX fields for INFO/FORMAT/FILTER fields. Maps
 	// from a global IDX to a local IDX corresponding to an incremental
 	// array offset.
-	std::vector<U32> filter_list_;
-	std::vector<U32> info_list_;
-	std::vector<U32> format_list_;
-	reorder_map_type filter_local_map_;
-	reorder_map_type info_local_map_;
-	reorder_map_type format_local_map_;
+	//std::vector<U32> filter_list_;
+	//std::vector<U32> info_list_;
+	//std::vector<U32> format_list_;
+	//reorder_map_type filter_local_map_;
+	//reorder_map_type info_local_map_;
+	//reorder_map_type format_local_map_;
 
 	// Vector of vectors corresponding to INFO/FORMAT/FILTER patterns of
 	// global IDX observed in the records. These vectors-of-vectors are
 	// hashed to get unique values that corresponds to their identities.
-	std::vector<std::vector<int>> filter_patterns_;
-	std::vector<std::vector<int>> format_patterns_;
-	std::vector<std::vector<int>> info_patterns_;
-	hash_map_type filter_hash_map_;
-	hash_map_type info_hash_map_;
-	hash_map_type format_hash_map_;
+	//std::vector<std::vector<int>> filter_patterns_;
+	//std::vector<std::vector<int>> format_patterns_;
+	//std::vector<std::vector<int>> info_patterns_;
+	//hash_map_type filter_hash_map_;
+	//hash_map_type info_hash_map_;
+	//hash_map_type format_hash_map_;
 
 	//
 	std::unique_ptr<vcf_reader_type> vcf_reader_;

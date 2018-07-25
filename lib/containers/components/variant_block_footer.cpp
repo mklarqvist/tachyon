@@ -22,7 +22,13 @@ VariantBlockFooter::VariantBlockFooter():
 	filter_offsets(nullptr),
 	info_bit_vectors(nullptr),
 	format_bit_vectors(nullptr),
-	filter_bit_vectors(nullptr)
+	filter_bit_vectors(nullptr),
+	n_info_patterns_allocated(0),
+	n_format_patterns_allocated(0),
+	n_filter_patterns_allocated(0),
+	info_patterns(nullptr),
+	format_patterns(nullptr),
+	filter_patterns(nullptr)
 {}
 
 VariantBlockFooter::~VariantBlockFooter(){
@@ -33,6 +39,9 @@ VariantBlockFooter::~VariantBlockFooter(){
 	delete [] this->info_bit_vectors;
 	delete [] this->format_bit_vectors;
 	delete [] this->filter_bit_vectors;
+	delete [] this->info_patterns;
+	delete [] this->format_patterns;
+	delete [] this->filter_patterns;
 }
 
 void VariantBlockFooter::reset(void){
@@ -56,49 +65,22 @@ void VariantBlockFooter::reset(void){
 	this->format_bit_vectors = nullptr;
 	this->filter_bit_vectors = nullptr;
 
+	this->n_info_patterns_allocated   = 0;
+	this->n_format_patterns_allocated = 0;
+	this->n_filter_patterns_allocated = 0;
+	this->info_patterns   = nullptr;
+	this->format_patterns = nullptr;
+	this->filter_patterns = nullptr;
+	delete [] this->info_patterns;
+	delete [] this->format_patterns;
+	delete [] this->filter_patterns;
+
 	this->n_info_streams    = 0;
 	this->n_format_streams  = 0;
 	this->n_filter_streams  = 0;
 	this->n_info_patterns   = 0;
 	this->n_format_patterns = 0;
 	this->n_filter_patterns = 0;
-}
-
-bool VariantBlockFooter::ConstructBitVectorWrapper(bit_vector*& target_bitvector, header_type* target_offset, std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& local_map){
-	if(patterns.size() == 0)
-		return false;
-
-	// Determine the required width in bytes of the bit-vector
-	const BYTE bitvector_width = ceil((float)patterns.size()/8);
-
-	// Allocate new bit-vectors
-	delete [] target_bitvector;
-	target_bitvector = new bit_vector[patterns.size()];
-
-	// Allocate memory for these bit-vectors
-	for(U32 i = 0; i < patterns.size(); ++i)
-		target_bitvector[i].allocate(patterns[i].size(), bitvector_width);
-
-	// Cycle over pattern size
-	for(U32 i = 0; i < patterns.size(); ++i){
-		for(U32 j = 0; j < patterns[i].size(); ++j){
-			std::unordered_map<U32,U32>::const_iterator it = local_map.find(patterns[i][j]);
-			assert(it != local_map.end());
-
-			U32 local_key = it->second;
-
-			// Set bit at local key position
-			target_bitvector[i].bit_bytes[local_key/8] |= 1 << (local_key % 8);
-
-			// Store local key in key-chain
-			target_bitvector[i].local_keys[j] = local_key;
-
-			// Store absolute key
-			target_offset[local_key].data_header.global_key = patterns[i][j];
-		}
-	}
-
-	return true;
 }
 
 bool VariantBlockFooter::constructBitVector(const INDEX_BLOCK_TARGET& target, hash_container_type& values, hash_vector_container_type& patterns){

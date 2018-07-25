@@ -34,6 +34,47 @@ namespace tachyon {
 
 namespace containers {
 
+struct yon_blk_bv_pair {
+	yon_blk_bv_pair() : bit_vector(nullptr){}
+	~yon_blk_bv_pair(){ delete this->bit_vector; }
+
+	void clear(void){
+		this->pattern.clear();
+		delete this->bit_vector;
+	}
+
+	// Given the total number of fields allocate ceil(n_total_fields/8)
+	// bytes for the base array.
+	void Build(const U32 n_total_fields, const std::unordered_map<U32, U32>* local_map){
+		if(this->pattern.size() == 0) return;
+		assert(local_map != nullptr);
+
+		// Determine the required width in bytes of the bit-vector
+		BYTE bitvector_width = ceil((float)(n_total_fields+1)/8);
+
+		// Allocate new bit-vectors
+		delete this->bit_vector;
+		this->bit_vector = new DataBlockBitvector();
+		this->bit_vector->allocate(this->pattern.size(), bitvector_width);
+
+		// Cycle over pattern size
+		for(U32 i = 0; i < this->pattern.size(); ++i){
+			std::unordered_map<U32, U32>::const_iterator it = local_map->find(this->pattern[i]);
+			assert(it != local_map->end());
+
+			// Map from absolute key to local key.
+			U32 local_key = it->second;
+			assert(local_key <= n_total_fields);
+
+			// Set bit at local key position
+			this->bit_vector->bit_bytes[local_key/8] |= 1 << (local_key % 8);
+		}
+	}
+
+	std::vector<int>    pattern;
+	DataBlockBitvector* bit_vector;
+};
+
 // It is possible of getting mapping local indices to global IDX
 // for either  FILTER/FORMAT/INFO fields by iterating over the
 // relevant DataContainerHeader structures and tracking the incremental
@@ -97,9 +138,6 @@ public:
 		                        const U32 n_format_streams,
 		                        const U32 n_filter_streams)
 	{
-		this->n_info_streams   = n_info_streams;
-		this->n_format_streams = n_format_streams;
-		this->n_filter_streams = n_filter_streams;
 		this->AllocateInfoHeaders(n_info_streams);
 		this->AllocateFormatHeaders(n_format_streams);
 		this->AllocateFilterHeaders(n_filter_streams);
@@ -117,10 +155,26 @@ public:
 	                        hash_container_type& values,
 	                        hash_vector_container_type& patterns);
 
-	bool ConstructBitVectorWrapper(bit_vector*& target_bitvector, header_type* target_offset, std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& info_local_map);
-	inline bool ConstructInfoBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& info_local_map){ return(this->ConstructBitVectorWrapper(this->info_bit_vectors, this->info_offsets, patterns, info_local_map)); }
-	inline bool ConstructFormatBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& format_local_map){ return(this->ConstructBitVectorWrapper(this->format_bit_vectors, this->format_offsets, patterns, format_local_map)); }
-	inline bool ConstructFilterBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& filter_local_map){ return(this->ConstructBitVectorWrapper(this->filter_bit_vectors, this->filter_offsets, patterns, filter_local_map)); }
+	bool ConstructInfoBitVector(std::unordered_map<U32,U32>* pattern_map){
+		for(U32 i = 0; i < this->n_info_patterns; ++i){
+			this->info_patterns[i].Build(this->n_info_streams, pattern_map);
+		}
+		return true;
+	}
+
+	bool ConstructFormatBitVector(std::unordered_map<U32,U32>* pattern_map){
+		for(U32 i = 0; i < this->n_format_patterns; ++i){
+			this->format_patterns[i].Build(this->n_format_streams, pattern_map);
+		}
+		return true;
+	}
+
+	bool ConstructFilterBitVector(std::unordered_map<U32,U32>* pattern_map){
+		for(U32 i = 0; i < this->n_filter_patterns; ++i){
+			this->filter_patterns[i].Build(this->n_filter_streams, pattern_map);
+		}
+		return true;
+	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
@@ -189,6 +243,13 @@ public:
 	bit_vector*  info_bit_vectors;
 	bit_vector*  format_bit_vectors;
 	bit_vector*  filter_bit_vectors;
+
+	U32 n_info_patterns_allocated;
+	U32 n_format_patterns_allocated;
+	U32 n_filter_patterns_allocated;
+	yon_blk_bv_pair* info_patterns;
+	yon_blk_bv_pair* format_patterns;
+	yon_blk_bv_pair* filter_patterns;
 };
 
 }

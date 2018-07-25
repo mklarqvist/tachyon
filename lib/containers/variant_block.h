@@ -3,6 +3,8 @@
 
 #include <unordered_map>
 
+#include "third_party/xxhash/xxhash.h"
+
 #include "algorithm/permutation/permutation_manager.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
@@ -33,6 +35,7 @@ class VariantBlock{
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
 	typedef std::unordered_map<U32, U32>    map_type;
+	typedef std::unordered_map<U64, U32>    map_pattern_type;
 
 public:
 	VariantBlock();
@@ -245,6 +248,142 @@ public:
 	 */
 	void UpdateContainers(void);
 
+	void Finalize(void){
+		this->footer.ConstructInfoBitVector(this->info_map);
+		this->footer.ConstructFormatBitVector(this->format_map);
+		this->footer.ConstructFilterBitVector(this->filter_map);
+	}
+
+	bool BuildMaps(void){
+		delete this->info_map;
+		delete this->filter_map;
+		delete this->format_map;
+
+		this->info_map   = new map_type();
+		this->filter_map = new map_type();
+		this->format_map = new map_type();
+
+		return true;
+	}
+
+	bool BuildPatternMaps(void){
+		delete this->info_pattern_map;
+		this->info_pattern_map = new map_pattern_type();
+		if(this->footer.n_info_patterns_allocated == 0){
+			this->footer.info_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_info_patterns_allocated = 100;
+		}
+
+		delete this->filter_pattern_map;
+		this->filter_pattern_map = new map_pattern_type();
+		if(this->footer.n_filter_patterns_allocated == 0){
+			this->footer.filter_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_filter_patterns_allocated = 100;
+		}
+
+		delete this->format_pattern_map;
+		this->format_pattern_map = new map_pattern_type();
+		if(this->footer.n_format_patterns_allocated == 0){
+			this->footer.format_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_format_patterns_allocated = 100;
+		}
+
+		return true;
+	}
+
+	U32 AddStreamWrapper(const U32 id, map_type* map, offset_type*& offsets, U16& stream_counter){
+		map_type::const_iterator it = map->find(id);
+		if(it == map->end()){
+			(*map)[id] = stream_counter;
+			offsets[stream_counter].data_header.global_key = id;
+			++stream_counter;
+		}
+
+		return((*map)[id]);
+	}
+
+	U32 AddInfo(const U32 id){
+		if(this->info_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->info_map, this->footer.info_offsets, this->footer.n_info_streams));
+	}
+
+	U32 AddFormat(const U32 id){
+		if(this->format_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->format_map, this->footer.format_offsets, this->footer.n_format_streams));
+	}
+
+	U32 AddFilter(const U32 id){
+		if(this->filter_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->filter_map, this->footer.filter_offsets, this->footer.n_filter_streams));
+	}
+
+	/**<
+	* Static function that calculates the 64-bit hash value for the target
+	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
+	* int (S32). Example of using this function:
+	*
+	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
+	*
+	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
+	* @return          Returns a 64-bit hash value.
+	*/
+	static U64 HashIdentifiers(const std::vector<int>& id_vector){
+		XXH64_state_t* const state = XXH64_createState();
+		if (state==NULL) abort();
+
+		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
+		if (resetResult == XXH_ERROR) abort();
+
+		for(U32 i = 0; i < id_vector.size(); ++i){
+			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
+			if (addResult == XXH_ERROR) abort();
+		}
+
+		U64 hash = XXH64_digest(state);
+		XXH64_freeState(state);
+
+		return hash;
+	}
+
+	U32 AddPatternWrapper(const std::vector<int>& pattern, map_pattern_type* pattern_map, yon_blk_bv_pair* bv_pairs, U16& stream_counter){
+		U64 pattern_hash = VariantBlock::HashIdentifiers(pattern);
+		const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
+		if(it == pattern_map->end()){
+			(*pattern_map)[pattern_hash] = stream_counter;
+			bv_pairs[stream_counter].pattern = pattern;
+			++stream_counter;
+		}
+
+		return((*pattern_map)[pattern_hash]);
+	}
+
+	U32 AddInfoPattern(const std::vector<int>& pattern){
+		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->footer.n_info_patterns_allocated == 0){
+			this->footer.info_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_info_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->info_pattern_map, this->footer.info_patterns, this->footer.n_info_patterns));
+	}
+
+	U32 AddFormatPattern(const std::vector<int>& pattern){
+		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->footer.n_format_patterns_allocated == 0){
+			this->footer.format_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_format_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->format_pattern_map, this->footer.format_patterns, this->footer.n_format_patterns));
+	}
+
+	U32 AddFilterPattern(const std::vector<int>& pattern){
+		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->footer.n_filter_patterns_allocated == 0){
+			this->footer.filter_patterns = new yon_blk_bv_pair[100];
+			this->footer.n_filter_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->filter_pattern_map, this->footer.filter_patterns, this->footer.n_filter_patterns));
+	}
+
 private:
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
@@ -330,6 +469,10 @@ public:
 	map_type* info_map;
 	map_type* format_map;
 	map_type* filter_map;
+	map_pattern_type* info_pattern_map;
+	map_pattern_type* format_pattern_map;
+	map_pattern_type* filter_pattern_map;
+
 
 
 	// Use during construction

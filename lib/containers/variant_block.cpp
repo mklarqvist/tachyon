@@ -13,6 +13,9 @@ VariantBlock::VariantBlock() :
 	info_map(nullptr),
 	format_map(nullptr),
 	filter_map(nullptr),
+	info_pattern_map(nullptr),
+	format_pattern_map(nullptr),
+	filter_pattern_map(nullptr),
 	end_block_(0),
 	start_compressed_data_(0),
 	end_compressed_data_(0)
@@ -27,6 +30,9 @@ VariantBlock::~VariantBlock(){
 	delete this->info_map;
 	delete this->format_map;
 	delete this->filter_map;
+	delete this->info_pattern_map;
+	delete this->format_pattern_map;
+	delete this->filter_pattern_map;
 	delete [] this->base_containers;
 	delete [] this->info_containers;
 	delete [] this->format_containers;
@@ -39,9 +45,17 @@ void VariantBlock::clear(void){
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 		this->format_containers[i].reset();
 
+	if(this->info_map != nullptr)   this->info_map->clear();
+	if(this->format_map != nullptr) this->format_map->clear();
+	if(this->filter_map != nullptr) this->filter_map->clear();
+	if(this->info_pattern_map != nullptr)   this->info_pattern_map->clear();
+	if(this->format_pattern_map != nullptr) this->format_pattern_map->clear();
+	if(this->filter_pattern_map != nullptr) this->filter_pattern_map->clear();
+
 	this->header.reset();
 	this->footer.reset();
 	this->footer_support.reset();
+
 
 	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
 		this->base_containers[i].reset();
