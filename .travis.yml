@@ -207,19 +207,12 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
   - git clone https://github.com/facebook/zstd
-  - cd zstd
-  - make -j4
-  - sudo make install
-  - cd ..
+  - cd zstd && make -j4 && sudo make install && cd ..
   - git clone https://github.com/samtools/htslib
-  - cd htslib
-  - autoheader && autoconf && ./configure && make -j 4
-  - cd ..
+  - cd htslib && autoheader && autoconf && ./configure && make -j 4 && cd ..
 
 script:
   - git submodule update --recursive
-  - cd lib/third_party/zlib
-  - ./configure
-  - cd ../../../
+  - cd lib/third_party/zlib && ./configure && cd ../../../
   - make -j 4
   
