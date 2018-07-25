@@ -110,16 +110,16 @@ endif
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
 SHARED_EXT   = so
-LD_LIB_FLAGS = -shared -Wl,-rpath,./zstd/lib,-rpath,./openssl/,-rpath,./htslib/,-soname,libtachyon.$(SHARED_EXT)
+LD_LIB_FLAGS = -shared '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib,-soname,libtachyon.$(SHARED_EXT)'
 else
 SHARED_EXT   = dylib
-LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) -Wl,-rpath,./zstd/lib,-rpath,./openssl/,-rpath,./htslib/
+LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
 endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
-BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/,-rpath,$$ORIGIN/htslib/'
+BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
 
 LIBS := -lzstd -lcrypto -lhts
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
