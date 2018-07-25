@@ -63,12 +63,14 @@ bool VariantImporter::Build(){
 }
 
 bool VariantImporter::BuildVCF(void){
-	// TEMP
 	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
 	if(this->vcf_reader_ == nullptr){
 		return false;
 	}
 
+	// Remap the global IDX fields in Vcf to the appropriate incremental order.
+	// This is useful in the situations when fields have been removed or added
+	// to the Vcf header section without reformatting the file.
 	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
 		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
 
@@ -80,22 +82,27 @@ bool VariantImporter::BuildVCF(void){
 
 	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
-	// END TEMP
 
-	// Search for GT field in the header
-	this->GT_available_ = this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr;
+	// Predicate of a search for "GT" FORMAT field in the Vcf header.
+	this->GT_available_ = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
 
-	// Search for END field in the header
+	// Predicate of a search for "END" INFO field in the Vcf header.
 	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
 	if(vcf_info_end != nullptr)
 		this->settings_.info_end_key = vcf_info_end->idx;
 
+	// Allocate a new writer.
 	if(this->settings_.output_prefix.size() == 0 ||
 	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
 	{
 		this->writer = new writer_stream_type;
 	}
 	else this->writer = new writer_file_type;
+
+	// Setup the checksums container.
+	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC + 1, // Add one for global checksum.
+			this->vcf_reader_->vcf_header_.info_fields_.size() + 1,
+			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
 
 	// The index needs to know how many contigs that's described in the
 	// Vcf header and their lenghts. This information is needed to construct
@@ -126,19 +133,30 @@ bool VariantImporter::BuildVCF(void){
 			return false;
 		}
 
-		// Set flag if genotypes are available
-		this->block.header.controller.hasGT  = this->GT_available_;
-		this->block.footer.n_info_streams    = this->info_local_map_.size();
-		this->block.footer.n_format_streams  = this->format_local_map_.size();
-		this->block.footer.n_filter_streams  = this->filter_local_map_.size();
+
+		this->block.header.controller.hasGT  = this->GT_available_; // Todo: if GT is available in a block, not in the header
 		this->block.footer.n_info_patterns   = this->info_patterns_.size();
 		this->block.footer.n_format_patterns = this->format_patterns_.size();
 		this->block.footer.n_filter_patterns = this->filter_patterns_.size();
+		this->block.footer.AllocateHeaders(this->info_local_map_.size(),
+		                                   this->format_local_map_.size(),
+		                                   this->filter_local_map_.size());
+		this->block.UpdateContainers();
+		this->block.footer.ConstructInfoBitVector(this->info_patterns_, this->info_local_map_);
+		this->block.footer.ConstructFormatBitVector(this->format_patterns_, this->format_local_map_);
+		this->block.footer.ConstructFilterBitVector(this->filter_patterns_, this->filter_local_map_);
 
+		// Update checksums container with the available data.
+		checksums += this->block;
+
+		// Clear current data.
 		this->clear();
 		this->block.clear();
 		this->index_entry.reset();
 	}
+
+	// Finalize checksum container.
+	checksums.Finalize();
 
 	// All done
 	return(true);
@@ -694,7 +712,7 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		}
 
 		++destination_container;
-		destination_container.addStride(stride_size);
+		destination_container.AddStride(stride_size);
 	}
 
 	return(this->AddVcfInfoPattern(info_ids, meta));
@@ -771,7 +789,7 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		}
 
 		++destination_container;
-		destination_container.addStride(stride_size);
+		destination_container.AddStride(stride_size);
 	}
 
 	return(this->AddVcfFormatPattern(format_ids, meta));
@@ -1007,7 +1025,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 
 		++target_container;
-		target_container.addStride(entry.infoID[i].l_stride);
+		target_container.AddStride(entry.infoID[i].l_stride);
 	}
 
 	for(U32 i = 0; i < entry.formatPointer; ++i){
@@ -1055,7 +1073,7 @@ bool VariantImporter::parseBCFBody(meta_type& meta, bcf_entry_type& entry){
 		}
 
 		++target_container;
-		target_container.addStride(entry.formatID[i].l_stride);
+		target_container.AddStride(entry.formatID[i].l_stride);
 	}
 
 	if(entry.filterPointer){

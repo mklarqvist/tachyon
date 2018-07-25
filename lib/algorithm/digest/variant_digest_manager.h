@@ -19,7 +19,7 @@ public:
 	VariantDigestManager(const self_type& other);
 	~VariantDigestManager();
 
-	void finalize(void);
+	void Finalize(void);
 
 	inline const_reference atINFO(const U32 position) const{ return(this->__entries_info[position]); }
 	inline const_reference atFORMAT(const U32 position) const{ return(this->__entries_format[position]); }

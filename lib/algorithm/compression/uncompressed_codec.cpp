@@ -25,7 +25,7 @@ bool UncompressedCodec::decompress(container_type& container){
 	container.buffer_data_uncompressed.resize(container.buffer_data.n_chars + 16536);
 	memcpy(container.buffer_data_uncompressed.buffer, container.buffer_data.buffer, container.buffer_data.n_chars);
 	container.buffer_data_uncompressed.n_chars = container.buffer_data.n_chars;
-	assert(container.checkCRC(0));
+	assert(container.CheckCRC(0));
 	return true;
 }
 
@@ -48,7 +48,7 @@ bool UncompressedCodec::decompressStrides(container_type& container){
 	container.buffer_strides_uncompressed.resize(container.buffer_strides.n_chars + 16536);
 	memcpy(container.buffer_strides_uncompressed.buffer, container.buffer_strides.buffer, container.buffer_strides.n_chars);
 	container.buffer_strides_uncompressed.n_chars = container.buffer_strides.n_chars;
-	assert(container.checkCRC(1));
+	assert(container.CheckCRC(1));
 	return true;
 }
 

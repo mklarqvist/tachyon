@@ -23,7 +23,7 @@ public:
 	bool compress(permutation_type& manager){ return false; }
 
 	bool compress(container_type& container, const std::string& command, const bool compress_strides = true){
-		container.generateCRC();
+		container.GenerateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
 			memcpy(container.buffer_data.data(),
@@ -77,7 +77,7 @@ public:
 	}
 
 	bool compress(container_type& container, const bool compress_strides){
-		container.generateCRC();
+		container.GenerateCRC();
 
 		if(container.header.data_header.controller.uniform || container.buffer_data_uncompressed.size() < 100){
 			memcpy(container.buffer_data.data(),

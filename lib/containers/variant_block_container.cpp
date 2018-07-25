@@ -91,52 +91,52 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 	}
 
 	if(settings.contig.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTIG], this->block_.meta_contig_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTIG], this->block_.base_containers[YON_BLK_CONTIG]);
 	}
 
 	if(settings.positions.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_POSITION], this->block_.meta_positions_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_POSITION], this->block_.base_containers[YON_BLK_POSITION]);
 	}
 
 	if(settings.controller.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTROLLER], this->block_.meta_controller_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTROLLER], this->block_.base_containers[YON_BLK_CONTROLLER]);
 	}
 
 	if(settings.quality.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_QUALITY], this->block_.meta_quality_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_QUALITY], this->block_.base_containers[YON_BLK_QUALITY]);
 	}
 
 	if(settings.names.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_NAMES], this->block_.meta_names_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_NAMES], this->block_.base_containers[YON_BLK_NAMES]);
 	}
 
 	if(settings.alleles.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_REFALT], this->block_.meta_refalt_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.meta_alleles_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_REFALT], this->block_.base_containers[YON_BLK_REFALT]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.base_containers[YON_BLK_ALLELES]);
 	}
 
 	if(settings.genotypes_rle.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.gt_rle8_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.gt_rle16_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.gt_rle32_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64], this->block_.gt_rle64_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.base_containers[YON_BLK_GT_INT16]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.base_containers[YON_BLK_GT_INT32]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64], this->block_.base_containers[YON_BLK_GT_INT64]);
 	}
 
 	if(settings.genotypes_simple.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8], this->block_.gt_simple8_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT16], this->block_.gt_simple16_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.gt_simple32_container);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.gt_simple64_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8], this->block_.base_containers[YON_BLK_GT_S_INT8]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT16], this->block_.base_containers[YON_BLK_GT_S_INT16]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.base_containers[YON_BLK_GT_S_INT32]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.base_containers[YON_BLK_GT_S_INT64]);
 	}
 
 	if(settings.genotypes_support.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.gt_support_data_container);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
 	}
 
 	if(settings.set_membership.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_ID_INFO], this->block_.meta_info_map_ids);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FILTER], this->block_.meta_filter_map_ids);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FORMAT], this->block_.meta_format_map_ids);
+		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_ID_INFO], this->block_.base_containers[YON_BLK_ID_INFO]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FORMAT], this->block_.base_containers[YON_BLK_ID_FORMAT]);
+		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FILTER], this->block_.base_containers[YON_BLK_ID_FILTER]);
 	}
 
 	// Load all info

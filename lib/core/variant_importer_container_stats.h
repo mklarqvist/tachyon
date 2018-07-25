@@ -14,8 +14,8 @@ struct VariantImporterStatsObject{
 	~VariantImporterStatsObject(){}
 
 	void operator+=(const data_container_type& container){
-		this->cost_uncompressed += container.getObjectSizeUncompressed();
-		this->cost_compressed   += container.getObjectSize();
+		this->cost_uncompressed += container.GetObjectSizeUncompressed();
+		this->cost_compressed   += container.GetObjectSize();
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){

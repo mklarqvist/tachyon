@@ -38,7 +38,7 @@ void DataContainer::resize(const U32 size){
 	this->buffer_strides_uncompressed.resize(size);
 }
 
-void DataContainer::generateCRC(void){
+void DataContainer::GenerateCRC(void){
 	if(this->buffer_data_uncompressed.size() == 0){
 		this->header.data_header.crc = 0;
 	} else {
@@ -63,7 +63,7 @@ void DataContainer::generateCRC(void){
 	}
 }
 
-bool DataContainer::checkCRC(int target){
+bool DataContainer::CheckCRC(int target){
 	if(target == 0){
 		if(this->buffer_data_uncompressed.size() == 0)
 			return true;
@@ -100,7 +100,7 @@ bool DataContainer::checkCRC(int target){
 	return true;
 }
 
-bool DataContainer::checkUniformity(void){
+bool DataContainer::CheckUniformity(void){
 	if(this->header.n_entries == 0)
 		return false;
 
@@ -146,7 +146,7 @@ bool DataContainer::checkUniformity(void){
 	return(true);
 }
 
-void DataContainer::reformatInteger(){
+void DataContainer::ReformatInteger(){
 	if(this->buffer_data_uncompressed.size() == 0)
 		return;
 
@@ -275,7 +275,7 @@ void DataContainer::reformatInteger(){
 	this->buffer_data.reset();
 }
 
-void DataContainer::reformatStride(){
+void DataContainer::ReformatStride(){
 	if(this->buffer_strides_uncompressed.size() == 0)
 		return;
 
@@ -351,7 +351,7 @@ void DataContainer::reformatStride(){
 	this->buffer_strides.reset();
 }
 
-U32 DataContainer::getObjectSize(void) const{
+U32 DataContainer::GetObjectSize(void) const{
 	// In case data is encrypted
 	if(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 		return(this->buffer_data.size());
@@ -363,7 +363,7 @@ U32 DataContainer::getObjectSize(void) const{
 	return(total_size);
 }
 
-U64 DataContainer::getObjectSizeUncompressed(void) const{
+U64 DataContainer::GetObjectSizeUncompressed(void) const{
 	U64 total_size = this->buffer_data_uncompressed.size();
 	if(this->header.data_header.hasMixedStride())
 		total_size += this->buffer_strides_uncompressed.size();
@@ -371,58 +371,7 @@ U64 DataContainer::getObjectSizeUncompressed(void) const{
 	return(total_size);
 }
 
-void DataContainer::deltaEncode(){
-	if(this->size() == 0)
-		return;
-
-	// Recode integer types only
-	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
-		return;
-	}
-
-	if(this->header.data_header.controller.uniform == true)
-		return;
-
-	// At this point all integers are S32
-	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.buffer);
-
-	// check for uniformity except first
-	if(this->header.n_additions > 1){
-		bool is_uniform_delta = true;
-		const S32 test_diff = dat[1] - dat[0];
-		for(U32 i = 2; i < this->header.n_additions; ++i){
-			if(dat[i] - dat[i - 1] != test_diff){
-				is_uniform_delta = false;
-				break;
-			}
-		}
-
-		if(is_uniform_delta){
-			this->header.n_entries   = 1;
-			this->header.n_additions = 1;
-			// Data pointers are updated in case there is no reformatting
-			// see StreamContainer::reformat()
-			this->buffer_data_uncompressed.n_chars             = sizeof(S32);
-			this->header.data_header.uLength                   = sizeof(S32);
-			this->header.data_header.cLength                   = sizeof(S32);
-			this->header.data_header.controller.uniform        = true;
-			this->header.data_header.controller.mixedStride    = false;
-			this->header.data_header.controller.encoder        = YON_ENCODE_NONE;
-			return;
-		}
-	}
-
-	this->buffer_data += dat[0];
-	for(U32 j = 1; j < this->header.n_additions; ++j){
-		this->buffer_data += dat[j] - dat[j-1];
-	}
-	memcpy(this->buffer_data_uncompressed.data(),
-			this->buffer_data.data(),
-			this->buffer_data.size());
-
-}
-
-void DataContainer::updateContainer(bool reformat){
+void DataContainer::UpdateContainer(bool reformat){
 	// If the data container has entries in it but has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
@@ -444,9 +393,9 @@ void DataContainer::updateContainer(bool reformat){
 
 	// Check if stream is uniform in content
 	if(this->header.data_header.controller.type != YON_TYPE_STRUCT){
-		this->checkUniformity();
+		this->CheckUniformity();
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->reformatInteger();
+		if(reformat) this->ReformatInteger();
 	}
 
 	// Set uncompressed length
@@ -455,7 +404,7 @@ void DataContainer::updateContainer(bool reformat){
 	// If we have mixed striding
 	if(this->header.data_header.hasMixedStride()){
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->reformatStride();
+		if(reformat) this->ReformatStride();
 		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
 	}
 }

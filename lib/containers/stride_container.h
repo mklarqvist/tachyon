@@ -216,7 +216,7 @@ StrideContainer<return_primitive>::~StrideContainer(void){
 
 template <class return_primitive>
 void StrideContainer<return_primitive>::__setup(const data_container_type& container){
-	switch(container.getStridePrimitiveType()){
+	switch(container.GetStridePrimitiveType()){
 	case(YON_TYPE_8B):  this->__allocate<BYTE>(container); break;
 	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
 	case(YON_TYPE_32B): this->__allocate<U32>(container);  break;

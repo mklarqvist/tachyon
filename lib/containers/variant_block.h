@@ -110,7 +110,7 @@ public:
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();
 		this->footer.AllocateHeaders(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
-		this->updateContainers();
+		this->UpdateContainers();
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
 		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
@@ -236,7 +236,6 @@ public:
 		return(stream.good());
 	}
 
-private:
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
 	 * container offsets and checks/builds
@@ -244,8 +243,9 @@ private:
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
-	void updateContainers(void);
+	void UpdateContainers(void);
 
+private:
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
 	 * block
@@ -321,27 +321,16 @@ public:
 	block_header_type header;
 	block_footer_type footer;
 	permutation_type  ppa_manager;
-	container_type    meta_contig_container;
-	container_type    meta_positions_container;
-	container_type    meta_refalt_container;
-	container_type    meta_controller_container;
-	container_type    meta_quality_container;
-	container_type    meta_names_container;
-	container_type    meta_alleles_container;
-	container_type    meta_info_map_ids;
-	container_type    meta_format_map_ids;
-	container_type    meta_filter_map_ids;
-	container_type    gt_support_data_container;
-	container_type    gt_rle8_container;
-	container_type    gt_rle16_container;
-	container_type    gt_rle32_container;
-	container_type    gt_rle64_container;
-	container_type    gt_simple8_container;
-	container_type    gt_simple16_container;
-	container_type    gt_simple32_container;
-	container_type    gt_simple64_container;
+	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
+
+	// Supportive hash tables to permit the map from global
+	// IDX fields to local IDX fields.
+	map_type* info_map;
+	map_type* format_map;
+	map_type* filter_map;
+
 
 	// Use during construction
 	// Todo: Delete these
@@ -351,15 +340,6 @@ public:
 	hash_vector_container_type info_patterns;
 	hash_vector_container_type format_patterns;
 	hash_vector_container_type filter_patterns;
-
-	// Supportive hash tables to permit the map from global
-	// IDX fields to local IDX fields. These members are used
-	// exclusively during the importing stage.
-	// Todo: Move out of this definition. They have no place here
-	//       if they are only used once.
-	//map_type filter_reorder_map;
-	//map_type info_reorder_map;
-	//map_type format_reorder_map;
 
 public:
 	// Utility

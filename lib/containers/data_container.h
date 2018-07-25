@@ -31,7 +31,7 @@ public:
 	 * the objects in this container.
 	 * @param value Data primitive type
 	 */
-	inline void setType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
+	inline void SetType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
 
 	/**<
 	 * Set the stride size of this container to some value.
@@ -40,7 +40,7 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void setStrideSize(const S32 value){ this->header.data_header.stride = value; }
+	inline void SetStrideSize(const S32 value){ this->header.data_header.stride = value; }
 
 	/**<
 	 * Check if the stride size of this container matches the
@@ -49,7 +49,7 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline bool checkStrideSize(const S32 value) const{
+	inline bool CheckStrideSize(const S32 value) const{
 		if(this->header.data_header.hasMixedStride() == false)
 			return false;
 
@@ -60,7 +60,7 @@ public:
 	 * Triggers the necessary switches to set this container
 	 * as having mixed strides
 	 */
-	inline void triggerMixedStride(void){
+	inline void TriggerMixedStride(void){
 		this->header.data_header.stride = -1;
 		this->header.data_header.controller.mixedStride = true;
 	}
@@ -86,17 +86,17 @@ public:
 	 * not.
 	 * @param value Stride value to add
 	 */
-	inline void addStride(const U32 value){
+	inline void AddStride(const U32 value){
 		// If this is the first stride set
 		if(this->header.n_strides == 0){
 			this->header.stride_header.controller.type = YON_TYPE_32B;
 			this->header.stride_header.controller.signedness = false;
-			this->setStrideSize(value);
+			this->SetStrideSize(value);
 		}
 
 		// Check if there are different strides
-		if(!this->checkStrideSize(value)){
-			this->triggerMixedStride();
+		if(!this->CheckStrideSize(value)){
+			this->TriggerMixedStride();
 		}
 
 		// Add value
@@ -105,8 +105,8 @@ public:
 	}
 
 	// Supportive
-	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const U64& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const U64& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
 	inline const U32& size(void) const{ return(this->header.n_entries); }
 
 	inline bool Add(const BYTE& value){
@@ -337,7 +337,7 @@ public:
 	 * data and, if set, the uncompressed strides data.
 	 * CRC32 checksums are stored in the header
 	 */
-	void generateCRC(void);
+	void GenerateCRC(void);
 
 	/**<
 	 *
@@ -350,14 +350,14 @@ public:
 	 * @param target Target buffer stream
 	 * @return       Returns TRUE if the CRC checksums are identical or FALSE otherwise
 	 */
-	bool checkCRC(int target = 0);
+	bool CheckCRC(int target = 0);
 
 	/**<
 	 * Checks if the current data is uniform given the provided
 	 * stride size
 	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
-	bool checkUniformity(void);
+	bool CheckUniformity(void);
 
 	/**<
 	 * This function is called during import to shrink each
@@ -365,27 +365,27 @@ public:
 	 * At this stage all integer values in the stream is of
 	 * type S32. No other values can be shrunk
 	 */
-	void reformatInteger(void);
+	void ReformatInteger(void);
 
 	/**<
 	 * This function is caled during import to shrink each
 	 * stride size element to the smallest possible primitive
 	 * type to describe it without losing precision.
 	 */
-	void reformatStride(void);
+	void ReformatStride(void);
 
 	/**<
 	 * Utility function that calculates the space this
 	 * object would take on disk if written out
 	 * @return Total size in bytes
 	 */
-	U32 getObjectSize(void) const;
+	U32 GetObjectSize(void) const;
 
 	/**<
 	 *
 	 * @return
 	 */
-	U64 getObjectSizeUncompressed(void) const;
+	U64 GetObjectSizeUncompressed(void) const;
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
@@ -397,15 +397,10 @@ public:
 	 * @param container Data container
 	 * @param reormat   Reformat boolean
 	 */
-	void updateContainer(bool reformat = true);
+	void UpdateContainer(bool reformat = true);
 
-	/**<
-	 * Currently unused
-	 */
-	void deltaEncode(void);
-
-	inline TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
-	inline TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
+	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
+	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
 private:
 	inline bool __checkInteger(void){

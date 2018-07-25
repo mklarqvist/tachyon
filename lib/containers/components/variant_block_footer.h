@@ -10,28 +10,27 @@
 
 namespace tachyon {
 
-#define YON_BLK_N_STATIC   21 // Total number of invariant headers
+#define YON_BLK_N_STATIC   20 // Total number of invariant headers
 #define YON_BLK_PPA         0 // Sample permutation array
-#define YON_BLK_META        1
-#define YON_BLK_CONTIG      2
-#define YON_BLK_POSITION    3
-#define YON_BLK_REFALT      4
-#define YON_BLK_CONTROLLER  5 // Set memberships
-#define YON_BLK_QUALITY     6
-#define YON_BLK_NAMES       7
-#define YON_BLK_ALLELES     8
-#define YON_BLK_ID_INFO     9
-#define YON_BLK_ID_FORMAT  10
-#define YON_BLK_ID_FILTER  11
-#define YON_BLK_GT_INT8    12 // Run-length encoded genotypes
-#define YON_BLK_GT_INT16   13
-#define YON_BLK_GT_INT32   14
-#define YON_BLK_GT_INT64   15
-#define YON_BLK_GT_S_INT8  16 // Standard encoded genotypes
-#define YON_BLK_GT_S_INT16 17
-#define YON_BLK_GT_S_INT32 18
-#define YON_BLK_GT_S_INT64 19
-#define YON_BLK_GT_SUPPORT 20 // Genotype support
+#define YON_BLK_CONTIG      1
+#define YON_BLK_POSITION    2
+#define YON_BLK_REFALT      3
+#define YON_BLK_CONTROLLER  4 // Set memberships
+#define YON_BLK_QUALITY     5
+#define YON_BLK_NAMES       6
+#define YON_BLK_ALLELES     7
+#define YON_BLK_ID_INFO     8
+#define YON_BLK_ID_FORMAT   9
+#define YON_BLK_ID_FILTER  10
+#define YON_BLK_GT_INT8    11 // Run-length encoded genotypes
+#define YON_BLK_GT_INT16   12
+#define YON_BLK_GT_INT32   13
+#define YON_BLK_GT_INT64   14
+#define YON_BLK_GT_S_INT8  15 // Standard encoded genotypes
+#define YON_BLK_GT_S_INT16 16
+#define YON_BLK_GT_S_INT32 17
+#define YON_BLK_GT_S_INT64 18
+#define YON_BLK_GT_SUPPORT 19 // Genotype support
 
 namespace containers {
 
@@ -98,6 +97,9 @@ public:
 		                        const U32 n_format_streams,
 		                        const U32 n_filter_streams)
 	{
+		this->n_info_streams   = n_info_streams;
+		this->n_format_streams = n_format_streams;
+		this->n_filter_streams = n_filter_streams;
 		this->AllocateInfoHeaders(n_info_streams);
 		this->AllocateFormatHeaders(n_format_streams);
 		this->AllocateFilterHeaders(n_filter_streams);
@@ -115,9 +117,10 @@ public:
 	                        hash_container_type& values,
 	                        hash_vector_container_type& patterns);
 
-	bool ConstructInfoBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
-	bool ConstructFormatBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
-	bool ConstructfilterBitVector(std::vector<int>& keys, const std::unordered_map<U32, U32>& patterns_map);
+	bool ConstructBitVectorWrapper(bit_vector*& target_bitvector, header_type* target_offset, std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& info_local_map);
+	inline bool ConstructInfoBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& info_local_map){ return(this->ConstructBitVectorWrapper(this->info_bit_vectors, this->info_offsets, patterns, info_local_map)); }
+	inline bool ConstructFormatBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& format_local_map){ return(this->ConstructBitVectorWrapper(this->format_bit_vectors, this->format_offsets, patterns, format_local_map)); }
+	inline bool ConstructFilterBitVector(std::vector< std::vector<int> >& patterns, const std::unordered_map<U32, U32>& filter_local_map){ return(this->ConstructBitVectorWrapper(this->filter_bit_vectors, this->filter_offsets, patterns, filter_local_map)); }
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);

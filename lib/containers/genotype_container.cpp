@@ -13,26 +13,26 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 {
 	// Todo: if anything is uniform
 	// Support
-	const bool uniform_stride = block.gt_support_data_container.header.data_header.isUniform();
-	PrimitiveContainer<U32> lengths(block.gt_support_data_container); // n_runs / objects size
+	const bool uniform_stride = block.base_containers[YON_BLK_GT_SUPPORT].header.data_header.isUniform();
+	PrimitiveContainer<U32> lengths(block.base_containers[YON_BLK_GT_SUPPORT]); // n_runs / objects size
 
-	U64 offset_rle8     = 0; const char* const rle8     = block.gt_rle8_container.buffer_data_uncompressed.data();
-	U64 offset_rle16    = 0; const char* const rle16    = block.gt_rle16_container.buffer_data_uncompressed.data();
-	U64 offset_rle32    = 0; const char* const rle32    = block.gt_rle32_container.buffer_data_uncompressed.data();
-	U64 offset_rle64    = 0; const char* const rle64    = block.gt_rle64_container.buffer_data_uncompressed.data();
-	U64 offset_simple8  = 0; const char* const simple8  = block.gt_simple8_container.buffer_data_uncompressed.data();
-	U64 offset_simple16 = 0; const char* const simple16 = block.gt_simple16_container.buffer_data_uncompressed.data();
-	U64 offset_simple32 = 0; const char* const simple32 = block.gt_simple32_container.buffer_data_uncompressed.data();
-	U64 offset_simple64 = 0; const char* const simple64 = block.gt_simple64_container.buffer_data_uncompressed.data();
+	U64 offset_rle8     = 0; const char* const rle8     = block.base_containers[YON_BLK_GT_INT8].buffer_data_uncompressed.data();
+	U64 offset_rle16    = 0; const char* const rle16    = block.base_containers[YON_BLK_GT_INT16].buffer_data_uncompressed.data();
+	U64 offset_rle32    = 0; const char* const rle32    = block.base_containers[YON_BLK_GT_INT32].buffer_data_uncompressed.data();
+	U64 offset_rle64    = 0; const char* const rle64    = block.base_containers[YON_BLK_GT_INT64].buffer_data_uncompressed.data();
+	U64 offset_simple8  = 0; const char* const simple8  = block.base_containers[YON_BLK_GT_S_INT8].buffer_data_uncompressed.data();
+	U64 offset_simple16 = 0; const char* const simple16 = block.base_containers[YON_BLK_GT_S_INT16].buffer_data_uncompressed.data();
+	U64 offset_simple32 = 0; const char* const simple32 = block.base_containers[YON_BLK_GT_S_INT32].buffer_data_uncompressed.data();
+	U64 offset_simple64 = 0; const char* const simple64 = block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.data();
 
-	assert(block.gt_rle8_container.buffer_data_uncompressed.size()     % sizeof(BYTE) == 0);
-	assert(block.gt_rle16_container.buffer_data_uncompressed.size()    % sizeof(U16)  == 0);
-	assert(block.gt_rle32_container.buffer_data_uncompressed.size()    % sizeof(U32)  == 0);
-	assert(block.gt_rle64_container.buffer_data_uncompressed.size()    % sizeof(U64)  == 0);
-	assert(block.gt_simple8_container.buffer_data_uncompressed.size()  % sizeof(BYTE) == 0);
-	assert(block.gt_simple16_container.buffer_data_uncompressed.size() % sizeof(U16)  == 0);
-	assert(block.gt_simple32_container.buffer_data_uncompressed.size() % sizeof(U32)  == 0);
-	assert(block.gt_simple64_container.buffer_data_uncompressed.size() % sizeof(U64)  == 0);
+	assert(block.base_containers[YON_BLK_GT_INT8].buffer_data_uncompressed.size()     % sizeof(BYTE) == 0);
+	assert(block.base_containers[YON_BLK_GT_INT16].buffer_data_uncompressed.size()    % sizeof(U16)  == 0);
+	assert(block.base_containers[YON_BLK_GT_INT32].buffer_data_uncompressed.size()    % sizeof(U32)  == 0);
+	assert(block.base_containers[YON_BLK_GT_INT64].buffer_data_uncompressed.size()    % sizeof(U64)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT8].buffer_data_uncompressed.size()  % sizeof(BYTE) == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT16].buffer_data_uncompressed.size() % sizeof(U16)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT32].buffer_data_uncompressed.size() % sizeof(U32)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.size() % sizeof(U64)  == 0);
 
 	this->n_entries   = meta.size();
 	this->__iterators = static_cast<pointer>(::operator new[](this->size() * sizeof(value_type)));
@@ -116,14 +116,14 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 		}
 	}
 
-	assert(offset_rle8  == block.gt_rle8_container.getSizeUncompressed());
-	assert(offset_rle16 == block.gt_rle16_container.getSizeUncompressed());
-	assert(offset_rle32 == block.gt_rle32_container.getSizeUncompressed());
-	assert(offset_rle64 == block.gt_rle64_container.getSizeUncompressed());
-	assert(offset_simple8  == block.gt_simple8_container.getSizeUncompressed());
-	assert(offset_simple16 == block.gt_simple16_container.getSizeUncompressed());
-	assert(offset_simple32 == block.gt_simple32_container.getSizeUncompressed());
-	assert(offset_simple64 == block.gt_simple64_container.getSizeUncompressed());
+	assert(offset_rle8  == block.base_containers[YON_BLK_GT_INT8].GetSizeUncompressed());
+	assert(offset_rle16 == block.base_containers[YON_BLK_GT_INT16].GetSizeUncompressed());
+	assert(offset_rle32 == block.base_containers[YON_BLK_GT_INT32].GetSizeUncompressed());
+	assert(offset_rle64 == block.base_containers[YON_BLK_GT_INT64].GetSizeUncompressed());
+	assert(offset_simple8  == block.base_containers[YON_BLK_GT_S_INT8].GetSizeUncompressed());
+	assert(offset_simple16 == block.base_containers[YON_BLK_GT_S_INT16].GetSizeUncompressed());
+	assert(offset_simple32 == block.base_containers[YON_BLK_GT_S_INT32].GetSizeUncompressed());
+	assert(offset_simple64 == block.base_containers[YON_BLK_GT_S_INT64].GetSizeUncompressed());
 }
 
 GenotypeContainer::~GenotypeContainer(){

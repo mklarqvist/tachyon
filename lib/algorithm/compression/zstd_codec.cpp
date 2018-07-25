@@ -18,7 +18,7 @@ ZSTDCodec::~ZSTDCodec(){
 }
 
 bool ZSTDCodec::compress(container_type& container){
-	container.generateCRC();
+	container.GenerateCRC();
 
 	if(container.header.n_entries == 0){
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
@@ -218,7 +218,7 @@ bool ZSTDCodec::decompress(container_type& container){
 	assert(ret >= 0);
 	container.buffer_data_uncompressed.n_chars = ret;
 	assert((U32)ret == container.header.data_header.uLength);
-	assert(container.checkCRC(0));
+	assert(container.CheckCRC(0));
 
 	return true;
 }
@@ -253,7 +253,7 @@ bool ZSTDCodec::decompressStrides(container_type& container){
 	container.buffer_strides_uncompressed.n_chars = ret_stride;
 	assert((U32)ret_stride == container.header.stride_header.uLength);
 	//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (container.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
-	assert(container.checkCRC(1));
+	assert(container.CheckCRC(1));
 
 	return true;
 }

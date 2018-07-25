@@ -11,25 +11,13 @@ bool EncryptionDecorator::encrypt(variant_block_type& block, keychain_type& keyc
 }
 
 bool EncryptionDecorator::decryptAES256(variant_block_type& block, keychain_type& keychain){
-	if(!this->decryptAES256(block.meta_contig_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_positions_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_refalt_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_controller_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_quality_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_names_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_rle8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_rle16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_rle32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_rle64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_alleles_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_simple8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_simple16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_simple32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_simple64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.gt_support_data_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_info_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_filter_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
-	if(!this->decryptAES256(block.meta_format_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+		if(!this->decryptAES256(block.base_containers[i], keychain)){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl;
+			return false;
+		}
+	}
 
 	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
 		if(!this->decryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
@@ -47,26 +35,12 @@ bool EncryptionDecorator::encryptAES256(variant_block_type& block, keychain_type
 	RAND_bytes(&RANDOM_BYTES[0], 32);
 	block.header.blockID = XXH64(&RANDOM_BYTES[0], 32, 1337);
 
-	if(!this->encryptAES256(block.meta_contig_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_positions_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_refalt_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_controller_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_quality_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_names_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_rle8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_rle16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_rle32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_rle64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_alleles_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_simple8_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_simple16_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_simple32_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_simple64_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.gt_support_data_container, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_info_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_filter_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-	if(!this->encryptAES256(block.meta_format_map_ids, keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
-
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+		if(!this->encryptAES256(block.base_containers[i], keychain)){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl;
+			return false;
+		}
+	}
 	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
 		if(!this->encryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 	}

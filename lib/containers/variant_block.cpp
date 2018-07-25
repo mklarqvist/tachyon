@@ -7,21 +7,27 @@ namespace tachyon{
 namespace containers{
 
 VariantBlock::VariantBlock() :
+	base_containers(new container_type[YON_BLK_N_STATIC]),
 	info_containers(new container_type[200]),
 	format_containers(new container_type[200]),
+	info_map(nullptr),
+	format_map(nullptr),
+	filter_map(nullptr),
 	end_block_(0),
 	start_compressed_data_(0),
 	end_compressed_data_(0)
 {
-	// Base container streams are always of type TYPE_STRUCT
-	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
-	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
-	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
-
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
 	this->footer_support.resize(65536);
 }
 
 VariantBlock::~VariantBlock(){
+	delete this->info_map;
+	delete this->format_map;
+	delete this->filter_map;
+	delete [] this->base_containers;
 	delete [] this->info_containers;
 	delete [] this->format_containers;
 }
@@ -37,31 +43,13 @@ void VariantBlock::clear(void){
 	this->footer.reset();
 	this->footer_support.reset();
 
-	this->meta_contig_container.reset();
-	this->meta_positions_container.reset();
-	this->meta_refalt_container.reset();
-	this->meta_controller_container.reset();
-	this->meta_quality_container.reset();
-	this->meta_names_container.reset();
-	this->meta_alleles_container.reset();
-	this->meta_info_map_ids.reset();
-	this->meta_format_map_ids.reset();
-	this->meta_filter_map_ids.reset();
-	this->gt_support_data_container.reset();
-	this->gt_rle8_container.reset();
-	this->gt_rle16_container.reset();
-	this->gt_rle32_container.reset();
-	this->gt_rle64_container.reset();
-	this->gt_simple8_container.reset();
-	this->gt_simple16_container.reset();
-	this->gt_simple32_container.reset();
-	this->gt_simple64_container.reset();
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		this->base_containers[i].reset();
 
-	// Base container data types are always TYPE_STRUCT
 	// Map ID fields are always S32 fields
-	this->meta_alleles_container.setType(YON_TYPE_STRUCT);
-	this->meta_controller_container.setType(tachyon::YON_TYPE_16B);
-	this->meta_refalt_container.setType(tachyon::YON_TYPE_8B);
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
 
 	this->info_fields.clear();
 	this->format_fields.clear();
@@ -80,25 +68,8 @@ void VariantBlock::clear(void){
 void VariantBlock::resize(const U32 s){
 	if(s == 0) return;
 
-	this->meta_contig_container.resize(s);
-	this->meta_positions_container.resize(s);
-	this->meta_refalt_container.resize(s);
-	this->meta_controller_container.resize(s);
-	this->meta_quality_container.resize(s);
-	this->meta_names_container.resize(s);
-	this->meta_alleles_container.resize(s);
-	this->meta_info_map_ids.resize(s);
-	this->meta_format_map_ids.resize(s);
-	this->meta_filter_map_ids.resize(s);
-	this->gt_support_data_container.resize(s);
-	this->gt_rle8_container.resize(s);
-	this->gt_rle16_container.resize(s);
-	this->gt_rle32_container.resize(s);
-	this->gt_rle64_container.resize(s);
-	this->gt_simple8_container.resize(s);
-	this->gt_simple16_container.resize(s);
-	this->gt_simple32_container.resize(s);
-	this->gt_simple64_container.resize(s);
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		this->base_containers[i].resize(s);
 
 	for(U32 i = 0; i < 200; ++i){
 		this->info_containers[i].resize(s);
@@ -106,35 +77,35 @@ void VariantBlock::resize(const U32 s){
 	}
 }
 
-void VariantBlock::updateContainers(void){
-	this->meta_contig_container.updateContainer();
-	this->meta_positions_container.updateContainer();
-	this->meta_refalt_container.updateContainer();
-	this->meta_controller_container.updateContainer(false);
-	this->meta_quality_container.updateContainer();
-	this->meta_names_container.updateContainer();
-	this->meta_alleles_container.updateContainer();
-	this->meta_filter_map_ids.updateContainer();
-	this->meta_format_map_ids.updateContainer();
-	this->meta_info_map_ids.updateContainer();
-	this->gt_support_data_container.updateContainer();
-	this->gt_rle8_container.updateContainer(false);
-	this->gt_rle16_container.updateContainer(false);
-	this->gt_rle32_container.updateContainer(false);
-	this->gt_rle64_container.updateContainer(false);
-	this->gt_simple8_container.updateContainer(false);
-	this->gt_simple16_container.updateContainer(false);
-	this->gt_simple32_container.updateContainer(false);
-	this->gt_simple64_container.updateContainer(false);
+void VariantBlock::UpdateContainers(void){
+	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
+	this->base_containers[YON_BLK_POSITION].UpdateContainer();
+	this->base_containers[YON_BLK_REFALT].UpdateContainer();
+	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false);
+	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
+	this->base_containers[YON_BLK_NAMES].UpdateContainer();
+	this->base_containers[YON_BLK_ALLELES].UpdateContainer();
+	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer();
+	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
+	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
+	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
+	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false);
+	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 		assert(this->info_containers[i].header.data_header.stride != 0);
-		this->info_containers[i].updateContainer();
+		this->info_containers[i].UpdateContainer();
 	}
 
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i){
 		assert(this->format_containers[i].header.data_header.stride != 0);
-		this->format_containers[i].updateContainer();
+		this->format_containers[i].UpdateContainer();
 	}
 }
 
@@ -180,25 +151,8 @@ bool VariantBlock::read(std::ifstream& stream){
 		stream >> this->ppa_manager;
 	}
 
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_CONTIG], this->meta_contig_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_POSITION], this->meta_positions_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_CONTROLLER], this->meta_controller_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_QUALITY], this->meta_quality_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_NAMES], this->meta_names_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_REFALT], this->meta_refalt_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ALLELES], this->meta_alleles_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT8], this->gt_rle8_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT16], this->gt_rle16_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT32], this->gt_rle32_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_INT64], this->gt_rle64_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8], this->gt_simple8_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16], this->gt_simple16_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32], this->gt_simple32_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64], this->gt_simple64_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT], this->gt_support_data_container);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_INFO], this->meta_info_map_ids);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_FILTER], this->meta_filter_map_ids);
-	this->__loadContainer(stream, this->footer.offsets[YON_BLK_ID_FORMAT], this->meta_format_map_ids);
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
+		this->__loadContainer(stream, this->footer.offsets[i], this->base_containers[i]);
 
 	// Load all INFO
 	if(this->footer.n_info_streams){
@@ -227,28 +181,11 @@ U64 VariantBlock::__determineCompressedSize(void) const{
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->ppa_manager.getObjectSize();
 
-	total += this->meta_contig_container.getObjectSize();
-	total += this->meta_positions_container.getObjectSize();
-	total += this->meta_refalt_container.getObjectSize();
-	total += this->meta_controller_container.getObjectSize();
-	total += this->meta_quality_container.getObjectSize();
-	total += this->meta_names_container.getObjectSize();
-	total += this->meta_alleles_container.getObjectSize();
-	total += this->meta_info_map_ids.getObjectSize();
-	total += this->meta_format_map_ids.getObjectSize();
-	total += this->meta_filter_map_ids.getObjectSize();
-	total += this->gt_support_data_container.getObjectSize();
-	total += this->gt_rle8_container.getObjectSize();
-	total += this->gt_rle16_container.getObjectSize();
-	total += this->gt_rle32_container.getObjectSize();
-	total += this->gt_rle64_container.getObjectSize();
-	total += this->gt_simple8_container.getObjectSize();
-	total += this->gt_simple16_container.getObjectSize();
-	total += this->gt_simple32_container.getObjectSize();
-	total += this->gt_simple64_container.getObjectSize();
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
+		total += this->base_containers[i].GetObjectSize();
 
-	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].getObjectSize();
-	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].getObjectSize();
+	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
+	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
 
 	return(total);
 }
@@ -259,25 +196,8 @@ void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import
 		stats_basic[1].cost_compressed   += this->ppa_manager.header.data_header.cLength;
 	}
 
-	stats_basic[2]  += this->meta_contig_container;
-	stats_basic[3]  += this->meta_positions_container;
-	stats_basic[4]  += this->meta_refalt_container;
-	stats_basic[5]  += this->meta_controller_container;
-	stats_basic[6]  += this->meta_quality_container;
-	stats_basic[7]  += this->meta_names_container;
-	stats_basic[8]  += this->meta_alleles_container;
-	stats_basic[9]  += this->meta_info_map_ids;
-	stats_basic[10] += this->meta_format_map_ids;
-	stats_basic[11] += this->meta_filter_map_ids;
-	stats_basic[12] += this->gt_support_data_container;
-	stats_basic[13] += this->gt_rle8_container;
-	stats_basic[14] += this->gt_rle16_container;
-	stats_basic[15] += this->gt_rle32_container;
-	stats_basic[16] += this->gt_rle64_container;
-	stats_basic[17] += this->gt_simple8_container;
-	stats_basic[18] += this->gt_simple16_container;
-	stats_basic[19] += this->gt_simple32_container;
-	stats_basic[20] += this->gt_simple64_container;
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
+		stats_basic[i+1] += this->base_containers[i];
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 		stats_basic[21] += this->info_containers[i];
@@ -307,25 +227,8 @@ bool VariantBlock::write(std::ostream& stream,
 		stream << this->ppa_manager;
 	}
 
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_CONTIG],      this->meta_contig_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_POSITION],    this->meta_positions_container, (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_CONTROLLER], this->meta_controller_container,(U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_QUALITY],     this->meta_quality_container,   (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_NAMES],       this->meta_names_container,     (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_REFALT],      this->meta_refalt_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ALLELES],     this->meta_alleles_container,   (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_INFO],     this->meta_info_map_ids,        (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_FILTER],   this->meta_filter_map_ids,      (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_ID_FORMAT],   this->meta_format_map_ids,      (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT],        this->gt_support_data_container,(U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT8],            this->gt_rle8_container,        (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT16],           this->gt_rle16_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT32],           this->gt_rle32_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_INT64],           this->gt_rle64_container,       (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8],       this->gt_simple8_container,     (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16],      this->gt_simple16_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32],      this->gt_simple32_container,    (U64)stream.tellp() - start_pos);
-	this->__writeContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64],      this->gt_simple64_container,    (U64)stream.tellp() - start_pos);
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
+		this->__writeContainer(stream, this->footer.offsets[i], this->base_containers[i], (U64)stream.tellp() - start_pos);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 		this->__writeContainer(stream, this->footer.info_offsets[i], this->info_containers[i], (U64)stream.tellp() - start_pos);
@@ -344,48 +247,48 @@ bool VariantBlock::write(std::ostream& stream,
 
 bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	// Meta positions
-	this->meta_positions_container.Add((S32)meta_entry.position);
-	++this->meta_positions_container;
+	this->base_containers[YON_BLK_POSITION].Add((S32)meta_entry.position);
+	++this->base_containers[YON_BLK_POSITION];
 
 	// Contig ID
-	this->meta_contig_container.Add((S32)meta_entry.contigID);
-	++this->meta_contig_container;
+	this->base_containers[YON_BLK_CONTIG].Add((S32)meta_entry.contigID);
+	++this->base_containers[YON_BLK_CONTIG];
 
 	// Ref-alt data
 	if(meta_entry.usePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
 		meta_entry.controller.alleles_packed = true;
 		const BYTE ref_alt = meta_entry.packRefAltByte();
-		this->meta_refalt_container.AddLiteral(ref_alt);
-		++this->meta_refalt_container;
+		this->base_containers[YON_BLK_REFALT].AddLiteral(ref_alt);
+		++this->base_containers[YON_BLK_REFALT];
 	}
 	// add complex
 	else {
 		// Special encoding
 		for(U32 i = 0; i < meta_entry.n_alleles; ++i){
 			// Write out allele
-			this->meta_alleles_container.AddLiteral((U16)meta_entry.alleles[i].l_allele);
-			this->meta_alleles_container.AddCharacter(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
+			this->base_containers[YON_BLK_ALLELES].AddLiteral((U16)meta_entry.alleles[i].l_allele);
+			this->base_containers[YON_BLK_ALLELES].AddCharacter(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
-		++this->meta_alleles_container; // update before to not trigger
-		this->meta_alleles_container.addStride(meta_entry.n_alleles);
+		++this->base_containers[YON_BLK_ALLELES]; // update before to not trigger
+		this->base_containers[YON_BLK_ALLELES].AddStride(meta_entry.n_alleles);
 	}
 
 	// Quality
-	this->meta_quality_container.Add(meta_entry.quality);
-	++this->meta_quality_container;
+	this->base_containers[YON_BLK_QUALITY].Add(meta_entry.quality);
+	++this->base_containers[YON_BLK_QUALITY];
 
 	// Variant name
-	this->meta_names_container.addStride(meta_entry.name.size());
-	this->meta_names_container.AddCharacter(meta_entry.name);
-	++this->meta_names_container;
+	this->base_containers[YON_BLK_NAMES].AddStride(meta_entry.name.size());
+	this->base_containers[YON_BLK_NAMES].AddCharacter(meta_entry.name);
+	++this->base_containers[YON_BLK_NAMES];
 
 	// Tachyon pattern identifiers
-	this->meta_info_map_ids.Add(meta_entry.info_pattern_id);
-	this->meta_format_map_ids.Add(meta_entry.format_pattern_id);
-	this->meta_filter_map_ids.Add(meta_entry.filter_pattern_id);
-	++this->meta_info_map_ids;
-	++this->meta_format_map_ids;
-	++this->meta_filter_map_ids;
+	this->base_containers[YON_BLK_ID_INFO].Add(meta_entry.info_pattern_id);
+	this->base_containers[YON_BLK_ID_FORMAT].Add(meta_entry.format_pattern_id);
+	this->base_containers[YON_BLK_ID_FILTER].Add(meta_entry.filter_pattern_id);
+	++this->base_containers[YON_BLK_ID_INFO];
+	++this->base_containers[YON_BLK_ID_FORMAT];
+	++this->base_containers[YON_BLK_ID_FILTER];
 
 	// Check if all variants are of length 1 (as in all alleles are SNVs)
 	bool all_snv = true;
@@ -395,8 +298,8 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	meta_entry.controller.all_snv = all_snv;
 
 	// Controller
-	this->meta_controller_container.AddLiteral((U16)meta_entry.controller.toValue()); // has been overloaded
-	++this->meta_controller_container;
+	this->base_containers[YON_BLK_CONTROLLER].AddLiteral((U16)meta_entry.controller.toValue()); // has been overloaded
+	++this->base_containers[YON_BLK_CONTROLLER];
 
 	return true;
 }

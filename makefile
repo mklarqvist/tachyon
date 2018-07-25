@@ -162,7 +162,7 @@ OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
 
 LIB_INCLUDE_PATH   = -I./lib/
-LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD),-rpath,$$ORIGIN/../zstd/lib,-rpath,$$ORIGIN/../openssl'
+LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD),-rpath,$$ORIGIN/../zstd/lib,-rpath,$$ORIGIN/../openssl,,-rpath,$$ORIGIN/../htslib'
 LIB_EXAMPLE_SOURCE = $(wildcard lib_example/*.cpp)
 LIB_EXAMPLE_OUTPUT = $(LIB_EXAMPLE_SOURCE:.cpp=)
 

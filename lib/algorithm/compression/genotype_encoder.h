@@ -65,58 +65,58 @@ public:
 
 	// Overload operator += for block and RTYPE helper
 	friend block_type& operator+=(block_type& block, const self_type& helper){
-		block.gt_support_data_container.Add((U32)helper.n_runs);
-		++block.gt_support_data_container;
+		block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)helper.n_runs);
+		++block.base_containers[YON_BLK_GT_SUPPORT];
 
 		if(helper.encoding_type == YON_GT_RLE_DIPLOID_BIALLELIC){
 			if(helper.gt_primitive == YON_GT_BYTE){
-				block.gt_rle8_container += helper.container;
-				++block.gt_rle8_container;
+				block.base_containers[YON_BLK_GT_INT8] += helper.container;
+				++block.base_containers[YON_BLK_GT_INT8];
 			} else if(helper.gt_primitive == YON_GT_U16){
-				block.gt_rle16_container += helper.container;
-				++block.gt_rle16_container;
+				block.base_containers[YON_BLK_GT_INT16] += helper.container;
+				++block.base_containers[YON_BLK_GT_INT16];
 			} else if(helper.gt_primitive == YON_GT_U32){
-				block.gt_rle32_container += helper.container;
-				++block.gt_rle32_container;
+				block.base_containers[YON_BLK_GT_INT32] += helper.container;
+				++block.base_containers[YON_BLK_GT_INT32];
 			} else if(helper.gt_primitive == YON_GT_U64){
-				block.gt_rle64_container += helper.container;
-				++block.gt_rle64_container;
+				block.base_containers[YON_BLK_GT_INT64] += helper.container;
+				++block.base_containers[YON_BLK_GT_INT64];
 			}
 		} else if(helper.encoding_type == YON_GT_RLE_DIPLOID_NALLELIC){
 			if(helper.gt_primitive == YON_GT_BYTE){
-				block.gt_simple8_container += helper.container;
-				++block.gt_simple8_container;
+				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT8];
 			} else if(helper.gt_primitive == YON_GT_U16){
-				block.gt_simple16_container += helper.container;
-				++block.gt_simple16_container;
+				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT16];
 			} else if(helper.gt_primitive == YON_GT_U32){
-				block.gt_simple32_container += helper.container;
-				++block.gt_simple32_container;
+				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT32];
 			} else if(helper.gt_primitive == YON_GT_U64){
-				block.gt_simple64_container += helper.container;
-				++block.gt_simple64_container;
+				block.base_containers[YON_BLK_GT_S_INT64] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT64];
 			}
 		} else if(helper.encoding_type == YON_GT_BCF_DIPLOID){
 			if(helper.gt_primitive == YON_GT_BYTE){
-				block.gt_simple8_container += helper.container;
-				++block.gt_simple8_container;
+				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT8];
 			} else if(helper.gt_primitive == YON_GT_U16){
-				block.gt_simple16_container += helper.container;
-				++block.gt_simple16_container;
+				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT16];
 			} else if(helper.gt_primitive == YON_GT_U32){
-				block.gt_simple32_container += helper.container;
-				++block.gt_simple32_container;
+				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT32];
 			}
 		} else if(helper.encoding_type == YON_GT_BCF_STYLE){
 			if(helper.gt_primitive == YON_GT_BYTE){
-				block.gt_simple8_container += helper.container;
-				++block.gt_simple8_container;
+				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT8];
 			} else if(helper.gt_primitive == YON_GT_U16){
-				block.gt_simple16_container += helper.container;
-				++block.gt_simple16_container;
+				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT16];
 			} else if(helper.gt_primitive == YON_GT_U32){
-				block.gt_simple32_container += helper.container;
-				++block.gt_simple32_container;
+				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
+				++block.base_containers[YON_BLK_GT_S_INT32];
 			}
 		}
 
