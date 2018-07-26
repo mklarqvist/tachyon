@@ -132,7 +132,7 @@ public:
 	 * @param stream
 	 * @return
 	 */
-	bool readHeaderFooter(std::ifstream& stream);
+	bool ReadHeaderFooter(std::ifstream& stream);
 
 	/**<
 	 * Standard way of writing out a YON block.
@@ -216,7 +216,7 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool __loadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
 		container.header = offset;
 		stream >> container;
 		assert(container.header == offset);
@@ -231,7 +231,7 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool __loadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
 		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
 		container.header = offset;
 		stream >> container;
@@ -390,7 +390,7 @@ private:
 	 * block
 	 * @return Returns the sum total disk size
 	 */
-	U64 __determineCompressedSize(void) const;
+	U64 DetermineCompressedSize(void) const;
 
 	/**<
 	 *
@@ -398,14 +398,14 @@ private:
 	 * @param stats_info
 	 * @param stats_format
 	 */
-	void updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+	void UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
 
 	/**<
 	 * Move over pair of headers from a data container to a block footer
 	 * @param offset    Destination header in footer
 	 * @param container Target container hosting the header
 	 */
-	inline void __updateHeader(offset_type& offset, const container_type& container){
+	inline void UpdateHeader(offset_type& offset, const container_type& container){
 		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -418,7 +418,7 @@ private:
 	 * @param container      Target container hosting the header
 	 * @param virtual_offset Block virtual offset
 	 */
-	inline void __updateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
+	inline void UpdateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
 		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -433,11 +433,11 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void __writeContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void WriteContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(this->__writeContainerEncrypted(stream, offset, container, virtual_offset));
 
-		this->__updateHeader(offset, container, virtual_offset);
+		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;
 	}
@@ -450,7 +450,7 @@ private:
 	 * @param virtual_offset
 	 */
 	inline void __writeContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
-		this->__updateHeader(offset, container, virtual_offset);
+		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);
 		// Encrypted data is concatenated: write only data buffer
 		stream.write(container.buffer_data.data(), container.buffer_data.size());
@@ -472,8 +472,6 @@ public:
 	map_pattern_type* info_pattern_map;
 	map_pattern_type* format_pattern_map;
 	map_pattern_type* filter_pattern_map;
-
-
 
 	// Use during construction
 	// Todo: Delete these

@@ -91,52 +91,52 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 	}
 
 	if(settings.contig.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTIG], this->block_.base_containers[YON_BLK_CONTIG]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTIG], this->block_.base_containers[YON_BLK_CONTIG]);
 	}
 
 	if(settings.positions.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_POSITION], this->block_.base_containers[YON_BLK_POSITION]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_POSITION], this->block_.base_containers[YON_BLK_POSITION]);
 	}
 
 	if(settings.controller.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTROLLER], this->block_.base_containers[YON_BLK_CONTROLLER]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_CONTROLLER], this->block_.base_containers[YON_BLK_CONTROLLER]);
 	}
 
 	if(settings.quality.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_QUALITY], this->block_.base_containers[YON_BLK_QUALITY]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_QUALITY], this->block_.base_containers[YON_BLK_QUALITY]);
 	}
 
 	if(settings.names.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_NAMES], this->block_.base_containers[YON_BLK_NAMES]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_NAMES], this->block_.base_containers[YON_BLK_NAMES]);
 	}
 
 	if(settings.alleles.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_REFALT], this->block_.base_containers[YON_BLK_REFALT]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.base_containers[YON_BLK_ALLELES]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_REFALT], this->block_.base_containers[YON_BLK_REFALT]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.base_containers[YON_BLK_ALLELES]);
 	}
 
 	if(settings.genotypes_rle.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.base_containers[YON_BLK_GT_INT16]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.base_containers[YON_BLK_GT_INT32]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64], this->block_.base_containers[YON_BLK_GT_INT64]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.base_containers[YON_BLK_GT_INT16]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.base_containers[YON_BLK_GT_INT32]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64], this->block_.base_containers[YON_BLK_GT_INT64]);
 	}
 
 	if(settings.genotypes_simple.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8], this->block_.base_containers[YON_BLK_GT_S_INT8]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT16], this->block_.base_containers[YON_BLK_GT_S_INT16]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.base_containers[YON_BLK_GT_S_INT32]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.base_containers[YON_BLK_GT_S_INT64]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8], this->block_.base_containers[YON_BLK_GT_S_INT8]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT16], this->block_.base_containers[YON_BLK_GT_S_INT16]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.base_containers[YON_BLK_GT_S_INT32]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.base_containers[YON_BLK_GT_S_INT64]);
 	}
 
 	if(settings.genotypes_support.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
 	}
 
 	if(settings.set_membership.load || settings.genotypes_all.load){
-		this->block_.__loadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_ID_INFO], this->block_.base_containers[YON_BLK_ID_INFO]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FORMAT], this->block_.base_containers[YON_BLK_ID_FORMAT]);
-		this->block_.__loadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FILTER], this->block_.base_containers[YON_BLK_ID_FILTER]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_ID_INFO], this->block_.base_containers[YON_BLK_ID_INFO]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FORMAT], this->block_.base_containers[YON_BLK_ID_FORMAT]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_ID_FILTER], this->block_.base_containers[YON_BLK_ID_FILTER]);
 	}
 
 	// Load all info
@@ -145,7 +145,7 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 
 		this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
-			this->block_.__loadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
+			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
 			this->mapper_.info_container_loaded_.at(i)(i, i, this->block_.footer.info_offsets[i].data_header.global_key, &this->block_.footer.info_offsets[i]);
 		}
 	}
@@ -160,7 +160,7 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 				return false;
 			}
 
-			this->block_.__loadContainer(stream, this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local], this->block_.info_containers[i]);
+			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local], this->block_.info_containers[i]);
 			this->mapper_.info_container_loaded_.at(i)(i, this->mapper_.info_container_global_[info_keys[i]].stream_id_local, info_keys[i], &this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local]);
 		}
 	} // end case load_info_ID
@@ -170,7 +170,7 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
 		this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
-			this->block_.__loadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
+			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
 			this->mapper_.format_container_loaded_.at(i)(i, i, this->block_.footer.format_offsets[i].data_header.global_key, &this->block_.footer.format_offsets[i]);
 		}
 		assert(this->block_.end_compressed_data_ == (U64)stream.tellg());
@@ -185,7 +185,7 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 				return false;
 			}
 
-			this->block_.__loadContainer(stream, this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local], this->block_.format_containers[i]);
+			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local], this->block_.format_containers[i]);
 			this->mapper_.format_container_loaded_.at(i)(i, this->mapper_.format_container_global_[format_keys[i]].stream_id_local, format_keys[i], &this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local]);
 		}
 	} // end case load_info_ID

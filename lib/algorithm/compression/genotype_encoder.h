@@ -19,7 +19,12 @@ namespace algorithm{
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
 
 struct GenotypeEncoderStatistics{
-	GenotypeEncoderStatistics(){}
+	GenotypeEncoderStatistics(){
+		memset(this->rle_counts,         0, sizeof(U64)*4);
+		memset(this->rle_simple_counts,  0, sizeof(U64)*4);
+		memset(this->diploid_bcf_counts, 0, sizeof(U64)*3);
+		memset(this->bcf_counts,         0, sizeof(U64)*3);
+	}
 
 	U64 getTotal(void) const{
 		U64 total = 0;

@@ -39,6 +39,9 @@ VariantBlock::~VariantBlock(){
 }
 
 void VariantBlock::clear(void){
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		this->base_containers[i].reset();
+
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 		this->info_containers[i].reset();
 
@@ -56,10 +59,6 @@ void VariantBlock::clear(void){
 	this->footer.reset();
 	this->footer_support.reset();
 
-
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		this->base_containers[i].reset();
-
 	// Map ID fields are always S32 fields
 	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
 	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
@@ -72,7 +71,7 @@ void VariantBlock::clear(void){
 	this->format_patterns.clear();
 	this->filter_patterns.clear();
 
-	this->end_block_        = 0;
+	this->end_block_             = 0;
 	this->start_compressed_data_ = 0;
 	this->end_compressed_data_   = 0;
 
@@ -95,7 +94,6 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
 	this->base_containers[YON_BLK_POSITION].UpdateContainer();
 	this->base_containers[YON_BLK_REFALT].UpdateContainer();
-	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false);
 	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
 	this->base_containers[YON_BLK_NAMES].UpdateContainer();
 	this->base_containers[YON_BLK_ALLELES].UpdateContainer();
@@ -103,6 +101,8 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
 	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
 	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
+
+	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false);
 	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false);
 	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false);
 	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false);
@@ -123,7 +123,7 @@ void VariantBlock::UpdateContainers(void){
 	}
 }
 
-bool VariantBlock::readHeaderFooter(std::ifstream& stream){
+bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 	if(!stream.good()){
 		std::cerr << utility::timestamp("ERROR") << "File stream is corrupted..." << std::endl;
 		return false;
@@ -166,13 +166,13 @@ bool VariantBlock::read(std::ifstream& stream){
 	}
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
-		this->__loadContainer(stream, this->footer.offsets[i], this->base_containers[i]);
+		this->LoadContainer(stream, this->footer.offsets[i], this->base_containers[i]);
 
 	// Load all INFO
 	if(this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
-			this->__loadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
+			this->LoadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
 
 	}
 
@@ -180,7 +180,7 @@ bool VariantBlock::read(std::ifstream& stream){
 	if(this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
-			this->__loadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
+			this->LoadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
 
 		// EOF assertion
 		assert(this->end_compressed_data_ == (U64)stream.tellg());
@@ -190,13 +190,12 @@ bool VariantBlock::read(std::ifstream& stream){
 	return(true);
 }
 
-U64 VariantBlock::__determineCompressedSize(void) const{
+U64 VariantBlock::DetermineCompressedSize(void) const{
 	U64 total = 0;
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->ppa_manager.getObjectSize();
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
-		total += this->base_containers[i].GetObjectSize();
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i) total += this->base_containers[i].GetObjectSize();
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
@@ -204,7 +203,7 @@ U64 VariantBlock::__determineCompressedSize(void) const{
 	return(total);
 }
 
-void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
+void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
 		stats_basic[1].cost_uncompressed += this->ppa_manager.header.data_header.uLength;
 		stats_basic[1].cost_compressed   += this->ppa_manager.header.data_header.cLength;
@@ -214,12 +213,12 @@ void VariantBlock::updateOutputStatistics(import_stats_type& stats_basic, import
 		stats_basic[i+1] += this->base_containers[i];
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
-		stats_basic[21] += this->info_containers[i];
+		stats_basic[22] += this->info_containers[i];
 		stats_info[this->footer.info_offsets[i].data_header.global_key] += this->info_containers[i];
 	}
 
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i){
-		stats_basic[22] += this->format_containers[i];
+		stats_basic[23] += this->format_containers[i];
 		stats_format[this->footer.format_offsets[i].data_header.global_key] += this->format_containers[i];
 	}
 }
@@ -230,7 +229,8 @@ bool VariantBlock::write(std::ostream& stream,
                      import_stats_type& stats_format)
 {
 	const U64 begin_pos = stream.tellp();
-	this->header.l_offset_footer = this->__determineCompressedSize();
+	this->header.l_offset_footer = this->DetermineCompressedSize();
+	std::cerr << "writing: " << this->header.l_offset_footer << std::endl;
 	stream << this->header;
 	const U64 start_pos = stream.tellp();
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
@@ -242,19 +242,19 @@ bool VariantBlock::write(std::ostream& stream,
 	}
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
-		this->__writeContainer(stream, this->footer.offsets[i], this->base_containers[i], (U64)stream.tellp() - start_pos);
+		this->WriteContainer(stream, this->footer.offsets[i], this->base_containers[i], (U64)stream.tellp() - start_pos);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)
-		this->__writeContainer(stream, this->footer.info_offsets[i], this->info_containers[i], (U64)stream.tellp() - start_pos);
+		this->WriteContainer(stream, this->footer.info_offsets[i], this->info_containers[i], (U64)stream.tellp() - start_pos);
 
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
-		this->__writeContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
+		this->WriteContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
 
 	// writing footer
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 
 	// Update stats
-	this->updateOutputStatistics(stats_basic, stats_info, stats_format);
+	this->UpdateOutputStatistics(stats_basic, stats_info, stats_format);
 
 	return(stream.good());
 }

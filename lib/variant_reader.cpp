@@ -129,7 +129,7 @@ bool VariantReader::nextBlock(){
 	// Reset and re-use
 	this->variant_container.reset();
 
-	if(!this->variant_container.getBlock().readHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
 	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
@@ -182,7 +182,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 		return(false);
 	}
 
-	if(!this->variant_container.getBlock().readHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
 	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
@@ -234,7 +234,7 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	// Reset and re-use
 	containers::VariantBlockContainer block;
 
-	if(!block.getBlock().readHeaderFooter(this->basic_reader.stream_))
+	if(!block.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return variant_container_type();
 
 	if(!this->codec_manager.zstd_codec.decompress(block.getBlock().footer_support)){

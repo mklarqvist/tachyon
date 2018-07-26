@@ -302,6 +302,11 @@ bool VariantImporter::BuildBCF(void){
 
 	bcf_reader.setFilterInvariantSites(this->settings_.drop_invariant_sites);
 	while(true){
+		this->block.footer.AllocateHeaders(
+				this->vcf_reader_->vcf_header_.info_fields_.size(),
+				this->vcf_reader_->vcf_header_.format_fields_.size(),
+				this->vcf_reader_->vcf_header_.filter_fields_.size());
+
 		// Retrieve BCF records
 		if(!bcf_reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
@@ -491,6 +496,7 @@ bool VariantImporter::BuildBCF(void){
 	const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
 	const U64 n_total_gt = gt_stats.getTotal();
 	if(!SILENT){
+		std::cout << "Total: " << n_total_gt << std::endl;
 		std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
 		std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
 		std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;
