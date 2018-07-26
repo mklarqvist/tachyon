@@ -108,7 +108,7 @@ public:
 	 * calls all necessary functions to construct a valid Tachyon block
 	 * for sequence variant data
 	 */
-	void finalize(void){
+	inline void finalize(void){
 		this->footer.n_info_streams   = this->info_fields.size();
 		this->footer.n_filter_streams = this->filter_fields.size();
 		this->footer.n_format_streams = this->format_fields.size();

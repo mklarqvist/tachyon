@@ -112,7 +112,7 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 
 	if(settings.alleles.load){
 		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_REFALT], this->block_.base_containers[YON_BLK_REFALT]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.base_containers[YON_BLK_ALLELES]);
+		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_ALLELES], this->block_.base_containers[YON_BLK_ALLELES]);
 	}
 
 	if(settings.genotypes_rle.load || settings.genotypes_all.load){

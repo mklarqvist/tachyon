@@ -13,11 +13,8 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 	zstd_codec.setCompressionLevel(general_level);
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
-		std::cerr << "compress: " << block.base_containers[i].header.n_entries << std::endl;
 		if(block.base_containers[i].header.n_entries)
 			zstd_codec.compress(block.base_containers[i]);
-		std::cerr << block.base_containers[i].buffer_data_uncompressed.size() << "->" << block.base_containers[i].buffer_data.size() << std::endl;
-		std::cerr << "header: " << block.base_containers[i].header.data_header.uLength << " -> " << block.base_containers[i].header.data_header.cLength << std::endl;
 	}
 
 	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
@@ -58,7 +55,7 @@ bool CompressionManager::decompress(variant_block_type& block){
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].GetSizeCompressed()){
 			if(!this->decompress(block.base_containers[i])){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress meta contig information!" << std::endl;
+				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress basic container!" << std::endl;
 				return false;
 			}
 		}

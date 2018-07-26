@@ -129,17 +129,26 @@ bool VariantReader::nextBlock(){
 	// Reset and re-use
 	this->variant_container.reset();
 
+	std::cerr << "Before read header footer" << std::endl;
+
 	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
+
+	std::cerr << "Before decompress header footer" << std::endl;
 
 	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
+	std::cerr << "Before overload header footer" << std::endl;
 	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
+
+	std::cerr << "Before read block" << std::endl;
 
 	// Attempts to read a YON block with the settings provided
 	if(!this->variant_container.readBlock(this->basic_reader.stream_, this->block_settings))
 		return false;
+
+	std::cerr << "After read block" << std::endl;
 
 	// encryption manager ascertainment
 	if(this->variant_container.anyEncrypted()){

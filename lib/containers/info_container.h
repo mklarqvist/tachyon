@@ -330,7 +330,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	stride_container_type strides(data_container);
 
 	U32 current_offset = 0;
-	U32 stride_offset = 0;
+	U32 stride_offset  = 0;
 
 	for(U32 i = 0; i < this->size(); ++i){
 		// There are no INFO fields
@@ -348,7 +348,9 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 			new( &this->__containers[i] ) value_type( );
 		}
 	}
+
 	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(stride_offset == strides.size());
 }
 
 template <class return_type>

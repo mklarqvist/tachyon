@@ -176,25 +176,6 @@ bool VariantImporter::BuildVCF(void){
 }
 
 bool VariantImporter::BuildBCF(void){
-	// TEMP
-	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
-	if(this->vcf_reader_ == nullptr){
-		return false;
-	}
-
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
-		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
-
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
-		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
-
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
-		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
-
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
-		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
-	// END TEMP
-
 	bcf_reader_type bcf_reader;
 	if(!bcf_reader.open(this->settings_.input_file)){
 		std::cerr << utility::timestamp("ERROR", "BCF")  << "Failed to open BCF file..." << std::endl;
@@ -212,7 +193,7 @@ bool VariantImporter::BuildBCF(void){
 	this->permutator.manager = &this->block.ppa_manager;
 	this->permutator.setSamples(this->header->n_samples);
 
-	if(this->settings_.output_prefix.size() == 0 || (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-")) this->writer = new writer_stream_type;
+	if(this->settings_.output_prefix.size() == 0) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
 
 	if(!this->writer->open(this->settings_.output_prefix)){
@@ -220,10 +201,27 @@ bool VariantImporter::BuildBCF(void){
 		return false;
 	}
 
-	// The index needs to know how many contigs that's described in the
-	// Vcf header and their lenghts. This information is needed to construct
-	// the linear and quad-tree index most appropriate for the data.
-	this->writer->index.Add(this->vcf_reader_->vcf_header_.contigs_);
+	//index::VariantIndex idx;
+	for(U32 i = 0; i < this->header->contigs.size(); ++i){
+		const U64 contig_length = this->header->contigs[i].bp_length;
+		BYTE n_levels = 7;
+		U64 bins_lowest = pow(4,n_levels);
+		double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
+
+		if(used / bins_lowest < 2500){
+			for(S32 i = n_levels; i != 0; --i){
+				if(used/pow(4,i) > 2500){
+					n_levels = i;
+					break;
+				}
+			}
+		}
+
+		this->writer->index.index_.add(i, contig_length, n_levels);
+		//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
+		//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
+		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+	}
 
 	// Writer MAGIC
 	this->writer->stream->write(&tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH);
@@ -234,7 +232,7 @@ bool VariantImporter::BuildBCF(void){
 	                +  SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 	header.literals += "\n" + this->settings_.GetInterpretedString();
 
-	if(this->settings_.encrypt_data)      header.literals += " -k";
+	if(this->settings_.encrypt_data) header.literals += " -k";
 	if(this->settings_.permute_genotypes) header.literals += " -P";
 	else header.literals += " -p";
 	header.header_magic.l_literals = header.literals.size();
@@ -248,8 +246,7 @@ bool VariantImporter::BuildBCF(void){
 	*this->writer->stream << header_data.buffer_data;
 
 	// Search for GT field in the header
-	this->GT_available_ = this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr;
-	std::cerr << "GT available: " << this->GT_available_ << std::endl;
+	this->GT_available_ = header.has_format_field("GT");
 	for(U32 i = 0; i < this->header->format_map.size(); ++i){
 		if(this->header->format_map[i].ID == "GT"){
 			bcf_reader.map_gt_id = this->header->format_map[i].IDX;
@@ -280,13 +277,11 @@ bool VariantImporter::BuildBCF(void){
 	this->block.resize(resize_to);
 
 	// Digest controller
-	algorithm::VariantDigestManager checksums(25,
-	                                          this->header->info_map.size(),
-	                                          this->header->format_map.size());
+	algorithm::VariantDigestManager checksums(25, this->header->info_map.size(), this->header->format_map.size());
 
-	// Start import parameters
-	U32 previous_first     =  0;
-	U32 previous_last      =  0;
+	// Start import
+	U32 previous_first     = 0;
+	U32 previous_last      = 0;
 	S32 previous_contig_ID = -1;
 
 	// Begin import
@@ -302,17 +297,13 @@ bool VariantImporter::BuildBCF(void){
 
 	bcf_reader.setFilterInvariantSites(this->settings_.drop_invariant_sites);
 	while(true){
-		this->block.footer.AllocateHeaders(
-				this->vcf_reader_->vcf_header_.info_fields_.size(),
-				this->vcf_reader_->vcf_header_.format_fields_.size(),
-				this->vcf_reader_->vcf_header_.filter_fields_.size());
-
 		// Retrieve BCF records
 		if(!bcf_reader.getVariants(this->settings_.checkpoint_n_snps, this->settings_.checkpoint_bases)){
 			break;
 		}
 
 		// Debug assertion
+#if IMPORT_ASSERT == 1
 		if(bcf_reader.front().body->CHROM == previous_contig_ID){
 			if(!(bcf_reader.front().body->POS >= previous_first && bcf_reader.front().body->POS >= previous_last)){
 				std::cerr << utility::timestamp("ERROR","IMPORT") << bcf_reader.front().body->POS << '/' << previous_first << '/' << previous_last << std::endl;
@@ -320,6 +311,7 @@ bool VariantImporter::BuildBCF(void){
 				exit(1);
 			}
 		}
+#endif
 		this->block.header.blockID     = this->writer->n_blocks_written;
 		this->block.header.contigID    = bcf_reader.front().body->CHROM;
 		this->block.header.minPosition = bcf_reader.front().body->POS;
@@ -365,7 +357,6 @@ bool VariantImporter::BuildBCF(void){
 		// Update head meta
 		this->block.header.controller.hasGT = this->GT_available_;
 		this->block.header.n_variants       = bcf_reader.size();
-		// Todo: this should be fixed
 		this->block.finalize();
 
 		// Perform compression using standard parameters
@@ -433,8 +424,8 @@ bool VariantImporter::BuildBCF(void){
 		this->permutator.reset();
 		this->writer->stream->flush();
 		previous_contig_ID = bcf_reader.front().body->CHROM;
-		previous_first     = bcf_reader.front().body->POS;
-		previous_last      = bcf_reader.back().body->POS;
+		previous_first    = bcf_reader.front().body->POS;
+		previous_last     = bcf_reader.back().body->POS;
 		this->index_entry.reset();
 	}
 	// Done importing
@@ -496,7 +487,6 @@ bool VariantImporter::BuildBCF(void){
 	const algorithm::GenotypeEncoderStatistics& gt_stats = this->encoder.getUsageStats();
 	const U64 n_total_gt = gt_stats.getTotal();
 	if(!SILENT){
-		std::cout << "Total: " << n_total_gt << std::endl;
 		std::cout << "GT-RLE-8\t"   << gt_stats.rle_counts[0] << '\t' << (float)gt_stats.rle_counts[0]/n_total_gt << std::endl;
 		std::cout << "GT-RLE-16\t"  << gt_stats.rle_counts[1] << '\t' << (float)gt_stats.rle_counts[1]/n_total_gt << std::endl;
 		std::cout << "GT-RLE-32\t"  << gt_stats.rle_counts[2] << '\t' << (float)gt_stats.rle_counts[2]/n_total_gt << std::endl;

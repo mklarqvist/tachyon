@@ -90,14 +90,17 @@ bool VariantBlockFooter::constructBitVector(const INDEX_BLOCK_TARGET& target, ha
 	// Determine target
 	switch(target){
 	case(INDEX_BLOCK_TARGET::INDEX_INFO)   :
+		this->l_info_bitvector = ceil((float)values.size()/8);
 		this->n_info_patterns = patterns.size();
 		return(this->__constructBitVector(this->info_bit_vectors, this->info_offsets,  values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FORMAT) :
+		this->l_format_bitvector = ceil((float)values.size()/8);
 		this->n_format_patterns = patterns.size();
 		return(this->__constructBitVector(this->format_bit_vectors, this->format_offsets, values, patterns));
 		break;
 	case(INDEX_BLOCK_TARGET::INDEX_FILTER) :
+		this->l_filter_bitvector = ceil((float)values.size()/8);
 		this->n_filter_patterns = patterns.size();
 		return(this->__constructBitVector(this->filter_bit_vectors, this->filter_offsets, values, patterns));
 		break;
@@ -112,6 +115,7 @@ bool VariantBlockFooter::__constructBitVector(bit_vector*& target,
                                      hash_container_type&  values,
                               hash_vector_container_type& patterns)
 {
+	std::cerr << "BV Patterns: " << patterns.size() << " values: " << values.size() << std::endl;
 	if(values.size() == 0) return false;
 
 	// Determine the required width in bytes of the bit-vector
@@ -142,6 +146,7 @@ bool VariantBlockFooter::__constructBitVector(bit_vector*& target,
 
 			// Store local key in key-chain
 			target[i].local_keys[j] = local_key;
+			std::cerr << j << "/" << patterns.size() << " local key: " << local_key << std::endl;
 
 			// Store absolute key
 			offset[local_key].data_header.global_key = patterns[i][j];
@@ -158,9 +163,7 @@ std::ostream& operator<<(std::ostream& stream, const VariantBlockFooter& entry){
 	stream.write(reinterpret_cast<const char*>(&entry.n_format_patterns), sizeof(U16));
 	stream.write(reinterpret_cast<const char*>(&entry.n_filter_patterns), sizeof(U16));
 
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		stream << entry.offsets[i];
-
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)       stream << entry.offsets[i];
 	for(U32 i = 0; i < entry.n_info_streams; ++i)   stream << entry.info_offsets[i];
 	for(U32 i = 0; i < entry.n_format_streams; ++i) stream << entry.format_offsets[i];
 	for(U32 i = 0; i < entry.n_filter_streams; ++i) stream << entry.filter_offsets[i];
@@ -207,8 +210,7 @@ std::ifstream& operator>>(std::ifstream& stream, VariantBlockFooter& entry){
 
 	delete [] entry.offsets;
 	entry.offsets = new DataContainerHeader[YON_BLK_N_STATIC];
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		stream >> entry.offsets[i];
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i) stream >> entry.offsets[i];
 
 	delete [] entry.info_offsets ;
 	delete [] entry.info_offsets;
@@ -264,34 +266,29 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	buffer += (U16)entry.n_format_patterns;
 	buffer += (U16)entry.n_filter_patterns;
 
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		buffer << entry.offsets[i];
-
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)       buffer << entry.offsets[i];
 	for(U32 i = 0; i < entry.n_info_streams; ++i)   buffer << entry.info_offsets[i];
 	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer << entry.format_offsets[i];
 	for(U32 i = 0; i < entry.n_filter_streams; ++i) buffer << entry.filter_offsets[i];
 
 	if(entry.n_info_patterns > 0){
-		const BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
 		for(U32 i = 0; i < entry.n_info_patterns; ++i){
 			buffer << entry.info_bit_vectors[i];
-			buffer.Add((const char* const)&entry.info_bit_vectors[i].bit_bytes[0], info_bitvector_width);
+			buffer.Add((const char* const)&entry.info_bit_vectors[i].bit_bytes[0], entry.l_info_bitvector);
 		}
 	}
 
 	if(entry.n_format_patterns > 0){
-		const BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 		for(U32 i = 0; i < entry.n_format_patterns; ++i){
 			buffer << entry.format_bit_vectors[i];
-			buffer.Add((const char* const)&entry.format_bit_vectors[i].bit_bytes[0], format_bitvector_width);
+			buffer.Add((const char* const)&entry.format_bit_vectors[i].bit_bytes[0], entry.l_format_bitvector);
 		}
 	}
 
 	if(entry.n_filter_patterns > 0){
-		const BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
 			buffer << entry.filter_bit_vectors[i];
-			buffer.Add((const char* const)&entry.filter_bit_vectors[i].bit_bytes[0], filter_bitvector_width);
+			buffer.Add((const char* const)&entry.filter_bit_vectors[i].bit_bytes[0], entry.l_filter_bitvector);
 		}
 	}
 
@@ -307,55 +304,51 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 	buffer >> entry.n_format_patterns;
 	buffer >> entry.n_filter_patterns;
 
-	entry.l_info_bitvector   = ceil((float)entry.n_info_streams/8);
-	entry.l_format_bitvector = ceil((float)entry.n_format_streams/8);
-	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams/8);
+	entry.l_info_bitvector   = ceil((float)entry.n_info_streams    / 8);
+	entry.l_format_bitvector = ceil((float)entry.n_format_streams  / 8);
+	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams  / 8);
 
 	delete [] entry.offsets;
-	entry.offsets = new DataContainerHeader[YON_BLK_N_STATIC];
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		buffer >> entry.offsets[i];
-
 	delete [] entry.info_offsets;
 	delete [] entry.format_offsets;
 	delete [] entry.filter_offsets;
+
+	entry.offsets        = new DataContainerHeader[YON_BLK_N_STATIC];
 	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
 	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];
 	entry.filter_offsets = new DataContainerHeader[entry.n_filter_streams];
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)       buffer >> entry.offsets[i];
 	for(U32 i = 0; i < entry.n_info_streams; ++i)   buffer >> entry.info_offsets[i];
 	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer >> entry.format_offsets[i];
 	for(U32 i = 0; i < entry.n_filter_streams; ++i) buffer >> entry.filter_offsets[i];
 
 	if(entry.n_info_patterns){
-		BYTE info_bitvector_width = ceil((float)entry.n_info_streams/8);
 		delete [] entry.info_bit_vectors;
 		entry.info_bit_vectors = new DataBlockBitvector[entry.n_info_patterns];
 		for(U32 i = 0; i < entry.n_info_patterns; ++i){
 			buffer >> entry.info_bit_vectors[i];
-			entry.info_bit_vectors[i].allocate(info_bitvector_width);
-			buffer.read((char*)entry.info_bit_vectors[i].bit_bytes, info_bitvector_width);
+			entry.info_bit_vectors[i].allocate(entry.l_info_bitvector);
+			buffer.read((char*)entry.info_bit_vectors[i].bit_bytes, entry.l_info_bitvector);
 		}
 	}
 
 	if(entry.n_format_patterns){
-		BYTE format_bitvector_width = ceil((float)entry.n_format_streams/8);
 		delete [] entry.format_bit_vectors;
 		entry.format_bit_vectors = new DataBlockBitvector[entry.n_format_patterns];
 		for(U32 i = 0; i < entry.n_format_patterns; ++i){
 			buffer >> entry.format_bit_vectors[i];
-			entry.format_bit_vectors[i].allocate(format_bitvector_width);
-			buffer.read((char*)entry.format_bit_vectors[i].bit_bytes, format_bitvector_width);
+			entry.format_bit_vectors[i].allocate(entry.l_format_bitvector);
+			buffer.read((char*)entry.format_bit_vectors[i].bit_bytes, entry.l_format_bitvector);
 		}
 	}
 
 	if(entry.n_filter_patterns){
-		BYTE filter_bitvector_width = ceil((float)entry.n_filter_streams/8);
 		delete [] entry.filter_bit_vectors;
 		entry.filter_bit_vectors = new DataBlockBitvector[entry.n_filter_patterns];
 		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
 			buffer >> entry.filter_bit_vectors[i];
-			entry.filter_bit_vectors[i].allocate(filter_bitvector_width);
-			buffer.read((char*)entry.filter_bit_vectors[i].bit_bytes, filter_bitvector_width);
+			entry.filter_bit_vectors[i].allocate(entry.l_filter_bitvector);
+			buffer.read((char*)entry.filter_bit_vectors[i].bit_bytes, entry.l_filter_bitvector);
 		}
 	}
 

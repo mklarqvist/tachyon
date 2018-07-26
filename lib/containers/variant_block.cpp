@@ -195,8 +195,7 @@ U64 VariantBlock::DetermineCompressedSize(void) const{
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->ppa_manager.getObjectSize();
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i) total += this->base_containers[i].GetObjectSize();
-
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
 
@@ -230,7 +229,6 @@ bool VariantBlock::write(std::ostream& stream,
 {
 	const U64 begin_pos = stream.tellp();
 	this->header.l_offset_footer = this->DetermineCompressedSize();
-	std::cerr << "writing: " << this->header.l_offset_footer << std::endl;
 	stream << this->header;
 	const U64 start_pos = stream.tellp();
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
@@ -241,6 +239,8 @@ bool VariantBlock::write(std::ostream& stream,
 		stream << this->ppa_manager;
 	}
 
+	// Start at offset 1 because offset 0 is encoding for the genotype
+	// permutation array that is handled differently.
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
 		this->WriteContainer(stream, this->footer.offsets[i], this->base_containers[i], (U64)stream.tellp() - start_pos);
 
@@ -250,7 +250,7 @@ bool VariantBlock::write(std::ostream& stream,
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 		this->WriteContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
 
-	// writing footer
+	// Assert that the written amount equals the projected amount.
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 
 	// Update stats
@@ -307,7 +307,7 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	// Check if all variants are of length 1 (as in all alleles are SNVs)
 	bool all_snv = true;
 	for(U32 i = 0; i < meta_entry.n_alleles; ++i){
-		if(meta_entry.alleles[i].l_allele != 1) all_snv = false;
+		if(meta_entry.alleles[i].size() != 1) all_snv = false;
 	}
 	meta_entry.controller.all_snv = all_snv;
 
