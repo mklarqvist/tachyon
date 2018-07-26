@@ -22,7 +22,7 @@ RadixSortGT::~RadixSortGT(){
 	delete [] this->bins;
 }
 
-void RadixSortGT::setSamples(const U64 n_samples){
+void RadixSortGT::SetSamples(const U64 n_samples){
 	this->n_samples = n_samples;
 
 	// Delete previous
@@ -49,19 +49,47 @@ void RadixSortGT::reset(void){
 	this->manager->reset();
 }
 
-bool RadixSortGT::build(const bcf_reader_type& reader){
+bool RadixSortGT::Build(const vcf_container_type& vcf_container){
+	// Alphabet: 0, 1, missing, sentinel symbol (EOV). We know each allele
+	// must map to the range [0, n_alleles):
+	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+		const io::VcfGenotypeSummary g = vcf_container.GetGenotypeSummary(i, this->GetSamples());
+		// If the Vcf line has invariant genotypes then simply
+		// continue as this line will have no effect.
+		if(g.invariant) continue;
+
+		const uint8_t* gt = vcf_container[i]->d.fmt[0].p;
+		// Add two for missing and sentinel node value.
+		const U16 n_alleles = vcf_container[i]->n_allele + 2;
+
+		// Base ploidy is equal to fmt.n in htslib. Sort genotypes
+		// according to their hash value.
+		/*
+		U32 gt_offset = 0;
+		for(U32 s = 0; s < this->GetSamples(); ++s){
+			//const U64 genotype_hash = RadixSortGT::HashGenotypes(&gt[gt_offset], g.base_ploidy * sizeof(uint8_t));
+			gt_offset += g.base_ploidy;
+			//std::cerr << ", " << genotype_hash;
+		}
+		*/
+	}
+
+	return true;
+}
+
+bool RadixSortGT::Build(const bcf_reader_type& reader){
 	if(reader.size() == 0)
 		return false;
 
 	// Cycle over BCF entries
 	for(U32 i = 0; i < reader.size(); ++i){
-		if(!this->update(reader[i]))
+		if(!this->Update(reader[i]))
 			continue;
 	}
 	return(true);
 }
 
-bool RadixSortGT::update(const bcf_entry_type& entry){
+bool RadixSortGT::Update(const bcf_entry_type& entry){
 	// Check again because we might use it
 	// iteratively at some point in time
 	// i.e. not operating through the

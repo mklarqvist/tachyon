@@ -37,8 +37,8 @@ bool VariantImporter::Build(){
 	temp.close();
 
 	if((BYTE)tempData[0] == io::constants::GZIP_ID1 && (BYTE)tempData[1] == io::constants::GZIP_ID2){
-		 if(!this->BuildBCF()){
-		//if(!this->BuildVCF()){
+		// if(!this->BuildBCF()){
+		if(!this->BuildVCF()){
 			std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 			return false;
 		}
@@ -101,6 +101,9 @@ bool VariantImporter::BuildVCF(void){
 	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
+	// Todo:
+	//this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
@@ -125,6 +128,10 @@ bool VariantImporter::BuildVCF(void){
 		if(this->AddRecords(this->vcf_container_) == false){
 			return false;
 		}
+
+		// Todo
+		this->permutator.n_samples = this->vcf_reader_->vcf_header_.GetNumberSamples();
+		this->permutator.Build(this->vcf_container_);
 
 
 		this->block.header.controller.hasGT  = this->GT_available_; // Todo: if GT is available in a block, not in the header
@@ -191,7 +198,7 @@ bool VariantImporter::BuildBCF(void){
 	this->encoder.setSamples(this->header->n_samples);
 	this->block.ppa_manager.setSamples(this->header->n_samples);
 	this->permutator.manager = &this->block.ppa_manager;
-	this->permutator.setSamples(this->header->n_samples);
+	this->permutator.SetSamples(this->header->n_samples);
 
 	if(this->settings_.output_prefix.size() == 0) this->writer = new writer_stream_type;
 	else this->writer = new writer_file_type;
@@ -324,7 +331,7 @@ bool VariantImporter::BuildBCF(void){
 
 		// Permute GT if GT is available and the appropriate flag is triggered
 		if(this->block.header.controller.hasGT && this->block.header.controller.hasGTPermuted){
-			if(!this->permutator.build(bcf_reader)){
+			if(!this->permutator.Build(bcf_reader)){
 				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to complete..." << std::endl;
 				return false;
 			}
