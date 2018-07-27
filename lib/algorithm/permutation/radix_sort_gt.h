@@ -11,94 +11,96 @@ namespace tachyon {
 namespace algorithm {
 
 struct yon_radix_gt {
-	yon_radix_gt(void) : n_id(0), n_allocated(0), n_alleles(0), alleles(nullptr){}
-	yon_radix_gt(const uint64_t n_id, const uint8_t n_allocate) :
-		n_id(n_id),
-		n_allocated(n_allocate),
-		n_alleles(0),
-		alleles(new int32_t[n_allocate])
-	{
-
+	yon_radix_gt() : n_ploidy(0), n_allocated(4), id(0), alleles(new uint16_t[this->n_allocated]){
+		memset(this->alleles, 0, sizeof(uint16_t)*this->n_allocated);
 	}
-	yon_radix_gt(const yon_radix_gt& other) :
-		n_id(other.n_id),
-		n_allocated(other.n_allocated),
-		n_alleles(other.n_alleles),
-		alleles(new int32_t[other.n_allocated])
-	{
-		memcpy(this->alleles, other.alleles, sizeof(int32_t)*other.n_alleles);
-	}
-
-	yon_radix_gt& operator=(const yon_radix_gt& other){
-		delete [] this->alleles;
-		this->n_id        = other.n_id;
-		this->n_allocated = other.n_allocated;
-		this->n_alleles   = other.n_alleles;
-		this->alleles     = new int32_t[other.n_allocated];
-		memcpy(this->alleles, other.alleles, sizeof(int32_t)*other.n_alleles);
-		return(*this);
-	}
-
 	~yon_radix_gt(){ delete [] this->alleles; }
-
-	inline int32_t& operator[](const int32_t value){ return(this->alleles[value]); }
-	inline const int32_t& operator[](const int32_t value) const{ return(this->alleles[value]); }
-
-	void clear(void){
-		this->n_id = 0;
-		memset(this->alleles, 0, sizeof(int32_t)*this->n_alleles);
-		this->n_alleles = 0;
+	yon_radix_gt(const yon_radix_gt& other) : n_ploidy(other.n_ploidy), n_allocated(other.n_allocated), id(other.id), alleles(new uint16_t[this->n_allocated])
+	{
+		memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
+	}
+	yon_radix_gt(yon_radix_gt&& other) : n_ploidy(other.n_ploidy), n_allocated(other.n_allocated), id(other.id), alleles(other.alleles)
+	{
+		other.alleles = nullptr;
 	}
 
-	void Allocate(const uint64_t n_id, const U32 n_allocate){
+	yon_radix_gt& operator=(const yon_radix_gt& other) // copy assignment
+	{
+		this->id = other.id;
+		this->n_ploidy = other.n_ploidy;
+		this->n_allocated = other.n_allocated;
 		delete [] this->alleles;
-		this->n_id        = n_id;
-		this->n_allocated = n_allocate;
-		this->n_alleles   = 0;
-		this->alleles     = new int32_t[this->n_allocated];
+		this->alleles = new uint16_t[this->n_allocated];
+		memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
+		return *this;
+	}
+	yon_radix_gt& operator=(yon_radix_gt&& other) // move assignment
+	{
+		if(this!=&other) // prevent self-move
+		{
+			this->id = other.id;
+			this->n_ploidy = other.n_ploidy;
+			this->n_allocated = other.n_allocated;
+			delete [] this->alleles;
+			this->alleles = other.alleles;
+			other.alleles = nullptr;
+		}
+		return *this;
 	}
 
-	bool operator<(const yon_radix_gt& other) const {
-		if(this->n_alleles < other.n_alleles) return true;
-		if(other.n_alleles < this->n_alleles) return false;
+	bool operator<(const yon_radix_gt& other) const{
+		// Do not compare incremental sample identification
+		// numbers as that is not the desired outcome of
+		// the sort.
+		if(this->n_ploidy < other.n_ploidy) return true;
+		if(other.n_ploidy < this->n_ploidy) return false;
 
-		for(U32 i = 0; i < this->n_alleles; ++i){
-			if(this->alleles[i] < other.alleles[i]){
+		for(U32 i = 0; i < this->n_ploidy; ++i){
+			if(this->alleles[i] < other.alleles[i])
 				return true;
-			}
 		}
 		return false;
 	}
 
-	inline bool operator!=(const yon_radix_gt& other) const{ return(!(*this == other)); }
-
 	bool operator==(const yon_radix_gt& other) const{
-		// Do not compare identifier.
-		if(this->n_alleles != other.n_alleles)
+		// Do not compare incremental sample identification
+		// numbers as that is not the desired outcome of
+		// the comparison.
+		if(this->n_ploidy != other.n_ploidy)
 			return false;
 
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(U32 i = 0; i < this->n_ploidy; ++i){
 			if(this->alleles[i] != other.alleles[i])
 				return false;
 		}
 		return true;
 	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& gt){
-		stream << gt.n_id << ": ";
-		if(gt.n_alleles){
-			stream << (uint32_t)gt.alleles[0];
-			for(U32 i = 1; i < gt.n_alleles; ++i)
-				stream << "," << (uint32_t)gt.alleles[i];
+	inline bool operator!=(const yon_radix_gt& other) const{ return(!(*this == other)); }
+
+	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype){
+		stream << genotype.id << ":";
+		if(genotype.n_ploidy){
+			stream << genotype.alleles[0];
+			for(U32 i = 1; i < genotype.n_ploidy; ++i){
+				stream << "," << genotype.alleles[i];
+			}
 		}
-		return stream;
+		return(stream);
 	}
 
-	// todo: sort
-	uint64_t n_id;
-	uint8_t  n_allocated;
-	uint8_t  n_alleles;
-	int32_t* alleles;
+	U64 GetPackedInteger(void) const{
+		U64 packed = 0;
+		for(U32 i = 0; i < this->n_ploidy; ++i){
+			packed |= this->alleles[i] << (i * 8);
+		}
+		return packed;
+	}
+
+	uint8_t   n_ploidy;
+	uint8_t   n_allocated;
+	uint64_t  id;
+	uint16_t* alleles;
 };
 
 /*
