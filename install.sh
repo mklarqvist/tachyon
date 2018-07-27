@@ -83,7 +83,7 @@ else
     # Install generic dependencies
     ################################################################################
     note_build_stage "Update misc. dependencies"
-    sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release liblz4-dev zstd-dev
+    sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release liblz4-dev zstd
 
     # Install htslib dependencies
     ################################################################################

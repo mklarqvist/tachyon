@@ -50,29 +50,64 @@ void RadixSortGT::reset(void){
 }
 
 bool RadixSortGT::Build(const vcf_container_type& vcf_container){
+	yon_radix_gt* gt_pattern = new yon_radix_gt[this->GetNumberSamples()];
+
+	// Allocate tetraploid worth of memory in the first instance.
+	for(U32 i = 0; i < this->GetNumberSamples(); ++i)
+		gt_pattern[i].Allocate(i, 4);
+
 	// Alphabet: 0, 1, missing, sentinel symbol (EOV). We know each allele
-	// must map to the range [0, n_alleles):
+	// must map to the range [0, n_alleles + 2):
 	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
-		const io::VcfGenotypeSummary g = vcf_container.GetGenotypeSummary(i, this->GetSamples());
+		const io::VcfGenotypeSummary g = vcf_container.GetGenotypeSummary(i, this->GetNumberSamples());
 		// If the Vcf line has invariant genotypes then simply
 		// continue as this line will have no effect.
-		if(g.invariant) continue;
+		if(g.invariant)        continue;
+		if(g.base_ploidy == 0) continue;
 
-		const uint8_t* gt = vcf_container[i]->d.fmt[0].p;
-		// Add two for missing and sentinel node value.
-		const U16 n_alleles = vcf_container[i]->n_allele + 2;
+		const bcf1_t* bcf = vcf_container[i];
+		const uint8_t* gt = bcf->d.fmt[0].p;
+		std::cerr << bcf->pos << ": " << bcf->d.fmt[0].p_len << " base ploidy: " << (int)g.base_ploidy << std::endl;
+		assert(bcf->d.fmt[0].p_len == sizeof(uint8_t) * g.base_ploidy * this->GetNumberSamples());
 
-		// Base ploidy is equal to fmt.n in htslib. Sort genotypes
-		// according to their hash value.
-		/*
+		// Base ploidy is equal to fmt.n in htslib.
 		U32 gt_offset = 0;
-		for(U32 s = 0; s < this->GetSamples(); ++s){
-			//const U64 genotype_hash = RadixSortGT::HashGenotypes(&gt[gt_offset], g.base_ploidy * sizeof(uint8_t));
-			gt_offset += g.base_ploidy;
-			//std::cerr << ", " << genotype_hash;
+		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
+			//gt_pattern[s].clear();
+			gt_pattern[s].n_alleles = g.base_ploidy;
+			gt_pattern[s].n_id = s;
+			for(U32 a = 0; a < g.base_ploidy; ++a, gt_offset++){
+				gt_pattern[s][a] = gt[gt_offset];
+				assert(a < gt_pattern[s].n_allocated);
+			}
 		}
-		*/
+		assert(gt_offset == bcf->d.fmt[0].p_len);
+
+		std::cerr << "Before sort" << std::endl;
+
+		// Sort genotypes according to their temporary encoded values.
+		std::sort(&gt_pattern[0], &gt_pattern[this->GetNumberSamples()]);
+
+		std::cerr << "After sort" << std::endl;
+
+		// Debug
+		yon_radix_gt* ref = &gt_pattern[0];
+		U32 l_run = 1;
+		for(U32 k = 1; k < this->GetNumberSamples(); ++k){
+			if(gt_pattern[k] != *ref){
+				std::cerr << i << "/" << vcf_container.sizeWithoutCarryOver() << ": " << *ref << "(" << l_run << ")" << std::endl;
+				l_run = 1;
+				ref = &gt_pattern[k];
+				continue;
+			}
+			++l_run;
+		}
+		std::cerr << i << "/" << vcf_container.sizeWithoutCarryOver() << ": " << *ref << "(" << l_run << ")" << std::endl << std::endl;
 	}
+
+	std::cerr << "Done" << std::endl;
+	delete [] gt_pattern;
+	std::cerr << "Done all" << std::endl;
 
 	return true;
 }

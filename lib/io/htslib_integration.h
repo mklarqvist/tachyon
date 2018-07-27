@@ -1034,8 +1034,18 @@ public:
 		return(this->size());
 	}
 
+	// Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
+	// Warning: this function does NOT check if the FORMAT field GT exists either
+	// in the header or in the structure itself. The assumption is that it does
+	// exist and according to the Bcf specification has to be the first FORMAT
+	// field set.
 	io::VcfGenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const{
 		io::VcfGenotypeSummary g;
+
+		// If there are no FORMAT fields there cannot exist any
+		// GT data.
+		if(this->at(position)->n_fmt == 0)
+			return(g);
 
 		// Iterate through the allowed primitive types for genotypes to collect summary
 		// statistics for genotypes at this loci. Information collected includes the

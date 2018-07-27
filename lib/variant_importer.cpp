@@ -657,8 +657,6 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		assert(target_container < 65536);
 		info_ids.push_back(global_key);
 
-		//std::cerr << "Info: " << hts_info_key << "(" << global_key << "," << this->info_local_map_[global_key] << "=" << target_container << ")->" << this->vcf_reader_->vcf_header_.GetInfo(hts_info_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
-
 		stream_container& destination_container = this->block.info_containers[target_container];
 		const int& info_primitive_type = record->d.info[i].type;
 		const int& stride_size         = record->d.info[i].len;
@@ -666,32 +664,35 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		const uint8_t* data            = record->d.info[i].vptr;
 		int element_stride_size        = 0;
 
+		//std::cerr << "Info:       " << hts_info_key << "(" << global_key << "," << (*this->block.info_map)[global_key] << "=" << target_container << ")->" << this->vcf_reader_->vcf_header_.GetInfo(hts_info_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
+		//std::cerr << "Additional: " << stride_size << "," << data_length << " -> " << this->vcf_reader_->vcf_header_.GetNumberSamples() << std::endl;
+
 		if(info_primitive_type == BCF_BT_INT8){
-			element_stride_size = 1;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int8_t);
+			assert(data_length % element_stride_size == 0);
 			const SBYTE* data_local = reinterpret_cast<const SBYTE*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_INT16){
-			element_stride_size = 2;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int16_t);
+			assert(data_length % element_stride_size == 0);
 			const S16* data_local = reinterpret_cast<const S16*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_INT32){
-			element_stride_size = 4;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int32_t);
+			assert(data_length % element_stride_size == 0);
 			const S32* data_local = reinterpret_cast<const S32*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_FLOAT){
-			element_stride_size = 4;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(float);
+			assert(data_length % element_stride_size == 0);
 			const float* data_local = reinterpret_cast<const float*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_CHAR){
-			element_stride_size = 1;
+			element_stride_size = sizeof(char);
 			const char* data_local = reinterpret_cast<const char*>(data);
 			destination_container.AddCharacter(data_local, data_length);
 		} else if(info_primitive_type == BCF_BT_NULL){
@@ -746,35 +747,35 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		//<< " stride size: " << stride_size << " data length: " << data_length << "->" << data_length/stride_size << std::endl;																																																			  //stream_container& target_container = this->block.format_containers[map_id];
 
 		if(format_primitive_type == BCF_BT_INT8){
-			element_stride_size = 1;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int8_t);
+			assert(data_length % element_stride_size == 0);
 			const SBYTE* data_local = reinterpret_cast<const SBYTE*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_INT16){
-			element_stride_size = 2;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int16_t);
+			assert(data_length % element_stride_size == 0);
 			const S16* data_local = reinterpret_cast<const S16*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_INT32){
-			element_stride_size = 4;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(int32_t);
+			assert(data_length % element_stride_size == 0);
 			const S32* data_local = reinterpret_cast<const S32*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_FLOAT){
-			element_stride_size = 4;
-			assert(element_stride_size % data_length == 0);
+			element_stride_size = sizeof(float);
+			assert(data_length % element_stride_size == 0);
 			const float* data_local = reinterpret_cast<const float*>(data);
 			for(U32 j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_CHAR){
-			element_stride_size = 1;
+			element_stride_size = sizeof(char);
 			const char* data_local = reinterpret_cast<const char*>(data);
 			destination_container.AddCharacter(data_local, data_length);
 		} else {

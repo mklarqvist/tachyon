@@ -104,10 +104,8 @@ bool CompressionManager::decompress(container_type& container){
 			return false;
 		}
 	} else if(container.header.data_header.controller.encoder == YON_ENCODE_ZPAQ){
-		if(!this->zpaq_codec.decompress(container)){
-			std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress data!" << std::endl;
-			return false;
-		}
+		std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "ZPAQ is no longer supported!" << std::endl;
+		return false;
 	} else {
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 		return false;
@@ -119,7 +117,8 @@ bool CompressionManager::decompress(container_type& container){
 		} else if (container.header.stride_header.controller.encoder == YON_ENCODE_NONE){
 			if(!this->no_codec.decompressStrides(container)){ std::cerr << utility::timestamp("ERROR","CODEC-NONE") << "Failed to decompress strides!" << std::endl; return false; }
 		} else if (container.header.stride_header.controller.encoder == YON_ENCODE_ZPAQ){
-			if(!this->zpaq_codec.decompressStrides(container)){ std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "Failed to decompress strides!" << std::endl; return false; }
+			std::cerr << utility::timestamp("ERROR","CODEC-ZPAQ") << "ZPAQ is no longer supported!" << std::endl;
+			return false;
 		} else {
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress! Illegal codec!" << std::endl;
 			return false;
