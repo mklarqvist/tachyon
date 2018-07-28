@@ -54,17 +54,22 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		return true;
 
 	// Allocate tetraploid worth of memory in the first instance.
-	yon_radix_gt* gt_pattern = new yon_radix_gt[this->GetNumberSamples()];
+	yon_radix_gt* gt_pattern   = new yon_radix_gt[this->GetNumberSamples()];
 	int32_t  largest_ploidy    = 0;
 	uint32_t largest_n_alleles = 0;
 	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
 		largest_ploidy = std::max(vcf_container[i]->d.fmt[0].n, largest_ploidy);
 		largest_n_alleles = std::max((uint32_t)vcf_container[i]->n_allele + 2, largest_n_alleles);
 	}
-	const uint8_t shift_size = ceil(log2(largest_n_alleles));
-	std::cerr << "Largest ploidy: " << largest_ploidy << " largest alleles " << largest_n_alleles << std::endl;
-	std::cerr << "Max: " << shift_size << " bits -> " << floor(64 / shift_size) << " ploidy limit" << std::endl;
-	assert(ceil(log2(largest_n_alleles)) * largest_ploidy <= 64);
+	// Shift largest_n_alleles one bit to the left as this is how
+	// alleles are stored in Vcf as the first bit encodes for
+	// the phasing.
+	uint32_t largest_n_alleles_binary = (largest_n_alleles << 1);
+
+	const uint8_t shift_size = ceil(log2(largest_n_alleles_binary));
+	std::cerr << "Largest ploidy: " << largest_ploidy << " largest alleles " << largest_n_alleles << "(" << largest_n_alleles_binary << ")" << std::endl;
+	std::cerr << "Max: " << (U32)shift_size << " bits -> " << floor(64 / shift_size) << " ploidy limit" << std::endl;
+	assert(shift_size * largest_ploidy <= 64);
 
 	// Ascertain that enough memory has been allocated.
 	// Todo: perform resizing.
@@ -73,6 +78,13 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		exit(1);
 	}
 
+	// Remap a genotype such that missing and sentinel node symbol (EOV)
+	// is stored in the back of the order.
+	uint8_t gt_remap[256];
+	gt_remap[0]   = largest_n_alleles - 1;
+	gt_remap[129] = largest_n_alleles; // Sentinel node symbol in unsigned space.
+	for(U32 i = 1; i < largest_n_alleles; ++i)
+		gt_remap[i] = i;
 
 	// In order to keep track of bins that are non-empty we use a
 	// vector of pointers to the bins and a map from bins to the vector
@@ -99,7 +111,7 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 
 		const bcf1_t* bcf = vcf_container[i];
 		const uint8_t* gt = bcf->d.fmt[0].p;
-		assert(bcf->d.fmt[0].p_len == sizeof(uint8_t) * g.base_ploidy * this->GetNumberSamples());
+		assert(bcf->d.fmt[0].p_len == sizeof(int8_t) * g.base_ploidy * this->GetNumberSamples());
 
 		// Base ploidy is equal to fmt.n in htslib.
 		U32 gt_offset = 0;
@@ -113,7 +125,10 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 			// the allele for that chromosome in the pattern helper
 			// structure.
 			for(U32 a = 0; a < g.base_ploidy; ++a, gt_offset++){
-				gt_pattern[s].alleles[a] = gt[gt_offset];
+				const uint8_t repacked = (gt_remap[gt[gt_offset] >> 1] << 1) | (gt[gt_offset] & 1);
+				assert((repacked >> 1) <= largest_n_alleles);
+				assert(repacked < largest_n_alleles_binary);
+				gt_pattern[s].alleles[a] = repacked;
 			}
 
 			// Hash the pattern of alleles
@@ -132,11 +147,12 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		}
 		assert(gt_offset == bcf->d.fmt[0].p_len);
 
-
+		/*
 		std::cerr << "Patterns: " << bin_used_map.size() << " unique: " << bin_used.size() << std::endl;
 		for(U32 i = 0; i < bin_used.size(); ++i){
 			std::cerr << "Bin " << i << ": n_entries = " << bin_used[i].size() << " packed " << bin_used_packed_integer[i] << " -> " << *bin_used[i].front() << std::endl;
 		}
+		*/
 
 
 		bin_used.clear();
