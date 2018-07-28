@@ -89,10 +89,11 @@ struct yon_radix_gt {
 		return(stream);
 	}
 
-	U64 GetPackedInteger(void) const{
+	U64 GetPackedInteger(const uint8_t& shift_size = 8) const{
 		U64 packed = 0;
 		for(U32 i = 0; i < this->n_ploidy; ++i){
-			packed |= this->alleles[i] << (i * 8);
+			packed <<= shift_size;
+			packed |= (this->alleles[i] & ((1 << shift_size)) - 1);
 		}
 		return packed;
 	}

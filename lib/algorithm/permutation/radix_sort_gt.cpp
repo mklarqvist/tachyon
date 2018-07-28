@@ -50,18 +50,43 @@ void RadixSortGT::reset(void){
 }
 
 bool RadixSortGT::Build(const vcf_container_type& vcf_container){
+	if(this->GetNumberSamples() == 0)
+		return true;
+
 	// Allocate tetraploid worth of memory in the first instance.
 	yon_radix_gt* gt_pattern = new yon_radix_gt[this->GetNumberSamples()];
+	int32_t  largest_ploidy    = 0;
+	uint32_t largest_n_alleles = 0;
+	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+		largest_ploidy = std::max(vcf_container[i]->d.fmt[0].n, largest_ploidy);
+		largest_n_alleles = std::max((uint32_t)vcf_container[i]->n_allele + 2, largest_n_alleles);
+	}
+	const uint8_t shift_size = ceil(log2(largest_n_alleles));
+	std::cerr << "Largest ploidy: " << largest_ploidy << " largest alleles " << largest_n_alleles << std::endl;
+	std::cerr << "Max: " << shift_size << " bits -> " << floor(64 / shift_size) << " ploidy limit" << std::endl;
+	assert(ceil(log2(largest_n_alleles)) * largest_ploidy <= 64);
 
-	// Assume largest ALT allele count is 10 and ploidy is 4.
-	//uint64_t* temp_bins = new uint64_t[pow(10, 4)];
+	// Ascertain that enough memory has been allocated.
+	// Todo: perform resizing.
+	if(largest_ploidy > gt_pattern[0].n_allocated){
+		std::cerr << utility::timestamp("ERROR") << "Insufficient memory allocated for this ploidy size. Resize needed..." << std::endl;
+		exit(1);
+	}
+
 
 	// In order to keep track of bins that are non-empty we use a
 	// vector of pointers to the bins and a map from bins to the vector
 	// offsets. The map uses the hash of the alleles as the key.
 	std::vector< std::vector<yon_radix_gt*> > bin_used;
 	std::unordered_map<uint64_t, uint32_t> bin_used_map;
+	// The byte-packed integer is used to determine the relative sort
+	// order of the bins.
 	std::vector<uint64_t> bin_used_packed_integer;
+
+	// Recycle iterator because the constructors are relatively
+	// expensive.
+	std::unordered_map<uint64_t, uint32_t>::const_iterator it;
+	std::unordered_map<uint64_t, uint32_t>::const_iterator end;
 
 	// Alphabet: 0, 1, missing, sentinel symbol (EOV). We know each allele
 	// must map to the range [0, n_alleles + 2):
@@ -72,74 +97,51 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		if(g.invariant)        continue;
 		if(g.base_ploidy == 0) continue;
 
-		// This functionality is only valid if ploidy is under or equal to
-		// eight as the packed integer requires 1 byte / ploidy.
-		if(g.base_ploidy > 8){
-			std::cerr << utility::timestamp("ERROR","PBWT") << "Cannot permute genotypes with base ploidy > 8. Run without permutation activiated!" << std::endl;
-			return false;
-		}
-
 		const bcf1_t* bcf = vcf_container[i];
 		const uint8_t* gt = bcf->d.fmt[0].p;
-		//std::cerr << bcf->pos << ": " << bcf->d.fmt[0].p_len << " base ploidy: " << (int)g.base_ploidy << std::endl;
 		assert(bcf->d.fmt[0].p_len == sizeof(uint8_t) * g.base_ploidy * this->GetNumberSamples());
 
 		// Base ploidy is equal to fmt.n in htslib.
 		U32 gt_offset = 0;
+
+		// Iterate over all available samples.
 		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
 			gt_pattern[s].n_ploidy = g.base_ploidy;
 			gt_pattern[s].id = s;
 			assert(g.base_ploidy < gt_pattern[s].n_allocated);
+			// Iterate over the ploidy for this sample and update
+			// the allele for that chromosome in the pattern helper
+			// structure.
 			for(U32 a = 0; a < g.base_ploidy; ++a, gt_offset++){
-				gt_pattern[s].alleles[a] = (gt[gt_offset] >> 1);
+				gt_pattern[s].alleles[a] = gt[gt_offset];
 			}
-			const U64 hash_pattern = RadixSortGT::HashGenotypes(gt_pattern[s].alleles, gt_pattern[s].n_ploidy);
-			//std::cerr << "Hash: " << hash_pattern << std::endl;
-			std::unordered_map<uint64_t, uint32_t>::const_iterator it = bin_used_map.find(hash_pattern);
-			if(it == bin_used_map.end()){
+
+			// Hash the pattern of alleles
+			const U64 hash_pattern = XXH64(gt_pattern[s].alleles, sizeof(uint16_t)*gt_pattern[s].n_ploidy, 651232);
+			// Update const_iterators for the hash mapper.
+			it  = bin_used_map.find(hash_pattern);
+			end = bin_used_map.cend();
+			if(it == end){
 				bin_used_map[hash_pattern] = bin_used.size();
 				bin_used.push_back(std::vector<yon_radix_gt*>());
 				bin_used.back().push_back(&gt_pattern[s]);
-				bin_used_packed_integer.push_back(gt_pattern[s].GetPackedInteger());
+				bin_used_packed_integer.push_back(gt_pattern[s].GetPackedInteger(shift_size));
 			} else {
 				bin_used[it->second].push_back(&gt_pattern[s]);
 			}
 		}
 		assert(gt_offset == bcf->d.fmt[0].p_len);
 
+
 		std::cerr << "Patterns: " << bin_used_map.size() << " unique: " << bin_used.size() << std::endl;
 		for(U32 i = 0; i < bin_used.size(); ++i){
 			std::cerr << "Bin " << i << ": n_entries = " << bin_used[i].size() << " packed " << bin_used_packed_integer[i] << " -> " << *bin_used[i].front() << std::endl;
 		}
 
+
 		bin_used.clear();
 		bin_used_map.clear();
-
-		// Sort genotypes according to their temporary encoded values.
-		//std::sort(&gt_pattern[0], &gt_pattern[this->GetNumberSamples()]);
-
-		/*
-		yon_radix_gt* ref = &gt_pattern[0];
-		for(U32 k = 1; k < this->GetNumberSamples(); ++k){
-
-		}
-		*/
-
-		// Debug
-		/*
-		yon_radix_gt* ref = &gt_pattern[0];
-		U32 l_run = 1;
-		for(U32 k = 1; k < this->GetNumberSamples(); ++k){
-			if(gt_pattern[k] != *ref){
-				std::cerr << i << "/" << vcf_container.sizeWithoutCarryOver() << ": " << *ref << "(" << l_run << ")" << std::endl;
-				l_run = 1;
-				ref = &gt_pattern[k];
-				continue;
-			}
-			++l_run;
-		}
-		std::cerr << i << "/" << vcf_container.sizeWithoutCarryOver() << ": " << *ref << "(" << l_run << ")" << std::endl << std::endl;
-		*/
+		bin_used_packed_integer.clear();
 	}
 
 	delete [] gt_pattern;
