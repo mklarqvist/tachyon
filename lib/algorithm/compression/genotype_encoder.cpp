@@ -22,6 +22,7 @@ bool GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfG
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
 	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	// Track all possible outcomes.
 	// 1: BYTE + Permuted
@@ -32,22 +33,26 @@ bool GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfG
 	// 6: U16  + No permutation
 	// 7: U32  + No permutation
 	// 8: U64  + No permutation
-	U32 n_runs[8]; // Number of runs.
-	U32 l_runs[8]; // Current run length.
-	memset(l_runs, 1, sizeof(U32)*8);
+	uint64_t n_runs[8]; // Number of runs.
+	uint64_t l_runs[8]; // Current run length.
+	memset(l_runs, 1, sizeof(uint64_t)*8);
+	memset(n_runs, 0, sizeof(uint64_t)*8);
 
 	// 1 + hasMissing + hasMixedPhasing
 	const BYTE shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
 	const BYTE add    = gt_summary.mixed_phasing  ? 1 : 0;
 
 	// Run limits
-	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (base_ploidy*shift + add)) - 1;
-	const U16  U16_limit  = pow(2, 8*sizeof(U16)  - (base_ploidy*shift + add)) - 1;
-	const U32  U32_limit  = pow(2, 8*sizeof(U32)  - (base_ploidy*shift + add)) - 1;
-	const U64  U64_limit  = pow(2, 8*sizeof(U64)  - (base_ploidy*shift + add)) - 1;
+	uint64_t limits[4];
+	limits[0] = pow(2, 8*sizeof(BYTE) - (base_ploidy*shift + add)) - 1;
+	limits[1] = pow(2, 8*sizeof(U16)  - (base_ploidy*shift + add)) - 1;
+	limits[2] = pow(2, 8*sizeof(U32)  - (base_ploidy*shift + add)) - 1;
+	limits[3] = pow(2, 8*sizeof(U64)  - (base_ploidy*shift + add)) - 1;
 
 	U32 rle_current_ref     = YON_PACK_GT_DIPLOID(gt[0], gt[1], shift, add);
-	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0]+0], gt[permutation_array[0]+1], shift, add);
+	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
+	                                              gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
+												  shift, add);
 
 	// Keep track of the linear offset in the genotype
 	// data stream. The permuted offset is computed directly
@@ -56,9 +61,186 @@ bool GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfG
 
 	// Iterate over all available samples.
 	for(U32 i = 1; i < this->n_samples; ++i, l_gt_offset += 2){
+		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
 		U32 rle_current     = YON_PACK_GT_DIPLOID(gt[l_gt_offset], gt[l_gt_offset + 1], shift, add);
-		U32 rle_ppa_current = YON_PACK_GT_DIPLOID(gt[permutation_array[i] + 0], gt[permutation_array[i] + 1], shift, add);
+		U32 rle_ppa_current = YON_PACK_GT_DIPLOID(gt_ppa_target[0], gt_ppa_target[1], shift, add);
+
+		if(rle_current != rle_current_ref){
+			++n_runs[4]; ++n_runs[5]; ++n_runs[6]; ++n_runs[7];
+			memset(&l_runs[4], 0, sizeof(uint64_t)*4);
+			rle_current_ref = rle_current;
+		}
+
+		// Overflow: trigger a break
+		for(U32 k = 4; k < 8; ++k){
+			if(l_runs[k] == limits[k-4]){
+				++n_runs[k]; l_runs[k] = 0;
+			}
+		}
+
+		++l_runs[4]; ++l_runs[5]; ++l_runs[6]; ++l_runs[7];
+
+
+		if(rle_ppa_current != rle_ppa_current_ref){
+			++n_runs[0]; ++n_runs[1]; ++n_runs[2]; ++n_runs[3];
+			memset(&l_runs[0], 0, sizeof(uint64_t)*4);
+			rle_ppa_current_ref = rle_ppa_current;
+		}
+
+		// Overflow: trigger a break
+		for(U32 k = 0; k < 4; ++k){
+			if(l_runs[k] == limits[k]){
+				++n_runs[k]; l_runs[k] = 0;
+			}
+		}
+		++l_runs[0]; ++l_runs[1]; ++l_runs[2]; ++l_runs[3];
+
 	}
+	assert(l_gt_offset == l_gt);
+	for(U32 k = 0; k < 8; ++k) ++n_runs[k];
+
+	std::cout << entry->pos + 1 << "\tR";
+	for(U32 i = 0; i < 4; ++i)
+		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*(i+1);
+	for(U32 i = 4; i < 8; ++i)
+		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*((i-4)+1);
+	std::cout << std::endl;
+
+	return true;
+}
+
+bool GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+	assert(entry->d.fmt[0].n == 2);
+	const uint8_t   base_ploidy = entry->d.fmt[0].n;
+	const uint8_t*  gt   = entry->d.fmt[0].p;
+	const uint32_t  l_gt = entry->d.fmt[0].p_len;
+	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
+
+	// Track all possible outcomes.
+	// 1: BYTE + Permuted
+	// 2: U16  + Permuted
+	// 3: U32  + Permuted
+	// 4: U64  + Permuted
+	// 5: BYTE + No permutation
+	// 6: U16  + No permutation
+	// 7: U32  + No permutation
+	// 8: U64  + No permutation
+	int64_t n_runs[8]; // Number of runs.
+	int64_t l_runs[8]; // Current run length.
+	memset(l_runs, 1, sizeof(int64_t)*8);
+	memset(n_runs, 0, sizeof(int64_t)*8);
+
+	// Assess RLE cost
+	const BYTE shift = ceil(log2(entry->n_allele + 2 + 1));
+	const BYTE add   = gt_summary.n_vector_end  ? 1 : 0;
+
+	// Run limits
+	// Values set to signed integers as values can underflow if
+	// the do not fit in the word size.
+	// Ploidy*shift_size bits for alleles and 1 bit for phase information (if required)
+	// Cost: 2^(8*word_width - (ploidy*(n_alleles + has_missing + hasEOV + 1) + has_mixed_phasing))
+	int64_t limits[4];
+	limits[0] = pow(2, 8*sizeof(BYTE) - (base_ploidy*shift + add)) - 1;
+	limits[1] = pow(2, 8*sizeof(U16)  - (base_ploidy*shift + add)) - 1;
+	limits[2] = pow(2, 8*sizeof(U32)  - (base_ploidy*shift + add)) - 1;
+	limits[3] = pow(2, 8*sizeof(U64)  - (base_ploidy*shift + add)) - 1;
+	if(limits[0] <= 0) limits[0] = std::numeric_limits<int64_t>::max();
+	if(limits[1] <= 0) limits[1] = std::numeric_limits<int64_t>::max();
+	if(limits[2] <= 0) limits[2] = std::numeric_limits<int64_t>::max();
+
+	uint8_t gt_remap[256];
+	memset(gt_remap, 256, 255);
+	for(U32 i = 0; i <= entry->n_allele; ++i){
+		gt_remap[i << 1]       = (i << 1) + 1;
+		gt_remap[(i << 1) + 1] = (i << 1) + 2;
+	}
+	gt_remap[0] = 0;
+	gt_remap[129] = 1;
+
+	U32 rle_current_ref     = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[0]], gt_remap[gt[1]], shift, add, gt_remap[gt[1]]);
+	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy]],
+												           gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]],
+												           shift, add,
+												           gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]]);
+
+	// Keep track of the linear offset in the genotype
+	// data stream. The permuted offset is computed directly
+	// and does not need to be tracked.
+	uint32_t l_gt_offset = base_ploidy;
+
+	//std::cerr << entry->pos + 1 << "\t" << (gt[0]>>1) << "|" << (gt[1]>>1);
+
+	// Iterate over all available samples.
+	for(U32 i = 1; i < this->n_samples; ++i, l_gt_offset += base_ploidy){
+		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
+		//std::cerr << "\t" << (gt[l_gt_offset] >> 1) << "|" << (gt[l_gt_offset+1] >> 1);
+		U32 rle_current     = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[l_gt_offset]], gt_remap[gt[l_gt_offset+1]], shift, add, gt_remap[gt[1]]);
+		U32 rle_ppa_current = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt_ppa_target[0]],
+		                                                   gt_remap[gt_ppa_target[1]],
+												           shift, add,
+														   gt_remap[gt_ppa_target[1]]);
+
+		assert(gt[l_gt_offset] != 255);
+		assert(gt[l_gt_offset+1] != 255);
+		assert(gt_remap[gt_ppa_target[0]] != 255);
+		assert(gt_remap[gt_ppa_target[1]] != 255);
+
+		/*
+		std::cerr << (U32)gt[l_gt_offset] << "->" << (U32)gt_remap[gt[l_gt_offset]] << std::endl;
+		std::cerr << (U32)gt[l_gt_offset+1] << "->" << (U32)gt_remap[gt[l_gt_offset+1]] << std::endl;
+		if(gt[l_gt_offset] == 129){
+			std::cerr << (int)gt[l_gt_offset] << "==129 -> " << (U32)gt_remap[gt[l_gt_offset]] << std::endl;
+		}
+		if(gt[l_gt_offset+1] == 129){
+			std::cerr << (int)gt[l_gt_offset+1] << "==129 -> " << (U32)gt_remap[gt[l_gt_offset+1]] << std::endl;
+		}
+		*/
+
+
+		if(rle_current != rle_current_ref){
+			++n_runs[4]; ++n_runs[5]; ++n_runs[6]; ++n_runs[7];
+			memset(&l_runs[4], 0, sizeof(uint64_t)*4);
+			rle_current_ref = rle_current;
+		}
+
+		// Overflow: trigger a break
+		for(U32 k = 4; k < 8; ++k){
+			if(l_runs[k] == limits[k-4]){
+				++n_runs[k]; l_runs[k] = 0;
+			}
+		}
+
+		++l_runs[4]; ++l_runs[5]; ++l_runs[6]; ++l_runs[7];
+
+
+		if(rle_ppa_current != rle_ppa_current_ref){
+			++n_runs[0]; ++n_runs[1]; ++n_runs[2]; ++n_runs[3];
+			memset(&l_runs[0], 0, sizeof(uint64_t)*4);
+			rle_ppa_current_ref = rle_ppa_current;
+		}
+
+		// Overflow: trigger a break
+		for(U32 k = 0; k < 4; ++k){
+			if(l_runs[k] == limits[k]){
+				++n_runs[k]; l_runs[k] = 0;
+			}
+		}
+		++l_runs[0]; ++l_runs[1]; ++l_runs[2]; ++l_runs[3];
+
+	}
+	//std::cerr << std::endl;
+	assert(l_gt_offset == l_gt);
+	for(U32 k = 0; k < 8; ++k) ++n_runs[k];
+
+	std::cout << entry->pos + 1 << "\tM";
+	for(U32 i = 0; i < 4; ++i)
+		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*(i+1);
+	for(U32 i = 4; i < 8; ++i)
+		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*((i-4)+1);
+	std::cout << std::endl;
+
+	return true;
 }
 
 bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,

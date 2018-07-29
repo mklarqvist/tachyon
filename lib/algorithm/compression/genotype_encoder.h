@@ -12,7 +12,7 @@
 #include "core/variant_controller.h"
 
 #include "io/htslib_integration.h"
-#include "algorithm/permutation/radix_sort_gt.h";
+#include "algorithm/permutation/radix_sort_gt.h"
 
 namespace tachyon{
 namespace algorithm{

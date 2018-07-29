@@ -221,9 +221,9 @@ void RadixSortGT::Debug(std::ostream& stream, const vcf_container_type& vcf_cont
 			// the allele for that chromosome in the pattern helper
 			// structure.
 			for(U32 a = 1; a < base_ploidy; ++a){
-				stream << "," << (U32)(gt_target[a] >> 1);
+				stream << "|" << (U32)(gt_target[a] >> 1);
 			}
-			stream << " ";
+			stream << "\t";
 		}
 		stream << std::endl;
 	}

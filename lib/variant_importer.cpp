@@ -577,6 +577,15 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 
 	// Add genotypes in parallel
 	// Todo: this->addGenotypes(bcf_reader, meta_entries);
+	this->encoder.setSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
+		io::VcfGenotypeSummary g = container.GetGenotypeSummary(i, this->vcf_reader_->vcf_header_.GetNumberSamples());
+		//if(g.n_vector_end) continue;
+		if(container[i]->n_allele == 2 && g.n_vector_end == 0)
+			this->encoder.AssessDiploidBiallelic(container[i],g,this->permutator.permutation_array);
+		else
+			this->encoder.AssessDiploidMultiAllelic(container[i],g,this->permutator.permutation_array);
+	}
 
 	// Add meta records to the block buffers
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries_new[i];
