@@ -229,7 +229,6 @@ bool GenotypeEncoder::EncodeParallel(const bcf_reader_type& bcf_reader,
 	return true;
 }
 
-// Todo: pass thread with slave in it
 bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 		                                  meta_type& meta,
                                    const U32* const  ppa,

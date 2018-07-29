@@ -102,7 +102,9 @@ bool VariantImporter::BuildVCF(void){
 	this->block.resize(resize_to);
 
 	// Todo:
-	//this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+	std::cerr << "setting samples" << std::endl;
+	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+	std::cerr << this->permutator.n_samples << std::endl;
 
 	// Iterate over all available variants in the file or until encountering
 	// an error.
@@ -125,14 +127,9 @@ bool VariantImporter::BuildVCF(void){
 		             this->vcf_container_.front()->pos + 1 << "->" <<
 					 this->vcf_container_.back()->pos + 1 << std::endl;
 
-		if(this->AddRecords(this->vcf_container_) == false){
-			return false;
-		}
-
 		// Todo
-		this->permutator.n_samples = this->vcf_reader_->vcf_header_.GetNumberSamples();
-		this->permutator.Build(this->vcf_container_);
-
+		if(this->permutator.Build(this->vcf_container_) == false) return false;
+		if(this->AddRecords(this->vcf_container_) == false) return false;
 
 		this->block.header.controller.hasGT  = this->GT_available_; // Todo: if GT is available in a block, not in the header
 		//this->block.footer.n_info_patterns   = this->info_patterns_.size();
@@ -154,7 +151,7 @@ bool VariantImporter::BuildVCF(void){
 		checksums += this->block;
 		// Todo: this->index += this->vcf_reader_->variant_reader
 
-
+		/*
 		for(U32 i = 0; i < this->block.footer.n_filter_patterns; ++i)
 			std::cerr << "Filter-pattern: " << this->block.footer.filter_patterns[i].pattern.size() << std::endl;
 
@@ -167,7 +164,7 @@ bool VariantImporter::BuildVCF(void){
 		std::cerr << "Info: " << this->block.info_map->size() << std::endl;
 		std::cerr << "Format: " << this->block.format_map->size() << std::endl;
 		std::cerr << "Filter: " << this->block.filter_map->size() << std::endl;
-
+		*/
 
 		// Clear current data.
 		this->clear();

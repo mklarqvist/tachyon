@@ -10,6 +10,32 @@
 namespace tachyon {
 namespace algorithm {
 
+struct yon_gt_ppa{
+	yon_gt_ppa(void) : n_samples(0), ordering(nullptr){}
+	yon_gt_ppa(const uint32_t n_samples) : n_samples(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
+	~yon_gt_ppa(void){ delete [] this->ordering; }
+
+	uint32_t& operator[](const uint32_t& position){ return(this->ordering[position]); }
+	const uint32_t& operator[](const uint32_t& position) const{ return(this->ordering[position]); }
+	uint32_t& at(const uint32_t& position){ return(this->ordering[position]); }
+	const uint32_t& at(const uint32_t& position) const{ return(this->ordering[position]); }
+
+	void Allocate(const uint32_t n_samples){
+		delete [] this->ordering;
+		this->n_samples = n_samples;
+		this->ordering = new uint32_t[n_samples];
+		this->reset();
+	}
+
+	void reset(void){
+		for(U32 i = 0; i < this->n_samples; ++i)
+			this->ordering[i] = i;
+	}
+
+	uint32_t  n_samples;
+	uint32_t* ordering;
+};
+
 struct yon_radix_gt {
 	yon_radix_gt() : n_ploidy(0), n_allocated(4), id(0), alleles(new uint16_t[this->n_allocated]){
 		memset(this->alleles, 0, sizeof(uint16_t)*this->n_allocated);
@@ -93,6 +119,7 @@ struct yon_radix_gt {
 		U64 packed = 0;
 		for(U32 i = 0; i < this->n_ploidy; ++i){
 			packed <<= shift_size;
+			assert(((this->alleles[i] << shift_size) >> shift_size) == this->alleles[i]);
 			packed |= (this->alleles[i] & ((1 << shift_size)) - 1);
 		}
 		return packed;
@@ -129,6 +156,7 @@ public:
 	void SetSamples(const U64 n_samples);
 
 	bool Build(const vcf_container_type& vcf_container);
+	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
 
 	// Construct given a reader with a block
 	// of BCF entries loaded in it
@@ -138,35 +166,6 @@ public:
 	inline const U64& GetNumberSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }
 
-	/**<
-	* Static function that calculates the 64-bit hash value for the target
-	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
-	* int (S32). Example of using this function:
-	*
-	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
-	*
-	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
-	* @return          Returns a 64-bit hash value.
-	*/
-	template <class T>
-	static U64 HashGenotypes(const T* genotype_data, const U32 l_data) {
-		XXH64_state_t* const state = XXH64_createState();
-		if (state==NULL) exit(1);
-
-		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
-		if (resetResult == XXH_ERROR) exit(1);
-
-		for(U32 i = 0; i < l_data; ++i) {
-			XXH_errorcode const addResult = XXH64_update(state, (const void*)genotype_data, sizeof(T));
-			if (addResult == XXH_ERROR) exit(1);
-		}
-
-		U64 hash = XXH64_digest(state);
-		XXH64_freeState(state);
-
-		return hash;
-	}
-
 public:
 	U64           n_samples; // total number of entries in file
 	U32           position;  // number of entries parsed
@@ -174,6 +173,11 @@ public:
 	BYTE*         GT_array;  // packed genotype array
 	U32**         bins;      // bin i
 	manager_type* manager;   // permutation manager
+
+	//
+	yon_gt_ppa    permutation_array;
+	yon_radix_gt* gt_pattern;
+	uint8_t gt_remap[256];
 };
 
 } /* namespace Algorithm */
