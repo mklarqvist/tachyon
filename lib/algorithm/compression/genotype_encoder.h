@@ -11,6 +11,9 @@
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
 
+#include "io/htslib_integration.h"
+#include "algorithm/permutation/radix_sort_gt.h";
+
 namespace tachyon{
 namespace algorithm{
 
@@ -172,6 +175,12 @@ public:
 	bool EncodeParallel(const bcf_type& bcf_entry, meta_type& meta, const U32* const ppa, GenotypeEncoderSlaveHelper& slave_helper) const;
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }
+
+	bool Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool AssessHaploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
 
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;

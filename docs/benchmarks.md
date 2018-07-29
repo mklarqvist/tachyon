@@ -10,7 +10,7 @@ We simulated haplotypes using [msprime][msprime] for a 50 megabase region for va
 | 685,363   | 250,000  | 12.64719       | 1.90681        | 1927.011      | 24.671        | 1028.046          | 4.745             |
 | 719,754   | 500,000  | 25.08209       | 3.04404        | 4139.424      | 45.247        | 2241.756          | 11.706            |  
 
-![screenshot](../examples/sim_50gbp.jpeg)
+![screenshot](sim_50gbp.jpeg)
 
 
 ### Real datasets
@@ -41,7 +41,7 @@ The following table shows data for the 1000 Genomes Project Phase 3 release (2,5
 | 21     | 180.55         | 5664.7           | 50.263         | 236.30           | 112.70   | 31.374   | 23.972            |
 | 22     | 177.18         | 5654.2           | 51.468         | 229.95           | 109.86   | 31.912   | 24.589            |
 
-![screenshot](../examples/1kgp3_yon_bcf.jpeg)  
+![screenshot](1kgp3_yon_bcf.jpeg)  
 The following table shows data for the Haplotype Reference Consortium (32,488 whole-genome sequenced samples)  
 
 | Contig | BCF-compressed | BCF-uncompressed | YON-compressed | YON-uncompressed | YON_fold | BCF_fold | Uncompressed_fold |
@@ -69,7 +69,7 @@ The following table shows data for the Haplotype Reference Consortium (32,488 wh
 | 21     | 986.49         | 34548            | 186.18         | 1221.8           | 185.56   | 35.021   | 28.275            |
 | 22     | 953.16         | 34110            | 196.84         | 1156.9           | 173.29   | 35.786   | 29.484            |
 
-![screenshot](../examples/hrc_bcf_yon.jpeg)  
+![screenshot](examples/hrc_bcf_yon.jpeg)  
 
 
 [msprime]:  https://github.com/jeromekelleher/msprime

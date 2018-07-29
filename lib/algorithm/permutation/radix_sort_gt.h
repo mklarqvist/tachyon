@@ -125,6 +125,14 @@ struct yon_radix_gt {
 		return packed;
 	}
 
+	void resize(const uint8_t new_ploidy){
+		uint16_t* temp = new uint16_t[new_ploidy];
+		memcpy(temp, this->alleles, this->n_allocated * sizeof(uint16_t));
+		delete [] this->alleles;
+		this->alleles = temp;
+		this->n_allocated = new_ploidy;
+	}
+
 	uint8_t   n_ploidy;
 	uint8_t   n_allocated;
 	uint64_t  id;

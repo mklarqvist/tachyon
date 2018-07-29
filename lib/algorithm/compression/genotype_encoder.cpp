@@ -15,6 +15,52 @@ GenotypeEncoder::GenotypeEncoder(const U64 samples) :
 
 GenotypeEncoder::~GenotypeEncoder(){}
 
+bool GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+	assert(entry->d.fmt[0].n == 2);
+	assert(entry->n_allele == 2);
+	const uint8_t   base_ploidy = entry->d.fmt[0].n;
+	const uint8_t*  gt   = entry->d.fmt[0].p;
+	const uint32_t  l_gt = entry->d.fmt[0].p_len;
+	assert(permutation_array.n_samples * base_ploidy == l_gt);
+
+	// Track all possible outcomes.
+	// 1: BYTE + Permuted
+	// 2: U16  + Permuted
+	// 3: U32  + Permuted
+	// 4: U64  + Permuted
+	// 5: BYTE + No permutation
+	// 6: U16  + No permutation
+	// 7: U32  + No permutation
+	// 8: U64  + No permutation
+	U32 n_runs[8]; // Number of runs.
+	U32 l_runs[8]; // Current run length.
+	memset(l_runs, 1, sizeof(U32)*8);
+
+	// 1 + hasMissing + hasMixedPhasing
+	const BYTE shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
+	const BYTE add    = gt_summary.mixed_phasing  ? 1 : 0;
+
+	// Run limits
+	const BYTE BYTE_limit = pow(2, 8*sizeof(BYTE) - (base_ploidy*shift + add)) - 1;
+	const U16  U16_limit  = pow(2, 8*sizeof(U16)  - (base_ploidy*shift + add)) - 1;
+	const U32  U32_limit  = pow(2, 8*sizeof(U32)  - (base_ploidy*shift + add)) - 1;
+	const U64  U64_limit  = pow(2, 8*sizeof(U64)  - (base_ploidy*shift + add)) - 1;
+
+	U32 rle_current_ref     = YON_PACK_GT_DIPLOID(gt[0], gt[1], shift, add);
+	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0]+0], gt[permutation_array[0]+1], shift, add);
+
+	// Keep track of the linear offset in the genotype
+	// data stream. The permuted offset is computed directly
+	// and does not need to be tracked.
+	uint32_t l_gt_offset = 2;
+
+	// Iterate over all available samples.
+	for(U32 i = 1; i < this->n_samples; ++i, l_gt_offset += 2){
+		U32 rle_current     = YON_PACK_GT_DIPLOID(gt[l_gt_offset], gt[l_gt_offset + 1], shift, add);
+		U32 rle_ppa_current = YON_PACK_GT_DIPLOID(gt[permutation_array[i] + 0], gt[permutation_array[i] + 1], shift, add);
+	}
+}
+
 bool GenotypeEncoder::Encode(const bcf_type& bcf_entry,
 		                          meta_type& meta,
 								 block_type& block,
@@ -458,6 +504,7 @@ bool GenotypeEncoder::EncodeParallel(const bcf_type& bcf_entry,
 const GenotypeEncoder::rle_helper_type GenotypeEncoder::assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const{
 	// Setup
 	const BYTE ploidy = 2;
+	// 1 + hasMissing + hasMixedPhasing;
 	const BYTE shift  = bcf_entry.gt_support.hasMissing    ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
 	const BYTE add    = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
 	U32 n_runs_byte = 0; U32 run_length_byte = 1;

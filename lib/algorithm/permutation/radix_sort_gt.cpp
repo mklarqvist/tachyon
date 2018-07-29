@@ -87,10 +87,9 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 	assert(shift_size * largest_ploidy <= 64);
 
 	// Ascertain that enough memory has been allocated.
-	// Todo: perform resizing.
-	if(largest_ploidy > this->gt_pattern[0].n_allocated){
-		std::cerr << utility::timestamp("ERROR") << "Insufficient memory allocated for this ploidy size. Resize needed..." << std::endl;
-		exit(1);
+	if(largest_ploidy >= this->gt_pattern[0].n_allocated){
+		for(U32 i = 0; i < this->GetNumberSamples(); ++i)
+			this->gt_pattern[i].resize(largest_ploidy + 3);
 	}
 
 	// Map a genotype such that missing and sentinel node symbol (EOV)
@@ -182,12 +181,10 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		}
 		assert(n_sample_c == this->GetNumberSamples());
 
-		/*
-		std::cerr << "Patterns: " << bin_used_map.size() << " unique: " << bin_used.size() << std::endl;
-		for(U32 i = 0; i < bin_used.size(); ++i){
-			std::cerr << "Bin " << i << ": n_entries = " << bin_used[i].size() << " packed " << bin_used_packed_integer[i] << " -> " << *bin_used[i].front() << std::endl;
-		}
-		*/
+		//std::cerr << "Patterns: " << bin_used_map.size() << " unique: " << bin_used.size() << std::endl;
+		//for(U32 i = 0; i < bin_used.size(); ++i){
+		//	std::cerr << "Bin " << i << ": n_entries = " << bin_used[i].size() << " packed " << bin_used_packed_integer[i] << " -> " << *bin_used[i].front() << std::endl;
+		//}
 
 		bin_used.clear();
 		bin_used_map.clear();
