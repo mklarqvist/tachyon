@@ -102,9 +102,10 @@ bool VariantImporter::BuildVCF(void){
 	this->block.resize(resize_to);
 
 	// Todo:
-	std::cerr << "setting samples" << std::endl;
 	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
-	std::cerr << this->permutator.n_samples << std::endl;
+
+	uint64_t b_total_genotypes = 0;
+	uint64_t b_total_write = 0;
 
 	// Iterate over all available variants in the file or until encountering
 	// an error.
@@ -131,10 +132,7 @@ bool VariantImporter::BuildVCF(void){
 		if(this->permutator.Build(this->vcf_container_) == false) return false;
 		if(this->AddRecords(this->vcf_container_) == false) return false;
 
-		this->block.header.controller.hasGT  = this->GT_available_; // Todo: if GT is available in a block, not in the header
-		//this->block.footer.n_info_patterns   = this->info_patterns_.size();
-		//this->block.footer.n_format_patterns = this->format_patterns_.size();
-		//this->block.footer.n_filter_patterns = this->filter_patterns_.size();
+		this->block.header.controller.hasGT  = this->GT_available_;
 		this->block.UpdateContainers();
 		this->block.Finalize();
 
@@ -143,34 +141,33 @@ bool VariantImporter::BuildVCF(void){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
-		//this->block.footer.ConstructInfoBitVector(this->info_patterns_, *this->block.info_map);
-		//this->block.footer.ConstructFormatBitVector(this->format_patterns_, *this->block.format_map);
-		//this->block.footer.ConstructFilterBitVector(this->filter_patterns_, *this->block.filter_map);
 
 		// Update checksums container with the available data.
 		checksums += this->block;
+
 		// Todo: this->index += this->vcf_reader_->variant_reader
 
-		/*
-		for(U32 i = 0; i < this->block.footer.n_filter_patterns; ++i)
-			std::cerr << "Filter-pattern: " << this->block.footer.filter_patterns[i].pattern.size() << std::endl;
-
-		for(U32 i = 0; i < this->block.footer.n_format_patterns; ++i)
-			std::cerr << "Format-pattern: " << this->block.footer.format_patterns[i].pattern.size() << std::endl;
-
-		for(U32 i = 0; i < this->block.footer.n_info_patterns; ++i)
-			std::cerr << "Info-pattern: " << this->block.footer.info_patterns[i].pattern.size() << std::endl;
-
-		std::cerr << "Info: " << this->block.info_map->size() << std::endl;
-		std::cerr << "Format: " << this->block.format_map->size() << std::endl;
-		std::cerr << "Filter: " << this->block.filter_map->size() << std::endl;
-		*/
+		uint64_t n_sum = 0;
+		for(U32 i = YON_BLK_GT_INT8; i < YON_BLK_GT_S_INT64; ++i){
+			//std::cerr << this->block.base_containers[i].buffer_data_uncompressed.size() << "->" << this->block.base_containers[i].buffer_data.size() << "=" << (float)this->block.base_containers[i].buffer_data_uncompressed.size()/this->block.base_containers[i].buffer_data.size() << "\t";
+			n_sum += this->block.base_containers[i].buffer_data_uncompressed.size();
+			b_total_genotypes += this->block.base_containers[i].buffer_data.size();
+		}
+		//std::cerr << this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.size() << "->" << this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data.size() << "=" << (float)this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.size()/this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data.size() << std::endl;
+		n_sum += this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.size();
+		b_total_genotypes += this->block.base_containers[YON_BLK_GT_S_INT64].buffer_data.size();
+		b_total_genotypes += this->block.base_containers[YON_BLK_GT_SUPPORT].buffer_data.size();
+		b_total_write += this->block.DetermineCompressedSize();
+		std::cerr << "Total: " << b_total_genotypes << " local: " << n_sum << std::endl;
+		std::cerr << "PPA size: " << this->block.ppa_manager.getObjectSize() << std::endl;
+		std::cerr << "Written: " << this->block.DetermineCompressedSize() << " -> " << b_total_write << std::endl;
 
 		// Clear current data.
 		this->clear();
 		this->block.clear();
 		this->index_entry.reset();
 	}
+	std::cerr << "Total write: " << b_total_write << std::endl;
 
 	// Finalize checksum container.
 	checksums.Finalize();
@@ -578,14 +575,7 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 	// Add genotypes in parallel
 	// Todo: this->addGenotypes(bcf_reader, meta_entries);
 	this->encoder.setSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
-	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
-		io::VcfGenotypeSummary g = container.GetGenotypeSummary(i, this->vcf_reader_->vcf_header_.GetNumberSamples());
-		//if(g.n_vector_end) continue;
-		if(container[i]->n_allele == 2 && g.n_vector_end == 0)
-			this->encoder.AssessDiploidBiallelic(container[i],g,this->permutator.permutation_array);
-		else
-			this->encoder.AssessDiploidMultiAllelic(container[i],g,this->permutator.permutation_array);
-	}
+	this->encoder.EncodeNew(container, meta_entries_new, this->block, this->permutator.permutation_array);
 
 	// Add meta records to the block buffers
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries_new[i];

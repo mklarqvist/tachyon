@@ -8,7 +8,7 @@ namespace tachyon{
 namespace algorithm{
 
 /**< Lower bounds threshold in fold-change for compression to be kept */
-#define MIN_COMPRESSION_FOLD 1.1
+#define MIN_COMPRESSION_FOLD 1.05
 
 /**
  * Permute bits from a byte-stream of U32 into target

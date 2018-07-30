@@ -79,5 +79,12 @@ void MetaAllele::operator()(const char* const in, const U32 length){
 	memcpy(this->allele, &in[0], this->l_allele);
 }
 
+void MetaAllele::operator()(const std::string& in){
+	this->l_allele = in.size();
+	delete [] this->allele;
+	this->allele = new char[this->l_allele];
+	memcpy(this->allele, in.data(), this->l_allele);
+}
+
 }
 }

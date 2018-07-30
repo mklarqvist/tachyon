@@ -106,7 +106,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
 
 		new( &this->alleles[0] ) allele_type( );
-		this->alleles[0](record->d.allele[0]);
+		this->alleles[0](std::string(record->d.allele[0]));
 		new( &this->alleles[1] ) allele_type( );
 		this->alleles[1].allele = new char[1];
 		this->alleles[1].allele[0] = '.';
@@ -114,7 +114,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 	} else {
 		for(U32 i = 0; i < this->n_alleles; ++i){
 			new( &this->alleles[i] ) allele_type( );
-			this->alleles[i](record->d.allele[i]);
+			this->alleles[i](std::string(record->d.allele[i]));
 		}
 	}
 
@@ -143,7 +143,7 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
 
 		new( &this->alleles[0] ) allele_type( );
-		this->alleles[0](record->d.allele[0]);
+		this->alleles[0](std::string(record->d.allele[0]));
 		new( &this->alleles[1] ) allele_type( );
 		this->alleles[1].allele = new char[1];
 		this->alleles[1].allele[0] = '.';
@@ -151,7 +151,7 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 	} else {
 		for(U32 i = 0; i < this->n_alleles; ++i){
 			new( &this->alleles[i] ) allele_type( );
-			this->alleles[i](record->d.allele[i]);
+			this->alleles[i](std::string(record->d.allele[i]));
 		}
 	}
 

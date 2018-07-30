@@ -61,7 +61,6 @@ void VariantDigestManager::Finalize(void){
 }
 
 void VariantDigestManager::operator+=(const variant_block_type& block){
-
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
 		this->at(i) += block.base_containers[i];
 

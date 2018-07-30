@@ -384,7 +384,6 @@ public:
 		return(this->AddPatternWrapper(pattern, this->filter_pattern_map, this->footer.filter_patterns, this->footer.n_filter_patterns));
 	}
 
-private:
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
 	 * block
@@ -392,6 +391,7 @@ private:
 	 */
 	U64 DetermineCompressedSize(void) const;
 
+private:
 	/**<
 	 *
 	 * @param stats_basic

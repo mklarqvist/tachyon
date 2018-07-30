@@ -21,6 +21,24 @@ namespace algorithm{
 #define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)                 (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
 
+struct yon_gt_assess {
+	uint8_t GetCheapestPrimitive(void) const{
+		uint64_t n_cost_best = this->n_cost[0];
+		uint8_t best_primitive = 0;
+		for(int i = 1; i < 4; ++i){
+			if(this->n_cost[i] < n_cost_best){
+				n_cost_best = this->n_cost[i];
+				best_primitive = i;
+			}
+		}
+		return(best_primitive);
+	}
+
+	uint8_t  method;
+	uint64_t n_runs[8];
+	uint64_t n_cost[8];
+};
+
 struct GenotypeEncoderStatistics{
 	GenotypeEncoderStatistics(){
 		memset(this->rle_counts,         0, sizeof(U64)*4);
@@ -171,16 +189,35 @@ public:
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
 	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
+
 	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa, const U32 n_threads);
 	bool EncodeParallel(const bcf_type& bcf_entry, meta_type& meta, const U32* const ppa, GenotypeEncoderSlaveHelper& slave_helper) const;
 	inline void setSamples(const U64 samples){ this->n_samples = samples; }
 	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }
 
-	bool Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	bool AssessHaploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	bool AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	bool AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	bool AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool EncodeNew(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const algorithm::yon_gt_ppa& permutation_array) const;
+	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+
+	template <class YON_RLE_TYPE>
+	uint64_t EncodeDiploidBiallelic(const bcf1_t* entry,
+                                    const io::VcfGenotypeSummary& gt_summary,
+	                                const algorithm::yon_gt_ppa& permutation_array,
+                                    container_type& dst) const;
+
+	template <class YON_RLE_TYPE>
+	uint64_t EncodeDiploidMultiAllelic(const bcf1_t* entry,
+	                                   const io::VcfGenotypeSummary& gt_summary,
+	                                   const algorithm::yon_gt_ppa& permutation_array,
+	                                   container_type& dst) const;
+
+	template <class YON_RLE_TYPE>
+	uint64_t EncodeMultiploid(const bcf1_t* entry,
+	                          const io::VcfGenotypeSummary& gt_summary,
+	                          const algorithm::yon_gt_ppa& permutation_array,
+	                          container_type& dst) const;
 
 private:
 	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
@@ -208,6 +245,248 @@ private:
 	U64 n_samples; // number of samples
 	stats_type stats_;
 };
+
+template <class YON_RLE_TYPE>
+uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
+                                                 const io::VcfGenotypeSummary& gt_summary,
+                                                 const algorithm::yon_gt_ppa& permutation_array,
+                                                 container_type& dst) const
+{
+	assert(entry->d.fmt[0].n == 2);
+	assert(entry->n_allele == 2);
+	assert(gt_summary.n_vector_end == 0);
+	const uint8_t   base_ploidy = entry->d.fmt[0].n;
+	const uint8_t*  gt   = entry->d.fmt[0].p;
+	const uint32_t  l_gt = entry->d.fmt[0].p_len;
+	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
+
+	uint64_t n_runs = 0; // Number of runs.
+	uint64_t l_runs = 1; // Current run length.
+
+	// 1 + hasMissing + hasMixedPhasing
+	const BYTE shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
+	const BYTE add    = gt_summary.mixed_phasing  ? 1 : 0;
+
+	// Run limits
+	const uint64_t limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (base_ploidy*shift + add)) - 1;
+	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
+												  gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
+												  shift, add);
+
+	// Iterate over all available samples.
+	for(U32 i = 1; i < this->n_samples; ++i){
+		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
+		U32 rle_ppa_current = YON_PACK_GT_DIPLOID(gt_ppa_target[0], gt_ppa_target[1], shift, add);
+
+		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+			YON_RLE_TYPE RLE = l_runs;
+			RLE <<= (base_ploidy*shift + add);
+			RLE |= rle_ppa_current_ref;
+			assert((RLE >> (base_ploidy*shift + add)) == l_runs);
+
+			// Push RLE to buffer
+			dst.AddLiteral((YON_RLE_TYPE)RLE);
+			++dst.header.n_additions;
+
+			rle_ppa_current_ref = rle_ppa_current;
+
+			l_runs = 0;
+			++n_runs;
+		}
+		++l_runs;
+	}
+	++n_runs;
+
+	YON_RLE_TYPE RLE = l_runs;
+	RLE <<= (base_ploidy*shift + add);
+	RLE |= rle_ppa_current_ref;
+	assert((RLE >> (base_ploidy*shift + add)) == l_runs);
+
+	// Push RLE to buffer
+	dst.AddLiteral((YON_RLE_TYPE)RLE);
+	++dst.header.n_additions;
+	++dst.header.n_entries;
+
+	//std::cerr << n_runs << "\t" << dst.buffer_data_uncompressed.size() << std::endl;
+
+	return n_runs;
+}
+
+template <class YON_RLE_TYPE>
+uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
+                                                    const io::VcfGenotypeSummary& gt_summary,
+                                                    const algorithm::yon_gt_ppa& permutation_array,
+                                                    container_type& dst) const
+{
+	assert(entry->d.fmt[0].n == 2);
+	const uint8_t   base_ploidy = entry->d.fmt[0].n;
+	const uint8_t*  gt   = entry->d.fmt[0].p;
+	const uint32_t  l_gt = entry->d.fmt[0].p_len;
+	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
+
+	int64_t n_runs = 0; // Number of runs.
+	int64_t l_runs = 1; // Current run length.
+
+	// Assess RLE cost
+	const BYTE shift = ceil(log2(entry->n_allele + 2 + 1));
+	const BYTE add   = gt_summary.mixed_phasing  ? 1 : 0;
+
+	// Run limits
+	// Values set to signed integers as values can underflow if
+	// the do not fit in the word size.
+	// Ploidy*shift_size bits for alleles and 1 bit for phase information (if required)
+	// Cost: 2^(8*word_width - (ploidy*(n_alleles + has_missing + hasEOV + 1) + has_mixed_phasing))
+	int64_t limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (base_ploidy*shift + add)) - 1;
+	assert(limit > 0);
+
+	uint8_t gt_remap[256];
+	memset(gt_remap, 256, 255);
+	for(U32 i = 0; i <= entry->n_allele; ++i){
+		gt_remap[i << 1]       = (i << 1) + 1;
+		gt_remap[(i << 1) + 1] = (i << 1) + 2;
+	}
+	gt_remap[0] = 0;
+	gt_remap[129] = 1;
+
+	// Initial reference entry.
+	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy]] >> 1,
+														   gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]] >> 1,
+														   shift, add,
+														   gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]]);
+
+	// Iterate over all available samples.
+	for(U32 i = 1; i < this->n_samples; ++i){
+		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
+		U32 rle_ppa_current = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt_ppa_target[0]] >> 1,
+														   gt_remap[gt_ppa_target[1]] >> 1,
+														   shift, add,
+														   gt_remap[gt_ppa_target[1]]);
+
+		assert(gt_remap[gt_ppa_target[0]] != 255);
+		assert(gt_remap[gt_ppa_target[1]] != 255);
+
+		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+			YON_RLE_TYPE RLE = l_runs;
+			RLE <<= (base_ploidy*shift + add);
+			RLE |= rle_ppa_current_ref;
+			assert((RLE >> (base_ploidy*shift + add)) == l_runs);
+
+			// Push RLE to buffer
+			dst.AddLiteral((YON_RLE_TYPE)RLE);
+			++dst.header.n_additions;
+
+			rle_ppa_current_ref = rle_ppa_current;
+
+			l_runs = 0;
+			++n_runs;
+		}
+
+		++l_runs;
+	}
+	++n_runs;
+
+	YON_RLE_TYPE RLE = l_runs;
+	RLE <<= (base_ploidy*shift + add);
+	RLE |= rle_ppa_current_ref;
+	assert((RLE >> (base_ploidy*shift + add)) == l_runs);
+
+	// Push RLE to buffer
+	dst.AddLiteral((YON_RLE_TYPE)RLE);
+	++dst.header.n_additions;
+	++dst.header.n_entries;
+
+	return n_runs;
+
+	//std::cerr << n_runs << "\t" << dst.buffer_data_uncompressed.size() << std::endl;
+}
+
+template <class YON_RLE_TYPE>
+uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
+                                           const io::VcfGenotypeSummary& gt_summary,
+                                           const algorithm::yon_gt_ppa& permutation_array,
+                                           container_type& dst) const
+{
+	// This method is currently only valid if the genotypic
+	// data is stored as BCF_BT_INT8 in the htslib bcf1_t
+	// record.
+	assert(entry->d.fmt[0].type == BCF_BT_INT8);
+	const uint8_t   base_ploidy = entry->d.fmt[0].n;
+	const uint8_t*  gt   = entry->d.fmt[0].p;
+	const uint32_t  l_gt = entry->d.fmt[0].p_len;
+	const uint64_t limit = std::numeric_limits<YON_RLE_TYPE>::max();
+	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
+
+	// Remap genotype encoding such that 0 maps to missing and
+	// 1 maps to the sentinel node symbol (EOV).
+	uint8_t gt_remap[256];
+	memset(gt_remap, 256, 255);
+	for(U32 i = 0; i <= entry->n_allele; ++i){
+		gt_remap[i << 1]       = (i << 1) + 1;
+		gt_remap[(i << 1) + 1] = (i << 1) + 2;
+	}
+	gt_remap[0]   = 0;
+	gt_remap[129] = 1;
+
+	// Start parameters for run-length encoding.
+	uint64_t n_runs = 0;     // Number of runs.
+	YON_RLE_TYPE l_run  = 0; // Current run length.
+
+	// Keep track of the current reference sequence as we
+	// iterate over the available genotypes.
+	uint8_t* reference = new uint8_t[base_ploidy];
+	for(U32 i = 0; i < base_ploidy; ++i)
+		reference[i] = gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + i]];
+
+	// Hash of current reference genotype sequence.
+	uint64_t hash_value_ppa_ref = XXH64(&gt[permutation_array[0] * sizeof(int8_t) * base_ploidy], sizeof(int8_t) * base_ploidy, 89231478);
+
+	// Iterate over all available samples.
+	for(U32 i = 1; i < this->n_samples; ++i){
+		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
+		uint64_t hash_value_ppa = XXH64(gt_ppa_target, sizeof(int8_t) * base_ploidy, 89231478);
+
+		if(hash_value_ppa != hash_value_ppa_ref){
+			dst.AddLiteral(l_run);
+			for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			++dst.header.n_additions;
+
+			++n_runs;
+			l_run = 0;
+			hash_value_ppa_ref = hash_value_ppa;
+			for(U32 k = 0; k < base_ploidy; ++k) reference[k] = gt_remap[gt_ppa_target[k]];
+		}
+
+		// Overflow: trigger a break
+		if(l_run == limit){
+			dst.AddLiteral(l_run);
+			for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			++dst.header.n_additions;
+
+			++n_runs;
+			l_run = 0;
+		}
+		++l_run;
+	}
+	dst.AddLiteral(l_run);
+	for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+	++dst.header.n_additions;
+	++dst.header.n_entries;
+
+	//std::cerr << l_run << ":" << (U32)reference[0];
+	//for(U32 k = 1; k < base_ploidy; ++k) std::cerr << "," << (U32)reference[k];
+	//std::cerr << std::endl;
+	++n_runs;
+
+	//std::cerr << n_runs << "\t" << dst.buffer_data_uncompressed.size() << std::endl;
+
+	delete [] reference;
+
+	return n_runs;
+}
+
 
 template <class YON_STORE_TYPE, class BCF_GT_TYPE>
 bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& bcf_entry,
