@@ -232,7 +232,7 @@ void GenotypeContainerDiploidBCF<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 		return;
 
 	// Has to be a SNV and biallelic
-	if(this->getMeta().isBiallelicSNV() == false) return;
+	if(this->getMeta().IsBiallelicSNV() == false) return;
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 

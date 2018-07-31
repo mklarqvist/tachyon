@@ -12,7 +12,6 @@
 #include "core/variant_importer_container_stats.h"
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
-#include "io/bcf/bcf_reader.h"
 #include "io/htslib_integration.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
@@ -81,10 +80,7 @@ private:
 	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
 
-	typedef vcf::VCFHeader                  header_type;
 	typedef index::IndexEntry               index_entry_type;
-	typedef bcf::BCFReader                  bcf_reader_type;
-	typedef bcf::BCFEntry                   bcf_entry_type;
 
 	typedef io::VcfReader                   vcf_reader_type;
 	typedef containers::VcfContainer        vcf_container_type;
@@ -131,34 +127,6 @@ private:
 	bool WriteBlock();
 	bool WriteFinal(algorithm::VariantDigestManager& checksums);
 	bool WriteKeychain(const encryption::Keychain<>& keychain);
-
-	/**<
-	* Static function that calculates the 64-bit hash value for the target
-	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
-	* int (S32). Example of using this function:
-	*
-	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
-	*
-	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
-	* @return          Returns a 64-bit hash value.
-	*/
-	static U64 HashIdentifiers(const std::vector<int>& id_vector){
-		XXH64_state_t* const state = XXH64_createState();
-		if (state==NULL) abort();
-
-		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
-		if (resetResult == XXH_ERROR) abort();
-
-		for(U32 i = 0; i < id_vector.size(); ++i){
-			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
-			if (addResult == XXH_ERROR) abort();
-		}
-
-		U64 hash = XXH64_digest(state);
-		XXH64_freeState(state);
-
-		return hash;
-	}
 
 private:
 	settings_type settings_; // internal settings

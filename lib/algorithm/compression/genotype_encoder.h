@@ -7,7 +7,6 @@
 #include <thread>
 
 #include "core/genotype_summary.h"
-#include "io/bcf/bcf_reader.h"
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
 
@@ -17,8 +16,12 @@
 namespace tachyon{
 namespace algorithm{
 
+const BYTE BCF_UNPACK_TACHYON[3] = {2, 0, 1};
+#define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TACHYON[((A) >> 1)]
+const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
+
 #define ENCODER_GT_DEBUG 0
-#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)                 (bcf::BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (bcf::BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
+#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)                 (BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
 
 struct yon_gt_assess {
@@ -160,8 +163,6 @@ class GenotypeEncoder {
 private:
 	typedef GenotypeEncoder              self_type;
 	typedef io::BasicBuffer              buffer_type;
-	typedef bcf::BCFReader               bcf_reader_type;
-	typedef bcf::BCFEntry                bcf_type;
 	typedef core::MetaEntry              meta_type;
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;
@@ -482,8 +483,6 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
  */
 struct CalcSlave{
 	typedef CalcSlave       self_type;
-	typedef bcf::BCFEntry   bcf_type;
-	typedef bcf::BCFReader  bcf_reader_type;
 	typedef core::MetaEntry meta_type;
 	typedef GenotypeEncoderSlaveHelper helper_type;
 
@@ -491,7 +490,7 @@ struct CalcSlave{
 		thread_idx_(0),
 		n_threads_(0),
 		encoder_(nullptr),
-		reader_(nullptr),
+		//reader_(nullptr),
 		meta_entries_(nullptr),
 		ppa_(nullptr),
 		helpers_(nullptr)
@@ -502,7 +501,7 @@ struct CalcSlave{
 	std::thread* Start(const GenotypeEncoder& encoder,
 		               const U32 thread_idx,
 		               const U32 n_threads,
-		               const bcf_reader_type& reader,
+		               //const bcf_reader_type& reader,
 		               meta_type* meta_entries,
 		               const U32* const ppa,
 		               helper_type* helpers)
@@ -510,7 +509,7 @@ struct CalcSlave{
 		this->encoder_      = &encoder;
 		this->thread_idx_   = thread_idx;
 		this->n_threads_    = n_threads;
-		this->reader_       = &reader;
+		//this->reader_       = &reader;
 		this->meta_entries_ = meta_entries;
 		this->ppa_          = ppa;
 		this->helpers_      = helpers;
@@ -522,7 +521,7 @@ struct CalcSlave{
 private:
 	void Run_(void){
 		exit(1);
-		for(U32 i = this->thread_idx_; i < this->reader_->size(); i += this->n_threads_){
+		for(U32 i = this->thread_idx_; i < 5; i += this->n_threads_){
 			//this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
 		}
 	}
@@ -531,7 +530,7 @@ private:
 	U32 thread_idx_;
 	U32 n_threads_;
 	const GenotypeEncoder* encoder_;
-	const bcf_reader_type* reader_;
+	//const bcf_reader_type* reader_;
 	meta_type* meta_entries_;
 	const U32* ppa_;
 	helper_type* helpers_;

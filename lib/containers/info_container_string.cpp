@@ -69,11 +69,11 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 
 	for(U32 i = 0; i < this->size(); ++i){
 		// Meta entry has no INFO
-		if(meta_container[i].getInfoPatternID() == -1){
+		if(meta_container[i].GetInfoPatternId() == -1){
 			new( &this->__containers[i] ) value_type( );
 		}
 		// If pattern matches
-		else if(pattern_matches[meta_container[i].getInfoPatternID()]){
+		else if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 			new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], strides[stride_offset]);
 			current_offset += strides[stride_offset];
 			++stride_offset;
@@ -114,10 +114,10 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If there are no INFO fields
-			if(meta_container[i].getInfoPatternID() == -1){
+			if(meta_container[i].GetInfoPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
 			} // If pattern matches
-			else if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			else if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], stride_size);
 				current_offset += stride_size;
 			}
@@ -132,7 +132,7 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 	else {
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type(data_container.buffer_data_uncompressed.data(), stride_size);
 			}
 			// Otherwise place an empty

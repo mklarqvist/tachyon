@@ -12,7 +12,6 @@
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
-#include "io/vcf/vcf_header.h"
 
 namespace tachyon{
 namespace containers{
@@ -32,7 +31,6 @@ class VariantBlock{
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
-
 
 public:
 	VariantBlock();

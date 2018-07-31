@@ -47,7 +47,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
-	if(this->isBiallelicSNV())
+	if(this->IsBiallelicSNV())
 		this->controller.simple_snv = true;
 }
 
@@ -84,7 +84,7 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
 	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
-	if(this->isBiallelicSNV())
+	if(this->IsBiallelicSNV())
 		this->controller.simple_snv = true;
 }
 
@@ -110,8 +110,8 @@ MetaEntry::~MetaEntry(){
 	::operator delete[](static_cast<void*>(this->alleles));
 };
 
-bool MetaEntry::usePackedRefAlt(void) const{
-	if(this->isBiallelic() == false || this->isDiploid() == false)
+bool MetaEntry::UsePackedRefAlt(void) const{
+	if(this->IsBiallelic() == false || this->IsDiploid() == false)
 		return false;
 
 	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), constants::YON_REGEX_PACKED_ALLELES) &&
@@ -121,8 +121,8 @@ bool MetaEntry::usePackedRefAlt(void) const{
 	return false;
 }
 
-BYTE MetaEntry::packRefAltByte(void) const{
-	assert(this->usePackedRefAlt());
+BYTE MetaEntry::PackRefAltByte(void) const{
+	assert(this->UsePackedRefAlt());
 	BYTE ref_alt = 0; // start out with empty
 
 	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){

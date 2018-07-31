@@ -465,7 +465,7 @@ public:
 		//U32 n_variants_parsed = 0;
 
 		//for(U32 i = 0; i < objects.genotypes->size(); ++i){
-			if(objects.meta_container->at(position).isDiploid() == false){
+			if(objects.meta_container->at(position).IsDiploid() == false){
 				std::cerr << "is not diploid" << std::endl;
 				return;
 			}
@@ -473,8 +473,8 @@ public:
 			// If set membership is -1 then calculate all fields
 			// Set target FLAG set to all ones; update with actual values if they exist
 			U16 target_flag_set = 65535;
-			if(objects.meta_container->at(position).getInfoPatternID() != -1)
-				target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).getInfoPatternID()];
+			if(objects.meta_container->at(position).GetInfoPatternId() != -1)
+				target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).GetInfoPatternId()];
 
 			// Get genotype summary data
 			objects.genotype_container->at(position).getSummary(*objects.genotype_summary);
@@ -601,7 +601,7 @@ public:
 		containers::GenotypeSummary gt_summary;
 		for(U32 i = 0; i < gt.size(); ++i){
 			// If there's > 5 alleles continue
-			if(gt[i].getMeta().getNumberAlleles() >= 5) continue;
+			if(gt[i].getMeta().GetNumberAlleles() >= 5) continue;
 			// Calculate summary statistics
 			//gt[i].getSummary(gt_summary);
 

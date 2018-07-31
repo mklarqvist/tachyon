@@ -8,7 +8,6 @@
 #include "support/type_definitions.h"
 #include "support/magic_constants.h"
 #include "algorithm/OpenHashTable.h"
-#include "io/vcf/vcf_header.h"
 #include "io/basic_buffer.h"
 
 namespace tachyon{
@@ -26,11 +25,9 @@ private:
 	typedef core::HeaderMapEntry              map_entry_type;
 	typedef core::HeaderSample                sample_type;
 	typedef hash::HashTable<std::string, S32> hash_table_type;
-	typedef vcf::VCFHeader                    vcf_header_type;
 
 public:
 	explicit VariantHeader(void);
-	VariantHeader(const vcf_header_type& vcf_header);
 	VariantHeader(const self_type& other);
 	~VariantHeader();
 
@@ -50,13 +47,6 @@ public:
 	inline U64& getSampleNumber(void){ return(this->header_magic.n_samples); }
 	inline const U32& getContigNumber(void) const{ return(this->header_magic.n_contigs); }
 	inline U32& getContigNumber(void){ return(this->header_magic.n_contigs); }
-
-	/**<
-	 * Interconvert a VCF header (provided during import) to
-	 * a Tachyon header
-	 * @param vcf_header Target input VCF header
-	 */
-	void operator=(const vcf_header_type& vcf_header);
 
 	// write
 	std::ostream& write(std::ostream& stream);

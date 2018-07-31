@@ -232,11 +232,11 @@ private:
 			this->n_ploidy  = 2;
 			this->alleles   = new core::GTObjectAllele[2];
     	}
-		const BYTE shift = meta_entry.isAnyGTMissing()   ? 2 : 1;
-		const BYTE add   = meta_entry.isGTMixedPhasing() ? 1 : 0;
+		const BYTE shift = meta_entry.IsAnyGTMissing()   ? 2 : 1;
+		const BYTE add   = meta_entry.IsGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].phase = gt_primitive & 1;
-		else    this->alleles[0].phase = meta_entry.getControllerPhase();
+		else    this->alleles[0].phase = meta_entry.GetControllerPhase();
 
 		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
 		this->alleles[0].allele = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);
@@ -286,11 +286,11 @@ private:
 			this->n_ploidy     = 2;
 			this->alleles      = new core::GTObjectAllele[2];
     	}
-		const BYTE shift    = ceil(log2(meta_entry.getNumberAlleles() + 1 + meta_entry.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
-		const BYTE add      = meta_entry.isGTMixedPhasing() ? 1 : 0;
+		const BYTE shift    = ceil(log2(meta_entry.GetNumberAlleles() + 1 + meta_entry.IsAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+		const BYTE add      = meta_entry.IsGTMixedPhasing() ? 1 : 0;
 
 		if(add) this->alleles[0].phase = gt_primitive & 1;
-		else    this->alleles[0].phase = meta_entry.getControllerPhase();
+		else    this->alleles[0].phase = meta_entry.GetControllerPhase();
 
 		this->n_objects        = YON_GT_RLE_LENGTH(gt_primitive, shift, add);
 		this->alleles[0].allele = YON_GT_RLE_ALLELE_A(gt_primitive, shift, add);

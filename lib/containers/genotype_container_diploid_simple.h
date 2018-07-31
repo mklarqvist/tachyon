@@ -82,8 +82,8 @@ template <class return_type>
 U32 GenotypeContainerDiploidSimple<return_type>::getSum(void) const{
 	U32 count = 0;
 
-	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
-	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = ceil(log2(this->__meta.GetNumberAlleles() + 1 + this->__meta.IsAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	for(U32 i = 0; i < this->n_entries; ++i)
 		count += YON_GT_RLE_LENGTH(this->at(i), shift, add);
@@ -93,8 +93,8 @@ U32 GenotypeContainerDiploidSimple<return_type>::getSum(void) const{
 
 template <class return_type>
 math::SquareMatrix<double>& GenotypeContainerDiploidSimple<return_type>::comparePairwise(square_matrix_type& square_matrix) const{
-	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing())); // Bits occupied per allele, 1 value for missing
-	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = ceil(log2(this->__meta.GetNumberAlleles() + 1 + this->__meta.IsAnyGTMissing())); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	U32 start_position = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -160,8 +160,8 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 	std::vector<tachyon::core::GTObject> ret(n_samples);
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 
-	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
-	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = ceil(log2(this->__meta.GetNumberAlleles() + 1 + this->__meta.IsAnyGTMissing() + this->__meta.IsMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -172,7 +172,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta.getControllerPhase();
+		else    phasing = this->__meta.GetControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
 			entries[cum_pos].alleles = new core::GTObjectAllele[2];
@@ -192,8 +192,8 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 	std::vector<tachyon::core::GTObject> ret(n_samples);
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&ret[0]);
 
-	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
-	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift    = ceil(log2(this->__meta.GetNumberAlleles() + 1 + this->__meta.IsAnyGTMissing() + this->__meta.IsMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add      = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -204,7 +204,7 @@ std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta.getControllerPhase();
+		else    phasing = this->__meta.GetControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
 			entries[ppa_manager[cum_pos]].alleles = new core::GTObjectAllele[2];
@@ -239,8 +239,8 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	}
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
 
-	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
-	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift    = ceil(log2(this->__meta.GetNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
+	const BYTE add      = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -251,7 +251,7 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta.getControllerPhase();
+		else    phasing = this->__meta.GetControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
 			entries[cum_pos].alleles[0].allele  = alleleA;
@@ -275,8 +275,8 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 	}
 	tachyon::core::GTObjectDiploidSimple* entries = reinterpret_cast<tachyon::core::GTObjectDiploidSimple*>(&objects[0]);
 
-	const BYTE shift    = ceil(log2(this->__meta.getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
-	const BYTE add      = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift    = ceil(log2(this->__meta.GetNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
+	const BYTE add      = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	U32 cum_pos = 0;
 	for(U32 i = 0; i < this->n_entries; ++i){
@@ -287,7 +287,7 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 
 		BYTE phasing = 0;
 		if(add) phasing = this->at(i) & 1;
-		else    phasing = this->__meta.getControllerPhase();
+		else    phasing = this->__meta.GetControllerPhase();
 
 		for(U32 j = 0; j < length; ++j, cum_pos++){
 			entries[ppa_manager[cum_pos]].alleles[0].allele  = alleleA;
@@ -323,17 +323,17 @@ GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summ
 template <class return_type>
 void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_object_type>& objects) const{
 	if(this->size() == 0) return;
-	if(this->getMeta().isDiploid() == false) return;
+	if(this->getMeta().IsDiploid() == false) return;
 	if(this->getMeta().alleles[0].size() != 1) return;
 
 	// If alleleA/B == ref then update self
 	// If allele != ref then update ref->observed
-	const U32 n_references = this->getMeta().getNumberAlleles() + 1 + this->__meta.isMixedPloidy();
+	const U32 n_references = this->getMeta().GetNumberAlleles() + 1 + this->__meta.IsMixedPloidy();
 	BYTE* references = new BYTE[n_references];
 
 	references[0] = constants::REF_ALT_MISSING;
-	references[1 + this->__meta.isMixedPloidy()] = constants::REF_ALT_MISSING;
-	U32 start_reference = 1 + this->__meta.isMixedPloidy();
+	references[1 + this->__meta.IsMixedPloidy()] = constants::REF_ALT_MISSING;
+	U32 start_reference = 1 + this->__meta.IsMixedPloidy();
 
 	switch(this->getMeta().alleles[0].allele[0]){
 	case('A'): references[start_reference] = constants::REF_ALT_A; break;
@@ -351,7 +351,7 @@ void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_obje
 	const BYTE& from_reference = references[start_reference];
 	++start_reference;
 
-	for(U32 i = 1; i < this->getMeta().getNumberAlleles(); ++i, start_reference++){
+	for(U32 i = 1; i < this->getMeta().GetNumberAlleles(); ++i, start_reference++){
 		if(this->getMeta().alleles[i].size() != 1){
 			//references[i] = constants::REF_ALT_INSERTION;
 			references[start_reference] = constants::REF_ALT_MISSING;
@@ -369,8 +369,8 @@ void GenotypeContainerDiploidSimple<return_type>::getTsTv(std::vector<ts_tv_obje
 
 	const BYTE* const transition_map_target   = constants::TRANSITION_MAP[from_reference];
 	const BYTE* const transversion_map_target = constants::TRANSVERSION_MAP[from_reference];
-	const BYTE shift = ceil(log2(this->__meta.getNumberAlleles() + 1 + this->__meta.isAnyGTMissing() + this->__meta.isMixedPloidy())); // Bits occupied per allele, 1 value for missing
-	const BYTE add   = this->__meta.isGTMixedPhasing() ? 1 : 0;
+	const BYTE shift = ceil(log2(this->__meta.GetNumberAlleles() + 1 + this->__meta.IsAnyGTMissing() + this->__meta.IsMixedPloidy())); // Bits occupied per allele, 1 value for missing
+	const BYTE add   = this->__meta.IsGTMixedPhasing() ? 1 : 0;
 
 	// Cycle over genotype objects
 	U32 cum_position = 0;

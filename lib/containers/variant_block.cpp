@@ -228,8 +228,7 @@ bool VariantBlock::write(std::ostream& stream,
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 		this->WriteContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
 
-	// Assert that the written amount equals the projected amount.
-	std::cerr << this->header.l_offset_footer << "==" << (U64)stream.tellp() - start_pos << std::endl;
+	// Assert that the written amount equals the expected amount.
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 
 	// Update stats
@@ -248,9 +247,9 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	++this->base_containers[YON_BLK_CONTIG];
 
 	// Ref-alt data
-	if(meta_entry.usePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+	if(meta_entry.UsePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
 		meta_entry.controller.alleles_packed = true;
-		const BYTE ref_alt = meta_entry.packRefAltByte();
+		const BYTE ref_alt = meta_entry.PackRefAltByte();
 		this->base_containers[YON_BLK_REFALT].AddLiteral(ref_alt);
 		++this->base_containers[YON_BLK_REFALT];
 	}

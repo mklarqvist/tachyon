@@ -50,7 +50,7 @@ public:
 
 	// Has mixed phasing
 	inline bool filterMixedPhasing(const_pointer pair, const objects_type& objects, const U32& position) const{
-		return(pair->applyFilter(objects.meta_container->at(position).isGTMixedPhasing()));
+		return(pair->applyFilter(objects.meta_container->at(position).IsGTMixedPhasing()));
 	}
 
 	inline bool filterKnownNovel(const_pointer pair, const objects_type& objects, const U32& position) const{
@@ -63,7 +63,7 @@ public:
 
 	// GT data matches this
 	inline bool filterUniformMatchPhase(const_pointer pair, const objects_type& objects, const U32& position) const{
-		if(objects.meta_container->at(position).isGTMixedPhasing() == true) return false;
+		if(objects.meta_container->at(position).IsGTMixedPhasing() == true) return false;
 		return(pair->applyFilter(objects.meta_container->at(position).controller.gt_phase));
 	}
 
@@ -75,7 +75,7 @@ public:
 	inline bool filterAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const{
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
-		return(pair->applyFilter(object.meta_container->at(position).getNumberAlleles() - 1));
+		return(pair->applyFilter(object.meta_container->at(position).GetNumberAlleles() - 1));
 	}
 
 	inline bool filterAlleleCount(const_pointer pair, const objects_type& object, const U32& position) const{

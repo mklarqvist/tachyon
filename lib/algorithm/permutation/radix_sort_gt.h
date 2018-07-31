@@ -1,7 +1,6 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "io/bcf/bcf_reader.h"
 #include "permutation_manager.h"
 #include "core/genotype_summary.h"
 
@@ -146,10 +145,7 @@ struct yon_radix_gt {
  */
 class RadixSortGT {
 	typedef RadixSortGT        self_type;
-	typedef bcf::BCFReader     bcf_reader_type;
-	typedef bcf::BCFEntry      bcf_entry_type;
 	typedef PermutationManager manager_type;
-
 	typedef containers::VcfContainer vcf_container_type;
 
 public:
@@ -165,11 +161,6 @@ public:
 
 	bool Build(const vcf_container_type& vcf_container);
 	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
-
-	// Construct given a reader with a block
-	// of BCF entries loaded in it
-	bool Build(const bcf_reader_type& reader);
-	bool Update(const bcf_entry_type& entry);
 
 	inline const U64& GetNumberSamples(void) const{ return(this->n_samples); }
 	inline const U32& size(void) const{ return(this->position); }

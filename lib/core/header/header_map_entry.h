@@ -5,7 +5,6 @@
 
 #include "support/enums.h"
 #include "io/basic_buffer.h"
-#include "io/vcf/vcf_header_line.h"
 
 namespace tachyon{
 namespace core{

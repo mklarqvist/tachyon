@@ -179,8 +179,8 @@ public:
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidRLE<T>& gt_rle_container){
-		const BYTE shift = gt_rle_container.getMeta().isAnyGTMissing()    ? 2 : 1;
-		const BYTE add   = gt_rle_container.getMeta().isGTMixedPhasing()  ? 1 : 0;
+		const BYTE shift = gt_rle_container.getMeta().IsAnyGTMissing()    ? 2 : 1;
+		const BYTE add   = gt_rle_container.getMeta().IsGTMixedPhasing()  ? 1 : 0;
 
 		for(U32 i = 0; i < gt_rle_container.size(); ++i){
 			const U64 length  = YON_GT_RLE_LENGTH(gt_rle_container.at(i), shift, add);
@@ -195,8 +195,8 @@ public:
 
 	template <class T>
 	inline void operator+=(const GenotypeContainerDiploidSimple<T>& gt_simple_container){
-		const BYTE shift    = ceil(log2(gt_simple_container.getMeta().getNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
-		const BYTE add      = gt_simple_container.getMeta().isGTMixedPhasing() ? 1 : 0;
+		const BYTE shift    = ceil(log2(gt_simple_container.getMeta().GetNumberAlleles() + 2 + 1)); // Bits occupied per allele, 1 value for missing
+		const BYTE add      = gt_simple_container.getMeta().IsGTMixedPhasing() ? 1 : 0;
 		//const BYTE matrix_add = !gt_simple_container.getMeta().isMixedPloidy();
 
 		if(gt_simple_container.getMeta().n_alleles + 2 > this->n_alleles_){
@@ -225,39 +225,6 @@ public:
 			this->matrix_[alleleA][alleleB] += 1;
 			this->vectorA_[alleleA] += 1;
 			this->vectorB_[alleleB] += 1;
-		}
-	}
-
-	inline void operator+=(const bcf::BCFEntry& entry){
-		if(entry.hasGenotypes == false) return;
-
-		if(entry.body->n_allele + 2 > this->n_alleles_){
-			std::cerr << "too many alleles: " << entry.body->n_allele + 2 << "/" << (int)this->n_alleles_ << std::endl;
-			return;
-		}
-
-		U32 internal_pos = entry.formatID[0].l_offset;
-		U32 k = 0;
-		for(U32 i = 0; i < 2*entry.body->n_sample; i += 2, ++k){
-			const BYTE& fmt_type_value1 = *reinterpret_cast<const BYTE* const>(&entry.data[internal_pos++]);
-			const BYTE& fmt_type_value2 = *reinterpret_cast<const BYTE* const>(&entry.data[internal_pos++]);
-			BYTE alleleA = fmt_type_value2 >> 1;
-			BYTE alleleB = fmt_type_value1 >> 1;
-			alleleA += (alleleA != 0 ? 1 : 0);
-			alleleB += (alleleB != 0 ? 1 : 0);
-			//std::cerr << (int)alleleA << "," << (int)alleleB << std::endl;
-			if(!(alleleA < this->n_alleles_ && alleleB < this->n_alleles_)){
-				std::cerr << entry.body->n_allele << std::endl;
-				std::cerr << internal_pos << "/" << entry.l_data << std::endl;
-				std::cerr << "pos: " << i << "/" << 2*entry.body->n_sample << "@" << k << std::endl;
-				std::cerr << (int)alleleA << "," << (int)alleleB << std::endl;
-				std::cerr << std::bitset<8>(fmt_type_value2) << "," << std::bitset<8>(fmt_type_value1) << std::endl;
-				exit(1);
-			}
-
-			++this->matrix_[alleleA][alleleB];
-			//++this->vectorA_[alleleA];
-			//++this->vectorB_[alleleB];
 		}
 	}
 

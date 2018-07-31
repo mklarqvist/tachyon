@@ -346,11 +346,11 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 		U32 strides_offset = 0;
 		for(U32 i = 0; i < this->size(); ++i){
 			// There are no FORMAT fields
-			if(meta_container[i].getFormatPatternID() == -1){
+			if(meta_container[i].GetFormatPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
 			}
 			// If pattern matches
-			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			else if(pattern_matches[meta_container[i].GetFormatPatternId()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
 				current_offset += strides[strides_offset] * sizeof(actual_primitive) * n_samples;
 				++strides_offset;
@@ -377,11 +377,11 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	if(data_container.header.data_header.isUniform()){
 		for(U32 i = 0; i < this->size(); ++i){
 			// There are no FORMAT fields
-			if(meta_container[i].getFormatPatternID() == -1){
+			if(meta_container[i].GetFormatPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
 			}
 			// If pattern matches
-			else if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			else if(pattern_matches[meta_container[i].GetFormatPatternId()]){
 				new( &this->__containers[i] ) value_type( data_container, 0, n_samples, stride_size );
 			}
 			// Otherwise place an empty
@@ -396,7 +396,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	else {
 		for(U32 i = 0; i < this->size(); ++i){
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getFormatPatternID()]){
+			if(pattern_matches[meta_container[i].GetFormatPatternId()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
 				current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 			}

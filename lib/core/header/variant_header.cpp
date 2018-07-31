@@ -16,22 +16,6 @@ VariantHeader::VariantHeader(void) :
 	htable_filter_fields(nullptr)
 {}
 
-VariantHeader::VariantHeader(const vcf_header_type& vcf_header) :
-	contigs(nullptr),
-	samples(nullptr),
-	info_fields(nullptr),
-	format_fields(nullptr),
-	filter_fields(nullptr),
-	htable_contigs(nullptr),
-	htable_samples(nullptr),
-	htable_info_fields(nullptr),
-	htable_format_fields(nullptr),
-	htable_filter_fields(nullptr)
-{
-	// Invoke copy operator
-	*this = vcf_header;
-}
-
 VariantHeader::VariantHeader(const self_type& other) :
 	header_magic(other.header_magic),
 	contigs(new contig_type[this->header_magic.getNumberContigs()]),
@@ -213,59 +197,6 @@ bool VariantHeader::buildHashTables(void){
 	}
 
 	return true;
-}
-
-void VariantHeader::operator=(const vcf_header_type& vcf_header){
-	this->header_magic.n_contigs       = vcf_header.contigs.size();
-	this->header_magic.n_samples       = vcf_header.size();
-	this->header_magic.n_info_values   = vcf_header.info_map.size();
-	this->header_magic.n_format_values = vcf_header.format_map.size();
-	this->header_magic.n_filter_values = vcf_header.filter_map.size();
-
-	if(vcf_header.literal_lines.size()){
-		this->literals += vcf_header.literal_lines[0];
-		for(U32 i = 1; i < vcf_header.literal_lines.size(); ++i)
-			this->literals += "\n" + vcf_header.literal_lines[i];
-	}
-
-	this->header_magic.l_literals     = this->literals.size();
-
-	// Cleanup previous
-	delete [] this->contigs;
-	delete [] this->samples;
-	delete [] this->info_fields;
-	delete [] this->filter_fields;
-	delete [] this->format_fields;
-
-	this->contigs = new contig_type[this->header_magic.getNumberContigs()];
-	for(U32 i = 0; i < this->header_magic.getNumberContigs(); ++i){
-		this->contigs[i] = vcf_header.contigs[i];
-		this->contigs[i].contigID = i;
-	}
-
-	this->samples = new sample_type[this->header_magic.getNumberSamples()];
-	for(U32 i = 0; i < this->header_magic.getNumberSamples(); ++i)
-		this->samples[i] = vcf_header.sample_names[i];
-
-	this->info_fields = new map_entry_type[this->header_magic.n_info_values];
-	for(U32 i = 0; i < this->header_magic.n_info_values; ++i){
-		this->info_fields[i] = vcf_header.info_map[i];
-		this->info_fields[i].IDX = i; // update idx to local
-	}
-
-	this->format_fields = new map_entry_type[this->header_magic.n_format_values];
-	for(U32 i = 0; i < this->header_magic.n_format_values; ++i){
-		this->format_fields[i] = vcf_header.format_map[i];
-		this->format_fields[i].IDX = i; // update idx to local
-	}
-
-	this->filter_fields = new map_entry_type[this->header_magic.n_filter_values];
-	for(U32 i = 0; i < this->header_magic.n_filter_values; ++i){
-		this->filter_fields[i] = vcf_header.filter_map[i];
-		this->filter_fields[i].IDX = i; // update idx to local
-	}
-
-	this->buildHashTables();
 }
 
 std::ostream& VariantHeader::writeHeaderVCF(std::ostream& stream, const bool showFormat) const{
