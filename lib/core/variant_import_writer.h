@@ -28,10 +28,10 @@ public:
 		const U64 start_footer_pos = this->stream->tellp();
 		const U32 footer_uLength   = footer.header.data_header.uLength;
 		const U32 footer_cLength   = footer.header.data_header.cLength;
-		const U32 footer_crc       = footer.header.data_header.crc;
+		const uint8_t* footer_crc  = &footer.header.data_header.crc[0];
 		this->stream->write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
 		this->stream->write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
-		this->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(U32));
+		this->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(MD5_DIGEST_LENGTH));
 		*this->stream << footer.buffer_data;
 		return(this->stream->good());
 	}

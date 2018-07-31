@@ -188,11 +188,11 @@ protected:
 public:
 	CompressionContainer() = default;
 	virtual ~CompressionContainer() = default;
-	virtual bool compress(permutation_type& manager)          =0;
-	virtual bool compress(container_type& container)          =0;
-	virtual bool compressStrides(container_type& container)   =0;
-	virtual bool decompress(container_type& container)        =0;
-	virtual bool decompressStrides(container_type& container) =0;
+	virtual bool Compress(permutation_type& manager)          =0;
+	virtual bool Compress(container_type& container)          =0;
+	virtual bool CompressStrides(container_type& container)   =0;
+	virtual bool Decompress(container_type& container)        =0;
+	virtual bool DecompressStrides(container_type& container) =0;
 
 protected:
 	buffer_type buffer;

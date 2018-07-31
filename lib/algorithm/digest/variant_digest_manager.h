@@ -1,6 +1,7 @@
 #ifndef ALGORITHM_DIGEST_VARIANT_DIGEST_MANAGER_H_
 #define ALGORITHM_DIGEST_VARIANT_DIGEST_MANAGER_H_
 
+#include "openssl/md5.h"
 #include "digest_manager.h"
 
 namespace tachyon{
@@ -27,6 +28,23 @@ public:
 	inline reference atFORMAT(const U32 position){ return(this->__entries_format[position]); }
 
 	void operator+=(const variant_block_type& block);
+
+	template <class T>
+	static void GenerateMd5(const T& value, uint8_t* dst){
+	   // uint8_t hash[MD5_DIGEST_LENGTH];
+		MD5_CTX md5;
+		MD5_Init(&md5);
+		MD5_Update(&md5, value, sizeof(T));
+		MD5_Final(dst, &md5);
+	}
+
+	static void GenerateMd5(const char* data, const uint32_t l_data, uint8_t* dst){
+	   // uint8_t hash[MD5_DIGEST_LENGTH];
+		MD5_CTX md5;
+		MD5_Init(&md5);
+		MD5_Update(&md5, data, l_data);
+		MD5_Final(dst, &md5);
+	}
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
 		const parent_type* const parent = reinterpret_cast<const parent_type* const>(&container);

@@ -32,11 +32,7 @@ void PermutationManager::reset(void){
 }
 
 bool PermutationManager::generateCRC(void){
-	// Checksum for main buffer
-	U32 crc = crc32(0, NULL, 0);
-	crc = crc32(crc, (Bytef*)this->PPA.buffer, this->n_samples*sizeof(U32));
-	this->header.data_header.crc = crc;
-	return true;
+	exit(1);
 }
 
 }

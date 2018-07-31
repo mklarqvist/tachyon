@@ -5,6 +5,8 @@
 #include "support/enums.h"
 #include "data_container_header_controller.h"
 
+#include "openssl/md5.h"
+
 namespace tachyon{
 namespace containers{
 
@@ -43,9 +45,15 @@ struct DataContainerHeaderObject{
 	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
 
 	// Checksum
-	inline U32& getChecksum(void){ return(this->crc); }
-	inline const U32& getChecksum(void) const{ return(this->crc); }
-	inline bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
+	inline uint8_t* GetChecksum(void){ return(&this->crc[0]); }
+	inline const uint8_t* GetChecksum(void) const{ return(&this->crc[0]); }
+	bool CheckChecksum(const uint8_t* compare) const{
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i){
+			if(compare[i] != this->crc[i])
+				return false;
+		}
+		return true;
+	}
 
 private:
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
@@ -55,7 +63,7 @@ private:
 		buffer += entry.cLength;
 		buffer += entry.uLength;
 		buffer += entry.eLength;
-		buffer += entry.crc;
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer += entry.crc[i];
 		buffer += entry.global_key;
 		return(buffer);
 	}
@@ -67,7 +75,7 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.crc),       sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.crc[0]),    sizeof(uint8_t)*MD5_DIGEST_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(S32));
 		return(stream);
 	}
@@ -79,7 +87,7 @@ private:
 		buffer >> entry.cLength;
 		buffer >> entry.uLength;
 		buffer >> entry.eLength;
-		buffer >> entry.crc;
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer >> entry.crc[i];
 		buffer >> entry.global_key;
 		return(buffer);
 	}
@@ -91,7 +99,7 @@ private:
 		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.crc),        sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.crc[0]),     sizeof(uint8_t)*MD5_DIGEST_LENGTH);
 		stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(S32));
 
 		return(stream);
@@ -104,7 +112,7 @@ public:
 	U32 cLength;                // compressed length
 	U32 uLength;                // uncompressed length
 	U32 eLength;                // encrypted length
-	U32 crc;                    // crc32 checksum
+	uint8_t crc[MD5_DIGEST_LENGTH];  // MD5 checksum
 	S32 global_key;             // global key
 };
 

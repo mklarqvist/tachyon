@@ -83,7 +83,7 @@ bool VariantReader::open(void){
 	header_container.buffer_data.resize(header_container.header.data_header.cLength);
 	this->basic_reader.stream_.read(header_container.buffer_data.data(), header_container.header.data_header.cLength);
 	header_container.buffer_data.n_chars = header_container.header.data_header.cLength;
-	if(!this->codec_manager.zstd_codec.decompress(header_container)){
+	if(!this->codec_manager.zstd_codec.Decompress(header_container)){
 		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
 		return false;
 	}
@@ -136,7 +136,7 @@ bool VariantReader::nextBlock(){
 
 	std::cerr << "Before decompress header footer" << std::endl;
 
-	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	std::cerr << "Before overload header footer" << std::endl;
@@ -165,7 +165,7 @@ bool VariantReader::nextBlock(){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
+	if(!this->codec_manager.Decompress(this->variant_container.getBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -194,7 +194,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.decompress(this->variant_container.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return(false);
 	}
@@ -219,7 +219,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(this->variant_container.getBlock())){
+	if(!this->codec_manager.Decompress(this->variant_container.getBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -246,7 +246,7 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	if(!block.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return variant_container_type();
 
-	if(!this->codec_manager.zstd_codec.decompress(block.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(block.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	block.getBlock().footer_support.buffer_data_uncompressed >> block.getBlock().footer;
@@ -270,7 +270,7 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.decompress(block.getBlock())){
+	if(!this->codec_manager.Decompress(block.getBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return variant_container_type();
 	}

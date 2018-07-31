@@ -20,16 +20,16 @@ public:
 	CompressionManager() = default;
 	~CompressionManager() = default;
 
-	bool compress(variant_block_type& block, const BYTE general_level = 6, const BYTE float_level = 3);
-	bool decompress(variant_block_type& block);
-	bool decompress(algorithm::PermutationManager& permutation_manager);
+	bool Compress(variant_block_type& block, const BYTE general_level = 6, const BYTE float_level = 3);
+	bool Decompress(variant_block_type& block);
+	bool Decompress(algorithm::PermutationManager& permutation_manager);
 
 	/**<
 	 * Decompress an abstract data container
 	 * @param container Target container
 	 * @return          Returns TRUE upon success or FALSE otherwise
 	 */
-	bool decompress(container_type& container);
+	bool Decompress(container_type& container);
 
 public:
 	no_codec_type   no_codec;

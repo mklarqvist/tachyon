@@ -110,10 +110,10 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 
 	U32 footer_uLength = 0;
 	U32 footer_cLength = 0;
-	U32 footer_crc = 0;
+	uint8_t footer_crc[MD5_DIGEST_LENGTH];
 	stream.read(reinterpret_cast<char*>(&footer_uLength), sizeof(U32));
 	stream.read(reinterpret_cast<char*>(&footer_cLength), sizeof(U32));
-	stream.read(reinterpret_cast<char*>(&footer_crc),     sizeof(U32));
+	stream.read(reinterpret_cast<char*>(&footer_crc[0]),  MD5_DIGEST_LENGTH);
 	this->footer_support.resize(footer_cLength);
 	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
 	this->footer_support.buffer_data.n_chars = footer_cLength;
@@ -121,7 +121,7 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
 	this->footer_support.header.data_header.cLength = footer_cLength;
 	this->footer_support.header.data_header.uLength = footer_uLength;
-	this->footer_support.header.data_header.crc     = footer_crc;
+	memcpy(&this->footer_support.header.data_header.crc[0], &footer_crc[0], MD5_DIGEST_LENGTH);
 
 	// Assert end-of-block marker
 	U64 eof_marker;

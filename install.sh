@@ -95,7 +95,4 @@ fi
 # Install Tachyon
 ################################################################################
 note_build_stage "Building Tachyon"
-cd lib/third_party/zlib
-./configure
-cd ../../../
 make clean; make -j$(nproc)

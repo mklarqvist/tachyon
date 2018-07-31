@@ -4,8 +4,6 @@
 #include <fstream>
 
 #include "containers/components/data_container_header.h"
-#include "third_party/zlib/zconf.h"
-#include "third_party/zlib/zlib.h"
 #include "io/basic_buffer.h"
 
 

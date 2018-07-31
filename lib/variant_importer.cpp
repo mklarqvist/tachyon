@@ -151,7 +151,7 @@ bool VariantImporter::BuildVCF(void){
 		this->block.Finalize();
 
 		// Perform compression using standard parameters
-		if(!this->compression_manager.compress(this->block, this->settings_.compression_level, 6)){
+		if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
@@ -536,7 +536,7 @@ bool VariantImporter::WriteBlock(){
 	this->index_entry.byte_offset = this->writer->stream->tellp();
 	this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
 	this->block.PackFooter(); // Pack footer into buffer.
-	this->compression_manager.zstd_codec.compress(block.footer_support);
+	this->compression_manager.zstd_codec.Compress(block.footer_support);
 	this->writer->WriteBlockFooter(block.footer_support);
 	this->writer->WriteEndOfBlock();
 	this->UpdateIndex(); // Update index.

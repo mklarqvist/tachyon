@@ -5,8 +5,8 @@
 #include "io/basic_buffer.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
-#include "third_party/zlib/zconf.h"
-#include "third_party/zlib/zlib.h"
+
+#include "algorithm/digest/variant_digest_manager.h"
 
 namespace tachyon{
 namespace containers{
@@ -39,28 +39,8 @@ void DataContainer::resize(const U32 size){
 }
 
 void DataContainer::GenerateCRC(void){
-	if(this->buffer_data_uncompressed.size() == 0){
-		this->header.data_header.crc = 0;
-	} else {
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
-		this->header.data_header.crc = crc;
-	}
-
-	if(this->header.data_header.hasMixedStride()){
-		if(this->buffer_data_uncompressed.size() == 0){
-			this->header.stride_header.crc = 0;
-		} else {
-			// Checksum for strides
-			U32 crc = crc32(0, NULL, 0);
-			if(this->buffer_strides_uncompressed.size() > 0){
-				crc = crc32(0, NULL, 0);
-				crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
-				this->header.stride_header.crc = crc;
-			}
-		}
-	}
+	algorithm::VariantDigestManager::GenerateMd5(this->buffer_data_uncompressed.data(), this->buffer_data_uncompressed.size(), &this->header.data_header.crc[0]);
+	algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides_uncompressed.data(), this->buffer_strides_uncompressed.size(), &this->header.stride_header.crc[0]);
 }
 
 bool DataContainer::CheckCRC(int target){
@@ -69,33 +49,33 @@ bool DataContainer::CheckCRC(int target){
 			return true;
 
 		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
-		return(crc == this->header.data_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_data_uncompressed.data(), this->buffer_data_uncompressed.size(), &md5_compare[0]);
+		return(this->header.data_header.CheckChecksum(md5_compare));
+
 	} else if(target == 1){
 		if(this->buffer_strides_uncompressed.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
-		return(crc == this->header.stride_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides_uncompressed.data(), this->buffer_strides_uncompressed.size(), &md5_compare[0]);
+		return(this->header.stride_header.CheckChecksum(md5_compare));
+
 	} else if(target == 3){
 		if(this->buffer_data.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data.buffer, this->buffer_data.size());
-		return(crc == this->header.data_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_data.data(), this->buffer_data.size(), &md5_compare[0]);
+		return(this->header.data_header.CheckChecksum(md5_compare));
+
 	} else if(target == 4){
 		if(this->buffer_strides.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides.buffer, this->buffer_strides.size());
-		return(crc == this->header.stride_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides.data(), this->buffer_strides.size(), &md5_compare[0]);
+		return(this->header.stride_header.CheckChecksum(md5_compare));
 	}
 	return true;
 }
