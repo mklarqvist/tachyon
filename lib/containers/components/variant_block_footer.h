@@ -5,12 +5,13 @@
 
 #include "data_block_bitvector.h"
 #include "data_container_header.h"
-#include "containers/hash_container.h"
 #include "io/basic_buffer.h"
+
+#include "third_party/xxhash/xxhash.h"
 
 namespace tachyon {
 
-#define YON_BLK_N_STATIC   20 // Total number of invariant headers
+#define YON_BLK_N_STATIC   20// Total number of invariant headers
 #define YON_BLK_PPA         0 // Sample permutation array
 #define YON_BLK_CONTIG      1
 #define YON_BLK_POSITION    2
@@ -43,6 +44,10 @@ struct yon_blk_bv_pair {
 		delete this->bit_vector;
 	}
 
+	// Bit access
+	inline bool operator[](const U32 position) const{ return((*this->bit_vector)[position]); }
+
+
 	// Given the total number of fields allocate ceil(n_total_fields/8)
 	// bytes for the base array.
 	void Build(const U32 n_total_fields, const std::unordered_map<U32, U32>* local_map){
@@ -71,6 +76,23 @@ struct yon_blk_bv_pair {
 		}
 	}
 
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry){
+		buffer += (U16)entry.pattern.size();
+		for(U32 i = 0; i < entry.pattern.size(); ++i) buffer += entry.pattern[i];
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry){
+		entry.pattern.clear();
+		U16 l_vector;
+		buffer >> l_vector;
+		entry.pattern.resize(l_vector);
+		for(U32 i = 0; i < l_vector; ++i) buffer >> entry.pattern[i];
+
+		return(buffer);
+	}
+
 	std::vector<int>    pattern;
 	DataBlockBitvector* bit_vector;
 };
@@ -84,20 +106,17 @@ struct VariantBlockFooter {
 private:
 	typedef VariantBlockFooter        self_type;
 	typedef DataBlockBitvector        bit_vector;
-	typedef std::vector<U32>          id_vector;
-	typedef std::vector< id_vector >  pattern_vector;
-	typedef containers::HashContainer hash_container_type;
-	typedef containers::HashVectorContainer hash_vector_container_type;
+	//typedef std::vector<U32>          id_vector;
+	//typedef std::vector< id_vector >  pattern_vector;
 	typedef DataContainerHeader       header_type;
-
-public:
-	// Internal use only
-	enum INDEX_BLOCK_TARGET{INDEX_INFO, INDEX_FORMAT, INDEX_FILTER};
+	typedef std::unordered_map<U32, U32>    map_type;
+	typedef std::unordered_map<U64, U32>    map_pattern_type;
 
 public:
 	VariantBlockFooter();
 	~VariantBlockFooter();
 	void reset(void);
+	void resetTables(void);
 
 	// Allocate offset vectors
 	inline void AllocateInfoHeaders(const U32 n_info_streams){
@@ -143,18 +162,6 @@ public:
 		this->AllocateFilterHeaders(n_filter_streams);
 	}
 
-	/**<
-	 * Wrapper function for constructing INFO/FORMAT/FILTER pattern
-	 * set-membership bit-vectors
-	 * @param target   Target group (INFO/FORMAT/FILTER)
-	 * @param values   Hash container of values
-	 * @param patterns Hash container of patterns
-	 * @return         Returns TRUE upon success or FALSE otherwise
-	 */
-	bool constructBitVector(const INDEX_BLOCK_TARGET& target,
-	                        hash_container_type& values,
-	                        hash_vector_container_type& patterns);
-
 	bool ConstructInfoBitVector(std::unordered_map<U32,U32>* pattern_map){
 		for(U32 i = 0; i < this->n_info_patterns; ++i){
 			this->info_patterns[i].Build(this->n_info_streams, pattern_map);
@@ -176,32 +183,152 @@ public:
 		return true;
 	}
 
-private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+	U32 AddPatternWrapper(const std::vector<int>& pattern, map_pattern_type* pattern_map, yon_blk_bv_pair* bv_pairs, U16& stream_counter){
+		U64 pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
+		const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
+		if(it == pattern_map->end()){
+			(*pattern_map)[pattern_hash] = stream_counter;
+			bv_pairs[stream_counter].pattern = pattern;
+			++stream_counter;
+		}
+
+		return((*pattern_map)[pattern_hash]);
+	}
+
+	U32 AddInfoPattern(const std::vector<int>& pattern){
+		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_info_patterns_allocated == 0){
+			this->info_patterns = new yon_blk_bv_pair[100];
+			this->n_info_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->info_pattern_map, this->info_patterns, this->n_info_patterns));
+	}
+
+	U32 AddFormatPattern(const std::vector<int>& pattern){
+		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_format_patterns_allocated == 0){
+			this->format_patterns = new yon_blk_bv_pair[100];
+			this->n_format_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->format_pattern_map, this->format_patterns, this->n_format_patterns));
+	}
+
+	U32 AddFilterPattern(const std::vector<int>& pattern){
+		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_filter_patterns_allocated == 0){
+			this->filter_patterns = new yon_blk_bv_pair[100];
+			this->n_filter_patterns_allocated = 100;
+		}
+		return(this->AddPatternWrapper(pattern, this->filter_pattern_map, this->filter_patterns, this->n_filter_patterns));
+	}
+
+	void Finalize(void){
+		this->ConstructInfoBitVector(this->info_map);
+		this->ConstructFormatBitVector(this->format_map);
+		this->ConstructFilterBitVector(this->filter_map);
+	}
+
+	bool BuildMaps(void){
+		delete this->info_map;
+		delete this->filter_map;
+		delete this->format_map;
+
+		this->info_map   = new map_type();
+		this->filter_map = new map_type();
+		this->format_map = new map_type();
+
+		return true;
+	}
+
+	bool BuildPatternMaps(void){
+		delete this->info_pattern_map;
+		this->info_pattern_map = new map_pattern_type();
+		if(this->n_info_patterns_allocated == 0){
+			this->info_patterns = new yon_blk_bv_pair[100];
+			this->n_info_patterns_allocated = 100;
+		}
+
+		delete this->filter_pattern_map;
+		this->filter_pattern_map = new map_pattern_type();
+		if(this->n_filter_patterns_allocated == 0){
+			this->filter_patterns = new yon_blk_bv_pair[100];
+			this->n_filter_patterns_allocated = 100;
+		}
+
+		delete this->format_pattern_map;
+		this->format_pattern_map = new map_pattern_type();
+		if(this->n_format_patterns_allocated == 0){
+			this->format_patterns = new yon_blk_bv_pair[100];
+			this->n_format_patterns_allocated = 100;
+		}
+
+		return true;
+	}
+
+	U32 AddStreamWrapper(const U32 id, map_type* map, header_type*& offsets, U16& stream_counter){
+		map_type::const_iterator it = map->find(id);
+		if(it == map->end()){
+			(*map)[id] = stream_counter;
+			offsets[stream_counter].data_header.global_key = id;
+			++stream_counter;
+		}
+
+		return((*map)[id]);
+	}
+
+	U32 AddInfo(const U32 id){
+		if(this->info_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->info_map, this->info_offsets, this->n_info_streams));
+	}
+
+	U32 AddFormat(const U32 id){
+		if(this->format_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->format_map, this->format_offsets, this->n_format_streams));
+	}
+
+	U32 AddFilter(const U32 id){
+		if(this->filter_map == nullptr) this->BuildMaps();
+		return(this->AddStreamWrapper(id, this->filter_map, this->filter_offsets, this->n_filter_streams));
+	}
+
+	/**<
+		* Static function that calculates the 64-bit hash value for the target
+	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
+	* int (S32). Example of using this function:
+	*
+	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
+	*
+	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
+	* @return          Returns a 64-bit hash value.
+	*/
+	static U64 HashIdentifiers(const std::vector<int>& id_vector){
+		XXH64_state_t* const state = XXH64_createState();
+		if (state==NULL) abort();
+
+		XXH_errorcode const resetResult = XXH64_reset(state, 71236251);
+		if (resetResult == XXH_ERROR) abort();
+
+		for(U32 i = 0; i < id_vector.size(); ++i){
+			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
+			if (addResult == XXH_ERROR) abort();
+		}
+
+		U64 hash = XXH64_digest(state);
+		XXH64_freeState(state);
+
+		return hash;
+	}
 
 private:
-	/**<
-	 *
-	 * @param target
-	 * @param offset
-	 * @param values
-	 * @param patterns
-	 * @return
-	 */
-	bool __constructBitVector(bit_vector*& target,
-	                          header_type* offset,
-	                          hash_container_type& values,
-	                          hash_vector_container_type& patterns);
+	//friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	//friend std::istream& operator>>(std::ifstream& stream, self_type& entry);
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
 
 public:
 	// Utility members. l_*_bitvector stores the byte-length
 	// of each of the bit-vectors described below.
 	// Not written or read from disk. Used internally only
-	// Todo: These should be embedded directly into the bit-vector
-	//       structure.
 	BYTE l_info_bitvector;
 	BYTE l_format_bitvector;
 	BYTE l_filter_bitvector;
@@ -240,16 +367,21 @@ public:
 	// for internal use. Construction of these bit-vectors are not
 	// critical for basic functionality but critical for the
 	// restoration of a bit-exact output sequence of fields.
-	bit_vector*  info_bit_vectors;
-	bit_vector*  format_bit_vectors;
-	bit_vector*  filter_bit_vectors;
-
 	U32 n_info_patterns_allocated;
 	U32 n_format_patterns_allocated;
 	U32 n_filter_patterns_allocated;
 	yon_blk_bv_pair* info_patterns;
 	yon_blk_bv_pair* format_patterns;
 	yon_blk_bv_pair* filter_patterns;
+
+	// Supportive hash tables to permit the map from global
+	// IDX fields to local IDX fields.
+	map_type* info_map;
+	map_type* format_map;
+	map_type* filter_map;
+	map_pattern_type* info_pattern_map;
+	map_pattern_type* format_pattern_map;
+	map_pattern_type* filter_pattern_map;
 };
 
 }

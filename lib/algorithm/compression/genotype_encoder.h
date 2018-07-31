@@ -188,14 +188,13 @@ public:
 	GenotypeEncoder();
 	GenotypeEncoder(const U64 samples);
 	~GenotypeEncoder();
-	bool Encode(const bcf_type& bcf_entry, meta_type& meta, block_type& block, const U32* const ppa);
 
-	bool EncodeParallel(const bcf_reader_type& bcf_reader, meta_type* meta_entries, block_type& block, const U32* const ppa, const U32 n_threads);
-	bool EncodeParallel(const bcf_type& bcf_entry, meta_type& meta, const U32* const ppa, GenotypeEncoderSlaveHelper& slave_helper) const;
-	inline void setSamples(const U64 samples){ this->n_samples = samples; }
-	inline const stats_type& getUsageStats(void) const{ return(this->stats_); }
+	inline void SetSamples(const U64 samples){ this->n_samples = samples; }
+	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
 
-	bool EncodeNew(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool EncodeParallel(const containers::VcfContainer& container, meta_type* meta_entries, GenotypeEncoderSlaveHelper& slave_helper, const algorithm::yon_gt_ppa& permutation_array) const;
+
 	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
 	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
 	yon_gt_assess AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
@@ -220,18 +219,6 @@ public:
 	                          container_type& dst) const;
 
 private:
-	const rle_helper_type assessDiploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
-	const rle_helper_type assessDiploidRLEnAllelic(const bcf_type& bcf_entry, const U32* const ppa) const;
-	//const rle_helper_type assessMploidRLEBiallelic(const bcf_type& bcf_entry, const U32* const ppa) const;
-	//const rle_helper_type assessMploidRLEnAllelic(const bcf_type& bcf_entry, const U32* const ppa) const;
-
-	template <class YON_STORE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeBCFStyle(const bcf_type& bcf_entry, container_type& container, U64& n_runs) const;
-	template <class YON_RLE_TYPE, class BCF_GT_TYPE = BYTE> bool EncodeDiploidBCF(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEBiallelic(const bcf_type& bcf_entry, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
-	template <class YON_RLE_TYPE> bool EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry, container_type& runs, const U32* const ppa, const rle_helper_type& helper) const;
-	//template <class T> bool EncodeMploidRLEBiallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
-	//template <class T> bool EncodeMploidRLENallelic(const bcf_type& bcf_entry, container_type& runs, U64& n_runs, const U32* const ppa) const;
-
 	/**<
 	 * Supportive reduce function for updating local import statistics
 	 * following parallel execution of `EncodeParallel`. Iteratively
@@ -488,244 +475,6 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 }
 
 
-template <class YON_STORE_TYPE, class BCF_GT_TYPE>
-bool GenotypeEncoder::EncodeBCFStyle(const bcf_type& bcf_entry,
-                                     container_type& simple,
-                                                U64& n_runs) const
-{
-	const BYTE ploidy = bcf_entry.gt_support.ploidy;
-	U32 bcf_gt_pos = bcf_entry.formatID[0].l_offset;
-	const BCF_GT_TYPE missing_value = (BCF_GT_TYPE)1 << (sizeof(BCF_GT_TYPE)*8 - 1);
-	const BCF_GT_TYPE EOV_value     = missing_value + 1;
-
-	// Pack genotypes as
-	// allele | phasing
-	U32 j = 0;
-	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy, ++j){
-		for(U32 p = 0; p < ploidy; ++p){
-			const BCF_GT_TYPE& allele = *reinterpret_cast<const BCF_GT_TYPE* const>(&bcf_entry.data[bcf_gt_pos]);
-			if((allele >> 1) == 0) simple.AddLiteral((YON_STORE_TYPE)0); // missing
-			else if(allele == EOV_value) simple.AddLiteral((YON_STORE_TYPE)1); // eov
-			else { // otherwise
-				// Add 1 because 1 is reserved for EOV
-				const YON_STORE_TYPE val = ((allele >> 1) + 1) << 1 | (allele & 1);
-				simple.AddLiteral((YON_STORE_TYPE)val);
-			}
-			bcf_gt_pos += sizeof(BCF_GT_TYPE);
-		}
-	}
-
-	n_runs = this->n_samples*ploidy;
-	simple.header.n_additions += n_runs;
-
-	return(true);
-}
-
-template <class YON_RLE_TYPE, class BCF_GT_TYPE>
-bool GenotypeEncoder::EncodeDiploidBCF(const bcf_type& bcf_entry,
-		                               container_type& simple,
-										          U64& n_runs,
-                                     const U32* const  ppa) const
-{
-	const BYTE ploidy = 2;
-	// Shift size is equivalent to floor((sizeof(T)*8 - 1)/2)
-	const BYTE shift_size = (sizeof(YON_RLE_TYPE)*8 - 1) / 2;
-
-	// Start of GT byte stream
-	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
-
-	const BCF_GT_TYPE missing_value = (BCF_GT_TYPE)1 << (sizeof(BCF_GT_TYPE)*8 - 1);
-	const BCF_GT_TYPE EOV_value     = missing_value + 1;
-	// Pack genotypes as
-	// allele A | allele B | phasing information
-	U32 ppa_pos = 0;
-	//YON_RLE_TYPE temp = 0;
-	for(U32 i = 0; i < this->n_samples * ploidy; i += ploidy){
-		BCF_GT_TYPE allele1 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos]]);
-		BCF_GT_TYPE allele2 = *reinterpret_cast<const BCF_GT_TYPE* const>(&data[ploidy*sizeof(BCF_GT_TYPE)*ppa[ppa_pos] + sizeof(BCF_GT_TYPE)]);
-		const bool phasing = allele2 & 1;
-
-		if((allele1 >> 1) == 0)       allele1 = 0;
-		else if(allele1 == EOV_value) allele1 = 1;
-		else allele1 = (allele1 >> 1) + 1;
-		if((allele2 >> 1) == 0)       allele2 = 0;
-		else if(allele2 == EOV_value) allele2 = 1;
-		else allele2 = (allele2 >> 1) + 1;
-
-		const YON_RLE_TYPE packed = (allele1 << (shift_size + 1)) |
-				                    (allele2 << 1) |
-									(phasing &  1);
-
-		simple.AddLiteral((YON_RLE_TYPE)packed);
-		++ppa_pos;
-	}
-
-	n_runs = this->n_samples;
-	simple.header.n_additions += n_runs;
-
-	return(true);
-}
-
-template <class YON_RLE_TYPE>
-bool GenotypeEncoder::EncodeDiploidRLEBiallelic(const bcf_type& bcf_entry,
-		                                        container_type& runs,
-                                              const U32* const  ppa,
-								         const rle_helper_type& helper) const
-{
-	const BYTE ploidy   = 2;
-	U32 sumLength       = 0;
-	YON_RLE_TYPE length = 1;
-	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = bcf_entry.gt_support.hasMissing    ? 2 : 1;
-	const BYTE add      = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
-
-	// Run limits
-	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (ploidy*shift + add)) - 1;
-	const char* const data       = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
-	const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
-	const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
-	YON_RLE_TYPE packed = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
-
-	U32 ppa_pos = 1;
-	U64 n_runs = 0;
-	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
-		const BYTE& allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
-		const BYTE& allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
-		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID(allele2, allele1, shift, add);
-
-		if(packed != packed_internal || length == run_limit){
-			// Prepare RLE
-			RLE = length;
-			RLE <<= (ploidy*shift + add);
-			RLE |= packed;
-			assert((RLE >> (ploidy*shift + add)) == length);
-
-			// Push RLE to buffer
-			runs.AddLiteral((YON_RLE_TYPE)RLE);
-
-			// Reset and update
-			sumLength += length;
-			length = 0;
-			packed = packed_internal;
-			++n_runs;
-		}
-		++length;
-		++ppa_pos;
-	}
-	// Last entry
-	// Prepare RLE
-	RLE = length;
-	RLE <<= (ploidy*shift + add);
-	RLE |= packed;
-	assert((RLE >> (ploidy*shift + add)) == length);
-
-	// Push RLE to buffer
-	runs.AddLiteral((YON_RLE_TYPE)RLE);
-	++n_runs;
-
-	// Reset and update
-	sumLength += length;
-	assert(sumLength == this->n_samples);
-	assert(helper.n_runs == n_runs);
-	runs.header.n_additions += n_runs;
-	assert(ppa_pos == n_samples);
-
-#if ENCODER_GT_DEBUG == 1
-	std::cout << 0 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';
-#endif
-	return(true);
-}
-
-template <class YON_RLE_TYPE>
-bool GenotypeEncoder::EncodeDiploidRLEnAllelic(const bcf_type& bcf_entry,
-		                                       container_type& runs,
-											 const U32* const  ppa,
-										const rle_helper_type& helper) const
-{
-	const BYTE ploidy   = 2;
-	U32 sumLength       = 0;
-	YON_RLE_TYPE length = 1;
-	YON_RLE_TYPE RLE    = 0;
-	const BYTE shift    = ceil(log2(bcf_entry.body->n_allele + 2 + 1)); // Bits occupied per allele
-	const BYTE add      = bcf_entry.gt_support.mixedPhasing  ? 1 : 0;
-	const YON_RLE_TYPE run_limit = pow(2, 8*sizeof(YON_RLE_TYPE)  - (ploidy*shift + add)) - 1;
-
-	// Setup first run
-	const char* const data = &bcf_entry.data[bcf_entry.formatID[0].l_offset];
-	BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0]]);
-	BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[0] + sizeof(BYTE)]);
-	const bool phase = allele2 & 1;
-
-	if((allele1 >> 1) == 0)  allele1 = 0;
-	else if(allele1 == 0x81) allele1 = 1;
-	else allele1 = (allele1 >> 1) + 1;
-
-	if((allele2 >> 1) == 0)  allele2 = 0;
-	else if(allele2 == 0x81) allele2 = 1;
-	else allele2 = (allele2 >> 1) + 1;
-
-	YON_RLE_TYPE packed  = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
-
-	U32 ppa_pos = 1;
-	U64 n_runs = 0;
-	for(U32 i = ploidy; i < this->n_samples * ploidy; i += ploidy){
-		BYTE allele1 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos]]);
-		BYTE allele2 = *reinterpret_cast<const BYTE* const>(&data[ploidy*sizeof(BYTE)*ppa[ppa_pos] + sizeof(BYTE)]);
-		const bool phase = allele2 & 1;
-
-		if((allele1 >> 1) == 0)  allele1 = 0;
-		else if(allele1 == 0x81) allele1 = 1;
-		else allele1 = (allele1 >> 1) + 1;
-
-		if((allele2 >> 1) == 0)  allele2 = 0;
-		else if(allele2 == 0x81) allele2 = 1;
-		else allele2 = (allele2 >> 1) + 1;
-
-		const YON_RLE_TYPE packed_internal = YON_PACK_GT_DIPLOID_NALLELIC(allele2, allele1, shift, add, phase);
-
-
-		if(packed != packed_internal || length == run_limit){
-			// Prepare RLE
-			RLE = (length << (ploidy*shift + add)) | packed;
-			assert((RLE >> (ploidy*shift + add)) == length);
-			assert(length != 0);
-
-			// Push RLE to buffer
-			runs.AddLiteral((YON_RLE_TYPE)RLE);
-
-			// Reset and update
-			sumLength += length;
-			length = 0;
-			packed = packed_internal;
-			++n_runs;
-		}
-		++length;
-		++ppa_pos;
-	}
-	// Last entry
-	// Prepare RLE
-	RLE = (length << (ploidy*shift + add)) | packed;
-	assert((RLE >> (ploidy*shift + add)) == length);
-	assert(length != 0);
-
-	// Push RLE to buffer
-	runs.AddLiteral((YON_RLE_TYPE)RLE);
-	++n_runs;
-
-	// Reset and update
-	sumLength += length;
-	assert(sumLength == this->n_samples);
-	assert(helper.n_runs == n_runs);
-	assert(ppa_pos == n_samples);
-	runs.header.n_additions += n_runs;
-
-#if ENCODER_GT_DEBUG == 1
-	std::cout << 1 << '\t' << n_runs << '\t' << sizeof(YON_RLE_TYPE) << '\n';
-#endif
-
-	return(true);
-}
-
 /**<
  * Parallel support structure: this object encapsulates
  * a thread that runs the `EncodeParallel` function with
@@ -772,8 +521,9 @@ struct CalcSlave{
 
 private:
 	void Run_(void){
+		exit(1);
 		for(U32 i = this->thread_idx_; i < this->reader_->size(); i += this->n_threads_){
-			this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
+			//this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
 		}
 	}
 

@@ -30,7 +30,7 @@ const std::vector<bool> VariantBlockContainer::get_info_field_pattern_matches(co
 		ret.resize(this->getBlock().footer.n_info_patterns, false);
 		for(U32 i = 0; i < this->getBlock().footer.n_info_patterns; ++i){
 			//std::cerr << i << '\t' << this->getBlock().footer.info_bit_vectors[i][local_key] << std::endl;
-			ret[i] = this->getBlock().footer.info_bit_vectors[i][local_key];
+			ret[i] = this->getBlock().footer.info_patterns[i][local_key];
 		}
 	}
 	return(ret);
@@ -63,7 +63,7 @@ const std::vector<bool> VariantBlockContainer::get_format_field_pattern_matches(
 		ret.resize(this->getBlock().footer.n_format_patterns, false);
 		for(U32 i = 0; i < this->getBlock().footer.n_format_patterns; ++i){
 			//std::cerr << i << '\t' << this->getBlock().index_entry.format_bit_vectors[i][local_format_field_id] << std::endl;
-			ret[i] = this->getBlock().footer.format_bit_vectors[i][local_key];
+			ret[i] = this->getBlock().footer.format_patterns[i][local_key];
 		}
 	}
 	return(ret);
@@ -288,10 +288,10 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 	// If loading all INFO values then return them in the ORIGINAL order
 	if(block_settings.info_all.load){
 		for(U32 i = 0; i < this->getBlock().footer.n_info_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+			for(U32 j = 0; j < this->getBlock().footer.info_patterns[i].pattern.size(); ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < objects.n_loaded_info; ++k){ // Number of loaded INFO identifiers
 					// Global
-					if(this->getBlock().footer.info_offsets[this->getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->getMapper().getLoadedInfo(k).offset->data_header.global_key){
+					if(this->getBlock().footer.info_offsets[this->getBlock().footer.info_patterns[i].pattern[j]].data_header.global_key == this->getMapper().getLoadedInfo(k).offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -303,8 +303,8 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 	else {
 		for(U32 i = 0; i < this->getBlock().footer.n_info_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < objects.n_loaded_info; ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->getBlock().footer.info_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->getBlock().footer.info_offsets[this->getBlock().footer.info_bit_vectors[i].local_keys[j]].data_header.global_key == this->getMapper().getLoadedInfo(k).offset->data_header.global_key){
+				for(U32 j = 0; j < this->getBlock().footer.info_patterns[i].pattern.size(); ++j){ // j = Number of keys in pattern [i]
+					if(this->getBlock().footer.info_offsets[this->getBlock().footer.info_patterns[i].pattern[j]].data_header.global_key == this->getMapper().getLoadedInfo(k).offset->data_header.global_key){
 						objects.local_match_keychain_info[i].push_back(k);
 						++objects.info_id_fields_keep[i];
 					}
@@ -317,9 +317,9 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 	// If loading all FORMAT values then return them in the ORIGINAL order
 	if(block_settings.format_all.load){
 		for(U32 i = 0; i < this->getBlock().footer.n_format_patterns; ++i){ // Number of info patterns
-			for(U32 j = 0; j < this->getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // Number of keys in pattern [i]
+			for(U32 j = 0; j < this->getBlock().footer.format_patterns[i].pattern.size(); ++j){ // Number of keys in pattern [i]
 				for(U32 k = 0; k < objects.n_loaded_format; ++k){ // Number of loaded INFO identifiers
-					if(this->getBlock().footer.format_offsets[this->getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->getMapper().getLoadedFormat(k).offset->data_header.global_key){
+					if(this->getBlock().footer.format_offsets[this->getBlock().footer.format_patterns[i].pattern[j]].data_header.global_key == this->getMapper().getLoadedFormat(k).offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -331,8 +331,8 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 	else {
 		for(U32 i = 0; i < this->getBlock().footer.n_format_patterns; ++i){ // i = Number of info patterns
 			for(U32 k = 0; k < objects.n_loaded_format; ++k){ // k = Number of loaded INFO identifiers
-				for(U32 j = 0; j < this->getBlock().footer.format_bit_vectors[i].n_keys; ++j){ // j = Number of keys in pattern [i]
-					if(this->getBlock().footer.format_offsets[this->getBlock().footer.format_bit_vectors[i].local_keys[j]].data_header.global_key == this->getMapper().getLoadedFormat(k).offset->data_header.global_key){
+				for(U32 j = 0; j < this->getBlock().footer.format_patterns[i].pattern.size(); ++j){ // j = Number of keys in pattern [i]
+					if(this->getBlock().footer.format_offsets[this->getBlock().footer.format_patterns[i].pattern[j]].data_header.global_key == this->getMapper().getLoadedFormat(k).offset->data_header.global_key){
 						objects.local_match_keychain_format[i].push_back(k);
 						++objects.format_id_fields_keep[i];
 					}
@@ -375,7 +375,7 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 		for(U32 i = 0; i < this->getBlock().footer.n_info_patterns; ++i){
 			objects.additional_info_execute_flag_set[i] = (1 << ADDITIONAL_INFO.size()) - 1;
 			for(U32 j = 0; j < additional_local_keys_found.size(); ++j){
-				if(this->getBlock().footer.info_bit_vectors[i][j]){
+				if(this->getBlock().footer.info_patterns[i][j]){
 					objects.additional_info_execute_flag_set[i] &= ~(1 << additional_local_keys_found[j].second);
 				}
 			}

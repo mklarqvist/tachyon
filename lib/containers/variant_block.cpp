@@ -10,12 +10,6 @@ VariantBlock::VariantBlock() :
 	base_containers(new container_type[YON_BLK_N_STATIC]),
 	info_containers(new container_type[200]),
 	format_containers(new container_type[200]),
-	info_map(nullptr),
-	format_map(nullptr),
-	filter_map(nullptr),
-	info_pattern_map(nullptr),
-	format_pattern_map(nullptr),
-	filter_pattern_map(nullptr),
 	end_block_(0),
 	start_compressed_data_(0),
 	end_compressed_data_(0)
@@ -27,12 +21,6 @@ VariantBlock::VariantBlock() :
 }
 
 VariantBlock::~VariantBlock(){
-	delete this->info_map;
-	delete this->format_map;
-	delete this->filter_map;
-	delete this->info_pattern_map;
-	delete this->format_pattern_map;
-	delete this->filter_pattern_map;
 	delete [] this->base_containers;
 	delete [] this->info_containers;
 	delete [] this->format_containers;
@@ -48,13 +36,6 @@ void VariantBlock::clear(void){
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 		this->format_containers[i].reset();
 
-	if(this->info_map != nullptr)   this->info_map->clear();
-	if(this->format_map != nullptr) this->format_map->clear();
-	if(this->filter_map != nullptr) this->filter_map->clear();
-	if(this->info_pattern_map != nullptr)   this->info_pattern_map->clear();
-	if(this->format_pattern_map != nullptr) this->format_pattern_map->clear();
-	if(this->filter_pattern_map != nullptr) this->filter_pattern_map->clear();
-
 	this->header.reset();
 	this->footer.reset();
 	this->footer_support.reset();
@@ -63,13 +44,6 @@ void VariantBlock::clear(void){
 	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
 	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
 	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
-
-	this->info_fields.clear();
-	this->format_fields.clear();
-	this->filter_fields.clear();
-	this->info_patterns.clear();
-	this->format_patterns.clear();
-	this->filter_patterns.clear();
 
 	this->end_block_             = 0;
 	this->start_compressed_data_ = 0;
@@ -227,6 +201,10 @@ bool VariantBlock::write(std::ostream& stream,
                      import_stats_type& stats_info,
                      import_stats_type& stats_format)
 {
+	if(stream.good() == false){
+		return false;
+	}
+
 	const U64 begin_pos = stream.tellp();
 	this->header.l_offset_footer = this->DetermineCompressedSize();
 	stream << this->header;
@@ -251,6 +229,7 @@ bool VariantBlock::write(std::ostream& stream,
 		this->WriteContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (U64)stream.tellp() - start_pos);
 
 	// Assert that the written amount equals the projected amount.
+	std::cerr << this->header.l_offset_footer << "==" << (U64)stream.tellp() - start_pos << std::endl;
 	assert(this->header.l_offset_footer == (U64)stream.tellp() - start_pos);
 
 	// Update stats

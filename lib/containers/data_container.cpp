@@ -409,5 +409,218 @@ void DataContainer::UpdateContainer(bool reformat){
 	}
 }
 
+void DataContainer::AddStride(const U32 value){
+	// If this is the first stride set
+	if(this->header.n_strides == 0){
+		this->header.stride_header.controller.type = YON_TYPE_32B;
+		this->header.stride_header.controller.signedness = false;
+		this->SetStrideSize(value);
+	}
+
+	// Check if there are different strides
+	if(!this->CheckStrideSize(value)){
+		this->TriggerMixedStride();
+	}
+
+	// Add value
+	this->buffer_strides_uncompressed += (U32)value;
+	++this->header.n_strides;
+}
+
+bool DataContainer::Add(const BYTE& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added BYTE" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U16& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U16" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U32& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()){
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U32" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const SBYTE& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added SBYTE" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S16& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S16" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S32& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S32" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U64& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_64B);
+		this->header.data_header.controller.signedness = false;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U64" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (U64)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S64& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_64B);
+		this->header.data_header.controller.signedness = true;
+	}
+
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S64" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (U64)value;
+	++this->header.n_additions;
+	//++this->n_entries;
+	return(true);
+}
+
+bool DataContainer::Add(const float& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_FLOAT);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added FLOAT" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (float)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const double& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_DOUBLE);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added DOUBLE" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (double)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::AddCharacter(const char& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_CHAR);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (char)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::AddCharacter(const char* const string, const U32 l_string){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.setType(YON_TYPE_CHAR);
+		this->header.data_header.controller.signedness = true;
+		//std::cerr << "triggering: string" << std::endl;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed.Add(string, l_string);
+	this->header.n_additions += l_string;
+	return(true);
+}
+
 }
 }

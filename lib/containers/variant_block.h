@@ -28,14 +28,11 @@ class VariantBlock{
 	typedef algorithm::PermutationManager   permutation_type;
 	typedef VariantBlockHeader              block_header_type;
 	typedef VariantBlockFooter              block_footer_type;
-	typedef HashContainer                   hash_container_type;
-	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
 	typedef tachyon::core::MetaEntry        meta_entry_type;
-	typedef std::unordered_map<U32, U32>    map_type;
-	typedef std::unordered_map<U64, U32>    map_pattern_type;
+
 
 public:
 	VariantBlock();
@@ -55,69 +52,6 @@ public:
 	void clear(void);
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
-
-	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
-	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
-	inline U32 addFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
-
-	inline S32 getPatternsINFO(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->info_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline S32 getPatternsFORMAT(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->format_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline S32 getPatternsFILTER(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->filter_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline void addPatternINFO(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->info_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	inline void addPatternFORMAT(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->format_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	inline void addPatternFILTER(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->filter_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	/**<
-	 * Todo: delete
-	 * Finalize this block before writing to disk. This wrapper function
-	 * calls all necessary functions to construct a valid Tachyon block
-	 * for sequence variant data
-	 */
-	inline void finalize(void){
-		this->footer.n_info_streams   = this->info_fields.size();
-		this->footer.n_filter_streams = this->filter_fields.size();
-		this->footer.n_format_streams = this->format_fields.size();
-		this->footer.AllocateHeaders(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
-		this->UpdateContainers();
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
-	}
 
 	/**< @brief Reads all digital objects from disk
 	 * Primary function for reading data from disk. Data
@@ -248,148 +182,26 @@ public:
 	 */
 	void UpdateContainers(void);
 
-	void Finalize(void){
-		this->footer.ConstructInfoBitVector(this->info_map);
-		this->footer.ConstructFormatBitVector(this->format_map);
-		this->footer.ConstructFilterBitVector(this->filter_map);
-	}
-
-	bool BuildMaps(void){
-		delete this->info_map;
-		delete this->filter_map;
-		delete this->format_map;
-
-		this->info_map   = new map_type();
-		this->filter_map = new map_type();
-		this->format_map = new map_type();
-
-		return true;
-	}
-
-	bool BuildPatternMaps(void){
-		delete this->info_pattern_map;
-		this->info_pattern_map = new map_pattern_type();
-		if(this->footer.n_info_patterns_allocated == 0){
-			this->footer.info_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_info_patterns_allocated = 100;
-		}
-
-		delete this->filter_pattern_map;
-		this->filter_pattern_map = new map_pattern_type();
-		if(this->footer.n_filter_patterns_allocated == 0){
-			this->footer.filter_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_filter_patterns_allocated = 100;
-		}
-
-		delete this->format_pattern_map;
-		this->format_pattern_map = new map_pattern_type();
-		if(this->footer.n_format_patterns_allocated == 0){
-			this->footer.format_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_format_patterns_allocated = 100;
-		}
-
-		return true;
-	}
-
-	U32 AddStreamWrapper(const U32 id, map_type* map, offset_type*& offsets, U16& stream_counter){
-		map_type::const_iterator it = map->find(id);
-		if(it == map->end()){
-			(*map)[id] = stream_counter;
-			offsets[stream_counter].data_header.global_key = id;
-			++stream_counter;
-		}
-
-		return((*map)[id]);
-	}
-
-	U32 AddInfo(const U32 id){
-		if(this->info_map == nullptr) this->BuildMaps();
-		return(this->AddStreamWrapper(id, this->info_map, this->footer.info_offsets, this->footer.n_info_streams));
-	}
-
-	U32 AddFormat(const U32 id){
-		if(this->format_map == nullptr) this->BuildMaps();
-		return(this->AddStreamWrapper(id, this->format_map, this->footer.format_offsets, this->footer.n_format_streams));
-	}
-
-	U32 AddFilter(const U32 id){
-		if(this->filter_map == nullptr) this->BuildMaps();
-		return(this->AddStreamWrapper(id, this->filter_map, this->footer.filter_offsets, this->footer.n_filter_streams));
-	}
-
-	/**<
-	* Static function that calculates the 64-bit hash value for the target
-	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
-	* int (S32). Example of using this function:
-	*
-	* const U64 hash_value = VariantImporter::HashIdentifiers(id_vector);
-	*
-	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
-	* @return          Returns a 64-bit hash value.
-	*/
-	static U64 HashIdentifiers(const std::vector<int>& id_vector){
-		XXH64_state_t* const state = XXH64_createState();
-		if (state==NULL) abort();
-
-		XXH_errorcode const resetResult = XXH64_reset(state, BCF_HASH_SEED);
-		if (resetResult == XXH_ERROR) abort();
-
-		for(U32 i = 0; i < id_vector.size(); ++i){
-			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
-			if (addResult == XXH_ERROR) abort();
-		}
-
-		U64 hash = XXH64_digest(state);
-		XXH64_freeState(state);
-
-		return hash;
-	}
-
-	U32 AddPatternWrapper(const std::vector<int>& pattern, map_pattern_type* pattern_map, yon_blk_bv_pair* bv_pairs, U16& stream_counter){
-		U64 pattern_hash = VariantBlock::HashIdentifiers(pattern);
-		const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
-		if(it == pattern_map->end()){
-			(*pattern_map)[pattern_hash] = stream_counter;
-			bv_pairs[stream_counter].pattern = pattern;
-			++stream_counter;
-		}
-
-		return((*pattern_map)[pattern_hash]);
-	}
-
-	U32 AddInfoPattern(const std::vector<int>& pattern){
-		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
-		if(this->footer.n_info_patterns_allocated == 0){
-			this->footer.info_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_info_patterns_allocated = 100;
-		}
-		return(this->AddPatternWrapper(pattern, this->info_pattern_map, this->footer.info_patterns, this->footer.n_info_patterns));
-	}
-
-	U32 AddFormatPattern(const std::vector<int>& pattern){
-		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
-		if(this->footer.n_format_patterns_allocated == 0){
-			this->footer.format_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_format_patterns_allocated = 100;
-		}
-		return(this->AddPatternWrapper(pattern, this->format_pattern_map, this->footer.format_patterns, this->footer.n_format_patterns));
-	}
-
-	U32 AddFilterPattern(const std::vector<int>& pattern){
-		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
-		if(this->footer.n_filter_patterns_allocated == 0){
-			this->footer.filter_patterns = new yon_blk_bv_pair[100];
-			this->footer.n_filter_patterns_allocated = 100;
-		}
-		return(this->AddPatternWrapper(pattern, this->filter_pattern_map, this->footer.filter_patterns, this->footer.n_filter_patterns));
-	}
-
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
 	 * block
 	 * @return Returns the sum total disk size
 	 */
 	U64 DetermineCompressedSize(void) const;
+
+	inline void PackFooter(void){
+		this->footer_support.reset();
+		this->footer_support.buffer_data_uncompressed << this->footer;
+		++this->footer_support;
+	}
+
+	inline U32 AddInfoPattern(const std::vector<int>& pattern){ return(this->footer.AddInfoPattern(pattern)); }
+	inline U32 AddFormatPattern(const std::vector<int>& pattern){ return(this->footer.AddFormatPattern(pattern)); }
+	inline U32 AddFilterPattern(const std::vector<int>& pattern){ return(this->footer.AddFilterPattern(pattern)); }
+	inline U32 AddInfo(const U32 id){ return(this->footer.AddInfo(id)); }
+	inline U32 AddFormat(const U32 id){ return(this->footer.AddFormat(id)); }
+	inline U32 AddFilter(const U32 id){ return(this->footer.AddFilter(id)); }
+	inline void Finalize(void){ this->footer.Finalize(); }
 
 private:
 	/**<
@@ -435,7 +247,7 @@ private:
 	 */
 	inline void WriteContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
-			return(this->__writeContainerEncrypted(stream, offset, container, virtual_offset));
+			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
@@ -449,7 +261,7 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void __writeContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void WriteContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);
 		// Encrypted data is concatenated: write only data buffer
@@ -459,30 +271,11 @@ private:
 public:
 	block_header_type header;
 	block_footer_type footer;
-	permutation_type  ppa_manager;
+	permutation_type  ppa_manager; // Todo: exchange for yon_gt_ppa
 	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
 
-	// Supportive hash tables to permit the map from global
-	// IDX fields to local IDX fields.
-	map_type* info_map;
-	map_type* format_map;
-	map_type* filter_map;
-	map_pattern_type* info_pattern_map;
-	map_pattern_type* format_pattern_map;
-	map_pattern_type* filter_pattern_map;
-
-	// Use during construction
-	// Todo: Delete these
-	hash_container_type        info_fields;
-	hash_container_type        format_fields;
-	hash_container_type        filter_fields;
-	hash_vector_container_type info_patterns;
-	hash_vector_container_type format_patterns;
-	hash_vector_container_type filter_patterns;
-
-public:
 	// Utility
 	U64 end_block_;
 	U64 start_compressed_data_;

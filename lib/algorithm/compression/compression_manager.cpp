@@ -15,7 +15,7 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].header.n_entries){
 			zstd_codec.compress(block.base_containers[i]);
-			std::cerr << "Compress: " << i << ": " << block.base_containers[i].buffer_data_uncompressed.size() << "->" << block.base_containers[i].buffer_data.size() << std::endl;
+			//std::cerr << "Compress: " << i << ": " << block.base_containers[i].buffer_data_uncompressed.size() << "->" << block.base_containers[i].buffer_data.size() << std::endl;
 		}
 	}
 
@@ -29,7 +29,7 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 			zstd_codec.setCompressionLevel(general_level);
 		}
 		zstd_codec.compress(block.info_containers[i]);
-		std::cerr << "Compress INFO: " << i << ": " << block.info_containers[i].buffer_data_uncompressed.size() << "->" << block.info_containers[i].buffer_data.size() << std::endl;
+		//std::cerr << "Compress INFO: " << i << ": " << block.info_containers[i].buffer_data_uncompressed.size() << "->" << block.info_containers[i].buffer_data.size() << std::endl;
 	}
 
 	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
@@ -42,8 +42,7 @@ bool CompressionManager::compress(variant_block_type& block, const BYTE general_
 			zstd_codec.setCompressionLevel(general_level);
 		}
 		zstd_codec.compress(block.format_containers[i]);
-		std::cerr << "Compress FORMAT: " << i << ": " << block.format_containers[i].buffer_data_uncompressed.size() << "->" << block.format_containers[i].buffer_data.size() << std::endl;
-
+		//std::cerr << "Compress FORMAT: " << i << ": " << block.format_containers[i].buffer_data_uncompressed.size() << "->" << block.format_containers[i].buffer_data.size() << std::endl;
 	}
 
 	return true;

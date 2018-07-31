@@ -310,8 +310,8 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 	if(outputBuffer.back() != '\t') outputBuffer += '\t';
 
 	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			// Local key -> global key
 			outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
@@ -331,8 +331,8 @@ void VariantReader::printFILTERCustom(buffer_type& outputBuffer,
 				 const objects_type& objects) const
 {
 	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			if(outputBuffer.back() != this->block_settings.custom_delimiter_char) outputBuffer += this->block_settings.custom_delimiter_char;
 
@@ -355,8 +355,8 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 					 const objects_type& objects) const
 {
 	if(this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].n_keys;
-		const U32* filter_keys   = this->variant_container.getBlock().footer.filter_bit_vectors[(*objects.meta_container)[position].filter_pattern_id].local_keys;
+		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
 			// Local key -> global key
@@ -381,8 +381,8 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 {
 	if(this->block_settings.format_all.display && objects.n_loaded_format){
 		if(objects.n_loaded_format){
-			const U32& n_format_keys = this->variant_container.getBlock().footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].n_keys;
-			const U32* format_keys   = this->variant_container.getBlock().footer.format_bit_vectors[objects.meta_container->at(position).format_pattern_id].local_keys;
+			const U32& n_format_keys = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.size();
+			const int* format_keys   = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.data();
 			if(n_format_keys){
 				if(buffer.back() != delimiter) buffer += delimiter;
 

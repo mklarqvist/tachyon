@@ -30,23 +30,21 @@ public:
 public:
 	MetaEntry();
 	MetaEntry(const self_type& other);
-	MetaEntry(const bcf_entry_type& bcf_entry); // transmute data from bcfentry
-	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset); // transmute from bcfentry with positional offset
 	MetaEntry(const bcf1_t* record);
 	MetaEntry(const bcf1_t* record, const U64 position_offset);
 	~MetaEntry();
 
 	// Check if a field is set
 	inline bool CheckInfoField(const datablock_footer_type& block, const U32 info_identifier) const{
-		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
+		return(block.info_patterns[this->info_pattern_id][info_identifier]);
 	}
 
 	inline bool CheckFormatField(const datablock_footer_type& block, const U32 format_identifier) const{
-		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
+		return(block.format_patterns[this->format_pattern_id][format_identifier]);
 	}
 
 	inline bool CheckFilterField(const datablock_footer_type& block, const U32 filter_identifier) const{
-		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
+		return(block.filter_patterns[this->filter_pattern_id][filter_identifier]);
 	}
 
 	// Boolean checks
