@@ -29,6 +29,8 @@ public:
 	bool DecompressStrides(container_type& container);
 	bool Decompress(permutation_type& manager);
 
+	bool Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const int compression_level);
+
 private:
 	S32 compression_level_data;
 	S32 compression_level_strides;

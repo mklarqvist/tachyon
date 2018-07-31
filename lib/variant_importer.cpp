@@ -89,6 +89,11 @@ bool VariantImporter::BuildVCF(void){
 	// the linear and quad-tree index most appropriate for the data.
 	this->writer->index.Add(this->vcf_reader_->vcf_header_.contigs_);
 
+	// Write out a fresh Tachyon header with the data from the Vcf header. As
+	// this data will not be modified during the import stage it is safe to
+	// write out now.
+	this->WriteYonHeader();
+
 	// Resize containers
 	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
 	this->block.resize(resize_to);
@@ -571,6 +576,18 @@ bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 		}
 	}
 	return true;
+}
+
+bool VariantImporter::WriteYonHeader(){
+	VariantHeader yon_header(this->vcf_reader_->vcf_header_);
+	yon_header.RecodeIndices();
+
+	io::BasicBuffer temp(500000);
+	io::BasicBuffer temp_cmp(temp);
+	temp << yon_header;
+	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 10);
+	this->writer->stream->write(temp_cmp.data(), temp_cmp.size());
+	return(this->writer->stream->good());
 }
 
 } /* namespace Tachyon */

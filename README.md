@@ -36,10 +36,10 @@ In this situation, all required dependencies are downloaded and built in the cur
 ## Documentation
 
 * Overview.
+* [Building and installing](docs/building.md)
 * [Getting started](docs/getting_started.md)
 * [Summary of example programs](docs/example_programs.md).
 * [Performance benchmarks](docs/benchmarks.md)
-* [Building and installing](docs/building.md)
 
 ### Contributing
 

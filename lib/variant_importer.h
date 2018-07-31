@@ -127,6 +127,7 @@ private:
 	bool WriteBlock();
 	bool WriteFinal(algorithm::VariantDigestManager& checksums);
 	bool WriteKeychain(const encryption::Keychain<>& keychain);
+	bool WriteYonHeader();
 
 private:
 	settings_type settings_; // internal settings

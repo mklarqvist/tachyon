@@ -34,7 +34,7 @@ public:
 		utility::SerializeString(contig.description, stream);
 
 		size_t size_helper = contig.extra.size();
-		stream.write((const char*)&size_helper, sizeof(size_t));
+		utility::SerializePrimitive(size_helper, stream);
 		for(U32 i = 0; i < contig.extra.size(); ++i){
 			utility::SerializeString(contig.extra[i].first, stream);
 			utility::SerializeString(contig.extra[i].second, stream);
@@ -50,7 +50,7 @@ public:
 		utility::DeserializeString(contig.description, stream);
 
 		size_t l_extra;
-		stream.read((char*)&l_extra, sizeof(size_t));
+		utility::DeserializePrimitive(l_extra, stream);
 		contig.extra.resize(l_extra);
 		for(U32 i = 0; i < contig.extra.size(); ++i){
 			utility::DeserializeString(contig.extra[i].first, stream);
@@ -67,7 +67,7 @@ public:
 		io::SerializeString(contig.description, buffer);
 
 		size_t size_helper = contig.extra.size();
-		buffer += size_helper;
+		io::SerializePrimitive(size_helper, buffer);
 		for(U32 i = 0; i < contig.extra.size(); ++i){
 			io::SerializeString(contig.extra[i].first, buffer);
 			io::SerializeString(contig.extra[i].second, buffer);
@@ -83,7 +83,7 @@ public:
 		io::DeserializeString(contig.description, buffer);
 
 		size_t l_extra;
-		buffer >> l_extra;
+		io::DeserializePrimitive(l_extra, buffer);
 		contig.extra.resize(l_extra);
 		for(U32 i = 0; i < contig.extra.size(); ++i){
 			io::DeserializeString(contig.extra[i].first, buffer);
@@ -120,7 +120,8 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const YonInfo& info){
 		utility::SerializePrimitive(info.idx, stream);
-		utility::SerializePrimitive(info.yon_type, stream);
+		int temp = info.yon_type;
+		utility::SerializePrimitive(temp, stream);
 		utility::SerializeString(info.id, stream);
 		utility::SerializeString(info.number, stream);
 		utility::SerializeString(info.type, stream);
@@ -133,7 +134,9 @@ public:
 
 	friend std::istream& operator>>(std::istream& stream, YonInfo& info){
 		utility::DeserializePrimitive(info.idx, stream);
-		utility::DeserializePrimitive(info.yon_type, stream);
+		int temp;
+		utility::DeserializePrimitive(temp, stream);
+		info.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		utility::DeserializeString(info.id, stream);
 		utility::DeserializeString(info.number, stream);
 		utility::DeserializeString(info.type, stream);
@@ -146,7 +149,8 @@ public:
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonInfo& info){
 		io::SerializePrimitive(info.idx, buffer);
-		io::SerializePrimitive(info.yon_type, buffer);
+		int temp = info.yon_type;
+		io::SerializePrimitive(temp, buffer);
 		io::SerializeString(info.id, buffer);
 		io::SerializeString(info.number, buffer);
 		io::SerializeString(info.type, buffer);
@@ -159,7 +163,9 @@ public:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonInfo& info){
 		io::DeserializePrimitive(info.idx, buffer);
-		io::DeserializePrimitive(info.yon_type, buffer);
+		int temp;
+		io::DeserializePrimitive(temp, buffer);
+		info.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		io::DeserializeString(info.id, buffer);
 		io::DeserializeString(info.number, buffer);
 		io::DeserializeString(info.type, buffer);
@@ -217,7 +223,8 @@ public:
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonFormat& fmt){
 		io::SerializePrimitive(fmt.idx, buffer);
-		io::SerializePrimitive(fmt.yon_type, buffer);
+		int temp = fmt.yon_type;
+		io::SerializePrimitive(temp, buffer);
 		io::SerializeString(fmt.id, buffer);
 		io::SerializeString(fmt.number, buffer);
 		io::SerializeString(fmt.type, buffer);
@@ -228,7 +235,9 @@ public:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonFormat& fmt){
 		io::DeserializePrimitive(fmt.idx, buffer);
-		io::DeserializePrimitive(fmt.yon_type, buffer);
+		int temp;
+		io::DeserializePrimitive(temp, buffer);
+		fmt.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		io::DeserializeString(fmt.id, buffer);
 		io::DeserializeString(fmt.number, buffer);
 		io::DeserializeString(fmt.type, buffer);
@@ -556,11 +565,11 @@ public:
 
 		io::DeserializePrimitive(l_helper, buffer);
 		header.contigs_.resize(l_helper);
-		for(U32 i = 0; i < header.contigs_.size(); ++i) buffer >> header.contigs_[i];
+		for(U32 i = 0; i < header.contigs_.size(); ++i)       buffer >> header.contigs_[i];
 
 		io::DeserializePrimitive(l_helper, buffer);
 		header.info_fields_.resize(l_helper);
-		for(U32 i = 0; i < header.info_fields_.size(); ++i) buffer >> header.info_fields_[i];
+		for(U32 i = 0; i < header.info_fields_.size(); ++i)   buffer >> header.info_fields_[i];
 
 		io::DeserializePrimitive(l_helper, buffer);
 		header.format_fields_.resize(l_helper);

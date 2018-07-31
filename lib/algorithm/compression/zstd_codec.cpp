@@ -19,6 +19,26 @@ ZSTDCodec::~ZSTDCodec(){
 	ZSTD_freeDCtx(this->decompression_context_);
 }
 
+bool ZSTDCodec::Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const int compression_level){
+	dst.reset();
+	dst.resize(src.size() + 65536);
+	const size_t ret = ZSTD_compress(
+							   dst.data(),
+							   dst.capacity(),
+							   src.data(),
+							   src.size(),
+							   compression_level);
+
+	std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << src.size() << " and output: " << ret << " -> " << (float)src.size()/ret << "-fold"  << std::endl;
+
+	if(ZSTD_isError(ret)){
+		std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+		return(false);
+	}
+
+	return true;
+}
+
 bool ZSTDCodec::Compress(container_type& container){
 	container.GenerateCRC();
 

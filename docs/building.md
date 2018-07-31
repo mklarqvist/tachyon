@@ -3,6 +3,7 @@
 You will need to have installed the following dependencies:
 * [zstd][zstd]: A compression library developed at Facebook
 * [openssl][openssl]: An open-source library for encryption/decryption
+* [htslib][htslib]: C library for high-throughput sequencing data formats 
 
 ## Building from source
 If the required external dependencies listed above are installed then building is trivial. Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies.
@@ -34,6 +35,12 @@ cd openssl
 ./config
 make
 cd ..
+# If you do NOT have htslib installed
+git clone https://github.com/samtools/htslib
+cd htslib
+./configure
+make
+cd ..
 # Build Tachyon
 make
 ```
@@ -45,6 +52,8 @@ brew update
 brew install openssl
 # If you do NOT have ZSTD installed
 brew install zstd
+# If you do NOT have htslib installed
+brew install htslib
 # Install Tachyon
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
@@ -54,3 +63,4 @@ make
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd
 [tomahawk]: https://github.com/mklarqvist/tomahawk
+[htslib]:   https://github.com/samtools/htslib

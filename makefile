@@ -174,7 +174,7 @@ tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
-	$(MAKE) examples
+	#$(MAKE) examples
 
 library: $(OBJECTS)
 	@echo 'Building dynamic library...'

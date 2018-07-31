@@ -256,6 +256,7 @@ public:
 		io::DeserializeString(extra.key, buffer);
 		size_t l_extra;
 		io::DeserializePrimitive(l_extra, buffer);
+		extra.fields.resize(l_extra);
 		for(U32 i = 0; i < extra.fields.size(); ++i)
 			buffer >> extra.fields[i];
 
