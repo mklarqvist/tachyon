@@ -137,8 +137,8 @@ bool DataBlockSettings::parse(const header_type& header){
 		for(U32 j = 0; j < ind.size(); ++j){
 			ind[j] = utility::remove_excess_whitespace(ind[j]);
 			if(std::regex_match(ind[j], field_identifier_regex)){
-				const header_map_type* map = header.getInfoField(ind[j]);
-				if(map == nullptr){
+				const io::VcfInfo* info = header.GetInfo(ind[j]);
+				if(info == nullptr){
 					std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
 					continue;
 				}
@@ -172,8 +172,8 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 				for(U32 j = 0; j < ind.size(); ++j){
 					ind[j] = utility::remove_excess_whitespace(ind[j]);
 					if(std::regex_match(ind[j], field_identifier_regex)){
-						const header_map_type* map = header.getInfoField(ind[j]);
-						if(map == nullptr){
+						const io::VcfInfo* info = header.GetInfo(ind[j]);
+						if(info == nullptr){
 							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
 							allGood = false;
 							continue;
@@ -217,8 +217,8 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 						}
 						// Any other FORMAT
 						else {
-							const header_map_type* map = header.getFormatField(ind[j]);
-							if(map == nullptr){
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
 								continue;
@@ -273,9 +273,9 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 bool DataBlockSettings::parseSettings(const header_type& header){
 	this->info_ID_list.clear();
 	for(U32 i = 0; i < this->info_list.size(); ++i){
-		const core::HeaderMapEntry* map_entry = header.getInfoField(this->info_list[i]);
-		if(map_entry == nullptr) continue;
-		const S32 global_key = map_entry->IDX;
+		const io::VcfInfo* info = header.GetInfo(this->info_list[i]);
+		if(info == nullptr) continue;
+		const S32 global_key = info->idx;
 		if(global_key >= 0){
 			this->info_ID_list.push_back(global_key);
 		}
@@ -283,13 +283,13 @@ bool DataBlockSettings::parseSettings(const header_type& header){
 
 	this->format_ID_list.clear();
 	for(U32 i = 0; i < this->format_list.size(); ++i){
-		const core::HeaderMapEntry* map_entry = header.getFormatField(this->format_list[i]);
-		if(map_entry == nullptr){
+		const io::VcfFormat* fmt = header.GetFormat(this->format_list[i]);
+		if(fmt == nullptr){
 			std::cerr << "could not find header: " << this->format_list[i] << " in parse settings..." << std::endl;
 			continue;
 		}
 
-		const S32 global_key = map_entry->IDX;
+		const S32 global_key = fmt->idx;
 		if(global_key >= 0)
 			this->format_ID_list.push_back(global_key);
 

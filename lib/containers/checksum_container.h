@@ -19,7 +19,7 @@ private:
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
     typedef containers::VariantBlock block_type;
-    typedef core::VariantHeader      header_type;
+    typedef VariantHeader            header_type;
 
 public:
 	ChecksumContainer(void);

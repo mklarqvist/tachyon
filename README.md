@@ -17,15 +17,7 @@ Tachyon, or `YON` for short, is an open source C++ software library for reading,
 * **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
 * **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF` and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
----
-
-## Project status
-Tachyon is under active development and the specification and/or the API interfaces may change at any time!   
-**Commits may break functionality! THERE IS NO STABILITY PROMISE WHATSOEVER!**  
-
-Current limitations imposed during development:
-* Importing is restricted to `BCF`
-* Output is restricted to `VCF`, `JSON`, and custom field slicing
+---  
 
 ## Installation
 For Ubuntu, Debian, and Mac systems, installation is easy: just run
@@ -55,7 +47,7 @@ Interested in contributing? Fork and submit a pull request and it will be review
 
 ### Support
 
-We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it.
+We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version
 This is Tachyon 0.1.0. Tachyon follows [semantic versioning](https://semver.org/).

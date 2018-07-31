@@ -30,7 +30,7 @@ private:
     typedef VariantBlockHeader    block_header_type;
     typedef VariantBlockFooter    block_footer_type;
     typedef VariantBlockMapper    block_mapper_type;
-    typedef core::VariantHeader   global_header_type;
+    typedef VariantHeader         global_header_type;
 	typedef containers::VariantBlock             block_entry_type;
 	typedef containers::MetaContainer            meta_container_type;
 	typedef containers::GenotypeContainer        gt_container_type;
@@ -52,7 +52,7 @@ public:
 	}
 
 	VariantBlockContainer(const global_header_type& header) :
-		mapper_(header.header_magic.n_format_values, header.header_magic.n_info_values),
+		mapper_(header.format_fields_.size(), header.info_fields_.size()),
 		header_(&header),
 		objects_(nullptr)
 	{
@@ -195,16 +195,16 @@ private:
 
 template <class T>
 containers::FormatContainer<T>* VariantBlockContainer::get_format_container(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
 	int format_field_global_id = -2;
-	if(this->header_->getFormatField(field_name, match)){
-		format_field_global_id = match->IDX;
+	io::VcfFormat* fmt = this->header_->GetFormat(field_name);
+	if(fmt != nullptr){
+		format_field_global_id = fmt->idx;
 	} else return nullptr;
 
 	if(format_field_global_id >= 0){
 		const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
 		if(target_local_id < 0) return nullptr;
-		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], this->header_->getSampleNumber()));
+		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], this->header_->GetNumberSamples()));
 	}
 	else return nullptr;
 }
@@ -214,10 +214,10 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 	if(meta_container.size() == 0)
 		return new containers::FormatContainer<T>();
 
-	core::HeaderMapEntry* match = nullptr;
+	io::VcfFormat* fmt = this->header_->GetFormat(field_name);
 	int format_field_global_id = -2;
-	if(this->header_->getFormatField(field_name, match))
-		format_field_global_id = match->IDX;
+	if(fmt != nullptr)
+		format_field_global_id = fmt->idx;
 	else return nullptr;
 
 	if(format_field_global_id >= 0){
@@ -232,17 +232,17 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 		if(target_local_id < 0)
 			return nullptr;
 
-		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header_->getSampleNumber()));
+		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header_->GetNumberSamples()));
 	}
 	else return nullptr;
 }
 
 template <class T>
 containers::InfoContainer<T>* VariantBlockContainer::get_info_container(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
+	io::VcfInfo* info = this->header_->GetInfo(field_name);
 	int info_field_global_id = -2;
-	if(this->header_->getInfoField(field_name, match)){
-		info_field_global_id = match->IDX;
+	if(info != nullptr){
+		info_field_global_id = info->idx;
 	} else return nullptr;
 
 	if(info_field_global_id >= 0){
@@ -258,10 +258,10 @@ containers::InfoContainer<T>* VariantBlockContainer::get_balanced_info_container
 	if(meta_container.size() == 0)
 		return new containers::InfoContainer<T>();
 
-	core::HeaderMapEntry* match = nullptr;
+	io::VcfInfo* info = this->header_->GetInfo(field_name);
 	int info_field_global_id = -2;
-	if(this->header_->getInfoField(field_name, match)){
-		info_field_global_id = match->IDX;
+	if(info != nullptr){
+		info_field_global_id = info->idx;
 	} else return nullptr;
 
 	if(info_field_global_id >= 0){

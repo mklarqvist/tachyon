@@ -44,6 +44,14 @@ public:
 	inline size_t size(void) const{ return(this->index_.size()); }
 	inline size_t sizeMeta(void) const{ return(this->index_meta_.size()); }
 
+	uint64_t GetLinearSize(void) const{
+		uint64_t n_total = 0;
+		for(U32 i = 0; i < this->index_.size(); ++i){
+			n_total += this->index_.linear_[i].size();
+		}
+		return(n_total);
+	}
+
 	//inline void operator+=(const entry_type& entry){ this->index_ += entry; }
 	//inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
 

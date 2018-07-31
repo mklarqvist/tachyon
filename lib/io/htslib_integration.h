@@ -12,6 +12,9 @@
 #include "htslib/faidx.h"
 #include "htslib/hts.h"
 
+#include "support/helpers.h"
+#include "io/basic_buffer.h"
+
 namespace tachyon {
 namespace io {
 
@@ -50,21 +53,6 @@ public:
 	// never use this information internally, other than reading it in so we can
 	// write the contig out again.
 	std::vector< std::pair<std::string, std::string> > extra;
-};
-
-struct Contig : public VcfContig {
-public:
-	Contig() : n_blocks(0){}
-	~Contig() = default;
-
-	inline void operator++(void){ ++this->n_blocks; }
-	inline void operator--(void){ --this->n_blocks; }
-	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
-	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
-
-public:
-	// Number of Tachyon blocks associated with this contig
-	uint32_t n_blocks;
 };
 
 // Temp declare
@@ -132,6 +120,38 @@ public:
 	VcfFilter() : idx(0){}
 	~VcfFilter() = default;
 
+	friend std::ostream& operator<<(std::ostream& stream, const VcfFilter& flt){
+		stream.write((const char*)&flt.idx, sizeof(uint32_t));
+
+		utility::SerializeString(flt.id, stream);
+		utility::SerializeString(flt.description, stream);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfFilter& flt){
+		stream.read((char*)&flt.idx, sizeof(uint32_t));
+
+		utility::DeserializeString(flt.id, stream);
+		utility::DeserializeString(flt.description, stream);
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfFilter& flt){
+		io::SerializePrimitive(flt.idx, buffer);
+		io::SerializeString(flt.id, buffer);
+		io::SerializeString(flt.description, buffer);
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfFilter& flt){
+		io::DeserializePrimitive(flt.idx, buffer);
+		io::DeserializeString(flt.id, buffer);
+		io::DeserializeString(flt.description, buffer);
+		return(buffer);
+	}
+
 public:
 	// Required. The internal identifier for this field
 	uint32_t idx;
@@ -157,6 +177,30 @@ public:
 
 	~VcfExtra() = default;
 
+	friend std::ostream& operator<<(std::ostream& stream, const VcfExtra& extra){
+		utility::SerializeString(extra.key, stream);
+		utility::SerializeString(extra.value, stream);
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfExtra& extra){
+		utility::DeserializeString(extra.key, stream);
+		utility::DeserializeString(extra.value, stream);
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfExtra& extra){
+		io::SerializeString(extra.key, buffer);
+		io::SerializeString(extra.value, buffer);
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfExtra& extra){
+		io::DeserializeString(extra.key, buffer);
+		io::DeserializeString(extra.value, buffer);
+		return(buffer);
+	}
+
 public:
   // Required by VCF. The key of the extra header field. Note that this key does
   // not have to be unique within a VcfHeader.
@@ -176,6 +220,47 @@ struct VcfStructuredExtra{
 public:
 	VcfStructuredExtra() = default;
 	~VcfStructuredExtra() = default;
+
+	friend std::ostream& operator<<(std::ostream& stream, const VcfStructuredExtra& extra){
+		utility::SerializeString(extra.key, stream);
+		size_t l_extra = extra.fields.size();
+		stream.write((const char*)&l_extra, sizeof(size_t));
+		for(U32 i = 0; i < extra.fields.size(); ++i)
+			stream << extra.fields[i];
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfStructuredExtra& extra){
+		utility::DeserializeString(extra.key, stream);
+		size_t l_extra;
+		stream.read((char*)&l_extra, sizeof(size_t));
+		extra.fields.resize(l_extra);
+		for(U32 i = 0; i < extra.fields.size(); ++i)
+			stream >> extra.fields[i];
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfStructuredExtra& extra){
+		io::SerializeString(extra.key, buffer);
+		size_t l_extra = extra.fields.size();
+		io::SerializePrimitive(l_extra, buffer);
+		for(U32 i = 0; i < extra.fields.size(); ++i)
+			buffer << extra.fields[i];
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfStructuredExtra& extra){
+		io::DeserializeString(extra.key, buffer);
+		size_t l_extra;
+		io::DeserializePrimitive(l_extra, buffer);
+		for(U32 i = 0; i < extra.fields.size(); ++i)
+			buffer >> extra.fields[i];
+
+		return(buffer);
+	}
 
 public:
 	// Required by VCF. The key of the extra header field. Note that this key does
@@ -699,7 +784,7 @@ public:
 	// VcfFilter: Data specifying a given FILTER field
 	// VcfStructuredExtra:
 	std::vector<std::string>        samples_;
-	std::vector<contig_type>        contigs_;
+	std::vector<VcfContig>          contigs_;
 	std::vector<VcfInfo>            info_fields_;
 	std::vector<VcfFormat>          format_fields_;
 	std::vector<VcfFilter>          filter_fields_;

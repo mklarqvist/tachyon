@@ -26,7 +26,7 @@ private:
     typedef const value_type*      const_pointer;
     typedef index::Index           index_type;
     typedef index::IndexEntry      index_entry_type;
-    typedef core::VariantHeader    header_type;
+    typedef VariantHeader          header_type;
     typedef core::MetaEntry        meta_entry_type;
 
 public:

@@ -89,10 +89,12 @@ bool VariantReader::open(void){
 	}
 	header_container.buffer_data_uncompressed >> this->global_header; // parse header from buffer
 
+	/*
 	if(!this->global_header.header_magic.validate()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate header!" << std::endl;
 		return false;
 	}
+	*/
 
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;
@@ -279,30 +281,6 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	return block;
 }
 
-int VariantReader::has_format_field(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
-	if(this->global_header.getFormatField(field_name, match)){
-		return(match->IDX);
-	}
-	return(-2);
-}
-
-int VariantReader::has_info_field(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
-	if(this->global_header.getInfoField(field_name, match)){
-		return(match->IDX);
-	}
-	return(-2);
-}
-
-int VariantReader::has_filter_field(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
-	if(this->global_header.getFilterField(field_name, match)){
-		return(match->IDX);
-	}
-	return(-2);
-}
-
 void VariantReader::printFILTER(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
@@ -314,10 +292,10 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			// Local key -> global key
-			outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 			}
 		} else
 			outputBuffer += '.';
@@ -337,10 +315,10 @@ void VariantReader::printFILTERCustom(buffer_type& outputBuffer,
 			if(outputBuffer.back() != this->block_settings.custom_delimiter_char) outputBuffer += this->block_settings.custom_delimiter_char;
 
 			// Local key -> global key
-			outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 			}
 		} else
 			outputBuffer += '.';
@@ -361,12 +339,12 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 			if(outputBuffer.back() != ',') outputBuffer += ',';
 			// Local key -> global key
 			outputBuffer += "\"FILTER-";
-			outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].ID;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			outputBuffer += "\":true";
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ',';
 				outputBuffer += "\"FILTER-";
-				outputBuffer += this->global_header.filter_fields[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].ID;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 				outputBuffer += "\":true";
 			}
 		}
@@ -387,10 +365,10 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				if(buffer.back() != delimiter) buffer += delimiter;
 
 				// Print key map
-				buffer += this->global_header.format_fields[this->variant_container.getBlock().footer.format_offsets[format_keys[0]].data_header.global_key].ID;
+				buffer += this->global_header.format_fields_[this->variant_container.getBlock().footer.format_offsets[format_keys[0]].data_header.global_key].id;
 				for(U32 i = 1; i < n_format_keys; ++i){
 					buffer += ':';
-					buffer += this->global_header.format_fields[this->variant_container.getBlock().footer.format_offsets[format_keys[i]].data_header.global_key].ID;
+					buffer += this->global_header.format_fields_[this->variant_container.getBlock().footer.format_offsets[format_keys[i]].data_header.global_key].id;
 				}
 				buffer += delimiter;
 
@@ -398,9 +376,9 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				// Begin print FORMAT data for each sample
 				if(this->variant_container.getBlock().header.controller.hasGT){
 					if(this->block_settings.ppa.load && this->variant_container.getBlock().header.controller.hasGTPermuted){
-						objects.genotype_container->at(position).getObjects(this->global_header.getSampleNumber(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
+						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
 					} else {
-						objects.genotype_container->at(position).getObjects(this->global_header.getSampleNumber(), genotypes_unpermuted);
+						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
 					}
 
 					buffer << genotypes_unpermuted[0];
@@ -409,7 +387,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 						objects.format_containers[format_keys[i]]->to_vcf_string(buffer, position, 0);
 					}
 
-					for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+					for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 						buffer += delimiter;
 						buffer << genotypes_unpermuted[s];
 						for(U32 i = 1; i < n_format_keys; ++i){
@@ -424,7 +402,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 						objects.format_containers[format_keys[i]]->to_vcf_string(buffer, position, 0);
 					}
 
-					for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+					for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 						buffer += delimiter;
 						objects.format_containers[format_keys[0]]->to_vcf_string(buffer, position, s);
 						for(U32 i = 1; i < n_format_keys; ++i){
@@ -469,7 +447,7 @@ void VariantReader::printFORMATCustom(buffer_type& outputBuffer,
 			outputBuffer += delimiter;
 
 			// First individual
-			//if(this->global_header.getSampleNumber() > 1) outputBuffer += '[';
+			//if(this->global_header.GetNumberSamples() > 1) outputBuffer += '[';
 
 			//if(targetKeys.size() > 1) outputBuffer += '[';
 			objects.format_containers[targetKeys[0]]->to_vcf_string(outputBuffer, position, 0);
@@ -479,7 +457,7 @@ void VariantReader::printFORMATCustom(buffer_type& outputBuffer,
 			}
 			//if(targetKeys.size() > 1) outputBuffer += ']';
 
-			for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+			for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 				outputBuffer += delimiter;
 				//if(targetKeys.size() > 1) outputBuffer += '[';
 				objects.format_containers[targetKeys[0]]->to_vcf_string(outputBuffer, position, s);
@@ -491,7 +469,7 @@ void VariantReader::printFORMATCustom(buffer_type& outputBuffer,
 			}
 
 
-			//if(this->global_header.getSampleNumber() > 1) outputBuffer += ']';
+			//if(this->global_header.GetNumberSamples() > 1) outputBuffer += ']';
 		}
 	}
 }
@@ -519,7 +497,7 @@ void VariantReader::printFORMATCustomVector(buffer_type& outputBuffer,
 			// Cycle over keys
 			objects.format_containers[targetKeys[0]]->to_vcf_string(outputBuffer, position, 0);
 			// Cycle over samples
-			for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+			for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 				outputBuffer += ',';
 				objects.format_containers[targetKeys[0]]->to_vcf_string(outputBuffer, position, s);
 			}
@@ -528,7 +506,7 @@ void VariantReader::printFORMATCustomVector(buffer_type& outputBuffer,
 				outputBuffer += delimiter;
 				objects.format_containers[targetKeys[i]]->to_vcf_string(outputBuffer, position, 0);
 				// Cycle over samples
-				for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+				for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					outputBuffer += ',';
 					objects.format_containers[targetKeys[i]]->to_vcf_string(outputBuffer, position, s);
 				}
@@ -553,14 +531,14 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 			outputBuffer += objects.format_field_names[targetKeys[0]];
 			outputBuffer += '"';
 			outputBuffer += ':';
-			if(this->global_header.getSampleNumber() > 1) outputBuffer += '[';
+			if(this->global_header.GetNumberSamples() > 1) outputBuffer += '[';
 			objects.format_containers[targetKeys[0]]->to_json_string(outputBuffer, position, 0);
 			// Cycle over samples
-			for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+			for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 				outputBuffer += ',';
 				objects.format_containers[targetKeys[0]]->to_json_string(outputBuffer, position, s);
 			}
-			if(this->global_header.getSampleNumber() > 1) outputBuffer += ']';
+			if(this->global_header.GetNumberSamples() > 1) outputBuffer += ']';
 
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ',';
@@ -568,14 +546,14 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 				outputBuffer += objects.format_field_names[targetKeys[i]];
 				outputBuffer += '"';
 				outputBuffer += ':';
-				if(this->global_header.getSampleNumber() > 1) outputBuffer += '[';
+				if(this->global_header.GetNumberSamples() > 1) outputBuffer += '[';
 				objects.format_containers[targetKeys[i]]->to_json_string(outputBuffer, position, 0);
 				// Cycle over samples
-				for(U64 s = 1; s < this->global_header.getSampleNumber(); ++s){
+				for(U64 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					outputBuffer += ',';
 					objects.format_containers[targetKeys[i]]->to_json_string(outputBuffer, position, s);
 				}
-				if(this->global_header.getSampleNumber() > 1) outputBuffer += ']';
+				if(this->global_header.GetNumberSamples() > 1) outputBuffer += ']';
 			}
 		}
 	}
@@ -605,7 +583,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ";";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
-				if(this->global_header.info_fields[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].primitive_type == YON_VCF_HEADER_FLAG)
+				if(this->global_header.info_fields_[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].yon_type == YON_VCF_HEADER_FLAG)
 					continue;
 
 				if(objects.info_containers[targetKeys[i]]->emptyPosition(position))
@@ -639,7 +617,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
 
 			// Check if this target container is a FLAG
-			if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+			if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += objects.info_field_names[targetKeys[0]];
 			} else {
 				// Check if the position is empty
@@ -650,7 +628,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += delimiter;
-				if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += objects.info_field_names[targetKeys[i]];
 					continue;
 				}
@@ -674,7 +652,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 			outputBuffer += "\"INFO-";
 			outputBuffer += objects.info_field_names[targetKeys[0]];
 			outputBuffer += "\":";
-			if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+			if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += "true";
 			} else {
 				objects.info_containers[targetKeys[0]]->to_json_string(outputBuffer, position);
@@ -685,7 +663,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 				outputBuffer += "\"INFO-";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
 				outputBuffer += "\":";
-				if(this->global_header.info_fields[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].primitive_type == YON_VCF_HEADER_FLAG){
+				if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += "true";
 					continue;
 				}
@@ -740,30 +718,30 @@ U64 VariantReader::outputVCF(void){
 		// fixme
 		// if special
 		// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"
-		if(this->global_header.getInfoField("FS_A") == nullptr)          this->global_header.literals += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
-		if(this->global_header.getInfoField("AN") == nullptr)            this->global_header.literals += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("NM") == nullptr)            this->global_header.literals += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("NPM") == nullptr)           this->global_header.literals += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("AC") == nullptr)            this->global_header.literals += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("AC_FWD") == nullptr)        this->global_header.literals += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("AC_REV") == nullptr)        this->global_header.literals += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
-		if(this->global_header.getInfoField("HWE_P") == nullptr)         this->global_header.literals += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
-		if(this->global_header.getInfoField("VT") == nullptr)            this->global_header.literals += "\n##INFO=<ID=VT,Number=A,Type=String>";
-		if(this->global_header.getInfoField("AF") == nullptr)            this->global_header.literals += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
-		if(this->global_header.getInfoField("MULTI_ALLELIC") == nullptr) this->global_header.literals += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
-		if(this->global_header.getInfoField("F_PIC") == nullptr)         this->global_header.literals += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
+		if(this->global_header.GetInfo("FS_A") == nullptr)          this->global_header.literals_ += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
+		if(this->global_header.GetInfo("AN") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("NM") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("NPM") == nullptr)           this->global_header.literals_ += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("AC") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("AC_FWD") == nullptr)        this->global_header.literals_ += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("AC_REV") == nullptr)        this->global_header.literals_ += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
+		if(this->global_header.GetInfo("HWE_P") == nullptr)         this->global_header.literals_ += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
+		if(this->global_header.GetInfo("VT") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=VT,Number=A,Type=String>";
+		if(this->global_header.GetInfo("AF") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
+		if(this->global_header.GetInfo("MULTI_ALLELIC") == nullptr) this->global_header.literals_ += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
+		if(this->global_header.GetInfo("F_PIC") == nullptr)         this->global_header.literals_ += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
 	}
 
-	this->global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-	this->global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+	this->global_header.literals_ += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+	this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 
-	this->global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
-	this->global_header.literals += this->getSettings().get_settings_string();
+	this->global_header.literals_ += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
+	this->global_header.literals_ += this->getSettings().get_settings_string();
 
 	// Output VCF header
 	if(this->block_settings.show_vcf_header){
-		this->global_header.writeHeaderVCF(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
+		//this->global_header.writeHeaderVCF(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
 	}
 
 	// If seek is active for targetted intervals
@@ -812,11 +790,11 @@ U32 VariantReader::outputBlockVCF(void){
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
 	io::BasicBuffer output_buffer(256000);
-	if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->global_header.getSampleNumber()*2);
+	if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->global_header.GetNumberSamples()*2);
 
 	// Todo: in cases of non-diploid
-	std::vector<core::GTObject> genotypes_unpermuted(this->global_header.getSampleNumber());
-	for(U32 i = 0; i < this->global_header.getSampleNumber(); ++i){
+	std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
+	for(U32 i = 0; i < this->global_header.GetNumberSamples(); ++i){
 		genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
 	}
 
@@ -876,8 +854,8 @@ U32 VariantReader::outputBlockCustom(void){
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of syncing
-	io::BasicBuffer output_buffer(256000 + this->global_header.getSampleNumber()*2);
-	std::vector<core::GTObject> genotypes_unpermuted(this->global_header.getSampleNumber());
+	io::BasicBuffer output_buffer(256000 + this->global_header.GetNumberSamples()*2);
+	std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
 
 	// Todo: move to function
 	//U32 info_match_limit = 1; // any match

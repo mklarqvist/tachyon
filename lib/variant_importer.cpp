@@ -96,28 +96,6 @@ bool VariantImporter::BuildVCF(void){
 	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 
-	// Todo: fix
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.GetNumberContigs(); ++i){
-		const U64 contig_length = this->vcf_reader_->vcf_header_.contigs_[i].n_bases;
-		BYTE n_levels = 7;
-		U64 bins_lowest = pow(4,n_levels);
-		double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
-
-		if(used / bins_lowest < 2500){
-			for(S32 i = n_levels; i != 0; --i){
-				if(used/pow(4,i) > 2500){
-					n_levels = i;
-					break;
-				}
-			}
-		}
-
-		this->writer->index.index_.add(i, contig_length, n_levels);
-		//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
-		//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
-		//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
-	}
-
 	uint64_t b_total_write = 0;
 
 	// Iterate over all available variants in the file or until encountering
@@ -488,7 +466,9 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 		// Update the variant index with the target bin(s) found.
 		if(longest > 1){
-			index_bin = this->writer->index.index_[meta.contigID].add(record->pos, record->pos + longest, (U32)this->writer->index.current_block_number());
+			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
+			                                                          record->pos + longest,
+			                                                          (U32)this->writer->index.current_block_number());
 			//index_bin = 0;
 			end_position_used = record->pos + longest;
 		}
@@ -551,8 +531,8 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 	footer.offset_end_of_data = this->writer->stream->tellp();
 	footer.n_blocks           = this->writer->n_blocks_written;
 	footer.n_variants         = this->writer->n_variants_written;
-	std::cerr << "Footer: " << footer.n_blocks << " and index " << this->writer->index.size() << "," << this->writer->index.index_.size() << "," << this->writer->index.index_meta_.size() << std::endl;
-	assert(footer.n_blocks == this->writer->index.size());
+	std::cerr << "Footer: " << footer.n_blocks << " and index " << this->writer->index.GetLinearSize() << "," << this->writer->index.index_.size() << "," << this->writer->index.index_meta_.size() << std::endl;
+	assert(footer.n_blocks == this->writer->index.GetLinearSize());
 
 	U64 last_pos = this->writer->stream->tellp();
 	this->writer->writeIndex(); // Write index

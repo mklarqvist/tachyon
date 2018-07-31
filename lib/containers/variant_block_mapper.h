@@ -69,7 +69,7 @@ private:
 	typedef const value_type*           const_pointer;
 	typedef VariantBlockMapperEntry     map_type;
 	typedef VariantBlockFooter          block_footer_type;
-	typedef core::VariantHeader         header_type;
+	typedef VariantHeader               header_type;
 	typedef DataBlockSettings           block_settings_type;
 
 public:
@@ -78,8 +78,8 @@ public:
 	~VariantBlockMapper();
 
 	self_type& operator<<(const header_type& header){
-		this->n_format_fields = header.header_magic.n_format_values;
-		this->n_info_fields   = header.header_magic.n_info_values;
+		this->n_format_fields = header.format_fields_.size();
+		this->n_info_fields   = header.info_fields_.size();
 		return(*this);
 	}
 

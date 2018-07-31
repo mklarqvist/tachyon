@@ -29,17 +29,17 @@ DEALINGS IN THE SOFTWARE.
 void import_usage(void){
 	programMessage();
 	std::cerr <<
-	"Brief:  Convert BCF -> YON\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input file> -o <output.yon>\n\n"
+	"Brief:  Convert Vcf/Bcf records into a Yon archive.\n"
+	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input> -o <output.yon>\n\n"
 	"Options:\n"
-	"  -i FILE  input BCF file (required)\n"
+	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required)\n"
 	"  -o FILE  output file prefix (required)\n"
 	"  -c INT   Import checkpoint size in number of variants (default: 1000)\n"
 	"  -C FLOAT Import checkpoint size in bases (default: 5 Mb)\n"
 	"  -L INT   Compression level 1-20 (default: 6)\n"
 	"  -t INT   Number of compression threads (default: all available)\n"
 	"  -p/-P    Permute/Do not permute diploid genotypes\n"
-	"  -e       Encrypt data (default AES-256)\n"
+	"  -e       Encrypt data with AES-256\n"
 	"  -d       Drop invariant sites (all REF or ALT)\n"
 	"  -s       Hide all program messages [null]\n";
 }

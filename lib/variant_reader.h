@@ -42,7 +42,7 @@ class VariantReader{
 private:
 	typedef VariantReader                          self_type;
 	typedef io::BasicBuffer                        buffer_type;
-	typedef core::VariantHeader                    header_type;
+	typedef VariantHeader                          header_type;
 	typedef core::Footer                           footer_type;
 	typedef core::MetaEntry                        meta_entry_type;
 	typedef algorithm::CompressionManager          codec_manager_type;
@@ -116,37 +116,6 @@ public:
 	inline size_t getFilesize(void) const{ return(this->basic_reader.filesize_); }
 	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
 	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
-
-	/**<
-	 * Checks if a FORMAT `field` is set in the header and then checks
-	 * if that field exists in the current block. If it does return
-	 * the GLOBAL key. If the field is not described in the header at
-	 * all then return -2.
-	 * @param field_name FORMAT field name to search for (e.g. "GL")
-	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
-	 */
-	int has_format_field(const std::string& field_name) const;
-
-	/**<
-	 * Checks if a INFO `field` is set in the header and then checks
-	 * if that field exists in the current block. If it does return
-	 * the GLOBAL key. If the field is not described in the header at
-	 * all then return -2.
-	 * @param field_name INFO field name to search for (e.g. "AC")
-	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
-	 */
-	int has_info_field(const std::string& field_name) const;
-
-	/**<
-	 * Checks if a FILTER `field` is set in the header and then checks
-	 * if that field exists in the current block. If it does return
-	 * the GLOBAL key. If the field is not described in the header at
-	 * all then return -2.
-	 * @param field_name FILTER field name to search for (e.g. "PASS")
-	 * @return Returns local key if found in this block. Returns -2 if not found in header, or -1 if found in header but not in block
-	 */
-	int has_filter_field(const std::string& field_name) const;
-
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -331,17 +300,17 @@ public:
 	 * @param stream
 	 */
 	void printHeaderVCF(std::ostream& stream = std::cout){
-		this->global_header.literals += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		this->global_header.literals += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+		this->global_header.literals_ += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 		                             +   SSLeay_version(SSLEAY_VERSION) + ","
 		                             +  "ZSTD-" + ZSTD_versionString()
 		                             +  "; timestamp=" + tachyon::utility::datetime();
 
-		this->global_header.literals += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		this->global_header.literals += this->getSettings().get_settings_string();
+		this->global_header.literals_ += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
+		this->global_header.literals_ += this->getSettings().get_settings_string();
 
-		stream << this->global_header.literals << std::endl;
-		this->global_header.writeHeaderVCF(stream, true);
+		stream << this->global_header.literals_ << std::endl;
+		//this->global_header.writeHeaderVCF(stream, true);
 	}
 
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
@@ -377,7 +346,7 @@ public:
 			// Vector of genotype objects (high level permuted)
 			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->global_header.getSampleNumber());
 			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.getSampleNumber(), this->variant_container.getBlock().ppa_manager);
+			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.GetNumberSamples(), this->variant_container.getBlock().ppa_manager);
 
 			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
 			for(U32 j = 1; j < objects_true.size(); ++j){
@@ -402,16 +371,16 @@ public:
 		square_temporary.clear();
 
 		// 2 * (Upper triagonal + diagonal) * number of variants
-		const U64 updates = 2*((this->global_header.getSampleNumber()*this->global_header.getSampleNumber() - this->global_header.getSampleNumber())/2 + this->global_header.getSampleNumber()) * gt.size();
+		const U64 updates = 2*((this->global_header.GetNumberSamples()*this->global_header.GetNumberSamples() - this->global_header.GetNumberSamples())/2 + this->global_header.GetNumberSamples()) * gt.size();
 		std::cerr << utility::timestamp("DEBUG") << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-		return((U64)2*this->global_header.getSampleNumber()*gt.size());
+		return((U64)2*this->global_header.GetNumberSamples()*gt.size());
 	}
 
 	U64 getTiTVRatios(std::vector<core::TsTvObject>& global){
 		containers::MetaContainer meta(this->variant_container.getBlock());
 		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
 
-		std::vector<core::TsTvObject> objects(this->global_header.getSampleNumber());
+		std::vector<core::TsTvObject> objects(this->global_header.GetNumberSamples());
 		for(U32 i = 0; i < gt.size(); ++i)
 			gt[i].getTsTv(objects);
 
@@ -616,8 +585,8 @@ public:
 
 		//return true;
 
-		core::HeaderMapEntry* entry = nullptr;
-		if(this->global_header.getInfoField("AF", entry)){
+		const io::VcfInfo* info = this->global_header.GetInfo("AF");
+		if(info != nullptr){
 			containers::InfoContainer<double> it_i(this->variant_container.getBlock().info_containers[1]);
 			//math::MathSummaryStatistics stats = it_i.getSummaryStatistics();
 			//std::cerr << stats.n_total << '\t' << stats.mean << '\t' << stats.standard_deviation << '\t' << stats.min << "-" << stats.max << std::endl;

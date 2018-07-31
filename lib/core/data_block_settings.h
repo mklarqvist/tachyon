@@ -29,7 +29,7 @@ struct DataBlockSettings{
 public:
 	typedef DataBlockSettings     self_type;
 	typedef DataBlockSettingsPair pair_type;
-	typedef core::VariantHeader   header_type;
+	typedef VariantHeader         header_type;
 	typedef core::HeaderMapEntry  header_map_type;
 
 public:

@@ -57,26 +57,27 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 
 	// Assert that interval list data is of length n_contigs_
 	// Note that this will truncate previous entries if resizing occurs
-	if(this->interval_list_.size() != header.getContigNumber())
-		this->interval_list_ = std::vector< std::vector< interval_type > >(header.getContigNumber());
+	if(this->interval_list_.size() != header.GetNumberContigs())
+		this->interval_list_ = std::vector< std::vector< interval_type > >(header.GetNumberContigs());
 
 	// Parse each interval
 	for(U32 i = 0; i < interval_strings.size(); ++i){
 		interval_strings[i] = utility::remove_whitespace(interval_strings[i]);
-		core::HeaderContig* contig = nullptr;
+		const YonContig* contig = nullptr;
 
 		// Chromosome only
 		if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
 			//std::cerr << "chromosome only" << std::endl;
-			if(!header.getContig(interval_strings[i],contig)){
+			contig = header.GetContig(interval_strings[i]);
+			if(contig == nullptr){
 				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << interval_strings[i] << std::endl;
 				return(false);
 			}
 
 			//std::cerr << "Parsed: " << interval_strings[i] << std::endl;
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID);
+			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
-			this->interval_list_[contig->contigID].push_back(interval_type(0, contig->bp_length, contig->contigID));
+			this->interval_list_[contig->idx].push_back(interval_type(0, contig->n_bases, contig->idx));
 
 		}
 		// Chromosome:position
@@ -88,17 +89,18 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 				return false;
 			}
 
-			if(!header.getContig(substrings[0],contig)){
-				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << substrings[0] << std::endl;
+			contig = header.GetContig(interval_strings[i]);
+			if(contig == nullptr){
+				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << interval_strings[i] << std::endl;
 				return(false);
 			}
 
 			U64 position = atof(substrings[1].data());
 			//std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID, position);
+			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
-			this->interval_list_[contig->contigID].push_back(interval_type(position, position, contig->contigID));
+			this->interval_list_[contig->idx].push_back(interval_type(position, position, contig->idx));
 		}
 		// Chromosome:position-position
 		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
@@ -109,7 +111,8 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 				return false;
 			}
 
-			if(!header.getContig(substrings[0],contig)){
+			contig = header.GetContig(substrings[0]);
+			if(contig == nullptr){
 				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << substrings[0] << std::endl;
 				return(false);
 			}
@@ -125,9 +128,9 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 
 			//std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->contigID, position_from, position_to);
+			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position_from, position_to);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
-			this->interval_list_[contig->contigID].push_back(interval_type(position_from, position_to, contig->contigID));
+			this->interval_list_[contig->idx].push_back(interval_type(position_from, position_to, contig->idx));
 
 		} else {
 			std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << interval_strings[i] << std::endl;
@@ -154,7 +157,7 @@ bool IntervalContainer::build(const header_type& header){
 	// Dedupe blocks before building
 	this->dedupeBlockList();
 
-	this->n_entries_ = header.getContigNumber();
+	this->n_entries_ = header.GetNumberContigs();
 	this->__entries  = static_cast<pointer>(::operator new[](this->n_entries_*sizeof(value_type)));
 	for(U32 i = 0; i < this->n_entries_; ++i){
 		new( &this->__entries[i] ) value_type( std::move(this->interval_list_[i]) );

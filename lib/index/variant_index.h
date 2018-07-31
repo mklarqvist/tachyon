@@ -113,7 +113,7 @@ public:
 				}
 			}
 
-			this->add(i, contig_length, n_levels);
+			this->Add(i, contig_length, n_levels);
 			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
 			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
 			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
@@ -127,7 +127,7 @@ public:
 	 * @param n_levels Number of desired 4^N levels
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& add(const U32& contigID, const U64& l_contig, const BYTE& n_levels){
+	inline self_type& Add(const U32& contigID, const U64& l_contig, const BYTE& n_levels){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();
 
@@ -143,7 +143,7 @@ public:
 	 * @param entry    Target index entry to push back onto the linear index vector
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& add(const U32& contigID, const linear_entry_type& entry){
+	inline self_type& Add(const U32& contigID, const linear_entry_type& entry){
 		this->linear_[contigID] += entry;
 		return(*this);
 	}
@@ -158,7 +158,7 @@ private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& index);
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 
-private:
+public:
 	size_type    n_contigs_; // number of contigs
 	size_type    n_capacity_;
 	pointer      contigs_;

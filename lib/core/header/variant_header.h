@@ -6,167 +6,636 @@
 #include "header_map_entry.h"
 #include "header_sample.h"
 #include "support/type_definitions.h"
-#include "support/magic_constants.h"
+#include "support/helpers.h"
 #include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
 
-namespace tachyon{
-namespace core{
+#include "io/htslib_integration.h"
+#include <unordered_map>
 
-/**<
- * This class describes data that is mandatory in the Tachyon
- * file-format
- */
-class VariantHeader{
-private:
-	typedef VariantHeader                     self_type;
-	typedef HeaderMagic                       magic_type;
-	typedef core::HeaderContig                contig_type;
-	typedef core::HeaderMapEntry              map_entry_type;
-	typedef core::HeaderSample                sample_type;
-	typedef hash::HashTable<std::string, S32> hash_table_type;
+namespace tachyon{
+
+struct YonContig : public io::VcfContig {
+public:
+	YonContig() : n_blocks(0){}
+	YonContig(const io::VcfContig& vcf_contig) : io::VcfContig(vcf_contig), n_blocks(0){}
+	~YonContig() = default;
+
+	inline void operator++(void){ ++this->n_blocks; }
+	inline void operator--(void){ --this->n_blocks; }
+	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
+	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
+
+	friend std::ostream& operator<<(std::ostream& stream, const YonContig& contig){
+		utility::SerializePrimitive(contig.idx, stream);
+		utility::SerializePrimitive(contig.n_bases, stream);
+		utility::SerializePrimitive(contig.n_blocks, stream);
+		utility::SerializeString(contig.name, stream);
+		utility::SerializeString(contig.description, stream);
+
+		size_t size_helper = contig.extra.size();
+		stream.write((const char*)&size_helper, sizeof(size_t));
+		for(U32 i = 0; i < contig.extra.size(); ++i){
+			utility::SerializeString(contig.extra[i].first, stream);
+			utility::SerializeString(contig.extra[i].second, stream);
+		}
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, YonContig& contig){
+		utility::DeserializePrimitive(contig.idx, stream);
+		utility::DeserializePrimitive(contig.n_bases, stream);
+		utility::DeserializePrimitive(contig.n_blocks, stream);
+		utility::DeserializeString(contig.name, stream);
+		utility::DeserializeString(contig.description, stream);
+
+		size_t l_extra;
+		stream.read((char*)&l_extra, sizeof(size_t));
+		contig.extra.resize(l_extra);
+		for(U32 i = 0; i < contig.extra.size(); ++i){
+			utility::DeserializeString(contig.extra[i].first, stream);
+			utility::DeserializeString(contig.extra[i].second, stream);
+		}
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonContig& contig){
+		io::SerializePrimitive(contig.idx, buffer);
+		io::SerializePrimitive(contig.n_bases, buffer);
+		io::SerializePrimitive(contig.n_blocks, buffer);
+		io::SerializeString(contig.name, buffer);
+		io::SerializeString(contig.description, buffer);
+
+		size_t size_helper = contig.extra.size();
+		buffer += size_helper;
+		for(U32 i = 0; i < contig.extra.size(); ++i){
+			io::SerializeString(contig.extra[i].first, buffer);
+			io::SerializeString(contig.extra[i].second, buffer);
+		}
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonContig& contig){
+		io::DeserializePrimitive(contig.idx, buffer);
+		io::DeserializePrimitive(contig.n_bases, buffer);
+		io::DeserializePrimitive(contig.n_blocks, buffer);
+		io::DeserializeString(contig.name, buffer);
+		io::DeserializeString(contig.description, buffer);
+
+		size_t l_extra;
+		buffer >> l_extra;
+		contig.extra.resize(l_extra);
+		for(U32 i = 0; i < contig.extra.size(); ++i){
+			io::DeserializeString(contig.extra[i].first, buffer);
+			io::DeserializeString(contig.extra[i].second, buffer);
+		}
+		return(buffer);
+	}
 
 public:
-	explicit VariantHeader(void);
-	VariantHeader(const self_type& other);
-	~VariantHeader();
+	// Number of Tachyon blocks associated with this contig
+	uint32_t n_blocks;
+};
 
-	inline const contig_type& getContig(const U32& position) const{ return(this->contigs[position]); }
-	inline const sample_type& getSample(const U32& position) const{ return(this->samples[position]); }
+class YonInfo : public io::VcfInfo {
+public:
+	YonInfo() : yon_type(YON_VCF_HEADER_FLAG){}
+	YonInfo(const io::VcfInfo& vcf_info) : io::VcfInfo(vcf_info), yon_type(YON_VCF_HEADER_FLAG){
+		this->EvaluateType();
+	}
+	~YonInfo() = default;
 
-	bool getContig(const std::string& p, contig_type*& target) const;
-	bool getSample(const std::string& p, sample_type*& target) const;
-	bool getInfoField(const std::string& p, map_entry_type*& target) const;
-	bool getFormatField(const std::string& p, map_entry_type*& target) const;
-	bool getFilterField(const std::string& p, map_entry_type*& target) const;
-	const map_entry_type* getInfoField(const std::string& p) const;
-	const map_entry_type* getFormatField(const std::string& p) const;
-	const map_entry_type* getFilterField(const std::string& p) const;
-
-	inline const U64& getSampleNumber(void) const{ return(this->header_magic.n_samples); }
-	inline U64& getSampleNumber(void){ return(this->header_magic.n_samples); }
-	inline const U32& getContigNumber(void) const{ return(this->header_magic.n_contigs); }
-	inline U32& getContigNumber(void){ return(this->header_magic.n_contigs); }
-
-	// write
-	std::ostream& write(std::ostream& stream);
-
-	bool has_format_field(const std::string& field_name) const{
-		map_entry_type* match = nullptr;
-		if(this->getFormatField(field_name, match))
-			return true;
-
-		return false;
+	bool EvaluateType(void){
+		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
+		else if(this->type == "Float") this->yon_type == YON_VCF_HEADER_FLOAT;
+		else if(this->type == "Flag") this->yon_type == YON_VCF_HEADER_FLAG;
+		else if(this->type == "Character") this->yon_type == YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type == YON_VCF_HEADER_STRING;
+		else {
+			std::cerr << "Illegal header type: " << this->type << std::endl;
+			return false;
+ 		}
+ 		return true;
 	}
 
-	bool has_info_field(const std::string& field_name) const{
-		map_entry_type* match = nullptr;
-		if(this->getInfoField(field_name, match))
-			return true;
-
-		return false;
-	}
-
-	bool has_filter_field(const std::string& field_name) const{
-		map_entry_type* match = nullptr;
-		if(this->getFilterField(field_name, match))
-			return true;
-
-		return(false);
-	}
-
-	std::ostream& writeHeaderVCF(std::ostream& stream, const bool showFormat = true) const;
-
-private:
-	bool buildHashTables(void);
-
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& header){
-		buffer << header.header_magic;
-		for(U32 i = 0; i < header.header_magic.n_contigs; ++i) buffer << header.contigs[i];
-		for(U32 i = 0; i < header.header_magic.n_samples; ++i) buffer << header.samples[i];
-		for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   buffer << header.info_fields[i];
-		for(U32 i = 0; i < header.header_magic.n_format_values; ++i) buffer << header.format_fields[i];
-		for(U32 i = 0; i < header.header_magic.n_filter_values; ++i) buffer << header.filter_fields[i];
-
-		buffer.Add(&header.literals[0], header.literals.size());
-		return(buffer);
-	}
-
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& header){
-		buffer >> header.header_magic;
-		delete [] header.contigs;
-		delete [] header.samples;
-		delete [] header.info_fields;
-		delete [] header.format_fields;
-		delete [] header.filter_fields;
-		header.contigs = new contig_type[header.header_magic.n_contigs];
-		header.samples = new sample_type[header.header_magic.n_samples];
-		header.info_fields   = new map_entry_type[header.header_magic.n_info_values];
-		header.format_fields = new map_entry_type[header.header_magic.n_format_values];
-		header.filter_fields = new map_entry_type[header.header_magic.n_filter_values];
-		for(U32 i = 0; i < header.header_magic.n_contigs; ++i) buffer >> header.contigs[i];
-		for(U32 i = 0; i < header.header_magic.n_samples; ++i) buffer >> header.samples[i];
-		for(U32 i = 0; i < header.header_magic.n_info_values; ++i)   buffer >> header.info_fields[i];
-		for(U32 i = 0; i < header.header_magic.n_format_values; ++i) buffer >> header.format_fields[i];
-		for(U32 i = 0; i < header.header_magic.n_filter_values; ++i) buffer >> header.filter_fields[i];
-
-		header.literals.resize(header.header_magic.l_literals);
-		buffer.read(&header.literals[0], header.header_magic.l_literals);
-
-		header.buildHashTables();
-
-		return(buffer);
-	}
-
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream >> entry.header_magic;
-
-		delete [] entry.contigs;
-		entry.contigs = new contig_type[entry.header_magic.n_contigs];
-		for(U32 i = 0; i < entry.header_magic.n_contigs; ++i) stream >> entry.contigs[i];
-
-		delete [] entry.samples;
-		entry.samples = new sample_type[entry.header_magic.n_samples];
-		for(U32 i = 0; i < entry.header_magic.n_samples; ++i) stream >> entry.samples[i];
-
-		delete [] entry.info_fields;
-		entry.info_fields = new map_entry_type[entry.header_magic.n_info_values];
-		for(U32 i = 0; i < entry.header_magic.n_info_values; ++i) stream >> entry.info_fields[i];
-
-		delete [] entry.format_fields;
-		entry.format_fields = new map_entry_type[entry.header_magic.n_format_values];
-		for(U32 i = 0; i < entry.header_magic.n_format_values; ++i) stream >> entry.format_fields[i];
-
-		delete entry.filter_fields;
-		entry.filter_fields = new map_entry_type[entry.header_magic.n_filter_values];
-		for(U32 i = 0; i < entry.header_magic.n_filter_values; ++i) stream >> entry.filter_fields[i];
-
-		entry.literals.resize(entry.header_magic.l_literals);
-		stream.read(&entry.literals[0], entry.header_magic.l_literals);
-
-		entry.buildHashTables();
+	friend std::ostream& operator<<(std::ostream& stream, const YonInfo& info){
+		utility::SerializePrimitive(info.idx, stream);
+		utility::SerializePrimitive(info.yon_type, stream);
+		utility::SerializeString(info.id, stream);
+		utility::SerializeString(info.number, stream);
+		utility::SerializeString(info.type, stream);
+		utility::SerializeString(info.description, stream);
+		utility::SerializeString(info.source, stream);
+		utility::SerializeString(info.version, stream);
 
 		return(stream);
 	}
 
-public:
-	magic_type       header_magic;
-	std::string      literals;
-	contig_type*     contigs;
-	sample_type*     samples;
-	map_entry_type*  info_fields;
-	map_entry_type*  format_fields;
-	map_entry_type*  filter_fields;
+	friend std::istream& operator>>(std::istream& stream, YonInfo& info){
+		utility::DeserializePrimitive(info.idx, stream);
+		utility::DeserializePrimitive(info.yon_type, stream);
+		utility::DeserializeString(info.id, stream);
+		utility::DeserializeString(info.number, stream);
+		utility::DeserializeString(info.type, stream);
+		utility::DeserializeString(info.description, stream);
+		utility::DeserializeString(info.source, stream);
+		utility::DeserializeString(info.version, stream);
 
-	// Constructed during run-time
-	hash_table_type* htable_contigs; // hash table for contig names
-	hash_table_type* htable_samples; // hash table for sample names
-	hash_table_type* htable_info_fields; // hash map from name to identifier
-	hash_table_type* htable_format_fields; // hash map from name to identifier
-	hash_table_type* htable_filter_fields; // hash map from name to identifier
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonInfo& info){
+		io::SerializePrimitive(info.idx, buffer);
+		io::SerializePrimitive(info.yon_type, buffer);
+		io::SerializeString(info.id, buffer);
+		io::SerializeString(info.number, buffer);
+		io::SerializeString(info.type, buffer);
+		io::SerializeString(info.description, buffer);
+		io::SerializeString(info.source, buffer);
+		io::SerializeString(info.version, buffer);
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonInfo& info){
+		io::DeserializePrimitive(info.idx, buffer);
+		io::DeserializePrimitive(info.yon_type, buffer);
+		io::DeserializeString(info.id, buffer);
+		io::DeserializeString(info.number, buffer);
+		io::DeserializeString(info.type, buffer);
+		io::DeserializeString(info.description, buffer);
+		io::DeserializeString(info.source, buffer);
+		io::DeserializeString(info.version, buffer);
+
+		return(buffer);
+	}
+
+public:
+	TACHYON_VARIANT_HEADER_FIELD_TYPE yon_type;
 };
 
-}
+class YonFormat : public io::VcfFormat {
+public:
+	YonFormat() : yon_type(YON_VCF_HEADER_FLAG){}
+	YonFormat(const io::VcfFormat& vcf_format) : io::VcfFormat(vcf_format), yon_type(YON_VCF_HEADER_FLAG){
+		this->EvaluateType();
+	}
+	~YonFormat() = default;
+
+	bool EvaluateType(void){
+		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
+		else if(this->type == "Character") this->yon_type == YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type == YON_VCF_HEADER_STRING;
+		else {
+			std::cerr << "Illegal header type: " << this->type << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const YonFormat& fmt){
+		utility::SerializePrimitive(fmt.idx, stream);
+		utility::SerializePrimitive(fmt.yon_type, stream);
+		utility::SerializeString(fmt.id, stream);
+		utility::SerializeString(fmt.number, stream);
+		utility::SerializeString(fmt.type, stream);
+		utility::SerializeString(fmt.description, stream);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, YonFormat& fmt){
+		utility::DeserializePrimitive(fmt.idx, stream);
+		utility::DeserializePrimitive(fmt.yon_type, stream);
+		utility::DeserializeString(fmt.id, stream);
+		utility::DeserializeString(fmt.number, stream);
+		utility::DeserializeString(fmt.type, stream);
+		utility::DeserializeString(fmt.description, stream);
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonFormat& fmt){
+		io::SerializePrimitive(fmt.idx, buffer);
+		io::SerializePrimitive(fmt.yon_type, buffer);
+		io::SerializeString(fmt.id, buffer);
+		io::SerializeString(fmt.number, buffer);
+		io::SerializeString(fmt.type, buffer);
+		io::SerializeString(fmt.description, buffer);
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonFormat& fmt){
+		io::DeserializePrimitive(fmt.idx, buffer);
+		io::DeserializePrimitive(fmt.yon_type, buffer);
+		io::DeserializeString(fmt.id, buffer);
+		io::DeserializeString(fmt.number, buffer);
+		io::DeserializeString(fmt.type, buffer);
+		io::DeserializeString(fmt.description, buffer);
+
+		return(buffer);
+	}
+
+public:
+	TACHYON_VARIANT_HEADER_FIELD_TYPE yon_type;
+};
+
+class VariantHeader{
+public:
+	typedef VariantHeader self_type;
+	typedef bcf_hdr_t     hts_vcf_header;
+	typedef std::unordered_map<std::string, uint32_t> map_type;
+	typedef std::unordered_map<uint32_t, uint32_t>    map_reverse_type;
+
+public:
+	VariantHeader() = default;
+	VariantHeader(const VariantHeader& other) :
+		fileformat_string_(other.fileformat_string_),
+		literals_(other.literals_),
+		samples_(other.samples_),
+		contigs_(other.contigs_),
+		info_fields_(other.info_fields_),
+		format_fields_(other.format_fields_),
+		filter_fields_(other.filter_fields_),
+		structured_extra_fields_(other.structured_extra_fields_),
+		extra_fields_(other.extra_fields_)
+	{
+		this->BuildMaps();
+		this->BuildReverseMaps();
+	}
+
+	VariantHeader(const io::VcfHeader& other) :
+		fileformat_string_(other.fileformat_string_),
+		literals_(other.literals_),
+		samples_(other.samples_),
+		filter_fields_(other.filter_fields_),
+		structured_extra_fields_(other.structured_extra_fields_),
+		extra_fields_(other.extra_fields_)
+	{
+		this->BuildMaps();
+		this->BuildReverseMaps();
+
+		this->contigs_.resize(other.contigs_.size());
+		for(U32 i = 0; i < other.contigs_.size(); ++i)
+			this->contigs_[i] = other.contigs_[i];
+
+		this->info_fields_.resize(other.info_fields_.size());
+		for(U32 i = 0; i < other.info_fields_.size(); ++i)
+			this->info_fields_[i] = other.info_fields_[i];
+
+		this->format_fields_.resize(other.format_fields_.size());
+		for(U32 i = 0; i < other.format_fields_.size(); ++i)
+			this->format_fields_[i] = other.format_fields_[i];
+
+	}
+
+	~VariantHeader() = default;
+
+	inline size_t GetNumberSamples(void) const{ return(this->samples_.size()); }
+	inline size_t GetNumberContigs(void) const{ return(this->contigs_.size()); }
+
+	void AddSample(const std::string& sample_name) {
+		if(this->samples_.size() == 0){
+			this->samples_.push_back(sample_name);
+			this->samples_map_[sample_name] = 0;
+			return;
+		}
+
+		if(this->samples_map_.find(sample_name) == this->samples_map_.end()){
+			this->samples_map_[sample_name] = this->samples_.size();
+			this->samples_.push_back(sample_name);
+		} else {
+			std::cerr << "illegal: duplicated sample name: " << sample_name << std::endl;
+		}
+	}
+
+	const YonContig* GetContig(const std::string& name) const {
+		map_type::const_iterator it = this->contigs_map_.find(name);
+		if(it != this->contigs_map_.end()) return(&this->contigs_[it->second]);
+		return(nullptr);
+	}
+
+	const YonContig* GetContig(const int& idx) const {
+		map_reverse_type::const_iterator it = this->contigs_reverse_map_.find(idx);
+		if(it != this->contigs_reverse_map_.end()) return(&this->contigs_[it->second]);
+		return(nullptr);
+	}
+
+	const YonInfo* GetInfo(const std::string& name) const {
+		map_type::const_iterator it = this->info_fields_map_.find(name);
+		if(it != this->info_fields_map_.end()) return(&this->info_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const YonInfo* GetInfo(const int& idx) const {
+		map_reverse_type::const_iterator it = this->info_fields_reverse_map_.find(idx);
+		if(it != this->info_fields_reverse_map_.end()) return(&this->info_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const YonFormat* GetFormat(const std::string& name) const {
+		map_type::const_iterator it = this->format_fields_map_.find(name);
+		if(it != this->format_fields_map_.end()) return(&this->format_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const YonFormat* GetFormat(const int& idx) const {
+		map_reverse_type::const_iterator it = this->format_fields_reverse_map_.find(idx);
+		if(it != this->format_fields_reverse_map_.end()) return(&this->format_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const io::VcfFilter* GetFilter(const std::string& name) const {
+		map_type::const_iterator it = this->filter_fields_map_.find(name);
+		if(it != this->filter_fields_map_.end()) return(&this->filter_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const io::VcfFilter* GetFilter(const int& idx) const {
+		map_reverse_type::const_iterator it = this->filter_fields_reverse_map_.find(idx);
+		if(it != this->filter_fields_reverse_map_.end()) return(&this->filter_fields_[it->second]);
+		return(nullptr);
+	}
+
+	const std::string* GetSample(const std::string& name) const {
+		map_type::const_iterator it = this->samples_map_.find(name);
+		if(it != this->samples_map_.end()) return(&this->samples_[it->second]);
+		return(nullptr);
+	}
+
+	bool BuildReverseMaps(void){
+		this->contigs_reverse_map_.clear();
+		this->info_fields_reverse_map_.clear();
+		this->format_fields_reverse_map_.clear();
+		this->filter_fields_reverse_map_.clear();
+
+		for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_reverse_map_[this->contigs_[i].idx] = i;
+		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_reverse_map_[this->info_fields_[i].idx] = i;
+		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_reverse_map_[this->format_fields_[i].idx] = i;
+		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_reverse_map_[this->filter_fields_[i].idx] = i;
+
+		return true;
+	}
+
+	bool BuildMaps(void){
+		this->info_fields_map_.clear();
+		this->format_fields_map_.clear();
+		this->filter_fields_map_.clear();
+		this->contigs_map_.clear();
+
+		for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_map_[this->contigs_[i].name] = i;
+		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_map_[this->info_fields_[i].id] = i;
+		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_map_[this->format_fields_[i].id] = i;
+		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_map_[this->filter_fields_[i].id] = i;
+
+		return true;
+	}
+
+	/**<
+	 * Recodes the internal IDX field for contig info, INFO, FORMAT, and FILTER
+	 * from any range to the range [0, 1, ..., n-1] as desired in Tachyon.
+	 * @return Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool RecodeIndices(void){
+		for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_[i].idx = i;
+		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_[i].idx = i;
+		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_[i].idx = i;
+		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_[i].idx = i;
+
+		if(this->BuildMaps() == false) return false;
+		if(this->BuildReverseMaps() == false) return false;
+		return true;
+	}
+
+	/**<
+	* Converts this header object into a hts_vcf_header object from the
+	* internally stored literal string. This object is required for
+	* writing out VCF/BCF files.
+	* @return
+	*/
+	hts_vcf_header* ConvertVcfHeader(void){
+		std::string internal = this->literals_;
+		internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+		if(this->samples_.size()){
+			internal += "\tFORMAT\t";
+			internal += this->samples_[0];
+			for(size_t i = 1; i < this->samples_.size(); ++i)
+				internal += "\t" + this->samples_[i];
+		}
+		internal += "\n";
+
+		hts_vcf_header* hdr = bcf_hdr_init("r");
+		int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
+		if(ret != 0){
+			std::cerr << "failed to get bcf header from literals" << std::endl;
+			bcf_hdr_destroy(hdr);
+			return(nullptr);
+		}
+
+		return(hdr);
+	}
+
+	// Append a string to the literal string
+	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }
+
+	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
+		utility::SerializeString(header.fileformat_string_, stream);
+		utility::SerializeString(header.literals_, stream);
+
+		size_t l_helper = header.samples_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.samples_.size(); ++i) utility::SerializeString(header.samples_[i], stream);
+
+		l_helper = header.contigs_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.contigs_.size(); ++i) stream << header.contigs_[i];
+
+		l_helper = header.info_fields_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.info_fields_.size(); ++i) stream << header.info_fields_[i];
+
+		l_helper = header.format_fields_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.format_fields_.size(); ++i) stream << header.format_fields_[i];
+
+		l_helper = header.filter_fields_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.filter_fields_.size(); ++i) stream << header.filter_fields_[i];
+
+		l_helper = header.structured_extra_fields_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) stream << header.structured_extra_fields_[i];
+
+		l_helper = header.extra_fields_.size();
+		utility::SerializePrimitive(l_helper, stream);
+		for(U32 i = 0; i < header.extra_fields_.size(); ++i) stream << header.extra_fields_[i];
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VariantHeader& header){
+		utility::DeserializeString(header.fileformat_string_, stream);
+		utility::DeserializeString(header.literals_, stream);
+
+		size_t l_helper;
+		utility::DeserializePrimitive(l_helper, stream);
+		header.samples_.resize(l_helper);
+		for(U32 i = 0; i < header.samples_.size(); ++i) utility::DeserializeString(header.samples_[i], stream);
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.contigs_.resize(l_helper);
+		for(U32 i = 0; i < header.contigs_.size(); ++i) stream >> header.contigs_[i];
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.info_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.info_fields_.size(); ++i) stream >> header.info_fields_[i];
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.format_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.format_fields_.size(); ++i) stream >> header.format_fields_[i];
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.filter_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.filter_fields_.size(); ++i) stream >> header.filter_fields_[i];
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.structured_extra_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) stream >> header.structured_extra_fields_[i];
+
+		utility::DeserializePrimitive(l_helper, stream);
+		header.extra_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.extra_fields_.size(); ++i) stream >> header.extra_fields_[i];
+
+		return stream;
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantHeader& header){
+		io::SerializeString(header.fileformat_string_, buffer);
+		io::SerializeString(header.literals_, buffer);
+
+		size_t l_helper = header.samples_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.samples_.size(); ++i) io::SerializeString(header.samples_[i], buffer);
+
+		l_helper = header.contigs_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.contigs_.size(); ++i) buffer << header.contigs_[i];
+
+		l_helper = header.info_fields_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.info_fields_.size(); ++i) buffer << header.info_fields_[i];
+
+		l_helper = header.format_fields_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.format_fields_.size(); ++i) buffer << header.format_fields_[i];
+
+		l_helper = header.filter_fields_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.filter_fields_.size(); ++i) buffer << header.filter_fields_[i];
+
+		l_helper = header.structured_extra_fields_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) buffer << header.structured_extra_fields_[i];
+
+		l_helper = header.extra_fields_.size();
+		io::SerializePrimitive(l_helper, buffer);
+		for(U32 i = 0; i < header.extra_fields_.size(); ++i) buffer << header.extra_fields_[i];
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantHeader& header){
+		io::DeserializeString(header.fileformat_string_, buffer);
+		io::DeserializeString(header.literals_, buffer);
+
+		size_t l_helper;
+		io::DeserializePrimitive(l_helper, buffer);
+		header.samples_.resize(l_helper);
+		for(U32 i = 0; i < header.samples_.size(); ++i) io::DeserializeString(header.samples_[i], buffer);
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.contigs_.resize(l_helper);
+		for(U32 i = 0; i < header.contigs_.size(); ++i) buffer >> header.contigs_[i];
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.info_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.info_fields_.size(); ++i) buffer >> header.info_fields_[i];
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.format_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.format_fields_.size(); ++i) buffer >> header.format_fields_[i];
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.filter_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.filter_fields_.size(); ++i) buffer >> header.filter_fields_[i];
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.structured_extra_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) buffer >> header.structured_extra_fields_[i];
+
+		io::DeserializePrimitive(l_helper, buffer);
+		header.extra_fields_.resize(l_helper);
+		for(U32 i = 0; i < header.extra_fields_.size(); ++i) buffer >> header.extra_fields_[i];
+
+		return buffer;
+	}
+
+public:
+	// VCF file version string.
+	std::string fileformat_string_;
+	// Literal string for VcfHeader data. Contains all of the Vcf header data up
+	// to the start of the main header line ("#CHROM"...). As such, sample names
+	// are not available in this string and needs to be appended before converting
+	// back into a htslib vcf header.
+	std::string literals_;
+
+	// Vcf header lines parse into:
+	// Samples:   Individual sample names.
+	// VcfContig: Information relating to the interpretation of a contig. Data
+	//            include its name, length in bases, its internal index identifier
+	//            and optional additional information.
+	// VcfInfo:   Data specifying a given INFO field
+	// VcfFormat: Data specifying a given FORMAT field
+	// VcfFilter: Data specifying a given FILTER field
+	// VcfStructuredExtra:
+	std::vector<std::string>            samples_;
+	std::vector<YonContig>              contigs_;
+	std::vector<YonInfo>                info_fields_;
+	std::vector<YonFormat>              format_fields_;
+	std::vector<io::VcfFilter>          filter_fields_;
+	std::vector<io::VcfStructuredExtra> structured_extra_fields_;
+	std::vector<io::VcfExtra>           extra_fields_;
+
+	// Utility members
+	//
+	// Hash tables allowing the mapping from the unique identifier string
+	// (such as contig name) to the relative index offset of that object.
+	// This approach requires another layer of indirection when mapping
+	// from the index to the actual target. For example:
+	//
+	// contigs_[contigs_map_["chr20"].second] <- maps to the actual target
+	//
+	// The reverse maps allows the mapping from a unique IDX identifier
+	// to the relative index offset of that object. As above, this requires
+	// an addition indirect lookup to access the desired object. For example
+	// mapping the first occuring FORMAT field to its name:
+	//
+	// format_fields_[format_fields_reverse_map_[container.at(0)->d.fmt[0].id].second].id
+	//
+	// map_type hash tables permits mapping string name -> index offset
+	// map_reverse_type hash tables permits mapping integer IDX -> index offset
+	map_type samples_map_;
+	map_type contigs_map_;
+	map_type info_fields_map_;
+	map_type format_fields_map_;
+	map_type filter_fields_map_;
+	map_reverse_type contigs_reverse_map_;       // map IDX -> index offset
+	map_reverse_type info_fields_reverse_map_;   // map IDX -> index offset
+	map_reverse_type format_fields_reverse_map_; // map IDX -> index offset
+	map_reverse_type filter_fields_reverse_map_; // map IDX -> index offset
+};
+
 }
 
 

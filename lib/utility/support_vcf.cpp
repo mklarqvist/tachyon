@@ -756,8 +756,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
 	return(stream);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
-	stream.write(&header.getContig(meta_entry.contigID).name[0], header.getContig(meta_entry.contigID).name.size()) << '\t';
+std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+	stream.write(&header.GetContig(meta_entry.contigID)->name[0], header.GetContig(meta_entry.contigID)->name.size()) << '\t';
 	stream << meta_entry.position + 1 << delimiter;
 
 	if(meta_entry.name.size() == 0) stream.put('.');
@@ -788,8 +788,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const c
 	return(stream);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
-	buffer += header.getContig(meta_entry.contigID).name;
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+	buffer += header.GetContig(meta_entry.contigID)->name;
 	buffer += delimiter;
 	buffer.AddReadble(meta_entry.position + 1);
 	buffer += delimiter;
@@ -824,9 +824,9 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	if(controller.contig.display){
-		buffer += header.getContig(meta_entry.contigID).name;
+		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += delimiter;
 	}
 
@@ -869,16 +869,16 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	return(utility::to_json_string(buffer, meta_entry, header, controller));
 }
 
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	bool add = false;
 	if(controller.contig.display){
 		buffer += "\"contig\":\"";
-		buffer += header.getContig(meta_entry.contigID).name;
+		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += '"';
 		add = true;
 	}

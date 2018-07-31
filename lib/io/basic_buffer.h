@@ -309,6 +309,16 @@ public:
 		return *this;
 	}
 
+	inline self_type& operator+=(const int64_t& value){
+		if(this->n_chars + sizeof(int64_t) >= this->width)
+			this->resize(this->width*2);
+
+		int64_t* p = reinterpret_cast<int64_t*>(&this->buffer[this->n_chars]);
+		*p = value;
+		this->n_chars += sizeof(int64_t);
+		return *this;
+	}
+
 	inline self_type& operator+=(const size_t& value){
 		if(this->n_chars + sizeof(size_t) >= this->width)
 			this->resize(this->width*2);
@@ -425,6 +435,19 @@ public:
 	U64     iterator_position_;
 	pointer buffer;
 };
+
+void SerializeString(const std::string& string, io::BasicBuffer& buffer);
+void DeserializeString(std::string& string, io::BasicBuffer& buffer);
+
+template <class T>
+static void SerializePrimitive(const T& value, io::BasicBuffer& buffer){
+	buffer += value;
+}
+
+template <class T>
+static void DeserializePrimitive(T& value, io::BasicBuffer& buffer){
+	buffer += value;
+}
 
 } /* namespace IO */
 } /* namespace Tomahawk */

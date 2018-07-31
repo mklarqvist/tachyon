@@ -11,6 +11,7 @@
 #include <regex>
 
 #include "type_definitions.h"
+#include "io/basic_buffer.h"
 
 namespace tachyon{
 namespace utility{
@@ -92,6 +93,19 @@ std::string toPrettyDiskString(const T value){
 		return(std::to_string((double)value/1e3) + " KB");
 	} else
 		return(std::to_string(value) + " B");
+}
+
+void SerializeString(const std::string& string, std::ostream& stream);
+void DeserializeString(std::string& string, std::istream& stream);
+
+template <class T>
+void SerializePrimitive(const T& value, std::ostream& stream){
+	stream.write((const char*)&value, sizeof(T));
+}
+
+template <class T>
+void DeserializePrimitive(T& value, std::istream& stream){
+	stream.read((char*)&value, sizeof(T));
 }
 
 }

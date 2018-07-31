@@ -4,10 +4,10 @@ namespace tachyon{
 namespace containers{
 
 const std::vector<bool> VariantBlockContainer::get_info_field_pattern_matches(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
+	const YonInfo* info = this->header_->GetInfo(field_name);
 	int info_field_global_id = -2;
-	if(this->header_->getInfoField(field_name, match)){
-		info_field_global_id = match->IDX;
+	if(info != nullptr){
+		info_field_global_id = info->idx;
 	}
 
 	std::vector<bool> ret;
@@ -37,10 +37,10 @@ const std::vector<bool> VariantBlockContainer::get_info_field_pattern_matches(co
 }
 
 const std::vector<bool> VariantBlockContainer::get_format_field_pattern_matches(const std::string& field_name) const{
-	core::HeaderMapEntry* match = nullptr;
+	const YonFormat* fmt = this->header_->GetFormat(field_name);
 	int format_field_global_id = -2;
-	if(this->header_->getFormatField(field_name, match)){
-		format_field_global_id = match->IDX;
+	if(fmt != nullptr){
+		format_field_global_id = fmt->idx;
 	}
 
 	std::vector<bool> ret;
@@ -216,23 +216,23 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 
 			// Pattern matches of GLOBAL in LOCAL
 			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->get_format_field_pattern_matches(this->header_->format_fields[global_key].ID);
+			std::vector<bool> matches = this->get_format_field_pattern_matches(this->header_->format_fields_[global_key].id);
 
-			if(this->header_->format_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
-				objects.format_containers[i] = new containers::FormatContainer<S32>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->getSampleNumber());
-				objects.format_field_names.push_back(this->header_->format_fields[global_key].ID);
-			} else if(this->header_->format_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-					  this->header_->format_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
-				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->getSampleNumber());
-				objects.format_field_names.push_back(this->header_->format_fields[global_key].ID);
-			} else if(this->header_->format_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
-				objects.format_containers[i] = new containers::FormatContainer<float>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->getSampleNumber());
-				objects.format_field_names.push_back(this->header_->format_fields[global_key].ID);
+			if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
+				objects.format_containers[i] = new containers::FormatContainer<S32>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_field_names.push_back(this->header_->format_fields_[global_key].id);
+			} else if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_STRING ||
+					  this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_CHARACTER){
+				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_field_names.push_back(this->header_->format_fields_[global_key].id);
+			} else if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_FLOAT){
+				objects.format_containers[i] = new containers::FormatContainer<float>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_field_names.push_back(this->header_->format_fields_[global_key].id);
 			} else {
 				objects.format_containers[i] = new containers::FormatContainer<U32>;
-				objects.format_field_names.push_back(this->header_->format_fields[global_key].ID);
+				objects.format_field_names.push_back(this->header_->format_fields_[global_key].id);
 			}
-			objects.format_container_map[this->header_->format_fields[global_key].ID] = objects.format_containers[i];
+			objects.format_container_map[this->header_->format_fields_[global_key].id] = objects.format_containers[i];
 		}
 	}
 
@@ -248,23 +248,23 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 
 			// Pattern matches of GLOBAL in LOCAL
 			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
-			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header_->info_fields[global_key].ID);
+			std::vector<bool> matches = this->get_info_field_pattern_matches(this->header_->info_fields_[global_key].id);
 
-			if(this->header_->info_fields[global_key].getType() == YON_VCF_HEADER_INTEGER){
+			if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
 				objects.info_containers[i] = new containers::InfoContainer<S32>(this->getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->header_->info_fields[global_key].ID);
-			} else if(this->header_->info_fields[global_key].getType() == YON_VCF_HEADER_STRING ||
-					  this->header_->info_fields[global_key].getType() == YON_VCF_HEADER_CHARACTER){
+				objects.info_field_names.push_back(this->header_->info_fields_[global_key].id);
+			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_STRING ||
+					  this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_CHARACTER){
 				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->header_->info_fields[global_key].ID);
-			} else if(this->header_->info_fields[global_key].getType() == YON_VCF_HEADER_FLOAT){
+				objects.info_field_names.push_back(this->header_->info_fields_[global_key].id);
+			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_FLOAT){
 				objects.info_containers[i] = new containers::InfoContainer<float>(this->getBlock().info_containers[i], *objects.meta_container, matches);
-				objects.info_field_names.push_back(this->header_->info_fields[global_key].ID);
+				objects.info_field_names.push_back(this->header_->info_fields_[global_key].id);
 			} else {
 				objects.info_containers[i] = new containers::InfoContainer<U32>();
-				objects.info_field_names.push_back(this->header_->info_fields[global_key].ID);
+				objects.info_field_names.push_back(this->header_->info_fields_[global_key].id);
 			}
-			objects.info_container_map[this->header_->info_fields[global_key].ID] = objects.info_containers[i];
+			objects.info_container_map[this->header_->info_fields_[global_key].id] = objects.info_containers[i];
 		}
 	}
 
@@ -355,11 +355,11 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 	// Step 1: Find INFO
 	std::vector< std::pair<U32, U32> > additional_local_keys_found;
 	for(U32 i = 0; i < ADDITIONAL_INFO.size(); ++i){
-		if(this->header_->has_info_field(ADDITIONAL_INFO[i])){
-			const core::HeaderMapEntry* map = this->header_->getInfoField(ADDITIONAL_INFO[i]);
+		const YonInfo* info = this->header_->GetInfo(ADDITIONAL_INFO[i]);
+		if(info != nullptr){
 			// Find local key
 			for(U32 k = 0; k < objects.n_loaded_info; ++k){
-				if(this->getBlock().info_containers[k].header.getGlobalKey() == map->IDX){
+				if(this->getBlock().info_containers[k].header.getGlobalKey() == info->idx){
 					execute_mask |= 1 << i;
 					additional_local_keys_found.push_back(std::pair<U32,U32>(k,i));
 				}
