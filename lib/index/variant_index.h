@@ -8,7 +8,7 @@
 #include "variant_index_bin.h"
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
-#include "core/header/header_contig.h"
+#include "core/header/variant_header.h"
 #include "io/htslib_integration.h"
 
 namespace tachyon{
@@ -25,7 +25,7 @@ private:
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
     typedef IndexEntry         linear_entry_type;
-    typedef core::HeaderContig contig_type;
+    typedef YonContig      contig_type;
 
 public:
 	VariantIndex();

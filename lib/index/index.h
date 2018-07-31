@@ -6,7 +6,6 @@
 #include "index_meta_container.h"
 #include "variant_index.h"
 #include "variant_index_linear.h"
-#include "core/header/header_contig.h"
 
 namespace tachyon{
 namespace index{
@@ -20,7 +19,7 @@ private:
 	typedef IndexEntry         entry_type;
 	typedef IndexIndexEntry    entry_meta_type;
 	typedef VariantIndexBin    bin_type;
-	typedef core::HeaderContig contig_type;
+	typedef YonContig          contig_type;
 
 public:
 	Index() : number_blocks(0){}

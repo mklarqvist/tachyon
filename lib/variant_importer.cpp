@@ -92,6 +92,7 @@ bool VariantImporter::BuildVCF(void){
 	// Write out a fresh Tachyon header with the data from the Vcf header. As
 	// this data will not be modified during the import stage it is safe to
 	// write out now.
+	this->writer->stream->write("YON\t",4); // Todo: fix
 	this->WriteYonHeader();
 
 	// Resize containers
@@ -102,6 +103,9 @@ bool VariantImporter::BuildVCF(void){
 	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 
 	uint64_t b_total_write = 0;
+
+	// Start porgress timer.
+	algorithm::Timer timer; timer.Start();
 
 	// Iterate over all available variants in the file or until encountering
 	// an error.
@@ -119,10 +123,6 @@ bool VariantImporter::BuildVCF(void){
 		                                    this->vcf_reader_) == false){
 			break;
 		}
-
-		std::cerr << this->vcf_container_.sizeWithoutCarryOver() << ": " <<
-		             this->vcf_container_.front()->pos + 1 << "->" <<
-					 this->vcf_container_.back()->pos + 1 << std::endl;
 
 		if(this->GT_available_)
 			if(this->permutator.Build(this->vcf_container_) == false) return false;
@@ -149,25 +149,24 @@ bool VariantImporter::BuildVCF(void){
 
 		this->WriteBlock();
 
-		// After all compression and writing is finished the header
-		// offsets are themselves compressed and stored in the block.
-		std::cerr << block.footer_support.header.data_header.uLength << "->" << block.footer_support.header.data_header.cLength << std::endl;
-
-
-
 		// Update checksums container with the available data.
 		checksums += this->block;
 
 		// Todo: this->index += this->vcf_reader_->variant_reader
-		b_total_write += this->block.DetermineCompressedSize();
-		std::cerr << "Written: " << this->block.DetermineCompressedSize() << " -> " << b_total_write << std::endl;
+
+		if(!SILENT){
+			std::cerr << utility::timestamp("PROGRESS") <<
+			std::setfill(' ') << std::setw(10) << this->writer->n_variants_written << ' ' <<
+			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(this->writer->stream->tellp()) << '\t' <<
+			timer.ElapsedString() << ' ' <<
+			this->vcf_reader_->vcf_header_.GetContig(this->vcf_container_.front()->rid)->name << ":" << this->vcf_container_.front()->pos + 1 << "->" << this->vcf_container_.back()->pos + 1 << std::endl;
+		}
 
 		// Clear current data.
 		this->clear();
 		this->block.clear();
 		this->index_entry.reset();
 	}
-	std::cerr << "Total write: " << b_total_write << std::endl;
 
 	this->WriteFinal(checksums);
 	this->WriteKeychain(keychain);
@@ -520,10 +519,13 @@ bool VariantImporter::UpdateIndex(){
 bool VariantImporter::WriteBlock(){
 	this->index_entry.byte_offset = this->writer->stream->tellp();
 	this->block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
+
+	// After all compression and writing is finished the header
+	// offsets are themselves compressed and stored in the block.
 	this->block.PackFooter(); // Pack footer into buffer.
 	this->compression_manager.zstd_codec.Compress(block.footer_support);
 	this->writer->WriteBlockFooter(block.footer_support);
-	this->writer->WriteEndOfBlock();
+	this->writer->WriteEndOfBlock(); // End-of-block marker
 	this->UpdateIndex(); // Update index.
 	return(this->writer->stream->good());
 }
@@ -536,7 +538,6 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 	footer.offset_end_of_data = this->writer->stream->tellp();
 	footer.n_blocks           = this->writer->n_blocks_written;
 	footer.n_variants         = this->writer->n_variants_written;
-	std::cerr << "Footer: " << footer.n_blocks << " and index " << this->writer->index.GetLinearSize() << "," << this->writer->index.index_.size() << "," << this->writer->index.index_meta_.size() << std::endl;
 	assert(footer.n_blocks == this->writer->index.GetLinearSize());
 
 	U64 last_pos = this->writer->stream->tellp();
@@ -580,12 +581,15 @@ bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 
 bool VariantImporter::WriteYonHeader(){
 	VariantHeader yon_header(this->vcf_reader_->vcf_header_);
-	yon_header.RecodeIndices();
 
 	io::BasicBuffer temp(500000);
 	io::BasicBuffer temp_cmp(temp);
 	temp << yon_header;
 	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 10);
+	size_t l_data = temp.size();
+	size_t l_c_data = temp_cmp.size();
+	utility::SerializePrimitive(l_data,   *this->writer->stream);
+	utility::SerializePrimitive(l_c_data, *this->writer->stream);
 	this->writer->stream->write(temp_cmp.data(), temp_cmp.size());
 	return(this->writer->stream->good());
 }

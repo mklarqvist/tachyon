@@ -1,10 +1,7 @@
 #ifndef CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 #define CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 
-#include "header_contig.h"
-#include "header_magic.h"
-#include "header_map_entry.h"
-#include "header_sample.h"
+#include "support/enums.h"
 #include "support/type_definitions.h"
 #include "support/helpers.h"
 #include "algorithm/OpenHashTable.h"
@@ -296,6 +293,8 @@ public:
 		this->format_fields_.resize(other.format_fields_.size());
 		for(U32 i = 0; i < other.format_fields_.size(); ++i)
 			this->format_fields_[i] = other.format_fields_[i];
+
+		this->RecodeIndices();
 
 	}
 
