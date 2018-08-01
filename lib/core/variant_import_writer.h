@@ -26,19 +26,16 @@ public:
 	bool WriteBlockFooter(const container_type& footer){
 		if(this->stream == nullptr) return false;
 		const U64 start_footer_pos = this->stream->tellp();
-		const U32 footer_uLength   = footer.header.data_header.uLength;
-		const U32 footer_cLength   = footer.header.data_header.cLength;
-		const uint8_t* footer_crc  = &footer.header.data_header.crc[0];
-		this->stream->write(reinterpret_cast<const char*>(&footer_uLength), sizeof(U32));
-		this->stream->write(reinterpret_cast<const char*>(&footer_cLength), sizeof(U32));
-		this->stream->write(reinterpret_cast<const char*>(&footer_crc),     sizeof(MD5_DIGEST_LENGTH));
+		utility::SerializePrimitive(footer.header.data_header.uLength, *this->stream);
+		utility::SerializePrimitive(footer.header.data_header.cLength, *this->stream);
+		this->stream->write(reinterpret_cast<const char*>(&footer.header.data_header.crc[0]), MD5_DIGEST_LENGTH);
 		*this->stream << footer.buffer_data;
 		return(this->stream->good());
 	}
 
 	bool WriteEndOfBlock(void){
 		if(this->stream == nullptr) return false;
-		this->stream->write(reinterpret_cast<const char*>(&constants::TACHYON_BLOCK_EOF), sizeof(U64));
+		utility::SerializePrimitive(constants::TACHYON_BLOCK_EOF, *this->stream);
 		return(this->stream->good());
 	}
 

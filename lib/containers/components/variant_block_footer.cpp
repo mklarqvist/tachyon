@@ -104,23 +104,9 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& e
 	for(U32 i = 0; i < entry.n_format_streams; ++i) buffer << entry.format_offsets[i];
 	for(U32 i = 0; i < entry.n_filter_streams; ++i) buffer << entry.filter_offsets[i];
 
-	if(entry.n_info_patterns > 0){
-		for(U32 i = 0; i < entry.n_info_patterns; ++i){
-			buffer << entry.info_patterns[i];
-		}
-	}
-
-	if(entry.n_format_patterns > 0){
-		for(U32 i = 0; i < entry.n_format_patterns; ++i){
-			buffer << entry.format_patterns[i];
-		}
-	}
-
-	if(entry.n_filter_patterns > 0){
-		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
-			buffer << entry.filter_patterns[i];
-		}
-	}
+	for(U32 i = 0; i < entry.n_info_patterns; ++i)   buffer << entry.info_patterns[i];
+	for(U32 i = 0; i < entry.n_format_patterns; ++i) buffer << entry.format_patterns[i];
+	for(U32 i = 0; i < entry.n_filter_patterns; ++i) buffer << entry.filter_patterns[i];
 
 	return(buffer);
 }
@@ -146,49 +132,47 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
 	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];
 	entry.filter_offsets = new DataContainerHeader[entry.n_filter_streams];
+	entry.n_info_patterns_allocated   = entry.n_info_streams;
+	entry.n_format_patterns_allocated = entry.n_format_streams;
+	entry.n_filter_patterns_allocated = entry.n_filter_streams;
 
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)       buffer >> entry.offsets[i];
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
+		buffer >> entry.offsets[i];
 
 	for(U32 i = 0; i < entry.n_info_streams; ++i){
 		buffer >> entry.info_offsets[i];
-		entry.AddInfo(entry.info_offsets[i].data_header.global_key);
+		entry.UpdateInfo(entry.info_offsets[i], i);
 	}
 
 	for(U32 i = 0; i < entry.n_format_streams; ++i){
 		buffer >> entry.format_offsets[i];
-		entry.AddFormat(entry.format_offsets[i].data_header.global_key);
+		entry.UpdateFormat(entry.format_offsets[i], i);
 	}
 
 	for(U32 i = 0; i < entry.n_filter_streams; ++i){
 		buffer >> entry.filter_offsets[i];
-		entry.AddFilter(entry.filter_offsets[i].data_header.global_key);
+		entry.UpdateFilter(entry.filter_offsets[i], i);
 	}
 
-	if(entry.n_info_patterns){
-		entry.info_patterns = new yon_blk_bv_pair[entry.n_info_patterns];
-		for(U32 i = 0; i < entry.n_info_patterns; ++i){
-			buffer >> entry.info_patterns[i];
-			entry.AddInfoPattern(entry.info_patterns[i].pattern);
-			entry.info_patterns[i].Build(entry.n_info_streams, entry.info_map);
-		}
+	entry.info_patterns = new yon_blk_bv_pair[entry.n_info_patterns];
+	for(U32 i = 0; i < entry.n_info_patterns; ++i){
+		buffer >> entry.info_patterns[i];
+		entry.UpdateInfoPattern(entry.info_patterns[i].pattern, i);
+		entry.info_patterns[i].Build(entry.n_info_streams, entry.info_map);
 	}
 
-	if(entry.n_format_patterns){
-		entry.format_patterns = new yon_blk_bv_pair[entry.n_format_patterns];
-		for(U32 i = 0; i < entry.n_format_patterns; ++i){
-			buffer >> entry.format_patterns[i];
-			entry.AddFormatPattern(entry.format_patterns[i].pattern);
-			entry.format_patterns[i].Build(entry.n_format_streams, entry.format_map);
-		}
+	entry.format_patterns = new yon_blk_bv_pair[entry.n_format_patterns];
+	for(U32 i = 0; i < entry.n_format_patterns; ++i){
+		buffer >> entry.format_patterns[i];
+		entry.UpdateFormatPattern(entry.format_patterns[i].pattern, i);
+		entry.format_patterns[i].Build(entry.n_format_streams, entry.format_map);
 	}
 
-	if(entry.n_filter_patterns){
-		entry.filter_patterns = new yon_blk_bv_pair[entry.n_filter_patterns];
-		for(U32 i = 0; i < entry.n_filter_patterns; ++i){
-			buffer >> entry.filter_patterns[i];
-			entry.AddFilterPattern(entry.filter_patterns[i].pattern);
-			entry.filter_patterns[i].Build(entry.n_filter_streams, entry.filter_map);
-		}
+	entry.filter_patterns = new yon_blk_bv_pair[entry.n_filter_patterns];
+	for(U32 i = 0; i < entry.n_filter_patterns; ++i){
+		buffer >> entry.filter_patterns[i];
+		entry.UpdateFilterPattern(entry.filter_patterns[i].pattern, i);
+		entry.filter_patterns[i].Build(entry.n_filter_streams, entry.filter_map);
 	}
 
 	return(buffer);

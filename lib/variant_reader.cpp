@@ -78,23 +78,21 @@ bool VariantReader::open(void){
 		return false;
 	}
 
-	containers::DataContainer header_container;
-	this->basic_reader.stream_ >> header_container.header;
-	header_container.buffer_data.resize(header_container.header.data_header.cLength);
-	this->basic_reader.stream_.read(header_container.buffer_data.data(), header_container.header.data_header.cLength);
-	header_container.buffer_data.n_chars = header_container.header.data_header.cLength;
-	if(!this->codec_manager.zstd_codec.Decompress(header_container)){
+	size_t l_data = 0;
+	size_t l_c_data = 0;
+	utility::DeserializePrimitive(l_data, this->basic_reader.stream_);
+	utility::DeserializePrimitive(l_c_data, this->basic_reader.stream_);
+
+	io::BasicBuffer header_uncompressed(l_data + 1024); header_uncompressed.n_chars = l_data;
+	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars = l_c_data;
+
+	this->basic_reader.stream_.read(header_compressed.data(), l_c_data);
+
+	if(!this->codec_manager.zstd_codec.Decompress(header_compressed, header_uncompressed)){
 		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
 		return false;
 	}
-	header_container.buffer_data_uncompressed >> this->global_header; // parse header from buffer
-
-	/*
-	if(!this->global_header.header_magic.validate()){
-		std::cerr << utility::timestamp("ERROR") << "Failed to validate header!" << std::endl;
-		return false;
-	}
-	*/
+	header_uncompressed >> this->global_header; // parse header from buffer
 
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;

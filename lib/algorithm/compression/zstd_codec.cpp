@@ -29,12 +29,32 @@ bool ZSTDCodec::Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const
 							   src.size(),
 							   compression_level);
 
-	std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << src.size() << " and output: " << ret << " -> " << (float)src.size()/ret << "-fold"  << std::endl;
+	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << src.size() << " and output: " << ret << " -> " << (float)src.size()/ret << "-fold"  << std::endl;
 
 	if(ZSTD_isError(ret)){
 		std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 		return(false);
 	}
+	dst.n_chars = ret;
+
+	return true;
+}
+
+bool ZSTDCodec::Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst){
+	const size_t ret = ZSTD_decompress(
+							   dst.data(),
+							   dst.capacity(),
+							   src.data(),
+							   src.size());
+
+	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << src.size() << " and output: " << ret << " -> " << (float)ret/src.size() << "-fold"  << std::endl;
+
+	if(ZSTD_isError(ret)){
+		std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
+		return(false);
+	}
+
+	dst = ret;
 
 	return true;
 }

@@ -77,18 +77,24 @@ struct yon_blk_bv_pair {
 	}
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry){
-		buffer += (U16)entry.pattern.size();
-		for(U32 i = 0; i < entry.pattern.size(); ++i) buffer += entry.pattern[i];
+		buffer += (U32)entry.pattern.size();
+		for(U32 i = 0; i < entry.pattern.size(); ++i){
+			io::SerializePrimitive(entry.pattern[i], buffer);
+		}
 
 		return(buffer);
 	}
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry){
 		entry.pattern.clear();
-		U16 l_vector;
+		U32 l_vector;
 		buffer >> l_vector;
 		entry.pattern.resize(l_vector);
-		for(U32 i = 0; i < l_vector; ++i) buffer >> entry.pattern[i];
+		for(U32 i = 0; i < l_vector; ++i){
+			int temp;
+			io::DeserializePrimitive(temp, buffer);
+			entry.pattern[i] = temp;
+		}
 
 		return(buffer);
 	}
@@ -183,7 +189,11 @@ public:
 		return true;
 	}
 
-	U32 AddPatternWrapper(const std::vector<int>& pattern, map_pattern_type* pattern_map, yon_blk_bv_pair* bv_pairs, U16& stream_counter){
+	U32 AddPatternWrapper(const std::vector<int>& pattern,
+	                      map_pattern_type* pattern_map,
+	                      yon_blk_bv_pair* bv_pairs,
+	                      U16& stream_counter)
+	{
 		U64 pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
 		const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
 		if(it == pattern_map->end()){
@@ -201,7 +211,11 @@ public:
 			this->info_patterns = new yon_blk_bv_pair[100];
 			this->n_info_patterns_allocated = 100;
 		}
-		return(this->AddPatternWrapper(pattern, this->info_pattern_map, this->info_patterns, this->n_info_patterns));
+
+		return(this->AddPatternWrapper(pattern,
+		                               this->info_pattern_map,
+		                               this->info_patterns,
+		                               this->n_info_patterns));
 	}
 
 	U32 AddFormatPattern(const std::vector<int>& pattern){
@@ -210,7 +224,11 @@ public:
 			this->format_patterns = new yon_blk_bv_pair[100];
 			this->n_format_patterns_allocated = 100;
 		}
-		return(this->AddPatternWrapper(pattern, this->format_pattern_map, this->format_patterns, this->n_format_patterns));
+
+		return(this->AddPatternWrapper(pattern,
+		                               this->format_pattern_map,
+		                               this->format_patterns,
+		                               this->n_format_patterns));
 	}
 
 	U32 AddFilterPattern(const std::vector<int>& pattern){
@@ -219,7 +237,53 @@ public:
 			this->filter_patterns = new yon_blk_bv_pair[100];
 			this->n_filter_patterns_allocated = 100;
 		}
-		return(this->AddPatternWrapper(pattern, this->filter_pattern_map, this->filter_patterns, this->n_filter_patterns));
+
+		return(this->AddPatternWrapper(pattern,
+		                               this->filter_pattern_map,
+		                               this->filter_patterns,
+		                               this->n_filter_patterns));
+	}
+
+	// This wrapper adds patterns to the hash map when the data has
+	// already been loaded. This occurs when loading an object from
+	// disk/buffer.
+	U32 UpdatePatternWrapper(const std::vector<int>& pattern,
+						  map_pattern_type* pattern_map,
+						  const U16& stream_counter)
+	{
+		U64 pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
+		const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
+		if(it == pattern_map->end())
+			(*pattern_map)[pattern_hash] = stream_counter;
+
+		return((*pattern_map)[pattern_hash]);
+	}
+
+	U32 UpdateInfoPattern(const std::vector<int>& pattern, const U16 pattern_id){
+		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_info_patterns_allocated == 0){
+			this->info_patterns = new yon_blk_bv_pair[100];
+			this->n_info_patterns_allocated = 100;
+		}
+		return(this->UpdatePatternWrapper(pattern, this->info_pattern_map, pattern_id));
+	}
+
+	U32 UpdateFormatPattern(const std::vector<int>& pattern, const U16 pattern_id){
+		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_format_patterns_allocated == 0){
+			this->format_patterns = new yon_blk_bv_pair[100];
+			this->n_format_patterns_allocated = 100;
+		}
+		return(this->UpdatePatternWrapper(pattern, this->format_pattern_map, pattern_id));
+	}
+
+	U32 UpdateFilterPattern(const std::vector<int>& pattern, const U16 pattern_id){
+		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
+		if(this->n_filter_patterns_allocated == 0){
+			this->filter_patterns = new yon_blk_bv_pair[100];
+			this->n_filter_patterns_allocated = 100;
+		}
+		return(this->UpdatePatternWrapper(pattern, this->filter_pattern_map, pattern_id));
 	}
 
 	void Finalize(void){
@@ -263,6 +327,29 @@ public:
 		}
 
 		return true;
+	}
+
+	U32 UpdateOffsetMapWrapper(const header_type& offset, map_type* map, const U16& stream_counter){
+		map_type::const_iterator it = map->find(offset.data_header.global_key);
+		if(it == map->end())
+			(*map)[offset.data_header.global_key] = stream_counter;
+
+		return((*map)[offset.data_header.global_key]);
+	}
+
+	U32 UpdateInfo(const header_type& offset, const U16 position){
+		if(this->info_map == nullptr) this->BuildMaps();
+		return(this->UpdateOffsetMapWrapper(offset, this->info_map, position));
+	}
+
+	U32 UpdateFormat(const header_type& offset, const U16 position){
+		if(this->format_map == nullptr) this->BuildMaps();
+		return(this->UpdateOffsetMapWrapper(offset, this->format_map, position));
+	}
+
+	U32 UpdateFilter(const header_type& offset, const U16 position){
+		if(this->filter_map == nullptr) this->BuildMaps();
+		return(this->UpdateOffsetMapWrapper(offset, this->filter_map, position));
 	}
 
 	U32 AddStreamWrapper(const U32 id, map_type* map, header_type*& offsets, U16& stream_counter){

@@ -106,26 +106,31 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 	stream >> this->header; // load header
 	this->start_compressed_data_ = (U64)stream.tellg(); // start of compressed data
 	stream.seekg(this->start_compressed_data_ + this->header.l_offset_footer); // seek to start of footer
-	this->end_compressed_data_ = stream.tellg(); // end of compressed data
+	this->end_compressed_data_   = stream.tellg(); // end of compressed data
+
+	assert(stream.good());
 
 	U32 footer_uLength = 0;
 	U32 footer_cLength = 0;
 	uint8_t footer_crc[MD5_DIGEST_LENGTH];
-	stream.read(reinterpret_cast<char*>(&footer_uLength), sizeof(U32));
-	stream.read(reinterpret_cast<char*>(&footer_cLength), sizeof(U32));
-	stream.read(reinterpret_cast<char*>(&footer_crc[0]),  MD5_DIGEST_LENGTH);
+	utility::DeserializePrimitive(footer_uLength, stream);
+	utility::DeserializePrimitive(footer_cLength, stream);
+	stream.read(reinterpret_cast<char*>(&footer_crc[0]), MD5_DIGEST_LENGTH);
+
 	this->footer_support.resize(footer_cLength);
 	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
 	this->footer_support.buffer_data.n_chars = footer_cLength;
 	this->footer_support.buffer_data_uncompressed.resize(footer_uLength);
+	this->footer_support.buffer_data_uncompressed.n_chars      = footer_uLength;
 	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
-	this->footer_support.header.data_header.cLength = footer_cLength;
-	this->footer_support.header.data_header.uLength = footer_uLength;
+	this->footer_support.header.data_header.cLength            = footer_cLength;
+	this->footer_support.header.data_header.uLength            = footer_uLength;
 	memcpy(&this->footer_support.header.data_header.crc[0], &footer_crc[0], MD5_DIGEST_LENGTH);
 
 	// Assert end-of-block marker
 	U64 eof_marker;
-	stream.read(reinterpret_cast<char*>(&eof_marker), sizeof(U64));
+	utility::DeserializePrimitive(eof_marker, stream);
+	std::cerr << eof_marker << "/" << constants::TACHYON_BLOCK_EOF << std::endl;
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 	this->end_block_ = stream.tellg(); // end-of-block offset
 	stream.seekg(this->start_compressed_data_);

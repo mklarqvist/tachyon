@@ -77,13 +77,14 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 	if(settings.format_ID_list.size()) format_keys = this->block_.intersectFormatKeys(settings.format_ID_list);
 	else format_keys = this->block_.getFormatKeys();
 
-	if(this->buildMapper(info_keys, format_keys, settings) == false)
-		return false;
+	//if(this->buildMapper(info_keys, format_keys, settings) == false)
+	//	return false;
 
 	// Todo: ascertain random access order is guaranteed
 
 	if(settings.ppa.load){
 		if(this->block_.header.controller.hasGTPermuted && this->block_.header.controller.hasGT){
+			std::cerr << "reading ppa" << std::endl;
 			this->block_.ppa_manager.header = this->block_.footer.offsets[YON_BLK_PPA];
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.offsets[YON_BLK_PPA].data_header.offset);
 			stream >> this->block_.ppa_manager;
@@ -143,15 +144,16 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 	if(settings.info_all.load && this->block_.footer.n_info_streams){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
-		this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
+		//this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
-			this->mapper_.info_container_loaded_.at(i)(i, i, this->block_.footer.info_offsets[i].data_header.global_key, &this->block_.footer.info_offsets[i]);
+			std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_info_streams << " -> " << this->block_.footer.info_offsets[i].data_header.global_key << std::endl;
+			//this->mapper_.info_container_loaded_.at(i)(i, i, this->block_.footer.info_offsets[i].data_header.global_key, &this->block_.footer.info_offsets[i]);
 		}
 	}
 	// If we have supplied a list of identifiers
 	else if(settings.info_ID_list.size()){
-		this->mapper_.info_container_loaded_.resize(info_keys.size());
+		//this->mapper_.info_container_loaded_.resize(info_keys.size());
 		// Ascertain that random access is linearly forward
 		for(U32 i = 0; i < info_keys.size(); ++i){
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local].data_header.offset);
@@ -161,22 +163,23 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 			}
 
 			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local], this->block_.info_containers[i]);
-			this->mapper_.info_container_loaded_.at(i)(i, this->mapper_.info_container_global_[info_keys[i]].stream_id_local, info_keys[i], &this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local]);
+			//this->mapper_.info_container_loaded_.at(i)(i, this->mapper_.info_container_global_[info_keys[i]].stream_id_local, info_keys[i], &this->block_.footer.info_offsets[this->mapper_.info_container_global_[info_keys[i]].stream_id_local]);
 		}
 	} // end case load_info_ID
 
 	// Load all FORMAT data
 	if(settings.format_all.load && this->block_.footer.n_format_streams){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
-		this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
+		//this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
-			this->mapper_.format_container_loaded_.at(i)(i, i, this->block_.footer.format_offsets[i].data_header.global_key, &this->block_.footer.format_offsets[i]);
+			std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_format_streams << " -> " << this->block_.footer.format_offsets[i].data_header.global_key << std::endl;
+			//this->mapper_.format_container_loaded_.at(i)(i, i, this->block_.footer.format_offsets[i].data_header.global_key, &this->block_.footer.format_offsets[i]);
 		}
 		assert(this->block_.end_compressed_data_ == (U64)stream.tellg());
 	} // If we have supplied a list of identifiers
 	else if(settings.format_ID_list.size()){
-		this->mapper_.format_container_loaded_.resize(format_keys.size());
+		//this->mapper_.format_container_loaded_.resize(format_keys.size());
 		// Ascertain that random access is linearly forward
 		for(U32 i = 0; i < format_keys.size(); ++i){
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local].data_header.offset);
@@ -186,11 +189,13 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 			}
 
 			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local], this->block_.format_containers[i]);
-			this->mapper_.format_container_loaded_.at(i)(i, this->mapper_.format_container_global_[format_keys[i]].stream_id_local, format_keys[i], &this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local]);
+			//this->mapper_.format_container_loaded_.at(i)(i, this->mapper_.format_container_global_[format_keys[i]].stream_id_local, format_keys[i], &this->block_.footer.format_offsets[this->mapper_.format_container_global_[format_keys[i]].stream_id_local]);
 		}
 	} // end case load_info_ID
 
+	std::cerr << "seek end" << std::endl;
 	stream.seekg(this->block_.end_block_); // seek to end-of-block
+	std::cerr << "done block" << std::endl;
 	return(true);
 }
 

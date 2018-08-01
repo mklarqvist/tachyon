@@ -92,7 +92,7 @@ bool VariantImporter::BuildVCF(void){
 	// Write out a fresh Tachyon header with the data from the Vcf header. As
 	// this data will not be modified during the import stage it is safe to
 	// write out now.
-	this->writer->stream->write("YON\t",4); // Todo: fix
+	this->writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
 	this->WriteYonHeader();
 
 	// Resize containers
@@ -524,7 +524,7 @@ bool VariantImporter::WriteBlock(){
 	// offsets are themselves compressed and stored in the block.
 	this->block.PackFooter(); // Pack footer into buffer.
 	this->compression_manager.zstd_codec.Compress(block.footer_support);
-	this->writer->WriteBlockFooter(block.footer_support);
+	this->writer->WriteBlockFooter(this->block.footer_support);
 	this->writer->WriteEndOfBlock(); // End-of-block marker
 	this->UpdateIndex(); // Update index.
 	return(this->writer->stream->good());

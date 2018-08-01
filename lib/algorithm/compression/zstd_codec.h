@@ -30,6 +30,7 @@ public:
 	bool Decompress(permutation_type& manager);
 
 	bool Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const int compression_level);
+	bool Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst);
 
 private:
 	S32 compression_level_data;

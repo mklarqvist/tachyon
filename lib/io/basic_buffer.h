@@ -109,7 +109,9 @@ public:
 	inline const U64& capacity(void) const{ return this->width; }
 
 	void resize(const U64 new_size){
+		if(this->n_chars == 0 && new_size == 0) return;
 		char* temp = new char[new_size];
+		//std::cerr << this->size() << "<" << new_size << std::endl;
 		assert(this->size() < new_size);
 		memcpy(temp, this->buffer, this->size());
 		delete [] this->buffer;
