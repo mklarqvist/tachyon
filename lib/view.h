@@ -320,8 +320,8 @@ int view(int argc, char** argv){
 
 		if(settings.drop_format){
 			reader.getBlockSettings().loadGenotypes(false);
-			reader.getBlockSettings().ppa(false, false);
-			reader.getBlockSettings().format_all(false, false);
+			reader.getBlockSettings().LoadDisplayStandard(false, YON_BLK_PPA);
+			reader.getBlockSettings().LoadDisplayStandard(false, YON_BLK_N_STATIC+2);
 		}
 	}
 
@@ -370,6 +370,7 @@ int view(int argc, char** argv){
 	}
 
 	// If user is triggering annotation
+	/*
 	if(settings.annotate_genotypes){
 		reader.getBlockSettings().annotate_extra = true;
 		reader.getBlockSettings().loadGenotypes(true);
@@ -384,6 +385,7 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().alleles.load = true;
 		reader.getBlockSettings().positions.load = true;
 	}
+	*/
 
 	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
 

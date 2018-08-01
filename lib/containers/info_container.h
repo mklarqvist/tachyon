@@ -138,10 +138,13 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
                                             const std::vector<bool>& pattern_matches) :
 	__containers(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0)
+	if(data_container.buffer_data_uncompressed.size() == 0){
+		std::cerr << "no data return empty in infocontainer ctor" << std::endl;
 		return;
+	}
 
 	if(data_container.header.data_header.hasMixedStride()){
+		std::cerr << "mixed stride" << std::endl;
 		if(data_container.header.data_header.isSigned()){
 			switch(data_container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches));  break;
@@ -172,6 +175,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			}
 		}
 	} else {
+		std::cerr << "not mixed stride fixed at " << data_container.header.data_header.stride << std::endl;
 		if(data_container.header.data_header.isSigned()){
 			switch(data_container.header.data_header.getPrimitiveType()){
 			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
@@ -208,6 +212,7 @@ template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& container) :
 	__containers(nullptr)
 {
+	std::cerr << "in this info ctor" << std::endl;
 	if(container.buffer_data_uncompressed.size() == 0)
 		return;
 

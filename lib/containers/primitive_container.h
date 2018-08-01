@@ -9,8 +9,30 @@
 namespace tachyon{
 namespace containers{
 
+class PrimitiveContainerInterface {
+public:
+	typedef PrimitiveContainerInterface self_type;
+	typedef std::size_t size_type;
+
+public:
+	PrimitiveContainerInterface(void) : is_uniform_(false), n_entries_(0){}
+	PrimitiveContainerInterface(const bool uniform, const size_t size) : is_uniform_(uniform), n_entries_(size){}
+	virtual ~PrimitiveContainerInterface(){}
+
+	 // Capacity
+	    inline bool empty(void) const{ return(this->n_entries_ == 0); }
+	    inline const size_type& size(void) const{ return(this->n_entries_); }
+	    inline bool isUniform(void) const{ return(this->is_uniform_); }
+
+	    virtual void makePureVirtual(void) const =0;
+
+protected:
+	bool    is_uniform_;
+    size_t  n_entries_;
+};
+
 template <class return_type>
-class PrimitiveContainer{
+class PrimitiveContainer : public PrimitiveContainerInterface {
 private:
     typedef std::size_t       size_type;
     typedef return_type       value_type;
@@ -70,21 +92,20 @@ public:
     inline const_pointer data(void) const{ return(this->__entries); }
     inline reference front(void){ return(this->__entries[0]); }
     inline const_reference front(void) const{ return(this->__entries[0]); }
-    inline reference back(void){ return(this->__entries[this->n_entries - 1]); }
-    inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
+    inline reference back(void){ return(this->__entries[this->n_entries_ - 1]); }
+    inline const_reference back(void) const{ return(this->__entries[this->n_entries_ - 1]); }
 
-    // Capacity
-    inline bool empty(void) const{ return(this->n_entries == 0); }
-    inline const size_type& size(void) const{ return(this->n_entries); }
-    inline bool isUniform(void) const{ return(this->__uniform); }
 
     // Iterator
     inline iterator begin(){ return iterator(&this->__entries[0]); }
-    inline iterator end(){ return iterator(&this->__entries[this->n_entries]); }
+    inline iterator end(){ return iterator(&this->__entries[this->n_entries_]); }
     inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
+    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries_]); }
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
+    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
+
+    // Silly
+    void makePureVirtual(void) const{}
 
 private:
     template <class native_primitive>
@@ -94,8 +115,6 @@ private:
     void __setupSigned(const container_type& container, const U32& offset);
 
 private:
-    bool    __uniform;
-    size_t  n_entries;
     pointer __entries;
 };
 
@@ -105,8 +124,6 @@ private:
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer() :
-	__uniform(false),
-	n_entries(0),
 	__entries(nullptr)
 {
 
@@ -114,8 +131,6 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container) :
-	__uniform(false),
-	n_entries(0),
 	__entries(nullptr)
 {
 	if(container.header.data_header.getPrimitiveWidth() == -1)
@@ -123,13 +138,13 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 
 	assert(container.buffer_data_uncompressed.size() % container.header.data_header.getPrimitiveWidth() == 0);
 
-	this->n_entries = container.buffer_data_uncompressed.size() / container.header.data_header.getPrimitiveWidth();
-	this->__entries = new value_type[this->n_entries];
+	this->n_entries_ = container.buffer_data_uncompressed.size() / container.header.data_header.getPrimitiveWidth();
+	this->__entries = new value_type[this->n_entries_];
 
-	if(this->n_entries == 0)
+	if(this->n_entries_ == 0)
 		return;
 
-	this->__uniform = container.header.data_header.isUniform();
+	this->is_uniform_ = container.header.data_header.isUniform();
 
 	if(container.header.data_header.isSigned()){
 		switch(container.header.data_header.getPrimitiveType()){
@@ -166,8 +181,7 @@ template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container,
                                                               const U32& offset,
                                                               const U32  n_entries) :
-	__uniform(false),
-	n_entries(n_entries),
+    PrimitiveContainerInterface(false, n_entries),
 	__entries(new value_type[n_entries])
 {
 	if(container.header.data_header.isSigned()){

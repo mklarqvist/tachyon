@@ -54,7 +54,7 @@ bool ZSTDCodec::Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst){
 		return(false);
 	}
 
-	dst = ret;
+	dst.n_chars = ret;
 
 	return true;
 }

@@ -104,10 +104,10 @@ public:
 
 	bool EvaluateType(void){
 		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
-		else if(this->type == "Float") this->yon_type == YON_VCF_HEADER_FLOAT;
-		else if(this->type == "Flag") this->yon_type == YON_VCF_HEADER_FLAG;
-		else if(this->type == "Character") this->yon_type == YON_VCF_HEADER_CHARACTER;
-		else if(this->type == "String") this->yon_type == YON_VCF_HEADER_STRING;
+		else if(this->type == "Float") this->yon_type = YON_VCF_HEADER_FLOAT;
+		else if(this->type == "Flag") this->yon_type = YON_VCF_HEADER_FLAG;
+		else if(this->type == "Character") this->yon_type = YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type = YON_VCF_HEADER_STRING;
 		else {
 			std::cerr << "Illegal header type: " << this->type << std::endl;
 			return false;
@@ -117,8 +117,6 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const YonInfo& info){
 		utility::SerializePrimitive(info.idx, stream);
-		int temp = info.yon_type;
-		utility::SerializePrimitive(temp, stream);
 		utility::SerializeString(info.id, stream);
 		utility::SerializeString(info.number, stream);
 		utility::SerializeString(info.type, stream);
@@ -131,23 +129,19 @@ public:
 
 	friend std::istream& operator>>(std::istream& stream, YonInfo& info){
 		utility::DeserializePrimitive(info.idx, stream);
-		int temp;
-		utility::DeserializePrimitive(temp, stream);
-		info.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		utility::DeserializeString(info.id, stream);
 		utility::DeserializeString(info.number, stream);
 		utility::DeserializeString(info.type, stream);
 		utility::DeserializeString(info.description, stream);
 		utility::DeserializeString(info.source, stream);
 		utility::DeserializeString(info.version, stream);
+		info.EvaluateType();
 
 		return(stream);
 	}
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonInfo& info){
 		io::SerializePrimitive(info.idx, buffer);
-		int temp = info.yon_type;
-		io::SerializePrimitive(temp, buffer);
 		io::SerializeString(info.id, buffer);
 		io::SerializeString(info.number, buffer);
 		io::SerializeString(info.type, buffer);
@@ -160,15 +154,13 @@ public:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonInfo& info){
 		io::DeserializePrimitive(info.idx, buffer);
-		int temp;
-		io::DeserializePrimitive(temp, buffer);
-		info.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		io::DeserializeString(info.id, buffer);
 		io::DeserializeString(info.number, buffer);
 		io::DeserializeString(info.type, buffer);
 		io::DeserializeString(info.description, buffer);
 		io::DeserializeString(info.source, buffer);
 		io::DeserializeString(info.version, buffer);
+		info.EvaluateType();
 
 		return(buffer);
 	}
@@ -187,8 +179,8 @@ public:
 
 	bool EvaluateType(void){
 		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
-		else if(this->type == "Character") this->yon_type == YON_VCF_HEADER_CHARACTER;
-		else if(this->type == "String") this->yon_type == YON_VCF_HEADER_STRING;
+		else if(this->type == "Character") this->yon_type = YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type = YON_VCF_HEADER_STRING;
 		else {
 			std::cerr << "Illegal header type: " << this->type << std::endl;
 			return false;
@@ -198,7 +190,6 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const YonFormat& fmt){
 		utility::SerializePrimitive(fmt.idx, stream);
-		utility::SerializePrimitive(fmt.yon_type, stream);
 		utility::SerializeString(fmt.id, stream);
 		utility::SerializeString(fmt.number, stream);
 		utility::SerializeString(fmt.type, stream);
@@ -209,19 +200,17 @@ public:
 
 	friend std::istream& operator>>(std::istream& stream, YonFormat& fmt){
 		utility::DeserializePrimitive(fmt.idx, stream);
-		utility::DeserializePrimitive(fmt.yon_type, stream);
 		utility::DeserializeString(fmt.id, stream);
 		utility::DeserializeString(fmt.number, stream);
 		utility::DeserializeString(fmt.type, stream);
 		utility::DeserializeString(fmt.description, stream);
+		fmt.EvaluateType();
 
 		return(stream);
 	}
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonFormat& fmt){
 		io::SerializePrimitive(fmt.idx, buffer);
-		int temp = fmt.yon_type;
-		io::SerializePrimitive(temp, buffer);
 		io::SerializeString(fmt.id, buffer);
 		io::SerializeString(fmt.number, buffer);
 		io::SerializeString(fmt.type, buffer);
@@ -232,13 +221,11 @@ public:
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonFormat& fmt){
 		io::DeserializePrimitive(fmt.idx, buffer);
-		int temp;
-		io::DeserializePrimitive(temp, buffer);
-		fmt.yon_type = TACHYON_VARIANT_HEADER_FIELD_TYPE(temp);
 		io::DeserializeString(fmt.id, buffer);
 		io::DeserializeString(fmt.number, buffer);
 		io::DeserializeString(fmt.type, buffer);
 		io::DeserializeString(fmt.description, buffer);
+		fmt.EvaluateType();
 
 		return(buffer);
 	}
@@ -522,7 +509,7 @@ public:
 		io::SerializeString(header.fileformat_string_, buffer);
 		io::SerializeString(header.literals_, buffer);
 
-		size_t l_helper = header.samples_.size();
+		uint32_t l_helper = header.samples_.size();
 		io::SerializePrimitive(l_helper, buffer);
 		for(U32 i = 0; i < header.samples_.size(); ++i) io::SerializeString(header.samples_[i], buffer);
 
@@ -557,7 +544,9 @@ public:
 		io::DeserializeString(header.fileformat_string_, buffer);
 		io::DeserializeString(header.literals_, buffer);
 
-		size_t l_helper;
+		std::cerr << header.literals_ << std::endl;
+
+		uint32_t l_helper;
 		io::DeserializePrimitive(l_helper, buffer);
 		header.samples_.resize(l_helper);
 		for(U32 i = 0; i < header.samples_.size(); ++i) io::DeserializeString(header.samples_[i], buffer);

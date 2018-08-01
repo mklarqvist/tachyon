@@ -52,6 +52,103 @@ public:
 	bool parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false);
 	bool parseSettings(const header_type& header);
 
+	inline void LoadDisplayStandard(bool set, const int field_id){
+		this->LoadStandard(set, field_id);
+		this->DisplayStandard(set, field_id);
+	}
+	inline void LoadStandard(bool set, const int field_id){ this->load_static |= set << field_id; }
+	inline void DisplayStandard(bool set, const int field_id){ this->display_static |= set << field_id; }
+
+	self_type& LoadWrapper(const int target){
+		this->load_static &= ~(target);
+		this->load_static |= target;
+		return(*this);
+	}
+	inline self_type& LoadPPA(void){ return(this->LoadWrapper(YON_BLK_BV_PPA)); }
+	inline self_type& LoadContigs(void){ return(this->LoadWrapper(YON_BLK_BV_CONTIG)); }
+	inline self_type& LoadPositions(void){ return(this->LoadWrapper(YON_BLK_BV_POSITION)); }
+	inline self_type& LoadRefAlt(void){ return(this->LoadWrapper(YON_BLK_BV_REFALT)); }
+	inline self_type& LoadController(void){ return(this->LoadWrapper(YON_BLK_BV_CONTROLLER)); }
+	inline self_type& LoadQuality(void){ return(this->LoadWrapper(YON_BLK_BV_QUALITY)); }
+	inline self_type& LoadNames(void){ return(this->LoadWrapper(YON_BLK_BV_NAMES)); }
+	inline self_type& LoadAlleles(void){ return(this->LoadWrapper(YON_BLK_BV_ALLELES)); }
+	inline self_type& LoadBasic(void){
+		this->LoadContigs();
+		this->LoadPositions();
+		this->LoadController();
+		return(this->LoadSetMemberships());
+	}
+
+	inline self_type& LoadInfoId(void){ return(this->LoadWrapper(YON_BLK_BV_ID_INFO)); }
+	inline self_type& LoadFormatId(void){ return(this->LoadWrapper(YON_BLK_BV_ID_FORMAT)); }
+	inline self_type& LoadFilterId(void){ return(this->LoadWrapper(YON_BLK_BV_ID_FILTER)); }
+	inline self_type& LoadSetMemberships(void){
+		this->LoadInfoId();
+		this->LoadFormatId();
+		return(this->LoadFilterId());
+	}
+
+	inline self_type& LoadGt8(void){ return(this->LoadWrapper(YON_BLK_BV_GT_INT8)); }
+	inline self_type& LoadGt16(void){ return(this->LoadWrapper(YON_BLK_BV_GT_INT16)); }
+	inline self_type& LoadGt32(void){ return(this->LoadWrapper(YON_BLK_BV_GT_INT32)); }
+	inline self_type& LoadGt64(void){ return(this->LoadWrapper(YON_BLK_BV_GT_INT64)); }
+	inline self_type& LoadGtS8(void){ return(this->LoadWrapper(YON_BLK_BV_GT_S_INT8)); }
+	inline self_type& LoadGtS16(void){ return(this->LoadWrapper(YON_BLK_BV_GT_S_INT16)); }
+	inline self_type& LoadGtS32(void){ return(this->LoadWrapper(YON_BLK_BV_GT_S_INT32)); }
+	inline self_type& LoadGtS64(void){ return(this->LoadWrapper(YON_BLK_BV_GT_S_INT64)); }
+	inline self_type& LoadGtSupport(void){ return(this->LoadWrapper(YON_BLK_BV_GT_SUPPORT)); }
+	inline self_type& LoadGenotypes(void){
+		this->LoadGt8(); this->LoadGt16(); this->LoadGt32(); this->LoadGt64();
+		this->LoadGtS8(); this->LoadGtS16(); this->LoadGtS32(); this->LoadGtS64();
+		return(this->LoadGtSupport());
+	}
+
+	self_type& LoadDisplayWrapper(const int target){
+		this->load_static &= ~(target);
+		this->load_static |= target;
+		this->display_static &= ~(target);
+		this->display_static |= target;
+		return(*this);
+	}
+	inline self_type& LoadDisplayPPA(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_PPA)); }
+	inline self_type& LoadDisplayContigs(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_CONTIG)); }
+	inline self_type& LoadDisplayPositions(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_POSITION)); }
+	inline self_type& LoadDisplayRefAlt(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_REFALT)); }
+	inline self_type& LoadDisplayController(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_CONTROLLER)); }
+	inline self_type& LoadDisplayQuality(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_QUALITY)); }
+	inline self_type& LoadDisplayNames(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_NAMES)); }
+	inline self_type& LoadDisplayAlleles(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_ALLELES)); }
+	inline self_type& LoadDisplayBasic(void){
+		this->LoadDisplayContigs();
+		this->LoadDisplayPositions();
+		this->LoadDisplayController();
+		return(this->LoadDisplaySetMemberships());
+	}
+
+	inline self_type& LoadDisplayInfoId(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_ID_INFO)); }
+	inline self_type& LoadDisplayFormatId(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_ID_FORMAT)); }
+	inline self_type& LoadDisplayFilterId(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_ID_FILTER)); }
+	inline self_type& LoadDisplaySetMemberships(void){
+		this->LoadDisplayInfoId();
+		this->LoadDisplayFormatId();
+		return(this->LoadDisplayFilterId());
+	}
+
+	inline self_type& LoadDisplayGt8(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_INT8)); }
+	inline self_type& LoadDisplayGt16(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_INT16)); }
+	inline self_type& LoadDisplayGt32(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_INT32)); }
+	inline self_type& LoadDisplayGt64(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_INT64)); }
+	inline self_type& LoadDisplayGtS8(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_S_INT8)); }
+	inline self_type& LoadDisplayGtS16(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_S_INT16)); }
+	inline self_type& LoadDisplayGtS32(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_S_INT32)); }
+	inline self_type& LoadDisplayGtS64(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_S_INT64)); }
+	inline self_type& LoadDisplayGtSupport(void){ return(this->LoadDisplayWrapper(YON_BLK_BV_GT_SUPPORT)); }
+	inline self_type& LoadDisplayGenotypes(void){
+		this->LoadDisplayGt8(); this->LoadDisplayGt16(); this->LoadDisplayGt32(); this->LoadDisplayGt64();
+		this->LoadDisplayGtS8(); this->LoadDisplayGtS16(); this->LoadDisplayGtS32(); this->LoadDisplayGtS64();
+		return(this->LoadDisplayGtSupport());
+	}
+
 public:
 	bool show_vcf_header;
 
@@ -61,21 +158,9 @@ public:
 	bool display_filter;
 
 	// Load/display pairs
-	pair_type contig;
-	pair_type positions;
-	pair_type controller;
-	pair_type quality;
-	pair_type names;
-	pair_type alleles;
-	pair_type set_membership;
-	pair_type genotypes_all;
-	pair_type genotypes_rle;
-	pair_type genotypes_simple;
-	pair_type genotypes_other;
-	pair_type genotypes_support;
-	pair_type ppa;
-	pair_type info_all;
-	pair_type format_all;
+	U32 load_static;
+	U32 display_static;
+
 
 	bool construct_occ_table;
 	bool custom_delimiter;

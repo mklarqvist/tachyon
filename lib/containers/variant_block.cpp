@@ -130,7 +130,6 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 	// Assert end-of-block marker
 	U64 eof_marker;
 	utility::DeserializePrimitive(eof_marker, stream);
-	std::cerr << eof_marker << "/" << constants::TACHYON_BLOCK_EOF << std::endl;
 	assert(eof_marker == constants::TACHYON_BLOCK_EOF);
 	this->end_block_ = stream.tellg(); // end-of-block offset
 	stream.seekg(this->start_compressed_data_);

@@ -73,8 +73,6 @@ bool VariantImporter::BuildVCF(void){
 		return false;
 	}
 
-	// Todo: write header
-
 	// Setup the encryption container.
 	encryption::EncryptionDecorator encryption_manager;
 	encryption::Keychain<> keychain;
@@ -130,6 +128,7 @@ bool VariantImporter::BuildVCF(void){
 		if(this->AddRecords(this->vcf_container_) == false) return false;
 
 		this->block.header.controller.hasGT  = this->GT_available_;
+		this->block.header.n_variants        = this->vcf_container_.sizeWithoutCarryOver();
 		this->block.UpdateContainers();
 		this->block.Finalize();
 
@@ -585,12 +584,12 @@ bool VariantImporter::WriteYonHeader(){
 	io::BasicBuffer temp(500000);
 	io::BasicBuffer temp_cmp(temp);
 	temp << yon_header;
-	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 10);
-	size_t l_data = temp.size();
-	size_t l_c_data = temp_cmp.size();
+	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 20);
+	uint32_t l_data   = temp.size();
+	uint32_t l_c_data = temp_cmp.size();
 	utility::SerializePrimitive(l_data,   *this->writer->stream);
 	utility::SerializePrimitive(l_c_data, *this->writer->stream);
-	this->writer->stream->write(temp_cmp.data(), temp_cmp.size());
+	this->writer->stream->write(temp_cmp.data(), l_c_data);
 	return(this->writer->stream->good());
 }
 

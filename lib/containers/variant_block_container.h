@@ -52,7 +52,6 @@ public:
 	}
 
 	VariantBlockContainer(const global_header_type& header) :
-		mapper_(header.format_fields_.size(), header.info_fields_.size()),
 		header_(&header),
 		objects_(nullptr)
 	{
@@ -65,7 +64,6 @@ public:
 
 	self_type& operator<<(const global_header_type& header){
 		this->header_ = &header;
-		this->mapper_ << header;
 		return(*this);
 	}
 
@@ -76,14 +74,6 @@ public:
 		// Todo: reset hashes
 	}
 
-	bool buildMapper(const std::vector<U32>& info_keys, const std::vector<U32>& format_keys, const block_settings_type& block_settings){
-		if(this->mapper_.build(info_keys, format_keys, this->block_.footer) == false){
-			std::cerr << utility::timestamp("ERROR") << "Failed to build mapper..." << std::endl;
-			return false;
-		}
-		return(true);
-	}
-
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
 	 * read in this way is not checked for integrity until later.
@@ -92,22 +82,6 @@ public:
 	 * @return         Returns FALSE if there was a problem, TRUE otherwise
 	 */
 	bool readBlock(std::ifstream& stream, block_settings_type& settings);
-
-	/**<
-	 * Calculates which INFO pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name INFO field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const;
-
-	/**<
-	 * Calculates which FORMAT pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name FORMAT field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const;
 
 	/**<
 	 * Factory function for FORMAT container given an input `field` name
@@ -150,8 +124,6 @@ public:
 	// Accessors
 	inline block_type& getBlock(void){ return(this->block_); }
 	inline const block_type& getBlock(void) const{ return(this->block_); }
-	inline block_mapper_type& getMapper(void){ return(this->mapper_); }
-	inline const block_mapper_type& getMapper(void) const{ return(this->mapper_); }
 	inline objects_type* getObjects(void){ return(this->objects_); }
 
 	// Checkers
@@ -174,17 +146,17 @@ public:
 		return this->objects_;
 	}
 
-	std::ostream& printVCF(const U32& position) const;
-	std::ostream& printVCFUnfiltered(const U32& position) const;
-
 private:
-	block_mapper_type    mapper_; // global -> local, local -> global, loaded or not, primitive type
 	block_type           block_;
 	hash_container_type  h_tables_format_;
 	hash_container_type  h_tables_info_;
 	site_annotation_type annotations_;
 	const global_header_type* header_;
 	objects_type*             objects_;
+
+	std::vector<int> info_id_loaded;
+	std::vector<int> format_id_loaded;
+
 };
 
 
@@ -196,17 +168,15 @@ private:
 template <class T>
 containers::FormatContainer<T>* VariantBlockContainer::get_format_container(const std::string& field_name) const{
 	int format_field_global_id = -2;
-	io::VcfFormat* fmt = this->header_->GetFormat(field_name);
+	YonFormat* fmt = this->header_->GetFormat(field_name);
 	if(fmt != nullptr){
 		format_field_global_id = fmt->idx;
-	} else return nullptr;
+	} else return new containers::FormatContainer<T>();
 
-	if(format_field_global_id >= 0){
-		const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
-		if(target_local_id < 0) return nullptr;
-		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], this->header_->GetNumberSamples()));
-	}
-	else return nullptr;
+	DataContainer* container = this->block_.GetFormatContainer(format_field_global_id);
+	if(container == nullptr) new containers::FormatContainer<T>();
+
+	return(new containers::FormatContainer<T>(*container, this->header_->GetNumberSamples()));
 }
 
 template <class T>
@@ -214,72 +184,61 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 	if(meta_container.size() == 0)
 		return new containers::FormatContainer<T>();
 
-	io::VcfFormat* fmt = this->header_->GetFormat(field_name);
 	int format_field_global_id = -2;
-	if(fmt != nullptr)
+	YonFormat* fmt = this->header_->GetFormat(field_name);
+	if(fmt != nullptr){
 		format_field_global_id = fmt->idx;
-	else return nullptr;
+	} else return new containers::FormatContainer<T>();
 
-	if(format_field_global_id >= 0){
-		const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
-		U32 matches = 0;
-		for(U32 i = 0; i < pattern_matches.size(); ++i)
-			matches += pattern_matches[i];
+	DataContainer* container = this->block_.GetFormatContainer(format_field_global_id);
+	if(container == nullptr) new containers::FormatContainer<T>();
 
-		if(matches == 0) return nullptr;
+	const std::vector<bool> pattern_matches = this->block_.FormatPatternSetMembership(format_field_global_id);
 
-		const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
-		if(target_local_id < 0)
-			return nullptr;
+	U32 matches = 0;
+	for(U32 i = 0; i < pattern_matches.size(); ++i)
+		matches += pattern_matches[i];
 
-		return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header_->GetNumberSamples()));
-	}
-	else return nullptr;
+	if(matches == 0) return new containers::FormatContainer<T>();
+
+	return(new containers::FormatContainer<T>(*container, meta_container, pattern_matches, this->header_->GetNumberSamples()));
+
 }
 
 template <class T>
 containers::InfoContainer<T>* VariantBlockContainer::get_info_container(const std::string& field_name) const{
-	io::VcfInfo* info = this->header_->GetInfo(field_name);
 	int info_field_global_id = -2;
+	YonInfo* info = this->header_->GetInfo(field_name);
 	if(info != nullptr){
 		info_field_global_id = info->idx;
-	} else return nullptr;
+	} else return new containers::InfoContainer<T>();
 
-	if(info_field_global_id >= 0){
-		const S32& target_local_id = this->getMapper().getGlobalInfo(info_field_global_id).load_order_index;
-		if(target_local_id < 0) return nullptr;
-		return(new containers::InfoContainer<T>(this->getBlock().info_containers[target_local_id]));
-	}
-	else return nullptr;
+	DataContainer* container = this->block_.GetInfoContainer(info_field_global_id);
+	if(container == nullptr) new containers::InfoContainer<T>();
+
+	return(new containers::InfoContainer<T>(*container));
 }
 
 template <class T>
 containers::InfoContainer<T>* VariantBlockContainer::get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-	if(meta_container.size() == 0)
-		return new containers::InfoContainer<T>();
-
-	io::VcfInfo* info = this->header_->GetInfo(field_name);
 	int info_field_global_id = -2;
+	YonInfo* info = this->header_->GetInfo(field_name);
 	if(info != nullptr){
 		info_field_global_id = info->idx;
-	} else return nullptr;
+	} else return new containers::InfoContainer<T>();
 
-	if(info_field_global_id >= 0){
-		const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
+	DataContainer* container = this->block_.GetInfoContainer(info_field_global_id);
+	if(container == nullptr) new containers::InfoContainer<T>();
 
-		U32 matches = 0;
-		for(U32 i = 0; i < pattern_matches.size(); ++i)
-			matches += pattern_matches[i];
+	const std::vector<bool> pattern_matches = this->block_.InfoPatternSetMembership(info_field_global_id);
 
-		if(matches == 0)
-			return nullptr;
+	U32 matches = 0;
+	for(U32 i = 0; i < pattern_matches.size(); ++i)
+		matches += pattern_matches[i];
 
-		const S32& target_local_id = this->getMapper().getGlobalInfo(info_field_global_id).load_order_index;
-		if(target_local_id < 0) return nullptr;
+	if(matches == 0) return new containers::InfoContainer<T>();
 
-		return(new containers::InfoContainer<T>(this->getBlock().info_containers[target_local_id], meta_container, pattern_matches));
-	}
-	else return nullptr;
+	return(new containers::InfoContainer<T>(*container, meta_container, pattern_matches));
 }
 
 }

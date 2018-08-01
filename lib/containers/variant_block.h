@@ -91,7 +91,7 @@ public:
 	 * @param info_ids Vector of global INFO keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> intersectInfoKeys(const std::vector<U32>& info_ids) const{
+	std::vector<U32> IntersectInfoKeys(const std::vector<U32>& info_ids) const{
 		std::vector<U32> info_ids_found;
 		if(info_ids.size() == 0) return(info_ids_found);
 
@@ -111,7 +111,7 @@ public:
 	 * @param info_ids Vector of global FORMAT keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> intersectFormatKeys(const std::vector<U32>& format_ids) const{
+	std::vector<U32> IntersectFormatKeys(const std::vector<U32>& format_ids) const{
 		std::vector<U32> format_ids_found;
 		if(format_ids.size() == 0) return(format_ids_found);
 
@@ -125,7 +125,7 @@ public:
 		return(format_ids_found);
 	}
 
-	std::vector<U32> getFormatKeys(void) const{
+	std::vector<U32> GetFormatKeys(void) const{
 		std::vector<U32> ret;
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 			ret.push_back(this->footer.format_offsets[i].data_header.global_key);
@@ -133,7 +133,7 @@ public:
 		return(ret);
 	}
 
-	std::vector<U32> getInfoKeys(void) const{
+	std::vector<U32> GetInfoKeys(void) const{
 		std::vector<U32> ret;
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 			ret.push_back(this->footer.info_offsets[i].data_header.global_key);
@@ -200,6 +200,80 @@ public:
 	inline U32 AddFormat(const U32 id){ return(this->footer.AddFormat(id)); }
 	inline U32 AddFilter(const U32 id){ return(this->footer.AddFilter(id)); }
 	inline void Finalize(void){ this->footer.Finalize(); }
+
+	bool HasInfo(const U32 global_id) const{
+		if(this->footer.info_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+		if(it == this->footer.info_map->end()) return false;
+		return(true);
+	}
+
+	bool HasFormat(const U32 global_id) const{
+		if(this->footer.format_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+		if(it == this->footer.format_map->end()) return false;
+		return(true);
+	}
+
+	bool HasFilter(const U32 global_id) const{
+		if(this->footer.filter_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+		if(it == this->footer.filter_map->end()) return false;
+		return(true);
+	}
+
+	container_type* GetInfoContainer(const U32 global_id) const{
+		if(this->HasInfo(global_id))
+			return(&this->info_containers[this->footer.info_map->at(global_id)]);
+		else
+			return nullptr;
+	}
+
+	container_type* GetFormatContainer(const U32 global_id) const{
+		if(this->HasFormat(global_id))
+			return(&this->format_containers[this->footer.format_map->at(global_id)]);
+		else
+			return nullptr;
+	}
+
+	std::vector<bool> InfoPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_info_patterns, false);
+		for(U32 i = 0; i < this->footer.n_info_patterns; ++i){
+			for(U32 j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
+				if(this->footer.info_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
+
+	std::vector<bool> FormatPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_format_patterns, false);
+		for(U32 i = 0; i < this->footer.n_format_patterns; ++i){
+			for(U32 j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
+				if(this->footer.format_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
+
+	std::vector<bool> FilterPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_filter_patterns, false);
+		for(U32 i = 0; i < this->footer.n_filter_patterns; ++i){
+			for(U32 j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
+				if(this->footer.filter_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
 
 private:
 	/**<

@@ -78,13 +78,13 @@ bool VariantReader::open(void){
 		return false;
 	}
 
-	size_t l_data = 0;
-	size_t l_c_data = 0;
+	uint32_t l_data   = 0;
+	uint32_t l_c_data = 0;
 	utility::DeserializePrimitive(l_data, this->basic_reader.stream_);
 	utility::DeserializePrimitive(l_c_data, this->basic_reader.stream_);
 
-	io::BasicBuffer header_uncompressed(l_data + 1024); header_uncompressed.n_chars = l_data;
-	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars = l_c_data;
+	io::BasicBuffer header_uncompressed(l_data + 1024);
+	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars   = l_c_data;
 
 	this->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 
@@ -92,6 +92,7 @@ bool VariantReader::open(void){
 		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
 		return false;
 	}
+	assert(header_uncompressed.size() == l_data);
 	header_uncompressed >> this->global_header; // parse header from buffer
 
 	if(!this->basic_reader.stream_.good()){
@@ -129,26 +130,17 @@ bool VariantReader::nextBlock(){
 	// Reset and re-use
 	this->variant_container.reset();
 
-	std::cerr << "Before read header footer" << std::endl;
-
 	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
-
-	std::cerr << "Before decompress header footer" << std::endl;
 
 	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	std::cerr << "Before overload header footer" << std::endl;
 	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
-
-	std::cerr << "Before read block" << std::endl;
 
 	// Attempts to read a YON block with the settings provided
 	if(!this->variant_container.readBlock(this->basic_reader.stream_, this->block_settings))
 		return false;
-
-	std::cerr << "After read block" << std::endl;
 
 	// encryption manager ascertainment
 	if(this->variant_container.anyEncrypted()){
@@ -355,7 +347,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 	                        const objects_type& objects,
 	               std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(this->block_settings.format_all.display && objects.n_loaded_format){
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) && objects.n_loaded_format){
 		if(objects.n_loaded_format){
 			const U32& n_format_keys = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.size();
 			const int* format_keys   = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.data();
@@ -373,7 +365,7 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				// Todo: print if no GT data
 				// Begin print FORMAT data for each sample
 				if(this->variant_container.getBlock().header.controller.hasGT){
-					if(this->block_settings.ppa.load && this->variant_container.getBlock().header.controller.hasGTPermuted){
+					if((this->block_settings.display_static & YON_BLK_BV_PPA) && this->variant_container.getBlock().header.controller.hasGTPermuted){
 						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
 					} else {
 						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
@@ -430,7 +422,7 @@ void VariantReader::printFORMATCustom(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || objects.n_loaded_format){
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) || objects.n_loaded_format){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -478,7 +470,7 @@ void VariantReader::printFORMATCustomVector(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || objects.n_loaded_format){
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) || objects.n_loaded_format){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -519,7 +511,7 @@ void VariantReader::printFORMATCustomVectorJSON(buffer_type& outputBuffer,
 					   const objects_type& objects,
 					   std::vector<core::GTObject>& genotypes_unpermuted) const
 {
-	if(block_settings.format_all.display || objects.n_loaded_format){
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) || objects.n_loaded_format){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_format[objects.meta_container->at(position).format_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
@@ -566,7 +558,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 	if(this->variant_container.getBlock().footer.n_info_patterns == 0)
 		return;
 
-	if(block_settings.info_all.display || objects.n_loaded_info){
+	if((this->block_settings.display_static & YON_BLK_BV_INFO) || objects.n_loaded_info){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -609,7 +601,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 					 const U32& position,
 					 const objects_type& objects) const
 {
-	if(block_settings.info_all.display || objects.n_loaded_info){
+	if((this->block_settings.display_static & YON_BLK_BV_INFO) || objects.n_loaded_info){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
@@ -642,7 +634,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 						 const U32& position,
 						 const objects_type& objects) const
 {
-	if(block_settings.info_all.display || objects.n_loaded_info){
+	if((this->block_settings.display_static & YON_BLK_BV_INFO) || objects.n_loaded_info){
 		const std::vector<U32>& targetKeys = objects.local_match_keychain_info[objects.meta_container->at(position).info_pattern_id];
 		if(targetKeys.size()){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
@@ -788,7 +780,7 @@ U32 VariantReader::outputBlockVCF(void){
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
 	io::BasicBuffer output_buffer(256000);
-	if(this->block_settings.format_all.load) output_buffer.resize(256000 + this->global_header.GetNumberSamples()*2);
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT)) output_buffer.resize(256000 + this->global_header.GetNumberSamples()*2);
 
 	// Todo: in cases of non-diploid
 	std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
@@ -799,7 +791,7 @@ U32 VariantReader::outputBlockVCF(void){
 	// Print functionality
 	print_format_function print_format = &self_type::printFORMATDummy;
 	if(this->block_settings.format_ID_list.size()) print_format = &self_type::printFORMATCustom;
-	else if(block_settings.format_all.display)     print_format = &self_type::printFORMATVCF;
+	else if((this->block_settings.display_static & YON_BLK_BV_FORMAT))     print_format = &self_type::printFORMATVCF;
 	print_info_function   print_info   = &self_type::printINFOVCF;
 	print_meta_function   print_meta   = &utility::to_vcf_string;
 	print_filter_function print_filter = &self_type::printFILTER;
@@ -866,7 +858,7 @@ U32 VariantReader::outputBlockCustom(void){
 	print_filter_function print_filter = &self_type::printFILTERDummy;
 	if(this->block_settings.output_json) print_meta = &utility::to_json_string;
 
-	if(this->block_settings.format_all.display || objects.n_loaded_format){
+	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) || objects.n_loaded_format){
 		if(this->block_settings.output_json){
 			print_format = &self_type::printFORMATCustomVectorJSON;
 		} else {
@@ -875,7 +867,7 @@ U32 VariantReader::outputBlockCustom(void){
 		}
 	}
 
-	if(this->block_settings.info_all.display || objects.n_loaded_info){
+	if((this->block_settings.display_static & YON_BLK_BV_INFO) || objects.n_loaded_info){
 		if(this->block_settings.output_json) print_info = &self_type::printINFOCustomJSON;
 		else print_info = &self_type::printINFOCustom;
 	}

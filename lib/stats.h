@@ -104,6 +104,7 @@ int stats(int argc, char** argv){
 	tachyon::algorithm::Timer timer, timer2;
 	timer.Start(); timer2.Start();
 
+	/*
 	reader.getBlockSettings().contig(true, true);
 	reader.getBlockSettings().positions(true, true);
 	reader.getBlockSettings().controller(true, true);
@@ -111,6 +112,7 @@ int stats(int argc, char** argv){
 	reader.getBlockSettings().loadGenotypes(true);
 	reader.getBlockSettings().ppa(true, true);
 	reader.getBlockSettings().alleles(true, true);
+	*/
 
 	U32 block_counter = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().GetNumberSamples());

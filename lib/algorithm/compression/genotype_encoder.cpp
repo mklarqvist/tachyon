@@ -44,6 +44,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container, meta_typ
 					return false;
 				}
 
+				meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
 				meta_entries[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_BIALLELIC;
 				block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)n_runs);
 				++block.base_containers[YON_BLK_GT_SUPPORT];
@@ -60,6 +61,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container, meta_typ
 					return false;
 				}
 
+				meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
 				meta_entries[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_NALLELIC;
 				block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)n_runs);
 				++block.base_containers[YON_BLK_GT_SUPPORT];
@@ -77,6 +79,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container, meta_typ
 				return false;
 			}
 
+			meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
 			meta_entries[i].controller.gt_compression_type = YON_GT_BCF_STYLE;
 			block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)n_runs);
 			++block.base_containers[YON_BLK_GT_SUPPORT];

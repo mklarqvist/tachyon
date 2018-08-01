@@ -33,6 +33,30 @@ namespace tachyon {
 #define YON_BLK_GT_S_INT64 18
 #define YON_BLK_GT_SUPPORT 19 // Genotype support
 
+#define YON_BLK_BV_PPA         1 << YON_BLK_PPA
+#define YON_BLK_BV_CONTIG      1 << YON_BLK_CONTIG
+#define YON_BLK_BV_POSITION    1 << YON_BLK_POSITION
+#define YON_BLK_BV_REFALT      1 << YON_BLK_REFALT
+#define YON_BLK_BV_CONTROLLER  1 << YON_BLK_CONTROLLER
+#define YON_BLK_BV_QUALITY     1 << YON_BLK_QUALITY
+#define YON_BLK_BV_NAMES       1 << YON_BLK_NAMES
+#define YON_BLK_BV_ALLELES     1 << YON_BLK_ALLELES
+#define YON_BLK_BV_ID_INFO     1 << YON_BLK_ID_INFO
+#define YON_BLK_BV_ID_FORMAT   1 << YON_BLK_ID_FORMAT
+#define YON_BLK_BV_ID_FILTER   1 << YON_BLK_ID_FILTER
+#define YON_BLK_BV_GT_INT8     1 << YON_BLK_GT_INT8
+#define YON_BLK_BV_GT_INT16    1 << YON_BLK_GT_INT16
+#define YON_BLK_BV_GT_INT32    1 << YON_BLK_GT_INT32
+#define YON_BLK_BV_GT_INT64    1 << YON_BLK_GT_INT64
+#define YON_BLK_BV_GT_S_INT8   1 << YON_BLK_GT_S_INT8
+#define YON_BLK_BV_GT_S_INT16  1 << YON_BLK_GT_S_INT16
+#define YON_BLK_BV_GT_S_INT32  1 << YON_BLK_GT_S_INT32
+#define YON_BLK_BV_GT_S_INT64  1 << YON_BLK_GT_S_INT64
+#define YON_BLK_BV_GT_SUPPORT  1 << YON_BLK_GT_SUPPORT
+
+#define YON_BLK_BV_INFO    1 << (YON_BLK_GT_SUPPORT + 1)
+#define YON_BLK_BV_FORMAT  1 << (YON_BLK_GT_SUPPORT + 2)
+
 namespace containers {
 
 struct yon_blk_bv_pair {
@@ -109,11 +133,9 @@ struct yon_blk_bv_pair {
 // position they occur at (local IDX) and read the global IDX in the
 // header structure.
 struct VariantBlockFooter {
-private:
+public:
 	typedef VariantBlockFooter        self_type;
 	typedef DataBlockBitvector        bit_vector;
-	//typedef std::vector<U32>          id_vector;
-	//typedef std::vector< id_vector >  pattern_vector;
 	typedef DataContainerHeader       header_type;
 	typedef std::unordered_map<U32, U32>    map_type;
 	typedef std::unordered_map<U64, U32>    map_pattern_type;
