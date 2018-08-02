@@ -15,7 +15,11 @@ GenotypeEncoder::GenotypeEncoder(const U64 samples) :
 
 GenotypeEncoder::~GenotypeEncoder(){}
 
-bool GenotypeEncoder::Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const algorithm::yon_gt_ppa& permutation_array) const{
+bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
+                             meta_type* meta_entries,
+                             block_type& block,
+                             const algorithm::yon_gt_ppa& permutation_array) const
+{
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		io::VcfGenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
 

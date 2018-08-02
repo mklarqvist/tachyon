@@ -361,10 +361,10 @@ public:
 		// Iterate over genotypes to find the first valid phase
 		// continuing the search if the current value is the
 		// sentinel node symbol.
-		int j = 0;
+		int j = fmt.n - 1;
 		for(uint32_t i = 0; i < n_samples; ++i){
-			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == false
-			   || VcfType<T>::IsVectorEnd(fmt.p[j]))
+			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == true
+			   || VcfType<T>::IsVectorEnd(fmt.p[j]) == true)
 				j += fmt.n;
 			else {
 				this->phase_if_uniform = fmt.p[j] & 1;
@@ -375,7 +375,7 @@ public:
 		// Iterate over genotypes to compute summary statistics
 		// regarding missingness, number of special sentinel
 		// symbols and assess uniformity of phasing.
-		j = 0;
+		j = fmt.n - 1;
 		for(uint32_t i = 0; i < n_samples; ++i){
 			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == false
 			   && VcfType<int8_t>::IsVectorEnd(fmt.p[j]) == false
