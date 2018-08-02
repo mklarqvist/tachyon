@@ -137,7 +137,7 @@ public:
 	 * @param objects Target objects
 	 * @return        Returns reference to input target objects
 	 */
-	objects_type& loadObjects(objects_type& objects, block_settings_type& block_settings) const;
+	objects_type& loadObjects(objects_type& objects, block_settings_type& block_settings);
 
 	objects_type* loadObjects(block_settings_type& block_settings){
 		delete this->objects_;
@@ -157,6 +157,47 @@ private:
 	std::vector<int> info_id_loaded;
 	std::vector<int> format_id_loaded;
 
+};
+
+// Todo:
+struct yon1_t {
+	yon1_t(void) :
+		is_dirty(false),
+		is_loaded_meta(false),
+		is_loaded_gt(false),
+		id_block(0),
+		meta(nullptr),
+		info(nullptr),
+		fmt(nullptr),
+		info_containers(nullptr),
+		format_containers(nullptr),
+		info_ids(nullptr),
+		format_ids(nullptr),
+		parent_container(nullptr)
+	{
+
+	}
+	~yon1_t(void){
+		delete [] this->info;
+		delete [] this->fmt;
+		delete [] this->info_containers;
+		delete [] this->format_containers;
+	}
+
+	bool is_dirty;
+	bool is_loaded_meta;
+	bool is_loaded_gt;
+	uint32_t id_block; // incremental id in the block container
+	core::MetaEntry* meta;
+	PrimitiveContainerInterface** info;
+	PrimitiveGroupContainerInterface** fmt;
+	InfoContainerInterface** info_containers;
+	FormatContainerInterface** format_containers;
+	std::vector<int>* info_ids;
+	std::vector<int>* format_ids;
+	VariantBlockContainer* parent_container;
+	std::vector<TACHYON_VARIANT_HEADER_FIELD_TYPE> info_types;
+	std::vector<TACHYON_VARIANT_HEADER_FIELD_TYPE> format_types;
 };
 
 

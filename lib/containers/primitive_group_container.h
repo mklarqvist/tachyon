@@ -6,8 +6,29 @@
 namespace tachyon{
 namespace containers{
 
+class PrimitiveGroupContainerInterface {
+public:
+	typedef PrimitiveGroupContainerInterface self_type;
+	typedef std::size_t size_type;
+
+public:
+	PrimitiveGroupContainerInterface() : n_objects_(0){ }
+	PrimitiveGroupContainerInterface(const size_type n_objects) : n_objects_(n_objects){ }
+	virtual ~PrimitiveGroupContainerInterface(){ }
+
+	virtual void makePureVirtual(void) const =0;
+
+	// Capacity
+	inline bool empty(void) const{ return(this->n_objects_ == 0); }
+	inline const size_type& size(void) const{ return(this->n_objects_); }
+
+
+public:
+    size_type n_objects_;
+};
+
 template <class return_type>
-class PrimitiveGroupContainer{
+class PrimitiveGroupContainer : public PrimitiveGroupContainerInterface {
 private:
     typedef PrimitiveGroupContainer self_type;
     typedef PrimitiveContainer<return_type> value_type;
@@ -67,27 +88,25 @@ public:
 	inline const_pointer data(void) const{ return(this->__containers); }
 	inline reference front(void){ return(this->__containers[0]); }
 	inline const_reference front(void) const{ return(this->__containers[0]); }
-	inline reference back(void){ return(this->__containers[this->__n_objects - 1]); }
-	inline const_reference back(void) const{ return(this->__containers[this->__n_objects - 1]); }
-
-	// Capacity
-	inline bool empty(void) const{ return(this->__n_objects == 0); }
-	inline const size_type& size(void) const{ return(this->__n_objects); }
+	inline reference back(void){ return(this->__containers[this->n_objects_ - 1]); }
+	inline const_reference back(void) const{ return(this->__containers[this->n_objects_ - 1]); }
 
 	// Iterator
 	inline iterator begin(){ return iterator(&this->__containers[0]); }
-	inline iterator end(){ return iterator(&this->__containers[this->__n_objects]); }
+	inline iterator end(){ return iterator(&this->__containers[this->n_objects_]); }
 	inline const_iterator begin() const{ return const_iterator(&this->__containers[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->__containers[this->__n_objects]); }
+	inline const_iterator end() const{ return const_iterator(&this->__containers[this->n_objects_]); }
 	inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->__n_objects]); }
+	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->n_objects_]); }
+
+	// Silly
+	void makePureVirtual(void) const { }
 
 private:
 	template <class actual_primitive_type>
 	void __setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each);
 
 private:
-    size_type __n_objects;
     pointer   __containers;
 };
 
@@ -96,12 +115,12 @@ private:
 
 
 template <class return_type>
-PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : __n_objects(0), __containers(nullptr){}
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : __containers(nullptr){}
 
 template <class return_type>
 PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :
-	__n_objects(n_objects),
-	__containers(static_cast<pointer>(::operator new[](this->__n_objects*sizeof(value_type))))
+	PrimitiveGroupContainerInterface(n_objects),
+	__containers(static_cast<pointer>(::operator new[](this->n_objects_*sizeof(value_type))))
 {
 
 	if(container.header.data_header.isSigned()){
@@ -137,7 +156,7 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 
 template <class return_type>
 PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer(){
-	for(std::size_t i = 0; i < this->__n_objects; ++i)
+	for(std::size_t i = 0; i < this->n_objects_; ++i)
 		((this->__containers + i)->~value_type)();
 
 	::operator delete[](static_cast<void*>(this->__containers));
@@ -147,7 +166,7 @@ template <class return_type>
 template <class actual_primitive_type>
 void PrimitiveGroupContainer<return_type>::__setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each){
 	U32 current_offset = offset;
-	for(U32 i = 0; i < this->__n_objects; ++i){
+	for(U32 i = 0; i < this->n_objects_; ++i){
 		new( &this->__containers[i] ) value_type( container, current_offset, strides_each );
 		current_offset += strides_each * sizeof(actual_primitive_type);
 	}

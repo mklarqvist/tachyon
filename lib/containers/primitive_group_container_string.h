@@ -7,10 +7,10 @@ namespace tachyon{
 namespace containers{
 
 template <>
-class PrimitiveGroupContainer<std::string>{
+class PrimitiveGroupContainer<std::string> : public PrimitiveGroupContainerInterface{
 private:
     typedef PrimitiveGroupContainer self_type;
-    typedef std::string             value_type;
+    typedef PrimitiveContainer<std::string> value_type;
     typedef std::size_t             size_type;
     typedef value_type&             reference;
     typedef const value_type&       const_reference;
@@ -59,32 +59,33 @@ public:
     	};
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->__strings[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->__strings[position]); }
-	inline reference operator[](const size_type& position){ return(this->__strings[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->__strings[position]); }
-	inline pointer data(void){ return(this->__strings); }
-	inline const_pointer data(void) const{ return(this->__strings); }
-	inline reference front(void){ return(this->__strings[0]); }
-	inline const_reference front(void) const{ return(this->__strings[0]); }
-	inline reference back(void){ return(this->__strings[this->__n_objects - 1]); }
-	inline const_reference back(void) const{ return(this->__strings[this->__n_objects - 1]); }
+	inline reference at(const size_type& position){ return(this->containers_[position]); }
+	inline const_reference at(const size_type& position) const{ return(this->containers_[position]); }
+	inline reference operator[](const size_type& position){ return(this->containers_[position]); }
+	inline const_reference operator[](const size_type& position) const{ return(this->containers_[position]); }
+	inline pointer data(void){ return(this->containers_); }
+	inline const_pointer data(void) const{ return(this->containers_); }
+	inline reference front(void){ return(this->containers_[0]); }
+	inline const_reference front(void) const{ return(this->containers_[0]); }
+	inline reference back(void){ return(this->containers_[this->n_objects_ - 1]); }
+	inline const_reference back(void) const{ return(this->containers_[this->n_objects_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->__n_objects == 0); }
-	inline const size_type& size(void) const{ return(this->__n_objects); }
+	inline bool empty(void) const{ return(this->n_objects_ == 0); }
+	inline const size_type& size(void) const{ return(this->n_objects_); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->__strings[0]); }
-	inline iterator end(){ return iterator(&this->__strings[this->__n_objects]); }
-	inline const_iterator begin() const{ return const_iterator(&this->__strings[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->__strings[this->__n_objects]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->__strings[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->__strings[this->__n_objects]); }
+	inline iterator begin(){ return iterator(&this->containers_[0]); }
+	inline iterator end(){ return iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator begin() const{ return const_iterator(&this->containers_[0]); }
+	inline const_iterator end() const{ return const_iterator(&this->containers_[this->n_objects_]); }
+	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
+	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
+
+	void makePureVirtual(void) const { };
 
 private:
-    size_type __n_objects;
-    pointer   __strings;
+    pointer   containers_;
 };
 
 }

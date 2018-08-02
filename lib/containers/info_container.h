@@ -29,6 +29,7 @@ private:
 
 public:
     InfoContainer();
+    InfoContainer(const bool is_flag);
     InfoContainer(const data_container_type& container);
     InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
     ~InfoContainer(void);
@@ -130,6 +131,19 @@ InfoContainer<return_type>::InfoContainer(void) :
 	__containers(nullptr)
 {
 
+}
+
+template <class return_type>
+InfoContainer<return_type>::InfoContainer(const bool is_flag) :
+	__containers(static_cast<pointer>(::operator new[](1*sizeof(value_type))))
+{
+	this->n_entries  = 1;
+	this->n_capacity = 1;
+	// Set the primitive container value to 0. This
+	// is required for the yon1_t structures to point
+	// to something that is not simply a nullpointer.
+	// It has no other practical uses.
+	new( &this->__containers[0] ) value_type( 0 );
 }
 
 template <class return_type>

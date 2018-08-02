@@ -113,11 +113,13 @@ struct yon_blk_bv_pair {
 		entry.pattern.clear();
 		U32 l_vector;
 		buffer >> l_vector;
-		entry.pattern.resize(l_vector);
+		//entry.pattern.resize(l_vector);
 		for(U32 i = 0; i < l_vector; ++i){
 			int temp;
 			io::DeserializePrimitive(temp, buffer);
-			entry.pattern[i] = temp;
+			std::cerr<< temp << std::endl;
+			//entry.pattern[i] = temp;
+			entry.pattern.push_back(temp);
 		}
 
 		return(buffer);

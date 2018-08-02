@@ -12,24 +12,24 @@ InfoContainer<std::string>::InfoContainer() :
 InfoContainer<std::string>::InfoContainer(const data_container_type& container) :
 	__containers(nullptr)
 {
-if(container.header.data_header.hasMixedStride())
-	this->__setup(container);
-else
-	this->__setup(container, container.header.data_header.stride);
+	if(container.header.data_header.hasMixedStride())
+		this->__setup(container);
+	else
+		this->__setup(container, container.header.data_header.stride);
 }
 
 InfoContainer<std::string>::InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches) :
 	__containers(nullptr)
 {
-if(data_container.header.data_header.hasMixedStride())
-	this->__setupBalanced(data_container, meta_container, pattern_matches);
-else
-	this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
+	if(data_container.header.data_header.hasMixedStride())
+		this->__setupBalanced(data_container, meta_container, pattern_matches);
+	else
+		this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
 }
 
 InfoContainer<std::string>::~InfoContainer(void){
 for(std::size_t i = 0; i < this->n_entries; ++i)
-	((this->__containers + i)->~basic_string)();
+	((this->__containers + i)->~PrimitiveContainer)();
 
 ::operator delete[](static_cast<void*>(this->__containers));
 }

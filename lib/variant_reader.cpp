@@ -133,6 +133,7 @@ bool VariantReader::nextBlock(){
 	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
+
 	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}

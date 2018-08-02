@@ -15,7 +15,7 @@ template <>
 class InfoContainer<std::string> : public InfoContainerInterface{
 private:
     typedef InfoContainer        self_type;
-    typedef std::string          value_type;
+    typedef PrimitiveContainer<std::string> value_type;
     typedef value_type&          reference;
     typedef const value_type&    const_reference;
     typedef value_type*          pointer;
@@ -91,14 +91,14 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
-    inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ return(stream << this->at(position)); }
-    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{ buffer += this->at(position); return(buffer); }
+    inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{ return(stream << this->at(position).data_); }
+    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{ buffer += this->at(position).data_; return(buffer); }
     inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position) const{
     	if(this->at(position).size() == 0){
     		buffer += "null";
     		return(buffer);
     	}
-    	buffer += '"'; buffer += this->at(position); buffer += '"';
+    	buffer += '"'; buffer += this->at(position).data_; buffer += '"';
     	return(buffer);
     }
 

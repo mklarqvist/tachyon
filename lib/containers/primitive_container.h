@@ -20,11 +20,11 @@ public:
 	virtual ~PrimitiveContainerInterface(){}
 
 	 // Capacity
-	    inline bool empty(void) const{ return(this->n_entries_ == 0); }
-	    inline const size_type& size(void) const{ return(this->n_entries_); }
-	    inline bool isUniform(void) const{ return(this->is_uniform_); }
+	inline bool empty(void) const{ return(this->n_entries_ == 0); }
+	inline const size_type& size(void) const{ return(this->n_entries_); }
+	inline bool isUniform(void) const{ return(this->is_uniform_); }
 
-	    virtual void makePureVirtual(void) const =0;
+	virtual void makePureVirtual(void) const =0;
 
 protected:
 	bool    is_uniform_;
@@ -45,6 +45,7 @@ private:
 
 public:
     PrimitiveContainer();
+    PrimitiveContainer(const return_type value);
     PrimitiveContainer(const container_type& container);
     PrimitiveContainer(const container_type& container, const U32& offset, const U32 n_entries);
     ~PrimitiveContainer(void);
@@ -118,6 +119,37 @@ private:
     pointer __entries;
 };
 
+template <>
+class PrimitiveContainer<std::string> : public PrimitiveContainerInterface{
+public:
+    typedef PrimitiveContainer   self_type;
+    typedef std::string          value_type;
+    typedef value_type&          reference;
+    typedef const value_type&    const_reference;
+    typedef value_type*          pointer;
+    typedef const value_type*    const_pointer;
+    typedef std::ptrdiff_t       difference_type;
+    typedef std::size_t          size_type;
+
+public:
+    PrimitiveContainer(){}
+	PrimitiveContainer(const char* data, const size_t l_data) :
+		PrimitiveContainerInterface(false, l_data),
+		data_(data, l_data)
+    {}
+	~PrimitiveContainer(void){}
+
+	// Element access
+	inline pointer data(void){ return(&this->data_); }
+	inline const_pointer data(void) const{ return(&this->data_); }
+	const bool empty(void) const{ return(this->data_.size() == 0); }
+
+	void makePureVirtual(void) const{}
+
+public:
+	std::string data_;
+};
+
 
 // IMPLEMENTATION -------------------------------------------------------------
 
@@ -127,6 +159,15 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 	__entries(nullptr)
 {
 
+}
+
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const return_type value) :
+	__entries(new return_type[1])
+{
+	this->n_entries_ = 1;
+	this->__entries[0] = value;
 }
 
 template <class return_type>
