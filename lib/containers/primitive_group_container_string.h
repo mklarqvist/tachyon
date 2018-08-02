@@ -82,7 +82,10 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
 
-	void makePureVirtual(void) const { };
+	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const{
+		buffer += this->at(position).data_;
+		return(buffer);
+	}
 
 private:
     pointer   containers_;

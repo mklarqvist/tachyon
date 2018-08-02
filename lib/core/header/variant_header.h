@@ -502,6 +502,9 @@ public:
 		header.extra_fields_.resize(l_helper);
 		for(U32 i = 0; i < header.extra_fields_.size(); ++i) stream >> header.extra_fields_[i];
 
+		header.BuildMaps();
+		header.BuildReverseMaps();
+
 		return stream;
 	}
 
@@ -544,8 +547,6 @@ public:
 		io::DeserializeString(header.fileformat_string_, buffer);
 		io::DeserializeString(header.literals_, buffer);
 
-		std::cerr << header.literals_ << std::endl;
-
 		uint32_t l_helper;
 		io::DeserializePrimitive(l_helper, buffer);
 		header.samples_.resize(l_helper);
@@ -574,6 +575,9 @@ public:
 		io::DeserializePrimitive(l_helper, buffer);
 		header.extra_fields_.resize(l_helper);
 		for(U32 i = 0; i < header.extra_fields_.size(); ++i) buffer >> header.extra_fields_[i];
+
+		header.BuildMaps();
+		header.BuildReverseMaps();
 
 		return buffer;
 	}

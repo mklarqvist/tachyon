@@ -100,8 +100,8 @@ public:
 	                                   const U32 position,
 	                                   const U64 sample) const
 	{
-		utility::to_vcf_string(stream, this->at(position).at(sample).data_);
-		this->at(position).at(sample).data_;
+		//utility::to_vcf_string(stream, this->at(position).at(sample).data_);
+		//this->at(position).at(sample).data_;
 		return(stream);
 	}
 	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }

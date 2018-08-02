@@ -5,6 +5,7 @@
 
 #include "variant_block.h"
 #include "math/summary_statistics.h"
+#include "utility/support_vcf.h"
 
 namespace tachyon{
 namespace containers{
@@ -24,7 +25,7 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline bool isUniform(void) const{ return(this->is_uniform_); }
 
-	virtual void makePureVirtual(void) const =0;
+	virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const =0;
 
 protected:
 	bool    is_uniform_;
@@ -105,8 +106,10 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
 
-    // Silly
-    void makePureVirtual(void) const{}
+    io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const{
+    	utility::to_vcf_string(buffer, this->data(), this->size());
+    	return(buffer);
+    }
 
 private:
     template <class native_primitive>
@@ -144,7 +147,10 @@ public:
 	inline const_pointer data(void) const{ return(&this->data_); }
 	const bool empty(void) const{ return(this->data_.size() == 0); }
 
-	void makePureVirtual(void) const{}
+	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const{
+		buffer += this->data_;
+		return(buffer);
+	}
 
 public:
 	std::string data_;

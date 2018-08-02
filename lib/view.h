@@ -397,9 +397,11 @@ int view(int argc, char** argv){
 
 	if(reader.addIntervals(interval_strings) == false) return(1);
 
-	U64 n_variants = 0;
-	if(settings.custom_output_format) n_variants = reader.outputCustom();
-	else n_variants = reader.outputVCF();
+	reader.OutputVcf();
+
+	//U64 n_variants = 0;
+	//if(settings.custom_output_format) n_variants = reader.outputCustom();
+	//else n_variants = reader.outputVCF();
 
 	//std::cerr << "Blocks: " << n_blocks << std::endl;
 	/*

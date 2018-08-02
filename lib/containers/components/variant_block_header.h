@@ -4,7 +4,6 @@
 #include <fstream>
 #include <bitset>
 
-#include "data_block_bitvector.h"
 #include "data_container_header.h"
 #include "containers/hash_container.h"
 #include "io/basic_buffer.h"

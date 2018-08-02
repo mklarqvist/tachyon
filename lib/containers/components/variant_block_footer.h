@@ -3,7 +3,6 @@
 
 #include <unordered_map>
 
-#include "data_block_bitvector.h"
 #include "data_container_header.h"
 #include "io/basic_buffer.h"
 
@@ -60,16 +59,17 @@ namespace tachyon {
 namespace containers {
 
 struct yon_blk_bv_pair {
-	yon_blk_bv_pair() : bit_vector(nullptr){}
-	~yon_blk_bv_pair(){ delete this->bit_vector; }
+	yon_blk_bv_pair() : l_bytes(0), bit_bytes(nullptr){}
+	~yon_blk_bv_pair(){ delete [] this->bit_bytes; }
 
 	void clear(void){
 		this->pattern.clear();
-		delete this->bit_vector;
+		this->l_bytes = 0;
+		delete [] this->bit_bytes;
 	}
 
 	// Bit access
-	inline bool operator[](const U32 position) const{ return((*this->bit_vector)[position]); }
+	 inline bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
 
 
 	// Given the total number of fields allocate ceil(n_total_fields/8)
@@ -82,9 +82,9 @@ struct yon_blk_bv_pair {
 		BYTE bitvector_width = ceil((float)(n_total_fields+1)/8);
 
 		// Allocate new bit-vectors
-		delete this->bit_vector;
-		this->bit_vector = new DataBlockBitvector();
-		this->bit_vector->allocate(this->pattern.size(), bitvector_width);
+		delete [] this->bit_bytes;
+		this->l_bytes = bitvector_width;
+		this->bit_bytes = new uint8_t[bitvector_width];
 
 		// Cycle over pattern size
 		for(U32 i = 0; i < this->pattern.size(); ++i){
@@ -96,37 +96,47 @@ struct yon_blk_bv_pair {
 			assert(local_key <= n_total_fields);
 
 			// Set bit at local key position
-			this->bit_vector->bit_bytes[local_key/8] |= 1 << (local_key % 8);
+			this->bit_bytes[local_key/8] |= 1 << (local_key % 8);
 		}
 	}
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry){
+		io::SerializePrimitive(entry.l_bytes, buffer);
 		buffer += (U32)entry.pattern.size();
-		for(U32 i = 0; i < entry.pattern.size(); ++i){
+		for(U32 i = 0; i < entry.pattern.size(); ++i)
 			io::SerializePrimitive(entry.pattern[i], buffer);
-		}
+
+		for(U32 i = 0; i < entry.l_bytes; ++i)
+			io::SerializePrimitive(entry.bit_bytes[i], buffer);
+
 
 		return(buffer);
 	}
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry){
 		entry.pattern.clear();
+		io::DeserializePrimitive(entry.l_bytes, buffer);
 		U32 l_vector;
 		buffer >> l_vector;
 		//entry.pattern.resize(l_vector);
 		for(U32 i = 0; i < l_vector; ++i){
 			int temp;
 			io::DeserializePrimitive(temp, buffer);
-			std::cerr<< temp << std::endl;
 			//entry.pattern[i] = temp;
 			entry.pattern.push_back(temp);
 		}
 
+		entry.bit_bytes = new BYTE[entry.l_bytes];
+		for(U32 i = 0; i < entry.l_bytes; ++i)
+			io::DeserializePrimitive(entry.bit_bytes[i], buffer);
+
 		return(buffer);
 	}
 
-	std::vector<int>    pattern;
-	DataBlockBitvector* bit_vector;
+public:
+	std::vector<int> pattern;
+	uint8_t l_bytes;
+	uint8_t* bit_bytes;
 };
 
 // It is possible of getting mapping local indices to global IDX
@@ -137,7 +147,6 @@ struct yon_blk_bv_pair {
 struct VariantBlockFooter {
 public:
 	typedef VariantBlockFooter        self_type;
-	typedef DataBlockBitvector        bit_vector;
 	typedef DataContainerHeader       header_type;
 	typedef std::unordered_map<U32, U32>    map_type;
 	typedef std::unordered_map<U64, U32>    map_pattern_type;

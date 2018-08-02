@@ -17,6 +17,55 @@
 namespace tachyon {
 namespace containers {
 
+// Forward declare.
+class VariantBlockContainer;
+
+// Todo:
+struct yon1_t {
+	yon1_t(void) :
+		is_dirty(false),
+		is_loaded_meta(false),
+		is_loaded_gt(false),
+		id_block(0),
+		meta(nullptr),
+		info(nullptr),
+		fmt(nullptr),
+		info_containers(nullptr),
+		format_containers(nullptr),
+		gt(nullptr),
+		info_ids(nullptr),
+		format_ids(nullptr),
+		filter_ids(nullptr),
+		parent_container(nullptr)
+	{
+
+	}
+	~yon1_t(void){
+		delete [] this->info;
+		delete [] this->fmt;
+		delete [] this->info_containers;
+		delete [] this->format_containers;
+	}
+
+	bool is_dirty; // if data has been modified in the raw buffer but not the containers
+	bool is_loaded_meta;
+	bool is_loaded_gt;
+	uint32_t id_block; // incremental id in the block container
+	core::MetaEntry* meta;
+	PrimitiveContainerInterface** info;
+	PrimitiveGroupContainerInterface** fmt;
+	InfoContainerInterface** info_containers;
+	FormatContainerInterface** format_containers;
+	GenotypeContainerInterface* gt;
+	std::vector<const YonInfo*> info_hdr;
+	std::vector<const YonFormat*> format_hdr;
+	std::vector<const io::VcfFilter*> filter_hdr;
+	std::vector<int>* info_ids;
+	std::vector<int>* format_ids;
+	std::vector<int>* filter_ids;
+	VariantBlockContainer* parent_container;
+};
+
 /**<
  * Decouples the low-level object `VariantBlock` that holds all internal data and
  * strides. This container should preferably be the primary object the end-user
@@ -146,6 +195,105 @@ public:
 		return this->objects_;
 	}
 
+	yon1_t* LazyEvaluate(objects_type& objects){
+		// Lazy evaluation of interleaved data.
+		yon1_t* records = new yon1_t[objects.meta_container->size()];
+
+		// Iterate over the sites described in the meta container.
+		for(U32 i = 0; i < objects.meta_container->size(); ++i){
+			records[i].is_dirty = false;
+			records[i].is_loaded_meta = true;
+			records[i].is_loaded_gt = true;
+			records[i].id_block = i;
+			records[i].meta = &objects.meta_container->at(i);
+
+			if(records[i].is_loaded_gt)
+				records[i].gt = &objects.genotype_container->at(i);
+
+			records[i].info_ids = &this->block_.footer.info_patterns[objects.meta_container->at(i).info_pattern_id].pattern;
+			records[i].info = new PrimitiveContainerInterface*[objects.n_loaded_info];
+			records[i].info_containers = new InfoContainerInterface*[objects.n_loaded_info];
+
+			// Populate Info data.
+			for(U32 j = 0; j < records[i].info_ids->size(); ++j){
+				InfoContainerInterface* info_cnt = objects.info_container_map[this->header_->info_fields_[records[i].info_ids->at(j)].id];
+				records[i].info_containers[j] = info_cnt;
+				records[i].info_hdr.push_back(&this->header_->info_fields_[records[i].info_ids->at(j)]);
+
+				//std::cerr << "INFO " << j << "/" << records[i].info_ids->size() << ": target: " << this->header_->info_fields_[records[i].info_ids->at(j)].id << " container entries = " << info_cnt->size() << std::endl;
+
+				switch(this->header_->info_fields_[records[i].info_ids->at(j)].yon_type){
+				case(YON_VCF_HEADER_INTEGER):
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<S32>*>(info_cnt)->at(i);
+					break;
+				case(YON_VCF_HEADER_FLOAT):
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<float>*>(info_cnt)->at(i);
+					break;
+				case(YON_VCF_HEADER_STRING):
+				case(YON_VCF_HEADER_CHARACTER):
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<std::string>*>(info_cnt)->at(i);
+					break;
+				default:
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<U32>*>(info_cnt)->at(0);
+					break;
+				}
+				//std::cerr << "target entries :" << records[i].info[j]->size() << std::endl;
+			}
+
+			//std::cerr << "start format" << std::endl;
+			records[i].format_ids = &this->block_.footer.format_patterns[objects.meta_container->at(i).format_pattern_id].pattern;
+			records[i].fmt = new PrimitiveGroupContainerInterface*[objects.n_loaded_info];
+			records[i].format_containers = new FormatContainerInterface*[objects.n_loaded_format];
+
+			//std::cerr << "after base format" << std::endl;
+
+			// Populate Format data.
+			for(U32 j = 0; j < records[i].format_ids->size(); ++j){
+				FormatContainerInterface* fmt_cnt = objects.format_container_map[this->header_->format_fields_[records[i].format_ids->at(j)].id];
+				records[i].format_containers[j] = fmt_cnt;
+				records[i].format_hdr.push_back(&this->header_->format_fields_[records[i].format_ids->at(j)]);
+
+
+				//std::cerr << "FORMAT " << j << "/" << records[i].format_ids->size() << ": target: " << this->header_->format_fields_[records[i].format_ids->at(j)].id << " container entries = " << fmt_cnt->size() << std::endl;
+
+				// Todo: if format container is completely empty then skip
+				if(fmt_cnt->size() == 0){
+					records[i].fmt[j] = nullptr;
+					continue;
+				}
+
+				switch(this->header_->format_fields_[records[i].format_ids->at(j)].yon_type){
+				case(YON_VCF_HEADER_INTEGER):
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<S32>*>(fmt_cnt)->at(i);
+					break;
+				case(YON_VCF_HEADER_FLOAT):
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<float>*>(fmt_cnt)->at(i);
+					break;
+				case(YON_VCF_HEADER_STRING):
+				case(YON_VCF_HEADER_CHARACTER):
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<std::string>*>(fmt_cnt)->at(i);
+					break;
+				default:
+					std::cerr << "fmt at default" << std::endl;
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<U32>*>(fmt_cnt)->at(0);
+					break;
+				}
+				//std::cerr << "target entries :" << records[i].fmt[j]->size() << std::endl;
+			}
+
+			// Populate Filter.
+			records[i].filter_ids = &this->block_.footer.filter_patterns[objects.meta_container->at(i).filter_pattern_id].pattern;
+			for(U32 j = 0; j < records[i].filter_ids->size(); ++j){
+				records[i].filter_hdr.push_back(&this->header_->filter_fields_[records[i].filter_ids->at(j)]);
+			}
+
+			records[i].parent_container = this;
+		}
+
+		//std::cerr << "done" << std::endl;
+		return(records);
+	}
+
 private:
 	block_type           block_;
 	hash_container_type  h_tables_format_;
@@ -158,48 +306,6 @@ private:
 	std::vector<int> format_id_loaded;
 
 };
-
-// Todo:
-struct yon1_t {
-	yon1_t(void) :
-		is_dirty(false),
-		is_loaded_meta(false),
-		is_loaded_gt(false),
-		id_block(0),
-		meta(nullptr),
-		info(nullptr),
-		fmt(nullptr),
-		info_containers(nullptr),
-		format_containers(nullptr),
-		info_ids(nullptr),
-		format_ids(nullptr),
-		parent_container(nullptr)
-	{
-
-	}
-	~yon1_t(void){
-		delete [] this->info;
-		delete [] this->fmt;
-		delete [] this->info_containers;
-		delete [] this->format_containers;
-	}
-
-	bool is_dirty;
-	bool is_loaded_meta;
-	bool is_loaded_gt;
-	uint32_t id_block; // incremental id in the block container
-	core::MetaEntry* meta;
-	PrimitiveContainerInterface** info;
-	PrimitiveGroupContainerInterface** fmt;
-	InfoContainerInterface** info_containers;
-	FormatContainerInterface** format_containers;
-	std::vector<int>* info_ids;
-	std::vector<int>* format_ids;
-	VariantBlockContainer* parent_container;
-	std::vector<TACHYON_VARIANT_HEADER_FIELD_TYPE> info_types;
-	std::vector<TACHYON_VARIANT_HEADER_FIELD_TYPE> format_types;
-};
-
 
 
 // IMPLEMENTATION -------------------------------------------------------------

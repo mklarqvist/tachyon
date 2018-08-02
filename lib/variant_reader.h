@@ -201,6 +201,8 @@ public:
 	 */
 	bool seek_to_block(const U32& blockID);
 
+	U64 OutputVcf(void);
+
 	/**<
 	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
 	 * Decides internally what function to invoke.

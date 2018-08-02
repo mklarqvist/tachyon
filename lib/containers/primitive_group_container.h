@@ -16,7 +16,7 @@ public:
 	PrimitiveGroupContainerInterface(const size_type n_objects) : n_objects_(n_objects){ }
 	virtual ~PrimitiveGroupContainerInterface(){ }
 
-	virtual void makePureVirtual(void) const =0;
+	virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const =0;
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_objects_ == 0); }
@@ -99,8 +99,10 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->__containers[this->n_objects_]); }
 
-	// Silly
-	void makePureVirtual(void) const { }
+	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const{
+		utility::to_vcf_string(buffer, this->at(position).data(), this->at(position).size());
+		return(buffer);
+	}
 
 private:
 	template <class actual_primitive_type>

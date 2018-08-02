@@ -175,23 +175,23 @@ bool VariantImporter::BuildVCF(void){
 }
 
 bool VariantImporter::AddRecords(const vcf_container_type& container){
-	meta_type* meta_entries_new = static_cast<meta_type*>(::operator new[](container.sizeWithoutCarryOver() * sizeof(meta_type)));
+	meta_type* meta_entries = static_cast<meta_type*>(::operator new[](container.sizeWithoutCarryOver() * sizeof(meta_type)));
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		// Transmute a bcf record into a meta structure
-		new( meta_entries_new + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
+		new( meta_entries + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
 		// Add the record data
-		if(this->AddRecord(container, i, meta_entries_new[i]) == false)
+		if(this->AddRecord(container, i, meta_entries[i]) == false)
 			return false;
 	}
 
 	// Add genotypes in parallel
-	this->encoder.Encode(container, meta_entries_new, this->block, this->permutator.permutation_array);
+	this->encoder.Encode(container, meta_entries, this->block, this->permutator.permutation_array);
 
 	// Add meta records to the block buffers
-	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries_new[i];
+	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries[i];
 
-	for(std::size_t i = 0; i < container.sizeWithoutCarryOver(); ++i) (meta_entries_new + i)->~MetaEntry();
-	::operator delete[](static_cast<void*>(meta_entries_new));
+	for(std::size_t i = 0; i < container.sizeWithoutCarryOver(); ++i) (meta_entries + i)->~MetaEntry();
+	::operator delete[](static_cast<void*>(meta_entries));
 
 	return true;
 }

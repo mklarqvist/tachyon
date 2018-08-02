@@ -698,6 +698,117 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
+U64 VariantReader::OutputVcf(void){
+	while(this->nextBlock()){
+		objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
+		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);
+
+		// Todo: in cases of non-diploid
+		std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
+		for(U32 i = 0; i < this->global_header.GetNumberSamples(); ++i){
+			genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
+		}
+
+		io::BasicBuffer output_buffer(100000);
+
+		for(U32 i = 0; i < objects.meta_container->size(); ++i){
+			entries[i].gt->getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
+			for(U32 j = 0; j < genotypes_unpermuted.size(); ++j){
+				output_buffer << genotypes_unpermuted[j];
+				output_buffer += ' ';
+			}
+			output_buffer += '\n';
+
+			std::cout.write(output_buffer.data(), output_buffer.size());
+			output_buffer.reset();
+		}
+
+		// temp
+		delete [] entries;
+		continue;
+
+		for(U32 i = 0; i < objects.meta_container->size(); ++i){
+			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
+			output_buffer += '\t';
+
+			// Print Filter.
+			const uint32_t n_filter_avail = entries[i].filter_ids->size();
+			if(n_filter_avail){
+				output_buffer += entries[i].filter_hdr[0]->id;
+				for(U32 j = 1; j < n_filter_avail; ++j){
+					output_buffer += ';';
+					output_buffer += entries[i].filter_hdr[j]->id;
+				}
+			} else {
+				output_buffer += '.';
+			}
+			output_buffer += '\t';
+
+			// Print Info.
+			const uint32_t n_info_avail = entries[i].info_ids->size();
+			if(n_info_avail){
+				if(entries[i].info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
+					output_buffer += entries[i].info_hdr[0]->id;
+				} else {
+					output_buffer += entries[i].info_hdr[0]->id;
+					output_buffer += '=';
+					entries[i].info[0]->to_vcf_string(output_buffer);
+				}
+
+				for(U32 j = 1; j < n_info_avail; ++j){
+					output_buffer += ';';
+					if(entries[i].info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+						output_buffer += entries[i].info_hdr[j]->id;
+					} else {
+						output_buffer += entries[i].info_hdr[j]->id;
+						output_buffer += '=';
+						entries[i].info[j]->to_vcf_string(output_buffer);
+					}
+				}
+			}
+			output_buffer += '\t';
+
+			// Print Format.
+			const uint32_t n_format_avail = entries[i].format_ids->size();
+			if(n_format_avail){
+				output_buffer += entries[i].format_hdr[0]->id;
+				for(U32 j = 1; j < n_format_avail; ++j){
+					output_buffer += ':';
+					output_buffer += entries[i].format_hdr[j]->id;
+				}
+				output_buffer += '\t';
+
+				// Todo: this is currently only valid if GT is available for
+				// this record.
+
+				if(n_format_avail > entries[i].is_loaded_gt){
+					for(U32 s = 0; s < this->global_header.GetNumberSamples(); ++s){
+						entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, s);
+						for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
+							output_buffer += ':';
+							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
+						}
+						output_buffer += '\t';
+					}
+				}
+			}
+
+			output_buffer += '\n';
+
+			if(output_buffer.size() > 65536){
+				std::cout.write(output_buffer.data(), output_buffer.size());
+				output_buffer.reset();
+			}
+		}
+
+		std::cout.write(output_buffer.data(), output_buffer.size());
+		output_buffer.reset();
+		delete [] entries;
+	}
+
+	return 0;
+}
+
 /**<
  * Outputs
  * @return

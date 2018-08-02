@@ -13,11 +13,9 @@ namespace containers{
 
 // Todo: value type should be GT object
 class GenotypeContainerInterface{
-private:
+public:
     typedef GenotypeContainerInterface    self_type;
     typedef std::size_t                   size_type;
-
-protected:
     typedef core::MetaEntry               meta_type;
     typedef core::VariantController       hot_controller_type;
     typedef core::GTObject                gt_object;
