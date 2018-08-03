@@ -22,7 +22,7 @@ public:
 
 	bool Compress(variant_block_type& block, const BYTE general_level = 6, const BYTE float_level = 3);
 	bool Decompress(variant_block_type& block);
-	bool Decompress(container_type& container, algorithm::yon_gt_ppa& gt_ppa);
+	bool Decompress(container_type& container, yon_gt_ppa& gt_ppa);
 
 	/**<
 	 * Decompress an abstract data container

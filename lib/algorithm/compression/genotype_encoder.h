@@ -9,7 +9,7 @@
 #include "core/genotype_summary.h"
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
-
+#include "core/genotypes.h"
 #include "io/htslib_integration.h"
 #include "algorithm/permutation/radix_sort_gt.h"
 
@@ -160,7 +160,7 @@ public:
 };
 
 class GenotypeEncoder {
-private:
+public:
 	typedef GenotypeEncoder              self_type;
 	typedef io::BasicBuffer              buffer_type;
 	typedef core::MetaEntry              meta_type;
@@ -193,30 +193,30 @@ public:
 	inline void SetSamples(const U64 samples){ this->n_samples = samples; }
 	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
 
-	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const algorithm::yon_gt_ppa& permutation_array) const;
-	bool EncodeParallel(const containers::VcfContainer& container, meta_type* meta_entries, GenotypeEncoderSlaveHelper& slave_helper, const algorithm::yon_gt_ppa& permutation_array) const;
+	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const yon_gt_ppa& permutation_array) const;
+	bool EncodeParallel(const containers::VcfContainer& container, meta_type* meta_entries, GenotypeEncoderSlaveHelper& slave_helper, const yon_gt_ppa& permutation_array) const;
 
-	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	yon_gt_assess AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
-	yon_gt_assess AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const;
+	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
+	yon_gt_assess AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
 
 	template <class YON_RLE_TYPE>
 	uint64_t EncodeDiploidBiallelic(const bcf1_t* entry,
                                     const io::VcfGenotypeSummary& gt_summary,
-	                                const algorithm::yon_gt_ppa& permutation_array,
+	                                const yon_gt_ppa& permutation_array,
                                     container_type& dst) const;
 
 	template <class YON_RLE_TYPE>
 	uint64_t EncodeDiploidMultiAllelic(const bcf1_t* entry,
 	                                   const io::VcfGenotypeSummary& gt_summary,
-	                                   const algorithm::yon_gt_ppa& permutation_array,
+	                                   const yon_gt_ppa& permutation_array,
 	                                   container_type& dst) const;
 
 	template <class YON_RLE_TYPE>
 	uint64_t EncodeMultiploid(const bcf1_t* entry,
 	                          const io::VcfGenotypeSummary& gt_summary,
-	                          const algorithm::yon_gt_ppa& permutation_array,
+	                          const yon_gt_ppa& permutation_array,
 	                          container_type& dst) const;
 
 private:
@@ -237,7 +237,7 @@ private:
 template <class YON_RLE_TYPE>
 uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
                                                  const io::VcfGenotypeSummary& gt_summary,
-                                                 const algorithm::yon_gt_ppa& permutation_array,
+                                                 const yon_gt_ppa& permutation_array,
                                                  container_type& dst) const
 {
 	assert(entry->d.fmt[0].n == 2);
@@ -304,7 +304,7 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
 template <class YON_RLE_TYPE>
 uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
                                                     const io::VcfGenotypeSummary& gt_summary,
-                                                    const algorithm::yon_gt_ppa& permutation_array,
+                                                    const yon_gt_ppa& permutation_array,
                                                     container_type& dst) const
 {
 	assert(entry->d.fmt[0].n == 2);
@@ -393,7 +393,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 template <class YON_RLE_TYPE>
 uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
                                            const io::VcfGenotypeSummary& gt_summary,
-                                           const algorithm::yon_gt_ppa& permutation_array,
+                                           const yon_gt_ppa& permutation_array,
                                            container_type& dst) const
 {
 	// This method is currently only valid if the genotypic

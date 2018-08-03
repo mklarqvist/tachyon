@@ -12,6 +12,7 @@
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
 #include "algorithm/permutation/radix_sort_gt.h"
+#include "core/genotypes.h"
 
 namespace tachyon{
 namespace containers{
@@ -345,7 +346,7 @@ public:
 	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
-	algorithm::yon_gt_ppa* gt_ppa;
+	yon_gt_ppa* gt_ppa;
 
 	// Utility
 	U64 end_block_;

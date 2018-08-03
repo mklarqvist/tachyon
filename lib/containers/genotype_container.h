@@ -14,6 +14,7 @@ namespace containers{
 template <class T> class GenotypeContainerDiploidRLE;
 template <class T> class GenotypeContainerDiploidSimple;
 
+
 class GenotypeContainer{
 private:
     typedef GenotypeContainer          self_type;

@@ -5,8 +5,10 @@
 #include "core/ts_tv_object.h"
 #include "math/square_matrix.h"
 #include "algorithm/permutation/permutation_manager.h"
+#include "core/genotypes.h"
 #include "core/genotype_object.h"
 #include "core/genotype_summary.h"
+#include "algorithm/permutation/radix_sort_gt.h"
 
 namespace tachyon{
 namespace containers{
@@ -60,7 +62,7 @@ public:
 
     GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
-		__data(new char[n_bytes]),
+		__data(new uint8_t[n_bytes]),
 		__meta(meta)
     {
     	memcpy(this->__data, data, n_bytes);
@@ -84,6 +86,8 @@ public:
     virtual gt_summary getSummary(void) const =0;
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
 
+    virtual yon_gt* GetObjects(const uint32_t n_samples) =0;
+    virtual yon_gt* GetObjects(yon_gt_ppa& ppa) =0;
 
     virtual std::vector<gt_object> getLiteralObjects(void) const =0;
     virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
@@ -126,7 +130,7 @@ protected:
 
 protected:
     size_type        n_entries;
-    char*            __data;
+    uint8_t*            __data;
     const meta_type  __meta;
 };
 

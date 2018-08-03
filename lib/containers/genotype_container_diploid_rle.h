@@ -48,6 +48,36 @@ public:
     gt_summary getSummary(void) const;
     gt_summary& getSummary(gt_summary& gt_summary_object) const;
     void getTsTv(std::vector<ts_tv_object_type>& objects) const;
+
+    yon_gt* GetObjects(const uint32_t n_samples){
+    	yon_gt* x = new yon_gt;
+    	x->shift = this->__meta.IsAnyGTMissing()    ? 2 : 1;
+		x->add   = this->__meta.IsGTMixedPhasing()  ? 1 : 0;
+		x->global_phase = this->__meta.GetControllerPhase();
+		x->data = this->__data;
+		x->n_i = this->n_entries;
+		x->method = 1;
+		x->p = sizeof(T);
+		x->m = 2;
+		x->n_s = n_samples;
+
+		return(x);
+    }
+
+    yon_gt* GetObjects(yon_gt_ppa& ppa){
+    	yon_gt* x = new yon_gt;
+		x->shift = this->__meta.IsAnyGTMissing()    ? 2 : 1;
+		x->add   = this->__meta.IsGTMixedPhasing()  ? 1 : 0;
+		x->global_phase = this->__meta.GetControllerPhase();
+		x->data = this->__data;
+		x->m = 2;
+		x->p = sizeof(T);
+		x->n_i = this->n_entries;
+		x->method = 1;
+		x->n_s = ppa.n_samples;
+		x->ppa = &ppa;
+		return(x);
+    }
 };
 
 

@@ -1,3 +1,4 @@
+#include "core/genotypes.h"
 #include "compression_manager.h"
 
 namespace tachyon{
@@ -88,7 +89,7 @@ bool CompressionManager::Decompress(variant_block_type& block){
 	return true;
 }
 
-bool CompressionManager::Decompress(container_type& container, algorithm::yon_gt_ppa& gt_ppa){
+bool CompressionManager::Decompress(container_type& container, yon_gt_ppa& gt_ppa){
 	return(this->zstd_codec.Decompress(container, gt_ppa));
 }
 

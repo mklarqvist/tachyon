@@ -56,6 +56,14 @@ public:
 	gt_summary getSummary(void) const;
 	gt_summary& getSummary(gt_summary& gt_summary_object) const;
     void getTsTv(std::vector<ts_tv_object_type>& objects) const;
+
+    yon_gt* GetObjects(const uint32_t n_samples){
+		return(nullptr);
+	}
+
+	yon_gt* GetObjects(yon_gt_ppa& ppa){
+		return(nullptr);
+	}
 };
 
 

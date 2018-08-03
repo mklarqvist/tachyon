@@ -18,7 +18,7 @@ GenotypeEncoder::~GenotypeEncoder(){}
 bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
                              meta_type* meta_entries,
                              block_type& block,
-                             const algorithm::yon_gt_ppa& permutation_array) const
+                             const yon_gt_ppa& permutation_array) const
 {
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		io::VcfGenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
@@ -92,7 +92,10 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 	return true;
 }
 
-yon_gt_assess GenotypeEncoder::Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+yon_gt_assess GenotypeEncoder::Assess(const bcf1_t* entry,
+                                      const io::VcfGenotypeSummary& gt_summary,
+                                      const yon_gt_ppa& permutation_array) const
+{
 	// Special case of diploid record.
 	yon_gt_assess assessed;
 	if(entry->d.fmt[0].n == 2){
@@ -108,7 +111,10 @@ yon_gt_assess GenotypeEncoder::Assess(const bcf1_t* entry, const io::VcfGenotype
 	return assessed;
 }
 
-yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry,
+                                                      const io::VcfGenotypeSummary& gt_summary,
+                                                      const yon_gt_ppa& permutation_array) const
+{
 	assert(entry->d.fmt[0].n == 2);
 	assert(entry->n_allele == 2);
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
@@ -209,7 +215,10 @@ yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry, const
 	return sum;
 }
 
-yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
+                                                         const io::VcfGenotypeSummary& gt_summary,
+                                                         const yon_gt_ppa& permutation_array) const
+{
 	assert(entry->d.fmt[0].n == 2);
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
@@ -369,7 +378,10 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry, co
 	return sum;
 }
 
-yon_gt_assess GenotypeEncoder::AssessMultiploid(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const algorithm::yon_gt_ppa& permutation_array) const{
+yon_gt_assess GenotypeEncoder::AssessMultiploid(const bcf1_t* entry,
+                                                const io::VcfGenotypeSummary& gt_summary,
+                                                const yon_gt_ppa& permutation_array) const
+{
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
