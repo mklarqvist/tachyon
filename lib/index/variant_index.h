@@ -9,7 +9,7 @@
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
 #include "core/header/variant_header.h"
-#include "io/htslib_integration.h"
+#include "io/vcf_utils.h"
 
 namespace tachyon{
 namespace index{

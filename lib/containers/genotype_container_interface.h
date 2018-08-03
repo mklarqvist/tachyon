@@ -4,11 +4,9 @@
 #include "data_container.h"
 #include "core/ts_tv_object.h"
 #include "math/square_matrix.h"
-#include "algorithm/permutation/permutation_manager.h"
 #include "core/genotypes.h"
 #include "core/genotype_object.h"
 #include "core/genotype_summary.h"
-#include "algorithm/permutation/radix_sort_gt.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,8 +17,8 @@ struct yon_gt_rle_obj {
 		object.n_objects  = YON_GT_RLE_LENGTH(value, shift, 1);
 		object.alleles[0].allele = YON_GT_RLE_ALLELE_A(value, shift, 1);
 		object.alleles[1].allele = YON_GT_RLE_ALLELE_B(value, shift, 1);
-		object.alleles[0].allele = core::YON_GT_RLE_RECODE[object.alleles[0].allele];
-		object.alleles[1].allele = core::YON_GT_RLE_RECODE[object.alleles[1].allele];
+		object.alleles[0].allele = YON_GT_RLE_RECODE[object.alleles[0].allele];
+		object.alleles[1].allele = YON_GT_RLE_RECODE[object.alleles[1].allele];
 		object.alleles[0].phase = (value & 1);
 		object.alleles[0].phase = (value & 1);
 		return(object);
@@ -30,8 +28,8 @@ struct yon_gt_rle_obj {
 		object.n_objects  = YON_GT_RLE_LENGTH(value, shift, 0);
 		object.alleles[0].allele = YON_GT_RLE_ALLELE_A(value, shift, 0);
 		object.alleles[1].allele = YON_GT_RLE_ALLELE_B(value, shift, 0);
-		object.alleles[0].allele = core::YON_GT_RLE_RECODE[object.alleles[0].allele];
-		object.alleles[1].allele = core::YON_GT_RLE_RECODE[object.alleles[1].allele];
+		object.alleles[0].allele = YON_GT_RLE_RECODE[object.alleles[0].allele];
+		object.alleles[1].allele = YON_GT_RLE_RECODE[object.alleles[1].allele];
 		object.alleles[0].phase = phase;
 		object.alleles[0].phase = phase;
 		return(object);
@@ -48,7 +46,6 @@ public:
     typedef core::GTObject                gt_object;
     typedef GenotypeSummary               gt_summary;
     typedef math::SquareMatrix<double>    square_matrix_type;
-    typedef algorithm::PermutationManager permutation_type;
     typedef core::TsTvObject              ts_tv_object_type;
 
     // Function pointers
@@ -89,12 +86,12 @@ public:
     virtual yon_gt* GetObjects(const uint32_t n_samples) =0;
     virtual yon_gt* GetObjects(yon_gt_ppa& ppa) =0;
 
-    virtual std::vector<gt_object> getLiteralObjects(void) const =0;
-    virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
-    virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
-	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const =0;
-	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const =0;
-	virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
+    //virtual std::vector<gt_object> getLiteralObjects(void) const =0;
+    //virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
+    //virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
+	//virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const =0;
+	//virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const =0;
+	//virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
     virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 
     // Capacity

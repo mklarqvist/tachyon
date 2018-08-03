@@ -1,7 +1,7 @@
 #ifndef COMPRESSIONCONTAINER_H_
 #define COMPRESSIONCONTAINER_H_
 
-#include "algorithm/permutation/radix_sort_gt.h"
+#include "core/genotypes.h"
 #include "containers/data_container.h"
 
 namespace tachyon{

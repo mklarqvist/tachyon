@@ -1,65 +1,30 @@
-#include "radix_sort_gt.h"
-
-#include <bitset>
+#include "genotype_sorter.h"
 
 namespace tachyon {
 namespace algorithm {
 
-RadixSortGT::RadixSortGT() :
+GenotypeSorter::GenotypeSorter() :
 	n_samples(0),
-	position(0),
-	GT_array(nullptr),
-	bins(new U32*[9]),
-	manager(nullptr),
 	gt_pattern(nullptr)
 {
-	for(U32 i = 0; i < 9; ++i) bins[i] = nullptr;
-	memset(&p_i, 0, sizeof(U32)*9);
 	memset(this->gt_remap, 0, 256*sizeof(uint8_t));
 }
 
-RadixSortGT::~RadixSortGT(){
-	delete [] this->GT_array;
-	for(U32 i = 0; i < 9; ++i) delete [] this->bins[i];
-	delete [] this->bins;
-
+GenotypeSorter::~GenotypeSorter(){
 	delete [] this->gt_pattern;
 }
 
-void RadixSortGT::SetSamples(const U64 n_samples){
+void GenotypeSorter::SetSamples(const U64 n_samples){
 	this->n_samples = n_samples;
-
-	/*
-	// Delete previous
-	delete [] this->GT_array;
-
-	// Set new
-	this->GT_array = new BYTE[this->n_samples];
-
-	// Reset
-	for(U32 i = 0; i < 9; ++i){
-		this->bins[i] = new U32[n_samples];
-		memset(this->bins[i], 0, sizeof(U32)*n_samples);
-	}
-	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
-
-	//this->manager->setSamples(n_samples);
-	this->manager->setSamples(n_samples*2);
-	*/
-
-	//
 	this->permutation_array.Allocate(n_samples);
 	this->gt_pattern = new yon_radix_gt[n_samples];
 }
 
-void RadixSortGT::reset(void){
-	this->position = 0;
-	memset(this->GT_array, 0, sizeof(BYTE)*n_samples);
-	memset(&p_i, 0, sizeof(U32)*9);
-	this->manager->reset();
+void GenotypeSorter::reset(void){
+	this->permutation_array.reset();
 }
 
-bool RadixSortGT::Build(const vcf_container_type& vcf_container){
+bool GenotypeSorter::Build(const vcf_container_type& vcf_container){
 	if(this->GetNumberSamples() == 0)
 		return true;
 
@@ -82,8 +47,6 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 	// case as described above.
 	const uint32_t largest_n_alleles_binary = (((largest_n_alleles + 1) << 1) + 1);
 	const uint8_t  shift_size = ceil(log2(largest_n_alleles_binary));
-	//std::cerr << "Largest ploidy: " << largest_ploidy << " largest alleles " << largest_n_alleles << "(" << largest_n_alleles_binary << ")" << std::endl;
-	//std::cerr << "Max: " << (U32)shift_size << " bits -> " << floor(64 / shift_size) << " ploidy limit" << std::endl;
 	assert(shift_size * largest_ploidy <= 64);
 
 	// Ascertain that enough memory has been allocated.
@@ -170,8 +133,6 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 			sort_helper.push_back(std::pair<uint64_t,uint32_t>(bin_used_packed_integer[k], k));
 
 		std::sort(sort_helper.begin(), sort_helper.end());
-		//for(U32 k = 0; k < bin_used.size(); ++k)
-		//	std::cerr << sort_helper[k].first << ": " << sort_helper[k].second << std::endl;
 
 		U32 n_sample_c = 0;
 		for(U32 s = 0; s < sort_helper.size(); ++s){
@@ -181,27 +142,18 @@ bool RadixSortGT::Build(const vcf_container_type& vcf_container){
 		}
 		assert(n_sample_c == this->GetNumberSamples());
 
-		//std::cerr << "Patterns: " << bin_used_map.size() << " unique: " << bin_used.size() << std::endl;
-		//for(U32 i = 0; i < bin_used.size(); ++i){
-		//	std::cerr << "Bin " << i << ": n_entries = " << bin_used[i].size() << " packed " << bin_used_packed_integer[i] << " -> " << *bin_used[i].front() << std::endl;
-		//}
-
 		bin_used.clear();
 		bin_used_map.clear();
 		bin_used_packed_integer.clear();
 		sort_helper.clear();
 	}
 
-	//for(U32 i = 0; i < this->GetNumberSamples(); ++i)
-	//	std::cerr << "," << permutation_array[i];
-	//std::cerr << std::endl;
-
 	//this->Debug(std::cout, vcf_container, permutation_array);
 
 	return true;
 }
 
-void RadixSortGT::Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa){
+void GenotypeSorter::Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa){
 	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
 		const bcf1_t* bcf = vcf_container[i];
 		const uint8_t* gt = bcf->d.fmt[0].p;

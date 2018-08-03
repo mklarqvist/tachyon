@@ -11,7 +11,6 @@
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
-#include "algorithm/permutation/radix_sort_gt.h"
 #include "core/genotypes.h"
 
 namespace tachyon{

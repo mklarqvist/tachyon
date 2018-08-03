@@ -5,21 +5,19 @@
 
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
-#include "algorithm/permutation/radix_sort_gt.h"
 #include "algorithm/timer.h"
 #include "containers/variant_block.h"
 #include "core/variant_import_writer.h"
 #include "core/variant_importer_container_stats.h"
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
-#include "io/htslib_integration.h"
+#include "io/vcf_utils.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
-
-
 #include "algorithm/digest/variant_digest_manager.h"
 #include "core/footer/footer.h"
 #include "algorithm/encryption/encryption_decorator.h"
+#include "algorithm/permutation/genotype_sorter.h"
 
 namespace tachyon {
 
@@ -86,8 +84,7 @@ private:
 	typedef containers::VcfContainer        vcf_container_type;
 
 	typedef algorithm::CompressionManager   compression_manager_type;
-	typedef algorithm::RadixSortGT          radix_sorter_type;
-	typedef algorithm::PermutationManager   permutation_type;
+	typedef algorithm::GenotypeSorter       radix_sorter_type;
 	typedef algorithm::GenotypeEncoder      gt_encoder_type;
 	typedef containers::DataContainer       stream_container;
 	typedef containers::VariantBlock        block_type;

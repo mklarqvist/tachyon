@@ -46,12 +46,12 @@ public:
     // GT-specific
 	U32 getSum(void) const;
 	square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const;
-	std::vector<gt_object> getLiteralObjects(void) const;
-	std::vector<gt_object> getObjects(const U64& n_samples) const;
-	std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
-    void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
-	void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
-	void getLiteralObjects(std::vector<gt_object>& objects) const;
+	//std::vector<gt_object> getLiteralObjects(void) const;
+	//std::vector<gt_object> getObjects(const U64& n_samples) const;
+	//std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    //void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
+	//void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
+	//void getLiteralObjects(std::vector<gt_object>& objects) const;
 	gt_summary& updateSummary(gt_summary& gt_summary_object) const;
 	gt_summary getSummary(void) const;
 	gt_summary& getSummary(gt_summary& gt_summary_object) const;
@@ -153,6 +153,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidSimple<return_type>::compare
 	return(square_matrix);
 }
 
+/*
 template <class return_type>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidSimple<return_type>::getLiteralObjects(void) const{
 	std::vector<gt_object> ret(this->n_entries);
@@ -307,6 +308,7 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 		}
 	}
 }
+*/
 
 template <class return_type>
 GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::updateSummary(gt_summary& gt_summary_object) const{

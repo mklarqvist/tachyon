@@ -37,12 +37,12 @@ public:
     // GT-specific
     U32 getSum(void) const;
     square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const;
-    std::vector<gt_object> getLiteralObjects(void) const;
-    std::vector<gt_object> getObjects(const U64& n_samples) const;
-    std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
-    void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
-	void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
-	void getLiteralObjects(std::vector<gt_object>& objects) const;
+    //std::vector<gt_object> getLiteralObjects(void) const;
+    //std::vector<gt_object> getObjects(const U64& n_samples) const;
+    //std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    //void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
+	//void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
+	//void getLiteralObjects(std::vector<gt_object>& objects) const;
 
     gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
@@ -60,6 +60,7 @@ public:
 		x->p = sizeof(T);
 		x->m = 2;
 		x->n_s = n_samples;
+		x->n_allele = this->__meta.n_alleles;
 
 		return(x);
     }
@@ -76,6 +77,8 @@ public:
 		x->method = 1;
 		x->n_s = ppa.n_samples;
 		x->ppa = &ppa;
+		x->n_allele = this->__meta.n_alleles;
+
 		return(x);
     }
 };
@@ -168,6 +171,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidRLE<T>::comparePairwise(squa
 	return(square_matrix);
 }
 
+/*
 template <class T>
 std::vector<tachyon::core::GTObject> GenotypeContainerDiploidRLE<T>::getLiteralObjects(void) const{
 	std::vector<tachyon::core::GTObject> ret(this->n_entries);
@@ -343,6 +347,7 @@ void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
 		}
 	}
 }
+*/
 
 template <class T>
 GenotypeSummary& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{

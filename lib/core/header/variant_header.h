@@ -7,7 +7,7 @@
 #include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
 
-#include "io/htslib_integration.h"
+#include "io/vcf_utils.h"
 #include <unordered_map>
 
 namespace tachyon{

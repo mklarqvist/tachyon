@@ -10,8 +10,7 @@
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
 #include "core/genotypes.h"
-#include "io/htslib_integration.h"
-#include "algorithm/permutation/radix_sort_gt.h"
+#include "io/vcf_utils.h"
 
 namespace tachyon{
 namespace algorithm{

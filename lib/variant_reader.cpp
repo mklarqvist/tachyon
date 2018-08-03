@@ -732,6 +732,45 @@ U64 VariantReader::OutputVcf(void){
 		*/
 
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
+			yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.getBlock().gt_ppa);
+			if(gt_records == nullptr) continue; // not all methods implemented yet.
+			std::cerr << "Site: " << objects.meta_container->at(i).position+1 << " -> " << gt_records->n_i << "," << gt_records->n_s << "," << (uint32_t)gt_records->m << "," << (uint32_t)gt_records->p << std::endl;
+			if(gt_records->n_i < 200) continue;
+
+			gt_records->EvaluateRecordsM1();
+			for(U32 j = 0; j < gt_records->n_i; ++j){
+				std::cerr << gt_records->rcds[j].length << ":" << (gt_records->rcds[j].allele[0] >> 1) << "," << (gt_records->rcds[j].allele[1] >> 1) << " ";
+			}
+			std::cerr << std::endl;
+			gt_records->EvaluateBcf();
+			std::cerr << "Permuted bcf" << std::endl;
+			uint64_t n_bcf_cum = 0;
+			for(U32 j = 0; j < gt_records->n_s; ++j){
+				std::cerr << (gt_records->d_bcf[n_bcf_cum++] >> 1);
+				for(U32 k = 1; k < gt_records->m; ++k, ++n_bcf_cum){
+					std::cerr << '|' << (gt_records->d_bcf[n_bcf_cum] >> 1);
+				}
+				std::cerr << " ";
+			}
+			std::cerr << std::endl;
+
+			gt_records->EvaluatePpaFromBcf(gt_records->d_bcf);
+			std::cerr << "Unpermuted bcf" << std::endl;
+
+			n_bcf_cum = 0;
+			for(U32 j = 0; j < gt_records->n_s; ++j){
+				std::cerr << (gt_records->d_ppa[n_bcf_cum++] >> 1);
+				for(U32 k = 1; k < gt_records->m; ++k, ++n_bcf_cum){
+					std::cerr << '|' << (gt_records->d_ppa[n_bcf_cum] >> 1);
+				}
+				std::cerr << " ";
+			}
+			std::cerr << std::endl;
+
+			delete gt_records;
+		}
+
+		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
 			output_buffer += '\t';
 
