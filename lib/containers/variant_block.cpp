@@ -214,11 +214,8 @@ bool VariantBlock::write(std::ostream& stream,
 	const U64 start_pos = stream.tellp();
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
 
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		std::cerr << "writing ppa: " << this->base_containers[YON_BLK_PPA].GetSizeCompressed() << "," << this->base_containers[YON_BLK_PPA].header.data_header.cLength << std::endl;
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (U64)stream.tellp() - start_pos);
-
-	}
 
 	// Start at offset 1 because offset 0 is encoding for the genotype
 	// permutation array that is handled differently.

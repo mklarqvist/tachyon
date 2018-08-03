@@ -41,6 +41,7 @@ struct yon_gt_ppa {
 		ppa.ordering = new uint32_t[ppa.n_samples];
 		for(U32 i = 0; i < ppa.n_samples; ++i)
 			io::DeserializePrimitive(ppa.ordering[i], buffer);
+
 		return(buffer);
 	}
 
@@ -48,6 +49,7 @@ struct yon_gt_ppa {
 		io::SerializePrimitive(ppa.n_samples, buffer);
 		for(U32 i = 0; i < ppa.n_samples; ++i)
 			io::SerializePrimitive(ppa.ordering[i], buffer);
+
 		return(buffer);
 	}
 

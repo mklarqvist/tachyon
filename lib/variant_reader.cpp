@@ -156,6 +156,9 @@ bool VariantReader::nextBlock(){
 			return false;
 		}
 	}
+	//assert(this->variant_container.getBlock().gt_ppa != nullptr);
+	this->variant_container.getBlock().gt_ppa = new algorithm::yon_gt_ppa;
+	this->variant_container.getBlock().gt_ppa->n_samples = this->global_header.GetNumberSamples();
 
 	// Internally decompress available data
 	if(!this->codec_manager.Decompress(this->variant_container.getBlock())){

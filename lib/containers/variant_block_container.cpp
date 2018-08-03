@@ -17,7 +17,6 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 		if(this->block_.header.controller.hasGTPermuted && this->block_.header.controller.hasGT){
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.offsets[YON_BLK_PPA].data_header.offset);
 			this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_PPA], this->block_.base_containers[YON_BLK_PPA]);
-			std::cerr << "reading ppa: " << this->block_.base_containers[YON_BLK_PPA].header.data_header.cLength << "," << this->block_.footer.offsets[YON_BLK_PPA].data_header.cLength << std::endl;
 		}
 	}
 
