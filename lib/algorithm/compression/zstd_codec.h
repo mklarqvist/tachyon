@@ -24,10 +24,10 @@ public:
 
 	bool Compress(container_type& container);
 	bool CompressStrides(container_type& container);
-	bool Compress(permutation_type& manager);
+	bool Compress(container_type& container, permutation_type& manager);
 	bool Decompress(container_type& container);
 	bool DecompressStrides(container_type& container);
-	bool Decompress(permutation_type& manager);
+	bool Decompress(container_type& container, permutation_type& manager);
 
 	bool Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const int compression_level);
 	bool Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst);

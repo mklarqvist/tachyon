@@ -9,7 +9,12 @@
 namespace tachyon {
 namespace algorithm {
 
-struct yon_gt_ppa{
+// Basic structure that maintains the permutation
+// order of the samples in relation to the global header.
+// This object is required if you want to use individual
+// genotypes in the ORIGINAL order. If this is not required
+// in your use-case then this structure has no value.
+struct yon_gt_ppa {
 	yon_gt_ppa(void) : n_samples(0), ordering(nullptr){}
 	yon_gt_ppa(const uint32_t n_samples) : n_samples(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
 	~yon_gt_ppa(void){ delete [] this->ordering; }
@@ -29,6 +34,21 @@ struct yon_gt_ppa{
 	void reset(void){
 		for(U32 i = 0; i < this->n_samples; ++i)
 			this->ordering[i] = i;
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
+		io::DeserializePrimitive(ppa.n_samples, buffer);
+		ppa.ordering = new uint32_t[ppa.n_samples];
+		for(U32 i = 0; i < ppa.n_samples; ++i)
+			io::DeserializePrimitive(ppa.ordering[i], buffer);
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
+		io::SerializePrimitive(ppa.n_samples, buffer);
+		for(U32 i = 0; i < ppa.n_samples; ++i)
+			io::SerializePrimitive(ppa.ordering[i], buffer);
+		return(buffer);
 	}
 
 	uint32_t  n_samples;

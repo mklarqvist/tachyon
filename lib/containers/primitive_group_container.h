@@ -125,8 +125,8 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 	__containers(static_cast<pointer>(::operator new[](this->n_objects_*sizeof(value_type))))
 {
 
-	if(container.header.data_header.isSigned()){
-		switch(container.header.data_header.getPrimitiveType()){
+	if(container.header.data_header.IsSigned()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset, n_objects, strides_each));  break;
 		case(YON_TYPE_16B):    (this->__setup<S16>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_32B):    (this->__setup<S32>(container, offset, n_objects, strides_each));    break;
@@ -137,10 +137,10 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		case(YON_TYPE_CHAR):
 		case(YON_TYPE_STRUCT):
 		case(YON_TYPE_UNKNOWN):
-		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		default: std::cerr << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl; return;
 		}
 	} else {
-		switch(container.header.data_header.getPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset, n_objects, strides_each));   break;
 		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset, n_objects, strides_each));    break;
@@ -151,7 +151,7 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		case(YON_TYPE_CHAR):
 		case(YON_TYPE_STRUCT):
 		case(YON_TYPE_UNKNOWN):
-		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		default: std::cerr << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl; return;
 		}
 	}
 }

@@ -367,9 +367,9 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 				// Begin print FORMAT data for each sample
 				if(this->variant_container.getBlock().header.controller.hasGT){
 					if((this->block_settings.display_static & YON_BLK_BV_PPA) && this->variant_container.getBlock().header.controller.hasGTPermuted){
-						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
+						//objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
 					} else {
-						objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
+						//objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
 					}
 
 					buffer << genotypes_unpermuted[0];
@@ -704,12 +704,12 @@ U64 VariantReader::OutputVcf(void){
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);
 
 		// Todo: in cases of non-diploid
+		io::BasicBuffer output_buffer(100000);
+		/*
 		std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
 		for(U32 i = 0; i < this->global_header.GetNumberSamples(); ++i){
 			genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
 		}
-
-		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			entries[i].gt->getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
@@ -726,6 +726,7 @@ U64 VariantReader::OutputVcf(void){
 		// temp
 		delete [] entries;
 		continue;
+		*/
 
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);

@@ -7,8 +7,10 @@ bool CompressionManager::Compress(variant_block_type& block, const BYTE general_
 	zstd_codec.SetCompressionLevel(general_level);
 	zstd_codec.SetCompressionLevelData(float_level);
 
-	if(block.header.controller.hasGTPermuted)
-		zstd_codec.Compress(block.ppa_manager);
+	if(block.header.controller.hasGTPermuted){
+		zstd_codec.SetCompressionLevel(22);
+		zstd_codec.Compress(block.base_containers[YON_BLK_PPA], *block.gt_ppa);
+	}
 
 	zstd_codec.SetCompressionLevel(general_level);
 
@@ -49,8 +51,10 @@ bool CompressionManager::Compress(variant_block_type& block, const BYTE general_
 }
 
 bool CompressionManager::Decompress(variant_block_type& block){
-	if(block.ppa_manager.PPA.size()){
-		if(!this->Decompress(block.ppa_manager)){
+	if(block.base_containers[YON_BLK_PPA].GetSizeCompressed()){
+		delete block.gt_ppa;
+		block.gt_ppa = new algorithm::yon_gt_ppa;
+		if(!this->Decompress(block.base_containers[YON_BLK_PPA], *block.gt_ppa)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT permutation information!" << std::endl;
 			return false;
 		}
@@ -86,8 +90,8 @@ bool CompressionManager::Decompress(variant_block_type& block){
 	return true;
 }
 
-bool CompressionManager::Decompress(algorithm::PermutationManager& permutation_manager){
-	return(this->zstd_codec.Decompress(permutation_manager));
+bool CompressionManager::Decompress(container_type& container, algorithm::yon_gt_ppa& gt_ppa){
+	return(this->zstd_codec.Decompress(container, gt_ppa));
 }
 
 bool CompressionManager::Decompress(container_type& container){

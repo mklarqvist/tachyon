@@ -10,6 +10,7 @@ VariantBlock::VariantBlock() :
 	base_containers(new container_type[YON_BLK_N_STATIC]),
 	info_containers(new container_type[200]),
 	format_containers(new container_type[200]),
+	gt_ppa(nullptr),
 	end_block_(0),
 	start_compressed_data_(0),
 	end_compressed_data_(0)
@@ -24,6 +25,7 @@ VariantBlock::~VariantBlock(){
 	delete [] this->base_containers;
 	delete [] this->info_containers;
 	delete [] this->format_containers;
+	delete this->gt_ppa;
 }
 
 void VariantBlock::clear(void){
@@ -49,7 +51,8 @@ void VariantBlock::clear(void){
 	this->start_compressed_data_ = 0;
 	this->end_compressed_data_   = 0;
 
-	this->ppa_manager.reset();
+	if(this->gt_ppa != nullptr)
+		this->gt_ppa->reset();
 }
 
 void VariantBlock::resize(const U32 s){
@@ -138,9 +141,8 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 
 bool VariantBlock::read(std::ifstream& stream){
 	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
-		this->ppa_manager.header = this->footer.offsets[YON_BLK_PPA];
 		stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
-		stream >> this->ppa_manager;
+		stream >> this->base_containers[YON_BLK_PPA];
 	}
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
@@ -170,10 +172,7 @@ bool VariantBlock::read(std::ifstream& stream){
 
 U64 VariantBlock::DetermineCompressedSize(void) const{
 	U64 total = 0;
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
-		total += this->ppa_manager.getObjectSize();
-
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
 
@@ -182,8 +181,8 @@ U64 VariantBlock::DetermineCompressedSize(void) const{
 
 void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		stats_basic[1].cost_uncompressed += this->ppa_manager.header.data_header.uLength;
-		stats_basic[1].cost_compressed   += this->ppa_manager.header.data_header.cLength;
+		stats_basic[1].cost_uncompressed += this->base_containers[YON_BLK_PPA].header.data_header.uLength;
+		stats_basic[1].cost_compressed   += this->base_containers[YON_BLK_PPA].header.data_header.cLength;
 	}
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
@@ -216,9 +215,9 @@ bool VariantBlock::write(std::ostream& stream,
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
 
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		this->footer.offsets[YON_BLK_PPA] = this->ppa_manager.header;
-		this->footer.offsets[YON_BLK_PPA].data_header.offset = (U64)stream.tellp() - start_pos;
-		stream << this->ppa_manager;
+		std::cerr << "writing ppa: " << this->base_containers[YON_BLK_PPA].GetSizeCompressed() << "," << this->base_containers[YON_BLK_PPA].header.data_header.cLength << std::endl;
+		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (U64)stream.tellp() - start_pos);
+
 	}
 
 	// Start at offset 1 because offset 0 is encoding for the genotype

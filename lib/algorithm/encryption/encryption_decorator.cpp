@@ -33,7 +33,7 @@ bool EncryptionDecorator::decryptAES256(variant_block_type& block, keychain_type
 bool EncryptionDecorator::encryptAES256(variant_block_type& block, keychain_type& keychain){
 	BYTE RANDOM_BYTES[32];
 	RAND_bytes(&RANDOM_BYTES[0], 32);
-	block.header.blockID = XXH64(&RANDOM_BYTES[0], 32, 1337);
+	block.header.block_hash = XXH64(&RANDOM_BYTES[0], 32, 1337);
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(!this->encryptAES256(block.base_containers[i], keychain)){

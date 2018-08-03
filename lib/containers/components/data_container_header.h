@@ -65,7 +65,7 @@ public:
 	// Accessors
 	inline S32& getGlobalKey(void){ return(this->data_header.global_key); }
 	inline const S32& getGlobalKey(void) const{ return(this->data_header.global_key); }
-	inline bool hasMixedStride(void) const{ return(this->data_header.hasMixedStride()); }
+	inline bool hasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry){
@@ -75,7 +75,7 @@ private:
 		buffer += entry.n_strides;
 		buffer << entry.data_header;
 
-		if(entry.data_header.hasMixedStride()) buffer << entry.stride_header;
+		if(entry.data_header.HasMixedStride()) buffer << entry.stride_header;
 
 		return(buffer);
 	}
@@ -87,7 +87,7 @@ private:
 		buffer >> entry.n_strides;
 		buffer >> entry.data_header;
 
-		if(entry.data_header.hasMixedStride()) buffer >> entry.stride_header;
+		if(entry.data_header.HasMixedStride()) buffer >> entry.stride_header;
 
 		return(buffer);
 	}
@@ -98,7 +98,7 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(U32));
 		stream << entry.data_header;
-		if(entry.data_header.hasMixedStride())
+		if(entry.data_header.HasMixedStride())
 			stream << entry.stride_header;
 
 		return(stream);
@@ -110,7 +110,7 @@ private:
 		stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(U32));
 		stream >> entry.data_header;
-		if(entry.data_header.hasMixedStride())
+		if(entry.data_header.HasMixedStride())
 			stream >> entry.stride_header;
 
 		return(stream);

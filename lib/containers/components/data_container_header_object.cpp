@@ -91,7 +91,7 @@ bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	return true;
 }
 
-SBYTE DataContainerHeaderObject::getPrimitiveWidth(void) const{
+SBYTE DataContainerHeaderObject::GetPrimitiveWidth(void) const{
 	// We do not care about signedness here
 	switch(this->controller.type){
 	case(YON_TYPE_UNKNOWN):

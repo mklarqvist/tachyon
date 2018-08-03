@@ -54,7 +54,7 @@ public:
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
 	inline bool CheckStrideSize(const S32 value) const{
-		if(this->header.data_header.hasMixedStride() == false)
+		if(this->header.data_header.HasMixedStride() == false)
 			return false;
 
 		return(this->header.data_header.stride == value);
@@ -143,7 +143,7 @@ public:
 	 * data and, if set, the uncompressed strides data.
 	 * CRC32 checksums are stored in the header
 	 */
-	void GenerateCRC(void);
+	void GenerateMd5(void);
 
 	/**<
 	 *
@@ -154,9 +154,9 @@ public:
 	 * 3: Compressed strides data
 	 *
 	 * @param target Target buffer stream
-	 * @return       Returns TRUE if the CRC checksums are identical or FALSE otherwise
+	 * @return       Returns TRUE if the MD5 checksums are identical or FALSE otherwise
 	 */
-	bool CheckCRC(int target = 0);
+	bool CheckMd5(int target = 0);
 
 	/**<
 	 * Checks if the current data is uniform given the provided
@@ -208,7 +208,7 @@ public:
 private:
 	inline bool CheckInteger(void){
 		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.SetType(YON_TYPE_32B);
 			this->header.data_header.controller.signedness = true;
 		}
 
@@ -222,7 +222,7 @@ private:
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.buffer_data;
-		if(entry.header.data_header.hasMixedStride())
+		if(entry.header.data_header.HasMixedStride())
 			stream << entry.buffer_strides;
 
 		return(stream);
@@ -234,7 +234,7 @@ private:
 			stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
 			entry.buffer_data.n_chars = entry.header.data_header.cLength;
 
-			if(entry.header.data_header.hasMixedStride()){
+			if(entry.header.data_header.HasMixedStride()){
 				entry.buffer_strides.resize(entry.header.stride_header.cLength);
 				stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
 				entry.buffer_strides.n_chars = entry.header.stride_header.cLength;

@@ -90,8 +90,6 @@ private:
 	typedef algorithm::PermutationManager   permutation_type;
 	typedef algorithm::GenotypeEncoder      gt_encoder_type;
 	typedef containers::DataContainer       stream_container;
-	typedef containers::HashContainer       hash_container_type;
-	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;

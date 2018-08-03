@@ -78,8 +78,8 @@ bool VariantImporter::BuildVCF(void){
 	encryption::Keychain<> keychain;
 
 	// Setup the checksums container.
-	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC + 1, // Add one for global checksum.
-			this->vcf_reader_->vcf_header_.info_fields_.size() + 1,
+	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC   + 1, // Add one for global checksum.
+			this->vcf_reader_->vcf_header_.info_fields_.size()   + 1,
 			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
 
 	// The index needs to know how many contigs that's described in the
@@ -122,8 +122,14 @@ bool VariantImporter::BuildVCF(void){
 			break;
 		}
 
-		if(this->GT_available_)
+		if(this->GT_available_){
 			if(this->permutator.Build(this->vcf_container_) == false) return false;
+			// This pointer here is borrowed from the PPA manager
+			// during import stages. Do not destroy the target block
+			// before finishing with this.
+			this->block.header.controller.hasGTPermuted = true;
+			this->block.gt_ppa = &this->permutator.permutation_array;
+		}
 
 		if(this->AddRecords(this->vcf_container_) == false) return false;
 
@@ -151,8 +157,6 @@ bool VariantImporter::BuildVCF(void){
 		// Update checksums container with the available data.
 		checksums += this->block;
 
-		// Todo: this->index += this->vcf_reader_->variant_reader
-
 		if(!SILENT){
 			std::cerr << utility::timestamp("PROGRESS") <<
 			std::setfill(' ') << std::setw(10) << this->writer->n_variants_written << ' ' <<
@@ -166,6 +170,8 @@ bool VariantImporter::BuildVCF(void){
 		this->block.clear();
 		this->index_entry.reset();
 	}
+	// Do not delete the borrowed pointer.
+	this->block.gt_ppa = nullptr;
 
 	this->WriteFinal(checksums);
 	this->WriteKeychain(keychain);
@@ -501,7 +507,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 }
 
 bool VariantImporter::UpdateIndex(){
-	this->index_entry.blockID         = this->block.header.blockID;
+	this->index_entry.blockID         = this->block.header.block_hash;
 	this->index_entry.byte_offset_end = this->writer->stream->tellp();
 	this->index_entry.contigID        = this->vcf_container_.front()->rid;
 	this->index_entry.minPosition     = this->vcf_container_.front()->pos;

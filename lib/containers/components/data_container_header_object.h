@@ -25,24 +25,24 @@ struct DataContainerHeaderObject{
 	bool operator==(const self_type& other) const;
 	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
-	SBYTE getPrimitiveWidth(void) const;
+	SBYTE GetPrimitiveWidth(void) const;
 
 	//
-	inline S32& getStride(void){ return(this->stride); }
-	inline const S32& getStride(void) const{ return(this->stride); }
+	inline S32& GetStride(void){ return(this->stride); }
+	inline const S32& GetStride(void) const{ return(this->stride); }
 
-	inline bool isUniform(void) const{ return(this->controller.uniform); }
-	inline bool isSigned(void) const{ return(this->controller.signedness); }
-	inline bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
-	inline void setUniform(const bool yes){ this->controller.uniform = yes; }
-	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
-	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
+	inline bool IsUniform(void) const{ return(this->controller.uniform); }
+	inline bool IsSigned(void) const{ return(this->controller.signedness); }
+	inline bool HasMixedStride(void) const{ return(this->controller.mixedStride); }
+	inline void SetUniform(const bool yes){ this->controller.uniform = yes; }
+	inline void SetSignedness(const bool yes){ this->controller.signedness = yes; }
+	inline void SetMixedStride(const bool yes){ this->controller.mixedStride = yes; }
 
-	inline TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
-	inline TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline TACHYON_CORE_TYPE GetPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline TACHYON_CORE_COMPRESSION GetEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Set types
-	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
+	inline void SetType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
 
 	// Checksum
 	inline uint8_t* GetChecksum(void){ return(&this->crc[0]); }

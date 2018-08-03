@@ -180,21 +180,21 @@ template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container) :
 	__entries(nullptr)
 {
-	if(container.header.data_header.getPrimitiveWidth() == -1)
+	if(container.header.data_header.GetPrimitiveWidth() == -1)
 		return;
 
-	assert(container.buffer_data_uncompressed.size() % container.header.data_header.getPrimitiveWidth() == 0);
+	assert(container.buffer_data_uncompressed.size() % container.header.data_header.GetPrimitiveWidth() == 0);
 
-	this->n_entries_ = container.buffer_data_uncompressed.size() / container.header.data_header.getPrimitiveWidth();
+	this->n_entries_ = container.buffer_data_uncompressed.size() / container.header.data_header.GetPrimitiveWidth();
 	this->__entries = new value_type[this->n_entries_];
 
 	if(this->n_entries_ == 0)
 		return;
 
-	this->is_uniform_ = container.header.data_header.isUniform();
+	this->is_uniform_ = container.header.data_header.IsUniform();
 
-	if(container.header.data_header.isSigned()){
-		switch(container.header.data_header.getPrimitiveType()){
+	if(container.header.data_header.IsSigned()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, 0));  break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, 0));    break;
 		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, 0));    break;
@@ -205,10 +205,12 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_CHAR):
 		case(YON_TYPE_STRUCT):
 		case(YON_TYPE_UNKNOWN):
-		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		default:
+			std::cerr << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl;
+			return;
 		}
 	} else {
-		switch(container.header.data_header.getPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, 0));   break;
 		case(YON_TYPE_16B):    (this->__setup<U16>(container, 0));    break;
 		case(YON_TYPE_32B):    (this->__setup<U32>(container, 0));    break;
@@ -219,7 +221,9 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		case(YON_TYPE_CHAR):
 		case(YON_TYPE_STRUCT):
 		case(YON_TYPE_UNKNOWN):
-		default: std::cerr << "Disallowed: " << container.header.data_header.getPrimitiveType() << std::endl; return;
+		default:
+			std::cerr << "Disallowed: " << container.header.data_header.GetPrimitiveType() << std::endl;
+			return;
 		}
 	}
 }
@@ -231,8 +235,8 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
     PrimitiveContainerInterface(false, n_entries),
 	__entries(new value_type[n_entries])
 {
-	if(container.header.data_header.isSigned()){
-		switch(container.header.data_header.getPrimitiveType()){
+	if(container.header.data_header.IsSigned()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, offset));  break;
 		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, offset));    break;
@@ -246,7 +250,7 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	} else {
-		switch(container.header.data_header.getPrimitiveType()){
+		switch(container.header.data_header.GetPrimitiveType()){
 		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
 		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
 		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;

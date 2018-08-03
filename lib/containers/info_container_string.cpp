@@ -12,7 +12,7 @@ InfoContainer<std::string>::InfoContainer() :
 InfoContainer<std::string>::InfoContainer(const data_container_type& container) :
 	__containers(nullptr)
 {
-	if(container.header.data_header.hasMixedStride())
+	if(container.header.data_header.HasMixedStride())
 		this->__setup(container);
 	else
 		this->__setup(container, container.header.data_header.stride);
@@ -21,7 +21,7 @@ InfoContainer<std::string>::InfoContainer(const data_container_type& container) 
 InfoContainer<std::string>::InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches) :
 	__containers(nullptr)
 {
-	if(data_container.header.data_header.hasMixedStride())
+	if(data_container.header.data_header.HasMixedStride())
 		this->__setupBalanced(data_container, meta_container, pattern_matches);
 	else
 		this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
@@ -110,7 +110,7 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-	if(data_container.header.data_header.isUniform() == false){
+	if(data_container.header.data_header.IsUniform() == false){
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If there are no INFO fields

@@ -74,7 +74,7 @@ public:
 				this->alleles[i] = other.alleles[i];
 		}
 
-		this->n_ploidy  = other.n_ploidy;
+		this->n_ploidy   = other.n_ploidy;
 		this-> n_objects = other.n_objects;
 		return(*this);
     }

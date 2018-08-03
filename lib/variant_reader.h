@@ -315,82 +315,9 @@ public:
 		//this->global_header.writeHeaderVCF(stream, true);
 	}
 
+
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
-
-	U64 timings_meta(){
-		containers::MetaContainer meta(this->variant_container.getBlock());
-		buffer_type temp(meta.size() * 1000);
-
-		for(U32 p = 0; p < meta.size(); ++p){
-			utility::to_vcf_string(temp, this->block_settings.custom_delimiter_char, meta[p], this->global_header);
-			//utility::to_vcf_string(std::cout, meta[p], this->global_header);
-			temp += '\n';
-			//if(temp.size() > 65536){
-			//	std::cout.write(temp.data(), temp.size());
-			//	temp.reset();
-			//}
-		}
-		std::cout.write(temp.data(), temp.size());
-		return(meta.size());
-	}
-
-
-	U64 iterate_genotypes(std::ostream& stream = std::cout){
-		containers::MetaContainer meta(this->variant_container.getBlock());
-		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
-
-		for(U32 i = 0; i < gt.size(); ++i){
-			// All of these functions are in relative terms very expensive!
-			// Avoid using them unless you absolutely have to!
-			// Vector of literal genotype representations (lower level)
-			//std::vector<core::GTObject> objects     = gt[i].getLiteralObjects();
-			// Vector of genotype objects (high level permuted)
-			//std::vector<core::GTObject> objects_all = gt[i].getObjects(this->global_header.getSampleNumber());
-			// Vector of genotype objects (high level unpermuted - original)
-			std::vector<core::GTObject> objects_true = gt[i].getObjects(this->global_header.GetNumberSamples(), this->variant_container.getBlock().ppa_manager);
-
-			std::cout << (int)objects_true[i].alleles[0].allele << (objects_true[i].alleles[1].phase ? '/' : '|') << (int)objects_true[i].alleles[1].allele;
-			for(U32 j = 1; j < objects_true.size(); ++j){
-				std::cout << '\t' << (int)objects_true[j].alleles[0].allele << (objects_true[j].alleles[1].phase ? '/' : '|') << (int)objects_true[j].alleles[1].allele;
-			}
-			std::cout << std::endl;
-		}
-		return(gt.size());
-	}
-
-	U64 calculateIBS(math::SquareMatrix<double>& square, math::SquareMatrix<double>& square_temporary){
-		algorithm::Timer timer;
-		timer.Start();
-
-		containers::MetaContainer meta(this->variant_container.getBlock());
-		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
-		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].comparePairwise(square_temporary);
-
-		//square /= (U64)2*this->global_header.getSampleNumber()*gt.size();
-		square.addUpperTriagonal(square_temporary, this->variant_container.getBlock().ppa_manager);
-		square_temporary.clear();
-
-		// 2 * (Upper triagonal + diagonal) * number of variants
-		const U64 updates = 2*((this->global_header.GetNumberSamples()*this->global_header.GetNumberSamples() - this->global_header.GetNumberSamples())/2 + this->global_header.GetNumberSamples()) * gt.size();
-		std::cerr << utility::timestamp("DEBUG") << "Updates: " << utility::ToPrettyString(updates) << '\t' << timer.ElapsedString() << '\t' << utility::ToPrettyString((U64)((double)updates/timer.Elapsed().count())) << "/s" << std::endl;
-		return((U64)2*this->global_header.GetNumberSamples()*gt.size());
-	}
-
-	U64 getTiTVRatios(std::vector<core::TsTvObject>& global){
-		containers::MetaContainer meta(this->variant_container.getBlock());
-		containers::GenotypeContainer gt(this->variant_container.getBlock(), meta);
-
-		std::vector<core::TsTvObject> objects(this->global_header.GetNumberSamples());
-		for(U32 i = 0; i < gt.size(); ++i)
-			gt[i].getTsTv(objects);
-
-		for(U32 i = 0; i < objects.size(); ++i)
-			global[this->variant_container.getBlock().ppa_manager[i]] += objects[i];
-
-		return(gt.size());
-	}
 
 	std::vector<double> calculateStrandBiasAlleles(const meta_entry_type& meta, const genotype_summary_type& genotype_summary, const bool phred_scale = true) const{
 		std::vector<double> strand_bias_p_values(meta.n_alleles);

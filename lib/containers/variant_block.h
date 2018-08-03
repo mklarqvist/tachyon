@@ -5,13 +5,13 @@
 
 #include "third_party/xxhash/xxhash.h"
 
-#include "algorithm/permutation/permutation_manager.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
 #include "core/data_block_settings.h"
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
+#include "algorithm/permutation/radix_sort_gt.h"
 
 namespace tachyon{
 namespace containers{
@@ -24,7 +24,6 @@ namespace containers{
 class VariantBlock{
 	typedef VariantBlock                    self_type;
 	typedef DataContainer                   container_type;
-	typedef algorithm::PermutationManager   permutation_type;
 	typedef VariantBlockHeader              block_header_type;
 	typedef VariantBlockFooter              block_footer_type;
 	typedef io::BasicBuffer                 buffer_type;
@@ -343,10 +342,10 @@ private:
 public:
 	block_header_type header;
 	block_footer_type footer;
-	permutation_type  ppa_manager; // Todo: exchange for yon_gt_ppa
 	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
+	algorithm::yon_gt_ppa* gt_ppa;
 
 	// Utility
 	U64 end_block_;

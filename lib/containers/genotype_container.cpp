@@ -13,7 +13,7 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 {
 	// Todo: if anything is uniform
 	// Support
-	const bool uniform_stride = block.base_containers[YON_BLK_GT_SUPPORT].header.data_header.isUniform();
+	const bool uniform_stride = block.base_containers[YON_BLK_GT_SUPPORT].header.data_header.IsUniform();
 	PrimitiveContainer<U32> lengths(block.base_containers[YON_BLK_GT_SUPPORT]); // n_runs / objects size
 
 	U64 offset_rle8     = 0; const char* const rle8     = block.base_containers[YON_BLK_GT_INT8].buffer_data_uncompressed.data();

@@ -60,8 +60,6 @@ bool ZSTDCodec::Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst){
 }
 
 bool ZSTDCodec::Compress(container_type& container){
-	container.GenerateCRC();
-
 	if(container.header.n_entries == 0){
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
 		container.buffer_data.n_chars                   = 0;
@@ -75,6 +73,8 @@ bool ZSTDCodec::Compress(container_type& container){
 		container.buffer_data.n_chars                   = container.buffer_data_uncompressed.size();
 		container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 		container.header.data_header.uLength            = container.buffer_data_uncompressed.size();
+
+		container.GenerateMd5();
 
 		if(container.header.data_header.controller.mixedStride == true)
 			return(this->CompressStrides(container));
@@ -106,6 +106,8 @@ bool ZSTDCodec::Compress(container_type& container){
 		container.header.data_header.cLength            = container.buffer_data_uncompressed.size();
 		container.header.data_header.uLength            = container.buffer_data_uncompressed.size();
 
+		container.GenerateMd5();
+
 		if(container.header.data_header.controller.mixedStride == true)
 			return(this->CompressStrides(container));
 		else return true;
@@ -117,6 +119,8 @@ bool ZSTDCodec::Compress(container_type& container){
 	container.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
 	container.header.data_header.cLength            = container.buffer_data.size();
 	container.header.data_header.uLength            = container.buffer_data_uncompressed.size();
+
+	container.GenerateMd5();
 
 	if(container.header.data_header.controller.mixedStride == true)
 		return(this->CompressStrides(container));
@@ -170,25 +174,20 @@ bool ZSTDCodec::CompressStrides(container_type& container){
 	return true;
 }
 
-bool ZSTDCodec::Compress(permutation_type& manager){
-	if(manager.PPA.size() == 0)
+bool ZSTDCodec::Compress(container_type& container, permutation_type& manager){
+	if(manager.n_samples == 0)
 		return true;
 
-	U32 n_samples = manager.n_samples;
-	if(n_samples < 100){
-		n_samples = 100;
-		manager.PPA.resize(n_samples*sizeof(U32));
-	}
+	container.buffer_data_uncompressed.reset();
+	container.buffer_data_uncompressed.resize(manager.n_samples*sizeof(U32) + 65536);
+	container.buffer_data_uncompressed << manager;
 
 	this->buffer.reset();
-	this->buffer.resize(n_samples*sizeof(U32) + 65536);
-
-	algorithm::VariantDigestManager::GenerateMd5(manager.PPA.data(), manager.PPA.size(), manager.header.data_header.crc);
-	manager.header.data_header.uLength = manager.PPA.size();
+	this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 
 	//const U32 in = manager.PPA.n_chars;
-	const int p_ret = permuteIntBits(manager.PPA.data(),
-									 manager.PPA.size(),
+	const int p_ret = permuteIntBits(container.buffer_data_uncompressed.data(),
+	                                 container.buffer_data_uncompressed.size(),
 									 this->buffer.data());
 
 	this->buffer.n_chars = p_ret;
@@ -211,8 +210,10 @@ bool ZSTDCodec::Compress(permutation_type& manager){
 	*/
 
 
-	size_t ret = ZSTD_compress(manager.PPA.data(),
-							   manager.PPA.capacity(),
+	container.buffer_data.reset();
+	container.buffer_data.resize(p_ret + 65536);
+	size_t ret = ZSTD_compress(container.buffer_data.data(),
+	                           container.buffer_data.capacity(),
 							   this->buffer.data(),
 							   this->buffer.size(),
 							   this->compression_level_data);
@@ -221,13 +222,17 @@ bool ZSTDCodec::Compress(permutation_type& manager){
 	if(ZSTD_isError(ret)){
 		std::cerr << "error zstd permute_ : " << ZSTD_getErrorCode(ret) << std::endl;
 		std::cerr << ZSTD_getErrorName(ret) << std::endl;
-		std::cerr << this->buffer.n_chars << '\t' << manager.PPA.n_chars << std::endl;
+		std::cerr << this->buffer.n_chars << '\t' << container.buffer_data.size() << std::endl;
 		exit(1);
 	}
-	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
-	manager.PPA.n_chars = ret;
-	manager.header.data_header.uLength = this->buffer.n_chars;
-	manager.header.data_header.cLength = ret;
+
+	std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
+
+	container.buffer_data.n_chars                   = ret;
+	container.header.data_header.cLength            = container.buffer_data.size();
+	container.header.data_header.uLength            = container.buffer_data_uncompressed.size();
+	container.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
+	container.GenerateMd5();
 
 	return true;
 }
@@ -259,7 +264,7 @@ bool ZSTDCodec::Decompress(container_type& container){
 	assert(ret >= 0);
 	container.buffer_data_uncompressed.n_chars = ret;
 	assert((U32)ret == container.header.data_header.uLength);
-	assert(container.CheckCRC(0));
+	assert(container.CheckMd5(0));
 
 	return true;
 }
@@ -294,29 +299,26 @@ bool ZSTDCodec::DecompressStrides(container_type& container){
 	container.buffer_strides_uncompressed.n_chars = ret_stride;
 	assert((U32)ret_stride == container.header.stride_header.uLength);
 	//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (container.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
-	assert(container.CheckCRC(1));
+	assert(container.CheckMd5(1));
 
 	return true;
 }
 
-bool ZSTDCodec::Decompress(permutation_type& manager){
+bool ZSTDCodec::Decompress(container_type& container, permutation_type& manager){
 	this->buffer.reset();
-	U32 n_samples = manager.n_samples;
-	if(n_samples < 100){
-		n_samples = 100;
-		manager.PPA.resize(n_samples*sizeof(U32));
-	}
 
-	this->buffer.resize(n_samples*sizeof(U32) + 65536);
+
+	container.buffer_data_uncompressed.resize(manager.n_samples*sizeof(U32) + 65536);
+	this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
 	size_t ret = ZSTD_decompress(this->buffer.data(),
 								 this->buffer.capacity(),
-								 manager.PPA.data(),
-								 manager.PPA.size());
+								 container.buffer_data_uncompressed.data(),
+								 container.buffer_data_uncompressed.size());
 
 	if(ZSTD_isError(ret)){
 		std::cerr << "error zstd permute_ : " << ZSTD_getErrorCode(ret) << std::endl;
 		std::cerr << ZSTD_getErrorName(ret) << std::endl;
-		std::cerr << this->buffer.n_chars << '\t' << manager.PPA.n_chars << std::endl;
+		std::cerr << this->buffer.n_chars << '\t' << container.buffer_data_uncompressed.n_chars << std::endl;
 		exit(1);
 	}
 
@@ -324,14 +326,16 @@ bool ZSTDCodec::Decompress(permutation_type& manager){
 	//manager.PPA.n_chars = ret;
 	//manager.c_length    = ret;
 
-	manager.PPA.resize(ret + 16536);
+	container.buffer_data_uncompressed.resize(ret + 16536);
 	const int up_ret = unpermuteIntBits(this->buffer.data(),
 										ret,
-										manager.PPA.data());
+										container.buffer_data_uncompressed.data());
 
 	//std::cerr << "ret: " << up_ret << std::endl;
 	//memcpy(manager.PPA.buffer, this->buffer.data(), up_ret);
-	manager.PPA.n_chars = up_ret;
+	container.buffer_data_uncompressed.n_chars = up_ret;
+	container.buffer_data_uncompressed >> manager;
+
 	return true;
 }
 

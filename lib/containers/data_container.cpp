@@ -38,12 +38,12 @@ void DataContainer::resize(const U32 size){
 	this->buffer_strides_uncompressed.resize(size);
 }
 
-void DataContainer::GenerateCRC(void){
+void DataContainer::GenerateMd5(void){
 	algorithm::VariantDigestManager::GenerateMd5(this->buffer_data_uncompressed.data(), this->buffer_data_uncompressed.size(), &this->header.data_header.crc[0]);
 	algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides_uncompressed.data(), this->buffer_strides_uncompressed.size(), &this->header.stride_header.crc[0]);
 }
 
-bool DataContainer::CheckCRC(int target){
+bool DataContainer::CheckMd5(int target){
 	if(target == 0){
 		if(this->buffer_data_uncompressed.size() == 0)
 			return true;
@@ -104,11 +104,11 @@ bool DataContainer::CheckUniformity(void){
 	default: return false; break;
 	}
 
-	const U64 first_hash = XXH64(this->buffer_data_uncompressed.data(), stride_update, 2147483647);
+	const U64 first_Hash = XXH64(this->buffer_data_uncompressed.data(), stride_update, 2147483647);
 
 	U64 cumulative_position = stride_update;
 	for(U32 i = 1; i < this->header.n_entries; ++i){
-		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_hash){
+		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_Hash){
 			return(false);
 		}
 		cumulative_position += stride_update;
@@ -136,7 +136,7 @@ void DataContainer::ReformatInteger(){
 	}
 
 	// Do not recode if the data is uniform
-	if(this->header.data_header.isUniform())
+	if(this->header.data_header.IsUniform())
 		return;
 
 	// At this point all integers are S32
@@ -144,11 +144,11 @@ void DataContainer::ReformatInteger(){
 	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data());
 	S32 min = dat[0];
 	S32 max = dat[0];
-	bool hasMissing = false;
+	bool HasMissing = false;
 
 	for(U32 j = 0; j < this->header.n_additions; ++j){
 		if(udat[j] == 0x80000000 || udat[j] == 0x80000001){
-			hasMissing = true;
+			HasMissing = true;
 			continue;
 		}
 		if(dat[j] < min) min = dat[j];
@@ -157,7 +157,7 @@ void DataContainer::ReformatInteger(){
 
 	BYTE byte_width = 0;
 	// If we have missing values then we have to use signedness
-	if(min < 0 || hasMissing == true){
+	if(min < 0 || HasMissing == true){
 		byte_width = ceil((ceil(log2(abs(min) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
 		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1 + 2)) + 1) / 8);
 		if(byte_width_max > byte_width){
@@ -170,14 +170,14 @@ void DataContainer::ReformatInteger(){
 	else if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
 
-	// Phase 2
+	// PHase 2
 	// Here we re-encode values using the smallest possible word-size
 	this->buffer_data.reset();
 	this->buffer_data.resize(this->buffer_data_uncompressed.size() + 65536);
 
 	// Is non-negative
 	// Also cannot have missing values
-	if(min >= 0 && hasMissing == false){
+	if(min >= 0 && HasMissing == false){
 		this->header.data_header.controller.signedness = 0;
 
 		if(byte_width == 1){
@@ -212,7 +212,7 @@ void DataContainer::ReformatInteger(){
 			exit(1);
 		}
 	}
-	// Is negative or has missing
+	// Is negative or Has missing
 	else {
 		this->header.data_header.controller.signedness = true;
 
@@ -259,7 +259,7 @@ void DataContainer::ReformatStride(){
 	if(this->buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->header.data_header.hasMixedStride() == false)
+	if(this->header.data_header.HasMixedStride() == false)
 		return;
 
 	// Recode integer types
@@ -337,7 +337,7 @@ U32 DataContainer::GetObjectSize(void) const{
 		return(this->buffer_data.size());
 
 	U32 total_size = this->buffer_data.size();
-	if(this->header.data_header.hasMixedStride())
+	if(this->header.data_header.HasMixedStride())
 		total_size += this->buffer_strides.size();
 
 	return(total_size);
@@ -345,14 +345,14 @@ U32 DataContainer::GetObjectSize(void) const{
 
 U64 DataContainer::GetObjectSizeUncompressed(void) const{
 	U64 total_size = this->buffer_data_uncompressed.size();
-	if(this->header.data_header.hasMixedStride())
+	if(this->header.data_header.HasMixedStride())
 		total_size += this->buffer_strides_uncompressed.size();
 
 	return(total_size);
 }
 
 void DataContainer::UpdateContainer(bool reformat){
-	// If the data container has entries in it but has
+	// If the data container Has entries in it but Has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
 		this->header.reset();
@@ -382,7 +382,7 @@ void DataContainer::UpdateContainer(bool reformat){
 	this->header.data_header.uLength = this->buffer_data_uncompressed.size();
 
 	// If we have mixed striding
-	if(this->header.data_header.hasMixedStride()){
+	if(this->header.data_header.HasMixedStride()){
 		// Reformat stream to use as small word size as possible
 		if(reformat) this->ReformatStride();
 		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
@@ -409,7 +409,7 @@ void DataContainer::AddStride(const U32 value){
 
 bool DataContainer::Add(const BYTE& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()) {
@@ -424,7 +424,7 @@ bool DataContainer::Add(const BYTE& value){
 
 bool DataContainer::Add(const U16& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()) {
@@ -439,7 +439,7 @@ bool DataContainer::Add(const U16& value){
 
 bool DataContainer::Add(const U32& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()){
@@ -454,7 +454,7 @@ bool DataContainer::Add(const U32& value){
 
 bool DataContainer::Add(const SBYTE& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()) {
@@ -469,7 +469,7 @@ bool DataContainer::Add(const SBYTE& value){
 
 bool DataContainer::Add(const S16& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()) {
@@ -484,7 +484,7 @@ bool DataContainer::Add(const S16& value){
 
 bool DataContainer::Add(const S32& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_32B);
+		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
 	if(!this->CheckInteger()) {
@@ -499,7 +499,7 @@ bool DataContainer::Add(const S32& value){
 
 bool DataContainer::Add(const U64& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_64B);
+		this->header.data_header.SetType(YON_TYPE_64B);
 		this->header.data_header.controller.signedness = false;
 	}
 
@@ -516,7 +516,7 @@ bool DataContainer::Add(const U64& value){
 
 bool DataContainer::Add(const S64& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_64B);
+		this->header.data_header.SetType(YON_TYPE_64B);
 		this->header.data_header.controller.signedness = true;
 	}
 
@@ -535,7 +535,7 @@ bool DataContainer::Add(const S64& value){
 
 bool DataContainer::Add(const float& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_FLOAT);
+		this->header.data_header.SetType(YON_TYPE_FLOAT);
 		this->header.data_header.controller.signedness = true;
 	}
 
@@ -552,7 +552,7 @@ bool DataContainer::Add(const float& value){
 
 bool DataContainer::Add(const double& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_DOUBLE);
+		this->header.data_header.SetType(YON_TYPE_DOUBLE);
 		this->header.data_header.controller.signedness = true;
 	}
 
@@ -569,7 +569,7 @@ bool DataContainer::Add(const double& value){
 
 bool DataContainer::AddCharacter(const char& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_CHAR);
+		this->header.data_header.SetType(YON_TYPE_CHAR);
 		this->header.data_header.controller.signedness = true;
 	}
 
@@ -586,7 +586,7 @@ bool DataContainer::AddCharacter(const char& value){
 
 bool DataContainer::AddCharacter(const char* const string, const U32 l_string){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-		this->header.data_header.setType(YON_TYPE_CHAR);
+		this->header.data_header.SetType(YON_TYPE_CHAR);
 		this->header.data_header.controller.signedness = true;
 		//std::cerr << "triggering: string" << std::endl;
 	}

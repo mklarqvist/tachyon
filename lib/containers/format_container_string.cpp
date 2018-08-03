@@ -18,7 +18,7 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& data_co
 	if(data_container.buffer_data_uncompressed.size() == 0)
 		return;
 
-	if(data_container.header.data_header.hasMixedStride()){
+	if(data_container.header.data_header.HasMixedStride()){
 		this->__setupBalanced(data_container, meta_container, pattern_matches, n_samples);
 	} else {
 		this->__setupBalanced(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride);
@@ -34,7 +34,7 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& contain
 	if(container.header.data_header.controller.mixedStride){
 		this->__setup(container, n_samples);
 	} else {
-		this->__setup(container, n_samples, container.header.data_header.getStride());
+		this->__setup(container, n_samples, container.header.data_header.GetStride());
 	}
 }
 
@@ -110,7 +110,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 
 	U32 current_offset = 0;
 	// Case 1: if data is uniform
-	if(data_container.header.data_header.isUniform()){
+	if(data_container.header.data_header.IsUniform()){
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// There are no INFO fields
 			if(meta_container[i].GetInfoPatternId() == -1){
@@ -159,7 +159,7 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 
 	U32 current_offset = 0;
 	// Case 1: data is uniform -> give all samples the same value
-	if(container.header.data_header.isUniform()){
+	if(container.header.data_header.IsUniform()){
 		for(U32 i = 0; i < this->n_entries; ++i)
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 
