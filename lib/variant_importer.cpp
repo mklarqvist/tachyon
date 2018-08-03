@@ -137,6 +137,7 @@ bool VariantImporter::BuildVCF(void){
 		this->block.header.n_variants        = this->vcf_container_.sizeWithoutCarryOver();
 		this->block.UpdateContainers();
 		this->block.Finalize();
+		this->GenerateIdentifiers();
 
 		// Perform compression using standard parameters
 		if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
@@ -597,6 +598,23 @@ bool VariantImporter::WriteYonHeader(){
 	utility::SerializePrimitive(l_c_data, *this->writer->stream);
 	this->writer->stream->write(temp_cmp.data(), l_c_data);
 	return(this->writer->stream->good());
+}
+
+bool VariantImporter::GenerateIdentifiers(void){
+	BYTE RANDOM_BYTES[32];
+	for(U32 i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
+		U64 b_hash;
+		while(true){
+			RAND_bytes(&RANDOM_BYTES[0], 32);
+			b_hash = XXH64(&RANDOM_BYTES[0], 32, 1337);
+			hash_map_type::const_iterator it = this->block_hash_map.find(b_hash);
+			if(it == this->block_hash_map.end()){
+				this->block_hash_map[b_hash] = 0; // Number doesn't matter.
+				break;
+			}
+		}
+	}
+	return true;
 }
 
 } /* namespace Tachyon */

@@ -126,6 +126,7 @@ private:
 	bool WriteFinal(algorithm::VariantDigestManager& checksums);
 	bool WriteKeychain(const encryption::Keychain<>& keychain);
 	bool WriteYonHeader();
+	bool GenerateIdentifiers(void);
 
 private:
 	settings_type settings_; // internal settings
@@ -160,6 +161,8 @@ private:
 
 	std::unique_ptr<vcf_reader_type> vcf_reader_;
 	vcf_container_type vcf_container_;
+
+	hash_map_type block_hash_map;
 };
 
 

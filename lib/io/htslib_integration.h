@@ -498,7 +498,6 @@ public:
 	    for(int i = 2; i < hrec->nkeys; ++i){
 	    	if(std::string(hrec->keys[i]) == "IDX"){
 	    		f.idx = atoi(hrec->vals[i]);
-	    		std::cerr << "filter idx: " << f.idx << std::endl;
 	    	}
 	    }
 
@@ -541,7 +540,6 @@ public:
 	        f.version = std::string(hrec->vals[i]);
 	      } else if (current_key == "IDX") {
 	    	  f.idx = atoi(hrec->vals[i]);
-	    	  std::cerr << "info idx: " << f.idx << std::endl;
 	      }
 	    }
 
@@ -580,7 +578,6 @@ public:
 	    	const std::string current_key = std::string(hrec->keys[i]);
 	    	if (current_key == "IDX") {
 				  f.idx = atoi(hrec->vals[i]);
-				  std::cerr << "format idx: " << f.idx << std::endl;
 			  }
 	    }
 
