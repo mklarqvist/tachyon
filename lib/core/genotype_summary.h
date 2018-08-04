@@ -129,14 +129,6 @@ public:
 		return(total);
 	}
 
-	/**<
-	// This code implements an exact SNP test of Hardy-Weinberg Equilibrium as described in
-	// Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
-	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
-	//
-	// Written by Jan Wigginton
-	// Modified to use Tachyon data by Marcus D. R. Klarqvist (https;//github.com/mklarqvist/tachyon)
-	*/
 	std::vector<double> calculateHardyWeinberg(const meta_type& meta) const{
 		if(meta.n_alleles == 1) return std::vector<double>();
 		const BYTE n_limit = meta.n_alleles + 2 > this->n_alleles_ ? this->n_alleles_ - 1 : meta.n_alleles - 1;
@@ -229,6 +221,14 @@ public:
 	}
 
 private:
+	/**<
+	// This code implements an exact SNP test of Hardy-Weinberg Equilibrium as described in
+	// Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
+	// Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
+	//
+	// Written by Jan Wigginton
+	// Modified for use in Tachyon by Marcus D. R. Klarqvist (https;//github.com/mklarqvist/tachyon)
+	*/
 	double __calculateHardyWeinberg(const U32 ref_target, const U32 alt_target) const{
 		U64 obs_hets = this->matrix_[ref_target][alt_target] + this->matrix_[alt_target][ref_target];
 		U64 obs_hom1 = this->matrix_[ref_target][ref_target];

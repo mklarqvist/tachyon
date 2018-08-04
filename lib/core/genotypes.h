@@ -24,8 +24,6 @@ namespace tachyon{
 #define YON_GT_UN_SIMPLE_PPA 16|YON_GT_UN_SIMPLE // bcf unpermuted
 #define YON_GT_UN_ALL        (YON_GT_UN_BCF_PPA|YON_GT_UN_SIMPLE_PPA) // everything
 
-const SBYTE YON_GT_RLE_CORRECTION[3] = {0, 0,  4};
-
 // 0 for missing and 1 for sentinel node. Note that the
 // sentinel node never occurs in this encoding type.
 const uint8_t YON_GT_RLE_RECODE[3] = {2, 3, 0};
@@ -186,6 +184,23 @@ struct yon_gt_rcd {
 	yon_gt_rcd() : length(0), allele(nullptr){}
 	~yon_gt_rcd(){ delete [] this->allele; }
 
+	io::BasicBuffer& printVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
+		if(this->allele[0] == 1){
+			buffer += '.';
+			return(buffer);
+		}
+		if(this->allele[0] == 0) buffer += '.';
+		else buffer.AddReadble(((this->allele[0] >> 1) - 2));
+
+		for(U32 i = 1; i < n_ploidy; ++i){
+			if(this->allele[i] == 1) break;
+			buffer += ((this->allele[i] & 1) ? '|' : '/');
+			if(this->allele[i] == 0) buffer += '.';
+			else buffer.AddReadble(((this->allele[i] >> 1) - 2));
+		}
+		return(buffer);
+	}
+
 	uint32_t length;
 	//uint8_t alleles; // Determined from base ploidy
 	uint8_t* allele; // contains phase at first bit
@@ -200,86 +215,33 @@ struct yon_gt {
     uint8_t  n_allele;
     yon_gt_ppa* ppa; // pointer to ppa
     uint8_t* data; // pointer to data
-    // Todo: Lazy evaluate (d)
-    // Todo: if ppa then map from sample -> internal record
     uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
-    uint8_t* d_ppa; // lazy evaluated from ppa to internal offset (length = n_samples)
+    uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
+    yon_gt_rcd** d_ppa; // lazy evaluated from ppa to internal offset (length = n_samples). This can be
     yon_gt_rcd* rcds; // lazy interpreted internal records
-    // Todo: interval tree of cumulative runs -> ppa find overlap
-    // e.g. itree[45] -> intersect overlap
-    algorithm::IntervalTree<uint32_t, uint32_t>* itree; // interval tree for consecutive ranges
+    algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
+    bool dirty;
 
     yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
-               n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_ppa(nullptr),
-			   rcds(nullptr), itree(nullptr)
+               n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
+			   d_ppa(nullptr), rcds(nullptr), itree(nullptr), dirty(false)
     {}
+
     ~yon_gt(){
     	delete [] d_bcf;
-    	delete [] d_ppa,
+    	delete [] d_bcf_ppa,
 		delete [] rcds;
+    	delete [] d_ppa;
     	delete itree;
     }
 
     bool Evaluate(void){
     	if(this->method == 1) return(this->EvaluateRecordsM1());
+    	else if(this->method == 2) return(this->EvaluateRecordsM2());
+    	else {
+    		std::cerr << "not implemented method " << (int)this->method << std::endl;
+    	}
     	return false;
-    }
-
-    // Requires base evaluation to rcds structures first.
-    bool EvaluateBcf(){
-    	if(this->rcds == nullptr){
-    		std::cerr << "have to evaluate rcds first" << std::endl;
-    		return false;
-    	}
-
-    	switch(this->p){
-		case(1): return(this->EvaluateBcf_<uint8_t>());
-		case(2): return(this->EvaluateBcf_<uint16_t>());
-		case(4): return(this->EvaluateBcf_<uint32_t>());
-		case(8): return(this->EvaluateBcf_<uint64_t>());
-		default:
-			std::cerr << "illegal primitive in EvaluateBcf" << std::endl;
-			exit(1);
-		}
-    }
-
-    template <class T>
-    bool EvaluateBcf_(){
-    	assert(this->rcds != nullptr);
-    	if(this->d_bcf != nullptr) delete [] this->d_bcf;
-
-    	uint64_t cum_pos = 0;
-    	this->d_bcf = new uint8_t[this->m * this->n_s];
-    	for(uint32_t i = 0; i < this->n_i; ++i){
-    		for(uint32_t j = 0; j < this->rcds[i].length; ++j){
-    			for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
-    				this->d_bcf[cum_pos] = this->rcds[i].allele[k]; // Todo: recode back from YON-style to htslib style (e.g. 0,1 special meaning in YON)
-    			}
-    		}
-    	}
-    	assert(cum_pos == this->n_s * this->m);
-    	return true;
-    }
-
-    bool EvaluatePpaFromBcf(const uint8_t* d_bcf_pre){
-    	assert(d_bcf_pre != nullptr);
-    	assert(this->ppa != nullptr);
-
-    	if(this->d_ppa != nullptr) delete [] this->d_ppa;
-    	this->d_ppa = new uint8_t[this->n_s * this->m];
-
-    	uint64_t cum_pos = 0;
-    	for(uint32_t i = 0; i < this->n_s; ++i){
-    		const uint32_t& ppa_target = this->ppa->ordering[i];
-    		const uint8_t* bcf_target = &d_bcf_pre[ppa_target * this->m];
-
-    		for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
-    			this->d_ppa[cum_pos] = bcf_target[k];
-    		}
-    	}
-
-    	assert(cum_pos == this->n_s * this->m);
-    	return true;
     }
 
     bool EvaluateRecordsM1(){
@@ -320,8 +282,8 @@ struct yon_gt {
 
 			this->rcds[i].length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
 			this->rcds[i].allele = new uint8_t[2];
-			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
-			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
+			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
+			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
 			// Store an allele encoded as (ALLELE << 1 | phasing).
 			this->rcds[i].allele[0] = (YON_GT_RLE_RECODE[this->rcds[i].allele[0]] << 1) | phasing;
 			this->rcds[i].allele[1] = (YON_GT_RLE_RECODE[this->rcds[i].allele[1]] << 1) | phasing;
@@ -329,6 +291,152 @@ struct yon_gt {
 		}
 		assert(n_total == this->n_s);
     }
+
+    bool EvaluateRecordsM2(){
+		switch(this->p){
+		case(1): return(this->EvaluateRecordsM2_<uint8_t>());
+		case(2): return(this->EvaluateRecordsM2_<uint16_t>());
+		case(4): return(this->EvaluateRecordsM2_<uint32_t>());
+		case(8): return(this->EvaluateRecordsM2_<uint64_t>());
+		default:
+			std::cerr << "illegal primitive in EvaluateRecordsM2" << std::endl;
+			exit(1);
+		}
+	}
+
+	template <class T>
+	bool EvaluateRecordsM2_(){
+		if(this->rcds != nullptr) delete [] this->rcds;
+		assert(this->m == 2);
+
+		// Allocate memory for new records.
+		this->rcds = new yon_gt_rcd[this->n_i];
+
+		// Reinterpret byte stream into the appropriate actual
+		// primitive type.
+		const T* r_data = reinterpret_cast<const T*>(this->data);
+
+		// Keep track of the cumulative number of genotypes observed
+		// as a means of asserting correctness.
+		uint64_t n_total = 0;
+
+		// Iterate over the internal run-length encoded genotypes
+		// and populate the rcds structure.
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			BYTE phasing = 0;
+			if(add) phasing = r_data[i] & 1;
+			else    phasing = this->global_phase;
+
+			this->rcds[i].length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
+			this->rcds[i].allele = new uint8_t[2];
+			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
+			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
+			// Store an allele encoded as (ALLELE << 1 | phasing).
+			this->rcds[i].allele[0] = (this->rcds[i].allele[0] << 1) | phasing;
+			this->rcds[i].allele[1] = (this->rcds[i].allele[1] << 1) | phasing;
+			n_total += this->rcds[i].length;
+		}
+		assert(n_total == this->n_s);
+	}
+
+	// Requires base evaluation to rcds structures first.
+	bool EvaluateBcf(){
+		if(this->rcds == nullptr){
+			std::cerr << "have to evaluate rcds first" << std::endl;
+			return false;
+		}
+
+		switch(this->p){
+		case(1): return(this->EvaluateBcf_<uint8_t>());
+		case(2): return(this->EvaluateBcf_<uint16_t>());
+		case(4): return(this->EvaluateBcf_<uint32_t>());
+		case(8): return(this->EvaluateBcf_<uint64_t>());
+		default:
+			std::cerr << "illegal primitive in EvaluateBcf" << std::endl;
+			exit(1);
+		}
+	}
+
+	template <class T>
+	bool EvaluateBcf_(){
+		assert(this->rcds != nullptr);
+		if(this->d_bcf != nullptr) delete [] this->d_bcf;
+
+		uint64_t cum_pos = 0;
+		this->d_bcf = new uint8_t[this->m * this->n_s];
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			for(uint32_t j = 0; j < this->rcds[i].length; ++j){
+				for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
+					this->d_bcf[cum_pos] = this->rcds[i].allele[k]; // Todo: recode back from YON-style to htslib style (e.g. 0,1 special meaning in YON)
+				}
+			}
+		}
+		assert(cum_pos == this->n_s * this->m);
+		return true;
+	}
+
+	bool EvaluatePpaFromBcf(const uint8_t* d_bcf_pre){
+		assert(d_bcf_pre != nullptr);
+		assert(this->ppa != nullptr);
+
+		if(this->d_bcf_ppa != nullptr) delete [] this->d_bcf_ppa;
+		this->d_bcf_ppa = new uint8_t[this->n_s * this->m];
+
+		uint64_t cum_pos = 0;
+		for(uint32_t i = 0; i < this->n_s; ++i){
+			const uint32_t& ppa_target = this->ppa->ordering[i];
+			const uint8_t* bcf_target = &d_bcf_pre[ppa_target * this->m];
+
+			for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
+				this->d_bcf_ppa[cum_pos] = bcf_target[k];
+			}
+		}
+
+		assert(cum_pos == this->n_s * this->m);
+		return true;
+	}
+
+	bool EvaluateIntervalTree(void){
+		assert(this->rcds != nullptr);
+		if(this->itree != nullptr) delete this->itree;
+
+		std::vector< algorithm::Interval<uint32_t, yon_gt_rcd*> > intervals;
+		uint64_t cum_pos = 0;
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			intervals.push_back(algorithm::Interval<uint32_t, yon_gt_rcd*>(
+					cum_pos,
+					cum_pos + this->rcds[i].length,
+					&this->rcds[i])
+				);
+			cum_pos += this->rcds[i].length;
+		}
+		this->itree = new algorithm::IntervalTree<uint32_t, yon_gt_rcd*>(std::move(intervals));
+
+		assert(cum_pos == this->n_s);
+		return true;
+	}
+
+	bool EvaluatePpa(void){
+		assert(this->rcds != nullptr);
+		assert(this->ppa != nullptr);
+
+		if(this->d_ppa != nullptr) delete [] this->d_ppa;
+		this->d_ppa = new yon_gt_rcd*[this->n_s];
+
+		uint64_t cum_sample = 0;
+		uint64_t cum_offset = 0;
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			for(uint32_t j = 0; j < this->rcds[i].length; ++j, ++cum_sample){
+				const uint32_t& target_ppa = this->ppa->at(cum_sample);
+				this->d_ppa[target_ppa] = &this->rcds[i];
+				cum_offset += this->p * this->m;
+			}
+		}
+		assert(cum_sample == this->n_s);
+		assert(cum_offset == this->n_s * this->m * this->p);
+		return true;
+	}
+
 
     template <class T>
     inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }

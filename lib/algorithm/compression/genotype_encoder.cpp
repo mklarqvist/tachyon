@@ -262,13 +262,17 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
 	for(U32 i = 0; i <= entry->n_allele; ++i){
-		gt_remap[i << 1]       = (i << 1) + 1;
-		gt_remap[(i << 1) + 1] = (i << 1) + 2;
+		gt_remap[i << 1]       = (i+1 << 1);
+		gt_remap[(i << 1) + 1] = (i+2 << 1);
 	}
-	gt_remap[0] = 0;
+	gt_remap[0]   = 0;
 	gt_remap[129] = 1;
 
-	U32 rle_current_ref     = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[0]] >> 1, gt_remap[gt[1]] >> 1, shift, add, gt_remap[gt[1]]);
+	U32 rle_current_ref     = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[0]] >> 1,
+	                                                       gt_remap[gt[1]] >> 1,
+	                                                       shift, add,
+	                                                       gt_remap[gt[1]]);
+
 	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy]] >> 1,
 												           gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]] >> 1,
 												           shift, add,
@@ -305,18 +309,6 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 		assert(gt_remap[gt_ppa_target[0]] != 255);
 		assert(gt_remap[gt_ppa_target[1]] != 255);
 
-		/*
-		std::cerr << (U32)gt[l_gt_offset] << "->" << (U32)gt_remap[gt[l_gt_offset]] << std::endl;
-		std::cerr << (U32)gt[l_gt_offset+1] << "->" << (U32)gt_remap[gt[l_gt_offset+1]] << std::endl;
-		if(gt[l_gt_offset] == 129){
-			std::cerr << (int)gt[l_gt_offset] << "==129 -> " << (U32)gt_remap[gt[l_gt_offset]] << std::endl;
-		}
-		if(gt[l_gt_offset+1] == 129){
-			std::cerr << (int)gt[l_gt_offset+1] << "==129 -> " << (U32)gt_remap[gt[l_gt_offset+1]] << std::endl;
-		}
-		*/
-
-
 		if(rle_current != rle_current_ref){
 			for(U32 k = 4; k < 8; ++k) ++n_runs[k];
 			for(U32 k = 4; k < 8; ++k) l_runs[k] = 0;
@@ -341,7 +333,6 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 			++l_runs[k];
 		}
 	}
-	//std::cerr << std::endl;
 	assert(l_gt_offset == l_gt);
 	for(U32 k = 0; k < 8; ++k) ++n_runs[k];
 
@@ -356,7 +347,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 		}
 	}
 	for(U32 k = 4; k < 8; ++k){
-		if(banned_limit[k]){
+		if(banned_limit[k-4]){
 			sum.n_runs[k] = std::numeric_limits<uint64_t>::max();
 			sum.n_cost[k] = std::numeric_limits<uint64_t>::max();
 		} else {
@@ -366,12 +357,11 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	}
 	sum.method = 1;
 
+
 	/*
 	std::cout << entry->pos + 1 << "\tM";
-	for(U32 i = 0; i < 4; ++i)
-		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*(i+1);
-	for(U32 i = 4; i < 8; ++i)
-		std::cout << "\t" << n_runs[i] << "\t" << n_runs[i]*((i-4)+1);
+	for(U32 i = 0; i < 8; ++i)
+		std::cout << "\t" << sum.n_runs[i] << "\t" << sum.n_cost[i];
 	std::cout << std::endl;
 	*/
 

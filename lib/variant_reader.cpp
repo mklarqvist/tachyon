@@ -708,67 +708,29 @@ U64 VariantReader::OutputVcf(void){
 
 		// Todo: in cases of non-diploid
 		io::BasicBuffer output_buffer(100000);
+
 		/*
-		std::vector<core::GTObject> genotypes_unpermuted(this->global_header.GetNumberSamples());
-		for(U32 i = 0; i < this->global_header.GetNumberSamples(); ++i){
-			genotypes_unpermuted[i].alleles = new core::GTObjectAllele;
-		}
-
-		for(U32 i = 0; i < objects.meta_container->size(); ++i){
-			entries[i].gt->getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
-			for(U32 j = 0; j < genotypes_unpermuted.size(); ++j){
-				output_buffer << genotypes_unpermuted[j];
-				output_buffer += ' ';
-			}
-			output_buffer += '\n';
-
-			std::cout.write(output_buffer.data(), output_buffer.size());
-			output_buffer.reset();
-		}
-
-		// temp
-		delete [] entries;
-		continue;
-		*/
-
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.getBlock().gt_ppa);
 			if(gt_records == nullptr) continue; // not all methods implemented yet.
-			std::cerr << "Site: " << objects.meta_container->at(i).position+1 << " -> " << gt_records->n_i << "," << gt_records->n_s << "," << (uint32_t)gt_records->m << "," << (uint32_t)gt_records->p << std::endl;
-			if(gt_records->n_i < 200) continue;
 
-			gt_records->EvaluateRecordsM1();
-			for(U32 j = 0; j < gt_records->n_i; ++j){
-				std::cerr << gt_records->rcds[j].length << ":" << (gt_records->rcds[j].allele[0] >> 1) << "," << (gt_records->rcds[j].allele[1] >> 1) << " ";
-			}
-			std::cerr << std::endl;
-			gt_records->EvaluateBcf();
-			std::cerr << "Permuted bcf" << std::endl;
-			uint64_t n_bcf_cum = 0;
+			gt_records->Evaluate();
+			gt_records->EvaluatePpa();
+
 			for(U32 j = 0; j < gt_records->n_s; ++j){
-				std::cerr << (gt_records->d_bcf[n_bcf_cum++] >> 1);
-				for(U32 k = 1; k < gt_records->m; ++k, ++n_bcf_cum){
-					std::cerr << '|' << (gt_records->d_bcf[n_bcf_cum] >> 1);
-				}
-				std::cerr << " ";
+				gt_records->d_ppa[j]->printVcf(output_buffer, gt_records->m);
+				output_buffer += ' ';
 			}
-			std::cerr << std::endl;
-
-			gt_records->EvaluatePpaFromBcf(gt_records->d_bcf);
-			std::cerr << "Unpermuted bcf" << std::endl;
-
-			n_bcf_cum = 0;
-			for(U32 j = 0; j < gt_records->n_s; ++j){
-				std::cerr << (gt_records->d_ppa[n_bcf_cum++] >> 1);
-				for(U32 k = 1; k < gt_records->m; ++k, ++n_bcf_cum){
-					std::cerr << '|' << (gt_records->d_ppa[n_bcf_cum] >> 1);
-				}
-				std::cerr << " ";
-			}
+			std::cerr.write(output_buffer.data(), output_buffer.size());
+			output_buffer.reset();
 			std::cerr << std::endl;
 
 			delete gt_records;
 		}
+
+		delete [] entries;
+		continue;
+		*/
 
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
@@ -821,19 +783,31 @@ U64 VariantReader::OutputVcf(void){
 				}
 				output_buffer += '\t';
 
+				yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.getBlock().gt_ppa);
+				gt_records->Evaluate();
+				gt_records->EvaluatePpa();
+
+
+				gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
+				output_buffer += ':';
+
+
 				// Todo: this is currently only valid if GT is available for
 				// this record.
 
 				if(n_format_avail > entries[i].is_loaded_gt){
 					for(U32 s = 0; s < this->global_header.GetNumberSamples(); ++s){
+						gt_records->d_ppa[s]->printVcf(output_buffer, gt_records->m);
+						output_buffer += ':';
 						entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, s);
 						for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
 							output_buffer += ':';
 							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
 						}
-						output_buffer += '\t';
+						if(s + 1 != this->global_header.GetNumberSamples()) output_buffer += '\t';
 					}
 				}
+				delete gt_records;
 			}
 
 			output_buffer += '\n';
