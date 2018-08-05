@@ -53,8 +53,8 @@ namespace tachyon {
 #define YON_BLK_BV_GT_S_INT64  1 << YON_BLK_GT_S_INT64
 #define YON_BLK_BV_GT_SUPPORT  1 << YON_BLK_GT_SUPPORT
 
-#define YON_BLK_BV_INFO    1 << (YON_BLK_GT_SUPPORT + 1)
-#define YON_BLK_BV_FORMAT  1 << (YON_BLK_GT_SUPPORT + 2)
+#define YON_BLK_BV_INFO        1 << (YON_BLK_GT_SUPPORT + 1)
+#define YON_BLK_BV_FORMAT      1 << (YON_BLK_GT_SUPPORT + 2)
 
 namespace containers {
 

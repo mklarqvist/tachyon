@@ -112,8 +112,7 @@ public:
 	}
 
 public:
-	// allows jumping to the next block when streaming
-	// over the file and not using the index
+	// Allows jumping to the next block when streaming.
 	// EOF marker is at this position - sizeof(EOF marker)
 	U32 l_offset_footer;
 	U64 block_hash;     // block identifier in the form of a random hash

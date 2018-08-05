@@ -38,7 +38,6 @@ DataContainerHeaderObject::DataContainerHeaderObject(DataContainerHeaderObject&&
 	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
 }
 
- // copy assignment
 DataContainerHeaderObject& DataContainerHeaderObject::operator=(const DataContainerHeaderObject& other){
 	this->controller = other.controller;
 	this->stride     = other.stride;
@@ -51,8 +50,6 @@ DataContainerHeaderObject& DataContainerHeaderObject::operator=(const DataContai
 	return *this;
 }
 
-
-/** Move assignment operator */
 DataContainerHeaderObject& DataContainerHeaderObject::operator=(DataContainerHeaderObject&& other) noexcept{
 	this->controller = other.controller;
 	this->stride     = other.stride;

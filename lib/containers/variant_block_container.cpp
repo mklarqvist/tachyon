@@ -3,9 +3,8 @@
 namespace tachyon{
 namespace containers{
 
-bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type& settings){
+bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type& settings){
 	// Todo: slice out target of interest
-
 	// Todo: fix these
 	settings.display_static = std::numeric_limits<U32>::max();
 	//settings.display_static = (1UL << YON_BLK_GT_INT8) - 1;
@@ -45,7 +44,6 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
 			//std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_info_streams << " -> " << this->block_.footer.info_offsets[i].data_header.global_key << std::endl;
-			//this->mapper_.info_container_loaded_.at(i)(i, i, this->block_.footer.info_offsets[i].data_header.global_key, &this->block_.footer.info_offsets[i]);
 		}
 	}
 	// If we have supplied a list of identifiers
@@ -60,7 +58,6 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
 			//std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_format_streams << " -> " << this->block_.footer.format_offsets[i].data_header.global_key << std::endl;
-			//this->mapper_.format_container_loaded_.at(i)(i, i, this->block_.footer.format_offsets[i].data_header.global_key, &this->block_.footer.format_offsets[i]);
 		}
 		assert(this->block_.end_compressed_data_ == (U64)stream.tellg());
 	} // If we have supplied a list of identifiers
@@ -72,13 +69,13 @@ bool VariantBlockContainer::readBlock(std::ifstream& stream, block_settings_type
 	return(true);
 }
 
-VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, block_settings_type& block_settings){
+VariantReaderObjects& VariantBlockContainer::LoadObjects(objects_type& objects, block_settings_type& block_settings){
 	// New meta container
-	objects.meta_container = new meta_container_type(this->getBlock());
+	objects.meta_container = new meta_container_type(this->GetBlock());
 
 	// New genotype containers if aplicable
-	if(this->getBlock().header.controller.hasGT && (block_settings.load_static & YON_BLK_BV_GT_INT8)){
-		objects.genotype_container = new gt_container_type(this->getBlock(), *objects.meta_container);
+	if(this->HasGenotypes() && (block_settings.load_static & YON_BLK_BV_GT_INT8)){
+		objects.genotype_container = new gt_container_type(this->GetBlock(), *objects.meta_container);
 		objects.genotype_summary   = new objects_type::genotype_summary_type(10);
 	}
 
@@ -97,14 +94,14 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 			std::vector<bool> matches = this->block_.FormatPatternSetMembership(global_key);
 
 			if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
-				objects.format_containers[i] = new containers::FormatContainer<S32>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_containers[i] = new containers::FormatContainer<S32>(this->GetBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
 
 			} else if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_STRING ||
 					  this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_CHARACTER)
 			{
-				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_containers[i] = new containers::FormatContainer<std::string>(this->GetBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
 			} else if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_FLOAT){
-				objects.format_containers[i] = new containers::FormatContainer<float>(this->getBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
+				objects.format_containers[i] = new containers::FormatContainer<float>(this->GetBlock().format_containers[i], *objects.meta_container, matches, this->header_->GetNumberSamples());
 			} else if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_FLAG){
 				std::cerr << utility::timestamp("ERROR") << "Format fields cannot have FLAG fields." << std::endl;
 				exit(1);
@@ -131,13 +128,13 @@ VariantReaderObjects& VariantBlockContainer::loadObjects(objects_type& objects, 
 			std::vector<bool> matches = this->block_.InfoPatternSetMembership(global_key);
 
 			if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
-				objects.info_containers[i] = new containers::InfoContainer<S32>(this->getBlock().info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<S32>(this->GetBlock().info_containers[i], *objects.meta_container, matches);
 			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_STRING ||
 					  this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_CHARACTER)
 			{
-				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->getBlock().info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<std::string>(this->GetBlock().info_containers[i], *objects.meta_container, matches);
 			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_FLOAT){
-				objects.info_containers[i] = new containers::InfoContainer<float>(this->getBlock().info_containers[i], *objects.meta_container, matches);
+				objects.info_containers[i] = new containers::InfoContainer<float>(this->GetBlock().info_containers[i], *objects.meta_container, matches);
 			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_FLAG){
 				objects.info_containers[i] = new containers::InfoContainer<U32>(true);
 			} else {

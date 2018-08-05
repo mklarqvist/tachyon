@@ -182,6 +182,11 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 	if(data_container.buffer_data_uncompressed.size() == 0)
 		return;
 
+	std::cerr << data_container.header.data_header.HasMixedStride() << "," <<
+			data_container.header.data_header.IsSigned() << "," <<
+			data_container.header.data_header.GetPrimitiveType() << "," <<
+			data_container.header.data_header.controller.signedness << std::endl;
+
 	if(data_container.header.data_header.HasMixedStride()){
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
@@ -246,7 +251,8 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 }
 
 template <class return_type>
-FormatContainer<return_type>::FormatContainer(const data_container_type& container, const U64 n_samples) :
+FormatContainer<return_type>::FormatContainer(const data_container_type& container,
+                                              const U64 n_samples) :
 	__containers(nullptr)
 {
 	if(container.buffer_data_uncompressed.size() == 0)
@@ -309,7 +315,9 @@ FormatContainer<return_type>::~FormatContainer(){
 
 template <class return_type>
 template <class actual_primitive>
-void FormatContainer<return_type>::__setup(const data_container_type& container, const U64& n_samples){
+void FormatContainer<return_type>::__setup(const data_container_type& container,
+                                           const U64& n_samples)
+{
 	if(container.buffer_strides_uncompressed.size() == 0)
 		return;
 
@@ -334,41 +342,54 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 
 template <class return_type>
 template <class actual_primitive>
-void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples){
-		this->n_entries = meta_container.size();
-		if(this->n_entries == 0)
-			return;
+void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container,
+                                                   const meta_container_type& meta_container,
+                                                   const std::vector<bool>& pattern_matches,
+                                                   const U64& n_samples)
+{
+	this->n_entries = meta_container.size();
+	if(this->n_entries == 0)
+		return;
 
-		this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
-		stride_container_type strides(data_container);
+	assert(data_container.GetSizeUncompressed() % sizeof(actual_primitive) == 0);
 
-		U32 current_offset = 0;
-		U32 strides_offset = 0;
-		for(U32 i = 0; i < this->size(); ++i){
-			// There are no FORMAT fields
-			if(meta_container[i].GetFormatPatternId() == -1){
-				new( &this->__containers[i] ) value_type( );
-			}
-			// If pattern matches
-			else if(pattern_matches[meta_container[i].GetFormatPatternId()]){
-				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
-				current_offset += strides[strides_offset] * sizeof(actual_primitive) * n_samples;
-				++strides_offset;
-			}
-			// Otherwise place an empty
-			else {
-				new( &this->__containers[i] ) value_type( );
-			}
+	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	stride_container_type strides(data_container);
+
+	U32 current_offset = 0;
+	U32 strides_offset = 0;
+	for(U32 i = 0; i < this->size(); ++i){
+		// There are no FORMAT fields set empty.
+		if(meta_container[i].GetFormatPatternId() == -1){
+			new( &this->__containers[i] ) value_type( );
 		}
-		assert(current_offset == data_container.buffer_data_uncompressed.size());
+		// If pattern matches
+		else if(pattern_matches[meta_container[i].GetFormatPatternId()]){
+			new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, strides[strides_offset] );
+			current_offset += strides[strides_offset] * sizeof(actual_primitive) * n_samples;
+			++strides_offset;
+		}
+		// Otherwise place an empty
+		else {
+			new( &this->__containers[i] ) value_type( );
+		}
+	}
+	assert(current_offset == data_container.buffer_data_uncompressed.size());
 }
 
 template <class return_type>
 template <class actual_primitive>
-void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples, const U32 stride_size){
+void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container,
+                                                   const meta_container_type& meta_container,
+                                                   const std::vector<bool>& pattern_matches,
+                                                   const U64& n_samples,
+                                                   const U32 stride_size)
+{
 	this->n_entries = meta_container.size();
 	if(this->n_entries == 0)
 		return;
+
+	assert(data_container.GetSizeUncompressed() % sizeof(actual_primitive) == 0);
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
@@ -411,7 +432,10 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 
 template <class return_type>
 template <class actual_primitive>
-void FormatContainer<return_type>::__setup(const data_container_type& container, const U64& n_samples, const U32 stride_size){
+void FormatContainer<return_type>::__setup(const data_container_type& container,
+                                           const U64& n_samples,
+                                           const U32 stride_size)
+{
 	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
 
 	if(this->n_entries == 0)

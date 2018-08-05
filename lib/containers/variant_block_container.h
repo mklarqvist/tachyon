@@ -10,7 +10,6 @@
 #include "containers/format_container_string.h"
 #include "containers/interval_container.h"
 #include "core/variant_site_annotation.h"
-#include "variant_block_mapper.h"
 #include "core/variant_reader_objects.h"
 
 namespace tachyon {
@@ -77,7 +76,6 @@ private:
     typedef VariantBlock          block_type;
     typedef VariantBlockHeader    block_header_type;
     typedef VariantBlockFooter    block_footer_type;
-    typedef VariantBlockMapper    block_mapper_type;
     typedef VariantHeader         global_header_type;
 	typedef containers::VariantBlock             block_entry_type;
 	typedef containers::MetaContainer            meta_container_type;
@@ -128,7 +126,7 @@ public:
 	 * @param settings Settings record describing reading parameters
 	 * @return         Returns FALSE if there was a problem, TRUE otherwise
 	 */
-	bool readBlock(std::ifstream& stream, block_settings_type& settings);
+	bool ReadBlock(std::ifstream& stream, block_settings_type& settings);
 
 	/**<
 	 * Factory function for FORMAT container given an input `field` name
@@ -169,14 +167,14 @@ public:
 	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const;
 
 	// Accessors
-	inline block_type& getBlock(void){ return(this->block_); }
-	inline const block_type& getBlock(void) const{ return(this->block_); }
-	inline objects_type* getObjects(void){ return(this->objects_); }
+	inline block_type& GetBlock(void){ return(this->block_); }
+	inline const block_type& GetBlock(void) const{ return(this->block_); }
+	inline objects_type* GetObjects(void){ return(this->objects_); }
 
 	// Checkers
-	inline bool anyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
-	inline bool hasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
-	inline bool hasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
+	inline bool AnyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
+	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
+	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
 	/**<
 	 * Primary construction function for generating the appropriate instances of
@@ -184,12 +182,12 @@ public:
 	 * @param objects Target objects
 	 * @return        Returns reference to input target objects
 	 */
-	objects_type& loadObjects(objects_type& objects, block_settings_type& block_settings);
+	objects_type& LoadObjects(objects_type& objects, block_settings_type& block_settings);
 
-	objects_type* loadObjects(block_settings_type& block_settings){
+	objects_type* LoadObjects(block_settings_type& block_settings){
 		delete this->objects_;
 		this->objects_ = new objects_type;
-		this->loadObjects(*this->objects_, block_settings);
+		this->LoadObjects(*this->objects_, block_settings);
 		return this->objects_;
 	}
 

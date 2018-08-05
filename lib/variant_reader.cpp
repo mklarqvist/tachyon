@@ -115,7 +115,7 @@ bool VariantReader::open(void){
 	return(this->basic_reader.stream_.good());
 }
 
-bool VariantReader::nextBlock(){
+bool VariantReader::NextBlock(){
 	// If the stream is faulty then return
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
@@ -130,38 +130,38 @@ bool VariantReader::nextBlock(){
 	// Reset and re-use
 	this->variant_container.reset();
 
-	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
+	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.readBlock(this->basic_reader.stream_, this->block_settings))
+	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
 		return false;
 
 	// encryption manager ascertainment
-	if(this->variant_container.anyEncrypted()){
+	if(this->variant_container.AnyEncrypted()){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(this->variant_container.getBlock(), this->keychain)){
+		if(!encryption_manager.decryptAES256(this->variant_container.GetBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
-	//assert(this->variant_container.getBlock().gt_ppa != nullptr);
-	this->variant_container.getBlock().gt_ppa = new yon_gt_ppa;
-	this->variant_container.getBlock().gt_ppa->n_samples = this->global_header.GetNumberSamples();
+	//assert(this->variant_container.GetBlock().gt_ppa != nullptr);
+	this->variant_container.GetBlock().gt_ppa = new yon_gt_ppa;
+	this->variant_container.GetBlock().gt_ppa->n_samples = this->global_header.GetNumberSamples();
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(this->variant_container.getBlock())){
+	if(!this->codec_manager.Decompress(this->variant_container.GetBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -170,7 +170,7 @@ bool VariantReader::nextBlock(){
 	return true;
 }
 
-bool VariantReader::getBlock(const index_entry_type& index_entry){
+bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	// If the stream is faulty then return
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
@@ -178,7 +178,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	}
 
 	// Reset and re-use
-	this->variant_container.getBlock().clear();
+	this->variant_container.GetBlock().clear();
 
 	// Seek to target block ID with the help of the index
 	this->basic_reader.stream_.seekg(index_entry.byte_offset);
@@ -187,35 +187,35 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 		return(false);
 	}
 
-	if(!this->variant_container.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return(false);
 	}
-	this->variant_container.getBlock().footer_support.buffer_data_uncompressed >> this->variant_container.getBlock().footer;
+	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
 
 	// Attempts to read a YON block with the provided
-	if(!this->variant_container.readBlock(this->basic_reader.stream_, this->block_settings))
+	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
 		return false;
 
 	// encryption manager ascertainment
-	if(this->variant_container.getBlock().header.controller.anyEncrypted){
+	if(this->variant_container.GetBlock().header.controller.anyEncrypted){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(this->variant_container.getBlock(), this->keychain)){
+		if(!encryption_manager.decryptAES256(this->variant_container.GetBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(this->variant_container.getBlock())){
+	if(!this->codec_manager.Decompress(this->variant_container.GetBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -224,7 +224,7 @@ bool VariantReader::getBlock(const index_entry_type& index_entry){
 	return true;
 }
 
-containers::VariantBlockContainer VariantReader::getBlock(){
+containers::VariantBlockContainer VariantReader::GetBlock(){
 	// If the stream is faulty then return
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
@@ -239,34 +239,34 @@ containers::VariantBlockContainer VariantReader::getBlock(){
 	// Reset and re-use
 	containers::VariantBlockContainer block;
 
-	if(!block.getBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!block.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return variant_container_type();
 
-	if(!this->codec_manager.zstd_codec.Decompress(block.getBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(block.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	block.getBlock().footer_support.buffer_data_uncompressed >> block.getBlock().footer;
+	block.GetBlock().footer_support.buffer_data_uncompressed >> block.GetBlock().footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!block.readBlock(this->basic_reader.stream_, this->getBlockSettings()))
+	if(!block.ReadBlock(this->basic_reader.stream_, this->getBlockSettings()))
 		return variant_container_type();
 
 	// encryption manager ascertainment
-	if(block.anyEncrypted()){
+	if(block.AnyEncrypted()){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return variant_container_type();
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(block.getBlock(), this->keychain)){
+		if(!encryption_manager.decryptAES256(block.GetBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return variant_container_type();
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(block.getBlock())){
+	if(!this->codec_manager.Decompress(block.GetBlock())){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return variant_container_type();
 	}
@@ -281,15 +281,15 @@ void VariantReader::printFILTER(buffer_type& outputBuffer,
 {
 	if(outputBuffer.back() != '\t') outputBuffer += '\t';
 
-	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
-		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
+	if(this->block_settings.display_filter && this->variant_container.GetBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			// Local key -> global key
-			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 			}
 		} else
 			outputBuffer += '.';
@@ -302,17 +302,17 @@ void VariantReader::printFILTERCustom(buffer_type& outputBuffer,
 				 const U32& position,
 				 const objects_type& objects) const
 {
-	if(this->block_settings.display_filter && this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
-		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
+	if(this->block_settings.display_filter && this->variant_container.GetBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			if(outputBuffer.back() != this->block_settings.custom_delimiter_char) outputBuffer += this->block_settings.custom_delimiter_char;
 
 			// Local key -> global key
-			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ';';
-				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 			}
 		} else
 			outputBuffer += '.';
@@ -326,19 +326,19 @@ void VariantReader::printFILTERJSON(buffer_type& outputBuffer,
 					 const U32& position,
 					 const objects_type& objects) const
 {
-	if(this->variant_container.getBlock().footer.n_filter_streams){
-		const U32& n_filter_keys = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
-		const int* filter_keys   = this->variant_container.getBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
+	if(this->variant_container.GetBlock().footer.n_filter_streams){
+		const U32& n_filter_keys = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.size();
+		const int* filter_keys   = this->variant_container.GetBlock().footer.filter_patterns[(*objects.meta_container)[position].filter_pattern_id].pattern.data();
 		if(n_filter_keys){
 			if(outputBuffer.back() != ',') outputBuffer += ',';
 			// Local key -> global key
 			outputBuffer += "\"FILTER-";
-			outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
+			outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[0]].data_header.global_key].id;
 			outputBuffer += "\":true";
 			for(U32 i = 1; i < n_filter_keys; ++i){
 				outputBuffer += ',';
 				outputBuffer += "\"FILTER-";
-				outputBuffer += this->global_header.filter_fields_[this->variant_container.getBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
+				outputBuffer += this->global_header.filter_fields_[this->variant_container.GetBlock().footer.filter_offsets[filter_keys[i]].data_header.global_key].id;
 				outputBuffer += "\":true";
 			}
 		}
@@ -353,24 +353,24 @@ void VariantReader::printFORMATVCF(buffer_type& buffer,
 {
 	if((this->block_settings.display_static & YON_BLK_BV_FORMAT) && objects.n_loaded_format){
 		if(objects.n_loaded_format){
-			const U32& n_format_keys = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.size();
-			const int* format_keys   = this->variant_container.getBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.data();
+			const U32& n_format_keys = this->variant_container.GetBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.size();
+			const int* format_keys   = this->variant_container.GetBlock().footer.format_patterns[objects.meta_container->at(position).format_pattern_id].pattern.data();
 			if(n_format_keys){
 				if(buffer.back() != delimiter) buffer += delimiter;
 
 				// Print key map
-				buffer += this->global_header.format_fields_[this->variant_container.getBlock().footer.format_offsets[format_keys[0]].data_header.global_key].id;
+				buffer += this->global_header.format_fields_[this->variant_container.GetBlock().footer.format_offsets[format_keys[0]].data_header.global_key].id;
 				for(U32 i = 1; i < n_format_keys; ++i){
 					buffer += ':';
-					buffer += this->global_header.format_fields_[this->variant_container.getBlock().footer.format_offsets[format_keys[i]].data_header.global_key].id;
+					buffer += this->global_header.format_fields_[this->variant_container.GetBlock().footer.format_offsets[format_keys[i]].data_header.global_key].id;
 				}
 				buffer += delimiter;
 
 				// Todo: print if no GT data
 				// Begin print FORMAT data for each sample
-				if(this->variant_container.getBlock().header.controller.hasGT){
-					if((this->block_settings.display_static & YON_BLK_BV_PPA) && this->variant_container.getBlock().header.controller.hasGTPermuted){
-						//objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.getBlock().ppa_manager);
+				if(this->variant_container.GetBlock().header.controller.hasGT){
+					if((this->block_settings.display_static & YON_BLK_BV_PPA) && this->variant_container.GetBlock().header.controller.hasGTPermuted){
+						//objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted, this->variant_container.GetBlock().ppa_manager);
 					} else {
 						//objects.genotype_container->at(position).getObjects(this->global_header.GetNumberSamples(), genotypes_unpermuted);
 					}
@@ -559,7 +559,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 				const objects_type& objects) const
 {
 	// Check if any INFO data exists at all
-	if(this->variant_container.getBlock().footer.n_info_patterns == 0)
+	if(this->variant_container.GetBlock().footer.n_info_patterns == 0)
 		return;
 
 	if((this->block_settings.display_static & YON_BLK_BV_INFO) || objects.n_loaded_info){
@@ -577,7 +577,7 @@ void VariantReader::printINFOVCF(buffer_type& outputBuffer,
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += ";";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
-				if(this->global_header.info_fields_[this->variant_container.getBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].yon_type == YON_VCF_HEADER_FLAG)
+				if(this->global_header.info_fields_[this->variant_container.GetBlock().footer.info_offsets[targetKeys[i]].data_header.global_key].yon_type == YON_VCF_HEADER_FLAG)
 					continue;
 
 				if(objects.info_containers[targetKeys[i]]->emptyPosition(position))
@@ -611,7 +611,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 			if(outputBuffer.back() != delimiter) outputBuffer += delimiter;
 
 			// Check if this target container is a FLAG
-			if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
+			if(this->global_header.info_fields_[this->variant_container.GetBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += objects.info_field_names[targetKeys[0]];
 			} else {
 				// Check if the position is empty
@@ -622,7 +622,7 @@ void VariantReader::printINFOCustom(buffer_type& outputBuffer,
 
 			for(U32 i = 1; i < targetKeys.size(); ++i){
 				outputBuffer += delimiter;
-				if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
+				if(this->global_header.info_fields_[this->variant_container.GetBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += objects.info_field_names[targetKeys[i]];
 					continue;
 				}
@@ -646,7 +646,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 			outputBuffer += "\"INFO-";
 			outputBuffer += objects.info_field_names[targetKeys[0]];
 			outputBuffer += "\":";
-			if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
+			if(this->global_header.info_fields_[this->variant_container.GetBlock().info_containers[targetKeys[0]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 				outputBuffer += "true";
 			} else {
 				objects.info_containers[targetKeys[0]]->to_json_string(outputBuffer, position);
@@ -657,7 +657,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 				outputBuffer += "\"INFO-";
 				outputBuffer += objects.info_field_names[targetKeys[i]];
 				outputBuffer += "\":";
-				if(this->global_header.info_fields_[this->variant_container.getBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
+				if(this->global_header.info_fields_[this->variant_container.GetBlock().info_containers[targetKeys[i]].header.getGlobalKey()].yon_type == YON_VCF_HEADER_FLAG){
 					outputBuffer += "true";
 					continue;
 				}
@@ -667,7 +667,7 @@ void VariantReader::printINFOCustomJSON(buffer_type& outputBuffer,
 	}
 }
 
-TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_entry_type& meta, const U32& allele) const{
+TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const U32& allele) const{
 	const S32 ref_size = meta.alleles[0].size();
 	const S32 diff = ref_size - meta.alleles[allele].size();
 	//std::cerr << diff << ",";
@@ -702,35 +702,11 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::classifyVariant(const meta_en
 }
 
 U64 VariantReader::OutputVcf(void){
-	while(this->nextBlock()){
-		objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
+	while(this->NextBlock()){
+		objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);
 
-		// Todo: in cases of non-diploid
 		io::BasicBuffer output_buffer(100000);
-
-		/*
-		for(U32 i = 0; i < objects.meta_container->size(); ++i){
-			yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.getBlock().gt_ppa);
-			if(gt_records == nullptr) continue; // not all methods implemented yet.
-
-			gt_records->Evaluate();
-			gt_records->EvaluatePpa();
-
-			for(U32 j = 0; j < gt_records->n_s; ++j){
-				gt_records->d_ppa[j]->printVcf(output_buffer, gt_records->m);
-				output_buffer += ' ';
-			}
-			std::cerr.write(output_buffer.data(), output_buffer.size());
-			output_buffer.reset();
-			std::cerr << std::endl;
-
-			delete gt_records;
-		}
-
-		delete [] entries;
-		continue;
-		*/
 
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
 			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
@@ -783,31 +759,50 @@ U64 VariantReader::OutputVcf(void){
 				}
 				output_buffer += '\t';
 
-				yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.getBlock().gt_ppa);
-				gt_records->Evaluate();
-				gt_records->EvaluatePpa();
+				// Case when there is only GT field.
+				if(n_format_avail == 1 && entries[i].is_loaded_gt){
+					// Calculate FORMAT:GT for this variant site.
+					yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.GetBlock().gt_ppa);
+					gt_records->Evaluate();
+					// Todo: If ppa is loaded or not.
+					gt_records->EvaluatePpa();
 
-
-				gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
-				output_buffer += ':';
-
-
-				// Todo: this is currently only valid if GT is available for
-				// this record.
-
-				if(n_format_avail > entries[i].is_loaded_gt){
-					for(U32 s = 0; s < this->global_header.GetNumberSamples(); ++s){
+					// Iterate over samples and print FORMAT:GT value in Vcf format.
+					gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
+					for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+						output_buffer += '\t';
 						gt_records->d_ppa[s]->printVcf(output_buffer, gt_records->m);
+					}
+					// Cleanup.
+					delete gt_records;
+
+				} else if(n_format_avail > 1 && entries[i].is_loaded_gt){
+					yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.GetBlock().gt_ppa);
+					gt_records->Evaluate();
+					gt_records->EvaluatePpa();
+
+					if(n_format_avail > entries[i].is_loaded_gt){
+						gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
 						output_buffer += ':';
-						entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, s);
+						entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, 0);
 						for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
 							output_buffer += ':';
-							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
+							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, 0);
 						}
-						if(s + 1 != this->global_header.GetNumberSamples()) output_buffer += '\t';
+
+						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+							output_buffer += '\t';
+							gt_records->d_ppa[s]->printVcf(output_buffer, gt_records->m);
+							output_buffer += ':';
+							entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, s);
+							for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
+								output_buffer += ':';
+								entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
+							}
+						}
 					}
+					delete gt_records;
 				}
-				delete gt_records;
 			}
 
 			output_buffer += '\n';
@@ -870,7 +865,7 @@ U64 VariantReader::outputVCF(void){
 
 		if(this->interval_container.getBlockList().size()){
 			for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
-				if(this->getBlock(this->interval_container.getBlockList()[i]) == false){
+				if(this->GetBlock(this->interval_container.getBlockList()[i]) == false){
 					return(0);
 				}
 				n_variants += this->outputBlockVCF();
@@ -883,7 +878,7 @@ U64 VariantReader::outputVCF(void){
 	}
 
 	// While there are YON blocks
-	while(this->nextBlock()) n_variants += this->outputBlockVCF();
+	while(this->NextBlock()) n_variants += this->outputBlockVCF();
 	return(n_variants);
 }
 
@@ -895,7 +890,7 @@ U64 VariantReader::outputCustom(void){
 	U64 n_variants = 0;
 
 	// While there are YON blocks
-	while(this->nextBlock()) n_variants += this->outputBlockCustom();
+	while(this->NextBlock()) n_variants += this->outputBlockCustom();
 	return(n_variants);
 }
 
@@ -904,7 +899,7 @@ U64 VariantReader::outputCustom(void){
  * @return
  */
 U32 VariantReader::outputBlockVCF(void){
-	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
+	objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of synchronisation
@@ -969,7 +964,7 @@ U32 VariantReader::outputBlockVCF(void){
  * @return
  */
 U32 VariantReader::outputBlockCustom(void){
-	objects_type& objects = *this->getCurrentBlock().loadObjects(this->block_settings);
+	objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
 
 	// Reserve memory for output buffer
 	// This is much faster than writing directly to ostream because of syncing

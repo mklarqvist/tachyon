@@ -116,7 +116,7 @@ int stats(int argc, char** argv){
 
 	U32 block_counter = 0;
 	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().GetNumberSamples());
-	while(reader.nextBlock()){
+	while(reader.NextBlock()){
 		//reader.getTiTVRatios(global_titv);
 		//reader.getGenotypeSummary(std::cout);
 		std::cerr << block_counter++ << "/" << reader.getIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.getIndex().size() << std::endl;

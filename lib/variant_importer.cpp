@@ -139,13 +139,13 @@ bool VariantImporter::BuildVCF(void){
 		this->block.Finalize();
 		this->GenerateIdentifiers();
 
-		// Perform compression using standard parameters
+		// Perform compression using standard parameters.
 		if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 			return false;
 		}
 
-		// Encryption
+		// Encrypt the variant block if desired.
 		if(this->settings_.encrypt_data){
 			this->block.header.controller.anyEncrypted = true;
 			if(!encryption_manager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
@@ -153,6 +153,7 @@ bool VariantImporter::BuildVCF(void){
 			}
 		}
 
+		// Write the current variant block.
 		this->WriteBlock();
 
 		// Update checksums container with the available data.
@@ -174,6 +175,7 @@ bool VariantImporter::BuildVCF(void){
 	// Do not delete the borrowed pointer.
 	this->block.gt_ppa = nullptr;
 
+	// Finalize writing procedure.
 	this->WriteFinal(checksums);
 	this->WriteKeychain(keychain);
 
@@ -235,15 +237,6 @@ bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 		const int& hts_filter_key = record->d.flt[i]; // htslib IDX value
 		const U32 global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
 		const U32 target_container = this->block.AddFilter(global_key);
-		/*
-		const reorder_map_type::const_iterator it = this->filter_local_map_.find(global_key); // search for global IDX
-		if(it == this->filter_local_map_.end()){
-			this->filter_local_map_[global_key] = this->filter_list_.size(); // local IDX
-			this->filter_list_.push_back(global_key); // store local IDX at the key of the global IDX
-			// Todo: spawn new object here if required.
-		}
-		const U32 target_container = this->filter_local_map_[global_key];
-		*/
 		assert(target_container < 65536);
 		filter_ids.push_back(global_key);
 	}
@@ -259,14 +252,6 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
 		const U32 global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
 		const U32 target_container = this->block.AddInfo(global_key);
-		/*
-		const reorder_map_type::const_iterator it = this->info_local_map_.find(global_key); // search for global IDX
-		if(it == this->info_local_map_.end()){
-			this->info_local_map_[global_key] = this->info_list_.size(); // local IDX
-			this->info_list_.push_back(global_key); // store local IDX at the key of the global IDX
-		}
-		const U32 target_container = this->info_local_map_[global_key];
-		*/
 		assert(target_container < 65536);
 		info_ids.push_back(global_key);
 
@@ -276,9 +261,6 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		const uint32_t& data_length    = record->d.info[i].vptr_len;
 		const uint8_t* data            = record->d.info[i].vptr;
 		int element_stride_size        = 0;
-
-		//std::cerr << "Info:       " << hts_info_key << "(" << global_key << "," << (*this->block.info_map)[global_key] << "=" << target_container << ")->" << this->vcf_reader_->vcf_header_.GetInfo(hts_info_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
-		//std::cerr << "Additional: " << stride_size << "," << data_length << " -> " << this->vcf_reader_->vcf_header_.GetNumberSamples() << std::endl;
 
 		if(info_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);
@@ -331,14 +313,6 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
 		const U32 global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
 		const U32 target_container = this->block.AddFormat(global_key);
-		/*
-		const reorder_map_type::const_iterator it = this->format_local_map_.find(global_key); // search for global IDX
-		if(it == this->format_local_map_.end()){
-			this->format_local_map_[global_key] = this->format_list_.size(); // local IDX
-			this->format_list_.push_back(global_key); // store local IDX at the key of the global IDX
-		}
-		const U32 target_container = this->format_local_map_[global_key];
-		*/
 		assert(target_container < 65536);
 		format_ids.push_back(global_key);
 
@@ -355,9 +329,6 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		const uint32_t& data_length      = record->d.fmt[i].p_len;
 		const uint8_t* data              = record->d.fmt[i].p;
 		int element_stride_size          = 0;
-
-		//std::cerr << "Format: " << hts_format_key << "(" << global_key << "," << this->format_local_map_[global_key] << "=" << target_container << ")->" << this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id << " : " << io::BCF_TYPE_LOOKUP[record->d.fmt[i].type]
-		//<< " stride size: " << stride_size << " data length: " << data_length << "->" << data_length/stride_size << std::endl;																																																			  //stream_container& target_container = this->block.format_containers[map_id];
 
 		if(format_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);

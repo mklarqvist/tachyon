@@ -1,7 +1,6 @@
 #include <cassert>
 
 #include "data_container.h"
-#include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
@@ -104,11 +103,11 @@ bool DataContainer::CheckUniformity(void){
 	default: return false; break;
 	}
 
-	const U64 first_Hash = XXH64(this->buffer_data_uncompressed.data(), stride_update, 2147483647);
+	const U64 first_hash = XXH64(this->buffer_data_uncompressed.data(), stride_update, 2147483647);
 
 	U64 cumulative_position = stride_update;
 	for(U32 i = 1; i < this->header.n_entries; ++i){
-		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_Hash){
+		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_hash){
 			return(false);
 		}
 		cumulative_position += stride_update;
@@ -130,54 +129,62 @@ void DataContainer::ReformatInteger(){
 	if(this->buffer_data_uncompressed.size() == 0)
 		return;
 
-	// Recode integer types only
-	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
+	// Recode integer types only.
+	if(!(this->header.data_header.controller.type == YON_TYPE_32B &&
+	     this->header.data_header.controller.signedness == true))
+	{
 		return;
 	}
 
-	// Do not recode if the data is uniform
+	// Do not recode if the data is uniform.
 	if(this->header.data_header.IsUniform())
 		return;
 
-	// At this point all integers are S32
+	// At this point all integers are signed 32-bit integers.
+	assert(this->buffer_data_uncompressed.size() % sizeof(S32) == 0);
+	assert(this->header.n_additions * sizeof(S32) == this->buffer_data_uncompressed.size());
 	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data());
-	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data());
-	S32 min = dat[0];
-	S32 max = dat[0];
-	bool HasMissing = false;
+	S32 min_value = dat[0];
+	S32 max_value = dat[0];
+	bool has_special = false;
 
+	// Iterate over available data and search for either missingness
+	// or sentinel node values. If a match is found trigger the
+	// bool flag to signal the use of the recoding procedure.
 	for(U32 j = 0; j < this->header.n_additions; ++j){
-		if(udat[j] == 0x80000000 || udat[j] == 0x80000001){
-			HasMissing = true;
+		if(dat[j] == bcf_int32_missing || dat[j] == bcf_int32_vector_end){
+			has_special = true;
 			continue;
 		}
-		if(dat[j] < min) min = dat[j];
-		if(dat[j] > max) max = dat[j];
+		if(dat[j] < min_value) min_value = dat[j];
+		if(dat[j] > max_value) max_value = dat[j];
 	}
 
+	// If we have missing values then we have to use signed
+	// primitives to accommodate this fact.
 	BYTE byte_width = 0;
-	// If we have missing values then we have to use signedness
-	if(min < 0 || HasMissing == true){
-		byte_width = ceil((ceil(log2(abs(min) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
-		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1 + 2)) + 1) / 8);
+	if(min_value < 0 || has_special == true){
+		byte_width = ceil((ceil(log2(abs(min_value) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
+		const BYTE byte_width_max = ceil((ceil(log2(abs(max_value) + 1 + 2)) + 1) / 8);
 		if(byte_width_max > byte_width){
 			byte_width = byte_width_max;
 		}
 	}
-	else byte_width = ceil(ceil(log2(max + 1)) / 8);
+	else byte_width = ceil(ceil(log2(max_value + 1)) / 8);
 
+	// Select the smallest primitive type (word width) that
+	// can hold the target data range.
 	if(byte_width == 0)     byte_width = 1;
 	else if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
 
-	// PHase 2
-	// Here we re-encode values using the smallest possible word-size
+	// Setup buffers.
 	this->buffer_data.reset();
 	this->buffer_data.resize(this->buffer_data_uncompressed.size() + 65536);
 
 	// Is non-negative
 	// Also cannot have missing values
-	if(min >= 0 && HasMissing == false){
+	if(min_value >= 0 && has_special == false){
 		this->header.data_header.controller.signedness = 0;
 
 		if(byte_width == 1){
@@ -219,27 +226,33 @@ void DataContainer::ReformatInteger(){
 		if(byte_width == 1){
 			this->header.data_header.controller.type = YON_TYPE_8B;
 
+			const SBYTE missing = INT8_MIN;
+			const SBYTE eov     = INT8_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
-				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (SBYTE)dat[j];
 			}
 
 		} else if(byte_width == 2){
 			this->header.data_header.controller.type = YON_TYPE_16B;
 
+			const S16 missing = INT16_MIN;
+			const S16 eov     = INT16_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (U16)0x8000;
-				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (S16)dat[j];
 			}
 
 		} else if(byte_width == 4){
 			this->header.data_header.controller.type = YON_TYPE_32B;
 
+			const S32 missing = INT32_MIN;
+			const S32 eov     = INT32_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (U32)0x80000000;
-				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (S32)dat[j];
 			}
 
@@ -248,6 +261,8 @@ void DataContainer::ReformatInteger(){
 			exit(1);
 		}
 	}
+	assert(this->buffer_data.size() % byte_width == 0);
+	assert(this->header.n_additions * byte_width == this->buffer_data.size());
 
 	memcpy(this->buffer_data_uncompressed.buffer, this->buffer_data.buffer, this->buffer_data.size());
 	this->buffer_data_uncompressed.n_chars = this->buffer_data.size();
@@ -457,11 +472,27 @@ bool DataContainer::Add(const SBYTE& value){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
 	}
+
 	if(!this->CheckInteger()) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added SBYTE" << std::endl;
 		exit(1);
 		return false;
 	}
+
+	if(value == bcf_int8_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int8eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int8_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int8miss" << std::endl;
+		return(true);
+	}
+
 	this->buffer_data_uncompressed += (S32)value;
 	++this->header.n_additions;
 	return(true);
@@ -477,6 +508,21 @@ bool DataContainer::Add(const S16& value){
 		exit(1);
 		return false;
 	}
+
+	if(value == bcf_int16_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int16eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int16_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int16miss" << std::endl;
+		return(true);
+	}
+
 	this->buffer_data_uncompressed += (S32)value;
 	++this->header.n_additions;
 	return(true);
@@ -492,6 +538,21 @@ bool DataContainer::Add(const S32& value){
 		exit(1);
 		return false;
 	}
+
+	if(value == bcf_int32_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int32eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int32_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int32miss" << std::endl;
+		return(true);
+	}
+
 	this->buffer_data_uncompressed += (S32)value;
 	++this->header.n_additions;
 	return(true);

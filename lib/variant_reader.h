@@ -176,19 +176,19 @@ public:
 	 * Get the next YON block in-order
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool nextBlock(void);
+	bool NextBlock(void);
 
 	/**<
 	 * Get the target YON block
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool getBlock(const index_entry_type& index_entry);
+	bool GetBlock(const index_entry_type& index_entry);
 
 	/**<
 	 * Get the current YON block in-order as a copy
 	 * @return Returns a YON block container. The container has a size of 0 upon fail/empty
 	 */
-	variant_container_type getBlock(void);
+	variant_container_type GetBlock(void);
 
 
 	/**<
@@ -256,15 +256,7 @@ public:
 	void printINFOCustomJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 
 	// Calculations
-	TACHYON_VARIANT_CLASSIFICATION_TYPE classifyVariant(const meta_entry_type& meta, const U32& allele) const;
-
-	/**<
-	 * Not implemented
-	 * Return bit-mask primitive of variant classifications detected
-	 * @param meta Input meta entry for a site
-	 * @return     Returns a primitive interpreted as a boolean presence/absence bit-mask
-	 */
-	BYTE classifyVariant(const meta_entry_type& meta) const;
+	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression
@@ -459,11 +451,11 @@ public:
 			if(target_flag_set & 512){
 				// Classify
 				buffer += ";VT=";
-				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta_container->at(position), 1)];
+				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), 1)];
 
 				for(U32 p = 2; p < objects.meta_container->at(position).n_alleles; ++p){
 					buffer += ',';
-					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->classifyVariant(objects.meta_container->at(position), p)];
+					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), p)];
 				}
 			}
 

@@ -52,7 +52,7 @@ else
 fi
 cd ..
 
- note_build_stage "Building HtsLib"
+ note_build_stage "Building htslib"
 if [ ! -d htslib ]; then
 git clone https://github.com/samtools/htslib.git
 fi
@@ -60,7 +60,7 @@ cd htslib
 if [ ! -f htslib.so ]; then
     autoheader && autoconf && ./configure && make -j$(nproc)
 else
-    echo "HtsLib already built! Skipping..."
+    echo "htslib already built! Skipping..."
 fi
 cd ..
 
