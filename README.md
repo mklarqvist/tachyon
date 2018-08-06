@@ -24,7 +24,8 @@ For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
-sudo source install.sh
+sudo -s
+source install.sh
 ```
 Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
 If you do not have super-user privileges required to install new packages on your system then run

@@ -71,9 +71,12 @@ if [ "$(uname)" == "Darwin" ]; then
     brew update
     # Install generic dependencies
     ################################################################################
-    note_build_stage "Update misc. dependencies"
+    note_build_stage "Install openssl"
     brew install openssl
+     note_build_stage "Install zstd"
     brew install zstd
+     note_build_stage "Install htslib"
+    brew install htslib
 else
     # Update package list
     ################################################################################
@@ -83,12 +86,31 @@ else
     # Install generic dependencies
     ################################################################################
     note_build_stage "Update misc. dependencies"
-    sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release liblz4-dev zstd
+    sudo -H apt-get -y install pkg-config zip g++ zlib1g-dev unzip curl git lsb-release liblz4-dev
 
     # Install htslib dependencies
     ################################################################################
     note_build_stage "Install htslib dependencies"
     sudo -H apt-get -y install libssl-dev libcurl4-openssl-dev liblz-dev libbz2-dev liblzma-dev
+
+    # Install from Github
+    ################################################################################
+    CURDIR=`echo $PWD`
+    TMPDIR=`mktemp -d -t`
+    cd ${TMPDIR}
+    # Install zstd
+    ################################################################################
+    note_build_stage "Install zstd"
+    git clone https://github.com/facebook/zstd
+    cd zstd &&  make -j$(nproc) && sudo make install
+    cd ..
+    # Install htslib
+    ################################################################################
+    note_build_stage "Install htslib"
+    git clone https://github.com/samtools/htslib.git
+    cd htslib
+    autoheader && autoconf && ./configure && make -j$(nproc) && sudo make install
+    cd ${CURDIR}
 fi
 fi
 
