@@ -61,7 +61,7 @@ public:
 		yon_gt* x = new yon_gt;
 		x->n_allele = this->__meta.n_alleles;
 		x->shift = ceil(log2(x->n_allele + 2 + 1));
-		x->add   =  this->__meta.IsGTMixedPhasing()  ? 1 : 0;
+		x->add   =  this->__meta.IsGTMixedPhasing() ? 1 : 0;
 		x->global_phase = this->__meta.GetControllerPhase();
 		x->data = this->__data;
 		x->n_i = this->n_entries;
@@ -79,6 +79,7 @@ public:
 		x->n_allele = this->__meta.n_alleles;
 		x->shift = ceil(log2(x->n_allele + 2 + 1));
 		x->add   =  this->__meta.IsGTMixedPhasing()  ? 1 : 0;
+		x->global_phase = this->__meta.GetControllerPhase();
 		x->data = this->__data;
 		x->m = 2;
 		x->p = sizeof(T);

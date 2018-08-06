@@ -181,7 +181,7 @@ struct yon_radix_gt {
 
 // Begin new gt structures
 struct yon_gt_rcd {
-	yon_gt_rcd() : length(0), allele(nullptr){}
+	yon_gt_rcd() : run_length(0), allele(nullptr){}
 	~yon_gt_rcd(){ delete [] this->allele; }
 
 	io::BasicBuffer& printVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
@@ -201,7 +201,7 @@ struct yon_gt_rcd {
 		return(buffer);
 	}
 
-	uint32_t length;
+	uint32_t run_length;
 	//uint8_t alleles; // Determined from base ploidy
 	uint8_t* allele; // contains phase at first bit
 };
@@ -221,6 +221,7 @@ struct yon_gt {
     yon_gt_rcd* rcds; // lazy interpreted internal records
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
+    // todo: lookup table
 
     yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
                n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
@@ -280,14 +281,14 @@ struct yon_gt {
 			if(add) phasing = r_data[i] & 1;
 			else    phasing = this->global_phase;
 
-			this->rcds[i].length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
+			this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
 			this->rcds[i].allele = new uint8_t[2];
 			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
 			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
 			// Store an allele encoded as (ALLELE << 1 | phasing).
 			this->rcds[i].allele[0] = (YON_GT_RLE_RECODE[this->rcds[i].allele[0]] << 1) | phasing;
 			this->rcds[i].allele[1] = (YON_GT_RLE_RECODE[this->rcds[i].allele[1]] << 1) | phasing;
-			n_total += this->rcds[i].length;
+			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);
     }
@@ -327,14 +328,14 @@ struct yon_gt {
 			if(add) phasing = r_data[i] & 1;
 			else    phasing = this->global_phase;
 
-			this->rcds[i].length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
+			this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
 			this->rcds[i].allele = new uint8_t[2];
 			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
 			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
 			// Store an allele encoded as (ALLELE << 1 | phasing).
 			this->rcds[i].allele[0] = (this->rcds[i].allele[0] << 1) | phasing;
 			this->rcds[i].allele[1] = (this->rcds[i].allele[1] << 1) | phasing;
-			n_total += this->rcds[i].length;
+			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);
 	}
@@ -365,7 +366,7 @@ struct yon_gt {
 		uint64_t cum_pos = 0;
 		this->d_bcf = new uint8_t[this->m * this->n_s];
 		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].length; ++j){
+			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j){
 				for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
 					this->d_bcf[cum_pos] = this->rcds[i].allele[k]; // Todo: recode back from YON-style to htslib style (e.g. 0,1 special meaning in YON)
 				}
@@ -405,10 +406,10 @@ struct yon_gt {
 		for(uint32_t i = 0; i < this->n_i; ++i){
 			intervals.push_back(algorithm::Interval<uint32_t, yon_gt_rcd*>(
 					cum_pos,
-					cum_pos + this->rcds[i].length,
+					cum_pos + this->rcds[i].run_length,
 					&this->rcds[i])
 				);
-			cum_pos += this->rcds[i].length;
+			cum_pos += this->rcds[i].run_length;
 		}
 		this->itree = new algorithm::IntervalTree<uint32_t, yon_gt_rcd*>(std::move(intervals));
 
@@ -426,7 +427,7 @@ struct yon_gt {
 		uint64_t cum_sample = 0;
 		uint64_t cum_offset = 0;
 		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].length; ++j, ++cum_sample){
+			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
 				const uint32_t& target_ppa = this->ppa->at(cum_sample);
 				this->d_ppa[target_ppa] = &this->rcds[i];
 				cum_offset += this->p * this->m;

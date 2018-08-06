@@ -182,11 +182,6 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 	if(data_container.buffer_data_uncompressed.size() == 0)
 		return;
 
-	std::cerr << data_container.header.data_header.HasMixedStride() << "," <<
-			data_container.header.data_header.IsSigned() << "," <<
-			data_container.header.data_header.GetPrimitiveType() << "," <<
-			data_container.header.data_header.controller.signedness << std::endl;
-
 	if(data_container.header.data_header.HasMixedStride()){
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
