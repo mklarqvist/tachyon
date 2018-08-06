@@ -38,6 +38,10 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	}
 	// Load all info
 	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){
+		delete [] this->block_.info_containers;
+		this->block_.info_containers = new VariantBlock::container_type[this->block_.footer.n_info_streams];
+		this->block_.n_info_c_allocated = this->block_.footer.n_info_streams;
+
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
 		//this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
@@ -53,6 +57,10 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 
 	// Load all FORMAT data
 	if(this->block_.footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
+		delete [] this->block_.format_containers;
+		this->block_.format_containers = new VariantBlock::container_type[this->block_.footer.n_format_streams];
+		this->block_.n_format_c_allocated = this->block_.footer.n_format_streams;
+
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
 		//this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){

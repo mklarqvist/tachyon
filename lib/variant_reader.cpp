@@ -711,9 +711,7 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 U64 VariantReader::OutputVcf(void){
 	while(this->NextBlock()){
 		objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
-		std::cerr << "after objects" << std::endl;
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);
-		std::cerr << "after entries" << std::endl;
 
 		io::BasicBuffer output_buffer(100000);
 
@@ -790,16 +788,16 @@ U64 VariantReader::OutputVcf(void){
 					// Case when the only available FORMAT field is the GT field.
 					if(n_format_avail == 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
 						// Iterate over samples and print FORMAT:GT value in Vcf format.
-						entries[i].gt->d_exp[0]->printVcf(output_buffer, entries[i].gt->m);
+						entries[i].gt->d_exp[0]->PrintVcf(output_buffer, entries[i].gt->m);
 						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
+							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
 						}
 					}
 					// Case when there are > 1 Vcf Format fields and the GT field
 					// is available.
 					else if(n_format_avail > 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
-						entries[i].gt->d_exp[0]->printVcf(output_buffer, entries[i].gt->m);
+						entries[i].gt->d_exp[0]->PrintVcf(output_buffer, entries[i].gt->m);
 						output_buffer += ':';
 						entries[i].format_containers[1]->to_vcf_string(output_buffer, i, 0);
 						for(U32 g = 2; g < n_format_avail; ++g){
@@ -809,7 +807,7 @@ U64 VariantReader::OutputVcf(void){
 
 						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
+							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
 							output_buffer += ':';
 							entries[i].format_containers[1]->to_vcf_string(output_buffer, i, s);
 							for(U32 g = 2; g < n_format_avail; ++g){
@@ -828,7 +826,7 @@ U64 VariantReader::OutputVcf(void){
 
 						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
+							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
 							output_buffer += ':';
 							entries[i].format_containers[0]->to_vcf_string(output_buffer, i, s);
 							for(U32 g = 1; g < n_format_avail; ++g){

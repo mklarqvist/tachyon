@@ -7,9 +7,28 @@ namespace tachyon{
 namespace containers{
 
 VariantBlock::VariantBlock() :
+	n_info_c_allocated(0),
+	n_format_c_allocated(0),
 	base_containers(new container_type[YON_BLK_N_STATIC]),
-	info_containers(new container_type[200]),
-	format_containers(new container_type[200]),
+	info_containers(new container_type[0]),
+	format_containers(new container_type[0]),
+	gt_ppa(nullptr),
+	end_block_(0),
+	start_compressed_data_(0),
+	end_compressed_data_(0)
+{
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
+	this->footer_support.resize(65536);
+}
+
+VariantBlock::VariantBlock(const uint16_t n_info, const uint16_t n_format) :
+	n_info_c_allocated(n_info),
+	n_format_c_allocated(n_format),
+	base_containers(new container_type[YON_BLK_N_STATIC]),
+	info_containers(new container_type[n_info]),
+	format_containers(new container_type[n_format]),
 	gt_ppa(nullptr),
 	end_block_(0),
 	start_compressed_data_(0),
@@ -60,8 +79,11 @@ void VariantBlock::resize(const U32 s){
 	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
 		this->base_containers[i].resize(s);
 
-	for(U32 i = 0; i < 200; ++i){
+	for(U32 i = 0; i < n_info_c_allocated; ++i){
 		this->info_containers[i].resize(s);
+	}
+
+	for(U32 i = 0; i < n_format_c_allocated; ++i){
 		this->format_containers[i].resize(s);
 	}
 }
@@ -148,6 +170,9 @@ bool VariantBlock::read(std::ifstream& stream){
 		this->LoadContainer(stream, this->footer.offsets[i], this->base_containers[i]);
 
 	// Load all INFO
+	delete [] this->info_containers;
+	this->info_containers = new container_type[this->footer.n_info_streams];
+	this->n_info_c_allocated = this->footer.n_info_streams;
 	if(this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
@@ -156,6 +181,9 @@ bool VariantBlock::read(std::ifstream& stream){
 	}
 
 	// Load all FORMAT
+	delete [] this->format_containers;
+	this->format_containers = new container_type[this->footer.n_format_streams];
+	this->n_format_c_allocated = this->footer.n_format_streams;
 	if(this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i)

@@ -184,7 +184,7 @@ struct yon_gt_rcd {
 	yon_gt_rcd() : run_length(0), allele(nullptr){}
 	~yon_gt_rcd(){ delete [] this->allele; }
 
-	io::BasicBuffer& printVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
+	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
 		if(this->allele[0] == 1){
 			buffer += '.';
 			return(buffer);

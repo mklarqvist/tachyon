@@ -75,6 +75,7 @@ bool VariantImporter::BuildVCF(void){
 	}
 	else this->writer = new writer_file_type;
 
+	// Open a file handle or standard out for writing.
 	if(!this->writer->open(this->settings_.output_prefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
@@ -104,10 +105,13 @@ bool VariantImporter::BuildVCF(void){
 	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
+	// Setup genotype permuter and genotype encoder.
 	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 
-	uint64_t b_total_write = 0;
+	// Setup.
+	this->block.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size(),
+	                     this->vcf_reader_->vcf_header_.format_fields_.size());
 
 	// Start porgress timer.
 	algorithm::Timer timer; timer.Start();
@@ -130,14 +134,19 @@ bool VariantImporter::BuildVCF(void){
 		}
 
 		if(this->GT_available_ && this->settings_.permute_genotypes){
-			if(this->permutator.Build(this->vcf_container_, this->vcf_reader_->vcf_header_) == false)
-				return false;
-
 			// This pointer here is borrowed from the PPA manager
 			// during import stages. Do not destroy the target block
 			// before finishing with this.
-			this->block.header.controller.hasGTPermuted = true;
 			this->block.gt_ppa = &this->permutator.permutation_array;
+
+			// Only store the permutation array if the number of samples
+			// are greater then one (1).
+			if(this->vcf_reader_->vcf_header_.GetNumberSamples() > 1){
+				if(this->permutator.Build(this->vcf_container_, this->vcf_reader_->vcf_header_) == false)
+					return false;
+
+				this->block.header.controller.hasGTPermuted = true;
+			}
 		}
 
 		if(this->AddRecords(this->vcf_container_) == false) return false;
@@ -146,7 +155,6 @@ bool VariantImporter::BuildVCF(void){
 		this->block.header.n_variants        = this->vcf_container_.sizeWithoutCarryOver();
 		this->block.UpdateContainers();
 		this->block.Finalize();
-		this->GenerateIdentifiers();
 
 		// Perform compression using standard parameters.
 		if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
@@ -156,6 +164,10 @@ bool VariantImporter::BuildVCF(void){
 
 		// Encrypt the variant block if desired.
 		if(this->settings_.encrypt_data){
+			// Generate field-unique identifiers.
+			this->GenerateIdentifiers();
+
+			// Start encryption.
 			this->block.header.controller.anyEncrypted = true;
 			if(!encryption_manager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;

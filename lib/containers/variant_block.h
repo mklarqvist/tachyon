@@ -22,6 +22,7 @@ namespace containers{
  * contents.
  */
 class VariantBlock{
+public:
 	typedef VariantBlock                    self_type;
 	typedef DataContainer                   container_type;
 	typedef VariantBlockHeader              block_header_type;
@@ -33,7 +34,18 @@ class VariantBlock{
 
 public:
 	VariantBlock();
+	VariantBlock(const uint16_t n_info, const uint16_t n_format);
 	~VariantBlock();
+
+	void Allocate(const uint16_t n_info, const uint16_t n_format){
+		delete [] this->info_containers;
+		this->info_containers = new container_type[n_info];
+		this->n_info_c_allocated = n_info;
+
+		delete [] this->format_containers;
+		this->format_containers = new container_type[n_format];
+		this->n_format_c_allocated = n_format;
+	}
 
 	/**< @brief Resize base container buffer streams
 	 * Internal use only
@@ -340,6 +352,8 @@ private:
 	}
 
 public:
+	uint16_t n_info_c_allocated;
+	uint16_t n_format_c_allocated;
 	block_header_type header;
 	block_footer_type footer;
 	container_type*   base_containers;

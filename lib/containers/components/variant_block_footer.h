@@ -264,6 +264,7 @@ public:
 	U32 AddInfoPattern(const std::vector<int>& pattern){
 		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_info_patterns_allocated == 0){
+			delete [] this->info_patterns;
 			this->info_patterns = new yon_blk_bv_pair[100];
 			this->n_info_patterns_allocated = 100;
 		}
@@ -289,6 +290,7 @@ public:
 	U32 AddFormatPattern(const std::vector<int>& pattern){
 		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_format_patterns_allocated == 0){
+			delete [] this->format_patterns;
 			this->format_patterns = new yon_blk_bv_pair[100];
 			this->n_format_patterns_allocated = 100;
 		}
@@ -314,6 +316,7 @@ public:
 	U32 AddFilterPattern(const std::vector<int>& pattern){
 		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_filter_patterns_allocated == 0){
+			delete [] this->filter_patterns;
 			this->filter_patterns = new yon_blk_bv_pair[100];
 			this->n_filter_patterns_allocated = 100;
 		}
@@ -354,6 +357,7 @@ public:
 	U32 UpdateInfoPattern(const std::vector<int>& pattern, const U16 pattern_id){
 		if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_info_patterns_allocated == 0){
+			delete [] this->info_patterns;
 			this->info_patterns = new yon_blk_bv_pair[100];
 			this->n_info_patterns_allocated = 100;
 		}
@@ -363,6 +367,7 @@ public:
 	U32 UpdateFormatPattern(const std::vector<int>& pattern, const U16 pattern_id){
 		if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_format_patterns_allocated == 0){
+			delete [] this->format_patterns;
 			this->format_patterns = new yon_blk_bv_pair[100];
 			this->n_format_patterns_allocated = 100;
 		}
@@ -372,6 +377,7 @@ public:
 	U32 UpdateFilterPattern(const std::vector<int>& pattern, const U16 pattern_id){
 		if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
 		if(this->n_filter_patterns_allocated == 0){
+			delete [] this->filter_patterns;
 			this->filter_patterns = new yon_blk_bv_pair[100];
 			this->n_filter_patterns_allocated = 100;
 		}
