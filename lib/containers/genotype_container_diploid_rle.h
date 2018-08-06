@@ -63,6 +63,8 @@ public:
 		x->n_allele = this->__meta.n_alleles;
 		x->ppa = nullptr;
 
+		assert(this->__meta.n_base_ploidy == 2);
+
 		return(x);
     }
 
@@ -79,6 +81,8 @@ public:
 		x->n_s = ppa.n_samples;
 		x->ppa = &ppa;
 		x->n_allele = this->__meta.n_alleles;
+
+		assert(this->__meta.n_base_ploidy == 2);
 
 		return(x);
     }

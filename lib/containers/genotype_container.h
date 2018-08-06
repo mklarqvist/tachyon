@@ -4,6 +4,7 @@
 #include "genotype_container_diploid_bcf.h"
 #include "genotype_container_diploid_rle.h"
 #include "genotype_container_diploid_simple.h"
+#include "genotype_container_nploid.h"
 #include "meta_container.h"
 #include "variant_block.h"
 

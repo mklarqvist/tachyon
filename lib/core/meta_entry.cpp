@@ -4,6 +4,7 @@ namespace tachyon{
 namespace core{
 
 MetaEntry::MetaEntry() :
+	n_base_ploidy(0),
 	n_alleles(0),
 	info_pattern_id(-1),
 	filter_pattern_id(-1),
@@ -15,6 +16,7 @@ MetaEntry::MetaEntry() :
 {}
 
 MetaEntry::MetaEntry(const bcf1_t* record) :
+	n_base_ploidy(0),
 	n_alleles(record->n_allele),
 	//n_alleles(0),
 	info_pattern_id(-1),
@@ -52,6 +54,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 }
 
 MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
+	n_base_ploidy(0),
 	n_alleles(record->n_allele),
 	//n_alleles(0),
 	info_pattern_id(-1),
@@ -89,6 +92,7 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 }
 
 MetaEntry::MetaEntry(const self_type& other) :
+	n_base_ploidy(other.n_base_ploidy),
 	controller(other.controller),
 	n_alleles(other.n_alleles),
 	info_pattern_id(other.info_pattern_id),

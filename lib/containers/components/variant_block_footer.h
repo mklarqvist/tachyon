@@ -10,7 +10,7 @@
 
 namespace tachyon {
 
-#define YON_BLK_N_STATIC   20// Total number of invariant headers
+#define YON_BLK_N_STATIC   21// Total number of invariant headers
 #define YON_BLK_PPA         0 // Sample permutation array
 #define YON_BLK_CONTIG      1
 #define YON_BLK_POSITION    2
@@ -31,6 +31,7 @@ namespace tachyon {
 #define YON_BLK_GT_S_INT32 17
 #define YON_BLK_GT_S_INT64 18
 #define YON_BLK_GT_SUPPORT 19 // Genotype support
+#define YON_BLK_GT_PLOIDY  20 // Genotype ploidy
 
 #define YON_BLK_BV_PPA         1 << YON_BLK_PPA
 #define YON_BLK_BV_CONTIG      1 << YON_BLK_CONTIG
@@ -52,9 +53,11 @@ namespace tachyon {
 #define YON_BLK_BV_GT_S_INT32  1 << YON_BLK_GT_S_INT32
 #define YON_BLK_BV_GT_S_INT64  1 << YON_BLK_GT_S_INT64
 #define YON_BLK_BV_GT_SUPPORT  1 << YON_BLK_GT_SUPPORT
+#define YON_BLK_BV_GT_PLOIDY   1 << YON_BLK_GT_PLOIDY
 
-#define YON_BLK_BV_INFO        1 << (YON_BLK_GT_SUPPORT + 1)
-#define YON_BLK_BV_FORMAT      1 << (YON_BLK_GT_SUPPORT + 2)
+#define YON_BLK_BV_INFO        1 << (YON_BLK_GT_PLOIDY + 1)
+#define YON_BLK_BV_FORMAT      1 << (YON_BLK_GT_PLOIDY + 2)
+#define YON_BLK_BV_GT          (YON_BLK_BV_GT_INT8|YON_BLK_BV_GT_INT16|YON_BLK_BV_GT_INT32|YON_BLK_BV_GT_INT64|YON_BLK_BV_GT_S_INT8|YON_BLK_BV_GT_S_INT16|YON_BLK_BV_GT_S_INT32|YON_BLK_BV_GT_S_INT64|YON_BLK_BV_GT_SUPPORT|YON_BLK_BV_GT_PLOIDY)
 
 namespace containers {
 

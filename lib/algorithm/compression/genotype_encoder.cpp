@@ -37,6 +37,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 		meta_entries[i].controller.gt_phase         = gt_summary.phase_if_uniform;
 		meta_entries[i].controller.mixed_ploidy     = (gt_summary.n_vector_end != 0);
 		meta_entries[i].controller.gt_available     = true;
+		meta_entries[i].n_base_ploidy               = gt_summary.base_ploidy;
 
 		if(container[i]->d.fmt[0].n == 2){
 			if(container[i]->n_allele == 2 && gt_summary.n_vector_end == 0){
@@ -87,7 +88,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 			}
 
 			meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
-			meta_entries[i].controller.gt_compression_type = YON_GT_BCF_STYLE;
+			meta_entries[i].controller.gt_compression_type = YON_GT_RLE_NPLOID;
 			block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)n_runs);
 			++block.base_containers[YON_BLK_GT_SUPPORT];
 		}
@@ -266,7 +267,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	memset(gt_remap, 256, 255);
 	for(U32 i = 0; i <= entry->n_allele; ++i){
 		gt_remap[i << 1]       = ((i+1) << 1);
-		gt_remap[(i << 1) + 1] = ((i+1) << 1);
+		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
 	gt_remap[0]   = 0;
 	gt_remap[129] = 1;

@@ -91,14 +91,15 @@ void VariantBlock::resize(const U32 s){
 void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
 	this->base_containers[YON_BLK_POSITION].UpdateContainer();
-	this->base_containers[YON_BLK_REFALT].UpdateContainer();
+	this->base_containers[YON_BLK_REFALT].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
 	this->base_containers[YON_BLK_NAMES].UpdateContainer();
-	this->base_containers[YON_BLK_ALLELES].UpdateContainer();
+	this->base_containers[YON_BLK_ALLELES].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer();
 	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
 	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
 	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
+	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer();
 
 	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
@@ -320,6 +321,10 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	// Controller
 	this->base_containers[YON_BLK_CONTROLLER].AddLiteral((U16)meta_entry.controller.toValue()); // has been overloaded
 	++this->base_containers[YON_BLK_CONTROLLER];
+
+	// Ploidy
+	this->base_containers[YON_BLK_GT_PLOIDY].Add(meta_entry.n_base_ploidy);
+	++this->base_containers[YON_BLK_GT_PLOIDY];
 
 	return true;
 }

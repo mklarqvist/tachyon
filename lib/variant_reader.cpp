@@ -709,6 +709,9 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 }
 
 U64 VariantReader::OutputVcf(void){
+	if(this->getBlockSettings().show_vcf_header)
+		this->global_header.PrintVcfHeader(std::cout);
+
 	while(this->NextBlock()){
 		objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);

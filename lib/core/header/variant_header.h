@@ -179,6 +179,7 @@ public:
 
 	bool EvaluateType(void){
 		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
+		else if(this->type == "Float") this->yon_type = YON_VCF_HEADER_FLOAT;
 		else if(this->type == "Character") this->yon_type = YON_VCF_HEADER_CHARACTER;
 		else if(this->type == "String") this->yon_type = YON_VCF_HEADER_STRING;
 		else {
@@ -433,6 +434,20 @@ public:
 
 	// Append a string to the literal string
 	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }
+
+	// Print the literals and the column header.
+	std::ostream& PrintVcfHeader(std::ostream& stream) const{
+		stream << this->literals_;
+		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+		if(this->samples_.size()){
+			stream << "\tFORMAT\t";
+			stream << this->samples_[0];
+			for(size_t i = 1; i < this->samples_.size(); ++i)
+				stream << "\t" + this->samples_[i];
+		}
+		stream << "\n";
+		return(stream);
+	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
 		utility::SerializeString(header.fileformat_string_, stream);

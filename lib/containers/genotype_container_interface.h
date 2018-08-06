@@ -11,31 +11,6 @@
 namespace tachyon{
 namespace containers{
 
-template <class yon_primitive>
-struct yon_gt_rle_obj {
-	static core::GTObjectDiploidRLE& Evaluate(core::GTObjectDiploidRLE& object, const uint8_t shift, const yon_primitive& value){
-		object.n_objects  = YON_GT_RLE_LENGTH(value, shift, 1);
-		object.alleles[0].allele = YON_GT_RLE_ALLELE_A(value, shift, 1);
-		object.alleles[1].allele = YON_GT_RLE_ALLELE_B(value, shift, 1);
-		object.alleles[0].allele = YON_GT_RLE_RECODE[object.alleles[0].allele];
-		object.alleles[1].allele = YON_GT_RLE_RECODE[object.alleles[1].allele];
-		object.alleles[0].phase = (value & 1);
-		object.alleles[0].phase = (value & 1);
-		return(object);
-	}
-
-	static core::GTObjectDiploidRLE& Evaluate(core::GTObjectDiploidRLE& object, const uint8_t shift, const bool phase, const yon_primitive& value){
-		object.n_objects  = YON_GT_RLE_LENGTH(value, shift, 0);
-		object.alleles[0].allele = YON_GT_RLE_ALLELE_A(value, shift, 0);
-		object.alleles[1].allele = YON_GT_RLE_ALLELE_B(value, shift, 0);
-		object.alleles[0].allele = YON_GT_RLE_RECODE[object.alleles[0].allele];
-		object.alleles[1].allele = YON_GT_RLE_RECODE[object.alleles[1].allele];
-		object.alleles[0].phase = phase;
-		object.alleles[0].phase = phase;
-		return(object);
-	}
-};
-
 // Todo: value type should be GT object
 class GenotypeContainerInterface{
 public:

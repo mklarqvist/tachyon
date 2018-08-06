@@ -39,7 +39,7 @@ else
 fi
 cd ..
 
- note_build_stage "Building OpenSSL..."
+note_build_stage "Building OpenSSL..."
 if [ ! -d openssl ]; then
 git clone https://github.com/openssl/openssl.git
 fi
@@ -52,13 +52,28 @@ else
 fi
 cd ..
 
+note_build_stage "Building curl..."
+if [ ! -d curl ]; then
+git clone https://github.com/curl/curl
+fi
+cd curl
+if [ ! -f lib/.libs/libcurl.so ]; then
+    ./buildconf
+    libtoolize && aclocal && automake --add-missing && ln -sf /usr/share/libtool/config/ltmain.sh . && autoconf
+    CPPFLAGS="-I${PWD}/../openssl/include" LDFLAGS="-L${PWD}/../openssl" ./configure
+    make -j$(nproc)
+else
+    echo "curl already built! Skipping..."
+fi
+cd ..
+
  note_build_stage "Building htslib"
 if [ ! -d htslib ]; then
 git clone https://github.com/samtools/htslib.git
 fi
 cd htslib
 if [ ! -f htslib.so ]; then
-    autoheader && autoconf && ./configure && make -j$(nproc)
+    autoheader && autoconf && ./configure CPPFLAGS="-I../openssl/include/ -I../curl/include/" LDFLAGS="-L../openssl/ -L../curl/lib/.libs/" && make -j$(nproc)
 else
     echo "htslib already built! Skipping..."
 fi

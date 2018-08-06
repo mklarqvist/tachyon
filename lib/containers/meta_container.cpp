@@ -30,6 +30,7 @@ void MetaContainer::__ctor_setup(const block_type& block){
 	PrimitiveContainer<S32>   filterID(block.base_containers[YON_BLK_ID_FILTER]);
 	PrimitiveContainer<S32>   formatID(block.base_containers[YON_BLK_ID_FORMAT]);
 	PrimitiveContainer<S32>   infoID(block.base_containers[YON_BLK_ID_INFO]);
+	PrimitiveContainer<BYTE>  ploidy(block.base_containers[YON_BLK_GT_PLOIDY]);
 
 	for(U32 i = 0; i < this->size(); ++i){
 		new( &this->__entries[i] ) value_type( );
@@ -153,6 +154,21 @@ void MetaContainer::__ctor_setup(const block_type& block){
 		for(U32 i = 0; i < this->size(); ++i){
 			this->__entries[i].name = std::string(&block.base_containers[YON_BLK_NAMES].buffer_data_uncompressed.data()[offset], strides[i]);
 			offset += strides[i];
+		}
+	}
+
+	// Parse ploidy.
+	if(ploidy.size()){
+		if(ploidy.isUniform()){
+			for(U32 i = 0; i < this->size(); ++i){
+				this->at(i).n_base_ploidy = ploidy[0];
+			}
+		} else {
+			assert(ploidy.size() == this->size());
+			for(U32 i = 0; i < this->size(); ++i){
+				this->at(i).n_base_ploidy = ploidy[i];
+				std::cerr << (int)ploidy[i] << std::endl;
+			}
 		}
 	}
 }

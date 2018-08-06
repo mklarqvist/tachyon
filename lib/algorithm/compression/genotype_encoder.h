@@ -332,7 +332,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 	memset(gt_remap, 256, 255);
 	for(U32 i = 0; i <= entry->n_allele; ++i){
 		gt_remap[i << 1]       = ((i+1) << 1);
-		gt_remap[(i << 1) + 1] = ((i+1) << 1);
+		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
 	gt_remap[0]   = 0;
 	gt_remap[129] = 1;
@@ -412,14 +412,14 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	memset(gt_remap, 256, 255);
 	for(U32 i = 0; i <= entry->n_allele; ++i){
 		gt_remap[i << 1]       = ((i+1) << 1);
-		gt_remap[(i << 1) + 1] = ((i+1) << 1);
+		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
 	gt_remap[0]   = 0;
 	gt_remap[129] = 1;
 
 	// Start parameters for run-length encoding.
 	uint64_t n_runs = 0;     // Number of runs.
-	YON_RLE_TYPE l_run  = 0; // Current run length.
+	YON_RLE_TYPE l_run  = 1; // Current run length.
 
 	// Keep track of the current reference sequence as we
 	// iterate over the available genotypes.

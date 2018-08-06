@@ -99,6 +99,7 @@ public:
 public:
 	// Markup: populate from streams
 	controller_type controller;
+	BYTE  n_base_ploidy;
 	U16   n_alleles;
 	S32   info_pattern_id;   // Info pattern ID
 	S32   filter_pattern_id; // Filter pattern ID

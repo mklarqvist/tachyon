@@ -25,7 +25,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		}
 	}
 
-	if(settings.load_static & YON_BLK_BV_GT_INT8){
+	if(settings.load_static & YON_BLK_BV_GT){
 		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.base_containers[YON_BLK_GT_INT16]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.base_containers[YON_BLK_GT_INT32]);
@@ -35,6 +35,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.base_containers[YON_BLK_GT_S_INT32]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.base_containers[YON_BLK_GT_S_INT64]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_PLOIDY], this->block_.base_containers[YON_BLK_GT_PLOIDY]);
 	}
 	// Load all info
 	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){

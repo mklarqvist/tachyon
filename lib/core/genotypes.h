@@ -239,6 +239,7 @@ struct yon_gt {
     bool Evaluate(void){
     	if(this->method == 1) return(this->EvaluateRecordsM1());
     	else if(this->method == 2) return(this->EvaluateRecordsM2());
+    	else if(this->method == 4) return(this->EvaluateRecordsM4());
     	else {
     		std::cerr << "not implemented method " << (int)this->method << std::endl;
     	}
@@ -335,6 +336,47 @@ struct yon_gt {
 			// Store an allele encoded as (ALLELE << 1 | phasing).
 			this->rcds[i].allele[0] = (this->rcds[i].allele[0] << 1) | phasing;
 			this->rcds[i].allele[1] = (this->rcds[i].allele[1] << 1) | phasing;
+			n_total += this->rcds[i].run_length;
+		}
+		assert(n_total == this->n_s);
+	}
+
+	 bool EvaluateRecordsM4(){
+		switch(this->p){
+		case(1): return(this->EvaluateRecordsM4_<uint8_t>());
+		case(2): return(this->EvaluateRecordsM4_<uint16_t>());
+		case(4): return(this->EvaluateRecordsM4_<uint32_t>());
+		case(8): return(this->EvaluateRecordsM4_<uint64_t>());
+		default:
+			std::cerr << "illegal primitive in EvaluateRecordsM1" << std::endl;
+			exit(1);
+		}
+	}
+
+	template <class T>
+	bool EvaluateRecordsM4_(){
+		if(this->rcds != nullptr) delete [] this->rcds;
+		assert(this->m != 2);
+
+		// Allocate memory for new records.
+		this->rcds = new yon_gt_rcd[this->n_i];
+
+		// Keep track of the cumulative number of genotypes observed
+		// as a means of asserting correctness.
+		uint64_t n_total  = 0;
+		uint64_t b_offset = 0;
+
+		// Iterate over the internal run-length encoded genotypes
+		// and populate the rcds structure.
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			T* run_length = reinterpret_cast<T*>(&this->data[b_offset]);
+			b_offset += sizeof(T);
+
+			this->rcds[i].run_length = *run_length;
+			this->rcds[i].allele = new uint8_t[this->m];
+			for(U32 j = 0; j < this->m; ++j, ++b_offset)
+				this->rcds[i].allele[j] = this->data[b_offset];
+
 			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);

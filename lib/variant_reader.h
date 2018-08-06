@@ -294,17 +294,17 @@ public:
 	 * @param stream
 	 */
 	void printHeaderVCF(std::ostream& stream = std::cout){
-		this->global_header.literals_ += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		this->global_header.literals_ += "##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 		this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 		                             +   SSLeay_version(SSLEAY_VERSION) + ","
 		                             +  "ZSTD-" + ZSTD_versionString()
-		                             +  "; timestamp=" + tachyon::utility::datetime();
+		                             +  "; timestamp=" + tachyon::utility::datetime() + "\n";
 
-		this->global_header.literals_ += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
+		this->global_header.literals_ += "##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
 		this->global_header.literals_ += this->getSettings().get_settings_string();
+		this->global_header.literals_ += '\n';
 
-		stream << this->global_header.literals_ << std::endl;
-		//this->global_header.writeHeaderVCF(stream, true);
+		this->global_header.PrintVcfHeader(stream);
 	}
 
 

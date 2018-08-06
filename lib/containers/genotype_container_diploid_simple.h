@@ -71,6 +71,8 @@ public:
 		x->n_s = n_samples;
 		x->ppa = nullptr;
 
+		assert(this->__meta.n_base_ploidy == 2);
+
 		return(x);
 	}
 
@@ -87,6 +89,8 @@ public:
 		x->method = 2;
 		x->n_s = ppa.n_samples;
 		x->ppa = &ppa;
+
+		assert(this->__meta.n_base_ploidy == 2);
 
 		return(x);
 	}

@@ -101,6 +101,25 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 					exit(1);
 				}
 			}
+			// Case RLE-encoding of nploids
+			else if(meta[i].GetGenotypeEncoding() == TACHYON_GT_ENCODING::YON_GT_RLE_NPLOID) {
+				if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					new( &this->__iterators[i] ) GenotypeContainerNploid<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple8 += lengths[gt_offset]*(sizeof(BYTE) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U16>( &simple16[offset_simple16], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple16 += lengths[gt_offset]*(sizeof(U16) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple32 += lengths[gt_offset]*(sizeof(U32) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
+					offset_simple64 += lengths[gt_offset]*(sizeof(U64) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+				}  else {
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
+					exit(1);
+				}
+			}
 			// Case other potential encodings
 			else {
 				std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding family..." << std::endl;
