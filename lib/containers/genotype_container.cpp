@@ -20,10 +20,16 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	U64 offset_rle16    = 0; const char* const rle16    = block.base_containers[YON_BLK_GT_INT16].buffer_data_uncompressed.data();
 	U64 offset_rle32    = 0; const char* const rle32    = block.base_containers[YON_BLK_GT_INT32].buffer_data_uncompressed.data();
 	U64 offset_rle64    = 0; const char* const rle64    = block.base_containers[YON_BLK_GT_INT64].buffer_data_uncompressed.data();
+
 	U64 offset_simple8  = 0; const char* const simple8  = block.base_containers[YON_BLK_GT_S_INT8].buffer_data_uncompressed.data();
 	U64 offset_simple16 = 0; const char* const simple16 = block.base_containers[YON_BLK_GT_S_INT16].buffer_data_uncompressed.data();
 	U64 offset_simple32 = 0; const char* const simple32 = block.base_containers[YON_BLK_GT_S_INT32].buffer_data_uncompressed.data();
 	U64 offset_simple64 = 0; const char* const simple64 = block.base_containers[YON_BLK_GT_S_INT64].buffer_data_uncompressed.data();
+
+	U64 offset_nploid8  = 0; const char* const nploid8  = block.base_containers[YON_BLK_GT_N_INT8].buffer_data_uncompressed.data();
+	U64 offset_nploid16 = 0; const char* const nploid16 = block.base_containers[YON_BLK_GT_N_INT16].buffer_data_uncompressed.data();
+	U64 offset_nploid32 = 0; const char* const nploid32 = block.base_containers[YON_BLK_GT_N_INT32].buffer_data_uncompressed.data();
+	U64 offset_nploid64 = 0; const char* const nploid64 = block.base_containers[YON_BLK_GT_N_INT64].buffer_data_uncompressed.data();
 
 	assert(block.base_containers[YON_BLK_GT_INT8].buffer_data_uncompressed.size()    % sizeof(BYTE) == 0);
 	assert(block.base_containers[YON_BLK_GT_INT16].buffer_data_uncompressed.size()   % sizeof(U16)  == 0);
@@ -104,17 +110,17 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 			// Case RLE-encoding of nploids
 			else if(meta[i].GetGenotypeEncoding() == TACHYON_GT_ENCODING::YON_GT_RLE_NPLOID) {
 				if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
-					new( &this->__iterators[i] ) GenotypeContainerNploid<BYTE>( &simple8[offset_simple8], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple8 += lengths[gt_offset]*(sizeof(BYTE) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+					new( &this->__iterators[i] ) GenotypeContainerNploid<BYTE>( &nploid8[offset_nploid8], lengths[gt_offset], this->__meta_container[i] );
+					offset_nploid8 += lengths[gt_offset]*(sizeof(BYTE) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
 				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
-					new( &this->__iterators[i] ) GenotypeContainerNploid<U16>( &simple16[offset_simple16], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple16 += lengths[gt_offset]*(sizeof(U16) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U16>( &nploid16[offset_nploid16], lengths[gt_offset], this->__meta_container[i] );
+					offset_nploid16 += lengths[gt_offset]*(sizeof(U16) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
 				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
-					new( &this->__iterators[i] ) GenotypeContainerNploid<U32>( &simple32[offset_simple32], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple32 += lengths[gt_offset]*(sizeof(U32) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U32>( &nploid32[offset_nploid32], lengths[gt_offset], this->__meta_container[i] );
+					offset_nploid32 += lengths[gt_offset]*(sizeof(U32) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
 				} else if(meta[i].GetGenotypeType() == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
-					new( &this->__iterators[i] ) GenotypeContainerNploid<U64>( &simple64[offset_simple64], lengths[gt_offset], this->__meta_container[i] );
-					offset_simple64 += lengths[gt_offset]*(sizeof(U64) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
+					new( &this->__iterators[i] ) GenotypeContainerNploid<U64>( &nploid64[offset_nploid64], lengths[gt_offset], this->__meta_container[i] );
+					offset_nploid64 += lengths[gt_offset]*(sizeof(U64) + this->__meta_container[i].n_base_ploidy*sizeof(BYTE));
 				}  else {
 					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
 					exit(1);
@@ -143,6 +149,10 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 	assert(offset_simple16 == block.base_containers[YON_BLK_GT_S_INT16].GetSizeUncompressed());
 	assert(offset_simple32 == block.base_containers[YON_BLK_GT_S_INT32].GetSizeUncompressed());
 	assert(offset_simple64 == block.base_containers[YON_BLK_GT_S_INT64].GetSizeUncompressed());
+	assert(offset_nploid8  == block.base_containers[YON_BLK_GT_N_INT8].GetSizeUncompressed());
+	assert(offset_nploid16 == block.base_containers[YON_BLK_GT_N_INT16].GetSizeUncompressed());
+	assert(offset_nploid32 == block.base_containers[YON_BLK_GT_N_INT32].GetSizeUncompressed());
+	assert(offset_nploid64 == block.base_containers[YON_BLK_GT_N_INT64].GetSizeUncompressed());
 }
 
 GenotypeContainer::~GenotypeContainer(){

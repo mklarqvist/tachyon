@@ -78,10 +78,10 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 		else {
 			uint64_t n_runs = 0;
 			switch(primitive){
-			case(0): n_runs = this->EncodeMultiploid<uint8_t> (container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_S_INT8]);  break;
-			case(1): n_runs = this->EncodeMultiploid<uint16_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_S_INT16]); break;
-			case(2): n_runs = this->EncodeMultiploid<uint32_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_S_INT32]); break;
-			case(3): n_runs = this->EncodeMultiploid<uint64_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_S_INT64]); break;
+			case(0): n_runs = this->EncodeMultiploid<uint8_t> (container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_N_INT8]);  break;
+			case(1): n_runs = this->EncodeMultiploid<uint16_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_N_INT16]); break;
+			case(2): n_runs = this->EncodeMultiploid<uint32_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_N_INT32]); break;
+			case(3): n_runs = this->EncodeMultiploid<uint64_t>(container[i],gt_summary,permutation_array,block.base_containers[YON_BLK_GT_N_INT64]); break;
 			default:
 				std::cerr << "illegal primitive type" << std::endl;
 				return false;

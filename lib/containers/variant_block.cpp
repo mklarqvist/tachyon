@@ -110,6 +110,10 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false, true);
 	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false, true);
 	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT8].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_GT_N_INT16].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_GT_N_INT32].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_GT_N_INT64].UpdateContainer(false, false);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 		assert(this->info_containers[i].header.data_header.stride != 0);
