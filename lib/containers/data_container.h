@@ -203,7 +203,7 @@ public:
 	 * @param container Data container
 	 * @param reormat   Reformat boolean
 	 */
-	void UpdateContainer(bool reformat = true);
+	void UpdateContainer(bool reformat_data = true, bool reformat_stride = true);
 
 private:
 	inline bool CheckInteger(void){

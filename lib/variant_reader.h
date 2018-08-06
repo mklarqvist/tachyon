@@ -480,7 +480,7 @@ public:
 			objects.genotype_summary->clear();
 	}
 
-protected:
+private:
 	basic_reader_type       basic_reader;
 	variant_container_type  variant_container;
 	block_settings_type     block_settings;

@@ -411,8 +411,8 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
 	for(U32 i = 0; i <= entry->n_allele; ++i){
-		gt_remap[i << 1]       = (i << 1) + 1;
-		gt_remap[(i << 1) + 1] = (i << 1) + 2;
+		gt_remap[i << 1]       = ((i+1) << 1);
+		gt_remap[(i << 1) + 1] = ((i+1) << 1);
 	}
 	gt_remap[0]   = 0;
 	gt_remap[129] = 1;

@@ -366,7 +366,7 @@ U64 DataContainer::GetObjectSizeUncompressed(void) const{
 	return(total_size);
 }
 
-void DataContainer::UpdateContainer(bool reformat){
+void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 	// If the data container Has entries in it but Has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
@@ -390,7 +390,7 @@ void DataContainer::UpdateContainer(bool reformat){
 	if(this->header.data_header.controller.type != YON_TYPE_STRUCT){
 		this->CheckUniformity();
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->ReformatInteger();
+		if(reformat_data) this->ReformatInteger();
 	}
 
 	// Set uncompressed length
@@ -399,7 +399,7 @@ void DataContainer::UpdateContainer(bool reformat){
 	// If we have mixed striding
 	if(this->header.data_header.HasMixedStride()){
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->ReformatStride();
+		if(reformat_stride) this->ReformatStride();
 		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
 	}
 }

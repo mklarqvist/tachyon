@@ -37,7 +37,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
 	}
 	// Load all info
-	if(settings.load_static & YON_BLK_BV_INFO){
+	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
 		//this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
@@ -52,7 +52,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	} // end case load_info_ID
 
 	// Load all FORMAT data
-	if(settings.load_static & YON_BLK_BV_FORMAT){
+	if(this->block_.footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
 		//this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){

@@ -61,6 +61,7 @@ public:
 		x->m = 2;
 		x->n_s = n_samples;
 		x->n_allele = this->__meta.n_alleles;
+		x->ppa = nullptr;
 
 		return(x);
     }

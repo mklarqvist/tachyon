@@ -37,6 +37,13 @@ bool VariantImporter::BuildVCF(void){
 		return false;
 	}
 
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
+		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
+			std::cerr << "No length declared for contig. Add maximum." << std::endl;
+			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<S32>::max();
+		}
+	}
+
 	// Remap the global IDX fields in Vcf to the appropriate incremental order.
 	// This is useful in the situations when fields have been removed or added
 	// to the Vcf header section without reformatting the file.
@@ -122,8 +129,10 @@ bool VariantImporter::BuildVCF(void){
 			break;
 		}
 
-		if(this->GT_available_){
-			if(this->permutator.Build(this->vcf_container_) == false) return false;
+		if(this->GT_available_ && this->settings_.permute_genotypes){
+			if(this->permutator.Build(this->vcf_container_, this->vcf_reader_->vcf_header_) == false)
+				return false;
+
 			// This pointer here is borrowed from the PPA manager
 			// during import stages. Do not destroy the target block
 			// before finishing with this.
@@ -188,12 +197,13 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		// Transmute a bcf record into a meta structure
 		new( meta_entries + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
+
 		// Add the record data
 		if(this->AddRecord(container, i, meta_entries[i]) == false)
 			return false;
 	}
 
-	// Add genotypes in parallel
+	// Add FORMAT:GT field data.
 	this->encoder.Encode(container, meta_entries, this->block, this->permutator.permutation_array);
 
 	// Add meta records to the block buffers
@@ -211,17 +221,21 @@ bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 p
 		return false;
 	}
 
-	io::VcfGenotypeSummary s = container.GetGenotypeSummary(position, this->vcf_reader_->vcf_header_.GetNumberSamples());
-	meta.controller.diploid          = (s.base_ploidy == 2);
-	meta.controller.gt_mixed_phasing = s.mixed_phasing;
-	meta.controller.gt_phase         = s.phase_if_uniform;
-	meta.controller.mixed_ploidy     = (s.n_vector_end != 0);
-
 	if(this->AddVcfFilterInfo(container.at(position), meta) == false) return false;
 	if(this->AddVcfInfo(container.at(position), meta) == false) return false;
-	if(this->AddVcfFormatInfo(container.at(position), meta) == false) return false;
-	if(this->IndexRecord(container.at(position), meta) == false) return false;
 
+	if(container.at(position)->n_fmt){
+		if(this->AddVcfFormatInfo(container.at(position), meta) == false) return false;
+
+		// Perform these actions if FORMAT:GT data is available.
+		const int& hts_format_key = container.at(position)->d.fmt[0].id; // htslib IDX value
+		if(this->vcf_reader_->vcf_header_.GetFormat(hts_format_key)->id != "GT"){
+			meta.controller.gt_available = false;
+		} else
+			meta.controller.gt_available = true;
+	}
+
+	if(this->IndexRecord(container.at(position), meta) == false) return false;
 	return true;
 }
 

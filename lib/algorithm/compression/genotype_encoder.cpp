@@ -21,6 +21,9 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
                              const yon_gt_ppa& permutation_array) const
 {
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
+		if(meta_entries[i].controller.gt_available == false)
+			continue;
+
 		io::VcfGenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
 
 		yon_gt_assess assessed = this->Assess(container[i], gt_summary, permutation_array);

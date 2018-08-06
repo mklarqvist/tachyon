@@ -133,6 +133,29 @@ struct yon_blk_bv_pair {
 		return(buffer);
 	}
 
+	yon_blk_bv_pair& operator=(const yon_blk_bv_pair& other){
+		delete [] this->bit_bytes;
+		this->pattern = other.pattern;
+		this->l_bytes = other.l_bytes;
+		this->bit_bytes = new uint8_t[this->l_bytes];
+		memcpy(this->bit_bytes, other.bit_bytes, this->l_bytes);
+		return(*this);
+	}
+
+	yon_blk_bv_pair& operator=(yon_blk_bv_pair&& other) noexcept{
+		if (this == &other){
+			// take precautions against `foo = std::move(foo)`
+			return *this;
+		}
+
+		delete [] this->bit_bytes;
+		this->bit_bytes = other.bit_bytes;
+		other.bit_bytes = nullptr;
+		this->pattern = std::move(other.pattern);
+		this->l_bytes = other.l_bytes;
+		return(*this);
+	}
+
 public:
 	std::vector<int> pattern;
 	uint8_t l_bytes;
@@ -245,6 +268,18 @@ public:
 			this->n_info_patterns_allocated = 100;
 		}
 
+		// Resize if required.
+		if(this->n_info_patterns == this->n_info_patterns_allocated){
+			yon_blk_bv_pair* temp = this->info_patterns;
+
+			this->info_patterns = new yon_blk_bv_pair[this->n_info_patterns_allocated*2];
+			for(U32 i = 0; i < this->n_info_patterns_allocated; ++i){
+				this->info_patterns[i] = std::move(temp[i]);
+			}
+			this->n_info_patterns_allocated *= 2;
+			delete [] temp;
+		}
+
 		return(this->AddPatternWrapper(pattern,
 		                               this->info_pattern_map,
 		                               this->info_patterns,
@@ -258,6 +293,18 @@ public:
 			this->n_format_patterns_allocated = 100;
 		}
 
+		// Resize if required.
+		if(this->n_format_patterns == this->n_format_patterns_allocated){
+			yon_blk_bv_pair* temp = this->format_patterns;
+
+			this->format_patterns = new yon_blk_bv_pair[this->n_format_patterns_allocated*2];
+			for(U32 i = 0; i < this->n_format_patterns_allocated; ++i){
+				this->format_patterns[i] = std::move(temp[i]);
+			}
+			this->n_format_patterns_allocated *= 2;
+			delete [] temp;
+		}
+
 		return(this->AddPatternWrapper(pattern,
 		                               this->format_pattern_map,
 		                               this->format_patterns,
@@ -269,6 +316,18 @@ public:
 		if(this->n_filter_patterns_allocated == 0){
 			this->filter_patterns = new yon_blk_bv_pair[100];
 			this->n_filter_patterns_allocated = 100;
+		}
+
+		// Resize if required.
+		if(this->n_filter_patterns == this->n_filter_patterns_allocated){
+			yon_blk_bv_pair* temp = this->filter_patterns;
+
+			this->filter_patterns = new yon_blk_bv_pair[this->n_filter_patterns_allocated*2];
+			for(U32 i = 0; i < this->n_filter_patterns_allocated; ++i){
+				this->filter_patterns[i] = std::move(temp[i]);
+			}
+			this->n_filter_patterns_allocated *= 2;
+			delete [] temp;
 		}
 
 		return(this->AddPatternWrapper(pattern,

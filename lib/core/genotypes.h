@@ -217,7 +217,7 @@ struct yon_gt {
     uint8_t* data; // pointer to data
     uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
     uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
-    yon_gt_rcd** d_ppa; // lazy evaluated from ppa to internal offset (length = n_samples). This can be
+    yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be
     yon_gt_rcd* rcds; // lazy interpreted internal records
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
@@ -225,14 +225,14 @@ struct yon_gt {
 
     yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
                n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
-			   d_ppa(nullptr), rcds(nullptr), itree(nullptr), dirty(false)
+			   d_exp(nullptr), rcds(nullptr), itree(nullptr), dirty(false)
     {}
 
     ~yon_gt(){
     	delete [] d_bcf;
     	delete [] d_bcf_ppa,
 		delete [] rcds;
-    	delete [] d_ppa;
+    	delete [] d_exp;
     	delete itree;
     }
 
@@ -417,19 +417,19 @@ struct yon_gt {
 		return true;
 	}
 
-	bool EvaluatePpa(void){
+	bool ExpandRecordsPpa(void){
 		assert(this->rcds != nullptr);
 		assert(this->ppa != nullptr);
 
-		if(this->d_ppa != nullptr) delete [] this->d_ppa;
-		this->d_ppa = new yon_gt_rcd*[this->n_s];
+		if(this->d_exp != nullptr) delete [] this->d_exp;
+		this->d_exp = new yon_gt_rcd*[this->n_s];
 
 		uint64_t cum_sample = 0;
 		uint64_t cum_offset = 0;
 		for(uint32_t i = 0; i < this->n_i; ++i){
 			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
 				const uint32_t& target_ppa = this->ppa->at(cum_sample);
-				this->d_ppa[target_ppa] = &this->rcds[i];
+				this->d_exp[target_ppa] = &this->rcds[i];
 				cum_offset += this->p * this->m;
 			}
 		}
@@ -438,6 +438,30 @@ struct yon_gt {
 		return true;
 	}
 
+	bool Expand(void){
+		if(this->ppa != nullptr)
+			return(this->ExpandRecordsPpa());
+		else return(this->ExpandRecords());
+	}
+
+	bool ExpandRecords(void){
+		assert(this->rcds != nullptr);
+
+		if(this->d_exp != nullptr) delete [] this->d_exp;
+		this->d_exp = new yon_gt_rcd*[this->n_s];
+
+		uint64_t cum_sample = 0;
+		uint64_t cum_offset = 0;
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+				this->d_exp[cum_sample] = &this->rcds[i];
+				cum_offset += this->p * this->m;
+			}
+		}
+		assert(cum_sample == this->n_s);
+		assert(cum_offset == this->n_s * this->m * this->p);
+		return true;
+	}
 
     template <class T>
     inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }

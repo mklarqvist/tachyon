@@ -42,7 +42,6 @@ void VariantBlock::clear(void){
 	this->footer.reset();
 	this->footer_support.reset();
 
-	// Map ID fields are always S32 fields
 	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
 	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
 	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
@@ -79,15 +78,15 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
 	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
 
-	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false);
-	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false);
+	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false, true);
 
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i){
 		assert(this->info_containers[i].header.data_header.stride != 0);
@@ -172,7 +171,10 @@ bool VariantBlock::read(std::ifstream& stream){
 
 U64 VariantBlock::DetermineCompressedSize(void) const{
 	U64 total = 0;
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+		total += this->base_containers[YON_BLK_PPA].GetObjectSize();
+
+	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
 
@@ -180,10 +182,8 @@ U64 VariantBlock::DetermineCompressedSize(void) const{
 }
 
 void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
-		stats_basic[1].cost_uncompressed += this->base_containers[YON_BLK_PPA].header.data_header.uLength;
-		stats_basic[1].cost_compressed   += this->base_containers[YON_BLK_PPA].header.data_header.cLength;
-	}
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+		stats_basic[1] += this->base_containers[YON_BLK_PPA];
 
 	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i)
 		stats_basic[i+1] += this->base_containers[i];

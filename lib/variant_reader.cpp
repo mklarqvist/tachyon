@@ -156,9 +156,16 @@ bool VariantReader::NextBlock(){
 			return false;
 		}
 	}
-	//assert(this->variant_container.GetBlock().gt_ppa != nullptr);
-	this->variant_container.GetBlock().gt_ppa = new yon_gt_ppa;
-	this->variant_container.GetBlock().gt_ppa->n_samples = this->global_header.GetNumberSamples();
+
+	// If there is FORMAT:GT field data available AND that data has
+	// been permuted then create a new yon_gt_ppa object to store
+	// this data.
+	if(this->variant_container.GetBlock().header.controller.hasGT &&
+	   this->variant_container.GetBlock().header.controller.hasGTPermuted)
+	{
+		this->variant_container.GetBlock().gt_ppa = new yon_gt_ppa;
+		this->variant_container.GetBlock().gt_ppa->n_samples = this->global_header.GetNumberSamples();
+	}
 
 	// Internally decompress available data
 	if(!this->codec_manager.Decompress(this->variant_container.GetBlock())){
@@ -704,7 +711,9 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 U64 VariantReader::OutputVcf(void){
 	while(this->NextBlock()){
 		objects_type& objects = *this->getCurrentBlock().LoadObjects(this->block_settings);
+		std::cerr << "after objects" << std::endl;
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(objects);
+		std::cerr << "after entries" << std::endl;
 
 		io::BasicBuffer output_buffer(100000);
 
@@ -713,98 +722,123 @@ U64 VariantReader::OutputVcf(void){
 			output_buffer += '\t';
 
 			// Print Filter.
-			const uint32_t n_filter_avail = entries[i].filter_ids->size();
-			if(n_filter_avail){
-				output_buffer += entries[i].filter_hdr[0]->id;
-				for(U32 j = 1; j < n_filter_avail; ++j){
-					output_buffer += ';';
-					output_buffer += entries[i].filter_hdr[j]->id;
+			if(entries[i].n_filter){
+				const uint32_t n_filter_avail = entries[i].filter_ids->size();
+				if(n_filter_avail){
+					output_buffer += entries[i].filter_hdr[0]->id;
+					for(U32 j = 1; j < n_filter_avail; ++j){
+						output_buffer += ';';
+						output_buffer += entries[i].filter_hdr[j]->id;
+					}
+				} else {
+					output_buffer += '.';
 				}
-			} else {
-				output_buffer += '.';
-			}
+			} else output_buffer += '.';
 			output_buffer += '\t';
 
 			// Print Info.
-			const uint32_t n_info_avail = entries[i].info_ids->size();
-			if(n_info_avail){
-				if(entries[i].info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
-					output_buffer += entries[i].info_hdr[0]->id;
-				} else {
-					output_buffer += entries[i].info_hdr[0]->id;
-					output_buffer += '=';
-					entries[i].info[0]->to_vcf_string(output_buffer);
-				}
-
-				for(U32 j = 1; j < n_info_avail; ++j){
-					output_buffer += ';';
-					if(entries[i].info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
-						output_buffer += entries[i].info_hdr[j]->id;
+			if(entries[i].n_info){
+				const uint32_t n_info_avail = entries[i].info_ids->size();
+				if(n_info_avail){
+					if(entries[i].info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
+						output_buffer += entries[i].info_hdr[0]->id;
 					} else {
-						output_buffer += entries[i].info_hdr[j]->id;
+						output_buffer += entries[i].info_hdr[0]->id;
 						output_buffer += '=';
-						entries[i].info[j]->to_vcf_string(output_buffer);
+						entries[i].info[0]->to_vcf_string(output_buffer);
+					}
+
+					for(U32 j = 1; j < n_info_avail; ++j){
+						output_buffer += ';';
+						if(entries[i].info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+							output_buffer += entries[i].info_hdr[j]->id;
+						} else {
+							output_buffer += entries[i].info_hdr[j]->id;
+							output_buffer += '=';
+							entries[i].info[j]->to_vcf_string(output_buffer);
+						}
 					}
 				}
-			}
-			output_buffer += '\t';
+			} else output_buffer += '.';
 
 			// Print Format.
-			const uint32_t n_format_avail = entries[i].format_ids->size();
-			if(n_format_avail){
-				output_buffer += entries[i].format_hdr[0]->id;
-				for(U32 j = 1; j < n_format_avail; ++j){
-					output_buffer += ':';
-					output_buffer += entries[i].format_hdr[j]->id;
-				}
+			if(entries[i].n_format){
 				output_buffer += '\t';
 
-				// Case when there is only GT field.
-				if(n_format_avail == 1 && entries[i].is_loaded_gt){
-					// Calculate FORMAT:GT for this variant site.
-					yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.GetBlock().gt_ppa);
-					gt_records->Evaluate();
-					// Todo: If ppa is loaded or not.
-					gt_records->EvaluatePpa();
-
-					// Iterate over samples and print FORMAT:GT value in Vcf format.
-					gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
-					for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-						output_buffer += '\t';
-						gt_records->d_ppa[s]->printVcf(output_buffer, gt_records->m);
-					}
-					// Cleanup.
-					delete gt_records;
-
-				} else if(n_format_avail > 1 && entries[i].is_loaded_gt){
-					yon_gt* gt_records = entries[i].gt->GetObjects(*this->variant_container.GetBlock().gt_ppa);
-					gt_records->Evaluate();
-					gt_records->EvaluatePpa();
-
-					if(n_format_avail > entries[i].is_loaded_gt){
-						gt_records->d_ppa[0]->printVcf(output_buffer, gt_records->m);
+				const uint32_t n_format_avail = entries[i].format_ids->size();
+				if(n_format_avail){
+					output_buffer += entries[i].format_hdr[0]->id;
+					for(U32 j = 1; j < n_format_avail; ++j){
 						output_buffer += ':';
-						entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, 0);
-						for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
+						output_buffer += entries[i].format_hdr[j]->id;
+					}
+					output_buffer += '\t';
+
+					// Vcf FORMAT values are interleaved such that values are
+					// presented in a columnar representation with data for
+					// each sample is concatenated together such as the pattern
+					// GT:AF:AS is display for three samples as:
+					//
+					// Sample 1    Sample 2    Sample 3
+					// 0|0:0.5|ABC 0|0:0.5|ABC 0|0:0.5|ABC
+					//
+					// This memory layout requires the interleaving of the
+					// internally separated data streams resulting in slower
+					// Vcf printing speeds compared to the naive Bcf file format.
+					//
+					// First calculate the FORMAT:GT field for this variant site.
+					// Case when the only available FORMAT field is the GT field.
+					if(n_format_avail == 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
+						// Iterate over samples and print FORMAT:GT value in Vcf format.
+						entries[i].gt->d_exp[0]->printVcf(output_buffer, entries[i].gt->m);
+						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+							output_buffer += '\t';
+							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
+						}
+					}
+					// Case when there are > 1 Vcf Format fields and the GT field
+					// is available.
+					else if(n_format_avail > 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
+						entries[i].gt->d_exp[0]->printVcf(output_buffer, entries[i].gt->m);
+						output_buffer += ':';
+						entries[i].format_containers[1]->to_vcf_string(output_buffer, i, 0);
+						for(U32 g = 2; g < n_format_avail; ++g){
 							output_buffer += ':';
 							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, 0);
 						}
 
 						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 							output_buffer += '\t';
-							gt_records->d_ppa[s]->printVcf(output_buffer, gt_records->m);
+							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
 							output_buffer += ':';
-							entries[i].format_containers[entries[i].is_loaded_gt]->to_vcf_string(output_buffer, i, s);
-							for(U32 g = entries[i].is_loaded_gt + 1; g < n_format_avail; ++g){
+							entries[i].format_containers[1]->to_vcf_string(output_buffer, i, s);
+							for(U32 g = 2; g < n_format_avail; ++g){
 								output_buffer += ':';
 								entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
 							}
 						}
 					}
-					delete gt_records;
+					// All other cases.
+					else {
+						entries[i].format_containers[0]->to_vcf_string(output_buffer, i, 0);
+						for(U32 g = 1; g < n_format_avail; ++g){
+							output_buffer += ':';
+							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, 0);
+						}
+
+						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+							output_buffer += '\t';
+							entries[i].gt->d_exp[s]->printVcf(output_buffer, entries[i].gt->m);
+							output_buffer += ':';
+							entries[i].format_containers[0]->to_vcf_string(output_buffer, i, s);
+							for(U32 g = 1; g < n_format_avail; ++g){
+								output_buffer += ':';
+								entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
+							}
+						}
+					}
 				}
 			}
-
 			output_buffer += '\n';
 
 			if(output_buffer.size() > 65536){

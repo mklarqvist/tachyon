@@ -24,7 +24,7 @@ void GenotypeSorter::reset(void){
 	this->permutation_array.reset();
 }
 
-bool GenotypeSorter::Build(const vcf_container_type& vcf_container){
+bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeader& vcf_header){
 	if(this->GetNumberSamples() == 0)
 		return true;
 
@@ -34,10 +34,26 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container){
 	// Allocate tetraploid worth of memory in the first instance.
 	int32_t  largest_ploidy    = 0;
 	uint32_t largest_n_alleles = 0;
+	uint32_t n_valid_records   = 0;
 	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+		if(vcf_container[i]->n_fmt == 0) continue;
+
+		// Perform these actions if FORMAT:GT data is available.
+		const int& hts_format_key = vcf_container.at(i)->d.fmt[0].id; // htslib IDX value
+		if(vcf_header.GetFormat(hts_format_key)->id != "GT"){
+			continue;
+		}
+
+		++n_valid_records;
 		largest_ploidy    = std::max(vcf_container[i]->d.fmt[0].n, largest_ploidy);
 		largest_n_alleles = std::max((uint32_t)vcf_container[i]->n_allele + 2, largest_n_alleles);
 	}
+
+	// If there are no valid FORMAT:GT entries in the list then
+	// return false.
+	if(n_valid_records == 0)
+		return false;
+
 	// Shift largest_n_alleles one bit to the left as this is how
 	// alleles are stored in Vcf as the first bit encodes for
 	// the phasing. The phasing may be unphased (0) or phased (1).
@@ -83,6 +99,15 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container){
 
 	// Iterate over all available bcf1_t records in the container.
 	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+		if(vcf_container[i]->n_fmt == 0) continue;
+
+		// Perform these actions if FORMAT:GT data is available.
+		const int& hts_format_key = vcf_container.at(i)->d.fmt[0].id; // htslib IDX value
+		if(vcf_header.GetFormat(hts_format_key)->id != "GT"){
+			continue;
+		}
+
+		// Setup.
 		const bcf1_t* bcf = vcf_container[i];
 		const uint8_t* gt = bcf->d.fmt[0].p;
 		const uint32_t base_ploidy = bcf->d.fmt[0].n;

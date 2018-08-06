@@ -29,7 +29,7 @@ public:
 	void reset(void);
 	void SetSamples(const U64 n_samples);
 
-	bool Build(const vcf_container_type& vcf_container);
+	bool Build(const vcf_container_type& vcf_container, io::VcfHeader& vcf_header);
 	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
 
 	inline const U64& GetNumberSamples(void) const{ return(this->n_samples); }
