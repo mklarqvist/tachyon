@@ -66,6 +66,7 @@ struct yon_blk_bv_pair {
 		this->pattern.clear();
 		this->l_bytes = 0;
 		delete [] this->bit_bytes;
+		this->bit_bytes = nullptr;
 	}
 
 	// Bit access
@@ -144,7 +145,7 @@ struct yon_blk_bv_pair {
 
 	yon_blk_bv_pair& operator=(yon_blk_bv_pair&& other) noexcept{
 		if (this == &other){
-			// take precautions against `foo = std::move(foo)`
+			// take precautions against self-moves
 			return *this;
 		}
 

@@ -52,26 +52,22 @@ VariantBlockFooter::~VariantBlockFooter(){
 
 void VariantBlockFooter::reset(void){
 	// Headers of the various containers
-	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		this->offsets[i].reset();
+	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i) this->offsets[i].reset();
 
-	// Offsets
-	delete [] this->info_offsets;
-	delete [] this->format_offsets;
-	delete [] this->filter_offsets;
-	this->info_offsets   = nullptr;
-	this->format_offsets = nullptr;
-	this->filter_offsets = nullptr;
+	for(U32 i = 0; i < this->n_info_streams; ++i)   this->info_offsets[i].reset();
+	for(U32 i = 0; i < this->n_format_streams; ++i) this->format_offsets[i].reset();
+	for(U32 i = 0; i < this->n_filter_streams; ++i) this->filter_offsets[i].reset();
 
-	this->n_info_patterns_allocated   = 0;
-	this->n_format_patterns_allocated = 0;
-	this->n_filter_patterns_allocated = 0;
-	this->info_patterns   = nullptr;
-	this->format_patterns = nullptr;
-	this->filter_patterns = nullptr;
-	delete [] this->info_patterns;
-	delete [] this->format_patterns;
-	delete [] this->filter_patterns;
+	for(U32 i = 0; i < this->n_info_patterns; ++i)   this->info_patterns[i].clear();
+	for(U32 i = 0; i < this->n_format_patterns; ++i) this->format_patterns[i].clear();
+	for(U32 i = 0; i < this->n_filter_patterns; ++i) this->filter_patterns[i].clear();
+
+	this->n_info_streams    = 0;
+	this->n_format_streams  = 0;
+	this->n_filter_streams  = 0;
+	this->n_info_patterns   = 0;
+	this->n_format_patterns = 0;
+	this->n_filter_patterns = 0;
 
 	this->resetTables();
 }
@@ -83,12 +79,6 @@ void VariantBlockFooter::resetTables(){
 	if(this->info_pattern_map != nullptr)   this->info_pattern_map->clear();
 	if(this->format_pattern_map != nullptr) this->format_pattern_map->clear();
 	if(this->filter_pattern_map != nullptr) this->filter_pattern_map->clear();
-	this->n_info_streams    = 0;
-	this->n_format_streams  = 0;
-	this->n_filter_streams  = 0;
-	this->n_info_patterns   = 0;
-	this->n_format_patterns = 0;
-	this->n_filter_patterns = 0;
 }
 
 io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& entry){

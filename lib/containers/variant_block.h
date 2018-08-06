@@ -37,14 +37,18 @@ public:
 	VariantBlock(const uint16_t n_info, const uint16_t n_format);
 	~VariantBlock();
 
-	void Allocate(const uint16_t n_info, const uint16_t n_format){
+	void Allocate(const uint16_t n_info, const uint16_t n_format, const uint16_t n_filter){
+		// Allocate space for INFO containers.
 		delete [] this->info_containers;
 		this->info_containers = new container_type[n_info];
 		this->n_info_c_allocated = n_info;
 
+		// Allocate space for FORMAT containers.
 		delete [] this->format_containers;
 		this->format_containers = new container_type[n_format];
 		this->n_format_c_allocated = n_format;
+
+		this->footer.AllocateHeaders(n_info, n_format, n_filter);
 	}
 
 	/**< @brief Resize base container buffer streams

@@ -101,17 +101,20 @@ bool VariantImporter::BuildVCF(void){
 	this->writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
 	this->WriteYonHeader();
 
-	// Resize containers
-	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
-	this->block.resize(resize_to);
-
 	// Setup genotype permuter and genotype encoder.
 	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
 
-	// Setup.
+	// Allocate containers and offsets for this file.
+	// This is not strictly necessary but prevents nasty resize
+	// calls in most cases.
 	this->block.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size(),
-	                     this->vcf_reader_->vcf_header_.format_fields_.size());
+	                     this->vcf_reader_->vcf_header_.format_fields_.size(),
+	                     this->vcf_reader_->vcf_header_.filter_fields_.size());
+
+	// Resize containers
+	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
+	this->block.resize(resize_to);
 
 	// Start porgress timer.
 	algorithm::Timer timer; timer.Start();
@@ -119,11 +122,6 @@ bool VariantImporter::BuildVCF(void){
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
-		this->block.footer.AllocateHeaders(
-				this->vcf_reader_->vcf_header_.info_fields_.size(),
-				this->vcf_reader_->vcf_header_.format_fields_.size(),
-				this->vcf_reader_->vcf_header_.filter_fields_.size());
-
 		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
 		// after retrieving a set number of variants or if the interval between
 		// the smallest and largest variant exceeds some distance in base pairs.
@@ -133,12 +131,12 @@ bool VariantImporter::BuildVCF(void){
 			break;
 		}
 
-		if(this->GT_available_ && this->settings_.permute_genotypes){
-			// This pointer here is borrowed from the PPA manager
-			// during import stages. Do not destroy the target block
-			// before finishing with this.
-			this->block.gt_ppa = &this->permutator.permutation_array;
+		// This pointer here is borrowed from the PPA manager
+		// during import stages. Do not destroy the target block
+		// before finishing with this.
+		this->block.gt_ppa = &this->permutator.permutation_array;
 
+		if(this->GT_available_ && this->settings_.permute_genotypes){
 			// Only store the permutation array if the number of samples
 			// are greater then one (1).
 			if(this->vcf_reader_->vcf_header_.GetNumberSamples() > 1){

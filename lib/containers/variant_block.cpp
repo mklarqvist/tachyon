@@ -57,10 +57,6 @@ void VariantBlock::clear(void){
 	for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 		this->format_containers[i].reset();
 
-	this->header.reset();
-	this->footer.reset();
-	this->footer_support.reset();
-
 	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
 	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
 	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
@@ -68,6 +64,10 @@ void VariantBlock::clear(void){
 	this->end_block_             = 0;
 	this->start_compressed_data_ = 0;
 	this->end_compressed_data_   = 0;
+
+	this->header.reset();
+	this->footer.reset();
+	this->footer_support.reset();
 
 	if(this->gt_ppa != nullptr)
 		this->gt_ppa->reset();
