@@ -311,7 +311,7 @@ int view(int argc, char** argv){
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
+		if(!reader.getBlockSettings().ParseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -320,8 +320,8 @@ int view(int argc, char** argv){
 
 		if(settings.drop_format){
 			reader.getBlockSettings().loadGenotypes(false);
-			reader.getBlockSettings().LoadDisplayStandard(false, YON_BLK_PPA);
-			reader.getBlockSettings().LoadDisplayStandard(false, YON_BLK_N_STATIC+2);
+			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_PPA);
+			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_N_STATIC+2);
 		}
 	}
 
@@ -387,7 +387,7 @@ int view(int argc, char** argv){
 	}
 	*/
 
-	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
+	reader.getBlockSettings().ParseSettings(reader.getGlobalHeader());
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();

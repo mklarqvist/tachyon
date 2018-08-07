@@ -35,9 +35,6 @@ bool VariantReader::open(void){
 		return false;
 	}
 
-	//this->basic_reader.stream_.open(this->settings.input, std::ios::binary | std::ios::in | std::ios::ate);
-	//this->filesize = (U64)this->basic_reader.stream_.tellg();
-
 	if(this->basic_reader.filesize_ <= YON_FOOTER_LENGTH){
 		std::cerr << utility::timestamp("ERROR") << "File is corrupted!" << std::endl;
 		return false;
@@ -110,7 +107,7 @@ bool VariantReader::open(void){
 	this->basic_reader.stream_.seekg(return_pos);
 
 	// Parse settings
-	this->getBlockSettings().parseSettings(this->global_header);
+	this->getBlockSettings().ParseSettings(this->global_header);
 
 	return(this->basic_reader.stream_.good());
 }

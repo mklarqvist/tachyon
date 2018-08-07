@@ -141,10 +141,10 @@ GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContaine
 		}
 	}
 
-	assert(offset_rle8  == block.base_containers[YON_BLK_GT_INT8].GetSizeUncompressed());
-	assert(offset_rle16 == block.base_containers[YON_BLK_GT_INT16].GetSizeUncompressed());
-	assert(offset_rle32 == block.base_containers[YON_BLK_GT_INT32].GetSizeUncompressed());
-	assert(offset_rle64 == block.base_containers[YON_BLK_GT_INT64].GetSizeUncompressed());
+	assert(offset_rle8     == block.base_containers[YON_BLK_GT_INT8].GetSizeUncompressed());
+	assert(offset_rle16    == block.base_containers[YON_BLK_GT_INT16].GetSizeUncompressed());
+	assert(offset_rle32    == block.base_containers[YON_BLK_GT_INT32].GetSizeUncompressed());
+	assert(offset_rle64    == block.base_containers[YON_BLK_GT_INT64].GetSizeUncompressed());
 	assert(offset_simple8  == block.base_containers[YON_BLK_GT_S_INT8].GetSizeUncompressed());
 	assert(offset_simple16 == block.base_containers[YON_BLK_GT_S_INT16].GetSizeUncompressed());
 	assert(offset_simple32 == block.base_containers[YON_BLK_GT_S_INT32].GetSizeUncompressed());

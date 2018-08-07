@@ -53,13 +53,12 @@ fi
 cd ..
 
 note_build_stage "Building curl..."
-if [ ! -d curl ]; then
-git clone https://github.com/curl/curl
+if [ ! -d curl-7.61.0 ]; then
+wget https://dl.uxnr.de/mirror/curl/curl-7.61.0.tar.gz
+tar -xzvf curl-7.61.0.tar.gz
 fi
-cd curl
+cd curl-7.61.0
 if [ ! -f lib/.libs/libcurl.so ]; then
-    ./buildconf
-    libtoolize && aclocal && automake --add-missing && ln -sf /usr/share/libtool/config/ltmain.sh . && autoconf
     CPPFLAGS="-I${PWD}/../openssl/include" LDFLAGS="-L${PWD}/../openssl" ./configure
     make -j$(nproc)
 else
@@ -67,13 +66,13 @@ else
 fi
 cd ..
 
- note_build_stage "Building htslib"
+note_build_stage "Building htslib"
 if [ ! -d htslib ]; then
 git clone https://github.com/samtools/htslib.git
 fi
 cd htslib
 if [ ! -f htslib.so ]; then
-    autoheader && autoconf && ./configure CPPFLAGS="-I../openssl/include/ -I../curl/include/" LDFLAGS="-L../openssl/ -L../curl/lib/.libs/" && make -j$(nproc)
+    autoheader && autoconf && ./configure CPPFLAGS="-I/usr/local/include/" LDFLAGS="-L/usr/local/lib/" && make -j$(nproc)
 else
     echo "htslib already built! Skipping..."
 fi

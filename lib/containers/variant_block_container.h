@@ -92,6 +92,8 @@ private:
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
 
+	typedef std::unordered_map<int, uint32_t>    map_type;
+
 public:
 	VariantBlockContainer() :
 		header_(nullptr),
@@ -321,6 +323,8 @@ private:
 	objects_type*             objects_;
 	std::vector<int>          info_id_loaded;
 	std::vector<int>          format_id_loaded;
+	map_type info_map;
+	map_type format_map;
 };
 
 

@@ -12,6 +12,22 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	//settings.load_static = (1UL << YON_BLK_GT_INT8) - 1;
 	//settings.load_static |= YON_BLK_BV_INFO;
 
+	// Temp: Disable all INFO loading for now.
+	settings.load_static &= ~(YON_BLK_BV_INFO);
+
+	if(settings.load_static & YON_BLK_BV_INFO){
+		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
+			this->info_id_loaded.push_back(i);
+		}
+	} else {
+		std::cerr << "ids: " << settings.info_ID_list.size() << std::endl;
+		for(U32 i = 0; i < settings.info_ID_list.size(); ++i){
+			const int local = this->block_.GetInfoPosition(settings.info_ID_list[i]);
+			if(local >= 0) this->info_id_loaded.push_back(local);
+			std::cerr << local << std::endl;
+		}
+	}
+
 	if(settings.load_static & YON_BLK_BV_PPA){
 		if(this->block_.header.controller.hasGTPermuted && this->block_.header.controller.hasGT){
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.offsets[YON_BLK_PPA].data_header.offset);
@@ -27,20 +43,21 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 
 	if(settings.load_static & YON_BLK_BV_GT){
 		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16], this->block_.base_containers[YON_BLK_GT_INT16]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32], this->block_.base_containers[YON_BLK_GT_INT32]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64], this->block_.base_containers[YON_BLK_GT_INT64]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8], this->block_.base_containers[YON_BLK_GT_S_INT8]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16],   this->block_.base_containers[YON_BLK_GT_INT16]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT32],   this->block_.base_containers[YON_BLK_GT_INT32]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT64],   this->block_.base_containers[YON_BLK_GT_INT64]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT8],  this->block_.base_containers[YON_BLK_GT_S_INT8]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT16], this->block_.base_containers[YON_BLK_GT_S_INT16]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT32], this->block_.base_containers[YON_BLK_GT_S_INT32]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_S_INT64], this->block_.base_containers[YON_BLK_GT_S_INT64]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_N_INT8], this->block_.base_containers[YON_BLK_GT_N_INT8]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_N_INT8],  this->block_.base_containers[YON_BLK_GT_N_INT8]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_N_INT16], this->block_.base_containers[YON_BLK_GT_N_INT16]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_N_INT32], this->block_.base_containers[YON_BLK_GT_N_INT32]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_N_INT64], this->block_.base_containers[YON_BLK_GT_N_INT64]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_SUPPORT], this->block_.base_containers[YON_BLK_GT_SUPPORT]);
-		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_PLOIDY], this->block_.base_containers[YON_BLK_GT_PLOIDY]);
+		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_PLOIDY],  this->block_.base_containers[YON_BLK_GT_PLOIDY]);
 	}
+
 	// Load all info
 	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){
 		delete [] this->block_.info_containers;
@@ -57,7 +74,16 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	}
 	// If we have supplied a list of identifiers
 	else if(settings.info_ID_list.size()){
-		// todo
+		std::cerr << "here" << std::endl;
+		delete [] this->block_.info_containers;
+		this->block_.info_containers = new VariantBlock::container_type[this->block_.footer.n_info_streams];
+		this->block_.n_info_c_allocated = this->block_.footer.n_info_streams;
+
+		for(U32 i = 0; i < this->info_id_loaded.size(); ++i){
+			this->block_.LoadContainerSeek(stream, this->block_.footer.info_offsets[this->info_id_loaded[i]], this->block_.info_containers[this->info_id_loaded[i]]);
+			std::cerr << "Loaded: " << this->info_id_loaded[i] << "/" << this->block_.footer.n_info_streams << " -> " << this->block_.footer.info_offsets[this->info_id_loaded[i]].data_header.global_key << "==" << this->info_id_loaded[i] << std::endl;
+		}
+
 	} // end case load_info_ID
 
 	// Load all FORMAT data

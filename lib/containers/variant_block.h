@@ -216,6 +216,13 @@ public:
 	inline U32 AddFilter(const U32 id){ return(this->footer.AddFilter(id)); }
 	inline void Finalize(void){ this->footer.Finalize(); }
 
+	S32 GetInfoPosition(const U32 global_id) const{
+		if(this->footer.info_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+		if(it == this->footer.info_map->end()) return -1;
+		return(it->second);
+	}
+
 	bool HasInfo(const U32 global_id) const{
 		if(this->footer.info_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);

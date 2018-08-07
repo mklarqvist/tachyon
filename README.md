@@ -29,7 +29,7 @@ sudo ./install.sh
 Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
 If you do not have super-user privileges required to install new packages on your system then run
 ```bash
-source install.sh local
+./install.sh local
 ```
 In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
 
@@ -46,7 +46,6 @@ In this situation, all required dependencies are downloaded and built in the cur
 Interested in contributing? Fork and submit a pull request and it will be reviewed.
 
 ### Support
-
 We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version

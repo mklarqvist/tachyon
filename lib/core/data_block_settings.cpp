@@ -22,10 +22,10 @@ DataBlockSettings::DataBlockSettings() :
 DataBlockSettings& DataBlockSettings::loadAll(const bool set){
 	this->loadAllMeta(true);
 	for(U32 i = 0; i < YON_BLK_N_STATIC; ++i)
-		this->LoadDisplayStandard(set, i);
+		this->LoadDisplayWrapper(set, i);
 
-	this->LoadDisplayStandard(set, YON_BLK_N_STATIC + 1); // all info
-	this->LoadDisplayStandard(set, YON_BLK_N_STATIC + 2); // all format
+	this->LoadDisplayWrapper(set, YON_BLK_N_STATIC + 1); // all info
+	this->LoadDisplayWrapper(set, YON_BLK_N_STATIC + 2); // all format
 
 	this->display_alt = true;
 	this->display_ref = true;
@@ -34,12 +34,12 @@ DataBlockSettings& DataBlockSettings::loadAll(const bool set){
 }
 
 DataBlockSettings& DataBlockSettings::loadAllMeta(const bool set){
-	this->LoadDisplayStandard(set, YON_BLK_CONTIG);
-	this->LoadDisplayStandard(set, YON_BLK_POSITION);
-	this->LoadDisplayStandard(set, YON_BLK_CONTROLLER);
-	this->LoadDisplayStandard(set, YON_BLK_QUALITY);
-	this->LoadDisplayStandard(set, YON_BLK_NAMES);
-	this->LoadDisplayStandard(set, YON_BLK_ALLELES);
+	this->LoadDisplayWrapper(set, YON_BLK_CONTIG);
+	this->LoadDisplayWrapper(set, YON_BLK_POSITION);
+	this->LoadDisplayWrapper(set, YON_BLK_CONTROLLER);
+	this->LoadDisplayWrapper(set, YON_BLK_QUALITY);
+	this->LoadDisplayWrapper(set, YON_BLK_NAMES);
+	this->LoadDisplayWrapper(set, YON_BLK_ALLELES);
 
 	this->display_alt = true;
 	this->display_ref = true;
@@ -48,23 +48,23 @@ DataBlockSettings& DataBlockSettings::loadAllMeta(const bool set){
 }
 
 DataBlockSettings& DataBlockSettings::loadAllFILTER(const bool set){
-	this->LoadDisplayStandard(set, YON_BLK_ID_INFO);
-	this->LoadDisplayStandard(set, YON_BLK_ID_FORMAT);
-	this->LoadDisplayStandard(set, YON_BLK_ID_FILTER);
-	this->LoadDisplayStandard(set, YON_BLK_CONTROLLER);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_INFO);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_FORMAT);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_FILTER);
+	this->LoadDisplayWrapper(set, YON_BLK_CONTROLLER);
 
 	this->display_filter  = true;
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadAllINFO(const bool set){
-	this->LoadDisplayStandard(set, YON_BLK_N_STATIC + 1); // all info
-	this->LoadDisplayStandard(set, YON_BLK_CONTIG);
-	this->LoadDisplayStandard(set, YON_BLK_POSITION);
-	this->LoadDisplayStandard(set, YON_BLK_CONTROLLER);
-	this->LoadDisplayStandard(set, YON_BLK_ID_INFO);
-	this->LoadDisplayStandard(set, YON_BLK_ID_FORMAT);
-	this->LoadDisplayStandard(set, YON_BLK_ID_FILTER);
+	this->LoadDisplayWrapper(set, YON_BLK_N_STATIC + 1); // all info
+	this->LoadDisplayWrapper(set, YON_BLK_CONTIG);
+	this->LoadDisplayWrapper(set, YON_BLK_POSITION);
+	this->LoadDisplayWrapper(set, YON_BLK_CONTROLLER);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_INFO);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_FORMAT);
+	this->LoadDisplayWrapper(set, YON_BLK_ID_FILTER);
 
 	return(*this);
 }
@@ -72,78 +72,78 @@ DataBlockSettings& DataBlockSettings::loadAllINFO(const bool set){
 DataBlockSettings& DataBlockSettings::loadINFO(const std::string& field_name){
 	if(field_name.size() == 0) return(*this);
 	this->info_list.push_back(field_name);
-	this->LoadStandard(true, YON_BLK_CONTIG);
-	this->LoadStandard(true, YON_BLK_POSITION);
-	this->LoadStandard(true, YON_BLK_CONTROLLER);
-	this->LoadStandard(true, YON_BLK_ID_INFO);
-	this->LoadStandard(true, YON_BLK_ID_FORMAT);
-	this->LoadStandard(true, YON_BLK_ID_FILTER);
+	this->LoadWrapper(true, YON_BLK_CONTIG);
+	this->LoadWrapper(true, YON_BLK_POSITION);
+	this->LoadWrapper(true, YON_BLK_CONTROLLER);
+	this->LoadWrapper(true, YON_BLK_ID_INFO);
+	this->LoadWrapper(true, YON_BLK_ID_FORMAT);
+	this->LoadWrapper(true, YON_BLK_ID_FILTER);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadINFO(const U32 field_id){
 	this->info_ID_list.push_back(field_id);
-	this->LoadStandard(true, YON_BLK_CONTIG);
-	this->LoadStandard(true, YON_BLK_POSITION);
-	this->LoadStandard(true, YON_BLK_CONTROLLER);
-	this->LoadStandard(true, YON_BLK_ID_INFO);
-	this->LoadStandard(true, YON_BLK_ID_FORMAT);
-	this->LoadStandard(true, YON_BLK_ID_FILTER);
+	this->LoadWrapper(true, YON_BLK_CONTIG);
+	this->LoadWrapper(true, YON_BLK_POSITION);
+	this->LoadWrapper(true, YON_BLK_CONTROLLER);
+	this->LoadWrapper(true, YON_BLK_ID_INFO);
+	this->LoadWrapper(true, YON_BLK_ID_FORMAT);
+	this->LoadWrapper(true, YON_BLK_ID_FILTER);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadGenotypes(const bool set){
-	this->LoadStandard(true, YON_BLK_GT_INT8);
-	this->LoadStandard(true, YON_BLK_GT_INT16);
-	this->LoadStandard(true, YON_BLK_GT_INT32);
-	this->LoadStandard(true, YON_BLK_GT_INT64);
-	this->LoadStandard(true, YON_BLK_GT_S_INT8);
-	this->LoadStandard(true, YON_BLK_GT_S_INT16);
-	this->LoadStandard(true, YON_BLK_GT_S_INT32);
-	this->LoadStandard(true, YON_BLK_GT_S_INT64);
-	this->LoadStandard(true, YON_BLK_GT_SUPPORT);
+	this->LoadWrapper(true, YON_BLK_GT_INT8);
+	this->LoadWrapper(true, YON_BLK_GT_INT16);
+	this->LoadWrapper(true, YON_BLK_GT_INT32);
+	this->LoadWrapper(true, YON_BLK_GT_INT64);
+	this->LoadWrapper(true, YON_BLK_GT_S_INT8);
+	this->LoadWrapper(true, YON_BLK_GT_S_INT16);
+	this->LoadWrapper(true, YON_BLK_GT_S_INT32);
+	this->LoadWrapper(true, YON_BLK_GT_S_INT64);
+	this->LoadWrapper(true, YON_BLK_GT_SUPPORT);
 
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadPermutationArray(const bool set){
-	this->LoadStandard(true, YON_BLK_PPA);
+	this->LoadWrapper(true, YON_BLK_PPA);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadAllFORMAT(const bool set){
-	this->LoadStandard(true, YON_BLK_PPA);
+	this->LoadWrapper(true, YON_BLK_PPA);
 	this->loadGenotypes(set);
-	this->LoadDisplayStandard(set, YON_BLK_N_STATIC + 2); // all format
-	this->LoadStandard(true, YON_BLK_CONTIG);
-	this->LoadStandard(true, YON_BLK_POSITION);
-	this->LoadStandard(true, YON_BLK_CONTROLLER);
-	this->LoadStandard(true, YON_BLK_ID_INFO);
-	this->LoadStandard(true, YON_BLK_ID_FORMAT);
-	this->LoadStandard(true, YON_BLK_ID_FILTER);
+	this->LoadDisplayWrapper(set, YON_BLK_N_STATIC + 2); // all format
+	this->LoadWrapper(true, YON_BLK_CONTIG);
+	this->LoadWrapper(true, YON_BLK_POSITION);
+	this->LoadWrapper(true, YON_BLK_CONTROLLER);
+	this->LoadWrapper(true, YON_BLK_ID_INFO);
+	this->LoadWrapper(true, YON_BLK_ID_FORMAT);
+	this->LoadWrapper(true, YON_BLK_ID_FILTER);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadFORMAT(const std::string& field_name){
 	if(field_name.size() == 0) return(*this);
-	this->LoadStandard(true, YON_BLK_CONTIG);
-	this->LoadStandard(true, YON_BLK_POSITION);
-	this->LoadStandard(true, YON_BLK_CONTROLLER);
-	this->LoadStandard(true, YON_BLK_ID_INFO);
-	this->LoadStandard(true, YON_BLK_ID_FORMAT);
-	this->LoadStandard(true, YON_BLK_ID_FILTER);
+	this->LoadWrapper(true, YON_BLK_CONTIG);
+	this->LoadWrapper(true, YON_BLK_POSITION);
+	this->LoadWrapper(true, YON_BLK_CONTROLLER);
+	this->LoadWrapper(true, YON_BLK_ID_INFO);
+	this->LoadWrapper(true, YON_BLK_ID_FORMAT);
+	this->LoadWrapper(true, YON_BLK_ID_FILTER);
 	if(field_name == "GT") this->loadGenotypes(true);
 	this->format_list.push_back(field_name);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::loadFORMAT(const U32 field_id){
-	this->LoadStandard(true, YON_BLK_CONTIG);
-	this->LoadStandard(true, YON_BLK_POSITION);
-	this->LoadStandard(true, YON_BLK_CONTROLLER);
-	this->LoadStandard(true, YON_BLK_ID_INFO);
-	this->LoadStandard(true, YON_BLK_ID_FORMAT);
-	this->LoadStandard(true, YON_BLK_ID_FILTER);
+	this->LoadWrapper(true, YON_BLK_CONTIG);
+	this->LoadWrapper(true, YON_BLK_POSITION);
+	this->LoadWrapper(true, YON_BLK_CONTROLLER);
+	this->LoadWrapper(true, YON_BLK_ID_INFO);
+	this->LoadWrapper(true, YON_BLK_ID_FORMAT);
+	this->LoadWrapper(true, YON_BLK_ID_FILTER);
 	this->format_ID_list.push_back(field_id);
 	return(*this);
 }
@@ -154,7 +154,7 @@ DataBlockSettings& DataBlockSettings::setCustomDelimiter(const char delimiter){
 	return(*this);
 }
 
-bool DataBlockSettings::parse(const header_type& header){
+bool DataBlockSettings::Parse(const header_type& header){
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 
 	for(U32 i = 0; i < this->info_list.size(); ++i){
@@ -183,7 +183,7 @@ bool DataBlockSettings::parse(const header_type& header){
 	return true;
 }
 
-bool DataBlockSettings::parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat){
+bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat){
 	this->custom_output_format = customOutputFormat; // Todo
 	bool allGood = true;
 
@@ -203,7 +203,7 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 							allGood = false;
 							continue;
 						}
-						this->loadINFO(ind[j]);
+						this->loadINFO(info->idx);
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
 						allGood = false;
@@ -213,14 +213,14 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 				this->loadAllINFO(true);
 			} else if(strncasecmp(partitions[p].data(), "FORMAT", 6) == 0 && partitions[p].size() == 6){
 				this->loadGenotypes(true);
-				this->LoadDisplayStandard(true, YON_BLK_N_STATIC + 2); // all format
-				this->LoadDisplayStandard(true, YON_BLK_PPA);
-				this->LoadDisplayStandard(true, YON_BLK_CONTIG);
-				this->LoadDisplayStandard(true, YON_BLK_POSITION);
-				this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
-				this->LoadDisplayStandard(true, YON_BLK_ID_INFO);
-				this->LoadDisplayStandard(true, YON_BLK_ID_FORMAT);
-				this->LoadDisplayStandard(true, YON_BLK_ID_FILTER);
+				this->LoadDisplayWrapper(true, YON_BLK_N_STATIC + 2); // all format
+				this->LoadDisplayWrapper(true, YON_BLK_PPA);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTIG);
+				this->LoadDisplayWrapper(true, YON_BLK_POSITION);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_INFO);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_FORMAT);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_FILTER);
 
 			} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 				std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
@@ -229,22 +229,38 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 					if(std::regex_match(ind[j], field_identifier_regex)){
 						// Special case for genotypes
 						if(strncasecmp(ind[j].data(), "GT", 2) == 0 && ind[j].size() == 2){
-							this->LoadDisplayStandard(true, YON_BLK_CONTIG);
-							this->LoadDisplayStandard(true, YON_BLK_POSITION);
-							this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
-							this->LoadDisplayStandard(true, YON_BLK_ID_INFO);
-							this->LoadDisplayStandard(true, YON_BLK_ID_FORMAT);
-							this->LoadDisplayStandard(true, YON_BLK_ID_FILTER);
+							this->LoadDisplayWrapper(true, YON_BLK_CONTIG);
+							this->LoadDisplayWrapper(true, YON_BLK_POSITION);
+							this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_INFO);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_FORMAT);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_FILTER);
 							this->loadGenotypes(true);
 
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->loadFORMAT(fmt->idx);
+
 						} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
-							this->LoadDisplayStandard(true, YON_BLK_CONTIG);
-							this->LoadDisplayStandard(true, YON_BLK_POSITION);
-							this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
-							this->LoadDisplayStandard(true, YON_BLK_ID_INFO);
-							this->LoadDisplayStandard(true, YON_BLK_ID_FORMAT);
-							this->LoadDisplayStandard(true, YON_BLK_ID_FILTER);
+							this->LoadDisplayWrapper(true, YON_BLK_CONTIG);
+							this->LoadDisplayWrapper(true, YON_BLK_POSITION);
+							this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_INFO);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_FORMAT);
+							this->LoadDisplayWrapper(true, YON_BLK_ID_FILTER);
 							this->loadGenotypes(true);
+
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->loadFORMAT(fmt->idx);
 						}
 						// Any other FORMAT
 						else {
@@ -254,7 +270,7 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 								allGood = false;
 								continue;
 							}
-							this->loadFORMAT(ind[j]);
+							this->loadFORMAT(fmt->idx);
 						}
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
@@ -265,32 +281,32 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 			} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
 					  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
 					  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
-				this->LoadDisplayStandard(true, YON_BLK_CONTIG);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTIG);
 			} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
 					  (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
-				this->LoadDisplayStandard(true, YON_BLK_POSITION);
+				this->LoadDisplayWrapper(true, YON_BLK_POSITION);
 			} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
-				this->LoadDisplayStandard(true, YON_BLK_ALLELES);
-				this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
+				this->LoadDisplayWrapper(true, YON_BLK_ALLELES);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
 				this->display_ref = true;
 			} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
-				this->LoadDisplayStandard(true, YON_BLK_ALLELES);
-				this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
+				this->LoadDisplayWrapper(true, YON_BLK_ALLELES);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
 				this->display_alt = true;
 			} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
-				this->LoadDisplayStandard(true, YON_BLK_QUALITY);
+				this->LoadDisplayWrapper(true, YON_BLK_QUALITY);
 			} else if((strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5) ||
 					  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
-				this->LoadDisplayStandard(true, YON_BLK_NAMES);
+				this->LoadDisplayWrapper(true, YON_BLK_NAMES);
 			} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
-				this->LoadDisplayStandard(true, YON_BLK_CONTROLLER);
-				this->LoadDisplayStandard(true, YON_BLK_ID_INFO);
-				this->LoadDisplayStandard(true, YON_BLK_ID_FORMAT);
-				this->LoadDisplayStandard(true, YON_BLK_ID_FILTER);
+				this->LoadDisplayWrapper(true, YON_BLK_CONTROLLER);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_INFO);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_FORMAT);
+				this->LoadDisplayWrapper(true, YON_BLK_ID_FILTER);
 				this->display_filter = true;
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
@@ -304,7 +320,8 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 }
 
 
-bool DataBlockSettings::parseSettings(const header_type& header){
+bool DataBlockSettings::ParseSettings(const header_type& header){
+	/*
 	this->info_ID_list.clear();
 	for(U32 i = 0; i < this->info_list.size(); ++i){
 		const io::VcfInfo* info = header.GetInfo(this->info_list[i]);
@@ -328,6 +345,7 @@ bool DataBlockSettings::parseSettings(const header_type& header){
 			this->format_ID_list.push_back(global_key);
 
 	}
+	*/
 
 	return true;
 }
