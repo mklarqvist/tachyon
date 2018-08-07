@@ -106,9 +106,6 @@ bool VariantReader::open(void){
 	this->basic_reader.stream_ >> this->checksums;
 	this->basic_reader.stream_.seekg(return_pos);
 
-	// Parse settings
-	this->getBlockSettings().ParseSettings(this->global_header);
-
 	return(this->basic_reader.stream_.good());
 }
 
@@ -159,6 +156,8 @@ bool VariantReader::NextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
+
+	std::cerr << "done reading" << std::endl;
 
 	// All passed
 	return true;
@@ -312,8 +311,11 @@ U64 VariantReader::OutputVcf(void){
 	if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
 
 	while(this->NextBlock()){
+		std::cerr << "before objects" << std::endl;
 		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
+		std::cerr << "done objects" << std::endl;
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		std::cerr << "done entries" << std::endl;
 
 		io::BasicBuffer output_buffer(100000);
 

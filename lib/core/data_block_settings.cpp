@@ -267,11 +267,13 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 			} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
 				this->LoadWrapper(true, YON_BLK_ALLELES);
+				this->LoadWrapper(true, YON_BLK_REFALT);
 				this->LoadWrapper(true, YON_BLK_CONTROLLER);
 				this->display_ref = true;
 			} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
 				this->LoadWrapper(true, YON_BLK_ALLELES);
+				this->LoadWrapper(true, YON_BLK_REFALT);
 				this->LoadWrapper(true, YON_BLK_CONTROLLER);
 				this->display_alt = true;
 			} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
@@ -283,8 +285,6 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 			} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
 				this->LoadWrapper(true, YON_BLK_CONTROLLER);
-				this->LoadWrapper(true, YON_BLK_ID_INFO);
-				this->LoadWrapper(true, YON_BLK_ID_FORMAT);
 				this->LoadWrapper(true, YON_BLK_ID_FILTER);
 				this->display_filter = true;
 			} else {

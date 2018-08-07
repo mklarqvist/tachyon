@@ -57,7 +57,6 @@ public:
 
 	bool Parse(const header_type& header);
 	bool ParseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false);
-	bool ParseSettings(const header_type& header);
 
 	inline self_type& LoadWrapper(bool set, const int field_id){
 		const U32 offset = 1 << field_id;

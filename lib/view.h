@@ -288,15 +288,6 @@ int view(int argc, char** argv){
 		return(1);
 	}
 
-	// Print messages
-	/*
-	if(!SILENT){
-		programHelp();
-		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
-	}
-	*/
-
-
 	reader.getSettings() = settings;
 
 	if(!reader.open(settings.input)){
@@ -386,8 +377,6 @@ int view(int argc, char** argv){
 		reader.getBlockSettings().positions.load = true;
 	}
 	*/
-
-	reader.getBlockSettings().ParseSettings(reader.getGlobalHeader());
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();

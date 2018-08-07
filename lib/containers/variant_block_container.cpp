@@ -237,6 +237,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	} // end case load_info_ID
 
 	stream.seekg(this->block_.end_block_); // seek to end-of-block
+	std::cerr << "done loading" << std::endl;
 	return(true);
 }
 
