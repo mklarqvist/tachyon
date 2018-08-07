@@ -48,6 +48,7 @@ public:
 		this->format_containers = new container_type[n_format];
 		this->n_format_c_allocated = n_format;
 
+		// Alocate space for headers.
 		this->footer.AllocateHeaders(n_info, n_format, n_filter);
 	}
 
@@ -106,14 +107,30 @@ public:
 	 * @param info_ids Vector of global INFO keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> IntersectInfoKeys(const std::vector<U32>& info_ids) const{
-		std::vector<U32> info_ids_found;
-		if(info_ids.size() == 0) return(info_ids_found);
+	std::vector<int> IntersectInfoKeys(const std::vector<int>& info_ids_global) const{
+		std::vector<int> info_ids_found;
+		if(info_ids_global.size() == 0) return(info_ids_found);
 
-		for(U32 i = 0; i < info_ids.size(); ++i){
+		for(U32 i = 0; i < info_ids_global.size(); ++i){
 			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
-				if(this->footer.info_offsets[j].data_header.global_key == info_ids[i])
+				if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
 					info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+			}
+		}
+
+		return(info_ids_found);
+	}
+
+	std::vector<int> IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const{
+		std::vector<int> info_ids_found;
+		if(info_ids_global.size() == 0) return(info_ids_found);
+		assert(local_id < this->footer.n_info_patterns);
+
+		for(U32 i = 0; i < info_ids_global.size(); ++i){
+			for(U32 k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
+				if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
+					info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
+				}
 			}
 		}
 
@@ -126,14 +143,29 @@ public:
 	 * @param info_ids Vector of global FORMAT keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> IntersectFormatKeys(const std::vector<U32>& format_ids) const{
-		std::vector<U32> format_ids_found;
-		if(format_ids.size() == 0) return(format_ids_found);
+	std::vector<int> IntersectFormatKeys(const std::vector<int>& format_ids_global) const{
+		std::vector<int> format_ids_found;
+		if(format_ids_global.size() == 0) return(format_ids_found);
 
-		for(U32 i = 0; i < format_ids.size(); ++i){
+		for(U32 i = 0; i < format_ids_global.size(); ++i){
 			for(U32 j = 0; j < this->footer.n_format_streams; ++j){
-				if(this->footer.format_offsets[j].data_header.global_key == format_ids[i])
+				if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
 					format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
+			}
+		}
+
+		return(format_ids_found);
+	}
+
+	std::vector<int> IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const{
+		std::vector<int> format_ids_found;
+		if(format_ids_global.size() == 0) return(format_ids_found);
+		assert(local_id < this->footer.n_format_patterns);
+
+		for(U32 i = 0; i < format_ids_global.size(); ++i){
+			for(U32 k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
+				if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
+					format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
 			}
 		}
 
@@ -220,6 +252,20 @@ public:
 		if(this->footer.info_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
 		if(it == this->footer.info_map->end()) return -1;
+		return(it->second);
+	}
+
+	S32 GetFormatPosition(const U32 global_id) const{
+		if(this->footer.format_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+		if(it == this->footer.format_map->end()) return -1;
+		return(it->second);
+	}
+
+	S32 GetFilterPosition(const U32 global_id) const{
+		if(this->footer.filter_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+		if(it == this->footer.filter_map->end()) return -1;
 		return(it->second);
 	}
 

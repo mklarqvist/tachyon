@@ -31,9 +31,9 @@ bool VariantReaderFilters::filterAlleleFrequency(const_pointer pair, const objec
 }
 
 
-bool VariantReaderFilters::filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const{
-	for(U32 i = 0; i < object.meta_container->at(position).n_alleles; ++i){
-		if(pair->applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i] == 0))
+bool VariantReaderFilters::filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& objects, const U32& position) const{
+	for(U32 i = 0; i < objects.meta_container->at(position).n_alleles; ++i){
+		if(pair->applyFilter(objects.genotype_summary->vectorA_[2+i] + objects.genotype_summary->vectorB_[2+i] == 0))
 			return true;
 	}
 	return false;

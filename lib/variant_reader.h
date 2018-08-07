@@ -210,50 +210,9 @@ public:
 	 */
 	U64 outputVCF(void);
 
-	/**<
-	 *
-	 * @return
-	 */
-	U64 outputCustom(void);
-
-	/**<
-	 *
-	 * @return
-	 */
-	U32 outputBlockVCF(void);
-
-	/**<
-	 *
-	 * @return
-	 */
-	U32 outputBlockCustom(void);
-
-	// Dummy functions as interfaces for function pointers
-	inline void printFILTERDummy(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const{}
-	inline void printFORMATDummy(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const{}
-	inline void printINFODummy(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const{}
-
 	// Filter interval intersection and dummy version
 	inline bool filterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
 	inline bool filterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.find_overlaps(meta_entry).size()); }
-
-	// FILTER functions
-	void printFILTER(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-	void printFILTERCustom(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-	void printFILTERJSON(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-
-	// FORMAT functions
-	void printFORMATVCF(buffer_type& buffer, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-	void printFORMATVCF(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-	void printFORMATCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-	void printFORMATCustomVector(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-	void printFORMATCustomVectorJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-
-	// INFO functions
-	void printINFOVCF(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
-	void printINFOVCF(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
-	void printINFOCustom(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
-	void printINFOCustomJSON(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
 
 	// Calculations
 	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
@@ -363,8 +322,8 @@ public:
 			// If set membership is -1 then calculate all fields
 			// Set target FLAG set to all ones; update with actual values if they exist
 			U16 target_flag_set = 65535;
-			if(objects.meta_container->at(position).GetInfoPatternId() != -1)
-				target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).GetInfoPatternId()];
+			//if(objects.meta_container->at(position).GetInfoPatternId() != -1)
+			//	target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).GetInfoPatternId()];
 
 			// Get genotype summary data
 			objects.genotype_container->at(position).getSummary(*objects.genotype_summary);

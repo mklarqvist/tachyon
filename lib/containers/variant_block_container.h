@@ -92,25 +92,24 @@ private:
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
 
-	typedef std::unordered_map<int, uint32_t>    map_type;
+	typedef std::unordered_map<int, int>    map_type;
 
 public:
 	VariantBlockContainer() :
-		header_(nullptr),
-		objects_(nullptr)
+		loaded_genotypes(false),
+		header_(nullptr)
 	{
 
 	}
 
 	VariantBlockContainer(const global_header_type& header) :
-		header_(&header),
-		objects_(nullptr)
+		loaded_genotypes(false),
+		header_(&header)
 	{
 
 	}
 
 	~VariantBlockContainer(void){
-		delete this->objects_;
 	}
 
 	self_type& operator<<(const global_header_type& header){
@@ -120,10 +119,10 @@ public:
 
 	void reset(void){
 		this->block_.clear();
-		delete this->objects_;
-		this->objects_ = nullptr;
-		// Todo: reset hashes
 	}
+
+	bool ParseSettings(block_settings_type& settings);
+	bool ParseLoadedPatterns();
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
@@ -175,7 +174,6 @@ public:
 	// Accessors
 	inline block_type& GetBlock(void){ return(this->block_); }
 	inline const block_type& GetBlock(void) const{ return(this->block_); }
-	inline objects_type* GetObjects(void){ return(this->objects_); }
 
 	// Checkers
 	inline bool AnyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
@@ -188,13 +186,11 @@ public:
 	 * @param objects Target objects
 	 * @return        Returns reference to input target objects
 	 */
-	objects_type& LoadObjects(objects_type& objects, block_settings_type& block_settings);
+	objects_type* LoadObjects(objects_type* objects, block_settings_type& block_settings);
 
 	objects_type* LoadObjects(block_settings_type& block_settings){
-		delete this->objects_;
-		this->objects_ = new objects_type;
-		this->LoadObjects(*this->objects_, block_settings);
-		return this->objects_;
+		objects_type* obj = new objects_type();
+		return(this->LoadObjects(obj, block_settings));
 	}
 
 	yon1_t* LazyEvaluate(objects_type& objects){
@@ -203,12 +199,14 @@ public:
 
 		// Iterate over the sites described in the meta container.
 		for(U32 i = 0; i < objects.meta_container->size(); ++i){
-			records[i].is_dirty = false;
-			records[i].is_loaded_meta = true;
-			records[i].is_loaded_gt = true;
-			records[i].id_block = i;
+			records[i].is_dirty       = false;
+			records[i].is_loaded_meta = true; // todo
+			records[i].is_loaded_gt   = objects.loaded_genotypes;
+			records[i].id_block       = i;
 			records[i].meta = &objects.meta_container->at(i);
 
+			// Check if genotype data has been loaded then checks
+			// if this variant site has any genotypes set.
 			if(records[i].is_loaded_gt && records[i].meta->HasGT()){
 				records[i].gt_i = &objects.genotype_container->at(i);
 
@@ -221,12 +219,12 @@ public:
 				records[i].gt->Expand();
 			}
 
-
-			if(this->block_.footer.n_info_streams){
-				records[i].n_info = this->block_.footer.n_info_streams;
-				records[i].info_ids = &this->block_.footer.info_patterns[objects.meta_container->at(i).info_pattern_id].pattern;
-				records[i].info = new PrimitiveContainerInterface*[objects.n_loaded_info];
-				records[i].info_containers = new InfoContainerInterface*[objects.n_loaded_info];
+			if(objects.n_loaded_info){
+				records[i].n_info   = objects.n_loaded_info;
+				records[i].info_ids = &this->info_patterns_local[objects.meta_container->at(i).info_pattern_id];
+				records[i].info     = new PrimitiveContainerInterface*[this->block_.footer.n_info_streams];
+				records[i].info_containers = new InfoContainerInterface*[this->block_.footer.n_info_streams];
+				//std::cerr << "here in loaded info: " << records[i].info_ids->size() << std::endl;
 
 				// Populate Info data.
 				for(U32 j = 0; j < records[i].info_ids->size(); ++j){
@@ -255,14 +253,11 @@ public:
 				}
 			}
 
-			if(this->block_.footer.n_format_streams){
-				records[i].n_format = this->block_.footer.n_format_streams;
-				//std::cerr << "start format" << std::endl;
-				records[i].format_ids = &this->block_.footer.format_patterns[objects.meta_container->at(i).format_pattern_id].pattern;
-				records[i].fmt = new PrimitiveGroupContainerInterface*[objects.n_loaded_info];
-				records[i].format_containers = new FormatContainerInterface*[objects.n_loaded_format];
-
-				//std::cerr << "after base format" << std::endl;
+			if(objects.n_loaded_format){
+				records[i].n_format   = objects.n_loaded_format;
+				records[i].format_ids = &this->format_patterns_local[objects.meta_container->at(i).format_pattern_id];
+				records[i].fmt        = new PrimitiveGroupContainerInterface*[this->block_.footer.n_format_streams];
+				records[i].format_containers = new FormatContainerInterface*[this->block_.footer.n_format_streams];
 
 				// Populate Format data.
 				for(U32 j = 0; j < records[i].format_ids->size(); ++j){
@@ -291,7 +286,7 @@ public:
 						records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<std::string>*>(fmt_cnt)->at(i);
 						break;
 					default:
-						std::cerr << "fmt at default" << std::endl;
+						std::cerr << "fmt at default: illegal primitive in assignment" << std::endl;
 						records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<U32>*>(fmt_cnt)->at(0);
 						break;
 					}
@@ -299,7 +294,7 @@ public:
 				}
 			}
 
-			if(this->block_.footer.n_filter_streams){
+			if(this->block_.footer.n_filter_streams){ // Todo
 				records[i].n_filter = this->block_.footer.n_filter_streams;
 
 				// Populate Filter.
@@ -317,14 +312,18 @@ public:
 	}
 
 private:
+	bool loaded_genotypes;
 	block_type                block_;
 	site_annotation_type      annotations_;
 	const global_header_type* header_;
-	objects_type*             objects_;
-	std::vector<int>          info_id_loaded;
-	std::vector<int>          format_id_loaded;
-	map_type info_map;
-	map_type format_map;
+	std::vector<int>          info_id_local_loaded;
+	std::vector<int>          format_id_local_loaded;
+	std::vector<int>          info_id_global_loaded;
+	std::vector<int>          format_id_global_loaded;
+	std::vector< std::vector<int> > info_patterns_local;
+	std::vector< std::vector<int> > format_patterns_local;
+	map_type info_map_global;
+	map_type format_map_global;
 };
 
 

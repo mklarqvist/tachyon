@@ -53,6 +53,7 @@ bool CompressionManager::Compress(variant_block_type& block, const BYTE general_
 
 bool CompressionManager::Decompress(variant_block_type& block){
 	if(block.base_containers[YON_BLK_PPA].GetSizeCompressed()){
+		std::cerr << "trying to decompress ppa" << std::endl;
 		if(!this->Decompress(block.base_containers[YON_BLK_PPA], *block.gt_ppa)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT permutation information!" << std::endl;
 			return false;

@@ -70,17 +70,17 @@ public:
 	// BCFtools calculate this as the SUM of all ALT counts
 	// We filter based on ANY ALT frequency OPERATOR the target frequency
 	bool filterAlleleFrequency(const_pointer pair, const objects_type& objects, const U32& position) const;
-	bool filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const;
+	bool filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& objects, const U32& position) const;
 
-	inline bool filterAlternativeAlleles(const_pointer pair, const objects_type& object, const U32& position) const{
+	inline bool filterAlternativeAlleles(const_pointer pair, const objects_type& objects, const U32& position) const{
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
-		return(pair->applyFilter(object.meta_container->at(position).GetNumberAlleles() - 1));
+		return(pair->applyFilter(objects.meta_container->at(position).GetNumberAlleles() - 1));
 	}
 
-	inline bool filterAlleleCount(const_pointer pair, const objects_type& object, const U32& position) const{
-		for(U32 i = 1; i < object.meta_container->at(position).n_alleles; ++i){
-			if(pair->applyFilter(object.genotype_summary->vectorA_[2+i] + object.genotype_summary->vectorB_[2+i])){
+	inline bool filterAlleleCount(const_pointer pair, const objects_type& objects, const U32& position) const{
+		for(U32 i = 1; i < objects.meta_container->at(position).n_alleles; ++i){
+			if(pair->applyFilter(objects.genotype_summary->vectorA_[2+i] + objects.genotype_summary->vectorB_[2+i])){
 				return true;
 			}
 		}
@@ -88,8 +88,8 @@ public:
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
-	inline bool filterHasMissingGenotypes(const_pointer pair, const objects_type& object, const U32& position) const{
-		return(pair->applyFilter(object.genotype_summary->vectorA_[1]));
+	inline bool filterHasMissingGenotypes(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter(objects.genotype_summary->vectorA_[1]));
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
@@ -97,29 +97,29 @@ public:
 		return(pair->applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
 	}
 
-	inline bool filterReferenceAllele(const_pointer pair, const objects_type& object, const U32& position) const{
-		//std::cerr << object.meta->at(position).alleles[0].toString() << std::endl;
-		return(pair->applyFilter(object.meta_container->at(position).alleles[0].toString()));
+	inline bool filterReferenceAllele(const_pointer pair, const objects_type& objects, const U32& position) const{
+		//std::cerr << objects.meta->at(position).alleles[0].toString() << std::endl;
+		return(pair->applyFilter(objects.meta_container->at(position).alleles[0].toString()));
 	}
 
-	inline bool filterAlternativeAllele(const_pointer pair, const objects_type& object, const U32& position) const{
-		for(U32 i = 1; i < object.meta_container->at(position).n_alleles; ++i){
-			if(pair->applyFilter(object.meta_container->at(position).alleles[i].toString()))
+	inline bool filterAlternativeAllele(const_pointer pair, const objects_type& objects, const U32& position) const{
+		for(U32 i = 1; i < objects.meta_container->at(position).n_alleles; ++i){
+			if(pair->applyFilter(objects.meta_container->at(position).alleles[i].toString()))
 				return true;
 		}
 		return false;
 	}
 
-	inline bool filterName(const_pointer pair, const objects_type& object, const U32& position) const{
-		return(pair->applyFilter(object.meta_container->at(position).name));
+	inline bool filterName(const_pointer pair, const objects_type& objects, const U32& position) const{
+		return(pair->applyFilter(objects.meta_container->at(position).name));
 	}
 
 	// Not implemented
 	bool filterPloidy(const_pointer pair, const objects_type& objects, const U32& position) const;
 	bool filterSampleList(const_pointer pair, const objects_type& objects, const U32& position) const;
-	bool filterVariantClassification(const_pointer pair, const objects_type& object, const U32& position) const;
-	bool filterFILTER(const_pointer pair, const objects_type& object, const U32& position) const;  // Filter by desired FILTER values
-	bool filterINFO(const_pointer pair, const objects_type& object, const U32& position) const;    // custom filter. e.g. AC<1024
+	bool filterVariantClassification(const_pointer pair, const objects_type& objects, const U32& position) const;
+	bool filterFILTER(const_pointer pair, const objects_type& objects, const U32& position) const;  // Filter by desired FILTER values
+	bool filterINFO(const_pointer pair, const objects_type& objects, const U32& position) const;    // custom filter. e.g. AC<1024
 
 	/**<
 	 * Iteratively apply filters in the filter pointer vector

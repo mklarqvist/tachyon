@@ -35,6 +35,13 @@ public:
 	DataBlockSettings();
 	~DataBlockSettings() = default;
 
+	self_type& LoadCore(bool display = true){
+		for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+			this->LoadWrapper(true, i);
+			this->DisplayWrapper(display, i);
+		}
+		return(*this);
+	}
 	self_type& loadAll(const bool set = true);
 	self_type& loadAllMeta(const bool set = true);
 	self_type& loadAllFILTER(const bool set = true);
@@ -101,8 +108,8 @@ public:
 	std::vector<std::string> info_list;
 	std::vector<std::string> format_list;
 
-	std::vector<U32> info_ID_list;
-	std::vector<U32> format_ID_list;
+	std::vector<U32> info_id_global;
+	std::vector<U32> format_id_global;
 
 	// blocks to load
 	std::vector<U32> blocks_numbers;

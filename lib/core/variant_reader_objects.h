@@ -37,17 +37,20 @@ public:
 		genotype_summary(nullptr),
 		info_containers(nullptr),
 		format_containers(nullptr)
-	{}
+	{
+	}
 
 	~VariantReaderObjects(){
 		delete this->meta_container;
 		delete this->genotype_container;
 		delete this->genotype_summary;
 
-		for(U32 i = 0; i < this->n_loaded_info; ++i) delete this->info_containers[i];
+		for(U32 i = 0; i < this->info_id_loaded.size(); ++i)
+			delete this->info_containers[this->info_id_loaded[i]];
 		delete [] this->info_containers;
 
-		for(U32 i = 0; i < this->n_loaded_format; ++i) delete this->format_containers[i];
+		for(U32 i = 0; i < this->format_id_loaded.size(); ++i)
+			delete this->format_containers[this->format_id_loaded[i]];
 		delete [] this->format_containers;
 	}
 
@@ -56,15 +59,9 @@ public:
 	bool loaded_meta;
 	size_t n_loaded_info;
 	size_t n_loaded_format;
-	std::vector<U32> info_id_fields_keep;
-	std::vector<U32> format_id_fields_keep;
-	std::vector<U16> additional_info_execute_flag_set;
-	std::vector< std::vector<U32> > local_match_keychain_info;
-	std::vector< std::vector<U32> > local_match_keychain_format;
 
-	std::vector<std::string> info_field_names;
-	std::vector<std::string> format_field_names;
-
+	std::vector<int> info_id_loaded;
+	std::vector<int> format_id_loaded;
 	std::unordered_map<std::string, info_interface_type*>   info_container_map;
 	std::unordered_map<std::string, format_interface_type*> format_container_map;
 

@@ -114,6 +114,9 @@ private:
     template <class actual_primitive>
 	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
 
+	void __setupBalancedFlag(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
+
+
     // For fixed strides
 	template <class actual_primitive>
 	void __setup(const data_container_type& container, const U32 stride_size);
@@ -155,7 +158,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
                                             const std::vector<bool>& pattern_matches) :
 	__containers(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0){
+	if(data_container.buffer_data_uncompressed.size() == 0 && data_container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN){
 		return;
 	}
 
@@ -168,7 +171,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_CHAR):
 			case(YON_TYPE_STRUCT):
 			case(YON_TYPE_UNKNOWN):
@@ -182,7 +185,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_CHAR):
 			case(YON_TYPE_STRUCT):
 			case(YON_TYPE_UNKNOWN):
@@ -198,7 +201,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_CHAR):
 			case(YON_TYPE_STRUCT):
 			case(YON_TYPE_UNKNOWN):
@@ -212,7 +215,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_CHAR):
 			case(YON_TYPE_STRUCT):
 			case(YON_TYPE_UNKNOWN):
@@ -226,7 +229,7 @@ template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& container) :
 	__containers(nullptr)
 {
-	if(container.buffer_data_uncompressed.size() == 0)
+	if(container.buffer_data_uncompressed.size() == 0 && container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN)
 		return;
 
 
@@ -369,6 +372,36 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	assert(current_offset == data_container.buffer_data_uncompressed.size());
 	assert(stride_offset == strides.size());
+}
+
+template <class return_type>
+void InfoContainer<return_type>::__setupBalancedFlag(const data_container_type& data_container,
+                                                 const meta_container_type& meta_container,
+                                                   const std::vector<bool>& pattern_matches)
+{
+	this->n_entries = meta_container.size();
+	std::cerr << "in flag ctor info: " << this->size() << std::endl;
+	if(this->size() == 0)
+		return;
+
+	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
+
+	for(U32 i = 0; i < this->size(); ++i){
+		// There are no INFO fields
+		if(meta_container[i].GetInfoPatternId() == -1){
+			new( &this->__containers[i] ) value_type( false );
+		}
+		// If pattern matches
+		else if(pattern_matches[meta_container[i].GetInfoPatternId()]){
+			std::cerr << "match add true: " << i << std::endl;
+			new( &this->__containers[i] ) value_type( true );
+		}
+		// Otherwise place an empty
+		else {
+			new( &this->__containers[i] ) value_type( false );
+		}
+	}
+
 }
 
 template <class return_type>
