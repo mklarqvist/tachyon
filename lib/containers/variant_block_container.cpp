@@ -4,6 +4,7 @@ namespace tachyon{
 namespace containers{
 
 bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
+	// Clear previous information (if any).
 	this->info_id_global_loaded.clear();
 	this->info_id_local_loaded.clear();
 	this->info_map_global.clear();
@@ -11,17 +12,17 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	this->format_id_local_loaded.clear();
 	this->format_map_global.clear();
 
-	// Parse Info.
+	// Parse Info. If all Info containers are loaded then we simply copy
+	// the order in which they occur. If we are provided with a vector
+	// of target global identifiers we have to first map these to the
+	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_INFO){
-		//std::cerr << "add all info" << std::endl;
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
 			this->info_id_local_loaded.push_back(i);
 			this->info_id_global_loaded.push_back(this->block_.footer.info_offsets[i].data_header.global_key);
 			this->info_map_global[this->info_id_global_loaded[i]] = i;
 		}
 	} else {
-		//std::cerr << "info ids: " << settings.info_id_global.size() << std::endl;
-
 		std::vector<int> local_ids;
 		std::vector<int> global_ids;
 		for(U32 i = 0; i < settings.info_id_global.size(); ++i){
@@ -33,11 +34,9 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 				local_ids.push_back(local);
 				global_ids.push_back(settings.info_id_global[i]);
 			}
-			//std::cerr << "info local: " << local << std::endl;
 		}
 
 		if(local_ids.size()){
-			//std::cerr << "deduping local info" << std::endl;
 			// Dedupe vectors. This prevents multiple parsings of the same
 			// target data container as this is illegal.
 			for(U32 i = 0; i < local_ids.size(); ++i){
@@ -48,22 +47,20 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 					this->info_map_global[global_ids[i]] = i;
 				}
 			}
-			//std::cerr << "loaded info: " << this->info_id_local_loaded.size() << std::endl;
 		}
 	}
 
-	// Parse Format.
+	// Parse Format. If all Format containers are loaded then we simply copy
+	// the order in which they occur. If we are provided with a vector
+	// of target global identifiers we have to first map these to the
+	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_FORMAT){
-		//std::cerr << "add all format: " << this->block_.footer.n_format_streams << std::endl;
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
-			//std::cerr << "format adding: " << this->block_.footer.format_offsets[i].data_header.global_key << "->" << this->header_->format_fields_[this->block_.footer.format_offsets[i].data_header.global_key].id << std::endl;
 			this->format_id_local_loaded.push_back(i);
 			this->format_id_global_loaded.push_back(this->block_.footer.format_offsets[i].data_header.global_key);
 			this->format_map_global[this->format_id_global_loaded[i]] = i;
 		}
 	} else {
-		//std::cerr << "format ids: " << settings.format_id_global.size() << std::endl;
-
 		std::vector<int> local_ids;
 		std::vector<int> global_ids;
 		for(U32 i = 0; i < settings.format_id_global.size(); ++i){
@@ -75,7 +72,6 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 				local_ids.push_back(local);
 				global_ids.push_back(settings.format_id_global[i]);
 			}
-			//std::cerr << "local: " << local << std::endl;
 		}
 
 		if(local_ids.size()){
@@ -96,6 +92,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 }
 
 bool VariantBlockContainer::ParseLoadedPatterns(){
+	// Clear previous information (if any).
 	this->info_patterns_local.clear();
 	this->format_patterns_local.clear();
 	this->info_patterns_local.resize(this->block_.footer.n_info_patterns);
@@ -119,32 +116,23 @@ bool VariantBlockContainer::ParseLoadedPatterns(){
 }
 
 bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type& settings){
-	// Todo: slice out target of interest
-	// Todo: fix these
-	//settings.display_static = std::numeric_limits<U32>::max();
-	//settings.display_static = (1UL << YON_BLK_GT_INT8) - 1;
-	//settings.load_static = std::numeric_limits<U32>::max();
-	//settings.load_static = (1UL << YON_BLK_GT_INT8) - 1;
-	//settings.load_static |= YON_BLK_BV_INFO;
-
-	// Temp: Disable all INFO and FORMAT loading.
-	//settings.load_static &= ~(YON_BLK_BV_PPA);
-	//settings.load_static &= ~(YON_BLK_BV_INFO);
-	//settings.load_static &= ~(YON_BLK_BV_FORMAT);
-	//settings.load_static &= ~(YON_BLK_BV_GT);
-	std::cerr << "Flags: " << std::bitset<32>(settings.load_static) << std::endl;
-
-	// Restore
+	// Allocate memory for the Format and Info containers.
+	// Info containers.
 	delete [] this->block_.info_containers;
 	this->block_.info_containers = new VariantBlock::container_type[this->block_.footer.n_info_streams];
 	this->block_.n_info_c_allocated = this->block_.footer.n_info_streams;
+	// Format containers.
 	delete [] this->block_.format_containers;
 	this->block_.format_containers = new VariantBlock::container_type[this->block_.footer.n_format_streams];
 	this->block_.n_format_c_allocated = this->block_.footer.n_format_streams;
 
-	// parse settings
+	// Interpret the user-specified block-settings if any. This step converts
+	// global index offset values into local offsets and computes new pattern
+	// vectors if required. The ordering of the values are according to the
+	// input sequence not according to the actual stored order.
 	this->ParseSettings(settings);
 
+	// Load the FORMAT:GT (GBPBWT) permutation array.
 	if(settings.load_static & YON_BLK_BV_PPA){
 		// If there is FORMAT:GT field data available AND that data has
 		// been permuted then create a new yon_gt_ppa object to store
@@ -158,14 +146,17 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		}
 	}
 
+	// Load base meta containers.
 	for(U32 i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
 		if(settings.load_static & (1 << i)){
 			this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[i], this->block_.base_containers[i]);
 		}
 	}
 
+	// Load genotype containers. At the moment, genotype containers cannot be loaded
+	// individually by using this wrapper routine. If you wish to load these separately
+	// you will have to do so manually.
 	if(settings.load_static & YON_BLK_BV_GT){
-		//std::cerr << "loading genotypes" << std::endl;
 		this->loaded_genotypes = true;
 		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16],    this->block_.base_containers[YON_BLK_GT_INT16]);
@@ -183,69 +174,66 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_PLOIDY],   this->block_.base_containers[YON_BLK_GT_PLOIDY]);
 	}
 
-	// Load all info
+	// Load Info containers. Technically there is no difference between the two
+	// conditions below in terms of outcome. However, the first case guarantees
+	// that data is loaded linearly from disk as this can be guaranteed when loading
+	// all available data. There is no such guarntees for the second case.
 	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
-		//this->mapper_.info_container_loaded_.resize(this->block_.footer.n_info_streams);
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
-			//std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_info_streams << " -> " << this->block_.footer.info_offsets[i].data_header.global_key << std::endl;
 		}
 	}
-	// If we have supplied a list of identifiers
+	// If we have a user-supplied list of identifiers parsed above.
 	else {
-		//std::cerr << "here load selected info: " << this->info_id_local_loaded.size() << std::endl;
-
 		for(U32 i = 0; i < this->info_id_local_loaded.size(); ++i){
-			//std::cerr << "Loaded: " << i << "/" << this->info_id_local_loaded.size() << " -> " << this->info_id_local_loaded[i] << "/" << this->block_.footer.n_info_streams << " -> " << this->block_.footer.info_offsets[this->info_id_local_loaded[i]].data_header.global_key << "==" << this->info_id_local_loaded[i] << std::endl;
-			//std::cerr << i << "/" << this->block_.n_info_c_allocated << " and " << std::endl;
 			this->block_.LoadContainerSeek(stream, this->block_.footer.info_offsets[this->info_id_local_loaded[i]], this->block_.info_containers[this->info_id_local_loaded[i]]);
 		}
 
-	} // end case load_info_ID
+	}
 
-	// Load all FORMAT data
-	//std::cerr << "Match all format: " << std::bitset<32>(settings.load_static & YON_BLK_BV_FORMAT) << std::endl;
+	// Load Format containers. Technically there is no difference between the two
+	// conditions below in terms of outcome. However, the first case guarantees
+	// that data is loaded linearly from disk as this can be guaranteed when loading
+	// all available data. There is no such guarntees for the second case.
 	if(this->block_.footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
-		//std::cerr << "load all format" << std::endl;
-
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
-		//this->mapper_.format_container_loaded_.resize(this->block_.footer.n_format_streams);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
 			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
-			//std::cerr << "Loaded: " << i << "/" << this->block_.footer.n_format_streams << " -> " << this->block_.footer.format_offsets[i].data_header.global_key << std::endl;
 		}
+		// At this point the stream should be located at the end-of-block
+		// marker as the Format information is stored last.
 		assert(this->block_.end_compressed_data_ == (U64)stream.tellg());
-	} // If we have supplied a list of identifiers
+	}
+	// If we have a user-supplied list of identifiers parsed above.
 	else {
-		//std::cerr << "here format: " << this->format_id_local_loaded.size() << std::endl;
-
 		for(U32 i = 0; i < this->format_id_local_loaded.size(); ++i){
 			this->block_.LoadContainerSeek(stream, this->block_.footer.format_offsets[this->format_id_local_loaded[i]], this->block_.format_containers[this->format_id_local_loaded[i]]);
-			//std::cerr << "Loaded: " << this->format_id_local_loaded[i] << "/" << this->block_.footer.n_format_streams << " -> " << this->block_.footer.format_offsets[this->format_id_local_loaded[i]].data_header.global_key << "==" << this->info_id_local_loaded[i] << std::endl;
 		}
-	} // end case load_info_ID
+	}
 
 	stream.seekg(this->block_.end_block_); // seek to end-of-block
-	//std::cerr << "done loading" << std::endl;
 	return(true);
 }
 
 VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, block_settings_type& block_settings){
-	// New meta container.
+	// Construct a new high-level meta container using all available loaded
+	// core meta data container.
 	objects->meta_container = new meta_container_type(this->GetBlock());
 
-	// New genotype containers if applicable.
+	// If the block has genotypes in it and they have been loaded we can construct
+	// a high-level genotype container and transform the multifarious internal
+	// encodings into a unified framework.
 	if(this->HasGenotypes() && (block_settings.load_static & YON_BLK_BV_GT)){
 		objects->loaded_genotypes   = true;
 		objects->genotype_container = new gt_container_type(this->GetBlock(), *objects->meta_container);
 		objects->genotype_summary   = new objects_type::genotype_summary_type(10);
 	}
 
-	// FORMAT-specific containers.
-	// Store as double pointers to avoid memory collisions because
-	// FORMAT containers have different intrinsic class members.
+	// Format-specific containers. These have to be allocated as double pointers
+	// to avoid memory collisions because they have different intrinsic class members
+	// even though they share the same data interface.
 	objects->n_loaded_format   = this->format_id_global_loaded.size();
 	objects->format_containers = new format_interface_type*[this->block_.footer.n_format_streams];
 
@@ -256,12 +244,8 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			const U32 local_key  = this->format_id_local_loaded[i];
 			objects->format_id_loaded.push_back(local_key);
 
-			//std::cerr << "format: " << i << "/" << objects->n_loaded_format << " -> " << global_key << ","
-			//          << local_key << " == " << this->header_->format_fields_[global_key].id << ":"
-			//          << this->header_->format_fields_[global_key].type << std::endl;
-
-			// Pattern matches of GLOBAL in LOCAL
-			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns.
+			// Evaluate the set-membership of a given global key in the available Format patterns
+			// described in the data container footer.
 			std::vector<bool> matches = this->block_.FormatPatternSetMembership(global_key);
 
 			if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
@@ -290,11 +274,9 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 		}
 	}
 
-
-
-	// INFO-specific containers
-	// Store as double pointers to avoid memory collisions because
-	// INFO containers have different class members
+	// Info-specific containers. These have to be allocated as double pointers
+	// to avoid memory collisions because they have different intrinsic class members
+	// even though they share the same data interface.
 	objects->n_loaded_info   = this->info_id_global_loaded.size();
 	objects->info_containers = new info_interface_type*[this->block_.footer.n_info_streams];
 
@@ -305,10 +287,8 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			const U32 local_key  = this->info_id_local_loaded[i];
 			objects->info_id_loaded.push_back(local_key);
 
-			//std::cerr << "building info: " << i << "/" << objects->n_loaded_info << " -> " << global_key << "," << local_key << " == " << this->header_->info_fields_[global_key].id << std::endl;
-
-			// Pattern matches of GLOBAL in LOCAL
-			// This evaluated the boolean set-membership of GLOBAL key in the FORMAT patterns
+			// Evaluate the set-membership of a given global key in the available Info patterns
+			// described in the data container footer.
 			std::vector<bool> matches = this->block_.InfoPatternSetMembership(global_key);
 
 			if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
@@ -360,7 +340,6 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			records[i].info_ids = &this->info_patterns_local[objects.meta_container->at(i).info_pattern_id];
 			records[i].info     = new PrimitiveContainerInterface*[this->block_.footer.n_info_streams];
 			records[i].info_containers = new InfoContainerInterface*[this->block_.footer.n_info_streams];
-			//std::cerr << "here in loaded info: " << records[i].info_ids->size() << std::endl;
 
 			// Populate Info data.
 			for(U32 j = 0; j < records[i].info_ids->size(); ++j){
@@ -385,7 +364,6 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<U32>*>(info_cnt)->at(0);
 					break;
 				}
-				//std::cerr << "target entries :" << records[i].info[j]->size() << std::endl;
 			}
 		}
 
@@ -419,12 +397,12 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<U32>*>(fmt_cnt)->at(0);
 					break;
 				}
-				//if(this->header_->format_fields_[records[i].format_ids->at(j)].id != "GT")
-				//	std::cerr << "target entries :" << records[i].fmt[j]->size() << std::endl;
 			}
 		}
 
-		if(this->block_.footer.n_filter_streams){ // Todo
+		// Todo: These should interpreted during loading as Info and Format
+		// fields are.
+		if(this->block_.footer.n_filter_streams){
 			records[i].n_filter = this->block_.footer.n_filter_streams;
 
 			// Populate Filter.
@@ -434,10 +412,9 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			}
 		}
 
+		// Pointer to this variant block container.
 		records[i].parent_container = this;
 	}
-
-	//std::cerr << "done" << std::endl;
 	return(records);
 }
 

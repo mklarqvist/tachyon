@@ -49,8 +49,10 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	if(contig_id > this->getMetaIndex().size())
 		return(std::vector<entry_type>());
 
-	if(this->getMetaIndex().at(contig_id).n_blocks == 0)
+
+	if(this->getMetaIndex().at(contig_id).n_blocks == 0){
 		return(std::vector<entry_type>());
+	}
 
 	const U32 block_offset_start = this->getIndex().linear_at(contig_id).at(0).blockID;
 
@@ -58,7 +60,7 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	//for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
 	//	this->getIndex().linear_at(contig_id).at(i).print(std::cerr) << std::endl;
 	//}
-
+	//std::cerr << "block offset: " << block_offset_start << std::endl;
 
 	// We also need to know possible overlaps in the quad-tree:
 	// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0
@@ -74,9 +76,8 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 		// Cycle over the YON blocks this bin have data mapping to
 		for(U32 j = 0; j < possible_chunks[i].size(); ++j){
 			const U32 used_bins = possible_chunks[i][j] - block_offset_start;
-			//std::cerr << i << "/" << possible_chunks[i].size() << ", used bin: " << used_bins << "\t";
+			//std::cerr << i << "/" << possible_chunks[i].size() << ",raw bin: " << possible_chunks[i][j] << ", used bin: " << used_bins << "\t";
 			//possible_chunks[i].print(std::cerr) << std::endl;
-
 			//std::cerr << "Comparing: " << this->getIndex().linear_at(contig_id)[used_bins].minPosition << "<" << end_pos
 			//		  << " and " << this->getIndex().linear_at(contig_id)[used_bins].maxPosition << ">" << start_pos << std::endl;
 

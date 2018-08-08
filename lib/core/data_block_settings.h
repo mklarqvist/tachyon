@@ -8,76 +8,38 @@
 
 namespace tachyon{
 
-struct DataBlockSettingsPair{
-public:
-	DataBlockSettingsPair() : load(false), display(false){}
-	DataBlockSettingsPair(const bool load, const bool display) : load(load), display(display){}
-	~DataBlockSettingsPair() = default;
-
-	inline void operator()(const bool& load){ this->load = load; this->display = load; }
-	inline void operator()(const bool& load, const bool& display){ this->load = load; this->display = display; }
-
-public:
-	bool load;
-	bool display;
-};
-
 /**<
  * Load and display Settings for the basic variant data block
  */
 struct DataBlockSettings{
 public:
 	typedef DataBlockSettings     self_type;
-	typedef DataBlockSettingsPair pair_type;
 	typedef VariantHeader         header_type;
 
 public:
 	DataBlockSettings();
 	~DataBlockSettings() = default;
 
-	self_type& LoadCore(bool display = true){
-		for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
-			this->LoadWrapper(true, i);
-			this->DisplayWrapper(display, i);
-		}
-		return(*this);
-	}
-	self_type& loadAll(const bool set = true);
-	self_type& loadAllMeta(const bool set = true);
-	self_type& loadAllFILTER(const bool set = true);
-	self_type& loadAllINFO(const bool set = true);
-	self_type& loadINFO(const std::string& field_name);
-	self_type& loadINFO(const U32 field_id);
-	self_type& loadGenotypes(const bool set);
-	self_type& loadPermutationArray(const bool set);
-	self_type& loadAllFORMAT(const bool set);
-	self_type& loadFORMAT(const std::string& field_name);
-	self_type& loadFORMAT(const U32 field_id);
-	self_type& setCustomDelimiter(const char delimiter);
+	self_type& LoadWrapper(bool set, const int field_bv);
+	self_type& DisplayWrapper(bool set, const int field_bv);
+	self_type& LoadDisplayWrapper(bool set, const int field_bv);
+	self_type& LoadCore(bool display = true);
+	self_type& LoadAll(const bool set = true);
+	self_type& LoadAllMeta(const bool set = true);
+	self_type& LoadAllFilter(const bool set = true);
+	self_type& LoadAllInfo(const bool set = true);
+	self_type& LoadInfo(const std::string& field_name);
+	self_type& LoadInfo(const U32 field_id);
+	self_type& LoadGenotypes(const bool set);
+	self_type& LoadPermutationArray(const bool set);
+	self_type& LoadAllFormat(const bool set);
+	self_type& LoadFormat(const std::string& field_name);
+	self_type& LoadFormat(const U32 field_id);
+	self_type& LoadMinimumVcf(const bool set = true);
+	self_type& SetCustomDelimiter(const char delimiter);
 
 	bool Parse(const header_type& header);
 	bool ParseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false);
-
-	inline self_type& LoadWrapper(bool set, const int field_id){
-		const U32 offset = 1 << field_id;
-		this->load_static &= ~(offset);
-		this->load_static |= offset;
-		return(*this);
-	}
-
-	inline self_type& DisplayWrapper(bool set, const int field_id){
-		const U32 offset = 1 << field_id;
-		this->display_static &= ~(offset);
-		this->display_static |= offset;
-		return(*this);
-	}
-
-	inline self_type& LoadDisplayWrapper(bool set, const int field_id){
-		const U32 offset = 1 << field_id;
-		this->LoadWrapper(set, offset);
-		this->DisplayWrapper(set, offset);
-		return(*this);
-	}
 
 public:
 	bool show_vcf_header;

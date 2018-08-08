@@ -503,7 +503,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 }
 
 bool VariantImporter::UpdateIndex(){
-	this->index_entry.blockID         = this->block.header.block_hash;
+	this->index_entry.blockID         = this->writer->n_blocks_written;
 	this->index_entry.byte_offset_end = this->writer->stream->tellp();
 	this->index_entry.contigID        = this->vcf_container_.front()->rid;
 	this->index_entry.minPosition     = this->vcf_container_.front()->pos;

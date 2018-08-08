@@ -55,8 +55,6 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 	// Append given interval strings to internal vector of strings
 	this->interval_strings_.insert( this->interval_strings_.end(), interval_strings.begin(), interval_strings.end() );
 
-	std::cerr << "here" << std::endl;
-
 	// Assert that interval list data is of length n_contigs_
 	// Note that this will truncate previous entries if resizing occurs
 	if(this->interval_list_.size() != header.GetNumberContigs())
@@ -90,7 +88,7 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 				return false;
 			}
 
-			contig = header.GetContig(interval_strings[i]);
+			contig = header.GetContig(substrings[0]);
 			if(contig == nullptr){
 				std::cerr << utility::timestamp("ERROR") << "Contig not defined in file: " << interval_strings[i] << std::endl;
 				return(false);
@@ -100,6 +98,7 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 			//std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position);
+			//std::cerr << "overlaps: " << target_blocks.size() << std::endl;
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(position, position, contig->idx));
 		}
@@ -139,8 +138,6 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 		}
 		++this->n_intervals_;
 	}
-
-	std::cerr << "here after: " << this->block_list_.size() << std::endl;
 
 	if(this->block_list_.size() == 0)
 		return(false);

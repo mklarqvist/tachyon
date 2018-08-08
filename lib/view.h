@@ -307,12 +307,12 @@ int view(int argc, char** argv){
 			return(1);
 		}
 	} else {
-		reader.getBlockSettings().loadAll(true);
+		reader.getBlockSettings().LoadAll(true);
 
 		if(settings.drop_format){
-			reader.getBlockSettings().loadGenotypes(false);
-			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_PPA);
-			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_N_STATIC+2);
+			reader.getBlockSettings().LoadGenotypes(false);
+			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_BV_PPA);
+			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_BV_FORMAT);
 		}
 	}
 
@@ -321,7 +321,7 @@ int view(int argc, char** argv){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -y when using a custom separator" << std::endl;
 			return(1);
 		}
-		reader.getBlockSettings().setCustomDelimiter(settings.custom_delimiter_char);
+		reader.getBlockSettings().SetCustomDelimiter(settings.custom_delimiter_char);
 	}
 	reader.getBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
 
@@ -384,11 +384,7 @@ int view(int argc, char** argv){
 	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
 	else reader.getBlockSettings().show_vcf_header = false;
 
-	if(reader.addIntervals(interval_strings) == false){
-		std::cerr << "failed to add" << std::endl;
-		return(1);
-	}
-	std::cerr << "here" << std::endl;
+	if(reader.addIntervals(interval_strings) == false) return(1);
 
 	reader.OutputVcf();
 

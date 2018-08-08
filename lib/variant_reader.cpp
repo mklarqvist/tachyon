@@ -213,7 +213,7 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
-void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
 	// Print Info.
 	if(entry.n_info){
 		const uint32_t n_info_avail = entry.info_ids->size();
@@ -240,7 +240,7 @@ void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const containe
 	} else output_buffer += '.';
 }
 
-void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
 	if(entry.n_format){
 		output_buffer += '\t';
 
@@ -313,7 +313,7 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const contai
 	}
 }
 
-void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
 	if(entry.n_filter){
 		const uint32_t n_filter_avail = entry.filter_ids->size();
 		if(n_filter_avail){
@@ -332,7 +332,7 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const contai
 U64 VariantReader::OutputVcfLinear(void){
 	while(this->NextBlock()){
 		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
-		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
@@ -370,7 +370,7 @@ U64 VariantReader::OutputVcfSearch(void){
 		this->GetBlock(this->interval_container.getBlockList()[i]);
 
 		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
-		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){

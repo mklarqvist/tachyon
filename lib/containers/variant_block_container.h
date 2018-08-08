@@ -11,62 +11,10 @@
 #include "containers/interval_container.h"
 #include "core/variant_site_annotation.h"
 #include "core/variant_reader_objects.h"
+#include "core/variant_record.h"
 
 namespace tachyon {
 namespace containers {
-
-// Forward declare.
-class VariantBlockContainer;
-
-struct yon1_t {
-	yon1_t(void) :
-		is_dirty(false),
-		is_loaded_meta(false),
-		is_loaded_gt(false),
-		n_format(0), n_info(0), n_filter(0),
-		id_block(0),
-		meta(nullptr),
-		gt(nullptr),
-		info(nullptr),
-		fmt(nullptr),
-		info_containers(nullptr),
-		format_containers(nullptr),
-		gt_i(nullptr),
-		info_ids(nullptr),
-		format_ids(nullptr),
-		filter_ids(nullptr),
-		parent_container(nullptr)
-	{
-
-	}
-	~yon1_t(void){
-		delete [] this->info;
-		delete [] this->fmt;
-		delete [] this->info_containers;
-		delete [] this->format_containers;
-		delete this->gt;
-	}
-
-	bool is_dirty; // if data has been modified in the raw buffer but not the containers
-	bool is_loaded_meta;
-	bool is_loaded_gt;
-	uint16_t n_format, n_info, n_filter;
-	uint32_t id_block; // incremental id in the block container
-	core::MetaEntry* meta;
-	yon_gt* gt;
-	PrimitiveContainerInterface** info;
-	PrimitiveGroupContainerInterface** fmt;
-	InfoContainerInterface** info_containers;
-	FormatContainerInterface** format_containers;
-	GenotypeContainerInterface* gt_i;
-	std::vector<const YonInfo*> info_hdr;
-	std::vector<const YonFormat*> format_hdr;
-	std::vector<const io::VcfFilter*> filter_hdr;
-	std::vector<int>* info_ids;
-	std::vector<int>* format_ids;
-	std::vector<int>* filter_ids;
-	VariantBlockContainer* parent_container;
-};
 
 /**<
  * Decouples the low-level object `VariantBlock` that holds all internal data and
