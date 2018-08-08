@@ -45,15 +45,17 @@ bool IntervalContainer::validateIntervalStrings(std::vector<std::string>& interv
 
 bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_strings, const header_type& header, const index_type& index){
 	// Intervals pass expression tests
-	if(this->validateIntervalStrings(interval_strings) == false)
-		return(false);
-
 	// No intervals to parse
 	if(interval_strings.size() == 0)
 		return(true);
 
+	if(this->validateIntervalStrings(interval_strings) == false)
+		return(false);
+
 	// Append given interval strings to internal vector of strings
 	this->interval_strings_.insert( this->interval_strings_.end(), interval_strings.begin(), interval_strings.end() );
+
+	std::cerr << "here" << std::endl;
 
 	// Assert that interval list data is of length n_contigs_
 	// Note that this will truncate previous entries if resizing occurs
@@ -74,11 +76,10 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 				return(false);
 			}
 
-			//std::cerr << "Parsed: " << interval_strings[i] << std::endl;
+			//std::cerr << "Parsed: " << interval_strings[i] << " -> " << contig->name << ":" << contig->idx << std::endl;
 			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(0, contig->n_bases, contig->idx));
-
 		}
 		// Chromosome:position
 		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
@@ -139,6 +140,8 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 		++this->n_intervals_;
 	}
 
+	std::cerr << "here after: " << this->block_list_.size() << std::endl;
+
 	if(this->block_list_.size() == 0)
 		return(false);
 
@@ -146,7 +149,6 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 	// This has the implication that the traversal of a sliced sorted file
 	// will be sorted as output
 	std::sort(this->block_list_.begin(), this->block_list_.end());
-
 
 	return true;
 }

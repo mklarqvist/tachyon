@@ -148,6 +148,10 @@ public:
 	const bool empty(void) const{ return(this->data_.size() == 0); }
 
 	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const{
+		if(this->data_.size() == 0){
+			buffer += '.';
+			return(buffer);
+		}
 		buffer += this->data_;
 		return(buffer);
 	}

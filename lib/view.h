@@ -384,7 +384,11 @@ int view(int argc, char** argv){
 	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
 	else reader.getBlockSettings().show_vcf_header = false;
 
-	if(reader.addIntervals(interval_strings) == false) return(1);
+	if(reader.addIntervals(interval_strings) == false){
+		std::cerr << "failed to add" << std::endl;
+		return(1);
+	}
+	std::cerr << "here" << std::endl;
 
 	reader.OutputVcf();
 

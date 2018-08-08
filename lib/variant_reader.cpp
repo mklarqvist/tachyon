@@ -157,115 +157,26 @@ bool VariantReader::NextBlock(){
 		return false;
 	}
 
-	std::cerr << "done reading" << std::endl;
-
 	// All passed
 	return true;
 }
 
 bool VariantReader::GetBlock(const index_entry_type& index_entry){
-	// If the stream is faulty then return
+	// If the stream is not good then return.
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
 		return false;
 	}
 
-	// Reset and re-use
-	this->variant_container.GetBlock().clear();
-
-	// Seek to target block ID with the help of the index
+	// Seek to target block id with the help of the linear index.
 	this->basic_reader.stream_.seekg(index_entry.byte_offset);
 	if(this->basic_reader.stream_.good() == false){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Failed to seek to given offset using target index entry!" << std::endl;
 		return(false);
 	}
 
-	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
-		return false;
-
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
-		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
-		return(false);
-	}
-	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
-
-	// Attempts to read a YON block with the provided
-	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
-		return false;
-
-	// encryption manager ascertainment
-	if(this->variant_container.GetBlock().header.controller.anyEncrypted){
-		if(this->keychain.size() == 0){
-			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
-			return false;
-		}
-
-		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(this->variant_container.GetBlock(), this->keychain)){
-			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
-			return false;
-		}
-	}
-
-	// Internally decompress available data
-	if(!this->codec_manager.Decompress(this->variant_container.GetBlock())){
-		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
-		return false;
-	}
-
-	// All passed
-	return true;
-}
-
-containers::VariantBlockContainer VariantReader::GetBlock(){
-	// If the stream is faulty then return
-	if(!this->basic_reader.stream_.good()){
-		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
-		return variant_container_type();
-	}
-
-	// If the current position is the EOF then
-	// exit the function
-	if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
-		return variant_container_type();
-
-	// Reset and re-use
-	containers::VariantBlockContainer block;
-
-	if(!block.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
-		return variant_container_type();
-
-	if(!this->codec_manager.zstd_codec.Decompress(block.GetBlock().footer_support)){
-		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
-	}
-	block.GetBlock().footer_support.buffer_data_uncompressed >> block.GetBlock().footer;
-
-	// Attempts to read a YON block with the settings provided
-	if(!block.ReadBlock(this->basic_reader.stream_, this->getBlockSettings()))
-		return variant_container_type();
-
-	// encryption manager ascertainment
-	if(block.AnyEncrypted()){
-		if(this->keychain.size() == 0){
-			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
-			return variant_container_type();
-		}
-
-		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(block.GetBlock(), this->keychain)){
-			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
-			return variant_container_type();
-		}
-	}
-
-	// Internally decompress available data
-	if(!this->codec_manager.Decompress(block.GetBlock())){
-		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
-		return variant_container_type();
-	}
-
-	// All passed
-	return block;
+	// Load the next block if possible.
+	return(this->NextBlock());
 }
 
 TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const U32& allele) const{
@@ -302,151 +213,180 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
-U64 VariantReader::OutputVcf(void){
-	if(this->getBlockSettings().show_vcf_header)
-		this->global_header.PrintVcfHeader(std::cout);
+void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+	// Print Info.
+	if(entry.n_info){
+		const uint32_t n_info_avail = entry.info_ids->size();
+		if(n_info_avail){
+			if(entry.info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
+				output_buffer += entry.info_hdr[0]->id;
+			} else {
+				output_buffer += entry.info_hdr[0]->id;
+				output_buffer += '=';
+				entry.info[0]->to_vcf_string(output_buffer);
+			}
 
-	// Filter functionality
-	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
-	if(this->interval_container.size()) filter_intervals = &self_type::filterIntervals;
+			for(U32 j = 1; j < n_info_avail; ++j){
+				output_buffer += ';';
+				if(entry.info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+					output_buffer += entry.info_hdr[j]->id;
+				} else {
+					output_buffer += entry.info_hdr[j]->id;
+					output_buffer += '=';
+					entry.info[j]->to_vcf_string(output_buffer);
+				}
+			}
+		}
+	} else output_buffer += '.';
+}
 
+void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+	if(entry.n_format){
+		output_buffer += '\t';
+
+		const uint32_t n_format_avail = entry.format_ids->size();
+		if(n_format_avail){
+			output_buffer += entry.format_hdr[0]->id;
+			for(U32 j = 1; j < n_format_avail; ++j){
+				output_buffer += ':';
+				output_buffer += entry.format_hdr[j]->id;
+			}
+			output_buffer += '\t';
+
+			// Vcf FORMAT values are interleaved such that values are
+			// presented in a columnar representation with data for
+			// each sample is concatenated together such as the pattern
+			// GT:AF:AS is display for three samples as:
+			//
+			// Sample 1    Sample 2    Sample 3
+			// 0|0:0.5|ABC 0|0:0.5|ABC 0|0:0.5|ABC
+			//
+			// This memory layout requires the interleaving of the
+			// internally separated data streams resulting in slower
+			// Vcf printing speeds compared to the naive Bcf file format.
+			//
+			// First calculate the FORMAT:GT field for this variant site.
+			// Case when the only available FORMAT field is the GT field.
+			if(n_format_avail == 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+				// Iterate over samples and print FORMAT:GT value in Vcf format.
+				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
+				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+					output_buffer += '\t';
+					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
+				}
+			}
+			// Case when there are > 1 Vcf Format fields and the GT field
+			// is available.
+			else if(n_format_avail > 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
+				for(U32 g = 1; g < n_format_avail; ++g){
+					output_buffer += ':';
+					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+				}
+				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+					output_buffer += '\t';
+					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
+					for(U32 g = 1; g < n_format_avail; ++g){
+						output_buffer += ':';
+						entry.fmt[g]->to_vcf_string(output_buffer, s);
+					}
+				}
+			}
+			// All other cases.
+			else {
+				entry.fmt[0]->to_vcf_string(output_buffer, 0);
+				for(U32 g = 1; g < n_format_avail; ++g){
+					output_buffer += ':';
+					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+				}
+
+				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+					output_buffer += '\t';
+					entry.fmt[0]->to_vcf_string(output_buffer, s);
+					for(U32 g = 1; g < n_format_avail; ++g){
+						output_buffer += ':';
+						entry.fmt[g]->to_vcf_string(output_buffer, s);
+					}
+				}
+			}
+		}
+	}
+}
+
+void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const{
+	if(entry.n_filter){
+		const uint32_t n_filter_avail = entry.filter_ids->size();
+		if(n_filter_avail){
+			output_buffer += entry.filter_hdr[0]->id;
+			for(U32 j = 1; j < n_filter_avail; ++j){
+				output_buffer += ';';
+				output_buffer += entry.filter_hdr[j]->id;
+			}
+		} else {
+			output_buffer += '.';
+		}
+	} else output_buffer += '.';
+	output_buffer += '\t';
+}
+
+U64 VariantReader::OutputVcfLinear(void){
 	while(this->NextBlock()){
-		std::cerr << "before objects" << std::endl;
 		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
-		std::cerr << "done objects" << std::endl;
 		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
-		std::cerr << "done entries" << std::endl;
-
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if(this->variant_filters.filter(*objects, i) == false)
 				continue;
 
+			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
+			output_buffer += '\t';
+
+			// Print Filter, Info, and Format if available.
+			this->OutputFilterVcf(output_buffer, entries[i]);
+			this->OutputInfoVcf(output_buffer, entries[i]);
+			this->OutputFormatVcf(output_buffer, entries[i]);
+			output_buffer += '\n';
+
+			if(output_buffer.size() > 65536){
+				std::cout.write(output_buffer.data(), output_buffer.size());
+				output_buffer.reset();
+			}
+		}
+
+		std::cout.write(output_buffer.data(), output_buffer.size());
+		output_buffer.reset();
+		delete [] entries;
+		delete objects;
+	}
+	return 0;
+}
+
+U64 VariantReader::OutputVcfSearch(void){
+	// Filter functionality
+	filter_intervals_function filter_intervals = &self_type::filterIntervals;
+
+	for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
+		this->GetBlock(this->interval_container.getBlockList()[i]);
+
+		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
+		containers::yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		io::BasicBuffer output_buffer(100000);
+
+		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
+				continue;
+
+			if(this->variant_filters.filter(*objects, i) == false)
 				continue;
 
 			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
 			output_buffer += '\t';
 
-			// Print Filter.
-			if(entries[i].n_filter){
-				const uint32_t n_filter_avail = entries[i].filter_ids->size();
-				if(n_filter_avail){
-					output_buffer += entries[i].filter_hdr[0]->id;
-					for(U32 j = 1; j < n_filter_avail; ++j){
-						output_buffer += ';';
-						output_buffer += entries[i].filter_hdr[j]->id;
-					}
-				} else {
-					output_buffer += '.';
-				}
-			} else output_buffer += '.';
-			output_buffer += '\t';
-
-			// Print Info.
-			if(entries[i].n_info){
-				const uint32_t n_info_avail = entries[i].info_ids->size();
-				if(n_info_avail){
-					if(entries[i].info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
-						output_buffer += entries[i].info_hdr[0]->id;
-					} else {
-						output_buffer += entries[i].info_hdr[0]->id;
-						output_buffer += '=';
-						entries[i].info[0]->to_vcf_string(output_buffer);
-					}
-
-					for(U32 j = 1; j < n_info_avail; ++j){
-						output_buffer += ';';
-						if(entries[i].info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
-							output_buffer += entries[i].info_hdr[j]->id;
-						} else {
-							output_buffer += entries[i].info_hdr[j]->id;
-							output_buffer += '=';
-							entries[i].info[j]->to_vcf_string(output_buffer);
-						}
-					}
-				}
-			} else output_buffer += '.';
-
-			// Print Format.
-			if(entries[i].n_format){
-				output_buffer += '\t';
-
-				const uint32_t n_format_avail = entries[i].format_ids->size();
-				if(n_format_avail){
-					output_buffer += entries[i].format_hdr[0]->id;
-					for(U32 j = 1; j < n_format_avail; ++j){
-						output_buffer += ':';
-						output_buffer += entries[i].format_hdr[j]->id;
-					}
-					output_buffer += '\t';
-
-					// Vcf FORMAT values are interleaved such that values are
-					// presented in a columnar representation with data for
-					// each sample is concatenated together such as the pattern
-					// GT:AF:AS is display for three samples as:
-					//
-					// Sample 1    Sample 2    Sample 3
-					// 0|0:0.5|ABC 0|0:0.5|ABC 0|0:0.5|ABC
-					//
-					// This memory layout requires the interleaving of the
-					// internally separated data streams resulting in slower
-					// Vcf printing speeds compared to the naive Bcf file format.
-					//
-					// First calculate the FORMAT:GT field for this variant site.
-					// Case when the only available FORMAT field is the GT field.
-					if(n_format_avail == 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
-						// Iterate over samples and print FORMAT:GT value in Vcf format.
-						entries[i].gt->d_exp[0]->PrintVcf(output_buffer, entries[i].gt->m);
-						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
-						}
-					}
-					// Case when there are > 1 Vcf Format fields and the GT field
-					// is available.
-					else if(n_format_avail > 1 && entries[i].is_loaded_gt && entries[i].meta->controller.gt_available){
-						entries[i].gt->d_exp[0]->PrintVcf(output_buffer, entries[i].gt->m);
-						output_buffer += ':';
-						entries[i].format_containers[1]->to_vcf_string(output_buffer, i, 0);
-						for(U32 g = 2; g < n_format_avail; ++g){
-							output_buffer += ':';
-							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, 0);
-						}
-
-						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
-							output_buffer += ':';
-							entries[i].format_containers[1]->to_vcf_string(output_buffer, i, s);
-							for(U32 g = 2; g < n_format_avail; ++g){
-								output_buffer += ':';
-								entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
-							}
-						}
-					}
-					// All other cases.
-					else {
-						entries[i].format_containers[0]->to_vcf_string(output_buffer, i, 0);
-						for(U32 g = 1; g < n_format_avail; ++g){
-							output_buffer += ':';
-							entries[i].format_containers[g]->to_vcf_string(output_buffer, i, 0);
-						}
-
-						for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-							output_buffer += '\t';
-							entries[i].gt->d_exp[s]->PrintVcf(output_buffer, entries[i].gt->m);
-							output_buffer += ':';
-							entries[i].format_containers[0]->to_vcf_string(output_buffer, i, s);
-							for(U32 g = 1; g < n_format_avail; ++g){
-								output_buffer += ':';
-								entries[i].format_containers[g]->to_vcf_string(output_buffer, i, s);
-							}
-						}
-					}
-				}
-			}
+			// Print Filter, Info, and Format if available.
+			this->OutputFilterVcf(output_buffer, entries[i]);
+			this->OutputInfoVcf(output_buffer, entries[i]);
+			this->OutputFormatVcf(output_buffer, entries[i]);
 			output_buffer += '\n';
 
 			if(output_buffer.size() > 65536){
@@ -462,6 +402,18 @@ U64 VariantReader::OutputVcf(void){
 	}
 
 	return 0;
+}
+
+U64 VariantReader::OutputVcf(void){
+	if(this->getBlockSettings().show_vcf_header)
+		this->global_header.PrintVcfHeader(std::cout);
+
+	this->interval_container.build(this->global_header);
+
+	// Filter functionality
+	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
+	if(this->interval_container.size()) return(this->OutputVcfSearch());
+	else return(this->OutputVcfLinear());
 }
 
 /**<

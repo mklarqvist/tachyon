@@ -184,12 +184,6 @@ public:
 	 */
 	bool GetBlock(const index_entry_type& index_entry);
 
-	/**<
-	 * Get the current YON block in-order as a copy
-	 * @return Returns a YON block container. The container has a size of 0 upon fail/empty
-	 */
-	variant_container_type GetBlock(void);
-
 
 	/**<
 	 * Seeks to a specific YON block without loading anything.
@@ -202,6 +196,11 @@ public:
 	bool seek_to_block(const U32& blockID);
 
 	U64 OutputVcf(void);
+	U64 OutputVcfLinear(void);
+	U64 OutputVcfSearch(void);
+	void OutputInfoVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const;
+	void OutputFormatVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const;
+	void OutputFilterVcf(io::BasicBuffer& output_buffer, const containers::yon1_t& entry) const;
 
 	/**<
 	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
