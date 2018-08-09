@@ -32,43 +32,12 @@ private:
     typedef containers::GenotypeSummary      gt_summary_type;
     typedef VariantBlock               block_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     GenotypeContainer(const block_type& block, const MetaContainer& meta);
     ~GenotypeContainer();
-
-    class iterator{
-        private:
-    		typedef iterator self_type;
-    		typedef std::forward_iterator_tag iterator_category;
-
-        public:
-    		iterator(pointer ptr) : ptr_(ptr) { }
-    		void operator++() { ptr_++; }
-    		void operator++(int junk) { ptr_++; }
-    		reference operator*() const{ return *ptr_; }
-    		pointer operator->() const{ return ptr_; }
-    		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-    		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-    	private:
-    		pointer ptr_;
-    	};
-
-        class const_iterator{
-    	private:
-    		typedef const_iterator self_type;
-    		typedef std::forward_iterator_tag iterator_category;
-
-    	public:
-    		const_iterator(pointer ptr) : ptr_(ptr) { }
-    		void operator++() { ptr_++; }
-    		void operator++(int junk) { ptr_++; }
-    		const_reference operator*() const{ return *ptr_; }
-    		const_pointer operator->() const{ return ptr_; }
-    		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-    		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-    	private:
-    		pointer ptr_;
-    	};
 
     // Capacity
 	inline bool empty(void) const{ return(this->n_entries == 0); }

@@ -3,6 +3,7 @@
 
 #include <typeinfo>
 
+#include "components/generic_iterator.h"
 #include "variant_block.h"
 #include "math/summary_statistics.h"
 #include "utility/support_vcf.h"
@@ -44,46 +45,15 @@ private:
     typedef std::ptrdiff_t    difference_type;
     typedef DataContainer     container_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+    typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     PrimitiveContainer();
     PrimitiveContainer(const return_type value);
     PrimitiveContainer(const container_type& container);
     PrimitiveContainer(const container_type& container, const U32& offset, const U32 n_entries);
     ~PrimitiveContainer(void);
-
-    class iterator{
-    private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-    public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-    class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
     // Element access
     inline reference at(const size_type& position){ return(this->__entries[position]); }
@@ -134,6 +104,9 @@ public:
     typedef std::ptrdiff_t       difference_type;
     typedef std::size_t          size_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     PrimitiveContainer(){}
 	PrimitiveContainer(const char* data, const size_t l_data) :
@@ -146,6 +119,14 @@ public:
 	inline pointer data(void){ return(&this->data_); }
 	inline const_pointer data(void) const{ return(&this->data_); }
 	const bool empty(void) const{ return(this->data_.size() == 0); }
+
+	 // Iterator
+	inline iterator begin(){ return iterator(&this->data_); }
+	inline iterator end(){ return iterator(&this->data_ + this->n_entries_); }
+	inline const_iterator begin() const{ return const_iterator(&this->data_); }
+	inline const_iterator end() const{ return const_iterator(&this->data_ + this->n_entries_); }
+	inline const_iterator cbegin() const{ return const_iterator(&this->data_); }
+	inline const_iterator cend() const{ return const_iterator(&this->data_ + this->n_entries_); }
 
 	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const{
 		if(this->data_.size() == 0){

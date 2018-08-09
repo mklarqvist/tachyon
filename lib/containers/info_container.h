@@ -27,46 +27,15 @@ private:
     typedef MetaContainer                   meta_container_type;
     typedef StrideContainer<U32>            stride_container_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     InfoContainer();
     InfoContainer(const bool is_flag);
     InfoContainer(const data_container_type& container);
     InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
     ~InfoContainer(void);
-
-    class iterator{
-    private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-    public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-    class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
     // Element access
     inline reference at(const size_type& position){ return(this->__containers[position]); }

@@ -3,6 +3,7 @@
 
 #include <cassert>
 
+#include "components/generic_iterator.h"
 #include "data_container.h"
 
 namespace tachyon{
@@ -16,7 +17,7 @@ namespace containers{
  */
 template <class return_primitive = U32>
 class StrideContainer{
-private:
+public:
 	typedef StrideContainer   self_type;
     typedef std::size_t       size_type;
     typedef return_primitive  value_type;
@@ -27,6 +28,9 @@ private:
     typedef std::ptrdiff_t    difference_type;
     typedef DataContainer     data_container_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     StrideContainer();
     StrideContainer(const size_type start_capacity);
@@ -34,40 +38,6 @@ public:
     StrideContainer(const data_container_type& container);
     StrideContainer(const self_type& other);
     ~StrideContainer(void);
-
-    class iterator{
-    private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-    public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-    class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
     // Element access
     inline reference at(const size_type& position){ return(this->__entries[position]); }
