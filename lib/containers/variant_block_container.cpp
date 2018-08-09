@@ -332,7 +332,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 				records[i].gt = records[i].gt_i->GetObjects(this->header_->GetNumberSamples());
 
 			records[i].gt->Evaluate();
-			records[i].gt->Expand();
+			//records[i].gt->Expand();
 		}
 
 		if(objects.n_loaded_info){

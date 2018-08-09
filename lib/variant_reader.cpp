@@ -213,6 +213,22 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
+void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
+	utility::to_vcf_string(output_buffer, '\t', *entry.meta, this->global_header);
+	output_buffer += '\t';
+
+	// Print Filter, Info, and Format if available.
+	this->OutputFilterVcf(output_buffer, entry);
+	this->OutputInfoVcf(output_buffer, entry);
+	this->OutputFormatVcf(output_buffer, entry);
+	output_buffer += '\n';
+
+	if(output_buffer.size() > 65536){
+		std::cout.write(output_buffer.data(), output_buffer.size());
+		output_buffer.reset();
+	}
+}
+
 void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
 	// Print Info.
 	if(entry.n_info){
@@ -268,16 +284,24 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 			// First calculate the FORMAT:GT field for this variant site.
 			// Case when the only available FORMAT field is the GT field.
 			if(n_format_avail == 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
+
 				// Iterate over samples and print FORMAT:GT value in Vcf format.
 				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
 				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
 					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
 				}
+
+				entry.gt->d_exp = nullptr;
 			}
 			// Case when there are > 1 Vcf Format fields and the GT field
 			// is available.
 			else if(n_format_avail > 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
+
 				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
 				for(U32 g = 1; g < n_format_avail; ++g){
 					output_buffer += ':';
@@ -291,6 +315,8 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 						entry.fmt[g]->to_vcf_string(output_buffer, s);
 					}
 				}
+
+				entry.gt->d_exp = nullptr;
 			}
 			// All other cases.
 			else {
@@ -330,6 +356,9 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 }
 
 U64 VariantReader::OutputVcfLinear(void){
+
+	this->variant_container.AllocateGenotypeMemory();
+
 	while(this->NextBlock()){
 		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
 		yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
@@ -339,19 +368,24 @@ U64 VariantReader::OutputVcfLinear(void){
 			if(this->variant_filters.filter(*objects, i) == false)
 				continue;
 
-			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
-			output_buffer += '\t';
-
-			// Print Filter, Info, and Format if available.
-			this->OutputFilterVcf(output_buffer, entries[i]);
-			this->OutputInfoVcf(output_buffer, entries[i]);
-			this->OutputFormatVcf(output_buffer, entries[i]);
-			output_buffer += '\n';
-
-			if(output_buffer.size() > 65536){
-				std::cout.write(output_buffer.data(), output_buffer.size());
-				output_buffer.reset();
+			yon_gt_summary sum(entries[i].gt->m, entries[i].gt->n_allele);
+			sum += *entries[i].gt;
+			std::vector< std::pair<uint64_t, double> > ret = sum.GetAlleleCountFrequency();
+			std::cerr << "AC=" << ret[2].first;
+			for(U32 j = 3; j < ret.size(); ++j){
+				std::cerr << "," << ret[j].first;
 			}
+			std::cerr << ";AF=" << ret[2].second;
+			for(U32 j = 3; j < ret.size(); ++j){
+				std::cerr << "," << ret[j].second;
+			}
+			std::cerr << ";AC_MISS=" << ret[0].first;
+			if(ret[1].first) std::cerr << ";MIXED_PLOIDY";
+			std::cerr << std::endl;
+
+			//sum.GetGenotypeCounts(true);
+
+			this->OuputVcfWrapper(output_buffer, entries[i]);
 		}
 
 		std::cout.write(output_buffer.data(), output_buffer.size());
@@ -380,19 +414,7 @@ U64 VariantReader::OutputVcfSearch(void){
 			if(this->variant_filters.filter(*objects, i) == false)
 				continue;
 
-			utility::to_vcf_string(output_buffer, '\t', *entries[i].meta, this->global_header);
-			output_buffer += '\t';
-
-			// Print Filter, Info, and Format if available.
-			this->OutputFilterVcf(output_buffer, entries[i]);
-			this->OutputInfoVcf(output_buffer, entries[i]);
-			this->OutputFormatVcf(output_buffer, entries[i]);
-			output_buffer += '\n';
-
-			if(output_buffer.size() > 65536){
-				std::cout.write(output_buffer.data(), output_buffer.size());
-				output_buffer.reset();
-			}
+			this->OuputVcfWrapper(output_buffer, entries[i]);
 		}
 
 		std::cout.write(output_buffer.data(), output_buffer.size());

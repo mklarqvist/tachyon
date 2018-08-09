@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "io/basic_buffer.h"
+#include "containers/components/generic_iterator.h"
 #include "third_party/intervalTree.h"
 
 namespace tachyon{
@@ -179,10 +180,25 @@ struct yon_radix_gt {
 	uint16_t* alleles;
 };
 
-// Begin new gt structures
+// Primary generic Tachyon FORMAT:GT structure.
 struct yon_gt_rcd {
 	yon_gt_rcd() : run_length(0), allele(nullptr){}
 	~yon_gt_rcd(){ delete [] this->allele; }
+	yon_gt_rcd(const yon_gt_rcd& other) = delete; // disallow copy ctor
+	yon_gt_rcd& operator=(const yon_gt_rcd& other) = delete; // disallow move assign
+	yon_gt_rcd(yon_gt_rcd&& other) : run_length(other.run_length), allele(other.allele){
+		other.allele = nullptr;
+	}
+	yon_gt_rcd& operator=(yon_gt_rcd&& other){
+		if(this == &other) return(*this);
+		delete this->allele;
+		this->allele = other.allele;
+		other.allele = nullptr;
+		this->run_length = other.run_length;
+		return(*this);
+	}
+
+	// Rule of 5
 
 	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
 		if(this->allele[0] == 1){
@@ -222,6 +238,9 @@ struct yon_gt {
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
     // todo: lookup table
+
+    typedef yonRawIterator<yon_gt_rcd>       iterator;
+	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
 
     yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
                n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
@@ -459,6 +478,17 @@ struct yon_gt {
 		return true;
 	}
 
+	/**<
+	 * Lazy evaluated (expands) (possibly) run-length encoded rcds structures
+	 * into a vector of pointers corresponding to distinct samples in the order
+	 * they were stored. This unpermutation (restoration) of order requires the
+	 * ppa array (stored at YON_BLK_PPA).
+	 *
+	 * This function should be considered private as the generic wrapper function
+	 * Expand() calls this function if ppa is available or ExpandRecords()
+	 * otherwise.
+	 * @return Always returns TRUE if the critical assertions passes.
+	 */
 	bool ExpandRecordsPpa(void){
 		assert(this->rcds != nullptr);
 		assert(this->ppa != nullptr);
@@ -480,10 +510,34 @@ struct yon_gt {
 		return true;
 	}
 
+	bool ExpandRecordsPpaExternal(yon_gt_rcd** d_expe){
+		assert(this->rcds != nullptr);
+		assert(this->ppa != nullptr);
+
+		uint64_t cum_sample = 0;
+		uint64_t cum_offset = 0;
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+				const uint32_t& target_ppa = this->ppa->at(cum_sample);
+				d_expe[target_ppa] = &this->rcds[i];
+				cum_offset += this->p * this->m;
+			}
+		}
+		assert(cum_sample == this->n_s);
+		assert(cum_offset == this->n_s * this->m * this->p);
+		return true;
+	}
+
 	bool Expand(void){
 		if(this->ppa != nullptr)
 			return(this->ExpandRecordsPpa());
 		else return(this->ExpandRecords());
+	}
+
+	bool ExpandExternal(yon_gt_rcd** d_expe){
+		if(this->ppa != nullptr)
+			return(this->ExpandRecordsPpaExternal(d_expe));
+		else return(this->ExpandRecordsExternal(d_expe));
 	}
 
 	bool ExpandRecords(void){
@@ -505,15 +559,209 @@ struct yon_gt {
 		return true;
 	}
 
+	bool ExpandRecordsExternal(yon_gt_rcd** d_expe){
+		assert(this->rcds != nullptr);
+
+		uint64_t cum_sample = 0;
+		uint64_t cum_offset = 0;
+		for(uint32_t i = 0; i < this->n_i; ++i){
+			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+				d_expe[cum_sample] = &this->rcds[i];
+				cum_offset += this->p * this->m;
+			}
+		}
+		assert(cum_sample == this->n_s);
+		assert(cum_offset == this->n_s * this->m * this->p);
+		return true;
+	}
+
     template <class T>
     inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }
 
     template <class T>
-	inline T& GetPrimitivePPA(const uint32_t sample){ return(this->ppa[*reinterpret_cast<T*>(&this->data[sample])]); }
+	inline T& GetPrimitivePpa(const uint32_t sample){ return(this->ppa[*reinterpret_cast<T*>(&this->data[sample])]); }
+
+    // Iterator
+   inline iterator begin(){ return iterator(&this->rcds[0]); }
+   inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
+   inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
+   inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
+   inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
+   inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
+};
+
+struct yon_gt_summary_obj{
+	yon_gt_summary_obj() : n_cnt(0), children(nullptr){}
+	~yon_gt_summary_obj(){ delete [] this->children; }
+
+	uint64_t n_cnt;
+	yon_gt_summary_obj* children;
+};
+
+struct yon_gt_summary{
+	yon_gt_summary(void) :
+		n_ploidy(0),
+		n_alleles(0),
+		alleles(nullptr),
+		gt(nullptr)
+	{
+
+	}
+
+	yon_gt_summary(const uint8_t base_ploidy, const uint8_t n_alleles) :
+		n_ploidy(base_ploidy),
+		n_alleles(n_alleles + 2),
+		alleles(new uint64_t[this->n_alleles]),
+		gt(new yon_gt_summary_obj[this->n_alleles])
+	{
+		memset(this->alleles, 0, sizeof(uint64_t)*this->n_alleles);
+
+		// Add layers to the root node.
+		for(U32 i = 0; i < this->n_alleles; ++i)
+			this->AddGenotypeLayer(&this->gt[i], 1);
+	}
+
+	~yon_gt_summary(){
+		delete [] this->alleles;
+		delete [] this->gt;
+	}
+
+	/**<
+	 * Recursively add layers to the trie to represent a possible
+	 * ploidy-dimensional matrix in the leafs. The memory cost of
+	 * the trie is O(n_alleles ^ ploidy)
+	 *
+	 * @param target
+	 * @param depth
+	 * @return
+	 */
+	bool AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth){
+		if(depth == this->n_ploidy)  return false;
+		if(target->children == nullptr){
+			target->children = new yon_gt_summary_obj[this->n_alleles];
+		}
+
+		for(U32 i = 0; i < this->n_alleles; ++i){
+			this->AddGenotypeLayer(&target->children[i], depth+1);
+		}
+
+		return false;
+	}
+
+	yon_gt_summary& operator+=(const yon_gt& gt){
+		// Iterate over available genotype records.
+		for(U32 i = 0; i < gt.n_i; ++i){
+			// Iterate over alleles given the base ploidy.
+			for(U32 j = 0; j < gt.m; ++j){
+				assert((gt.rcds[i].allele[j] >> 1) < this->n_alleles);
+				this->alleles[gt.rcds[i].allele[j] >> 1] += gt.rcds[i].run_length;
+			}
+			// Recursive approach to adding a genotype to the trie.
+			this->AddGenotype(gt.rcds[i].run_length, &this->gt[gt.rcds[i].allele[0] >> 1], gt.rcds[i].allele, 0);
+		}
+
+		return(*this);
+	}
+
+	/**<
+	 * Subroutine to add a genotype to the trie by recursion.
+	 * @param run_length
+	 * @param target
+	 * @param alleles
+	 * @param depth
+	 * @return
+	 */
+	bool AddGenotype(const uint32_t& run_length, yon_gt_summary_obj* target, uint8_t* alleles, uint8_t depth){
+		if(depth == this->n_ploidy) return false;
+		target->n_cnt += run_length;
+		this->AddGenotype(run_length, &target->children[alleles[depth] >> 1], alleles, depth + 1);
+		return(true);
+	}
+
+	inline uint64_t* GetAlleleCountsRaw(void){ return(this->alleles); }
+	inline const uint64_t* GetAlleleCountsRaw(void) const{ return(this->alleles); }
+
+	std::vector<uint64_t> GetAlleleCounts(void) const{
+		std::vector<uint64_t> c_allele(this->n_alleles, 0);
+		for(U32 i = 0; i < this->n_alleles; ++i)
+			c_allele[i] = this->alleles[i];
+
+		return(c_allele);
+	}
+
+	std::vector< std::pair<uint64_t,double> > GetAlleleCountFrequency(void) const{
+		std::vector< std::pair<uint64_t,double> > c_allele(this->n_alleles);
+		uint64_t n_total = 0;
+		for(U32 i = 0; i < 2; ++i){
+			c_allele[i].first = this->alleles[i];
+		}
+
+		for(U32 i = 2; i < this->n_alleles; ++i){
+			c_allele[i].first = this->alleles[i];
+			n_total += this->alleles[i];
+		}
+
+		if(n_total != 0){
+			for(U32 i = 0; i < this->n_alleles; ++i){
+				c_allele[i].second = (double)c_allele[i].first / n_total;
+			}
+		}
+
+		return(c_allele);
+	}
+
+	bool GetGenotype(std::vector<uint64_t>& data, yon_gt_summary_obj* target, uint8_t depth){
+		if(depth + 1 == this->n_ploidy){
+			assert(target->children != nullptr);
+			for(U32 i = 0; i < this->n_alleles; ++i){
+				if(target->children[i].n_cnt != 0){
+					data.push_back(target->children[i].n_cnt);
+				}
+			}
+			return false;
+		}
+
+		for(U32 i = 0; i < this->n_alleles; ++i){
+			this->GetGenotype(data, &target->children[i], depth + 1);
+		}
+
+		return(true);
+	}
+
+	std::vector<yon_gt_rcd> GetGenotypeCounts(bool drop_empty = true){
+		std::vector<yon_gt_rcd> genotypes;
+
+		// Traverse the trie and store records when hitting the leafs.
+		std::vector<uint64_t> d;
+
+		// If the target ploidy is greater than one (haploid) we collect
+		// the genotypes by traversing the trie. Otherwise the genotypes
+		// are the allele counts at the roots.
+		if(this->n_ploidy > 1){
+			for(U32 i = 0; i < this->n_alleles; ++i){
+				//std::cerr << "outer " << i << "/" << (int)this->n_alleles << std::endl;
+				this->GetGenotype(d, &this->gt[i], 1);
+			}
+		} else {
+			for(U32 i = 0; i < this->n_alleles; ++i){
+				if(this->gt[i].n_cnt != 0){
+					d.push_back(this->gt[i].n_cnt);
+				}
+			}
+		}
+		uint64_t n_total = 0;
+		for(U32 i = 0; i < d.size(); ++i)
+			n_total += d[i];
+		std::cerr << "collected: " << d.size() << " total = " << n_total << std::endl;
+		return(genotypes);
+	}
+
+	uint8_t   n_ploidy;
+	uint8_t   n_alleles;
+	uint64_t* alleles;
+	yon_gt_summary_obj* gt;
 };
 
 }
-
-
 
 #endif /* CORE_GENOTYPES_H_ */

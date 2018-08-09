@@ -45,16 +45,18 @@ private:
 public:
 	VariantBlockContainer() :
 		loaded_genotypes(false),
-		header_(nullptr)
+		header_(nullptr),
+		gt_exp(nullptr)
 	{
 
 	}
 
 	VariantBlockContainer(const global_header_type& header) :
 		loaded_genotypes(false),
-		header_(&header)
+		header_(&header),
+		gt_exp(nullptr)
 	{
-
+		delete [] this->gt_exp;
 	}
 
 	~VariantBlockContainer(void){
@@ -128,6 +130,10 @@ public:
 	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
 	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
+	inline void AllocateGenotypeMemory(void){ this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()]; }
+	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
+	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
+
 	/**<
 	 * Primary construction function for generating the appropriate instances of
 	 * iterators / containers
@@ -156,6 +162,11 @@ private:
 	std::vector< std::vector<int> > format_patterns_local;
 	map_type info_map_global;
 	map_type format_map_global;
+	// External memory allocation for linear use of lazy-evaluated
+	// expansion of genotype records. This is critical when the sample
+	// numbers are becoming large as allocating/deallocating hundreds
+	// of thousands of pointers for every variant is very time consuming.
+	yon_gt_rcd** gt_exp;
 };
 
 
