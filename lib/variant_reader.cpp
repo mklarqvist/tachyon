@@ -370,18 +370,16 @@ U64 VariantReader::OutputVcfLinear(void){
 
 			yon_gt_summary sum(entries[i].gt->m, entries[i].gt->n_allele);
 			sum += *entries[i].gt;
-			std::vector< std::pair<uint64_t, double> > ret = sum.GetAlleleCountFrequency();
-			std::cerr << "AC=" << ret[2].first;
-			for(U32 j = 3; j < ret.size(); ++j){
-				std::cerr << "," << ret[j].first;
+			sum.LazyEvaluate();
+
+			sum.d->PrintVcf(output_buffer);
+			output_buffer += '\n';
+
+			if(output_buffer.size() > 65536){
+				std::cout.write(output_buffer.data(), output_buffer.size());
+				output_buffer.reset();
 			}
-			std::cerr << ";AF=" << ret[2].second;
-			for(U32 j = 3; j < ret.size(); ++j){
-				std::cerr << "," << ret[j].second;
-			}
-			std::cerr << ";AC_MISS=" << ret[0].first;
-			if(ret[1].first) std::cerr << ";MIXED_PLOIDY";
-			std::cerr << std::endl;
+			continue;
 
 			//sum.GetGenotypeCounts(true);
 

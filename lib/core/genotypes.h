@@ -6,6 +6,7 @@
 #include "io/basic_buffer.h"
 #include "containers/components/generic_iterator.h"
 #include "third_party/intervalTree.h"
+#include "math/fisher_math.h"
 
 namespace tachyon{
 
@@ -594,8 +595,80 @@ struct yon_gt_summary_obj{
 	yon_gt_summary_obj() : n_cnt(0), children(nullptr){}
 	~yon_gt_summary_obj(){ delete [] this->children; }
 
+	inline yon_gt_summary_obj& operator[](const uint32_t pos){ return(this->children[pos]); }
+	inline const yon_gt_summary_obj& operator[](const uint32_t pos) const{ return(this->children[pos]); }
+
 	uint64_t n_cnt;
 	yon_gt_summary_obj* children;
+};
+
+struct yon_gt_summary_rcd {
+	yon_gt_summary_rcd() :
+		n_ploidy(0), n_ac_af(0), n_fs(0), ac(nullptr), af(nullptr),
+		nm(0), npm(0), an(0), ac_p(nullptr), fs_a(nullptr), hwe_p(0),
+		f_pic(0)
+	{}
+	~yon_gt_summary_rcd(){
+		delete [] this->ac; delete [] this->af;
+		delete [] this->fs_a;
+		// Do not delete ac_p as it is borrowed
+	}
+
+	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer){
+		buffer +=  "NM=";     buffer.AddReadble((U64)this->nm);
+		buffer += ";NPM=";   buffer.AddReadble((U64)this->npm);
+		buffer += ";AN=";    buffer.AddReadble((U64)this->an);
+		buffer += ";HWE_P="; buffer.AddReadble((double)this->hwe_p);
+		if(this->n_ac_af > 4) buffer += ";MULTI_ALLELIC";
+
+		if(this->n_ac_af > 2){
+			buffer += ";AC="; buffer.AddReadble((U64)this->ac[2]);
+			for(U32 i = 3; i < this->n_ac_af; ++i){
+				buffer += ','; buffer.AddReadble((U64)this->ac[i]);
+			}
+			buffer += ";AF="; buffer.AddReadble((double)this->af[2]);
+			for(U32 i = 3; i < this->n_ac_af; ++i){
+				buffer += ','; buffer.AddReadble((double)this->af[i]);
+			}
+		}
+
+		for(U32 p = 0; p < this->n_ploidy; ++p){
+			buffer += ";AC_P"; buffer.AddReadble((U32)p+1); buffer += '=';
+			buffer.AddReadble((U64)this->ac_p[p][0]);
+			for(U32 i = 2; i < this->n_ac_af; ++i){
+				buffer += ','; buffer.AddReadble((U64)this->ac_p[p][i]);
+			}
+		}
+
+		if(this->fs_a != nullptr){
+			buffer += ";FS_A=";
+			buffer.AddReadble((double)this->fs_a[0]);
+			for(U32 i = 1; i < this->n_fs; ++i){
+				buffer += ','; buffer.AddReadble((double)this->fs_a[i]);
+			}
+		}
+
+		if(this->n_ploidy == 2){
+			buffer += ";F_PIC=";
+			buffer.AddReadble((double)this->f_pic);
+		}
+
+		return(buffer);
+	}
+
+	uint8_t n_ploidy;
+	uint32_t n_ac_af;
+	uint32_t n_fs;
+	uint64_t* ac; // allele counts
+	double* af; // allele frequency
+	uint64_t nm; // number of non-sentinel, non-missing symbols
+	uint64_t npm;// number of missing symbols
+	uint64_t an; // number of non-sentinel symbols
+	// ac_p is borrowed from summary
+	uint64_t** ac_p;
+	double* fs_a;// fisher strand test p
+	double hwe_p;// hardy-weinberg p
+	double f_pic;
 };
 
 struct yon_gt_summary{
@@ -603,7 +676,9 @@ struct yon_gt_summary{
 		n_ploidy(0),
 		n_alleles(0),
 		alleles(nullptr),
-		gt(nullptr)
+		alleles_strand(nullptr),
+		gt(nullptr),
+		d(nullptr)
 	{
 
 	}
@@ -612,9 +687,15 @@ struct yon_gt_summary{
 		n_ploidy(base_ploidy),
 		n_alleles(n_alleles + 2),
 		alleles(new uint64_t[this->n_alleles]),
-		gt(new yon_gt_summary_obj[this->n_alleles])
+		alleles_strand(new uint64_t*[this->n_ploidy]),
+		gt(new yon_gt_summary_obj[this->n_alleles]),
+		d(nullptr)
 	{
 		memset(this->alleles, 0, sizeof(uint64_t)*this->n_alleles);
+		for(U32 i = 0; i < this->n_ploidy; ++i){
+			this->alleles_strand[i] = new uint64_t[this->n_alleles];
+			memset(this->alleles_strand[i], 0, sizeof(uint64_t)*this->n_alleles);
+		}
 
 		// Add layers to the root node.
 		for(U32 i = 0; i < this->n_alleles; ++i)
@@ -624,6 +705,12 @@ struct yon_gt_summary{
 	~yon_gt_summary(){
 		delete [] this->alleles;
 		delete [] this->gt;
+		if(this->alleles_strand != nullptr){
+			for(U32 i = 0; i < this->n_ploidy; ++i)
+				delete this->alleles_strand[i];
+			delete [] this->alleles_strand;
+		}
+		delete this->d;
 	}
 
 	/**<
@@ -655,11 +742,11 @@ struct yon_gt_summary{
 			for(U32 j = 0; j < gt.m; ++j){
 				assert((gt.rcds[i].allele[j] >> 1) < this->n_alleles);
 				this->alleles[gt.rcds[i].allele[j] >> 1] += gt.rcds[i].run_length;
+				this->alleles_strand[j][gt.rcds[i].allele[j] >> 1] += gt.rcds[i].run_length;
 			}
 			// Recursive approach to adding a genotype to the trie.
 			this->AddGenotype(gt.rcds[i].run_length, &this->gt[gt.rcds[i].allele[0] >> 1], gt.rcds[i].allele, 0);
 		}
-
 		return(*this);
 	}
 
@@ -671,10 +758,14 @@ struct yon_gt_summary{
 	 * @param depth
 	 * @return
 	 */
-	bool AddGenotype(const uint32_t& run_length, yon_gt_summary_obj* target, uint8_t* alleles, uint8_t depth){
+	bool AddGenotype(const uint32_t& run_length,
+	                 yon_gt_summary_obj* target,
+	                 const uint8_t* alleles,
+	                 uint8_t depth)
+	{
 		if(depth == this->n_ploidy) return false;
 		target->n_cnt += run_length;
-		this->AddGenotype(run_length, &target->children[alleles[depth] >> 1], alleles, depth + 1);
+		this->AddGenotype(run_length, &target->children[alleles[depth + 1] >> 1], alleles, depth + 1);
 		return(true);
 	}
 
@@ -704,6 +795,17 @@ struct yon_gt_summary{
 		if(n_total != 0){
 			for(U32 i = 0; i < this->n_alleles; ++i){
 				c_allele[i].second = (double)c_allele[i].first / n_total;
+			}
+		}
+
+		return(c_allele);
+	}
+
+	std::vector< std::vector<uint64_t> > GetAlleleStrandCounts(void) const{
+		std::vector< std::vector<uint64_t> > c_allele(this->n_ploidy, std::vector<uint64_t>(this->n_alleles));
+		for(U32 i = 0; i < this->n_ploidy; ++i){
+			for(U32 j = 0; j < this->n_alleles; ++j){
+				c_allele[i][j] = this->alleles_strand[i][j];
 			}
 		}
 
@@ -756,10 +858,213 @@ struct yon_gt_summary{
 		return(genotypes);
 	}
 
-	uint8_t   n_ploidy;
-	uint8_t   n_alleles;
-	uint64_t* alleles;
-	yon_gt_summary_obj* gt;
+	std::vector<double> GetStrandBiasAlleles(const bool phred_scale = true) const{
+		if(this->n_ploidy != 2 || this->n_alleles + 2 < 2)
+			return std::vector<double>();
+
+		std::vector<double> strand_bias_p_values;
+		double fisher_left_p, fisher_right_p, fisher_twosided_p;
+
+		uint64_t n_cnt_fwd = 0;
+		uint64_t n_cnt_rev = 0;
+		for(U32 i = 2; i < this->n_alleles; ++i){
+			n_cnt_fwd += this->alleles_strand[0][i];
+			n_cnt_rev += this->alleles_strand[1][i];
+		}
+
+		kt_fisher_exact(
+		this->alleles_strand[0][2], // A: Allele on forward strand
+		this->alleles_strand[1][2], // B: Allele on reverse strand
+		n_cnt_fwd - this->alleles_strand[0][2], // C: Not allele on forward strand
+		n_cnt_rev - this->alleles_strand[1][2], // D: Not allele on reverse strand
+		&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+		if(phred_scale) strand_bias_p_values.push_back(std::abs(-10 * log10(fisher_twosided_p)));
+		else strand_bias_p_values.push_back(fisher_twosided_p);
+
+		// If n_alleles = 2 then they are identical because of symmetry
+		if(this->n_alleles - 2 > 2){
+			for(U32 p = 3; p < this->n_alleles; ++p){
+				kt_fisher_exact(
+				this->alleles_strand[0][p], // A: Allele on forward strand
+				this->alleles_strand[1][p], // B: Allele on reverse strand
+				n_cnt_fwd - this->alleles_strand[0][p], // C: Not allele on forward strand
+				n_cnt_rev - this->alleles_strand[1][p], // D: Not allele on reverse strand
+				&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+				if(phred_scale) strand_bias_p_values.push_back(std::abs(-10 * log10(fisher_twosided_p)));
+				else strand_bias_p_values.push_back(fisher_twosided_p);
+			}
+		}
+		return(strand_bias_p_values);
+	}
+
+	double CalculateHardyWeinberg(void){
+		if(this->n_ploidy != 2 || this->n_alleles - 2 != 2) return -1;
+
+		U64 obs_hets = this->gt[2][3].n_cnt + this->gt[3][2].n_cnt; // alts
+		U64 obs_hom1 = this->gt[2][2].n_cnt; // hom ref
+		U64 obs_hom2 = this->gt[3][3].n_cnt; // hom alt
+
+		U64 obs_homc = obs_hom1 < obs_hom2 ? obs_hom2 : obs_hom1;
+		U64 obs_homr = obs_hom1 < obs_hom2 ? obs_hom1 : obs_hom2;
+
+		int64_t rare_copies = 2 * obs_homr + obs_hets;
+		int64_t genotypes   = obs_hets + obs_homc + obs_homr;
+
+		double* het_probs = new double[rare_copies + 1];
+
+		int64_t i;
+		for (i = 0; i <= rare_copies; ++i)
+			het_probs[i] = 0.0;
+
+		/* start at midpoint */
+		int64_t mid = rare_copies * (2 * genotypes - rare_copies) / (2 * genotypes);
+
+		/* check to ensure that midpoint and rare alleles have same parity */
+		if ((rare_copies & 1) ^ (mid & 1))
+			++mid;
+
+		int64_t curr_hets = mid;
+		int64_t curr_homr = (rare_copies - mid) / 2;
+		int64_t curr_homc = genotypes - curr_hets - curr_homr;
+
+		het_probs[mid] = 1.0;
+		double sum = het_probs[mid];
+		for (curr_hets = mid; curr_hets > 1; curr_hets -= 2){
+			het_probs[curr_hets - 2] = het_probs[curr_hets] * curr_hets * (curr_hets - 1.0)
+							   / (4.0 * (curr_homr + 1.0) * (curr_homc + 1.0));
+			sum += het_probs[curr_hets - 2];
+
+			/* 2 fewer heterozygotes for next iteration -> add one rare, one common homozygote */
+			++curr_homr;
+			++curr_homc;
+		}
+
+		curr_hets = mid;
+		curr_homr = (rare_copies - mid) / 2;
+		curr_homc = genotypes - curr_hets - curr_homr;
+		for (curr_hets = mid; curr_hets <= rare_copies - 2; curr_hets += 2){
+			het_probs[curr_hets + 2] = het_probs[curr_hets] * 4.0 * curr_homr * curr_homc
+							/((curr_hets + 2.0) * (curr_hets + 1.0));
+			sum += het_probs[curr_hets + 2];
+
+			/* add 2 heterozygotes for next iteration -> subtract one rare, one common homozygote */
+			--curr_homr;
+			--curr_homc;
+		}
+
+		for (i = 0; i <= rare_copies; i++)
+			het_probs[i] /= sum;
+
+		double p_hwe = 0.0;
+		/*  p-value calculation for p_hwe  */
+		for (i = 0; i <= rare_copies; i++){
+			if (het_probs[i] > het_probs[obs_hets])
+				continue;
+
+			p_hwe += het_probs[i];
+		}
+
+		p_hwe = p_hwe > 1.0 ? 1.0 : p_hwe;
+
+		delete [] het_probs;
+
+		return(p_hwe);
+	}
+
+	bool LazyEvaluate(void){
+		delete this->d;
+		this->d = new yon_gt_summary_rcd;
+
+		// Allele count and frequency
+		this->d->n_ploidy = this->n_ploidy;
+		this->d->n_ac_af  = this->n_alleles;
+		this->d->ac       = new uint64_t[this->n_alleles];
+		this->d->af       = new double[this->n_alleles];
+
+		uint64_t n_total = 0;
+		for(U32 i = 0; i < 2; ++i) this->d->ac[i] = this->alleles[i];
+		for(U32 i = 2; i < this->n_alleles; ++i){
+			this->d->ac[i] = this->alleles[i];
+			n_total += this->alleles[i];
+		}
+
+		if(n_total != 0){
+			for(U32 i = 0; i < this->n_alleles; ++i)
+				this->d->af[i] = (double)this->d->ac[i] / n_total;
+
+		} else {
+			for(U32 i = 0; i < this->n_alleles; ++i)
+				this->d->af[i] = 0;
+		}
+
+		this->d->npm = this->d->ac[0];
+		this->d->nm  = n_total;
+		this->d->an  = n_total + this->d->ac[0];
+		this->d->hwe_p = this->CalculateHardyWeinberg();
+		this->d->ac_p = this->alleles_strand;
+
+		// Strand-specific bias and inbreeding coefficient (F-statistic)
+		if(this->n_ploidy == 2){
+			uint8_t n_fs_used = (this->n_alleles - 2 == 2 ? 1 : this->n_alleles - 2);
+			this->d->n_fs = n_fs_used;
+			this->d->fs_a = new double[n_fs_used];
+			double fisher_left_p, fisher_right_p, fisher_twosided_p;
+			uint64_t n_cnt_fwd = 0;
+			uint64_t n_cnt_rev = 0;
+			for(U32 i = 2; i < this->n_alleles; ++i){
+				n_cnt_fwd += this->alleles_strand[0][i];
+				n_cnt_rev += this->alleles_strand[1][i];
+			}
+
+			kt_fisher_exact(
+			this->alleles_strand[0][2], // A: Allele on forward strand
+			this->alleles_strand[1][2], // B: Allele on reverse strand
+			n_cnt_fwd - this->alleles_strand[0][2], // C: Not allele on forward strand
+			n_cnt_rev - this->alleles_strand[1][2], // D: Not allele on reverse strand
+			&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+			this->d->fs_a[0] = std::abs(-10 * log10(fisher_twosided_p));
+
+			// If n_alleles = 2 then they are identical because of symmetry
+			uint8_t pos = 1;
+			if(this->n_alleles - 2 > 2){
+				for(U32 p = 3; p < this->n_alleles; ++p){
+					kt_fisher_exact(
+					this->alleles_strand[0][p], // A: Allele on forward strand
+					this->alleles_strand[1][p], // B: Allele on reverse strand
+					n_cnt_fwd - this->alleles_strand[0][p], // C: Not allele on forward strand
+					n_cnt_rev - this->alleles_strand[1][p], // D: Not allele on reverse strand
+					&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
+
+					this->d->fs_a[pos++] = std::abs(-10 * log10(fisher_twosided_p));
+				}
+			}
+
+			// Total number of genotypes is the sum of the root
+			// nodes excluding special missing and sentinel node
+			// (0 and 1).
+			uint64_t n_genotypes = this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt + this->gt[3][3].n_cnt;
+
+			// Allele frequency of A
+			const double p = ((double)2*this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / (2*n_genotypes);
+			// Genotype frequency of heterozyotes
+			const double pg = ((double)this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / n_genotypes;
+			// Expected heterozygosity
+			const double exp = 2*p*(1-p);
+			// Population inbreeding coefficient: F
+			const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
+			this->d->f_pic = f_pic;
+		}
+	}
+
+	uint8_t   n_ploidy; // base ploidy at site
+	uint8_t   n_alleles; // number of alleles
+	uint64_t* alleles; // allele counts
+	uint64_t** alleles_strand; // allelic counts per chromosome
+	yon_gt_summary_obj* gt; // full genotypic trie with branch-size n_alleles
+	yon_gt_summary_rcd* d; // lazy evaluated record
 };
 
 }
