@@ -240,7 +240,6 @@ struct yon_gt {
     yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be
     yon_gt_rcd* rcds; // lazy interpreted internal records
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
-    yon_gt_summary* gt_sum; // lazy interpreted gt summary statistics
     bool dirty;
     // todo: lookup table
 
@@ -249,12 +248,10 @@ struct yon_gt {
 
     yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
                n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
-			   d_exp(nullptr), rcds(nullptr), itree(nullptr), gt_sum(nullptr), dirty(false)
+			   d_exp(nullptr), rcds(nullptr), itree(nullptr), dirty(false)
     {}
 
     ~yon_gt();
-
-    bool EvaluateSummary(const bool lazy_evaluate = true);
 
     bool Evaluate(void){
     	if(this->method == 1) return(this->EvaluateRecordsM1());

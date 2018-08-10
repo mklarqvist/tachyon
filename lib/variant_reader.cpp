@@ -365,11 +365,12 @@ U64 VariantReader::OutputVcfLinear(void){
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.filter(*objects, i) == false)
+			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
 
-			entries[i].gt->EvaluateSummary();
-			entries[i].gt->gt_sum->d->PrintVcf(output_buffer);
+			/*
+			entries[i].EvaluateSummary(true);
+			entries[i].gt_sum->d->PrintVcf(output_buffer);
 			output_buffer += '\n';
 
 			if(output_buffer.size() > 65536){
@@ -377,6 +378,7 @@ U64 VariantReader::OutputVcfLinear(void){
 				output_buffer.reset();
 			}
 			continue;
+			*/
 
 			//sum.GetGenotypeCounts(true);
 
@@ -406,7 +408,7 @@ U64 VariantReader::OutputVcfSearch(void){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
 				continue;
 
-			if(this->variant_filters.filter(*objects, i) == false)
+			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);

@@ -10,7 +10,8 @@
 
 namespace tachyon{
 
-// Forward declare.
+// Forward declare to allow variant to reference
+// parent (host) container.
 namespace containers {
 class VariantBlockContainer;
 }
@@ -24,6 +25,7 @@ struct yon1_t {
 		id_block(0),
 		meta(nullptr),
 		gt(nullptr),
+		gt_sum(nullptr),
 		info(nullptr),
 		fmt(nullptr),
 		info_containers(nullptr),
@@ -34,14 +36,28 @@ struct yon1_t {
 		filter_ids(nullptr),
 		parent_container(nullptr)
 	{
-
 	}
+
 	~yon1_t(void){
 		delete [] this->info;
 		delete [] this->fmt;
 		delete [] this->info_containers;
 		delete [] this->format_containers;
 		delete this->gt;
+		delete this->gt_sum;
+	}
+
+	bool EvaluateSummary(bool lazy_evaluate = true){
+		assert(this->gt != nullptr);
+		assert(this->gt->rcds != nullptr);
+
+		if(this->gt_sum != nullptr)
+			return true;
+
+		this->gt_sum = new yon_gt_summary(this->gt->m, this->gt->n_allele);
+		*this->gt_sum += *this->gt;
+		if(lazy_evaluate) this->gt_sum->LazyEvaluate();
+		return true;
 	}
 
 	bool is_dirty; // if data has been modified in the raw buffer but not the containers
@@ -51,6 +67,7 @@ struct yon1_t {
 	uint32_t id_block; // incremental id in the block container
 	core::MetaEntry* meta;
 	yon_gt* gt;
+	yon_gt_summary* gt_sum;
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
 	containers::InfoContainerInterface** info_containers;
@@ -66,7 +83,5 @@ struct yon1_t {
 };
 
 }
-
-
 
 #endif /* CORE_VARIANT_RECORD_H_ */

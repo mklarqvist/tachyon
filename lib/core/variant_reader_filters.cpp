@@ -21,27 +21,26 @@ VariantReaderFilters::~VariantReaderFilters(){
 	}
 }
 
-bool VariantReaderFilters::filterAlleleFrequency(const_pointer pair, const objects_type& objects, const U32& position) const{
-	for(U32 i = 2; i < objects.genotype_summary->d->n_ac_af; ++i){
-		if(pair->applyFilter(objects.genotype_summary->d->af[i]))
+bool VariantReaderFilters::filterAlleleFrequency(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	for(U32 i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
+		if(pair->applyFilter(objects.gt_sum->d->af[i]))
 			return true;
 	}
 	return(false);
 }
 
 
-bool VariantReaderFilters::filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& objects, const U32& position) const{
-	for(U32 i = 2; i < objects.genotype_summary->d->n_ac_af; ++i){
-		if(pair->applyFilter(objects.genotype_summary->d->ac[i] + objects.genotype_summary->d->ac[i] == 0))
+bool VariantReaderFilters::filterUnseenAlternativeAlleles(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	for(U32 i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
+		if(pair->applyFilter(objects.gt_sum->d->ac[i] + objects.gt_sum->d->ac[i] == 0))
 			return true;
 	}
 	return false;
 }
 
-bool VariantReaderFilters::filter(const objects_type& objects, const U32 position) const{
-	// Todo: construct genotype summary globally for this variant
+bool VariantReaderFilters::filter(yon1_t& objects, const U32 position) const{
 	if(this->require_genotypes)
-		objects.genotype_container->at(position).getSummary(*objects.genotype_summary);
+		objects.EvaluateSummary(true);
 
 	for(U32 i = 0 ; i < this->filters.size(); ++i){
 		if((this->*(this->filters[i]))(this->filter_data_[i], objects, position) == false){
