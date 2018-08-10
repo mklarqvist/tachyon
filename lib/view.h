@@ -134,7 +134,7 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	std::string temp;
 	tachyon::VariantReader reader;
-	tachyon::VariantReaderFilters& filters = reader.getFilterSettings();
+	tachyon::VariantReaderFilters& filters = reader.GetFilterSettings();
 
 	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
 		switch (c){
@@ -288,7 +288,7 @@ int view(int argc, char** argv){
 		return(1);
 	}
 
-	reader.getSettings() = settings;
+	reader.GetSettings() = settings;
 
 	if(!reader.open(settings.input)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << settings.input << "..." << std::endl;
@@ -296,23 +296,21 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.printHeaderVCF();
+		reader.PrintHeaderVCF();
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().ParseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
+		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetGlobalHeader(), settings.custom_output_format)){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
 	} else {
-		reader.getBlockSettings().LoadAll(true);
+		reader.GetBlockSettings().LoadAll(true);
 
 		if(settings.drop_format){
-			reader.getBlockSettings().LoadGenotypes(false);
-			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_BV_PPA);
-			reader.getBlockSettings().LoadDisplayWrapper(false, YON_BLK_BV_FORMAT);
+			reader.GetBlockSettings().LoadGenotypes(false).LoadDisplayWrapper(false, YON_BLK_BV_PPA).LoadDisplayWrapper(false, YON_BLK_BV_FORMAT);
 		}
 	}
 
@@ -321,9 +319,9 @@ int view(int argc, char** argv){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -y when using a custom separator" << std::endl;
 			return(1);
 		}
-		reader.getBlockSettings().SetCustomDelimiter(settings.custom_delimiter_char);
+		reader.GetBlockSettings().SetCustomDelimiter(settings.custom_delimiter_char);
 	}
-	reader.getBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
+	reader.GetBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
 
 	if(settings.output_type.size()){
 		std::transform(settings.output_type.begin(), settings.output_type.end(), settings.output_type.begin(), ::toupper); // transform to UPPERCASE
@@ -332,27 +330,27 @@ int view(int argc, char** argv){
 				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with JSON. Disabled..." << std::endl;
 
 			settings.custom_output_format = true;
-			reader.getBlockSettings().custom_output_format = true;
-			reader.getBlockSettings().output_json = true;
-			reader.getBlockSettings().output_format_vector = true;
+			reader.GetBlockSettings().custom_output_format = true;
+			reader.GetBlockSettings().output_json = true;
+			reader.GetBlockSettings().output_format_vector = true;
 		} else if(strncmp(&settings.output_type[0], "VCF", 3) == 0 && settings.output_type.size() == 3){
 			if(settings.custom_delimiter)
 				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with VCF. Disabled..." << std::endl;
 
-			reader.getBlockSettings().custom_output_format = false;
-			reader.getBlockSettings().custom_delimiter = false;
-			reader.getBlockSettings().custom_delimiter_char = '\t';
+			reader.GetBlockSettings().custom_output_format = false;
+			reader.GetBlockSettings().custom_delimiter = false;
+			reader.GetBlockSettings().custom_delimiter_char = '\t';
 
 			if(settings.output_FORMAT_as_vector)
 				std::cerr << tachyon::utility::timestamp("WARNING") << "Output FORMAT as vectors (-V) is incompatible with VCF output. Disabled..." << std::endl;
 
-			reader.getBlockSettings().output_format_vector = false;
+			reader.GetBlockSettings().output_format_vector = false;
 		} else if(strncmp(&settings.output_type[0], "BCF", 3) == 0 && settings.output_type.size() == 3){
-			reader.getBlockSettings().custom_output_format = false;
+			reader.GetBlockSettings().custom_output_format = false;
 			std::cerr << tachyon::utility::timestamp("ERROR") << "BCF output not supported yet." << std::endl;
 			return(1);
 		} else if(strncmp(&settings.output_type[0], "CUSTOM", 6) == 0 && settings.output_type.size() == 6){
-			reader.getBlockSettings().custom_output_format = true;
+			reader.GetBlockSettings().custom_output_format = true;
 			settings.custom_output_format = true;
 		} else {
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
@@ -361,30 +359,22 @@ int view(int argc, char** argv){
 	}
 
 	// If user is triggering annotation
-	/*
 	if(settings.annotate_genotypes){
-		reader.getBlockSettings().annotate_extra = true;
-		reader.getBlockSettings().loadGenotypes(true);
-		reader.getBlockSettings().set_membership(true, true);
-		reader.getBlockSettings().alleles(true, true);
-		reader.getBlockSettings().positions(true, true);
+		reader.GetBlockSettings().annotate_extra = true;
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
 	}
 
 	if(filters.doRequireGenotypes()){
-		reader.getBlockSettings().loadGenotypes(true);
-		reader.getBlockSettings().set_membership.load = true;
-		reader.getBlockSettings().alleles.load = true;
-		reader.getBlockSettings().positions.load = true;
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
 	}
-	*/
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
-	else reader.getBlockSettings().show_vcf_header = false;
+	if(settings.show_header) reader.GetBlockSettings().show_vcf_header = true;
+	else reader.GetBlockSettings().show_vcf_header = false;
 
-	if(reader.addIntervals(interval_strings) == false) return(1);
+	if(reader.AddIntervals(interval_strings) == false) return(1);
 
 	reader.OutputVcf();
 

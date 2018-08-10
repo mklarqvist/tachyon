@@ -213,7 +213,7 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
-void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
+void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const{
 	utility::to_vcf_string(output_buffer, '\t', *entry.meta, this->global_header);
 	output_buffer += '\t';
 
@@ -229,7 +229,7 @@ void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, const yon1_t
 	}
 }
 
-void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
+void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const{
 	// Print Info.
 	if(entry.n_info){
 		const uint32_t n_info_avail = entry.info_ids->size();
@@ -252,8 +252,19 @@ void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, const yon1_t& 
 					entry.info[j]->to_vcf_string(output_buffer);
 				}
 			}
+
+			if(this->GetBlockSettings().annotate_extra){
+				entry.EvaluateSummary(true);
+				entry.gt_sum->d->PrintVcf(output_buffer);
+			}
 		}
-	} else output_buffer += '.';
+	} else {
+		if(this->GetBlockSettings().annotate_extra){
+			entry.EvaluateSummary(true);
+			entry.gt_sum->d->PrintVcf(output_buffer);
+		} else
+			output_buffer += '.';
+	}
 }
 
 void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
@@ -360,27 +371,13 @@ U64 VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	while(this->NextBlock()){
-		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
-		yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
-
-			/*
-			entries[i].EvaluateSummary(true);
-			entries[i].gt_sum->d->PrintVcf(output_buffer);
-			output_buffer += '\n';
-
-			if(output_buffer.size() > 65536){
-				std::cout.write(output_buffer.data(), output_buffer.size());
-				output_buffer.reset();
-			}
-			continue;
-			*/
-
-			//sum.GetGenotypeCounts(true);
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);
 		}
@@ -395,13 +392,13 @@ U64 VariantReader::OutputVcfLinear(void){
 
 U64 VariantReader::OutputVcfSearch(void){
 	// Filter functionality
-	filter_intervals_function filter_intervals = &self_type::filterIntervals;
+	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 
 	for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
 		this->GetBlock(this->interval_container.getBlockList()[i]);
 
-		objects_type* objects = this->getCurrentBlock().LoadObjects(this->block_settings);
-		yon1_t* entries = this->getCurrentBlock().LazyEvaluate(*objects);
+		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
@@ -424,13 +421,13 @@ U64 VariantReader::OutputVcfSearch(void){
 }
 
 U64 VariantReader::OutputVcf(void){
-	if(this->getBlockSettings().show_vcf_header)
+	if(this->GetBlockSettings().show_vcf_header)
 		this->global_header.PrintVcfHeader(std::cout);
 
 	this->interval_container.build(this->global_header);
 
 	// Filter functionality
-	filter_intervals_function filter_intervals = &self_type::filterIntervalsDummy;
+	filter_intervals_function filter_intervals = &self_type::FilterIntervalsDummy;
 	if(this->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
 }
@@ -465,7 +462,7 @@ U64 VariantReader::outputVCF(void){
 			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
 
 	this->global_header.literals_ += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
-	this->global_header.literals_ += this->getSettings().get_settings_string();
+	this->global_header.literals_ += this->GetSettings().get_settings_string();
 
 	// Output VCF header
 	if(this->block_settings.show_vcf_header){

@@ -213,7 +213,8 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		}
 	}
 
-	stream.seekg(this->block_.end_block_); // seek to end-of-block
+	// Seek to end-of-block position.
+	stream.seekg(this->block_.end_block_);
 	return(true);
 }
 
@@ -228,6 +229,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 	if(this->HasGenotypes() && (block_settings.load_static & YON_BLK_BV_GT)){
 		objects->loaded_genotypes   = true;
 		objects->genotype_container = new gt_container_type(this->GetBlock(), *objects->meta_container);
+		// Genotype summary object is only allocated when required.
 		objects->genotype_summary   = nullptr;
 	}
 
@@ -237,6 +239,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 	objects->n_loaded_format   = this->format_id_global_loaded.size();
 	objects->format_containers = new format_interface_type*[this->block_.footer.n_format_streams];
 
+	// Handle Vcf:FORMAT fields.
 	if(objects->n_loaded_format){
 		for(U32 i = 0; i < objects->n_loaded_format; ++i){
 			//const U32 global_key = this->block_.footer.format_offsets[i].getGlobalKey();
@@ -280,6 +283,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 	objects->n_loaded_info   = this->info_id_global_loaded.size();
 	objects->info_containers = new info_interface_type*[this->block_.footer.n_info_streams];
 
+	// Handle Vcf:INFO fields.
 	if(objects->n_loaded_info){
 		for(U32 i = 0; i < objects->n_loaded_info; ++i){
 			//const U32 global_key = this->block_.footer.info_offsets[i].getGlobalKey();

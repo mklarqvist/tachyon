@@ -64,13 +64,8 @@ private:
 	typedef io::BasicReader                        basic_reader_type;
 	typedef encryption::EncryptionDecorator        encryption_manager_type;
 
-	// Function pointers
-	typedef void (self_type::*print_format_function)(buffer_type& buffer, const char& delimiter, const U32& position, const objects_type& objects, std::vector<core::GTObject>& genotypes_unpermuted) const;
-	typedef void (self_type::*print_info_function)(buffer_type& outputBuffer, const char& delimiter, const U32& position, const objects_type& objects) const;
-	typedef void (self_type::*print_filter_function)(buffer_type& outputBuffer, const U32& position, const objects_type& objects) const;
+	// Function pointer to interval slicing.
 	typedef bool (self_type::*filter_intervals_function)(const meta_entry_type& meta_entry) const;
-
-	typedef buffer_type& (*print_meta_function)(buffer_type& buffer, const char& delimiter, const meta_entry_type& meta_entry, const header_type& header, const block_settings_type& controller);
 
 public:
 	VariantReader();
@@ -85,7 +80,8 @@ public:
 	 * has been invoked has no effect on the loaded `block` data.
 	 * @return A reference instance of the block settings object
 	 */
-	inline block_settings_type& getBlockSettings(void){ return(this->block_settings); }
+	inline block_settings_type& GetBlockSettings(void){ return(this->block_settings); }
+	inline const block_settings_type& GetBlockSettings(void) const{ return(this->block_settings); }
 
 	/**<
 	 * Retrieve current settings for the variant reader. This settings
@@ -94,25 +90,27 @@ public:
 	 * parsing.
 	 * @return A reference instance of the settings object
 	 */
-	inline settings_type& getSettings(void){ return(this->settings); }
+	inline settings_type& GetSettings(void){ return(this->settings); }
+	inline const settings_type& GetSettings(void) const{ return(this->settings); }
+
 
 	/**<
 	 * Retrieve the current filter settings for the variant reader. This
 	 * object controls the pointers to filter applied to each variant.
 	 * @return A reference instance of the filter object
 	 */
-	inline variant_filter_type& getFilterSettings(void){ return(this->variant_filters); }
+	inline variant_filter_type& GetFilterSettings(void){ return(this->variant_filters); }
 
 	// Basic accessors
-	inline header_type& getGlobalHeader(void){ return(this->global_header); }
-	inline const header_type& getGlobalHeader(void) const{ return(this->global_header); }
-	inline footer_type& getGlobalFooter(void){ return(this->global_footer); }
-	inline const footer_type& getGlobalFooter(void) const{ return(this->global_footer); }
-	inline index_type& getIndex(void){ return(this->index); }
-	inline const index_type& getIndex(void) const{ return(this->index); }
-	inline size_t getFilesize(void) const{ return(this->basic_reader.filesize_); }
-	inline variant_container_type& getCurrentBlock(void){ return(this->variant_container); }
-	inline const variant_container_type& getCurrentBlock(void) const{ return(this->variant_container); }
+	inline header_type& GetGlobalHeader(void){ return(this->global_header); }
+	inline const header_type& GetGlobalHeader(void) const{ return(this->global_header); }
+	inline footer_type& GetGlobalFooter(void){ return(this->global_footer); }
+	inline const footer_type& GetGlobalFooter(void) const{ return(this->global_footer); }
+	inline index_type& GetIndex(void){ return(this->index); }
+	inline const index_type& GetIndex(void) const{ return(this->index); }
+	inline size_t GetFilesize(void) const{ return(this->basic_reader.filesize_); }
+	inline variant_container_type& GetCurrentContainer(void){ return(this->variant_container); }
+	inline const variant_container_type& GetCurrentContainer(void) const{ return(this->variant_container); }
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -131,7 +129,7 @@ public:
 		this->basic_reader.filename_ = filename;
 		this->settings.input = filename;
 		if(settings.keychain_file.size()){
-			if(this->loadKeychainFile() == false)
+			if(this->LoadKeychainFile() == false)
 				return false;
 		}
 		return(this->open());
@@ -151,14 +149,14 @@ public:
 	 * @param position
 	 * @return
 	 */
-	bool seektoBlock(const U32 position);
+	bool SeektoBlock(const U32 position);
 
 	/**<
 	 * Not implemented
 	 * @param chromosome_name
 	 * @return
 	 */
-	bool seekToBlockChromosome(const std::string& chromosome_name);
+	bool SeekToBlockChromosome(const std::string& chromosome_name);
 
 	/**<
 	 * Not implemented
@@ -167,7 +165,7 @@ public:
 	 * @param to_bp_position
 	 * @return
 	 */
-	bool seekToBlockChromosome(const std::string& chromosome_name, const U32 from_bp_position, const U32 to_bp_position);
+	bool SeekToBlockChromosome(const std::string& chromosome_name, const U32 from_bp_position, const U32 to_bp_position);
 
 	/**<
 	 * Get the next YON block in-order
@@ -190,13 +188,13 @@ public:
 	 * @param blockID
 	 * @return
 	 */
-	bool seek_to_block(const U32& blockID);
+	bool SeekBlock(const U32& blockID);
 
 	U64 OutputVcf(void);
 	U64 OutputVcfLinear(void);
 	U64 OutputVcfSearch(void);
-	void OuputVcfWrapper(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
-	void OutputInfoVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
+	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;
+	void OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const;
 	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
@@ -208,8 +206,8 @@ public:
 	U64 outputVCF(void);
 
 	// Filter interval intersection and dummy version
-	inline bool filterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
-	inline bool filterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.find_overlaps(meta_entry).size()); }
+	inline bool FilterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
+	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.find_overlaps(meta_entry).size()); }
 
 	// Calculations
 	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
@@ -220,7 +218,7 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	inline bool addIntervals(std::vector<std::string>& interval_strings){
+	inline bool AddIntervals(std::vector<std::string>& interval_strings){
 		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
 	}
 
@@ -230,7 +228,7 @@ public:
 	 * @param path
 	 * @return
 	 */
-	bool loadKeychainFile(void){
+	bool LoadKeychainFile(void){
 		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
 		if(!keychain_reader.good()){
 			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
@@ -249,7 +247,7 @@ public:
 	 *
 	 * @param stream
 	 */
-	void printHeaderVCF(std::ostream& stream = std::cout){
+	void PrintHeaderVCF(std::ostream& stream = std::cout){
 		this->global_header.literals_ += "##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
 		this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
 		                             +   SSLeay_version(SSLEAY_VERSION) + ","
@@ -257,7 +255,7 @@ public:
 		                             +  "; timestamp=" + tachyon::utility::datetime() + "\n";
 
 		this->global_header.literals_ += "##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		this->global_header.literals_ += this->getSettings().get_settings_string();
+		this->global_header.literals_ += this->GetSettings().get_settings_string();
 		this->global_header.literals_ += '\n';
 
 		this->global_header.PrintVcfHeader(stream);

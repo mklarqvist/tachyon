@@ -115,17 +115,17 @@ int stats(int argc, char** argv){
 	*/
 
 	U32 block_counter = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().GetNumberSamples());
+	std::vector<tachyon::core::TsTvObject> global_titv(reader.GetGlobalHeader().GetNumberSamples());
 	while(reader.NextBlock()){
 		//reader.getTiTVRatios(global_titv);
 		//reader.getGenotypeSummary(std::cout);
-		std::cerr << block_counter++ << "/" << reader.getIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.getIndex().size() << std::endl;
+		std::cerr << block_counter++ << "/" << reader.GetIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.GetIndex().size() << std::endl;
 		timer.Start();
 	}
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.getGlobalHeader().samples_[i] << '\t' << global_titv[i] << '\n';
+		std::cout << reader.GetGlobalHeader().samples_[i] << '\t' << global_titv[i] << '\n';
 	}
 
 	return 0;
