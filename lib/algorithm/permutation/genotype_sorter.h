@@ -1,7 +1,6 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "core/genotype_summary.h"
 #include "core/genotypes.h"
 #include "io/vcf_utils.h"
 

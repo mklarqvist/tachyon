@@ -23,7 +23,6 @@
 #include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/genotype_object.h"
-#include "core/variant_site_annotation.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_objects.h"
@@ -60,8 +59,6 @@ private:
 	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
-	typedef containers::GenotypeSummary            genotype_summary_type;
-	typedef containers::VariantSiteAnnotation      site_annotation_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<U32, S64>          interval_type;
 	typedef io::BasicReader                        basic_reader_type;
@@ -270,143 +267,7 @@ public:
 	//<----------------- EXAMPLE FUNCTIONS -------------------------->
 
 
-	std::vector<double> calculateStrandBiasAlleles(const meta_entry_type& meta, const genotype_summary_type& genotype_summary, const bool phred_scale = true) const{
-		std::vector<double> strand_bias_p_values(meta.n_alleles);
-		double fisher_left_p, fisher_right_p, fisher_twosided_p;
-
-		kt_fisher_exact(
-		genotype_summary.vectorA_[2], // A: Allele on forward strand
-		genotype_summary.vectorB_[2], // B: Allele on reverse strand
-		genotype_summary.alleleCountA() - (genotype_summary.vectorA_[2]), // C: Not allele on forward strand
-		genotype_summary.alleleCountB() - (genotype_summary.vectorB_[2]), // D: Not allele on reverse strand
-		&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
-
-		if(phred_scale) strand_bias_p_values[0] = std::abs(-10 * log10(fisher_twosided_p));
-		else strand_bias_p_values[0] = fisher_twosided_p;
-
-		// If n_alleles = 2 then they are identical because of symmetry
-		if(meta.n_alleles > 2){
-			for(U32 p = 1; p < meta.n_alleles; ++p){
-				kt_fisher_exact(
-				genotype_summary.vectorA_[2+p], // A: Allele on forward strand
-				genotype_summary.vectorB_[2+p], // B: Allele on reverse strand
-				genotype_summary.alleleCountA() - (genotype_summary.vectorA_[2+p]), // C: Not allele on forward strand
-				genotype_summary.alleleCountB() - (genotype_summary.vectorB_[2+p]), // D: Not allele on reverse strand
-				&fisher_left_p, &fisher_right_p, &fisher_twosided_p);
-
-				if(phred_scale) strand_bias_p_values[p] = std::abs(-10 * log10(fisher_twosided_p));
-				else strand_bias_p_values[p] = fisher_twosided_p;
-			}
-		}
-		return(strand_bias_p_values);
-	}
-
-	void getGenotypeSummary(buffer_type& buffer, const U32& position, objects_type& objects) const{
-		if((this->block_settings.load_static & YON_BLK_BV_ALLELES) == false || (this->block_settings.load_static & YON_BLK_BV_GT_INT8) == false || (this->block_settings.load_static & YON_BLK_BV_CONTROLLER) == false || (this->block_settings.load_static & YON_BLK_BV_ID_INFO) == false){
-			std::cerr << utility::timestamp("ERROR") << "Cannot run function without loading: SET-MEMBERSHIP, GT, REF or ALT, CONTIG or POSITION..." << std::endl;
-			return;
-		}
-
-		if(buffer.back() != ';' && buffer.back() != '\t') buffer += ';';
-
-		//objects_type objects;
-		//this->loadObjects(objects);
-		//U32 n_variants_parsed = 0;
-
-		//for(U32 i = 0; i < objects.genotypes->size(); ++i){
-			if(objects.meta_container->at(position).IsDiploid() == false){
-				std::cerr << "is not diploid" << std::endl;
-				return;
-			}
-
-			// If set membership is -1 then calculate all fields
-			// Set target FLAG set to all ones; update with actual values if they exist
-			U16 target_flag_set = 65535;
-			//if(objects.meta_container->at(position).GetInfoPatternId() != -1)
-			//	target_flag_set = objects.additional_info_execute_flag_set[objects.meta_container->at(position).GetInfoPatternId()];
-
-			// Get genotype summary data
-			objects.genotype_container->at(position).getSummary(*objects.genotype_summary);
-			std::vector<double> hwe_p = objects.genotype_summary->calculateHardyWeinberg(objects.meta_container->at(position));
-			std::vector<double> af    = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
-
-
-			//utility::to_vcf_string(stream, this->block_settings.custom_delimiter_char, meta, this->global_header);
-
-			if(target_flag_set & 1){
-				std::vector<double> allele_bias = this->calculateStrandBiasAlleles(objects.meta_container->at(position), *objects.genotype_summary, true);
-				buffer += "FS_A=";
-				buffer.AddReadble(allele_bias[0]);
-				for(U32 p = 1; p < allele_bias.size(); ++p){
-					buffer += ',';
-					buffer.AddReadble(allele_bias[p]);
-				}
-			}
-
-			if(target_flag_set & 2){
-				buffer += ";AN=";
-				buffer.AddReadble(objects.genotype_summary->alleleCount());
-			}
-
-			if(target_flag_set & 4){
-				if(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]){
-					buffer += ";NM=";
-					buffer.AddReadble(objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1]);
-				}
-			}
-
-			if(target_flag_set & 8){
-				if(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]){
-					buffer += ";NPM=";
-					buffer.AddReadble(objects.genotype_summary->vectorA_[0] + objects.genotype_summary->vectorB_[0]);
-				}
-			}
-
-			if(target_flag_set & 16){
-				buffer += ";AC=";
-				buffer.AddReadble(objects.genotype_summary->vectorA_[2] + objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
-					buffer += ",";
-					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p] + objects.genotype_summary->vectorB_[2+p]);
-				}
-			}
-
-			if(target_flag_set & 32){
-				buffer += ";AC_FWD=";
-				buffer.AddReadble(objects.genotype_summary->vectorA_[2]);
-				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
-					buffer += ",";
-					buffer.AddReadble(objects.genotype_summary->vectorA_[2+p]);
-				}
-			}
-
-			if(target_flag_set & 64){
-				buffer += ";AC_REV=";
-				buffer.AddReadble(objects.genotype_summary->vectorB_[2]);
-				for(U32 p = 1; p < objects.meta_container->at(position).n_alleles; ++p){
-					buffer += ",";
-					buffer.AddReadble(objects.genotype_summary->vectorB_[2+p]);
-				}
-			}
-
-			if(target_flag_set & 128){
-				buffer += ";AF=";
-				buffer.AddReadble(af[0]);
-				for(U32 p = 1; p < af.size(); ++p){
-					buffer += ",";
-					buffer.AddReadble(af[p]);
-				}
-			}
-
-			if(target_flag_set & 256){
-				buffer += ";HWE_P=";
-				buffer.AddReadble(hwe_p[0]);
-				for(U32 p = 1; p < hwe_p.size(); ++p){
-					buffer += ",";
-					buffer.AddReadble(hwe_p[p]);
-				}
-			}
-
+	/*
 			if(target_flag_set & 512){
 				// Classify
 				buffer += ";VT=";
@@ -417,27 +278,9 @@ public:
 					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), p)];
 				}
 			}
+			*/
 
-			if(target_flag_set & 1024){
-				if(objects.meta_container->at(position).n_alleles > 2) buffer += ";MULTI_ALLELIC";
-			}
 
-			// Population inbreeding coefficient: F = (Hexp - Hobs) /Hexp
-			if(target_flag_set & 2048){
-				// Allele frequency of A
-				const double p = ((double)2*objects.genotype_summary->matrix_[2][2] + objects.genotype_summary->matrix_[2][3] + objects.genotype_summary->matrix_[3][2]) / (2*objects.genotype_summary->genotypeCount());
-				// Genotype frequency of heterozyotes
-				const double pg = ((double)objects.genotype_summary->matrix_[2][3] + objects.genotype_summary->matrix_[3][2]) / objects.genotype_summary->genotypeCount();
-				// Expected heterozygosity
-				const double exp = 2*p*(1-p);
-				// Population inbreeding coefficient: F
-				const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
-				buffer += ";F_PIC=";
-				buffer.AddReadble(f_pic);
-			}
-
-			objects.genotype_summary->clear();
-	}
 
 private:
 	basic_reader_type       basic_reader;

@@ -122,21 +122,20 @@ math::SquareMatrix<double>& GenotypeContainerNploid<T>::comparePairwise(square_m
 
 
 template <class T>
-GenotypeSummary& GenotypeContainerNploid<T>::updateSummary(gt_summary& gt_summary_object) const{
+yon_gt_summary& GenotypeContainerNploid<T>::updateSummary(gt_summary& gt_summary_object) const{
 	//gt_summary_object += *this;
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSummary GenotypeContainerNploid<T>::getSummary(void) const{
+yon_gt_summary GenotypeContainerNploid<T>::getSummary(void) const{
 	gt_summary summary;
 	//summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSummary& GenotypeContainerNploid<T>::getSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object.clear();
+yon_gt_summary& GenotypeContainerNploid<T>::getSummary(gt_summary& gt_summary_object) const{
 	//gt_summary_object += *this;
 	return(gt_summary_object);
 }

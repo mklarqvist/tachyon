@@ -22,9 +22,8 @@ VariantReaderFilters::~VariantReaderFilters(){
 }
 
 bool VariantReaderFilters::filterAlleleFrequency(const_pointer pair, const objects_type& objects, const U32& position) const{
-	const std::vector<double> af = objects.genotype_summary->calculateAlleleFrequency(objects.meta_container->at(position));
-	for(U32 i = 1; i < af.size(); ++i){
-		if(pair->applyFilter(af[i]))
+	for(U32 i = 2; i < objects.genotype_summary->d->n_ac_af; ++i){
+		if(pair->applyFilter(objects.genotype_summary->d->af[i]))
 			return true;
 	}
 	return(false);
@@ -32,8 +31,8 @@ bool VariantReaderFilters::filterAlleleFrequency(const_pointer pair, const objec
 
 
 bool VariantReaderFilters::filterUnseenAlternativeAlleles(const_pointer pair, const objects_type& objects, const U32& position) const{
-	for(U32 i = 0; i < objects.meta_container->at(position).n_alleles; ++i){
-		if(pair->applyFilter(objects.genotype_summary->vectorA_[2+i] + objects.genotype_summary->vectorB_[2+i] == 0))
+	for(U32 i = 2; i < objects.genotype_summary->d->n_ac_af; ++i){
+		if(pair->applyFilter(objects.genotype_summary->d->ac[i] + objects.genotype_summary->d->ac[i] == 0))
 			return true;
 	}
 	return false;

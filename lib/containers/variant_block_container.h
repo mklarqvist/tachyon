@@ -9,7 +9,6 @@
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
 #include "containers/interval_container.h"
-#include "core/variant_site_annotation.h"
 #include "core/variant_reader_objects.h"
 #include "core/variant_record.h"
 
@@ -34,8 +33,6 @@ private:
 	typedef containers::GenotypeContainer        gt_container_type;
 	typedef containers::InfoContainerInterface   info_interface_type;
 	typedef containers::FormatContainerInterface format_interface_type;
-	typedef containers::GenotypeSummary          genotype_summary_type;
-	typedef containers::VariantSiteAnnotation    site_annotation_type;
 	typedef containers::IntervalContainer        interval_container_type;
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
@@ -152,7 +149,6 @@ public:
 private:
 	bool loaded_genotypes;
 	block_type                block_;
-	site_annotation_type      annotations_;
 	const global_header_type* header_;
 	std::vector<int>          info_id_local_loaded;
 	std::vector<int>          format_id_local_loaded;

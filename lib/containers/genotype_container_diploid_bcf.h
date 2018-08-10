@@ -217,22 +217,18 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 */
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSummary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
+yon_gt_summary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
 	gt_summary summary;
-	summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object.clear();
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 

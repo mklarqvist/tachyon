@@ -16,7 +16,7 @@ template <class T> class GenotypeContainerDiploidRLE;
 template <class T> class GenotypeContainerDiploidSimple;
 
 
-class GenotypeContainer{
+class GenotypeContainer {
 private:
     typedef GenotypeContainer          self_type;
     typedef GenotypeContainerInterface value_type;
@@ -29,7 +29,7 @@ private:
     typedef MetaContainer              meta_container_type;
     typedef tachyon::core::MetaEntry   meta_type;
     typedef io::BasicBuffer            buffer_type;
-    typedef containers::GenotypeSummary      gt_summary_type;
+    typedef yon_gt_summary             gt_summary_type;
     typedef VariantBlock               block_type;
 
     typedef yonRawIterator<value_type>       iterator;
@@ -52,22 +52,22 @@ public:
 	inline const_reference at(const U32& position) const{ return(this->__iterators[position]); }
 
 	// Advanced getters
-	inline GenotypeContainerDiploidSimple<BYTE>* getDiploidSimpleByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U16>*  getDiploidSimpleU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U32>*  getDiploidSimpleU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidSimple<U64>*  getDiploidSimpleU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<BYTE>*    getDiploidRLEByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U16>*     getDiploidRLEU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U32>*     getDiploidRLEU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
-	inline GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidSimple<BYTE>* getDiploidSimpleByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidSimple<U16>*  getDiploidSimpleU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidSimple<U32>*  getDiploidSimpleU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidSimple<U64>*  getDiploidSimpleU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidRLE<BYTE>*    getDiploidRLEByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidRLE<U16>*     getDiploidRLEU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidRLE<U32>*     getDiploidRLEU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
-	inline const GenotypeContainerDiploidRLE<U64>*     getDiploidRLEU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<BYTE>* GetDiploidSimpleByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U16>*  GetDiploidSimpleU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U32>*  GetDiploidSimpleU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidSimple<U64>*  GetDiploidSimpleU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<BYTE>*    GetDiploidRLEByte(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U16>*     GetDiploidRLEU16(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U32>*     GetDiploidRLEU32(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
+	inline GenotypeContainerDiploidRLE<U64>*     GetDiploidRLEU64(const U32 position){ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<BYTE>* GetDiploidSimpleByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<BYTE>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U16>*  GetDiploidSimpleU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U16>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U32>*  GetDiploidSimpleU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U32>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidSimple<U64>*  GetDiploidSimpleU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidSimple<U64>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<BYTE>*    GetDiploidRLEByte(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<BYTE>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U16>*     GetDiploidRLEU16(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U16>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U32>*     GetDiploidRLEU32(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U32>*>(&this->__iterators[position])); }
+	inline const GenotypeContainerDiploidRLE<U64>*     GetDiploidRLEU64(const U32 position) const{ return(reinterpret_cast<GenotypeContainerDiploidRLE<U64>*>(&this->__iterators[position])); }
 
 private:
     template <class intrinsic_primitive> inline U32 getNative(const buffer_type& buffer, const U32 position) const{

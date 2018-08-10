@@ -228,7 +228,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 	if(this->HasGenotypes() && (block_settings.load_static & YON_BLK_BV_GT)){
 		objects->loaded_genotypes   = true;
 		objects->genotype_container = new gt_container_type(this->GetBlock(), *objects->meta_container);
-		objects->genotype_summary   = new objects_type::genotype_summary_type(10);
+		objects->genotype_summary   = nullptr;
 	}
 
 	// Format-specific containers. These have to be allocated as double pointers

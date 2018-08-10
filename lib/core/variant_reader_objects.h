@@ -24,7 +24,7 @@ public:
 	typedef containers::GenotypeContainer        gt_container_type;
 	typedef containers::InfoContainerInterface   info_interface_type;
 	typedef containers::FormatContainerInterface format_interface_type;
-	typedef containers::GenotypeSummary          genotype_summary_type;
+	typedef yon_gt_summary                       genotype_summary_type;
 
 public:
 	VariantReaderObjects() :

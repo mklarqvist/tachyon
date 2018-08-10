@@ -79,8 +79,8 @@ public:
 	}
 
 	inline bool filterAlleleCount(const_pointer pair, const objects_type& objects, const U32& position) const{
-		for(U32 i = 1; i < objects.meta_container->at(position).n_alleles; ++i){
-			if(pair->applyFilter(objects.genotype_summary->vectorA_[2+i] + objects.genotype_summary->vectorB_[2+i])){
+		for(U32 i = 2; i < objects.genotype_summary->d->n_ac_af; ++i){
+			if(pair->applyFilter(objects.genotype_summary->d->af[i])){
 				return true;
 			}
 		}
@@ -89,12 +89,12 @@ public:
 
 	// Unused parameter position available in definition to allow a unified pointer definition
 	inline bool filterHasMissingGenotypes(const_pointer pair, const objects_type& objects, const U32& position) const{
-		return(pair->applyFilter(objects.genotype_summary->vectorA_[1]));
+		return(pair->applyFilter((U32)objects.genotype_summary->d->ac[0]));
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
 	inline bool filterMixedPloidy(const_pointer pair, const objects_type& objects, const U32& position) const{
-		return(pair->applyFilter((objects.genotype_summary->vectorA_[1] + objects.genotype_summary->vectorB_[1])));
+		return(pair->applyFilter((U32)objects.genotype_summary->d->ac[1]));
 	}
 
 	inline bool filterReferenceAllele(const_pointer pair, const objects_type& objects, const U32& position) const{

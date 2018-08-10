@@ -6,7 +6,6 @@
 #include <cassert>
 #include <thread>
 
-#include "core/genotype_summary.h"
 #include "containers/variant_block.h"
 #include "core/variant_controller.h"
 #include "core/genotypes.h"

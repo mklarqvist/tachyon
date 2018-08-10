@@ -341,22 +341,18 @@ void GenotypeContainerDiploidSimple<return_type>::getObjects(const U64& n_sample
 */
 
 template <class return_type>
-GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::updateSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidSimple<return_type>::updateSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
 template <class return_type>
-GenotypeSummary GenotypeContainerDiploidSimple<return_type>::getSummary(void) const{
+yon_gt_summary GenotypeContainerDiploidSimple<return_type>::getSummary(void) const{
 	gt_summary summary;
-	summary += *this;
 	return(summary);
 }
 
 template <class return_type>
-GenotypeSummary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object.clear();
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidSimple<return_type>::getSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 

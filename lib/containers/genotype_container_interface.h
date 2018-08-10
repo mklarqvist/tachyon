@@ -6,7 +6,6 @@
 #include "math/square_matrix.h"
 #include "core/genotypes.h"
 #include "core/genotype_object.h"
-#include "core/genotype_summary.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,7 +18,7 @@ public:
     typedef core::MetaEntry               meta_type;
     typedef core::VariantController       hot_controller_type;
     typedef core::GTObject                gt_object;
-    typedef GenotypeSummary               gt_summary;
+    typedef yon_gt_summary                gt_summary;
     typedef math::SquareMatrix<double>    square_matrix_type;
     typedef core::TsTvObject              ts_tv_object_type;
 

@@ -368,11 +368,8 @@ U64 VariantReader::OutputVcfLinear(void){
 			if(this->variant_filters.filter(*objects, i) == false)
 				continue;
 
-			yon_gt_summary sum(entries[i].gt->m, entries[i].gt->n_allele);
-			sum += *entries[i].gt;
-			sum.LazyEvaluate();
-
-			sum.d->PrintVcf(output_buffer);
+			entries[i].gt->EvaluateSummary();
+			entries[i].gt->gt_sum->d->PrintVcf(output_buffer);
 			output_buffer += '\n';
 
 			if(output_buffer.size() > 65536){

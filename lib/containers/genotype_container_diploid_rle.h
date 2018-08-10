@@ -355,22 +355,18 @@ void GenotypeContainerDiploidRLE<T>::getObjects(const U64& n_samples,
 */
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidRLE<T>::updateSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSummary GenotypeContainerDiploidRLE<T>::getSummary(void) const{
+yon_gt_summary GenotypeContainerDiploidRLE<T>::getSummary(void) const{
 	gt_summary summary;
-	summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object.clear();
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidRLE<T>::getSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
