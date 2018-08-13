@@ -294,7 +294,10 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 			//
 			// First calculate the FORMAT:GT field for this variant site.
 			// Case when the only available FORMAT field is the GT field.
-			if(n_format_avail == 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+			if(n_format_avail == 1 && entry.is_loaded_gt &&
+			   entry.meta->controller.gt_available &&
+			   (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
+			{
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
@@ -309,7 +312,10 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 			}
 			// Case when there are > 1 Vcf Format fields and the GT field
 			// is available.
-			else if(n_format_avail > 1 && entry.is_loaded_gt && entry.meta->controller.gt_available){
+			else if(n_format_avail > 1 && entry.is_loaded_gt &&
+			        entry.meta->controller.gt_available &&
+			        (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
+			{
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
@@ -367,17 +373,29 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 }
 
 U64 VariantReader::OutputVcfLinear(void){
-
 	this->variant_container.AllocateGenotypeMemory();
+
+	// temp
+	tachyon::yon_occ occ;
+	if(occ.ReadTable("/home/mk21/Downloads/1kgp3_grp.ped", this->GetGlobalHeader(), '\t') == false){
+		return(0);
+	}
 
 	while(this->NextBlock()){
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
+		// If occ table is built.
+		objects->occ = &occ;
+		objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
+
+			// Each entry evaluate occ if available.
+			entries[i].occ = objects->occ;
+			entries[i].EvaluateOcc();
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);
 		}
@@ -385,12 +403,15 @@ U64 VariantReader::OutputVcfLinear(void){
 		std::cout.write(output_buffer.data(), output_buffer.size());
 		output_buffer.reset();
 		delete [] entries;
+		objects->occ = nullptr;
 		delete objects;
 	}
 	return 0;
 }
 
 U64 VariantReader::OutputVcfSearch(void){
+	this->variant_container.AllocateGenotypeMemory();
+
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 

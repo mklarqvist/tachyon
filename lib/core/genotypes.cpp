@@ -5,8 +5,14 @@ namespace tachyon{
 yon_gt::~yon_gt(){
 	delete [] d_bcf;
 	delete [] d_bcf_ppa,
-		delete [] rcds;
+	delete [] rcds;
 	delete [] d_exp;
+	if(d_occ != nullptr){
+		for(U32 i = 0; i < this->n_o; ++i)
+			delete [] d_occ[i];
+	}
+	delete [] n_occ;
+	delete [] d_occ;
 	delete itree;
 }
 

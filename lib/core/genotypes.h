@@ -30,6 +30,10 @@ namespace tachyon{
 // sentinel node never occurs in this encoding type.
 const uint8_t YON_GT_RLE_RECODE[3] = {2, 3, 0};
 
+// Vcf:INFO names for fields annotated when triggering
+// annotation of genotypes.
+const std::vector< std::string > YON_GT_ANNOTATE_FIELDS = {"NM","NPM","AN","HWE_P","AC","AF","AC_P","FS_A","F_PIC","HET","MULTI_ALLELIC"};
+
 // Basic structure that maintains the permutation
 // order of the samples in relation to the global header.
 // This object is required if you want to use individual
@@ -231,24 +235,27 @@ struct yon_gt {
              global_phase : 1;
     uint8_t  shift;
     uint8_t  p, m, method; // bytes per entry, base ploidy, base method
-    uint32_t n_s, n_i;     // number samples, number of entries
+    uint32_t n_s, n_i, n_o;     // number samples, number of entries
     uint8_t  n_allele;
     yon_gt_ppa* ppa; // pointer to ppa
+    std::vector< std::vector<uint32_t> >* occ; // pointer to occ
     uint8_t* data; // pointer to data
     uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
     uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
-    yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be
+    yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
     yon_gt_rcd* rcds; // lazy interpreted internal records
+    uint32_t* n_occ;
+    yon_gt_rcd** d_occ; // lazy evaluation of occ table
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
-    // todo: lookup table
 
     typedef yonRawIterator<yon_gt_rcd>       iterator;
 	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
 
-    yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0),
-               n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr), d_bcf_ppa(nullptr),
-			   d_exp(nullptr), rcds(nullptr), itree(nullptr), dirty(false)
+    yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
+               n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
+			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_occ(nullptr), d_occ(nullptr),
+			   itree(nullptr), dirty(false)
     {}
 
     ~yon_gt();
@@ -629,9 +636,13 @@ struct yon_gt_summary_rcd {
 			}
 		}
 
-		for(U32 p = 0; p < this->n_ploidy; ++p){
-			buffer += ";AC_P"; buffer.AddReadble((U32)p+1); buffer += '=';
-			buffer.AddReadble((U64)this->ac_p[p][0]);
+		buffer += ";AC_P=";
+		buffer.AddReadble((U64)this->ac_p[0][2]);
+		for(U32 i = 3; i < this->n_ac_af; ++i){
+			buffer += ','; buffer.AddReadble((U64)this->ac_p[0][i]);
+		}
+
+		for(U32 p = 1; p < this->n_ploidy; ++p){
 			for(U32 i = 2; i < this->n_ac_af; ++i){
 				buffer += ','; buffer.AddReadble((U64)this->ac_p[p][i]);
 			}

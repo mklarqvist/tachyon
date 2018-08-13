@@ -360,6 +360,12 @@ public:
 		return(nullptr);
 	}
 
+	const int32_t GetSampleId(const std::string& name) const {
+		map_type::const_iterator it = this->samples_map_.find(name);
+		if(it != this->samples_map_.end()) return(it->second);
+		return(-1);
+	}
+
 	bool BuildReverseMaps(void){
 		this->contigs_reverse_map_.clear();
 		this->info_fields_reverse_map_.clear();
@@ -384,6 +390,7 @@ public:
 		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_map_[this->info_fields_[i].id] = i;
 		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_map_[this->format_fields_[i].id] = i;
 		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) this->filter_fields_map_[this->filter_fields_[i].id] = i;
+		for(uint32_t i = 0; i < this->samples_.size(); ++i)       this->samples_map_[this->samples_[i]] = i;
 
 		return true;
 	}
@@ -430,6 +437,145 @@ public:
 		}
 
 		return(hdr);
+	}
+
+	void AddGenotypeAnnotationFields(void){
+		//"NM","NPM","AN","HWE_P","AC","AF","AC_P","FS_A","F_PIC","HET","MULTI_ALLELIC"
+
+		const YonInfo* info = this->GetInfo("NM");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = "NM";
+			nm.number = "1";
+			nm.type = "Integer";
+			nm.yon_type = YON_VCF_HEADER_INTEGER;
+			nm.description = "NM";
+			nm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo("NPM");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "NPM";
+			npm.number = "1";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "NPM";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("AN");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "AN";
+			npm.number = "1";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "AN";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("HWE_P");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "HWE_P";
+			npm.number = "1";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "HWE_P";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("AC");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "AC";
+			npm.number = ".";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "AC";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("AF");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "AF";
+			npm.number = ".";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "AF";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("AC_P");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "AC_P";
+			npm.number = ".";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "AC_P";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("FS_A");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = "FS_A";
+			npm.number = ".";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "FS_A";
+			npm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo("F_PIC");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = "F_PIC";
+			nm.number = "1";
+			nm.type = "Float";
+			nm.yon_type = YON_VCF_HEADER_FLOAT;
+			nm.description = "F_PIC";
+			nm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo("HET");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = "HET";
+			nm.number = "1";
+			nm.type = "Float";
+			nm.yon_type = YON_VCF_HEADER_FLOAT;
+			nm.description = "HET";
+			nm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo("MULTI_ALLELIC");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = "MULTI_ALLELIC";
+			nm.number = "1";
+			nm.type = "Flag";
+			nm.yon_type = YON_VCF_HEADER_FLAG;
+			nm.description = "MULTI_ALLELIC";
+			nm.idx = this->info_fields_.size();
+			this->info_fields_.push_back(nm);
+		}
+
+		this->BuildMaps();
+		this->BuildReverseMaps();
 	}
 
 	// Append a string to the literal string

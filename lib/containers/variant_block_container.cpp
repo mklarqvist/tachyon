@@ -12,16 +12,37 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	this->format_id_local_loaded.clear();
 	this->format_map_global.clear();
 
+	// Todo: if performing genotype annotating then we have to remove
+	//       fields that are annotate by tachyon to prevent duplicates
+	//       (e.g. AC or AF already existing).
+	std::unordered_map<uint32_t, std::string> blocked_list;
+	if(settings.annotate_extra){
+		for(U32 i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
+			const YonInfo* info = this->header_->GetInfo(YON_GT_ANNOTATE_FIELDS[i]);
+			if(info != nullptr){
+				blocked_list[info->idx] = YON_GT_ANNOTATE_FIELDS[i];
+				//std::cerr << "Add to blocked list: " << YON_GT_ANNOTATE_FIELDS[i] << "@" << info->idx << std::endl;
+			}
+		}
+	}
+
 	// Parse Info. If all Info containers are loaded then we simply copy
 	// the order in which they occur. If we are provided with a vector
 	// of target global identifiers we have to first map these to the
 	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_INFO){
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
-			this->info_id_local_loaded.push_back(i);
-			this->info_id_global_loaded.push_back(this->block_.footer.info_offsets[i].data_header.global_key);
-			this->info_map_global[this->info_id_global_loaded[i]] = i;
+			const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->block_.footer.info_offsets[i].data_header.global_key);
+			if(it == blocked_list.end()){
+				//std::cerr << "adding not blocked" << std::endl;
+				this->info_id_local_loaded.push_back(i);
+				this->info_id_global_loaded.push_back(this->block_.footer.info_offsets[i].data_header.global_key);
+				this->info_map_global[this->info_id_global_loaded[i]] = i;
+			} else {
+				//std::cerr << "skipping blocked" << std::endl;
+			}
 		}
+		//std::cerr << this->info_id_local_loaded.size() << "," << this->info_id_global_loaded.size() << std::endl;
 	} else {
 		std::vector<int> local_ids;
 		std::vector<int> global_ids;
@@ -29,10 +50,13 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 			// Searches for the global Vcf:INFO idx value in the block. If
 			// it is found then return that local idx otherwise -1. If the
 			// idx is found store it in the loaded idx vector.
-			const int local = this->block_.GetInfoPosition(settings.info_id_global[i]);
-			if(local >= 0){
-				local_ids.push_back(local);
-				global_ids.push_back(settings.info_id_global[i]);
+			const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->block_.footer.info_offsets[i].data_header.global_key);
+			if(it == blocked_list.end()){
+				const int local = this->block_.GetInfoPosition(settings.info_id_global[i]);
+				if(local >= 0){
+					local_ids.push_back(local);
+					global_ids.push_back(settings.info_id_global[i]);
+				}
 			}
 		}
 
@@ -88,10 +112,10 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 		}
 	}
 
-	return(this->ParseLoadedPatterns());
+	return(this->ParseLoadedPatterns(settings));
 }
 
-bool VariantBlockContainer::ParseLoadedPatterns(){
+bool VariantBlockContainer::ParseLoadedPatterns(block_settings_type& settings){
 	// Clear previous information (if any).
 	this->info_patterns_local.clear();
 	this->format_patterns_local.clear();
@@ -100,15 +124,33 @@ bool VariantBlockContainer::ParseLoadedPatterns(){
 
 	// Iterate over Info patterns.
 	if(this->info_id_global_loaded.size()){
-		for(U32 p = 0; p < this->block_.footer.n_info_patterns; ++p){
-			this->info_patterns_local[p] = this->block_.IntersectInfoPatterns(this->info_id_global_loaded, p);
+		// If all Vcf::INFO fields are desired then return them
+		// in the stored order to guarantee bit-exactness. Otherwise
+		// return in the order requested.
+		if((settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
+			for(U32 p = 0; p < this->block_.footer.n_info_patterns; ++p){
+				this->info_patterns_local[p] = this->block_.footer.info_patterns[p].pattern;
+			}
+		} else { // Return in requested order.
+			for(U32 p = 0; p < this->block_.footer.n_info_patterns; ++p){
+				this->info_patterns_local[p] = this->block_.IntersectInfoPatterns(this->info_id_global_loaded, p);
+			}
 		}
 	}
 
 	// Iterate over Format patterns.
 	if(this->format_id_global_loaded.size()){
-		for(U32 p = 0; p < this->block_.footer.n_format_patterns; ++p){
-			this->format_patterns_local[p] = this->block_.IntersectFormatPatterns(this->format_id_global_loaded, p);
+		if(settings.load_static & YON_BLK_BV_FORMAT){
+			// If all Vcf::FORMAT fields are desired then return them
+			// in the stored order to guarantee bit-exactness. Otherwise
+			// return in the order requested.
+			for(U32 p = 0; p < this->block_.footer.n_format_patterns; ++p){
+				this->format_patterns_local[p] = this->block_.footer.format_patterns[p].pattern;
+			}
+		} else {
+			for(U32 p = 0; p < this->block_.footer.n_format_patterns; ++p){
+				this->format_patterns_local[p] = this->block_.IntersectFormatPatterns(this->format_id_global_loaded, p);
+			}
 		}
 	}
 
@@ -139,7 +181,9 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 		// this data.
 		if(this->block_.header.controller.hasGTPermuted && this->block_.header.controller.hasGT){
 			stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.offsets[YON_BLK_PPA].data_header.offset);
-			this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_PPA], this->block_.base_containers[YON_BLK_PPA]);
+			this->block_.LoadContainerSeek(stream,
+			                               this->block_.footer.offsets[YON_BLK_PPA],
+			                               this->block_.base_containers[YON_BLK_PPA]);
 
 			this->block_.gt_ppa = new yon_gt_ppa;
 			this->block_.gt_ppa->n_samples = this->header_->GetNumberSamples();
@@ -149,14 +193,16 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	// Load base meta containers.
 	for(U32 i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
 		if(settings.load_static & (1 << i)){
-			this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[i], this->block_.base_containers[i]);
+			this->block_.LoadContainerSeek(stream,
+			                               this->block_.footer.offsets[i],
+			                               this->block_.base_containers[i]);
 		}
 	}
 
 	// Load genotype containers. At the moment, genotype containers cannot be loaded
 	// individually by using this wrapper routine. If you wish to load these separately
 	// you will have to do so manually.
-	if(settings.load_static & YON_BLK_BV_GT){
+	if((settings.load_static & YON_BLK_BV_GT) || (settings.load_static & YON_BLK_BV_FORMAT)){
 		this->loaded_genotypes = true;
 		this->block_.LoadContainerSeek(stream, this->block_.footer.offsets[YON_BLK_GT_INT8], this->block_.base_containers[YON_BLK_GT_INT8]);
 		this->block_.LoadContainer(stream, this->block_.footer.offsets[YON_BLK_GT_INT16],    this->block_.base_containers[YON_BLK_GT_INT16]);
@@ -178,17 +224,21 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	// conditions below in terms of outcome. However, the first case guarantees
 	// that data is loaded linearly from disk as this can be guaranteed when loading
 	// all available data. There is no such guarntees for the second case.
-	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO)){
+	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
 		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
-			this->block_.LoadContainer(stream, this->block_.footer.info_offsets[i], this->block_.info_containers[i]);
+			this->block_.LoadContainer(stream,
+			                           this->block_.footer.info_offsets[i],
+			                           this->block_.info_containers[i]);
 		}
 	}
 	// If we have a user-supplied list of identifiers parsed above.
 	else {
 		for(U32 i = 0; i < this->info_id_local_loaded.size(); ++i){
-			this->block_.LoadContainerSeek(stream, this->block_.footer.info_offsets[this->info_id_local_loaded[i]], this->block_.info_containers[this->info_id_local_loaded[i]]);
+			this->block_.LoadContainerSeek(stream,
+			                               this->block_.footer.info_offsets[this->info_id_local_loaded[i]],
+			                               this->block_.info_containers[this->info_id_local_loaded[i]]);
 		}
 
 	}
@@ -200,7 +250,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	if(this->block_.footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
 		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
-			this->block_.LoadContainer(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
+			this->block_.LoadContainerSeek(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
 		}
 		// At this point the stream should be located at the end-of-block
 		// marker as the Format information is stored last.

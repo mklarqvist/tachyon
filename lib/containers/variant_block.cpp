@@ -214,7 +214,10 @@ U64 VariantBlock::DetermineCompressedSize(void) const{
 	return(total);
 }
 
-void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format){
+void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic,
+                                          import_stats_type& stats_info,
+                                          import_stats_type& stats_format)
+{
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		stats_basic[1] += this->base_containers[YON_BLK_PPA];
 

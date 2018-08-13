@@ -7,6 +7,7 @@
 #include "containers/info_container_string.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
+#include "occ.h"
 
 namespace tachyon{
 
@@ -26,6 +27,7 @@ struct yon1_t {
 		meta(nullptr),
 		gt(nullptr),
 		gt_sum(nullptr),
+		occ(nullptr),
 		info(nullptr),
 		fmt(nullptr),
 		info_containers(nullptr),
@@ -45,6 +47,7 @@ struct yon1_t {
 		delete [] this->format_containers;
 		delete this->gt;
 		delete this->gt_sum;
+		// Do not delete occ. It is always borrowed.
 	}
 
 	bool EvaluateSummary(bool lazy_evaluate = true){
@@ -60,6 +63,44 @@ struct yon1_t {
 		return true;
 	}
 
+	bool EvaluateOcc(){
+		assert(this->gt != nullptr);
+		assert(occ != nullptr);
+
+		this->gt->n_o   = occ->occ.size();
+		this->gt->n_occ = new uint32_t[this->gt->n_o];
+		this->gt->d_occ = new yon_gt_rcd*[this->gt->n_o];
+
+		for(U32 i = 0; i < this->gt->n_o; ++i){
+			this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
+
+			uint32_t cum_sum  = 0;
+			uint32_t n_offset = 0;
+			for(U32 j = 0; j < this->gt->n_i; ++j){
+				const uint32_t to   = this->occ->occ[i][cum_sum + this->gt->rcds[j].run_length];
+				const uint32_t from = this->occ->occ[i][cum_sum];
+				if(to - from != 0){
+					// Allocate memory for alleles.
+					this->gt->d_occ[i][n_offset].allele = new uint8_t[this->gt->m];
+
+					// Copy allelic data from recerence rcd.
+					for(U32 k = 0; k < this->gt->m; ++k){
+						this->gt->d_occ[i][n_offset].allele[k] = this->gt->rcds[j].allele[k];
+					}
+
+					// Set run-length representation.
+					this->gt->d_occ[i][n_offset].run_length = to-from;
+						assert(n_offset < this->gt->n_i);
+						++n_offset;
+					}
+				cum_sum += this->gt->rcds[j].run_length;
+				assert(cum_sum == this->gt->n_s);
+			}
+			this->gt->n_occ[i] = n_offset;
+		}
+		return(true);
+	}
+
 	bool is_dirty; // if data has been modified in the raw buffer but not the containers
 	bool is_loaded_meta;
 	bool is_loaded_gt;
@@ -68,6 +109,7 @@ struct yon1_t {
 	core::MetaEntry* meta;
 	yon_gt* gt;
 	yon_gt_summary* gt_sum;
+	yon_occ* occ;
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
 	containers::InfoContainerInterface** info_containers;

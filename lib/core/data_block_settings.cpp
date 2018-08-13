@@ -37,11 +37,18 @@ DataBlockSettings& DataBlockSettings::LoadDisplayWrapper(bool set, const int fie
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::LoadCore(bool display){
+DataBlockSettings& DataBlockSettings::LoadCore(const bool set){
 	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
 		const U32 bv = 1 << i;
-		this->LoadWrapper(true, bv);
-		this->DisplayWrapper(display, bv);
+		this->LoadWrapper(set, bv);
+	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayCore(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->DisplayWrapper(set, bv);
 	}
 	return(*this);
 }
@@ -49,9 +56,16 @@ DataBlockSettings& DataBlockSettings::LoadCore(bool display){
 DataBlockSettings& DataBlockSettings::LoadAll(const bool set){
 	if(set){
 		this->load_static = std::numeric_limits<U32>::max();
-		this->display_static = std::numeric_limits<U32>::max();
 	} else {
 		this->load_static = 0;
+	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAll(const bool set){
+	if(set){
+		this->display_static = std::numeric_limits<U32>::max();
+	} else {
 		this->display_static = 0;
 	}
 	this->display_alt = set;
@@ -65,6 +79,14 @@ DataBlockSettings& DataBlockSettings::LoadAllMeta(const bool set){
 		const U32 bv = 1 << i;
 		this->LoadWrapper(set, i);
 	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllMeta(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->DisplayWrapper(set, i);
+	}
 
 	this->display_alt = set;
 	this->display_ref = set;
@@ -77,6 +99,15 @@ DataBlockSettings& DataBlockSettings::LoadAllFilter(const bool set){
 	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
 	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
 	this->LoadWrapper(set, YON_BLK_BV_CONTROLLER);
+
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllFilter(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_ID_INFO);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->DisplayWrapper(set, YON_BLK_BV_CONTROLLER);
 
 	this->display_filter  = true;
 	return(*this);
@@ -108,6 +139,12 @@ DataBlockSettings& DataBlockSettings::LoadGenotypes(const bool set){
 	return(*this);
 }
 
+DataBlockSettings& DataBlockSettings::DisplayGenotypes(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_GT);
+	this->DisplayWrapper(set, YON_BLK_BV_PPA);
+	return(*this);
+}
+
 DataBlockSettings& DataBlockSettings::LoadPermutationArray(const bool set){
 	this->LoadWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
@@ -117,6 +154,17 @@ DataBlockSettings& DataBlockSettings::LoadAllFormat(const bool set){
 	this->LoadGenotypes(set);
 	this->LoadWrapper(set, YON_BLK_BV_FORMAT); // all format
 	this->LoadCore(set);
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllFormat(const bool set){
+	this->DisplayGenotypes(set);
+	this->DisplayWrapper(set, YON_BLK_BV_FORMAT); // all format
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllInfo(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_INFO);
 	return(*this);
 }
 
@@ -141,6 +189,14 @@ DataBlockSettings& DataBlockSettings::LoadMinimumVcf(const bool set){
 	this->LoadWrapper(set, YON_BLK_BV_ID_INFO);
 	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
 	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->LoadWrapper(set, YON_BLK_BV_ALLELES);
+	this->LoadWrapper(set, YON_BLK_BV_REFALT);
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayMinimumVcf(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_CONTIG);
+	this->DisplayWrapper(set, YON_BLK_BV_POSITION);
 	return(*this);
 }
 
@@ -203,6 +259,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 							continue;
 						}
 						this->LoadInfo(info->idx);
+						this->DisplayAllInfo(true);
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
 						allGood = false;
@@ -210,8 +267,10 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 				}
 			} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0 && partitions[p].size() == 4){
 				this->LoadAllInfo(true);
+				this->DisplayAllInfo(true);
 			} else if(strncasecmp(partitions[p].data(), "FORMAT", 6) == 0 && partitions[p].size() == 6){
 				this->LoadAllFormat(true);
+				this->DisplayAllFormat(true);
 
 			} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 				std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
@@ -230,10 +289,12 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 								continue;
 							}
 							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
 
 						} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
 							this->LoadMinimumVcf(true);
 							this->LoadGenotypes(true);
+							this->DisplayAllFormat(true);
 
 							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
 							if(fmt == nullptr){
@@ -242,6 +303,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 								continue;
 							}
 							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
 						}
 						// Any other FORMAT
 						else {
@@ -252,6 +314,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 								continue;
 							}
 							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
 						}
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
@@ -263,6 +326,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 					  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
 					  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
 				this->LoadWrapper(true, YON_BLK_BV_CONTIG);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTIG);
 			} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
 					  (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
 				this->LoadWrapper(true, YON_BLK_BV_POSITION);
@@ -271,23 +335,33 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
 				this->LoadWrapper(true, YON_BLK_BV_REFALT);
 				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
 				this->display_ref = true;
 			} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
 				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
 				this->LoadWrapper(true, YON_BLK_BV_REFALT);
 				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
 				this->display_alt = true;
 			} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
 				this->LoadWrapper(true, YON_BLK_BV_QUALITY);
+				this->DisplayWrapper(true, YON_BLK_BV_QUALITY);
 			} else if((strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5) ||
 					  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
 				this->LoadWrapper(true, YON_BLK_BV_NAMES);
+				this->DisplayWrapper(true, YON_BLK_BV_NAMES);
 			} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
 				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
 				this->LoadWrapper(true, YON_BLK_BV_ID_FILTER);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ID_FILTER);
 				this->display_filter = true;
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;

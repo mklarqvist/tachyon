@@ -29,6 +29,8 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 #include "variant_reader.h"
 
+#include "core/occ.h"
+
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<
@@ -38,13 +40,13 @@ void view_usage(void){
 	"  -i FILE   input YON file (required)\n"
 	"  -o FILE   output file (- for stdout; default: -)\n"
 	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
-	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	//"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
 	"  -R STRING path to file with interval strings\n"
-	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -y        custom output format (ignores VCF specification rules)\n"
-	"  -V        custom output data as vectors instead of per sample (valid only with -y)\n"
+	//"  -d CHAR   output delimiter (-c must be triggered)\n"
+	//"  -y        custom output format (ignores VCF specification rules)\n"
+	//"  -V        custom output data as vectors instead of per sample (valid only with -y)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
 	"  -s        Hide all program messages\n\n"
@@ -361,11 +363,12 @@ int view(int argc, char** argv){
 	// If user is triggering annotation
 	if(settings.annotate_genotypes){
 		reader.GetBlockSettings().annotate_extra = true;
-		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true).DisplayWrapper(false, YON_BLK_BV_GT);
+		reader.GetGlobalHeader().AddGenotypeAnnotationFields();
 	}
 
 	if(filters.doRequireGenotypes()){
-		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true).DisplayWrapper(false, YON_BLK_BV_GT);
 	}
 
 	tachyon::algorithm::Timer timer;
@@ -375,6 +378,7 @@ int view(int argc, char** argv){
 	else reader.GetBlockSettings().show_vcf_header = false;
 
 	if(reader.AddIntervals(interval_strings) == false) return(1);
+
 
 	reader.OutputVcf();
 

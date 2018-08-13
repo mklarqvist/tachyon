@@ -23,7 +23,7 @@ public:
 	self_type& LoadWrapper(bool set, const int field_bv);
 	self_type& DisplayWrapper(bool set, const int field_bv);
 	self_type& LoadDisplayWrapper(bool set, const int field_bv);
-	self_type& LoadCore(bool display = true);
+	self_type& LoadCore(const bool set = true);
 	self_type& LoadAll(const bool set = true);
 	self_type& LoadAllMeta(const bool set = true);
 	self_type& LoadAllFilter(const bool set = true);
@@ -36,6 +36,16 @@ public:
 	self_type& LoadFormat(const std::string& field_name);
 	self_type& LoadFormat(const U32 field_id);
 	self_type& LoadMinimumVcf(const bool set = true);
+
+	self_type& DisplayCore(const bool set = true);
+	self_type& DisplayAll(const bool set = true);
+	self_type& DisplayAllMeta(const bool set = true);
+	self_type& DisplayAllFilter(const bool set = true);
+	self_type& DisplayAllInfo(const bool set = true);
+	self_type& DisplayGenotypes(const bool set);
+	self_type& DisplayAllFormat(const bool set);
+	self_type& DisplayMinimumVcf(const bool set = true);
+
 	self_type& SetCustomDelimiter(const char delimiter);
 
 	bool Parse(const header_type& header);

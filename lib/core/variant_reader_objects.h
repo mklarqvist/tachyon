@@ -9,6 +9,7 @@
 #include "containers/info_container_string.h"
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
+#include "occ.h"
 
 namespace tachyon{
 
@@ -36,7 +37,8 @@ public:
 		genotype_container(nullptr),
 		genotype_summary(nullptr),
 		info_containers(nullptr),
-		format_containers(nullptr)
+		format_containers(nullptr),
+		occ(nullptr)
 	{
 	}
 
@@ -52,6 +54,17 @@ public:
 		for(U32 i = 0; i < this->format_id_loaded.size(); ++i)
 			delete this->format_containers[this->format_id_loaded[i]];
 		delete [] this->format_containers;
+		delete this->occ;
+	}
+
+	bool EvaluateOcc(){
+		if(occ == nullptr) return false;
+		return(this->occ->BuildTable());
+	}
+
+	bool EvaluateOcc(yon_gt_ppa* ppa){
+		if(occ == nullptr) return(this->EvaluateOcc());
+		return(this->occ->BuildTable(*ppa));
 	}
 
 public:
@@ -59,17 +72,17 @@ public:
 	bool loaded_meta;
 	size_t n_loaded_info;
 	size_t n_loaded_format;
-
 	std::vector<int> info_id_loaded;
 	std::vector<int> format_id_loaded;
+
 	std::unordered_map<std::string, info_interface_type*>   info_container_map;
 	std::unordered_map<std::string, format_interface_type*> format_container_map;
-
 	meta_container_type*     meta_container;
 	gt_container_type*       genotype_container;
 	genotype_summary_type*   genotype_summary;
 	info_interface_type**    info_containers;
 	format_interface_type**  format_containers;
+	yon_occ* occ;
 };
 
 }

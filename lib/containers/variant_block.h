@@ -37,7 +37,10 @@ public:
 	VariantBlock(const uint16_t n_info, const uint16_t n_format);
 	~VariantBlock();
 
-	void Allocate(const uint16_t n_info, const uint16_t n_format, const uint16_t n_filter){
+	void Allocate(const uint16_t n_info,
+	              const uint16_t n_format,
+	              const uint16_t n_filter)
+	{
 		// Allocate space for INFO containers.
 		delete [] this->info_containers;
 		this->info_containers = new container_type[n_info];
@@ -195,7 +198,10 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool LoadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainer(std::ifstream& stream,
+	                          const offset_type& offset,
+	                          container_type& container)
+	{
 		container.header = offset;
 		stream >> container;
 		assert(container.header == offset);
@@ -210,7 +216,10 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool LoadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainerSeek(std::ifstream& stream,
+	                              const offset_type& offset,
+	                              container_type& container)
+	{
 		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
 		container.header = offset;
 		stream >> container;
@@ -350,7 +359,9 @@ private:
 	 * @param stats_info
 	 * @param stats_format
 	 */
-	void UpdateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+	void UpdateOutputStatistics(import_stats_type& stats_basic,
+	                            import_stats_type& stats_info,
+	                            import_stats_type& stats_format);
 
 	/**<
 	 * Move over pair of headers from a data container to a block footer
@@ -370,7 +381,10 @@ private:
 	 * @param container      Target container hosting the header
 	 * @param virtual_offset Block virtual offset
 	 */
-	inline void UpdateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
+	inline void UpdateHeader(offset_type& offset,
+	                         const container_type& container,
+	                         const U32& virtual_offset)
+	{
 		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -385,7 +399,11 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void WriteContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void WriteContainer(std::ostream& stream,
+	                           offset_type& offset,
+	                           const container_type& container,
+	                           const U32 virtual_offset)
+	{
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
@@ -401,7 +419,11 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void WriteContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void WriteContainerEncrypted(std::ostream& stream,
+	                                    offset_type& offset,
+	                                    const container_type& container,
+	                                    const U32 virtual_offset)
+	{
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);
 		// Encrypted data is concatenated: write only data buffer

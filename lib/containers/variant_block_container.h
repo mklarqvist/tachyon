@@ -69,7 +69,7 @@ public:
 	}
 
 	bool ParseSettings(block_settings_type& settings);
-	bool ParseLoadedPatterns();
+	bool ParseLoadedPatterns(block_settings_type& settings);
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
