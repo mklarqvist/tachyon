@@ -377,7 +377,7 @@ U64 VariantReader::OutputVcfLinear(void){
 
 	// temp
 	tachyon::yon_occ occ;
-	if(occ.ReadTable("/home/mk21/Downloads/1kgp3_grp.ped", this->GetGlobalHeader(), '\t') == false){
+	if(occ.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 		return(0);
 	}
 

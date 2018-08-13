@@ -47,7 +47,7 @@ struct yon1_t {
 		delete [] this->format_containers;
 		delete this->gt;
 		delete this->gt_sum;
-		// Do not delete occ. It is always borrowed.
+		// Do not delete occ. It is always borrowed!
 	}
 
 	bool EvaluateSummary(bool lazy_evaluate = true){
@@ -74,8 +74,11 @@ struct yon1_t {
 		for(U32 i = 0; i < this->gt->n_o; ++i){
 			this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
 
-			uint32_t cum_sum  = 0;
-			uint32_t n_offset = 0;
+			uint32_t cum_sum  = 0; // Total cumulative genotypes observed
+			uint32_t cum_sum_hit = 0; // Number of non-zero runs observed.
+			uint32_t n_offset = 0; // Virtual offset in destination array.
+
+			// Iterate over available gt rcds.
 			for(U32 j = 0; j < this->gt->n_i; ++j){
 				const uint32_t to   = this->occ->occ[i][cum_sum + this->gt->rcds[j].run_length];
 				const uint32_t from = this->occ->occ[i][cum_sum];
@@ -83,19 +86,21 @@ struct yon1_t {
 					// Allocate memory for alleles.
 					this->gt->d_occ[i][n_offset].allele = new uint8_t[this->gt->m];
 
-					// Copy allelic data from recerence rcd.
+					// Copy allelic data from recerence gt rcd.
 					for(U32 k = 0; k < this->gt->m; ++k){
 						this->gt->d_occ[i][n_offset].allele[k] = this->gt->rcds[j].allele[k];
 					}
 
 					// Set run-length representation.
-					this->gt->d_occ[i][n_offset].run_length = to-from;
-						assert(n_offset < this->gt->n_i);
-						++n_offset;
-					}
+					this->gt->d_occ[i][n_offset].run_length = to - from;
+					assert(n_offset < this->gt->n_i);
+					++n_offset;
+					cum_sum_hit += to - from;
+				}
 				cum_sum += this->gt->rcds[j].run_length;
-				assert(cum_sum == this->gt->n_s);
 			}
+			assert(cum_sum == this->gt->n_s);
+			assert(cum_sum_hit == this->occ->cum_sums[i]);
 			this->gt->n_occ[i] = n_offset;
 		}
 		return(true);

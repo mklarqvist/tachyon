@@ -28,6 +28,8 @@ struct yon_occ {
 	map_type map;
 	// Unique names of grouping factors.
 	std::vector<std::string> row_names;
+	// Total cumulative sums for each row.
+	std::vector<uint32_t> cum_sums;
 
 	// a matrix with proportions samples times groupings
 	// rows corresponds to the cumulative sum of a grouping
