@@ -96,6 +96,27 @@ public:
 	 */
 	BYTE PackRefAltByte(void) const;
 
+	std::string GetAlleleString(void) const{
+		std::string ret = this->alleles[0].toString();
+		for(U32 i = 1; i < this->n_alleles; ++i)
+			ret += "," + this->alleles[i].toString();
+		return(ret);
+	}
+
+	// Todo: overload given bcf1_t entry
+	bcf1_t* UpdateVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
+		// Add a record
+		// 20     14370   rs6054257 G      A       29
+		// .. CHROM
+		rec->rid = this->contigID;
+		rec->pos = this->position;
+		bcf_update_id(hdr, rec, this->name.data());
+		bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
+		rec->qual = this->quality;
+
+		return(rec);
+	}
+
 public:
 	// Markup: populate from streams
 	controller_type controller;

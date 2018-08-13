@@ -234,42 +234,6 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, cons
 	return(buffer);
 }
 
-
-std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object){
-	if(gt_object.n_ploidy == 0)
-		return(stream);
-
-	for(U32 i = 0; i < gt_object.n_objects; ++i){
-		stream << (int)gt_object[0].allele << (gt_object[i].phase ? '|' : '/') << (int)gt_object[1].allele;
-		for(U32 j = 1; j < gt_object.n_ploidy; ++j){
-			stream << '\t' << (int)gt_object[0].allele << (gt_object[0].phase ? '|' : '/') << (int)gt_object[1].allele;
-		}
-	}
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects){
-	if(gt_objects.size() == 0)
-		return(stream);
-
-	stream << (int)gt_objects[0][0].allele << (gt_objects[0][0].phase ? '|' : '/') << (int)gt_objects[0][1].allele;
-
-	for(U32 element = 1; element < gt_objects.size(); ++element){
-		if(gt_objects[element].n_ploidy == 0)
-			continue;
-
-		stream << '\t';
-
-		for(U32 object = 0; object < gt_objects[element].n_objects; ++object){
-			stream << (int)gt_objects[element][0].allele << (gt_objects[element][0].phase ? '|' : '/') << (int)gt_objects[element][1].allele;
-			for(U32 k = 1; k < gt_objects[element].n_ploidy; ++k){
-				stream << '\t' << (int)gt_objects[element][k].allele << (gt_objects[element][k].phase ? '|' : '/') << (int)gt_objects[element][k].allele;
-			}
-		}
-	}
-	return(stream);
-}
-
 std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
 	stream << string;
 	return(stream);

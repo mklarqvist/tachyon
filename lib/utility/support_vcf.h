@@ -6,8 +6,8 @@
 #include <cmath>
 #include "support/type_definitions.h"
 //#include "containers/primitive_container.h"
-#include "core/genotype_object.h"
 #include "core/data_block_settings.h"
+#include "core/meta_entry.h"
 
 namespace tachyon{
 namespace utility{
@@ -34,10 +34,6 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const char* const data, 
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const float* const data, const size_t n_data);
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const double* const data, const size_t n_data);
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const std::string& string);
-
-// Genotype objects
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const core::GTObject& gt_object);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const std::vector<core::GTObject>& gt_objects);
 
 std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
 io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);

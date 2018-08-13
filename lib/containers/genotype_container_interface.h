@@ -5,7 +5,6 @@
 #include "core/ts_tv_object.h"
 #include "math/square_matrix.h"
 #include "core/genotypes.h"
-#include "core/genotype_object.h"
 
 namespace tachyon{
 namespace containers{
@@ -17,7 +16,6 @@ public:
     typedef std::size_t                   size_type;
     typedef core::MetaEntry               meta_type;
     typedef core::VariantController       hot_controller_type;
-    typedef core::GTObject                gt_object;
     typedef yon_gt_summary                gt_summary;
     typedef math::SquareMatrix<double>    square_matrix_type;
     typedef core::TsTvObject              ts_tv_object_type;

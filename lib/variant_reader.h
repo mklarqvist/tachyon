@@ -22,7 +22,6 @@
 #include "containers/variant_block.h"
 #include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
-#include "core/genotype_object.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_objects.h"
