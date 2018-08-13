@@ -293,6 +293,7 @@ private:
 	codec_manager_type      codec_manager;
 	keychain_type           keychain;
 	interval_container_type interval_container;
+	yon_occ                 occ_table;
 };
 
 }

@@ -26,6 +26,23 @@ public:
 	VcfContig() : idx(0), n_bases(0){}
 	~VcfContig() = default;
 
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##contig=<ID=GL000241.1,assembly=b37,length=42152>
+		std::string ret = "##contig=<" + this->name;
+		if(extra.size()){
+			ret += "," + this->extra[0].first + "=" + this->extra[0].second;
+			for(U32 i = 1; i < this->extra.size(); ++i){
+				ret += "," + this->extra[i].first + "=" + this->extra[i].second;
+			}
+		}
+		if(this->description.size()) ret += ",Description=" + this->description;
+		ret += "," + std::to_string(this->n_bases);
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
 public:
 	// Required. The internal identifier for this field
 	uint32_t idx;
@@ -60,6 +77,21 @@ struct VcfInfo{
 public:
 	VcfInfo() : idx(0){}
 	~VcfInfo() = default;
+
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##INFO=<ID=AF,Number=A,Type=Float,Description="Estimated allele frequency in the range (0,1)">
+		std::string ret = "##INFO=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(this->source.size()) ret += ",Source=" + this->source;
+		if(this->source.size()) ret += ",Version=" + this->version;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
 public:
 	// Required. The internal identifier for this field
 	uint32_t idx;
@@ -96,6 +128,18 @@ public:
 	VcfFormat() : idx(0){}
 	~VcfFormat() = default;
 
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FORMAT=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
 public:
 	// Required. The unique ID of the FORMAT field. Examples include "GT", "PL".
 	std::string id;
@@ -119,6 +163,16 @@ struct VcfFilter{
 public:
 	VcfFilter() : idx(0){}
 	~VcfFilter() = default;
+
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FILTER=<ID=" + this->id;
+		ret += ",Description=" + this->description;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const VcfFilter& flt){
 		stream.write((const char*)&flt.idx, sizeof(uint32_t));
@@ -177,6 +231,13 @@ public:
 
 	~VcfExtra() = default;
 
+	std::string ToVcfString(void) const{
+		// Template:
+		// ##source=CombineGVCFs
+		std::string ret = "##" + this->key + "=" + this->value;
+		return(ret);
+	}
+
 	friend std::ostream& operator<<(std::ostream& stream, const VcfExtra& extra){
 		utility::SerializeString(extra.key, stream);
 		utility::SerializeString(extra.value, stream);
@@ -220,6 +281,17 @@ struct VcfStructuredExtra{
 public:
 	VcfStructuredExtra() = default;
 	~VcfStructuredExtra() = default;
+
+	std::string ToVcfString(void) const{
+		// Template:
+		// ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
+		std::string ret = "##" + this->key + "=<";
+		ret += this->fields[0].key + "=" + this->fields[0].value;
+		for(U32 i = 1; i < this->fields.size(); ++i)
+			ret += "," + this->fields[i].key + "=" + this->fields[i].value;
+		ret += ">";
+		return(ret);
+	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const VcfStructuredExtra& extra){
 		utility::SerializeString(extra.key, stream);

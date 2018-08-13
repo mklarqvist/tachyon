@@ -376,26 +376,29 @@ U64 VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	// temp
-	tachyon::yon_occ occ;
-	if(occ.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
-		return(0);
-	}
+	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
+	//	return(0);
+	//}
+
+	//this->GetGlobalHeader().PrintVcfHeader2(std::cerr, false);
+	//std::cerr << "regular" <<  std::endl;
+	//this->GetGlobalHeader().PrintVcfHeader(std::cerr);
 
 	while(this->NextBlock()){
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 		// If occ table is built.
-		objects->occ = &occ;
-		objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
+		//objects->occ = &occ;
+		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
 
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
 
 			// Each entry evaluate occ if available.
-			entries[i].occ = objects->occ;
-			entries[i].EvaluateOcc();
+			//entries[i].occ = objects->occ;
+			//entries[i].EvaluateOcc();
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);
 		}
@@ -403,7 +406,7 @@ U64 VariantReader::OutputVcfLinear(void){
 		std::cout.write(output_buffer.data(), output_buffer.size());
 		output_buffer.reset();
 		delete [] entries;
-		objects->occ = nullptr;
+		//objects->occ = nullptr;
 		delete objects;
 	}
 	return 0;
