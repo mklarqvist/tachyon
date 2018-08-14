@@ -74,7 +74,7 @@ struct yon1_t {
 		for(U32 i = 0; i < this->gt->n_o; ++i){
 			this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
 
-			uint32_t cum_sum  = 0; // Total cumulative genotypes observed
+			uint32_t cum_sum  = 0; // Total cumulative genotypes observed.
 			uint32_t cum_sum_hit = 0; // Number of non-zero runs observed.
 			uint32_t n_offset = 0; // Virtual offset in destination array.
 

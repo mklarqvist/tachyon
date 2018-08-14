@@ -125,7 +125,7 @@ bool VariantImporter::BuildVCF(void){
 		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
 		// after retrieving a set number of variants or if the interval between
 		// the smallest and largest variant exceeds some distance in base pairs.
-		if(this->vcf_container_.getVariants(this->settings_.checkpoint_n_snps,
+		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
 		                                    this->settings_.checkpoint_bases,
 		                                    this->vcf_reader_) == false){
 			break;

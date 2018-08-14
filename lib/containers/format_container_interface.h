@@ -24,6 +24,8 @@ public:
     virtual bool emptyPosition(const U32& position) const =0;
     virtual bool emptyPosition(const U32& position, const U64& sample) const =0;
 
+    virtual bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
+
 protected:
     TACHYON_CORE_TYPE primitive_type;
 	size_t  n_entries;

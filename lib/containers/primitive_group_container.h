@@ -18,6 +18,9 @@ public:
 	virtual ~PrimitiveGroupContainerInterface(){ }
 
 	virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const =0;
+	virtual bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
+	virtual bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
+	virtual bcf1_t* UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_objects_ == 0); }
@@ -72,6 +75,48 @@ public:
 	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const{
 		utility::to_vcf_string(buffer, this->at(position).data(), this->at(position).size());
 		return(buffer);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		uint32_t n_records = 0;
+		for(U32 i = 0; i < this->size(); ++i)
+			n_records += this->at(i).size();
+
+		int32_t* dst = new int32_t[n_records];
+		uint32_t n_offset = 0;
+		for(U32 i = 0; i < this->size(); ++i){
+			utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
+			n_offset += this->at(i).size();
+		}
+
+		bcf_update_format_int32(hdr, rec, tag.data(), dst, n_records);
+
+		delete [] dst;
+		return(rec);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		uint32_t n_records = 0;
+		for(U32 i = 0; i < this->size(); ++i)
+			n_records += this->at(i).size();
+
+		float* dst = new float[n_records];
+		uint32_t n_offset = 0;
+		for(U32 i = 0; i < this->size(); ++i){
+			utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
+			n_offset += this->at(i).size();
+		}
+
+		bcf_update_format_float(hdr, rec, tag.data(), dst, n_records);
+
+		delete [] dst;
+		return(rec);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		std::cerr << "illegal conversion from any value to string" << std::endl;
+		exit(1);
+		return(rec);
 	}
 
 private:

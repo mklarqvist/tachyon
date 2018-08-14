@@ -197,6 +197,10 @@ public:
 	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
+	U64 OutputHtslibVcf(void);
+	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
+	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
+
 	/**<
 	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
 	 * Decides internally what function to invoke.

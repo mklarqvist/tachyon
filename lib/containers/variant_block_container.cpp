@@ -433,7 +433,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 				records[i].format_containers[j] = fmt_cnt;
 				records[i].format_hdr.push_back(&this->header_->format_fields_[records[i].format_ids->at(j)]);
 
-				//std::cerr << "FORMAT " << j << "/" << records[i].format_ids->size() << ": target: " << this->header_->format_fields_[records[i].format_ids->at(j)].id << " container entries = " << fmt_cnt->size() << std::endl;
+				//std::cerr << "FORMAT " << j << "/" << records[i].format_ids->size() << ": target: " << records[i].format_hdr[j]->id << " container entries = " << fmt_cnt->size() << std::endl;
 
 				switch(this->header_->format_fields_[records[i].format_ids->at(j)].yon_type){
 				case(YON_VCF_HEADER_INTEGER):

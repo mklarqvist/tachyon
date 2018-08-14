@@ -57,6 +57,28 @@ public:
 		return(buffer);
 	}
 
+	bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		return(rec);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		return(rec);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		const char** dst = new const char*[this->size()];
+
+		for(U32 i = 0; i < this->size(); ++i){
+			dst[i] = this->at(i).data_.data();
+			//std::cerr << dst[i] << std::endl;
+		}
+
+		bcf_update_format_string(hdr, rec, tag.data(), dst, this->size());
+
+		delete [] dst;
+		return(rec);
+	}
+
 private:
     pointer   containers_;
 };

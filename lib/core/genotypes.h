@@ -3,10 +3,13 @@
 
 #include <cstring>
 
+#include "htslib/vcf.h"
+
 #include "io/basic_buffer.h"
 #include "containers/components/generic_iterator.h"
 #include "third_party/intervalTree.h"
 #include "math/fisher_math.h"
+#include "utility/support_vcf.h"
 
 namespace tachyon{
 
@@ -616,6 +619,39 @@ struct yon_gt_summary_rcd {
 		delete [] this->ac; delete [] this->af;
 		delete [] this->fs_a;
 		// Do not delete ac_p as it is borrowed
+	}
+
+	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NM", (const U64*)&this->nm, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NPM", (const U64*)&this->npm, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AN", (const U64*)&this->an, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "HWE_P", (const double*)&this->hwe_p, 1);
+
+		if(this->n_ac_af > 4)
+			bcf_update_info_flag(hdr, rec, "MULTI_ALLELIC", NULL, 1);
+
+		if(this->n_ac_af > 2){
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC", (const U64*)&this->ac[2], this->n_ac_af - 2);
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AF", (const double*)&this->af[2], this->n_ac_af - 2);
+		}
+
+		std::vector<uint64_t> ac_p;
+		for(U32 p = 0; p < this->n_ploidy; ++p){
+			for(U32 i = 2; i < this->n_ac_af; ++i){
+				ac_p.push_back(this->ac_p[p][i]);
+			}
+		}
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC_P", (const U64*)ac_p.data(), ac_p.size());
+
+		if(this->fs_a != nullptr)
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "FS_A", this->fs_a, this->n_fs);
+
+		if(this->n_ploidy == 2){
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "FPIC", &this->f_pic, 1);
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "HET", &this->heterozygosity, 1);
+		}
+
+		return(rec);
 	}
 
 	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer){

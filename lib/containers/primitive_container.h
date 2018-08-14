@@ -28,6 +28,8 @@ public:
 
 	virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const =0;
 
+	virtual bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
+
 protected:
 	bool    is_uniform_;
     size_t  n_entries_;
@@ -79,6 +81,10 @@ public:
     io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer) const{
     	utility::to_vcf_string(buffer, this->data(), this->size());
     	return(buffer);
+    }
+
+    bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+    	return(utility::UpdateHtslibVcfRecordInfo(rec, hdr, tag, this->data(), this->size()));
     }
 
 private:
@@ -135,6 +141,10 @@ public:
 		}
 		buffer += this->data_;
 		return(buffer);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		return(utility::UpdateHtslibVcfRecordInfo(rec, hdr, tag, this->data_));
 	}
 
 public:

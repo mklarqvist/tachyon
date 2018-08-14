@@ -71,8 +71,14 @@ public:
 	{
 		//utility::to_vcf_string(stream, this->at(position).at(sample).data_);
 		//this->at(position).at(sample).data_;
+		assert(2 == 1);
 		return(stream);
 	}
+
+	bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		return(this->at(position).UpdateHtslibVcfRecordFormatString(rec, hdr, tag));
+	}
+
 	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
 	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
 	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }

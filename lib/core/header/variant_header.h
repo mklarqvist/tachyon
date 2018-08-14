@@ -19,6 +19,7 @@ public:
 	~YonContig() = default;
 
 	std::string ToVcfString(const bool is_bcf = false) const{ return(io::VcfContig::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(io::VcfContig::ToVcfString(idx)); }
 
 	inline void operator++(void){ ++this->n_blocks; }
 	inline void operator--(void){ --this->n_blocks; }
@@ -105,6 +106,7 @@ public:
 	~YonInfo() = default;
 
 	std::string ToVcfString(const bool is_bcf = false) const{ return(io::VcfInfo::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(io::VcfInfo::ToVcfString(idx)); }
 
 	bool EvaluateType(void){
 		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
@@ -182,6 +184,7 @@ public:
 	~YonFormat() = default;
 
 	std::string ToVcfString(const bool is_bcf = false) const{ return(io::VcfFormat::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(io::VcfFormat::ToVcfString(idx)); }
 
 	bool EvaluateType(void){
 		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
@@ -388,7 +391,8 @@ public:
 	* writing out VCF/BCF files.
 	* @return
 	*/
-	hts_vcf_header* ConvertVcfHeader(void);
+	hts_vcf_header* ConvertVcfHeaderLiterals(const bool add_format = true);
+	hts_vcf_header* ConvertVcfHeader(const bool add_format = true);
 
 	void AddGenotypeAnnotationFields(void);
 
@@ -409,14 +413,16 @@ public:
 		return(stream);
 	}
 
-	std::ostream& PrintVcfHeader2(std::ostream& stream, const bool is_bcf = false) const{
-		for(U32 i = 0; i < this->contigs_.size(); ++i) stream << this->contigs_[i].ToVcfString(is_bcf) << "\n";
-		for(U32 i = 0; i < this->info_fields_.size(); ++i) stream << this->info_fields_[i].ToVcfString(is_bcf) << "\n";
-		for(U32 i = 0; i < this->format_fields_.size(); ++i) stream << this->format_fields_[i].ToVcfString(is_bcf) << "\n";
-		for(U32 i = 0; i < this->filter_fields_.size(); ++i) stream << this->filter_fields_[i].ToVcfString(is_bcf) << "\n";
-		for(U32 i = 0; i < this->extra_fields_.size(); ++i) stream << this->extra_fields_[i].ToVcfString() << "\n";
-		for(U32 i = 0; i < this->structured_extra_fields_.size(); ++i) stream << this->structured_extra_fields_[i].ToVcfString() << "\n";
-		return(stream);
+	std::string ToString(const bool is_bcf = false) const{
+		std::string string = "##fileformat=VCFv4.1\n";
+		uint32_t idx = 0;
+		for(U32 i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
+		for(U32 i = 0; i < this->structured_extra_fields_.size(); ++i) string += this->structured_extra_fields_[i].ToVcfString() + "\n";
+		for(U32 i = 0; i < this->filter_fields_.size(); ++i) string += this->filter_fields_[i].ToVcfString(idx++) + "\n";
+		for(U32 i = 0; i < this->info_fields_.size(); ++i)   string += this->info_fields_[i].ToVcfString(idx++) + "\n";
+		for(U32 i = 0; i < this->format_fields_.size(); ++i) string += this->format_fields_[i].ToVcfString(idx++) + "\n";
+		for(U32 i = 0; i < this->extra_fields_.size(); ++i)  string += this->extra_fields_[i].ToVcfString() + "\n";
+		return(string);
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header);

@@ -80,6 +80,18 @@ public:
 		return(buffer);
 	}
 
+	bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		if(this->primitive_type == YON_TYPE_8B || this->primitive_type == YON_TYPE_16B || this->primitive_type == YON_TYPE_32B || this->primitive_type == YON_TYPE_64B){
+			return(this->at(position).UpdateHtslibVcfRecordFormatInt32(rec, hdr, tag));
+		} else if(this->primitive_type == YON_TYPE_FLOAT || this->primitive_type == YON_TYPE_DOUBLE){
+			return(this->at(position).UpdateHtslibVcfRecordFormatFloat(rec, hdr, tag));
+		} else {
+			std::cerr << "illegal type: " << (int)this->primitive_type << std::endl;
+			exit(1);
+		}
+		return rec;
+	}
+
 	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
 	inline bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
 

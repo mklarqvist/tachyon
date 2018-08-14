@@ -429,5 +429,203 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 	return(buffer);
 }
 
+int32_t* FormatDataHtslib(const BYTE* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U16* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U32* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U64* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const SBYTE* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT8_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT8_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S16* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT16_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT16_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S32* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT32_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT32_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S64* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const float* const src, int32_t* dst, const size_t n_entries){
+	std::cerr << utility::timestamp("ERROR") << "Cannot convert float into integer." << std::endl;
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const double* const src, int32_t* dst, const size_t n_entries){
+	std::cerr << utility::timestamp("ERROR") << "Cannot convert double into integer." << std::endl;
+	return(dst);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const BYTE* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), &tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U16* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U32* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U64* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const SBYTE* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S16* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S32* const data,
+                                  const size_t n_entries)
+{
+	bcf_update_info_int32(hdr, rec, tag.data(), data, n_entries);
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S64* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const float* const data,
+                                  const size_t n_entries)
+{
+	float* tmpi = new float[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_float(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const double* const data,
+                                  const size_t n_entries)
+{
+	float* tmpi = new float[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_float(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const std::string& data)
+{
+	bcf_update_info_string(hdr, rec, tag.data(), data.data());
+	return(rec);
+}
+
 }
 }

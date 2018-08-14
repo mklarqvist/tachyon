@@ -9,7 +9,6 @@
 
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
-#include "htslib/faidx.h"
 #include "htslib/hts.h"
 
 #include "support/helpers.h"
@@ -29,7 +28,7 @@ public:
 	std::string ToVcfString(const bool is_bcf = false) const{
 		// Template:
 		// ##contig=<ID=GL000241.1,assembly=b37,length=42152>
-		std::string ret = "##contig=<" + this->name;
+		std::string ret = "##contig=<ID=" + this->name;
 		if(extra.size()){
 			ret += "," + this->extra[0].first + "=" + this->extra[0].second;
 			for(U32 i = 1; i < this->extra.size(); ++i){
@@ -37,7 +36,7 @@ public:
 			}
 		}
 		if(this->description.size()) ret += ",Description=" + this->description;
-		ret += "," + std::to_string(this->n_bases);
+		ret += ",length=" + std::to_string(this->n_bases);
 		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
 		ret += ">";
 		return(ret);
@@ -92,6 +91,20 @@ public:
 		return(ret);
 	}
 
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##INFO=<ID=AF,Number=A,Type=Float,Description="Estimated allele frequency in the range (0,1)">
+		std::string ret = "##INFO=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(this->source.size()) ret += ",Source=" + this->source;
+		if(this->source.size()) ret += ",Version=" + this->version;
+		ret += ",IDX=" + std::to_string(idx);
+		ret += ">";
+		return(ret);
+	}
+
 public:
 	// Required. The internal identifier for this field
 	uint32_t idx;
@@ -140,6 +153,18 @@ public:
 		return(ret);
 	}
 
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FORMAT=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		ret += ",IDX=" + std::to_string(idx);
+		ret += ">";
+		return(ret);
+	}
+
 public:
 	// Required. The unique ID of the FORMAT field. Examples include "GT", "PL".
 	std::string id;
@@ -170,6 +195,16 @@ public:
 		std::string ret = "##FILTER=<ID=" + this->id;
 		ret += ",Description=" + this->description;
 		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FILTER=<ID=" + this->id;
+		ret += ",Description=" + this->description;
+		ret += ",IDX=" + std::to_string(idx);
 		ret += ">";
 		return(ret);
 	}
@@ -1068,182 +1103,6 @@ public:
 
 }
 
-namespace containers {
-
-class VcfContainer{
-public:
-	typedef VcfContainer       self_type;
-	typedef bcf1_t             value_type;
-	typedef value_type&        reference;
-	typedef const value_type&  const_reference;
-	typedef value_type*        pointer;
-	typedef const value_type*  const_pointer;
-	typedef std::ptrdiff_t     difference_type;
-	typedef std::size_t        size_type;
-
-public:
-	VcfContainer(void) :
-		n_carry_over_(0),
-		n_entries_(0),
-		n_capacity_(500),
-		entries_(new pointer[500])
-	{
-		for(size_type i = 0; i < this->capacity(); ++i)
-			this->entries_[i] = nullptr;
-	}
-
-	VcfContainer(const size_type& start_capacity) :
-		n_carry_over_(0),
-		n_entries_(0),
-		n_capacity_(start_capacity),
-		entries_(new pointer[start_capacity])
-	{
-		for(size_type i = 0; i < this->capacity(); ++i)
-			this->entries_[i] = nullptr;
-	}
-
-	~VcfContainer(){
-		if(this->entries_ != nullptr){
-			for(std::size_t i = 0; i < this->n_entries_; ++i)
-				bcf_destroy(this->entries_[i]);
-
-			::operator delete[](static_cast<void*>(this->entries_));
-		}
-	}
-
-	VcfContainer(const VcfContainer& other) = delete; // Disallow copy ctor
-
-	inline const size_type& size(void) const{ return(this->n_entries_); }
-	inline size_type sizeWithoutCarryOver(void) const{ return(this->n_entries_ - this->n_carry_over_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
-	inline pointer front(void){ return(this->entries_[0]); }
-	inline const_pointer front(void) const{ return(this->entries_[0]); }
-	inline pointer back(void){ return(this->entries_[this->size() == 0 ? 0 : this->size() - 1 - this->n_carry_over_]); }
-	inline const_pointer back(void) const{ return(this->entries_[this->size() == 0 ? 0 : this->size() - 1 - this->n_carry_over_]); }
-
-	inline void operator+=(const pointer entry){ this->entries_[this->n_entries_++] = entry; }
-	inline pointer operator[](const uint32_t position){ return(this->entries_[position]); }
-	inline const_pointer operator[](const uint32_t position) const{ return(this->entries_[position]); }
-	inline pointer at(const uint32_t position){ return(this->entries_[position]); }
-	inline const_pointer at(const uint32_t position) const{ return(this->entries_[position]); }
-
-	inline pointer end(void){ return(this->entries_[this->n_entries_]); }
-	inline const_pointer end(void) const{ return(this->entries_[this->n_entries_]); }
-
-	void resize(const size_t new_size){
-		if(new_size < this->capacity()){
-			for(size_t i = new_size; i < this->n_entries_; ++i)
-				bcf_destroy(this->entries_[i]);
-
-			if(this->n_entries_ >= new_size) this->n_entries_ = new_size;
-			return;
-		}
-
-		pointer* temp = new pointer[new_size];
-		for(size_t i = 0; i < this->size(); ++i)
-			temp[i] = this->entries_[i];
-
-		delete [] this->entries_;
-		this->entries_ = temp;
-		this->n_capacity_ = new_size;
-	}
-
-	bool getVariants(const int32_t n_variants, const int64_t n_bases, std::unique_ptr<io::VcfReader>& reader){
-		if(this->size() + n_variants >= this->capacity())
-			this->resize(this->size() + n_variants + 64);
-
-		VcfContainer::pointer bcf1_ = this->end();
-		if(bcf1_ == nullptr) bcf1_  = bcf_init();
-		if(reader->next(bcf1_) == false)
-			return false;
-
-		*this += bcf1_;
-
-		int64_t first_pos    = bcf1_->pos;
-		int32_t first_contig = bcf1_->rid;
-		if(this->size() != 1){
-			first_pos    = this->entries_[0]->pos;
-			first_contig = this->entries_[0]->rid;
-		}
-
-		if(bcf1_->pos - first_pos > n_bases || first_contig != bcf1_->rid){
-			this->n_carry_over_ = 1;
-			return(this->size() - 1);
-		}
-
-		for(int32_t i = 1; i < n_variants; ++i){
-			bcf1_ = this->end();
-			if(bcf1_ == nullptr) bcf1_  = bcf_init();
-
-			if(reader->next(bcf1_) == false)
-				return(this->size());
-
-			*this += bcf1_;
-
-			if(bcf1_->pos - first_pos > n_bases || first_contig != bcf1_->rid){
-				this->n_carry_over_ = 1;
-				return(this->size() - 1);
-			}
-		}
-
-		return(this->size());
-	}
-
-	// Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
-	// Warning: this function does NOT check if the FORMAT field GT exists either
-	// in the header or in the structure itself. The assumption is that it does
-	// exist and according to the Bcf specification has to be the first FORMAT
-	// field set.
-	io::VcfGenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const{
-		io::VcfGenotypeSummary g;
-
-		// If there are no FORMAT fields there cannot exist any
-		// GT data.
-		if(this->at(position)->n_fmt == 0)
-			return(g);
-
-		// Iterate through the allowed primitive types for genotypes to collect summary
-		// statistics for genotypes at this loci. Information collected includes the
-		// base ploidy, if there's any mixed phasing, the number of missing genotypes, and
-		// the number of samples that has a special end-of-vector encoding.
-		// Only the signed primitives int8_t, int16_t, and int32_t are valid for genotypes.
-		switch(this->at(position)->d.fmt[0].type){
-		case(BCF_BT_INT8):  g.evaluate<int8_t> (n_samples, this->at(position)->d.fmt[0]); break;
-		case(BCF_BT_INT16): g.evaluate<int16_t>(n_samples, this->at(position)->d.fmt[0]); break;
-		case(BCF_BT_INT32): g.evaluate<int32_t>(n_samples, this->at(position)->d.fmt[0]); break;
-		case(BCF_BT_NULL):
-		case(BCF_BT_FLOAT):
-		case(BCF_BT_CHAR):
-		default:
-			std::cerr << "Illegal genotype primtive type: " << io::BCF_TYPE_LOOKUP[this->at(position)->d.fmt[0].type] << std::endl;
-		}
-
-		return(g);
-	}
-
-	void clear(void){
-		uint32_t start_pos = 0;
-		if(this->n_carry_over_){
-			assert(this->size() != 0);
-			std::swap(this->entries_[this->size() - 1], this->entries_[0]);
-			start_pos = 1;
-			this->n_carry_over_ = 0;
-		}
-
-		for(uint32_t i = start_pos; i < this->size(); ++i)
-			bcf_clear(this->entries_[i]);
-
-		this->n_entries_ = start_pos;
-	}
-
-public:
-	uint32_t  n_carry_over_;
-	size_type n_entries_;
-	size_type n_capacity_;
-	pointer*  entries_;
-};
-
-}
 }
 
 

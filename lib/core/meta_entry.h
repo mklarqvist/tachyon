@@ -103,11 +103,14 @@ public:
 		return(ret);
 	}
 
-	// Todo: overload given bcf1_t entry
-	bcf1_t* UpdateVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
-		// Add a record
-		// 20     14370   rs6054257 G      A       29
-		// .. CHROM
+	/**<
+	 * Updates a htslib bcf1_t record with data available in this meta record.
+	 * This function is used when converting yon1_t records to bcf1_t records.
+	 * @param rec Input bcf1_t record that has been allocated.
+	 * @param hdr Input bcf hdr structure converted from tachyon header.
+	 * @return Returns the input bcf1_t record pointer.
+	 */
+	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
 		rec->rid = this->contigID;
 		rec->pos = this->position;
 		bcf_update_id(hdr, rec, this->name.data());

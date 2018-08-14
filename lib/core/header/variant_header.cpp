@@ -42,10 +42,32 @@ bool VariantHeader::RecodeIndices(void){
 	return true;
 }
 
-bcf_hdr_t* VariantHeader::ConvertVcfHeader(void){
+bcf_hdr_t* VariantHeader::ConvertVcfHeaderLiterals(const bool add_format){
 	std::string internal = this->literals_;
 	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(this->samples_.size()){
+	if(this->samples_.size() && add_format){
+		internal += "\tFORMAT\t";
+		internal += this->samples_[0];
+		for(size_t i = 1; i < this->samples_.size(); ++i)
+			internal += "\t" + this->samples_[i];
+	}
+	internal += "\n";
+
+	hts_vcf_header* hdr = bcf_hdr_init("r");
+	int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
+	if(ret != 0){
+		std::cerr << "failed to get bcf header from literals" << std::endl;
+		bcf_hdr_destroy(hdr);
+		return(nullptr);
+	}
+
+	return(hdr);
+}
+
+bcf_hdr_t* VariantHeader::ConvertVcfHeader(const bool add_format){
+	std::string internal = this->ToString(true);
+	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+	if(this->samples_.size() && add_format){
 		internal += "\tFORMAT\t";
 		internal += this->samples_[0];
 		for(size_t i = 1; i < this->samples_.size(); ++i)
@@ -76,7 +98,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.yon_type = YON_VCF_HEADER_INTEGER;
 		nm.description = "NM";
 		nm.idx = this->info_fields_.size();
-		this->literals_ += nm.ToVcfString(false);
+		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
 	}
 
@@ -89,7 +111,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
 		npm.description = "NPM";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -102,7 +124,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
 		npm.description = "AN";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -115,7 +137,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
 		npm.description = "HWE_P";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -128,7 +150,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
 		npm.description = "AC";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -141,7 +163,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
 		npm.description = "AF";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -154,7 +176,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
 		npm.description = "AC_P";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -167,7 +189,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
 		npm.description = "FS_A";
 		npm.idx = this->info_fields_.size();
-		this->literals_ += npm.ToVcfString(false);
+		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
 	}
 
@@ -180,7 +202,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.yon_type = YON_VCF_HEADER_FLOAT;
 		nm.description = "F_PIC";
 		nm.idx = this->info_fields_.size();
-		this->literals_ += nm.ToVcfString(false);
+		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
 	}
 
@@ -193,7 +215,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.yon_type = YON_VCF_HEADER_FLOAT;
 		nm.description = "HET";
 		nm.idx = this->info_fields_.size();
-		this->literals_ += nm.ToVcfString(false);
+		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
 	}
 
@@ -206,7 +228,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.yon_type = YON_VCF_HEADER_FLAG;
 		nm.description = "MULTI_ALLELIC";
 		nm.idx = this->info_fields_.size();
-		this->literals_ += nm.ToVcfString(false);
+		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
 	}
 

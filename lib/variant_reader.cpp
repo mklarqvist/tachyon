@@ -375,14 +375,11 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 U64 VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 
+	return(this->OutputHtslibVcf());
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 	//	return(0);
 	//}
-
-	//this->GetGlobalHeader().PrintVcfHeader2(std::cerr, false);
-	//std::cerr << "regular" <<  std::endl;
-	//this->GetGlobalHeader().PrintVcfHeader(std::cerr);
 
 	while(this->NextBlock()){
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
@@ -409,6 +406,7 @@ U64 VariantReader::OutputVcfLinear(void){
 		//objects->occ = nullptr;
 		delete objects;
 	}
+
 	return 0;
 }
 
@@ -454,6 +452,143 @@ U64 VariantReader::OutputVcf(void){
 	filter_intervals_function filter_intervals = &self_type::FilterIntervalsDummy;
 	if(this->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
+}
+
+U64 VariantReader::OutputHtslibVcf(void){
+	this->variant_container.AllocateGenotypeMemory();
+
+	htsFile *fp = hts_open("/media/mdrk/NVMe/1kgp3/test_yon.bcf","wb");
+	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(true);
+	if ( bcf_hdr_write(fp, hdr) != 0 ) {
+		std::cerr << "Failed to write header to " << "/media/mdrk/NVMe/1kgp3/test_yon.bcf";
+		exit(1);
+	}
+	bcf1_t *rec = bcf_init1();
+
+	while(this->NextBlock()){
+		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+		io::BasicBuffer output_buffer(100000);
+
+		for(U32 i = 0; i < objects->meta_container->size(); ++i){
+			if(this->variant_filters.filter(entries[i], i) == false)
+				continue;
+
+			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
+			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
+			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
+
+			if ( bcf_write1(fp, hdr, rec) != 0 ){
+				std::cerr << "Failed to write record to " << "/media/mdrk/NVMe/1kgp3/test_yon.bcf";
+				exit(1);
+			}
+
+			bcf_clear1(rec);
+		}
+
+		std::cout.write(output_buffer.data(), output_buffer.size());
+		output_buffer.reset();
+		delete [] entries;
+		delete objects;
+	}
+
+	bcf_destroy1(rec);
+	bcf_hdr_destroy(hdr);
+	int ret;
+	if ( (ret=hts_close(fp)) )
+	{
+		fprintf(stderr,"hts_close(%s): non-zero status %d\n","file",ret);
+		exit(ret);
+	}
+
+	return 0;
+}
+
+void VariantReader::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const{
+	if(entry.n_info){
+		const uint32_t n_info_avail = entry.info_ids->size();
+		if(n_info_avail){
+			for(U32 j = 0; j < n_info_avail; ++j){
+				if(entry.info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+					bcf_update_info_flag(hdr, rec, entry.info_hdr[j]->id.data(), NULL, 1);
+				} else {
+					entry.info[j]->UpdateHtslibVcfRecordInfo(rec, hdr, entry.info_hdr[j]->id);
+				}
+			}
+
+			if(this->GetBlockSettings().annotate_extra){
+				entry.EvaluateSummary(true);
+				entry.gt_sum->d->UpdateHtslibVcfRecord(rec, hdr);
+			}
+		}
+	} else {
+		if(this->GetBlockSettings().annotate_extra){
+			entry.EvaluateSummary(true);
+			entry.gt_sum->d->UpdateHtslibVcfRecord(rec, hdr);
+		}
+	}
+}
+
+void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const{
+	if(entry.n_format){
+		const uint32_t n_format_avail = entry.format_ids->size();
+		if(n_format_avail){
+			// Case when the only available FORMAT field is the GT field.
+			if(n_format_avail == 1 && entry.is_loaded_gt &&
+			   entry.meta->controller.gt_available &&
+			   (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
+			{
+				//std::cerr << "here1" << std::endl;
+				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
+
+				// Iterate over samples and print FORMAT:GT value in Vcf format.
+				//entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
+				//for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+				//	output_buffer += '\t';
+				//	entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
+				//}
+
+				entry.gt->d_exp = nullptr;
+			}
+			// Case when there are > 1 Vcf Format fields and the GT field
+			// is available.
+			else if(n_format_avail > 1 && entry.is_loaded_gt &&
+			        entry.meta->controller.gt_available &&
+			        (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
+			{
+				//std::cerr << "here2" << std::endl;
+				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
+
+				for(U32 g = 1; g < n_format_avail; ++g){
+					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
+				}
+
+				entry.gt->d_exp = nullptr;
+			}
+			// All other cases.
+			else {
+				//std::cerr << "here3" << std::endl;
+				/*
+				entry.fmt[0]->to_vcf_string(output_buffer, 0);
+				for(U32 g = 1; g < n_format_avail; ++g){
+					output_buffer += ':';
+					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+				}
+
+				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+					output_buffer += '\t';
+					entry.fmt[0]->to_vcf_string(output_buffer, s);
+					for(U32 g = 1; g < n_format_avail; ++g){
+						output_buffer += ':';
+						entry.fmt[g]->to_vcf_string(output_buffer, s);
+					}
+				}
+				*/
+			}
+		}
+	}
 }
 
 /**<
