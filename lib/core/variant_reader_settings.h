@@ -19,8 +19,9 @@ public:
 		header_only(false),
 		show_header(true),
 		annotate_genotypes(false),
+		use_htslib(false),
 		output("-"),
-		use_htslib(false)
+		output_type('v')
 	{}
 
 	~VariantReaderSettings() = default;
@@ -50,8 +51,7 @@ public:
 	std::string input;
 	std::string output;
 	std::string keychain_file;
-	std::string output_type;
-	std::string htslib_output_type;
+	char output_type;
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
 };

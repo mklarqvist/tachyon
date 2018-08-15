@@ -34,30 +34,31 @@ DEALINGS IN THE SOFTWARE.
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<
-	"About:  Convert YON->VCF/BCF or custom output; provides subset and slice operators data\n"
+	"About:  Convert YON->VCF/BCF; provides subsetting and slicing functionality\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " view [options] -i <in.yon>\n\n"
 	"Options:\n"
 	"  -i FILE   input YON file (required)\n"
-	"  -o FILE   output file (- for stdout; default: -)\n"
-	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
-	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	"  -o FILE   output file (- for stdout)[-]\n"
+	"  -k FILE   keychain file with encryption keys (required if the file is encrypted)\n"
+	"  -O <y|b|u|z|v> y: tachyon archive, b: compressed BCF, u: uncompressed BCF, \n"
+	"                 z: compressed VCF,  v: uncompressed VCF [v]\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
-	"  -R STRING path to file with interval strings\n"
+	//"  -R STRING path to file with interval strings\n"
 	"  -G        drop all FORMAT fields from output\n"
-	"  -h/H      header only / no header\n"
-	"  -s        Hide all program messages\n\n"
+	"  -X        annotate FORMAT:GT data and add these statistics to the INFO column\n"
+	"  -h/H      header only / no header\n\n"
 
-	"Subset options:\n"
-	"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
-	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n\n"
+	//"Subset options:\n"
+	//"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
+	//"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n\n"
 
 	"Filter options:\n"
 	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression pattern for the reference allele -a or for any alternative alleles -A\n"
 	"  -n,   --name-match <REGEX>                  regular expression pattern for the locus name\n"
     "  -c/C, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
-    "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
+    //"  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
 	"  -q/Q, --min-quality/--max-quality           minimum/maximum quality value\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
@@ -67,8 +68,8 @@ void view_usage(void){
 	"  -l/L, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
-	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n"
-    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
+	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n\n";
+    //"  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
 }
 
 int view(int argc, char** argv){
@@ -236,7 +237,7 @@ int view(int argc, char** argv){
 			settings.show_header = false;
 			break;
 		case 'O':
-			settings.output_type = std::string(optarg);
+			settings.output_type = optarg[0];
 			break;
 		case 'X':
 			settings.annotate_genotypes = true;
@@ -285,34 +286,25 @@ int view(int argc, char** argv){
 		}
 	}
 
-	if(settings.output_type.size()){
-		std::transform(settings.output_type.begin(),
-		               settings.output_type.end(),
-		               settings.output_type.begin(),
-		               ::toupper); // transform to UPPERCASE
-		if(strncasecmp(&settings.output_type[0], "JSON", 4) == 0 && settings.output_type.size() == 4){
-			std::cerr << "not supported yet" << std::endl;
-			return(1);
-		} else if(strncasecmp(&settings.output_type[0], "VCF", 3) == 0 && settings.output_type.size() == 3){
-			settings.use_htslib = false;
-		} else if(strncasecmp(&settings.output_type[0], "VCFGZ", 3) == 0 && settings.output_type.size() == 5){
-			settings.htslib_output_type = "wz";
-			settings.use_htslib = true;
-		} else if(strncasecmp(&settings.output_type[0], "BCF", 3) == 0 && settings.output_type.size() == 3){
-			settings.htslib_output_type = "wb";
-			settings.use_htslib = true;
-			std::cerr << "setting to bcf: " << settings.use_htslib << std::endl;
-		} else if(strncasecmp(&settings.output_type[0], "UBCF", 3) == 0 && settings.output_type.size() == 4){
-			settings.htslib_output_type = "bu";
-			settings.use_htslib = true;
-		} else if(strncasecmp(&settings.output_type[0], "YON", 3) == 0 && settings.output_type.size() == 3){
-			std::cerr << "not supported yet" << std::endl;
-			return(1);
-		} else {
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
-			return(1);
-		}
+	if(settings.output_type == 'v'){
+		settings.use_htslib = false;
+	} else if(settings.output_type == 'z'){
+		settings.output_type = 'z';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'b'){
+		settings.output_type = 'b';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'u'){
+		settings.output_type = 'u';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'y'){
+		std::cerr << "not supported yet" << std::endl;
+		return(1);
+	} else {
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
+		return(1);
 	}
+
 
 	// If user is triggering annotation
 	if(settings.annotate_genotypes){
@@ -338,21 +330,7 @@ int view(int argc, char** argv){
 	if(reader.AddIntervals(interval_strings) == false) return(1);
 
 
-	reader.OutputVcf();
-
-	//U64 n_variants = 0;
-	//if(settings.custom_output_format) n_variants = reader.outputCustom();
-	//else n_variants = reader.outputVCF();
-
-	//std::cerr << "Blocks: " << n_blocks << std::endl;
-	/*
-	std::cerr << "Variants: "
-	          << tachyon::utility::ToPrettyString(n_variants) << " genotypes: "
-	          << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t'
-	          << timer.ElapsedString() << '\t'
-	          << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count()))
-	          << std::endl;
-	*/
+	reader.OutputRecords();
 
 	return 0;
 }

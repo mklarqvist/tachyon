@@ -189,7 +189,7 @@ public:
 	 */
 	bool SeekBlock(const U32& blockID);
 
-	U64 OutputVcf(void);
+	U64 OutputRecords(void);
 	U64 OutputVcfLinear(void);
 	U64 OutputVcfSearch(void);
 	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;
@@ -197,7 +197,8 @@ public:
 	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
-	U64 OutputHtslibVcf(void);
+	U64 OutputHtslibVcfLinear(void);
+	U64 OutputHtslibVcfSearch(void);
 	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
 	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
 

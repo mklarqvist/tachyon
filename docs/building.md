@@ -17,48 +17,19 @@ Tachyon comes bundled with several API-examples in the `lib_example` directory. 
 make examples
 ```
 
-## Building without admin privilidges
-If you have no super-user (`sudo`) powers required to install software on your machine:
-
-## Linux/MacOSX
+## Installation
+For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
-# If you do NOT have ZSTD available
-git clone https://github.com/facebook/zstd
-cd zstd
-make
-cd ..
-# If you do NOT have OpenSSL installed
-git clone git://git.openssl.org/openssl.git
-cd openssl
-./config
-make
-cd ..
-# If you do NOT have htslib installed
-git clone https://github.com/samtools/htslib
-cd htslib
-./configure
-make
-cd ..
-# Build Tachyon
-make
+sudo ./install.sh
 ```
-### MacOSX
-Installation using [Homebrew](https://brew.sh/):
+Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
+If you do not have super-user privileges required to install new packages on your system then run
 ```bash
-brew update
-# If you do NOT have OpenSSL installed
-brew install openssl
-# If you do NOT have ZSTD installed
-brew install zstd
-# If you do NOT have htslib installed
-brew install htslib
-# Install Tachyon
-git clone --recursive https://github.com/mklarqvist/tachyon
-cd tachyon
-make
+./install.sh local
 ```
+In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
 
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd

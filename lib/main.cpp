@@ -51,7 +51,8 @@ int main(int argc, char** argv){
 	} else if(strncmp(subroutine.data(), "view", 4) == 0 && subroutine.size() == 4){
 		return(view(argc, argv));
 	} else if(strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5){
-		return(stats(argc, argv));
+		std::cerr << "Not implemented" << std::endl;
+		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << "Not implemented" << std::endl;
 		return(0);

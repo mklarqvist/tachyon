@@ -440,47 +440,49 @@ U64 VariantReader::OutputVcfSearch(void){
 	return 0;
 }
 
-U64 VariantReader::OutputVcf(void){
+U64 VariantReader::OutputRecords(void){
+	this->interval_container.build(this->global_header);
+
+	if(this->settings.use_htslib){
+		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());
+		else return(this->OutputHtslibVcfLinear());
+	}
+
 	if(this->GetBlockSettings().show_vcf_header)
 		this->global_header.PrintVcfHeader(std::cout);
 
-	this->interval_container.build(this->global_header);
-
-	std::cerr << "usehtslib: " << this->settings.use_htslib << std::endl;
-	if(this->settings.use_htslib){
-		std::cerr << "use htslib" << std::endl;
-		return(this->OutputHtslibVcf());
-	}
-
-	// Filter functionality
-	filter_intervals_function filter_intervals = &self_type::FilterIntervalsDummy;
 	if(this->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
 }
 
-U64 VariantReader::OutputHtslibVcf(void){
+U64 VariantReader::OutputHtslibVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 
-	//
-	// [rw]b  .. compressed BCF, BAM, FAI
-    // [rw]bu .. uncompressed BCF
-    // [rw]z  .. compressed VCF
-    // [rw]   .. uncompressed VCF
-	htsFile *fp = hts_open(this->settings.output.c_str(), "wb");
-	exit(1);
+	// Open a htslib file handle for the target output
+	// destination.
+	char hts_stream_type[2];
+	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
+	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
 
-	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(true);
+	// Convert the internal yon header to a bcf_hdr_t
+	// structure.
+	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(!this->settings.drop_format);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
 		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
 	}
+
+	// Initialize an empty record that we will keep
+	// reusing as we iterate over available yon records.
 	bcf1_t *rec = bcf_init1();
 
+	// Iterate over available blocks.
 	while(this->NextBlock()){
+		// Lazy evaluate yon records.
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
-		io::BasicBuffer output_buffer(100000);
 
+		// Iterate over available records in this block.
 		for(U32 i = 0; i < objects->meta_container->size(); ++i){
 			if(this->variant_filters.filter(entries[i], i) == false)
 				continue;
@@ -490,21 +492,92 @@ U64 VariantReader::OutputHtslibVcf(void){
 			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
-				std::cerr << "Failed to write record to " << "/media/mdrk/NVMe/1kgp3/test_yon.bcf";
+				std::cerr << "Failed to write record to " << this->settings.output;
 				exit(1);
 			}
 
 			bcf_clear1(rec);
 		}
 
-		std::cout.write(output_buffer.data(), output_buffer.size());
-		output_buffer.reset();
+		// Cleanup lazy evaluation of yon records.
 		delete [] entries;
 		delete objects;
 	}
 
+	// Cleanup htslib bcf1_t and bcf_hdr_t structures.
 	bcf_destroy1(rec);
 	bcf_hdr_destroy(hdr);
+
+	// Close file handle.
+	int ret;
+	if ( (ret=hts_close(fp)) ) {
+		fprintf(stderr,"hts_close(%s): non-zero status %d\n",this->settings.output.data(),ret);
+		exit(ret);
+	}
+
+	return 0;
+}
+
+U64 VariantReader::OutputHtslibVcfSearch(void){
+	this->variant_container.AllocateGenotypeMemory();
+
+	// Open a htslib file handle for the target output
+	// destination.
+	char hts_stream_type[2];
+	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
+	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+
+	// Convert the internal yon header to a bcf_hdr_t
+	// structure.
+	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(!this->settings.drop_format);
+	if ( bcf_hdr_write(fp, hdr) != 0 ) {
+		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
+		exit(1);
+	}
+
+	// Initialize an empty record that we will keep
+	// reusing as we iterate over available yon records.
+	bcf1_t *rec = bcf_init1();
+
+	// Filter functionality
+	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
+
+	// Iterate over available blocks.
+	while(this->NextBlock()){
+		// Lazy evaluate yon records.
+		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+
+		// Iterate over available records in this block.
+		for(U32 i = 0; i < objects->meta_container->size(); ++i){
+			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
+				continue;
+
+			if(this->variant_filters.filter(entries[i], i) == false)
+				continue;
+
+			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
+			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
+			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
+
+			if ( bcf_write1(fp, hdr, rec) != 0 ){
+				std::cerr << "Failed to write record to " << this->settings.output;
+				exit(1);
+			}
+
+			bcf_clear1(rec);
+		}
+
+		// Cleanup lazy evaluation of yon records.
+		delete [] entries;
+		delete objects;
+	}
+
+	// Cleanup htslib bcf1_t and bcf_hdr_t structures.
+	bcf_destroy1(rec);
+	bcf_hdr_destroy(hdr);
+
+	// Close file handle.
 	int ret;
 	if ( (ret=hts_close(fp)) ) {
 		fprintf(stderr,"hts_close(%s): non-zero status %d\n",this->settings.output.data(),ret);
