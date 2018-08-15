@@ -30,6 +30,7 @@ public:
 
 	void operator()(const char* const in);
 	void operator()(const char* const in, const U32 length);
+	void operator()(const std::string& in);
 
 	inline const U16& size(void) const{ return(this->l_allele); }
 	inline const U16& length(void) const{ return(this->l_allele); }

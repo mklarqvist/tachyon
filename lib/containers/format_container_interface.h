@@ -10,23 +10,26 @@ private:
     typedef std::size_t              size_type;
 
 public:
-    FormatContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0){}
-    FormatContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries){}
+    FormatContainerInterface() : primitive_type( YON_TYPE_32B), n_entries(0), n_capacity(0){}
+    FormatContainerInterface(const size_t n_entries) : primitive_type(YON_TYPE_32B), n_entries(n_entries), n_capacity(0){}
     virtual ~FormatContainerInterface(){}
 
     // Capacity
-	inline const bool empty(void) const{ return(this->n_entries == 0); }
+	inline bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
     virtual std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample_number) const =0;
     virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const =0;
     virtual io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const =0;
-    virtual const bool emptyPosition(const U32& position) const =0;
-    virtual const bool emptyPosition(const U32& position, const U64& sample) const =0;
+    virtual bool emptyPosition(const U32& position) const =0;
+    virtual bool emptyPosition(const U32& position, const U64& sample) const =0;
+
+    virtual bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
 
 protected:
     TACHYON_CORE_TYPE primitive_type;
 	size_t  n_entries;
+	size_t  n_capacity;
 };
 
 }

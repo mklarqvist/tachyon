@@ -1,14 +1,17 @@
 #ifndef CORE_BLOCKENTRY_H_
 #define CORE_BLOCKENTRY_H_
 
-#include "algorithm/permutation/permutation_manager.h"
+#include <unordered_map>
+
+#include "third_party/xxhash/xxhash.h"
+
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
 #include "core/data_block_settings.h"
 #include "data_container.h"
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
-#include "io/vcf/VCFHeader.h"
+#include "core/genotypes.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,13 +22,11 @@ namespace containers{
  * contents.
  */
 class VariantBlock{
+public:
 	typedef VariantBlock                    self_type;
 	typedef DataContainer                   container_type;
-	typedef algorithm::PermutationManager   permutation_type;
 	typedef VariantBlockHeader              block_header_type;
 	typedef VariantBlockFooter              block_footer_type;
-	typedef HashContainer                   hash_container_type;
-	typedef HashVectorContainer             hash_vector_container_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
@@ -33,7 +34,26 @@ class VariantBlock{
 
 public:
 	VariantBlock();
+	VariantBlock(const uint16_t n_info, const uint16_t n_format);
 	~VariantBlock();
+
+	void Allocate(const uint16_t n_info,
+	              const uint16_t n_format,
+	              const uint16_t n_filter)
+	{
+		// Allocate space for INFO containers.
+		delete [] this->info_containers;
+		this->info_containers = new container_type[n_info];
+		this->n_info_c_allocated = n_info;
+
+		// Allocate space for FORMAT containers.
+		delete [] this->format_containers;
+		this->format_containers = new container_type[n_format];
+		this->n_format_c_allocated = n_format;
+
+		// Alocate space for headers.
+		this->footer.AllocateHeaders(n_info, n_format, n_filter);
+	}
 
 	/**< @brief Resize base container buffer streams
 	 * Internal use only
@@ -50,72 +70,6 @@ public:
 
 	inline const U32& size(void) const{ return(this->header.n_variants); }
 
-	//
-	//inline const size_t getINFOLoaded(void) const{ return(this->info_loaded.size()); }
-	//inline const size_t getFORMATLoaded(void) const{ return(this->format_loaded.size()); }
-
-	inline U32 addFieldINFO(const U32 fieldID){ return(this->info_fields.setGet(fieldID)); }
-	inline U32 addFieldFORMAT(const U32 fieldID){ return(this->format_fields.setGet(fieldID)); }
-	inline U32 addFieldFILTER(const U32 fieldID){ return(this->filter_fields.setGet(fieldID)); }
-
-	inline const S32 getPatternsINFO(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->info_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline const S32 getPatternsFORMAT(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->format_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline const S32 getPatternsFILTER(const U64& hash_pattern) const{
-		U32 mapID = 0;
-		if(this->filter_patterns.getRaw(hash_pattern, mapID))
-			return(mapID);
-		else return(-1);
-	}
-
-	inline void addPatternINFO(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->info_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	inline void addPatternFORMAT(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->format_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	inline void addPatternFILTER(const std::vector<U32>& pattern, const U64& hash_pattern){
-		if(!this->filter_patterns.set(pattern, hash_pattern)){
-			std::cerr << "failed to insert filter: " << pattern.size() << " and " << hash_pattern << std::endl;
-			exit(1);
-		}
-	}
-
-	/**<
-	 * Finalize this block before writing to disk. This wrapper function
-	 * calls all necessary functions to construct a valid Tachyon block
-	 * for sequence variant data
-	 */
-	inline void finalize(void){
-		this->footer.n_info_streams   = this->info_fields.size();
-		this->footer.n_filter_streams = this->filter_fields.size();
-		this->footer.n_format_streams = this->format_fields.size();
-		this->footer.allocateDiskOffsets(this->footer.n_info_streams, this->footer.n_format_streams, this->footer.n_filter_streams);
-		this->updateContainers();
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_INFO,   this->info_fields,   this->info_patterns);
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FILTER, this->filter_fields, this->filter_patterns);
-		this->footer.constructBitVector(containers::VariantBlockFooter::INDEX_FORMAT, this->format_fields, this->format_patterns);
-	}
-
 	/**< @brief Reads all digital objects from disk
 	 * Primary function for reading data from disk. Data
 	 * read in this way is not checked for integrity here.
@@ -129,7 +83,7 @@ public:
 	 * @param stream
 	 * @return
 	 */
-	bool readHeaderFooter(std::ifstream& stream);
+	bool ReadHeaderFooter(std::ifstream& stream);
 
 	/**<
 	 * Standard way of writing out a YON block.
@@ -156,14 +110,30 @@ public:
 	 * @param info_ids Vector of global INFO keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> intersectInfoKeys(const std::vector<U32>& info_ids) const{
-		std::vector<U32> info_ids_found;
-		if(info_ids.size() == 0) return(info_ids_found);
+	std::vector<int> IntersectInfoKeys(const std::vector<int>& info_ids_global) const{
+		std::vector<int> info_ids_found;
+		if(info_ids_global.size() == 0) return(info_ids_found);
 
-		for(U32 i = 0; i < info_ids.size(); ++i){
+		for(U32 i = 0; i < info_ids_global.size(); ++i){
 			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
-				if(this->footer.info_offsets[j].data_header.global_key == info_ids[i])
+				if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
 					info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+			}
+		}
+
+		return(info_ids_found);
+	}
+
+	std::vector<int> IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const{
+		std::vector<int> info_ids_found;
+		if(info_ids_global.size() == 0) return(info_ids_found);
+		assert(local_id < this->footer.n_info_patterns);
+
+		for(U32 i = 0; i < info_ids_global.size(); ++i){
+			for(U32 k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
+				if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
+					info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
+				}
 			}
 		}
 
@@ -176,21 +146,36 @@ public:
 	 * @param info_ids Vector of global FORMAT keys
 	 * @return         Returns the set intersection of provided keys and local keys
 	 */
-	std::vector<U32> intersectFormatKeys(const std::vector<U32>& format_ids) const{
-		std::vector<U32> format_ids_found;
-		if(format_ids.size() == 0) return(format_ids_found);
+	std::vector<int> IntersectFormatKeys(const std::vector<int>& format_ids_global) const{
+		std::vector<int> format_ids_found;
+		if(format_ids_global.size() == 0) return(format_ids_found);
 
-		for(U32 i = 0; i < format_ids.size(); ++i){
-			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
-				if(this->footer.info_offsets[j].data_header.global_key == format_ids[i])
-					format_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+		for(U32 i = 0; i < format_ids_global.size(); ++i){
+			for(U32 j = 0; j < this->footer.n_format_streams; ++j){
+				if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
+					format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
 			}
 		}
 
 		return(format_ids_found);
 	}
 
-	std::vector<U32> getFormatKeys(void) const{
+	std::vector<int> IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const{
+		std::vector<int> format_ids_found;
+		if(format_ids_global.size() == 0) return(format_ids_found);
+		assert(local_id < this->footer.n_format_patterns);
+
+		for(U32 i = 0; i < format_ids_global.size(); ++i){
+			for(U32 k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
+				if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
+					format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
+			}
+		}
+
+		return(format_ids_found);
+	}
+
+	std::vector<U32> GetFormatKeys(void) const{
 		std::vector<U32> ret;
 		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
 			ret.push_back(this->footer.format_offsets[i].data_header.global_key);
@@ -198,7 +183,7 @@ public:
 		return(ret);
 	}
 
-	std::vector<U32> getInfoKeys(void) const{
+	std::vector<U32> GetInfoKeys(void) const{
 		std::vector<U32> ret;
 		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
 			ret.push_back(this->footer.info_offsets[i].data_header.global_key);
@@ -213,7 +198,10 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool __loadContainer(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainer(std::ifstream& stream,
+	                          const offset_type& offset,
+	                          container_type& container)
+	{
 		container.header = offset;
 		stream >> container;
 		assert(container.header == offset);
@@ -228,7 +216,10 @@ public:
 	 * @param container Destination container object
 	 * @return
 	 */
-	inline bool __loadContainerSeek(std::ifstream& stream, const offset_type& offset, container_type& container){
+	inline bool LoadContainerSeek(std::ifstream& stream,
+	                              const offset_type& offset,
+	                              container_type& container)
+	{
 		stream.seekg(this->start_compressed_data_ + offset.data_header.offset);
 		container.header = offset;
 		stream >> container;
@@ -236,7 +227,6 @@ public:
 		return(stream.good());
 	}
 
-private:
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
 	 * container offsets and checks/builds
@@ -244,29 +234,141 @@ private:
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
-	void updateContainers(void);
+	void UpdateContainers(void);
 
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
 	 * block
 	 * @return Returns the sum total disk size
 	 */
-	const U64 __determineCompressedSize(void) const;
+	U64 DetermineCompressedSize(void) const;
 
+	inline void PackFooter(void){
+		this->footer_support.reset();
+		this->footer_support.buffer_data_uncompressed << this->footer;
+		++this->footer_support;
+	}
+
+	inline U32 AddInfoPattern(const std::vector<int>& pattern){ return(this->footer.AddInfoPattern(pattern)); }
+	inline U32 AddFormatPattern(const std::vector<int>& pattern){ return(this->footer.AddFormatPattern(pattern)); }
+	inline U32 AddFilterPattern(const std::vector<int>& pattern){ return(this->footer.AddFilterPattern(pattern)); }
+	inline U32 AddInfo(const U32 id){ return(this->footer.AddInfo(id)); }
+	inline U32 AddFormat(const U32 id){ return(this->footer.AddFormat(id)); }
+	inline U32 AddFilter(const U32 id){ return(this->footer.AddFilter(id)); }
+	inline void Finalize(void){ this->footer.Finalize(); }
+
+	S32 GetInfoPosition(const U32 global_id) const{
+		if(this->footer.info_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+		if(it == this->footer.info_map->end()) return -1;
+		return(it->second);
+	}
+
+	S32 GetFormatPosition(const U32 global_id) const{
+		if(this->footer.format_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+		if(it == this->footer.format_map->end()) return -1;
+		return(it->second);
+	}
+
+	S32 GetFilterPosition(const U32 global_id) const{
+		if(this->footer.filter_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+		if(it == this->footer.filter_map->end()) return -1;
+		return(it->second);
+	}
+
+	bool HasInfo(const U32 global_id) const{
+		if(this->footer.info_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+		if(it == this->footer.info_map->end()) return false;
+		return(true);
+	}
+
+	bool HasFormat(const U32 global_id) const{
+		if(this->footer.format_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+		if(it == this->footer.format_map->end()) return false;
+		return(true);
+	}
+
+	bool HasFilter(const U32 global_id) const{
+		if(this->footer.filter_map == nullptr) return false;
+		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+		if(it == this->footer.filter_map->end()) return false;
+		return(true);
+	}
+
+	container_type* GetInfoContainer(const U32 global_id) const{
+		if(this->HasInfo(global_id))
+			return(&this->info_containers[this->footer.info_map->at(global_id)]);
+		else
+			return nullptr;
+	}
+
+	container_type* GetFormatContainer(const U32 global_id) const{
+		if(this->HasFormat(global_id))
+			return(&this->format_containers[this->footer.format_map->at(global_id)]);
+		else
+			return nullptr;
+	}
+
+	std::vector<bool> InfoPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_info_patterns, false);
+		for(U32 i = 0; i < this->footer.n_info_patterns; ++i){
+			for(U32 j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
+				if(this->footer.info_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
+
+	std::vector<bool> FormatPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_format_patterns, false);
+		for(U32 i = 0; i < this->footer.n_format_patterns; ++i){
+			for(U32 j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
+				if(this->footer.format_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
+
+	std::vector<bool> FilterPatternSetMembership(const int value) const{
+		std::vector<bool> matches(this->footer.n_filter_patterns, false);
+		for(U32 i = 0; i < this->footer.n_filter_patterns; ++i){
+			for(U32 j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
+				if(this->footer.filter_patterns[i].pattern[j] == value){
+					matches[i] = true;
+					break;
+				}
+			}
+		}
+		return(matches);
+	}
+
+private:
 	/**<
 	 *
 	 * @param stats_basic
 	 * @param stats_info
 	 * @param stats_format
 	 */
-	void updateOutputStatistics(import_stats_type& stats_basic, import_stats_type& stats_info, import_stats_type& stats_format);
+	void UpdateOutputStatistics(import_stats_type& stats_basic,
+	                            import_stats_type& stats_info,
+	                            import_stats_type& stats_format);
 
 	/**<
 	 * Move over pair of headers from a data container to a block footer
 	 * @param offset    Destination header in footer
 	 * @param container Target container hosting the header
 	 */
-	inline void __updateHeader(offset_type& offset, const container_type& container){
+	inline void UpdateHeader(offset_type& offset, const container_type& container){
 		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -279,7 +381,10 @@ private:
 	 * @param container      Target container hosting the header
 	 * @param virtual_offset Block virtual offset
 	 */
-	inline void __updateHeader(offset_type& offset, const container_type& container, const U32& virtual_offset){
+	inline void UpdateHeader(offset_type& offset,
+	                         const container_type& container,
+	                         const U32& virtual_offset)
+	{
 		const U32 global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -294,11 +399,15 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void __writeContainer(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
+	inline void WriteContainer(std::ostream& stream,
+	                           offset_type& offset,
+	                           const container_type& container,
+	                           const U32 virtual_offset)
+	{
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
-			return(this->__writeContainerEncrypted(stream, offset, container, virtual_offset));
+			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
-		this->__updateHeader(offset, container, virtual_offset);
+		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;
 	}
@@ -310,48 +419,27 @@ private:
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void __writeContainerEncrypted(std::ostream& stream, offset_type& offset, const container_type& container, const U32 virtual_offset){
-		this->__updateHeader(offset, container, virtual_offset);
+	inline void WriteContainerEncrypted(std::ostream& stream,
+	                                    offset_type& offset,
+	                                    const container_type& container,
+	                                    const U32 virtual_offset)
+	{
+		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);
 		// Encrypted data is concatenated: write only data buffer
 		stream.write(container.buffer_data.data(), container.buffer_data.size());
 	}
 
 public:
+	uint16_t n_info_c_allocated;
+	uint16_t n_format_c_allocated;
 	block_header_type header;
 	block_footer_type footer;
-	permutation_type  ppa_manager;
-	container_type    meta_contig_container;
-	container_type    meta_positions_container;
-	container_type    meta_refalt_container;
-	container_type    meta_controller_container;
-	container_type    meta_quality_container;
-	container_type    meta_names_container;
-	container_type    meta_alleles_container;
-	container_type    meta_info_map_ids;
-	container_type    meta_format_map_ids;
-	container_type    meta_filter_map_ids;
-	container_type    gt_support_data_container;
-	container_type    gt_rle8_container;
-	container_type    gt_rle16_container;
-	container_type    gt_rle32_container;
-	container_type    gt_rle64_container;
-	container_type    gt_simple8_container;
-	container_type    gt_simple16_container;
-	container_type    gt_simple32_container;
-	container_type    gt_simple64_container;
+	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
+	yon_gt_ppa* gt_ppa;
 
-	// Use during construction
-	hash_container_type        info_fields;
-	hash_container_type        format_fields;
-	hash_container_type        filter_fields;
-	hash_vector_container_type info_patterns;
-	hash_vector_container_type format_patterns;
-	hash_vector_container_type filter_patterns;
-
-public:
 	// Utility
 	U64 end_block_;
 	U64 start_compressed_data_;

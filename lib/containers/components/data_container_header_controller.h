@@ -15,6 +15,7 @@ namespace containers{
 // Controller type for stream container
 struct DataContainerHeaderController{
 	typedef DataContainerHeaderController self_type;
+	typedef io::BasicBuffer               buffer_type;
 
 public:
 	DataContainerHeaderController() :
@@ -37,9 +38,9 @@ public:
 		this->encryption  = 0;
 	}
 
-	inline const bool isEncrypted(void) const{ return(this->encryption > 0); }
-	inline const bool compareType(const BYTE& type) const{ return(this->type == type); }
-	inline const bool compareTypeSign(const BYTE& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
+	inline bool isEncrypted(void) const{ return(this->encryption > 0); }
+	inline bool compareType(const BYTE& type) const{ return(this->type == type); }
+	inline bool compareTypeSign(const BYTE& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
 
 	self_type& operator=(const self_type& other){
 		this->signedness  = other.signedness;
@@ -51,7 +52,7 @@ public:
 		return(*this);
 	}
 
-	const bool operator==(const self_type& other) const{
+	bool operator==(const self_type& other) const{
 		if(this->signedness  != other.signedness)  return false;
 		if(this->mixedStride != other.mixedStride) return false;
 		if(this->type        != other.type)        return false;
@@ -60,12 +61,19 @@ public:
 		if(this->encryption  != other.encryption)  return false;
 		return true;
 	}
-	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
 private:
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer,const self_type& controller){
-		const U16* c = reinterpret_cast<const U16* const>(&controller);
-		buffer += *c;
+	friend buffer_type& operator<<(buffer_type& buffer,const self_type& controller){
+		const U16 c = controller.signedness  << 0  |
+					  controller.mixedStride << 1  |
+					  controller.type        << 2  |
+					  controller.encoder     << 8  |
+					  controller.uniform     << 13 |
+					  controller.encryption  << 14;
+
+		//const U16* c = reinterpret_cast<const U16* const>(&controller);
+		buffer += c;
 		return(buffer);
 	}
 
@@ -77,7 +85,7 @@ private:
 					  controller.uniform     << 13 |
 					  controller.encryption  << 14;
 
-		assert(*reinterpret_cast<const U16* const>(&controller) == c);
+		//assert(*reinterpret_cast<const U16* const>(&controller) == c);
 
 		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
 		return(stream);
@@ -88,7 +96,7 @@ private:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& controller){
+	friend buffer_type& operator>>(buffer_type& buffer, self_type& controller){
 		U16* c = reinterpret_cast<U16*>(&controller);
 		buffer >> *c;
 		return(buffer);

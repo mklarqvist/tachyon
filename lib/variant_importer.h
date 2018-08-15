@@ -1,18 +1,23 @@
 #ifndef VARIANT_IMPORTER_H_
 #define VARIANT_IMPORTER_H_
 
+#include <unordered_map>
+
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
-#include "algorithm/permutation/radix_sort_gt.h"
 #include "algorithm/timer.h"
 #include "containers/variant_block.h"
 #include "core/variant_import_writer.h"
 #include "core/variant_importer_container_stats.h"
 #include "index/index_entry.h"
 #include "index/index_index_entry.h"
-#include "io/bcf/BCFReader.h"
+#include "io/vcf_utils.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
+#include "algorithm/digest/variant_digest_manager.h"
+#include "core/footer/footer.h"
+#include "algorithm/encryption/encryption_decorator.h"
+#include "algorithm/permutation/genotype_sorter.h"
 
 namespace tachyon {
 
@@ -35,7 +40,7 @@ public:
 
 	~VariantImporterSettings() = default;
 
-	std::string getInterpretedString(void) const{
+	std::string GetInterpretedString(void) const{
 		return(std::string("##tachyon_importInterpretedCommand=input_file=" + this->input_file +
 		   ";output_prefix=" + this->output_prefix +
 		   ";checkpoint_snps=" + std::to_string(this->checkpoint_n_snps) +
@@ -44,12 +49,12 @@ public:
 		));
 	}
 
-	inline void setInputFile(const std::string& input_name){ this->input_file = input_name; }
-	inline void setOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
-	inline void setThreads(const U32 n_threads){ this->n_threads = n_threads; }
-	inline void setPermute(const bool yes){ this->permute_genotypes = yes; }
-	inline void setEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void setCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
+	inline void SetInputFile(const std::string& input_name){ this->input_file = input_name; }
+	inline void SetOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
+	inline void SetThreads(const U32 n_threads){ this->n_threads = n_threads; }
+	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
+	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
+	inline void SetCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
 
 public:
 	bool permute_genotypes;   // permute GT flag
@@ -72,38 +77,53 @@ private:
 	typedef VariantImportWriterFile         writer_file_type;
 	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef vcf::VCFHeader                  header_type;
+
 	typedef index::IndexEntry               index_entry_type;
-	typedef bcf::BCFReader                  bcf_reader_type;
-	typedef bcf::BCFEntry                   bcf_entry_type;
+
+	typedef io::VcfReader                   vcf_reader_type;
+	typedef containers::VcfContainer        vcf_container_type;
+
 	typedef algorithm::CompressionManager   compression_manager_type;
-	typedef algorithm::RadixSortGT          radix_sorter_type;
-	typedef algorithm::PermutationManager   permutation_type;
+	typedef algorithm::GenotypeSorter       radix_sorter_type;
 	typedef algorithm::GenotypeEncoder      gt_encoder_type;
 	typedef containers::DataContainer       stream_container;
-	typedef containers::HashContainer       hash_container_type;
-	typedef containers::HashVectorContainer hash_vector_container_type;
 	typedef containers::VariantBlock        block_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
+	typedef std::unordered_map<U32, U32>    reorder_map_type;
+	typedef std::unordered_map<U64, U32>    hash_map_type;
 
 public:
 	VariantImporter();
 	VariantImporter(const settings_type& settings);
-
-	VariantImporter(std::string inputFile, std::string outputPrefix, const U32 checkpoint_size, const double checkpoint_bases);
 	~VariantImporter();
+
 	bool Build();
 
-	void setWriterTypeFile(void){ this->writer = new writer_file_type; }
-	void setWriterTypeStream(void){ this->writer = new writer_stream_type; }
+	void SetWriterTypeFile(void){ this->writer = new writer_file_type; }
+	void SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+
+	void clear(void);
 
 private:
-	bool BuildBCF();  // import a BCF file
-	bool addSite(meta_type& meta, bcf_entry_type& line); // Import a BCF line
-	bool addGenotypes(bcf_reader_type& bcf_reader, meta_type* meta_entries);
-	bool parseBCFBody(meta_type& meta, bcf_entry_type& line);
+	bool BuildVCF();
+	bool AddRecords(const vcf_container_type& container);
+	bool AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta);
+	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
+	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
+	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
+	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
+	bool AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
+	bool UpdateIndex();
+	bool WriteBlock();
+	bool WriteFinal(algorithm::VariantDigestManager& checksums);
+	bool WriteKeychain(const encryption::Keychain<>& keychain);
+	bool WriteYonHeader();
+	bool GenerateIdentifiers(void);
 
 private:
 	settings_type settings_; // internal settings
@@ -115,17 +135,31 @@ private:
 	import_stats_type stats_format;
 
 	// Read/write fields
-	writer_interface_type* writer;      // writer
-
+	writer_interface_type* writer; // writer
 	index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter
-	header_type*      header;      // header
 	gt_encoder_type   encoder;     // RLE packer
 
 	compression_manager_type compression_manager;
 
 	// Data container
 	block_type block;
+
+	// Map from BCF global FORMAT/INFO/FILTER IDX to local IDX such that
+	// FORMAT maps to [0, f-1], and INFO maps to [0, i-1] and FILTER to
+	// [0,l-1] and where f+i+l = n, where n is the total number of fields.
+	//
+	//                    Global    Local
+	// std::unordered_map<uint32_t, uint32_t> filter_reorder_map_;
+	reorder_map_type filter_reorder_map_;
+	reorder_map_type info_reorder_map_;
+	reorder_map_type format_reorder_map_;
+	reorder_map_type contig_reorder_map_;
+
+	std::unique_ptr<vcf_reader_type> vcf_reader_;
+	vcf_container_type vcf_container_;
+
+	hash_map_type block_hash_map;
 };
 
 

@@ -37,7 +37,7 @@ PREFIX := /usr/local
 # If you want to build in debug mode then add DEBUG=true to your build command
 # make DEBUG=true
 ifdef DEBUG
-DEBUG_FLAGS := -g -Wall -Wextra -Wcast-qual -Wcast-align -Wshadow \
+DEBUG_FLAGS := -g -Wall -Wextra -Wcast-qual -Wcast-align \
                   -Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
                   -Wstrict-prototypes -Wundef -Wpointer-arith -Wformat-security \
                   -Wvla -Wformat=2 -Winit-self -Wfloat-equal -Wwrite-strings \
@@ -51,13 +51,20 @@ INCLUDE_PATH = -I./lib/
 ZSTD_LIBRARY_PATH = 
 
 # Check if ZSTD is in the current directory
+UNAME_R := $(shell uname -r)
 ifneq ("$(wildcard ./zstd/)","")
   INCLUDE_PATH += -I./zstd/lib/ -I./zstd/lib/common/ 
   ZSTD_LIBRARY_PATH = -L./zstd/lib 
-else ifneq ("$(wildcard /usr/local/include/)","")
+else ifneq ("$(wildcard /usr/local/include/zstd.h)","")
   INCLUDE_PATH += -I/usr/local/include/
   #ZSTD_LIBRARY_PATH = -L/usr/local/lib 
+else ifneq ("$(wildcard /usr/src/linux-headers-$(UNAME_R)/include/linux/zstd.h)","")
+  INCLUDE_PATH += -I/usr/src/linux-headers-$(UNAME_R)/include/linux/
+  #ZSTD_LIBRARY_PATH = -L/usr/src/linux-headers-$(uname -r)/lib
+else
+  INCLUDE_PATH += "-I/usr/src/linux-headers-$(UNAME_R)/include/linux/"
 endif
+
 
 # Try to deduce where OpenSSL is located
 OPENSSL_LIBRARY_PATH = 
@@ -72,7 +79,24 @@ else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
   OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
 endif
 
-LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) -L/usr/local/lib/
+# Try to deduce where HTSLib is located
+HSLIB_LIBRARY_PATH =
+ifneq ("$(wildcard ./htslib/)","")
+  INCLUDE_PATH += -I./htslib/
+  HSLIB_LIBRARY_PATH = -L./htslib/
+else ifneq ("$(wildcard /usr/local/include/htslib/)","")
+  INCLUDE_PATH += -I/usr/local/include/
+  #OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
+endif 
+
+# Sort the include_path vector of strings to remove duplicates. This doesn't have
+# any functional effect but dedupes the vector.
+# Do NOT use equal sign here as the lazy evaluaton will throw a recusion
+# warning.
+INCLUDE_PATH := $(sort $(INCLUDE_PATH))
+
+# Library paths
+LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) $(HSLIB_LIBRARY_PATH) -L/usr/local/lib/
 
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
@@ -86,17 +110,18 @@ endif
 # see : https://developer.apple.com/library/mac/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
 ifneq ($(shell uname), Darwin)
 SHARED_EXT   = so
-LD_LIB_FLAGS = -shared -Wl,-rpath,./zstd/lib,-rpath,./openssl/,-soname,libtachyon.$(SHARED_EXT)
+LD_LIB_FLAGS = -shared '-Wl,-rpath-link,$$ORIGIN/,-rpath-link,$(PWD),-rpath-link,$$ORIGIN/zstd/lib,-rpath-link,$$ORIGIN/openssl,-rpath-link,$$ORIGIN/htslib,-soname,libtachyon.$(SHARED_EXT)'
 else
 SHARED_EXT   = dylib
-LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) -Wl,-rpath,./zstd/lib,-rpath,./openssl/
+LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath-link,$$ORIGIN/,-rpath-link,$(PWD),-rpath-link,$$ORIGIN/zstd/lib,-rpath-link,$$ORIGIN/openssl,-rpath-link,$$ORIGIN/htslib'
 endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
-BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl/'
+CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
+BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
 
-LIBS := -lzstd -lcrypto
+LIBS := -lzstd -lcrypto -lhts
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 			 $(wildcard lib/algorithm/digest/*.cpp) \
 			 $(wildcard lib/algorithm/encryption/*.cpp) \
@@ -105,6 +130,7 @@ CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 			 $(wildcard lib/containers/components/*.cpp) \
 			 $(wildcard lib/core/header/*.cpp) \
 			 $(wildcard lib/core/*.cpp) \
+			 $(wildcard lib/index/*.cpp) \
 			 $(wildcard lib/io/*.cpp) \
 			 $(wildcard lib/io/bcf/*.cpp) \
 			 $(wildcard lib/io/compression/*.cpp) \
@@ -116,27 +142,12 @@ CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 
 C_SOURCE = \
 lib/third_party/xxhash/xxhash.c \
-lib/third_party/zlib/adler32.c \
-lib/third_party/zlib/crc32.c \
-lib/third_party/zlib/deflate.c \
-lib/third_party/zlib/infback.c \
-lib/third_party/zlib/inffast.c \
-lib/third_party/zlib/inflate.c \
-lib/third_party/zlib/inftrees.c \
-lib/third_party/zlib/trees.c \
-lib/third_party/zlib/zutil.c \
-lib/third_party/zlib/compress.c \
-lib/third_party/zlib/uncompr.c \
-lib/third_party/zlib/gzclose.c \
-lib/third_party/zlib/gzlib.c \
-lib/third_party/zlib/gzread.c \
-lib/third_party/zlib/gzwrite.c \
 
 OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
 
 LIB_INCLUDE_PATH   = -I./lib/
-LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD),-rpath,$$ORIGIN/../zstd/lib,-rpath,$$ORIGIN/../openssl'
+LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD)'
 LIB_EXAMPLE_SOURCE = $(wildcard lib_example/*.cpp)
 LIB_EXAMPLE_OUTPUT = $(LIB_EXAMPLE_SOURCE:.cpp=)
 
@@ -153,10 +164,7 @@ all: tachyon
 
 # Third party rules
 lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
-	gcc $(CFLAGS) -c -o $@ $<
-
-lib/third_party/zlib/%.o: lib/third_party/zlib/%.c
-	gcc $(CFLAGS) -c -o $@ $<
+	gcc $(CFLAGS_VENDOR) -c -o $@ $<
 
 # Generic rules
 %.o: %.cpp
@@ -166,7 +174,7 @@ tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
-	$(MAKE) examples
+	#$(MAKE) examples
 
 library: $(OBJECTS)
 	@echo 'Building dynamic library...'

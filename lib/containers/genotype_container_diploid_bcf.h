@@ -37,18 +37,26 @@ public:
     // GT-specific
     U32 getSum(void) const;
     square_matrix_type& comparePairwise(square_matrix_type& square_matrix) const;
-    std::vector<gt_object> getLiteralObjects(void) const;
-    std::vector<gt_object> getObjects(const U64& n_samples) const;
-    std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
+    //std::vector<gt_object> getLiteralObjects(void) const;
+    //std::vector<gt_object> getObjects(const U64& n_samples) const;
+    //std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const;
     //bool getObjects(const U64& n_samples, std::vector<core::GTObject>& objects) const;
     //bool getObjects(const U64& n_samples, std::vector<core::GTObject>& objects, const permutation_type& ppa_manager) const;
-	void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
-	void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
-	void getLiteralObjects(std::vector<gt_object>& objects) const;
+	//void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const;
+	//void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const;
+	//void getLiteralObjects(std::vector<gt_object>& objects) const;
 	gt_summary& updateSummary(gt_summary& gt_summary_object) const;
     gt_summary getSummary(void) const;
     gt_summary& getSummary(gt_summary& gt_summary_object) const;
     void getTsTv(std::vector<ts_tv_object_type>& objects) const;
+
+    yon_gt* GetObjects(const uint32_t n_samples){
+		return(nullptr);
+	}
+
+	yon_gt* GetObjects(yon_gt_ppa& ppa){
+		return(nullptr);
+	}
 };
 
 
@@ -84,6 +92,7 @@ math::SquareMatrix<double>& GenotypeContainerDiploidBCF<T>::comparePairwise(squa
 	return(square_matrix);
 }
 
+/*
 template <class T>
 std::vector<core::GTObject> GenotypeContainerDiploidBCF<T>::getLiteralObjects(void) const{
 	std::vector<core::GTObject> ret(this->n_entries);
@@ -205,24 +214,21 @@ void GenotypeContainerDiploidBCF<T>::getObjects(const U64& n_samples, std::vecto
 		entries[ppa_manager[i]].n_ploidy  = 2;
 	}
 }
+*/
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidBCF<T>::updateSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
 template <class T>
-GenotypeSummary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
+yon_gt_summary GenotypeContainerDiploidBCF<T>::getSummary(void) const{
 	gt_summary summary;
-	summary += *this;
 	return(summary);
 }
 
 template <class T>
-GenotypeSummary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
-	gt_summary_object.clear();
-	gt_summary_object += *this;
+yon_gt_summary& GenotypeContainerDiploidBCF<T>::getSummary(gt_summary& gt_summary_object) const{
 	return(gt_summary_object);
 }
 
@@ -232,7 +238,7 @@ void GenotypeContainerDiploidBCF<T>::getTsTv(std::vector<ts_tv_object_type>& obj
 		return;
 
 	// Has to be a SNV and biallelic
-	if(this->getMeta().isBiallelicSNV() == false) return;
+	if(this->getMeta().IsBiallelicSNV() == false) return;
 
 	const BYTE shift = (sizeof(T)*8 - 1) / 2;
 

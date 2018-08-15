@@ -1,133 +1,201 @@
+#include "containers/components/variant_block_footer.h"
 #include "data_block_settings.h"
 
 namespace tachyon{
 
 DataBlockSettings::DataBlockSettings() :
 	show_vcf_header(true),
-	display_ref(false),
-	display_alt(false),
-	display_filter(false),
+	display_ref(true),
+	display_alt(true),
+	display_filter(true),
+	load_static(std::numeric_limits<U32>::max()),
+	display_static(std::numeric_limits<U32>::max()),
 	construct_occ_table(false),
-	custom_delimiter(false),
-	custom_output_format(false),
-	custom_delimiter_char('\t'),
-	output_json(false),
-	output_format_vector(false),
 	annotate_extra(false)
 {}
 
-DataBlockSettings& DataBlockSettings::loadAll(const bool set){
-	this->loadAllMeta(true);
-	this->set_membership(set, set);
-	this->genotypes_all(set, set);
-	this->genotypes_rle(set, set);
-	this->genotypes_simple(set, set);
-	this->genotypes_other(set, set);
-	this->genotypes_support(set, set);
-	this->info_all(set, set);
-	this->format_all(set, set);
-	this->ppa(set, set);
-	this->display_alt = true;
-	this->display_ref = true;
-	this->display_filter = true;
+DataBlockSettings& DataBlockSettings::LoadWrapper(bool set, const int field_bv){
+	this->load_static &= ~(field_bv);
+	if(set) this->load_static |= field_bv;
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadAllMeta(const bool set){
-	this->contig(set, set);
-	this->positions(set, set);
-	this->controller(set, set);
-	this->quality(set, set);
-	this->names(set, set);
-	this->alleles(set, set);
-	this->display_alt = true;
-	this->display_ref = true;
-	this->display_filter = true;
+DataBlockSettings& DataBlockSettings::DisplayWrapper(bool set, const int field_bv){
+	this->display_static &= ~(field_bv);
+	if(set) this->display_static |= field_bv;
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadAllFILTER(const bool set){
-	this->set_membership(set, set);
-	this->display_filter = true;
+DataBlockSettings& DataBlockSettings::LoadDisplayWrapper(bool set, const int field_bv){
+	this->LoadWrapper(set, field_bv);
+	this->DisplayWrapper(set, field_bv);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadAllINFO(const bool set){
-	this->info_all(set, set);
-	this->contig.load = set;
-	this->positions.load = set;
-	this->set_membership.load = set;
+DataBlockSettings& DataBlockSettings::LoadCore(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->LoadWrapper(set, bv);
+	}
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadINFO(const std::string& field_name){
+DataBlockSettings& DataBlockSettings::DisplayCore(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->DisplayWrapper(set, bv);
+	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadAll(const bool set){
+	if(set){
+		this->load_static = std::numeric_limits<U32>::max();
+	} else {
+		this->load_static = 0;
+	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAll(const bool set){
+	if(set){
+		this->display_static = std::numeric_limits<U32>::max();
+	} else {
+		this->display_static = 0;
+	}
+	this->display_alt = set;
+	this->display_ref = set;
+	this->display_filter = set;
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadAllMeta(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->LoadWrapper(set, i);
+	}
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllMeta(const bool set){
+	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const U32 bv = 1 << i;
+		this->DisplayWrapper(set, i);
+	}
+
+	this->display_alt = set;
+	this->display_ref = set;
+	this->display_filter = set;
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadAllFilter(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_ID_INFO);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->LoadWrapper(set, YON_BLK_BV_CONTROLLER);
+
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllFilter(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_ID_INFO);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->DisplayWrapper(set, YON_BLK_BV_CONTROLLER);
+
+	this->display_filter  = true;
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadAllInfo(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_INFO); // all info
+	if(set) this->LoadMinimumVcf(true);
+
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadInfo(const std::string& field_name){
 	if(field_name.size() == 0) return(*this);
-	this->contig.load = true;
-	this->positions.load = true;
-	this->set_membership.load = true;
-	this->controller(true, false);
 	this->info_list.push_back(field_name);
+	this->LoadMinimumVcf(true);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadINFO(const U32 field_id){
-	this->info_ID_list.push_back(field_id);
-	this->contig.load = true;
-	this->positions.load = true;
-	this->set_membership.load = true;
-	this->controller.load = true;
+DataBlockSettings& DataBlockSettings::LoadInfo(const U32 field_id){
+	this->info_id_global.push_back(field_id);
+	this->LoadMinimumVcf(true);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadGenotypes(const bool set){
-	this->genotypes_all(set, set);
-	this->genotypes_rle(set, set);
-	this->genotypes_simple(set, set);
-	this->genotypes_other(set, set);
-	this->genotypes_support.load = set;
+DataBlockSettings& DataBlockSettings::LoadGenotypes(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_GT);
+	this->LoadWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadPermutationArray(const bool set){
-	this->ppa.load = set;
+DataBlockSettings& DataBlockSettings::DisplayGenotypes(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_GT);
+	this->DisplayWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadAllFORMAT(const bool set){
-	this->ppa(set, set);
-	this->loadGenotypes(set);
-	this->format_all.load = set;
-	this->contig.load = set;
-	this->positions.load = set;
-	this->set_membership.load = set;
+DataBlockSettings& DataBlockSettings::LoadPermutationArray(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadFORMAT(const std::string& field_name){
+DataBlockSettings& DataBlockSettings::LoadAllFormat(const bool set){
+	this->LoadGenotypes(set);
+	this->LoadWrapper(set, YON_BLK_BV_FORMAT); // all format
+	this->LoadCore(set);
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllFormat(const bool set){
+	this->DisplayGenotypes(set);
+	this->DisplayWrapper(set, YON_BLK_BV_FORMAT); // all format
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::DisplayAllInfo(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_INFO);
+	return(*this);
+}
+
+DataBlockSettings& DataBlockSettings::LoadFormat(const std::string& field_name){
 	if(field_name.size() == 0) return(*this);
-	this->contig.load = true;
-	this->positions.load = true;
-	this->set_membership.load = true;
-	if(field_name == "GT") this->loadGenotypes(true);
+	this->LoadMinimumVcf(true);
+	if(field_name == "GT") this->LoadGenotypes(true);
 	this->format_list.push_back(field_name);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::loadFORMAT(const U32 field_id){
-	this->contig.load = true;
-	this->positions.load = true;
-	this->set_membership.load = true;
-	this->format_ID_list.push_back(field_id);
+DataBlockSettings& DataBlockSettings::LoadFormat(const U32 field_id){
+	this->LoadMinimumVcf(true);
+	this->format_id_global.push_back(field_id);
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::setCustomDelimiter(const char delimiter){
-	this->custom_delimiter = true;
-	this->custom_delimiter_char = delimiter;
+DataBlockSettings& DataBlockSettings::LoadMinimumVcf(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_CONTIG);
+	this->LoadWrapper(set, YON_BLK_BV_POSITION);
+	this->LoadWrapper(set, YON_BLK_BV_CONTROLLER);
+	this->LoadWrapper(set, YON_BLK_BV_ID_INFO);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->LoadWrapper(set, YON_BLK_BV_ALLELES);
+	this->LoadWrapper(set, YON_BLK_BV_REFALT);
 	return(*this);
 }
 
-bool DataBlockSettings::parse(const header_type& header){
+DataBlockSettings& DataBlockSettings::DisplayMinimumVcf(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_CONTIG);
+	this->DisplayWrapper(set, YON_BLK_BV_POSITION);
+	return(*this);
+}
+
+bool DataBlockSettings::Parse(const header_type& header){
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 
 	for(U32 i = 0; i < this->info_list.size(); ++i){
@@ -135,17 +203,17 @@ bool DataBlockSettings::parse(const header_type& header){
 		for(U32 j = 0; j < ind.size(); ++j){
 			ind[j] = utility::remove_excess_whitespace(ind[j]);
 			if(std::regex_match(ind[j], field_identifier_regex)){
-				const header_map_type* map = header.getInfoField(ind[j]);
-				if(map == nullptr){
+				const io::VcfInfo* info = header.GetInfo(ind[j]);
+				if(info == nullptr){
 					std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
 					continue;
 				}
-				this->loadINFO(ind[j]);
+				this->LoadInfo(ind[j]);
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
 				return(false);
 			}
-			this->loadINFO(ind[j]);
+			this->LoadInfo(ind[j]);
 		}
 	}
 
@@ -156,9 +224,11 @@ bool DataBlockSettings::parse(const header_type& header){
 	return true;
 }
 
-bool DataBlockSettings::parseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat){
-	this->custom_output_format = customOutputFormat; // Todo
+bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& command, const header_type& header){
 	bool allGood = true;
+
+	this->display_static = 0;
+	this->load_static = 0;
 
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 	for(U32 i = 0; i < command.size(); ++i){
@@ -170,29 +240,25 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 				for(U32 j = 0; j < ind.size(); ++j){
 					ind[j] = utility::remove_excess_whitespace(ind[j]);
 					if(std::regex_match(ind[j], field_identifier_regex)){
-						const header_map_type* map = header.getInfoField(ind[j]);
-						if(map == nullptr){
+						const io::VcfInfo* info = header.GetInfo(ind[j]);
+						if(info == nullptr){
 							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
 							allGood = false;
 							continue;
 						}
-						this->loadINFO(ind[j]);
+						this->LoadInfo(info->idx);
+						this->DisplayAllInfo(true);
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
 						allGood = false;
 					}
 				}
 			} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0 && partitions[p].size() == 4){
-				this->loadAllINFO(true);
+				this->LoadAllInfo(true);
+				this->DisplayAllInfo(true);
 			} else if(strncasecmp(partitions[p].data(), "FORMAT", 6) == 0 && partitions[p].size() == 6){
-				this->format_all(true, true);
-				this->set_membership(true, true);
-				this->loadGenotypes(true);
-				this->set_membership.load = true;
-				this->positions.load = true;
-				this->contig.load = true;
-				this->ppa.load = true;
-				this->controller.load = true;
+				this->LoadAllFormat(true);
+				this->DisplayAllFormat(true);
 
 			} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 				std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
@@ -201,27 +267,42 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 					if(std::regex_match(ind[j], field_identifier_regex)){
 						// Special case for genotypes
 						if(strncasecmp(ind[j].data(), "GT", 2) == 0 && ind[j].size() == 2){
-							this->contig.load = true;
-							this->positions.load = true;
-							this->controller.load = true;
-							this->loadGenotypes(true);
-							this->set_membership.load = true;
-						} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
-							this->contig.load = true;
-							this->positions.load = true;
-							this->controller.load = true;
-							this->loadGenotypes(true);
-							this->set_membership.load = true;
-						}
-						// Any other FORMAT
-						else {
-							const header_map_type* map = header.getFormatField(ind[j]);
-							if(map == nullptr){
+							this->LoadMinimumVcf(true);
+							this->LoadGenotypes(true);
+
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
 								continue;
 							}
-							this->loadFORMAT(ind[j]);
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
+
+						} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
+							this->LoadMinimumVcf(true);
+							this->LoadGenotypes(true);
+							this->DisplayAllFormat(true);
+
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
+						}
+						// Any other FORMAT
+						else {
+							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
 						}
 					} else {
 						std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
@@ -232,29 +313,43 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 			} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
 					  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
 					  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
-				this->contig(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_CONTIG);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTIG);
 			} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
 					  (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
-				this->positions(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_POSITION);
 			} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
-				this->alleles(true, true);
-				this->controller(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
+				this->LoadWrapper(true, YON_BLK_BV_REFALT);
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
 				this->display_ref = true;
 			} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
 					  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
-				this->alleles(true, true);
-				this->controller(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
+				this->LoadWrapper(true, YON_BLK_BV_REFALT);
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
 				this->display_alt = true;
 			} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
-				this->quality(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_QUALITY);
+				this->DisplayWrapper(true, YON_BLK_BV_QUALITY);
 			} else if((strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5) ||
 					  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
-				this->names(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_NAMES);
+				this->DisplayWrapper(true, YON_BLK_BV_NAMES);
 			} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
 					  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
-				this->set_membership(true, true);
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->LoadWrapper(true, YON_BLK_BV_ID_FILTER);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ID_FILTER);
 				this->display_filter = true;
 			} else {
 				std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
@@ -264,31 +359,6 @@ bool DataBlockSettings::parseCommandString(const std::vector<std::string>& comma
 	}
 
 	if(allGood == false) return false;
-	return true;
-}
-
-
-bool DataBlockSettings::parseSettings(const header_type& header){
-	this->info_ID_list.clear();
-	for(U32 i = 0; i < this->info_list.size(); ++i){
-		const core::HeaderMapEntry* map_entry = header.getInfoField(this->info_list[i]);
-		if(map_entry == nullptr) continue;
-		const S32 global_key = map_entry->IDX;
-		if(global_key >= 0){
-			this->info_ID_list.push_back(global_key);
-		}
-	}
-
-	this->format_ID_list.clear();
-	for(U32 i = 0; i < this->format_list.size(); ++i){
-		const core::HeaderMapEntry* map_entry = header.getFormatField(this->format_list[i]);
-		if(map_entry == nullptr) continue;
-		const S32 global_key = map_entry->IDX;
-		if(global_key >= 0){
-			this->format_ID_list.push_back(global_key);
-		}
-	}
-
 	return true;
 }
 

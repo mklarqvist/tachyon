@@ -3,250 +3,73 @@
 namespace tachyon{
 namespace utility{
 
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<BYTE>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	stream << container[0];
-	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << (U32)container[i];
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U16>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	stream << container[0];
-	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << (U32)container[i];
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U32>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	stream << container[0];
-	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << container[i];
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U64>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	stream << container[0];
-	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << container[i];
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<SBYTE>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	const BYTE* const ref = reinterpret_cast<const BYTE* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_BYTE_EOV)
-		return(stream.put('.'));
-
-	// First value
-	if(ref[0] == YON_BYTE_MISSING) stream << '.';
-	else stream << (S32)container[0];
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_BYTE_MISSING) stream << ",.";
-		else if(ref[i] == YON_BYTE_EOV){ return stream; }
-		else stream << ',' << (S32)container[i];
-	}
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S16>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	const U16* const ref = reinterpret_cast<const U16* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_SHORT_EOV)
-		return(stream.put('.'));
-
-	// First value
-	if(ref[0] == YON_SHORT_MISSING) stream << '.';
-	else stream << (S32)container[0];
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_SHORT_MISSING) stream << ",.";
-		else if(ref[i] == YON_SHORT_EOV){ return stream; }
-		else stream << ',' << (S32)container[i];
-	}
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S32>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_INT_EOV){
-		return(stream.put('.'));
-	}
-
-	// First value
-	if(ref[0] == YON_INT_MISSING) stream << '.';
-	else stream << container[0];
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_INT_MISSING) stream << ",.";
-		else if(ref[i] == YON_INT_EOV){ return stream; }
-		else stream << ',' << container[i];
-	}
-
-	return(stream);
-}
-
-// Special case
-std::ostream& to_vcf_string_char(std::ostream& stream, const containers::PrimitiveContainer<char>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	stream << container[0];
-	for(U32 i = 1; i < container.size(); ++i)
-		stream << ',' << container[i];
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<float>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_FLOAT_EOV)
-		return(stream.put('.'));
-
-	// First value
-	if(ref[0] == YON_FLOAT_MISSING) stream << '.';
-	else stream << container[0];
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_FLOAT_MISSING) stream << ",.";
-		else if(ref[i] == YON_FLOAT_EOV){ return stream; }
-		else stream << ',' << container[i];
-	}
-
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<double>& container){
-	if(container.size() == 0)
-		return(stream.put('.'));
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_FLOAT_EOV)
-		return(stream.put('.'));
-
-	// First value
-	if(ref[0] == YON_FLOAT_MISSING) stream << '.';
-	else stream << container[0];
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_FLOAT_MISSING) stream << ",.";
-		else if(ref[i] == YON_FLOAT_EOV){ return stream; }
-		else stream << ',' << container[i];
-	}
-
-	return(stream);
-}
-
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const BYTE* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer.AddReadble((U32)container[0]);
-	for(U32 i = 1; i < container.size(); ++i){
+	buffer.AddReadble((U32)data[0]);
+	for(U32 i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer.AddReadble((U32)container[i]);
+		buffer.AddReadble((U32)data[i]);
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U16* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer.AddReadble(container[0]);
-	for(U32 i = 1; i < container.size(); ++i){
+	buffer.AddReadble(data[0]);
+	for(U32 i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer.AddReadble(container[i]);
+		buffer.AddReadble(data[i]);
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer.AddReadble(container[0]);
-	for(U32 i = 1; i < container.size(); ++i){
+	buffer.AddReadble(data[0]);
+	for(U32 i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer.AddReadble(container[i]);
+		buffer.AddReadble(data[i]);
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U64* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer.AddReadble(container[0]);
-	for(U32 i = 1; i < container.size(); ++i){
+	buffer.AddReadble(data[0]);
+	for(U32 i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer.AddReadble(container[i]);
+		buffer.AddReadble(data[i]);
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const SBYTE* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const BYTE* const ref = reinterpret_cast<const BYTE* const>(container.data());
+	const BYTE* const ref = reinterpret_cast<const BYTE* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_BYTE_EOV){
@@ -256,28 +79,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 
 	// First value
 	if(ref[0] == YON_BYTE_MISSING) buffer += '.';
-	else buffer.AddReadble((S32)container[0]);
+	else buffer.AddReadble((S32)data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
+	for(U32 i = 1; i < n_data; ++i){
 		if(ref[i] == YON_BYTE_MISSING) buffer += ",.";
 		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble((S32)container[i]);
+			buffer.AddReadble((S32)data[i]);
 		}
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S16* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U16* const ref = reinterpret_cast<const U16* const>(container.data());
+	const U16* const ref = reinterpret_cast<const U16* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_SHORT_EOV){
@@ -287,28 +110,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 
 	// First value
 	if(ref[0] == YON_SHORT_MISSING) buffer += '.';
-	else buffer.AddReadble((S32)container[0]);
+	else buffer.AddReadble((S32)data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
+	for(U32 i = 1; i < n_data; ++i){
 		if(ref[i] == YON_SHORT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble((S32)container[i]);
+			buffer.AddReadble((S32)data[i]);
 		}
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S32* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+	const U32* const ref = reinterpret_cast<const U32* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_INT_EOV){
@@ -318,15 +141,15 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 
 	// First value
 	if(ref[0] == YON_INT_MISSING) buffer += '.';
-	else buffer.AddReadble(container[0]);
+	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
+	for(U32 i = 1; i < n_data; ++i){
 		if(ref[i] == YON_INT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_INT_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble(container[i]);
+			buffer.AddReadble(data[i]);
 		}
 	}
 
@@ -334,28 +157,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 }
 
 // Special case
-io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer += container[0];
-	for(U32 i = 1; i < container.size(); ++i){
+	buffer += data[0];
+	for(U32 i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer += container[i];
+		buffer += data[i];
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+	const U32* const ref = reinterpret_cast<const U32* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_FLOAT_EOV){
@@ -365,28 +188,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 
 	// First value
 	if(ref[0] == YON_FLOAT_MISSING) buffer += '.';
-	else buffer.AddReadble(container[0]);
+	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
+	for(U32 i = 1; i < n_data; ++i){
 		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble(container[i]);
+			buffer.AddReadble(data[i]);
 		}
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container){
-	if(container.size() == 0){
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, const size_t n_data){
+	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
+	const U32* const ref = reinterpret_cast<const U32* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_FLOAT_EOV){
@@ -396,359 +219,19 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::Primit
 
 	// First value
 	if(ref[0] == YON_FLOAT_MISSING) buffer += '.';
-	else buffer.AddReadble(container[0]);
+	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
+	for(U32 i = 1; i < n_data; ++i){
 		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble(container[i]);
+			buffer.AddReadble(data[i]);
 		}
 	}
 
 	return(buffer);
-}
-
-///////////
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	if(container.size() == 1){
-		buffer.AddReadble((U32)container[0]);
-	} else {
-		buffer += '[';
-		buffer.AddReadble((U32)container[0]);
-		for(U32 i = 1; i < container.size(); ++i){
-			buffer += ',';
-			buffer.AddReadble((U32)container[i]);
-		}
-		buffer += ']';
-	}
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	if(container.size() == 1){
-		buffer.AddReadble(container[0]);
-	} else {
-		buffer += '[';
-		buffer.AddReadble(container[0]);
-		for(U32 i = 1; i < container.size(); ++i){
-			buffer += ',';
-			buffer.AddReadble(container[i]);
-		}
-		buffer += ']';
-	}
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	if(container.size() == 1){
-		buffer.AddReadble(container[0]);
-	} else {
-		buffer += '[';
-		buffer.AddReadble(container[0]);
-		for(U32 i = 1; i < container.size(); ++i){
-			buffer += ',';
-			buffer.AddReadble(container[i]);
-		}
-		buffer += ']';
-	}
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	if(container.size() == 1){
-		buffer.AddReadble(container[0]);
-	} else {
-		buffer += '[';
-		buffer.AddReadble(container[0]);
-		for(U32 i = 1; i < container.size(); ++i){
-			buffer += ',';
-			buffer.AddReadble(container[i]);
-		}
-		buffer += ']';
-	}
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	const BYTE* const ref = reinterpret_cast<const BYTE* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_BYTE_EOV){
-		buffer += "null";
-		return(buffer);
-	}
-
-	// First value
-	if(container.size() == 1){
-		if(ref[0] == YON_BYTE_MISSING) buffer += "null";
-		else buffer.AddReadble((S32)container[0]);
-		return(buffer);
-	}
-
-	buffer += '[';
-	if(ref[0] == YON_BYTE_MISSING) buffer += "null";
-	else buffer.AddReadble((S32)container[0]);
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_BYTE_MISSING) buffer += ",null";
-		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
-		else {
-			buffer += ',';
-			buffer.AddReadble((S32)container[i]);
-		}
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	const U16* const ref = reinterpret_cast<const U16* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_SHORT_EOV){
-		buffer += "null";
-		return(buffer);
-	}
-
-	// First value
-	if(container.size() == 1){
-		if(ref[0] == YON_SHORT_MISSING) buffer += "null";
-		else buffer.AddReadble((S32)container[0]);
-		return(buffer);
-	}
-
-	buffer += '[';
-	if(ref[0] == YON_SHORT_MISSING) buffer += "null";
-	else buffer.AddReadble((S32)container[0]);
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_SHORT_MISSING) buffer += ",null";
-		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
-		else {
-			buffer += ',';
-			buffer.AddReadble((S32)container[i]);
-		}
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container){
-	if(container.size() == 0){
-		buffer += '.';
-		return(buffer);
-	}
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_INT_EOV){
-		buffer += "null";
-		return(buffer);
-	}
-
-	// First value
-	if(container.size() == 1){
-		if(ref[0] == YON_INT_MISSING) buffer += "null";
-		else buffer.AddReadble((S32)container[0]);
-		return(buffer);
-	}
-
-	buffer += '[';
-	if(ref[0] == YON_INT_MISSING) buffer += "null";
-	else buffer.AddReadble((S32)container[0]);
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_INT_MISSING) buffer += ",null";
-		else if(ref[i] == YON_INT_EOV){ return buffer; }
-		else {
-			buffer += ',';
-			buffer.AddReadble((S32)container[i]);
-		}
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-// Special case
-io::BasicBuffer& to_json_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	if(container.size() == 1){
-		buffer += container[0];
-		return(buffer);
-	}
-
-	buffer += '[';
-	buffer += container[0];
-	for(U32 i = 1; i < container.size(); ++i){
-		buffer += ',';
-		buffer += container[i];
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_FLOAT_EOV){
-		buffer += "null";
-		return(buffer);
-	}
-
-	// First value
-	if(container.size() == 1){
-		if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
-		else buffer.AddReadble(container[0]);
-		return(buffer);
-	}
-
-	buffer += '[';
-	if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
-	else buffer.AddReadble(container[0]);
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_FLOAT_MISSING) buffer += ",null";
-		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
-		else {
-			buffer += ',';
-			buffer.AddReadble(container[i]);
-		}
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container){
-	if(container.size() == 0){
-		buffer += "null";
-		return(buffer);
-	}
-
-	const U32* const ref = reinterpret_cast<const U32* const>(container.data());
-
-	// If the first value is end-of-vector then return
-	if(ref[0] == YON_FLOAT_EOV){
-		buffer += "null";
-		return(buffer);
-	}
-
-	// First value
-	if(container.size() == 1){
-		if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
-		else buffer.AddReadble(container[0]);
-		return(buffer);
-	}
-
-	buffer += '[';
-	if(ref[0] == YON_FLOAT_MISSING) buffer += "null";
-	else buffer.AddReadble(container[0]);
-
-	// Remainder values
-	for(U32 i = 1; i < container.size(); ++i){
-		if(ref[i] == YON_FLOAT_MISSING) buffer += ",null";
-		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
-		else {
-			buffer += ',';
-			buffer.AddReadble(container[i]);
-		}
-	}
-	buffer += ']';
-
-	return(buffer);
-}
-
-///
-
-std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object){
-	if(gt_object.n_ploidy == 0)
-		return(stream);
-
-	for(U32 i = 0; i < gt_object.n_objects; ++i){
-		stream << (int)gt_object[0].allele << (gt_object[i].phase ? '|' : '/') << (int)gt_object[1].allele;
-		for(U32 j = 1; j < gt_object.n_ploidy; ++j){
-			stream << '\t' << (int)gt_object[0].allele << (gt_object[0].phase ? '|' : '/') << (int)gt_object[1].allele;
-		}
-	}
-	return(stream);
-}
-
-std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects){
-	if(gt_objects.size() == 0)
-		return(stream);
-
-	stream << (int)gt_objects[0][0].allele << (gt_objects[0][0].phase ? '|' : '/') << (int)gt_objects[0][1].allele;
-
-	for(U32 element = 1; element < gt_objects.size(); ++element){
-		if(gt_objects[element].n_ploidy == 0)
-			continue;
-
-		stream << '\t';
-
-		for(U32 object = 0; object < gt_objects[element].n_objects; ++object){
-			stream << (int)gt_objects[element][0].allele << (gt_objects[element][0].phase ? '|' : '/') << (int)gt_objects[element][1].allele;
-			for(U32 k = 1; k < gt_objects[element].n_ploidy; ++k){
-				stream << '\t' << (int)gt_objects[element][k].allele << (gt_objects[element][k].phase ? '|' : '/') << (int)gt_objects[element][k].allele;
-			}
-		}
-	}
-	return(stream);
 }
 
 std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
@@ -756,8 +239,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
 	return(stream);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
-	stream.write(&header.getContig(meta_entry.contigID).name[0], header.getContig(meta_entry.contigID).name.size()) << '\t';
+std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+	stream.write(&header.GetContig(meta_entry.contigID)->name[0], header.GetContig(meta_entry.contigID)->name.size()) << '\t';
 	stream << meta_entry.position + 1 << delimiter;
 
 	if(meta_entry.name.size() == 0) stream.put('.');
@@ -788,8 +271,8 @@ std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const c
 	return(stream);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header){
-	buffer += header.getContig(meta_entry.contigID).name;
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+	buffer += header.GetContig(meta_entry.contigID)->name;
 	buffer += delimiter;
 	buffer.AddReadble(meta_entry.position + 1);
 	buffer += delimiter;
@@ -819,27 +302,26 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	else {
 		buffer.AddReadble(meta_entry.quality);
 	}
-	buffer += delimiter;
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
-	if(controller.contig.display){
-		buffer += header.getContig(meta_entry.contigID).name;
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
+	//if(controller.contig.display){
+		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += delimiter;
-	}
+	//}
 
-	if(controller.positions.display){
+	//if(controller.positions.display){
 		buffer.AddReadble(meta_entry.position + 1);
 		buffer += delimiter;
-	}
+	//}
 
-	if(controller.names.display){
+	//if(controller.names.display){
 		if(meta_entry.name.size() == 0) buffer += '.';
 		else buffer += meta_entry.name;
 		buffer += delimiter;
-	}
+	//}
 
 	if(controller.display_ref){
 		if(meta_entry.n_alleles) buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
@@ -860,37 +342,37 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 		buffer += delimiter;
 	}
 
-	if(controller.quality.display){
+	//if(controller.quality.display){
 		if(std::isnan(meta_entry.quality)) buffer += '.';
 		else buffer.AddReadble(meta_entry.quality);
 		buffer += delimiter;
-	}
+	//}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	return(utility::to_json_string(buffer, meta_entry, header, controller));
 }
 
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	bool add = false;
-	if(controller.contig.display){
+	//if(controller.contig.display){
 		buffer += "\"contig\":\"";
-		buffer += header.getContig(meta_entry.contigID).name;
+		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += '"';
 		add = true;
-	}
+	//}
 
-	if(controller.positions.display){
+	//if(controller.positions.display){
 		if(add){ buffer += ','; add = false; }
 		buffer += "\"position\":";
 		buffer.AddReadble(meta_entry.position + 1);
 		add = true;
-	}
+	//}
 
-	if(controller.names.display){
+	//if(controller.names.display){
 		if(add){ buffer += ','; add = false; }
 		buffer += "\"name\":";
 		if(meta_entry.name.size() == 0) buffer += "null";
@@ -900,9 +382,9 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 			buffer += '"';
 			add = true;
 		}
-	}
+	//}
 
-	if(controller.display_ref){
+	//if(controller.display_ref){
 		if(add){ buffer += ','; add = false; }
 		buffer += "\"ref\":";
 		if(meta_entry.n_alleles){
@@ -913,7 +395,7 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 			buffer += "null";
 		}
 		add = true;
-	}
+	//}
 
 	if(controller.display_alt){
 		if(add){ buffer += ','; add = false; }
@@ -936,15 +418,213 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 		add = true;
 	}
 
-	if(controller.quality.display){
+	//if(controller.quality.display){
 		if(add){ buffer += ','; add = false; }
 		buffer += "\"quality\":";
 		if(std::isnan(meta_entry.quality)) buffer += 0;
 		else buffer.AddReadble(meta_entry.quality);
 		add = true;
-	}
+	//}
 
 	return(buffer);
+}
+
+int32_t* FormatDataHtslib(const BYTE* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U16* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U32* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const U64* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const SBYTE* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT8_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT8_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S16* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT16_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT16_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S32* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i){
+		if(src[i] == INT32_MIN)  { dst[i] = bcf_int32_missing; }
+		else if(src[i] == INT32_MIN+1){ dst[i] = bcf_int32_vector_end; }
+		else dst[i] = src[i];
+	}
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const S64* const src, int32_t* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const float* const src, int32_t* dst, const size_t n_entries){
+	std::cerr << utility::timestamp("ERROR") << "Cannot convert float into integer." << std::endl;
+	return(dst);
+}
+
+int32_t* FormatDataHtslib(const double* const src, int32_t* dst, const size_t n_entries){
+	std::cerr << utility::timestamp("ERROR") << "Cannot convert double into integer." << std::endl;
+	return(dst);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const BYTE* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), &tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U16* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U32* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const U64* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const SBYTE* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S16* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S32* const data,
+                                  const size_t n_entries)
+{
+	bcf_update_info_int32(hdr, rec, tag.data(), data, n_entries);
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const S64* const data,
+                                  const size_t n_entries)
+{
+	int32_t* tmpi = new int32_t[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_int32(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const float* const data,
+                                  const size_t n_entries)
+{
+	float* tmpi = new float[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_float(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const double* const data,
+                                  const size_t n_entries)
+{
+	float* tmpi = new float[n_entries];
+	FormatDataHtslib(data, tmpi, n_entries);
+	bcf_update_info_float(hdr, rec, tag.data(), tmpi, n_entries);
+	delete [] tmpi;
+	return(rec);
+}
+
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+                                  bcf_hdr_t* hdr,
+                                  const std::string& tag,
+                                  const std::string& data)
+{
+	bcf_update_info_string(hdr, rec, tag.data(), data.data());
+	return(rec);
 }
 
 }

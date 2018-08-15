@@ -36,8 +36,7 @@ void stats_usage(void){
 
 int stats(int argc, char** argv){
 	if(argc <= 2){
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		return(1);
 	}
 
@@ -97,12 +96,6 @@ int stats(int argc, char** argv){
 
 	tachyon::VariantReader reader;
 
-	// temp
-	if(keychain_file.size()){
-		if(reader.loadKeychainFile(keychain_file) == false)
-			return 1;
-	}
-
 	if(!reader.open(input)){
 		std::cerr << "failed to open" << std::endl;
 		return 1;
@@ -111,6 +104,7 @@ int stats(int argc, char** argv){
 	tachyon::algorithm::Timer timer, timer2;
 	timer.Start(); timer2.Start();
 
+	/*
 	reader.getBlockSettings().contig(true, true);
 	reader.getBlockSettings().positions(true, true);
 	reader.getBlockSettings().controller(true, true);
@@ -118,19 +112,20 @@ int stats(int argc, char** argv){
 	reader.getBlockSettings().loadGenotypes(true);
 	reader.getBlockSettings().ppa(true, true);
 	reader.getBlockSettings().alleles(true, true);
+	*/
 
 	U32 block_counter = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.getGlobalHeader().getSampleNumber());
-	while(reader.nextBlock()){
-		reader.getTiTVRatios(std::cout, global_titv);
+	std::vector<tachyon::core::TsTvObject> global_titv(reader.GetGlobalHeader().GetNumberSamples());
+	while(reader.NextBlock()){
+		//reader.getTiTVRatios(global_titv);
 		//reader.getGenotypeSummary(std::cout);
-		std::cerr << block_counter++ << "/" << reader.getIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.getIndex().size() << std::endl;
+		std::cerr << block_counter++ << "/" << reader.GetIndex().size() << " in " << timer.ElapsedString() << " " << timer2.ElapsedString() << " " << timer2.Elapsed().count()/(block_counter+1)*reader.GetIndex().size() << std::endl;
 		timer.Start();
 	}
 
 	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
 	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.getGlobalHeader().samples[i].name << '\t' << global_titv[i] << '\n';
+		std::cout << reader.GetGlobalHeader().samples_[i] << '\t' << global_titv[i] << '\n';
 	}
 
 	return 0;

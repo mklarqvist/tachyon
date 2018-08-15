@@ -1,7 +1,6 @@
 #ifndef CORE_TS_TV_OBJECT_H_
 #define CORE_TS_TV_OBJECT_H_
 
-#include "genotype_summary.h"
 #include "meta_entry.h"
 #include "support/type_definitions.h"
 
@@ -12,7 +11,6 @@ struct TsTvObject{
 private:
 	typedef TsTvObject self_type;
 	typedef MetaEntry  meta_type;
-	typedef containers::GenotypeSummaryObject gtsum_type;
 
 public:
 	TsTvObject() :
@@ -47,15 +45,10 @@ public:
 		return(*this);
 	}
 
-	inline const double getTiTVRatio(void) const{
+	inline double getTiTVRatio(void) const{
 		// Prevent division by 0
 		if(this->n_transversions == 0) return 0;
 		return((double)this->n_transitions / this->n_transversions);
-	}
-
-	// Todo:
-	void update(const gtsum_type& gtsum, const meta_type& meta){
-
 	}
 
 private:

@@ -5,6 +5,8 @@
 #include "support/enums.h"
 #include "data_container_header_controller.h"
 
+#include "openssl/md5.h"
+
 namespace tachyon{
 namespace containers{
 
@@ -20,32 +22,38 @@ struct DataContainerHeaderObject{
 	~DataContainerHeaderObject();
 
 	void reset(void);
-	const bool operator==(const self_type& other) const;
-	inline const bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	bool operator==(const self_type& other) const;
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
-	const SBYTE getPrimitiveWidth(void) const;
+	SBYTE GetPrimitiveWidth(void) const;
 
 	//
-	inline S32& getStride(void){ return(this->stride); }
-	inline const S32& getStride(void) const{ return(this->stride); }
+	inline S32& GetStride(void){ return(this->stride); }
+	inline const S32& GetStride(void) const{ return(this->stride); }
 
-	inline const bool isUniform(void) const{ return(this->controller.uniform); }
-	inline const bool isSigned(void) const{ return(this->controller.signedness); }
-	inline const bool hasMixedStride(void) const{ return(this->controller.mixedStride); }
-	inline void setUniform(const bool yes){ this->controller.uniform = yes; }
-	inline void setSignedness(const bool yes){ this->controller.signedness = yes; }
-	inline void setMixedStride(const bool yes){ this->controller.mixedStride = yes; }
+	inline bool IsUniform(void) const{ return(this->controller.uniform); }
+	inline bool IsSigned(void) const{ return(this->controller.signedness); }
+	inline bool HasMixedStride(void) const{ return(this->controller.mixedStride); }
+	inline void SetUniform(const bool yes){ this->controller.uniform = yes; }
+	inline void SetSignedness(const bool yes){ this->controller.signedness = yes; }
+	inline void SetMixedStride(const bool yes){ this->controller.mixedStride = yes; }
 
-	inline const TACHYON_CORE_TYPE getPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
-	inline const TACHYON_CORE_COMPRESSION getEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline TACHYON_CORE_TYPE GetPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline TACHYON_CORE_COMPRESSION GetEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Set types
-	inline void setType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
+	inline void SetType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
 
 	// Checksum
-	inline U32& getChecksum(void){ return(this->crc); }
-	inline const U32& getChecksum(void) const{ return(this->crc); }
-	inline const bool checkChecksum(const U32 checksum) const{ return(this->crc == checksum); }
+	inline uint8_t* GetChecksum(void){ return(&this->crc[0]); }
+	inline const uint8_t* GetChecksum(void) const{ return(&this->crc[0]); }
+	bool CheckChecksum(const uint8_t* compare) const{
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i){
+			if(compare[i] != this->crc[i])
+				return false;
+		}
+		return true;
+	}
 
 private:
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry){
@@ -55,7 +63,7 @@ private:
 		buffer += entry.cLength;
 		buffer += entry.uLength;
 		buffer += entry.eLength;
-		buffer += entry.crc;
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer += entry.crc[i];
 		buffer += entry.global_key;
 		return(buffer);
 	}
@@ -67,7 +75,7 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(U32));
 		stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.crc),       sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.crc[0]),    sizeof(uint8_t)*MD5_DIGEST_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(S32));
 		return(stream);
 	}
@@ -79,7 +87,7 @@ private:
 		buffer >> entry.cLength;
 		buffer >> entry.uLength;
 		buffer >> entry.eLength;
-		buffer >> entry.crc;
+		for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer >> entry.crc[i];
 		buffer >> entry.global_key;
 		return(buffer);
 	}
@@ -91,7 +99,7 @@ private:
 		stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(U32));
 		stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.crc),        sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.crc[0]),     sizeof(uint8_t)*MD5_DIGEST_LENGTH);
 		stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(S32));
 
 		return(stream);
@@ -104,7 +112,7 @@ public:
 	U32 cLength;                // compressed length
 	U32 uLength;                // uncompressed length
 	U32 eLength;                // encrypted length
-	U32 crc;                    // crc32 checksum
+	uint8_t crc[MD5_DIGEST_LENGTH];  // MD5 checksum
 	S32 global_key;             // global key
 };
 

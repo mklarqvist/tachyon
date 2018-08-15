@@ -4,6 +4,7 @@ namespace tachyon{
 namespace core{
 
 MetaEntry::MetaEntry() :
+	n_base_ploidy(0),
 	n_alleles(0),
 	info_pattern_id(-1),
 	filter_pattern_id(-1),
@@ -14,52 +15,17 @@ MetaEntry::MetaEntry() :
 	alleles(nullptr)
 {}
 
-MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry) :
-	n_alleles(bcf_entry.body->n_allele),
-	info_pattern_id(-1),
-	filter_pattern_id(-1),
-	format_pattern_id(-1),
-	quality(bcf_entry.body->QUAL),
-	contigID(bcf_entry.body->CHROM),
-	position(bcf_entry.body->POS),
-	name(bcf_entry.ID, bcf_entry.l_ID),
-	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
-{
-	// Fix for the special case when ALT is not encoded
-	if(this->n_alleles == 1){
-		::operator delete[](static_cast<void*>(this->alleles));
-		this->n_alleles = 2;
-		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
-
-		new( &this->alleles[0] ) allele_type( );
-		this->alleles[0](bcf_entry.alleles[0].data, bcf_entry.alleles[0].length);
-		new( &this->alleles[1] ) allele_type( );
-		this->alleles[1].allele = new char[1];
-		this->alleles[1].allele[0] = '.';
-		this->alleles[1].l_allele = 1;
-	} else {
-		for(U32 i = 0; i < this->n_alleles; ++i){
-			new( &this->alleles[i] ) allele_type( );
-			this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
-		}
-	}
-
-	if(this->n_alleles == 2) this->controller.biallelic = true;
-	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isBiallelicSNV())
-		this->controller.simple_snv = true;
-}
-
-MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset) :
-	n_alleles(bcf_entry.body->n_allele),
+MetaEntry::MetaEntry(const bcf1_t* record) :
+	n_base_ploidy(0),
+	n_alleles(record->n_allele),
 	//n_alleles(0),
 	info_pattern_id(-1),
 	filter_pattern_id(-1),
 	format_pattern_id(-1),
-	quality(bcf_entry.body->QUAL),
-	contigID(bcf_entry.body->CHROM),
-	position(bcf_entry.body->POS - position_offset),
-	name(bcf_entry.ID, bcf_entry.l_ID),
+	quality(record->qual),
+	contigID(record->rid),
+	position(record->pos),
+	name(record->d.id),
 	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
 {
 	// Fix for the special case when ALT is not encoded
@@ -69,7 +35,7 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
 
 		new( &this->alleles[0] ) allele_type( );
-		this->alleles[0](bcf_entry.alleles[0].data, bcf_entry.alleles[0].length);
+		this->alleles[0](std::string(record->d.allele[0]));
 		new( &this->alleles[1] ) allele_type( );
 		this->alleles[1].allele = new char[1];
 		this->alleles[1].allele[0] = '.';
@@ -77,17 +43,56 @@ MetaEntry::MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset)
 	} else {
 		for(U32 i = 0; i < this->n_alleles; ++i){
 			new( &this->alleles[i] ) allele_type( );
-			this->alleles[i](bcf_entry.alleles[i].data, bcf_entry.alleles[i].length);
+			this->alleles[i](std::string(record->d.allele[i]));
 		}
 	}
 
 	if(this->n_alleles == 2) this->controller.biallelic = true;
-	this->controller.simple_snv = bcf_entry.isSimple();
-	if(this->isBiallelicSNV())
+	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
+	if(this->IsBiallelicSNV())
+		this->controller.simple_snv = true;
+}
+
+MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
+	n_base_ploidy(0),
+	n_alleles(record->n_allele),
+	//n_alleles(0),
+	info_pattern_id(-1),
+	filter_pattern_id(-1),
+	format_pattern_id(-1),
+	quality(record->qual),
+	contigID(record->rid),
+	position(record->pos - position_offset),
+	name(record->d.id),
+	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
+{
+	// Fix for the special case when ALT is not encoded
+	if(this->n_alleles == 1){
+		::operator delete[](static_cast<void*>(this->alleles));
+		this->n_alleles = 2;
+		this->alleles = static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type)));
+
+		new( &this->alleles[0] ) allele_type( );
+		this->alleles[0](std::string(record->d.allele[0]));
+		new( &this->alleles[1] ) allele_type( );
+		this->alleles[1].allele = new char[1];
+		this->alleles[1].allele[0] = '.';
+		this->alleles[1].l_allele = 1;
+	} else {
+		for(U32 i = 0; i < this->n_alleles; ++i){
+			new( &this->alleles[i] ) allele_type( );
+			this->alleles[i](std::string(record->d.allele[i]));
+		}
+	}
+
+	if(this->n_alleles == 2) this->controller.biallelic = true;
+	this->controller.simple_snv = (this->alleles[0].length() == 1 && this->alleles[1].length() == 1);
+	if(this->IsBiallelicSNV())
 		this->controller.simple_snv = true;
 }
 
 MetaEntry::MetaEntry(const self_type& other) :
+	n_base_ploidy(other.n_base_ploidy),
 	controller(other.controller),
 	n_alleles(other.n_alleles),
 	info_pattern_id(other.info_pattern_id),
@@ -109,8 +114,8 @@ MetaEntry::~MetaEntry(){
 	::operator delete[](static_cast<void*>(this->alleles));
 };
 
-const bool MetaEntry::usePackedRefAlt(void) const{
-	if(this->isBiallelic() == false || this->isDiploid() == false)
+bool MetaEntry::UsePackedRefAlt(void) const{
+	if(this->IsBiallelic() == false || this->IsDiploid() == false)
 		return false;
 
 	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), constants::YON_REGEX_PACKED_ALLELES) &&
@@ -120,8 +125,8 @@ const bool MetaEntry::usePackedRefAlt(void) const{
 	return false;
 }
 
-const BYTE MetaEntry::packRefAltByte(void) const{
-	assert(this->usePackedRefAlt());
+BYTE MetaEntry::PackRefAltByte(void) const{
+	assert(this->UsePackedRefAlt());
 	BYTE ref_alt = 0; // start out with empty
 
 	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){

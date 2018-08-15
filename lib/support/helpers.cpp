@@ -193,5 +193,18 @@ bool HexToBytes(const std::string& hex, uint8_t* target){
 	return true;
 }
 
+void SerializeString(const std::string& string, std::ostream& stream){
+	size_t size_helper = string.size();
+	stream.write((const char*)&size_helper, sizeof(size_t));
+	stream.write(string.data(), string.size());
+}
+
+void DeserializeString(std::string& string, std::istream& stream){
+	size_t l_string;
+	stream.read((char*)&l_string, sizeof(size_t));
+	string.resize(l_string);
+	stream.read(&string[0], l_string);
+}
+
 }
 }

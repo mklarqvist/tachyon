@@ -3,6 +3,7 @@
 
 #include "variant_block.h"
 #include "core/meta_entry.h"
+#include "components/generic_iterator.h"
 
 namespace tachyon{
 namespace containers{
@@ -19,43 +20,12 @@ private:
     typedef VariantBlock       block_type;
     typedef VariantBlockHeader block_header_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
 	MetaContainer(const block_type& block);
 	~MetaContainer(void);
-
-	class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
     // Element access
     inline reference at(const size_type& position){ return(this->__entries[position]); }
@@ -70,7 +40,7 @@ public:
     inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
     // Iterator

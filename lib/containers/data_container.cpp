@@ -1,12 +1,11 @@
 #include <cassert>
 
 #include "data_container.h"
-#include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
 #include "support/helpers.h"
 #include "support/type_definitions.h"
-#include "third_party/zlib/zconf.h"
-#include "third_party/zlib/zlib.h"
+
+#include "algorithm/digest/variant_digest_manager.h"
 
 namespace tachyon{
 namespace containers{
@@ -38,69 +37,49 @@ void DataContainer::resize(const U32 size){
 	this->buffer_strides_uncompressed.resize(size);
 }
 
-void DataContainer::generateCRC(void){
-	if(this->buffer_data_uncompressed.size() == 0){
-		this->header.data_header.crc = 0;
-	} else {
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
-		this->header.data_header.crc = crc;
-	}
-
-	if(this->header.data_header.hasMixedStride()){
-		if(this->buffer_data_uncompressed.size() == 0){
-			this->header.stride_header.crc = 0;
-		} else {
-			// Checksum for strides
-			U32 crc = crc32(0, NULL, 0);
-			if(this->buffer_strides_uncompressed.size() > 0){
-				crc = crc32(0, NULL, 0);
-				crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
-				this->header.stride_header.crc = crc;
-			}
-		}
-	}
+void DataContainer::GenerateMd5(void){
+	algorithm::VariantDigestManager::GenerateMd5(this->buffer_data_uncompressed.data(), this->buffer_data_uncompressed.size(), &this->header.data_header.crc[0]);
+	algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides_uncompressed.data(), this->buffer_strides_uncompressed.size(), &this->header.stride_header.crc[0]);
 }
 
-bool DataContainer::checkCRC(int target){
+bool DataContainer::CheckMd5(int target){
 	if(target == 0){
 		if(this->buffer_data_uncompressed.size() == 0)
 			return true;
 
 		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data_uncompressed.buffer, this->buffer_data_uncompressed.size());
-		return(crc == this->header.data_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_data_uncompressed.data(), this->buffer_data_uncompressed.size(), &md5_compare[0]);
+		return(this->header.data_header.CheckChecksum(md5_compare));
+
 	} else if(target == 1){
 		if(this->buffer_strides_uncompressed.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides_uncompressed.buffer, this->buffer_strides_uncompressed.size());
-		return(crc == this->header.stride_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides_uncompressed.data(), this->buffer_strides_uncompressed.size(), &md5_compare[0]);
+		return(this->header.stride_header.CheckChecksum(md5_compare));
+
 	} else if(target == 3){
 		if(this->buffer_data.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_data.buffer, this->buffer_data.size());
-		return(crc == this->header.data_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_data.data(), this->buffer_data.size(), &md5_compare[0]);
+		return(this->header.data_header.CheckChecksum(md5_compare));
+
 	} else if(target == 4){
 		if(this->buffer_strides.size() == 0)
 			return true;
 
-		// Checksum for main buffer
-		U32 crc = crc32(0, NULL, 0);
-		crc = crc32(crc, (Bytef*)this->buffer_strides.buffer, this->buffer_strides.size());
-		return(crc == this->header.stride_header.crc);
+		uint8_t md5_compare[MD5_DIGEST_LENGTH];
+		algorithm::VariantDigestManager::GenerateMd5(this->buffer_strides.data(), this->buffer_strides.size(), &md5_compare[0]);
+		return(this->header.stride_header.CheckChecksum(md5_compare));
 	}
 	return true;
 }
 
-bool DataContainer::checkUniformity(void){
+bool DataContainer::CheckUniformity(void){
 	if(this->header.n_entries == 0)
 		return false;
 
@@ -146,58 +125,66 @@ bool DataContainer::checkUniformity(void){
 	return(true);
 }
 
-void DataContainer::reformatInteger(){
+void DataContainer::ReformatInteger(){
 	if(this->buffer_data_uncompressed.size() == 0)
 		return;
 
-	// Recode integer types only
-	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
+	// Recode integer types only.
+	if(!(this->header.data_header.controller.type == YON_TYPE_32B &&
+	     this->header.data_header.controller.signedness == true))
+	{
 		return;
 	}
 
-	// Do not recode if the data is uniform
-	if(this->header.data_header.isUniform())
+	// Do not recode if the data is uniform.
+	if(this->header.data_header.IsUniform())
 		return;
 
-	// At this point all integers are S32
+	// At this point all integers are signed 32-bit integers.
+	assert(this->buffer_data_uncompressed.size() % sizeof(S32) == 0);
+	assert(this->header.n_additions * sizeof(S32) == this->buffer_data_uncompressed.size());
 	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.data());
-	const U32* const udat = reinterpret_cast<const U32* const>(this->buffer_data_uncompressed.data());
-	S32 min = dat[0];
-	S32 max = dat[0];
-	bool hasMissing = false;
+	S32 min_value = dat[0];
+	S32 max_value = dat[0];
+	bool has_special = false;
 
+	// Iterate over available data and search for either missingness
+	// or sentinel node values. If a match is found trigger the
+	// bool flag to signal the use of the recoding procedure.
 	for(U32 j = 0; j < this->header.n_additions; ++j){
-		if(udat[j] == 0x80000000 || udat[j] == 0x80000001){
-			hasMissing = true;
+		if(dat[j] == bcf_int32_missing || dat[j] == bcf_int32_vector_end){
+			has_special = true;
 			continue;
 		}
-		if(dat[j] < min) min = dat[j];
-		if(dat[j] > max) max = dat[j];
+		if(dat[j] < min_value) min_value = dat[j];
+		if(dat[j] > max_value) max_value = dat[j];
 	}
 
+	// If we have missing values then we have to use signed
+	// primitives to accommodate this fact.
 	BYTE byte_width = 0;
-	// If we have missing values then we have to use signedness
-	if(min < 0 || hasMissing == true){
-		byte_width = ceil((ceil(log2(abs(min) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
-		const BYTE byte_width_max = ceil((ceil(log2(abs(max) + 1 + 2)) + 1) / 8);
+	if(min_value < 0 || has_special == true){
+		byte_width = ceil((ceil(log2(abs(min_value) + 1 + 2)) + 1) / 8);  // One bit is used for sign, 2 values for missing and end-of-vector
+		const BYTE byte_width_max = ceil((ceil(log2(abs(max_value) + 1 + 2)) + 1) / 8);
 		if(byte_width_max > byte_width){
 			byte_width = byte_width_max;
 		}
 	}
-	else byte_width = ceil(ceil(log2(max + 1)) / 8);
+	else byte_width = ceil(ceil(log2(max_value + 1)) / 8);
 
+	// Select the smallest primitive type (word width) that
+	// can hold the target data range.
 	if(byte_width == 0)     byte_width = 1;
 	else if(byte_width >= 3 && byte_width <= 4) byte_width = 4;
 	else if(byte_width > 4) byte_width = 8;
 
-	// Phase 2
-	// Here we re-encode values using the smallest possible word-size
+	// Setup buffers.
 	this->buffer_data.reset();
 	this->buffer_data.resize(this->buffer_data_uncompressed.size() + 65536);
 
 	// Is non-negative
 	// Also cannot have missing values
-	if(min >= 0 && hasMissing == false){
+	if(min_value >= 0 && has_special == false){
 		this->header.data_header.controller.signedness = 0;
 
 		if(byte_width == 1){
@@ -232,34 +219,40 @@ void DataContainer::reformatInteger(){
 			exit(1);
 		}
 	}
-	// Is negative or has missing
+	// Is negative or Has missing
 	else {
 		this->header.data_header.controller.signedness = true;
 
 		if(byte_width == 1){
 			this->header.data_header.controller.type = YON_TYPE_8B;
 
+			const SBYTE missing = INT8_MIN;
+			const SBYTE eov     = INT8_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (BYTE)0x80;
-				else if(udat[j] == 0x80000001) this->buffer_data += (BYTE)0x81;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (SBYTE)dat[j];
 			}
 
 		} else if(byte_width == 2){
 			this->header.data_header.controller.type = YON_TYPE_16B;
 
+			const S16 missing = INT16_MIN;
+			const S16 eov     = INT16_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (U16)0x8000;
-				else if(udat[j] == 0x80000001) this->buffer_data += (U16)0x8001;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (S16)dat[j];
 			}
 
 		} else if(byte_width == 4){
 			this->header.data_header.controller.type = YON_TYPE_32B;
 
+			const S32 missing = INT32_MIN;
+			const S32 eov     = INT32_MIN + 1;
 			for(U32 j = 0; j < this->header.n_additions; ++j){
-				if(udat[j] == 0x80000000)      this->buffer_data += (U32)0x80000000;
-				else if(udat[j] == 0x80000001) this->buffer_data += (U32)0x80000001;
+				if(dat[j] == bcf_int32_missing)         this->buffer_data += missing;
+				else if(dat[j] == bcf_int32_vector_end) this->buffer_data += eov;
 				else this->buffer_data += (S32)dat[j];
 			}
 
@@ -268,6 +261,8 @@ void DataContainer::reformatInteger(){
 			exit(1);
 		}
 	}
+	assert(this->buffer_data.size() % byte_width == 0);
+	assert(this->header.n_additions * byte_width == this->buffer_data.size());
 
 	memcpy(this->buffer_data_uncompressed.buffer, this->buffer_data.buffer, this->buffer_data.size());
 	this->buffer_data_uncompressed.n_chars = this->buffer_data.size();
@@ -275,11 +270,11 @@ void DataContainer::reformatInteger(){
 	this->buffer_data.reset();
 }
 
-void DataContainer::reformatStride(){
+void DataContainer::ReformatStride(){
 	if(this->buffer_strides_uncompressed.size() == 0)
 		return;
 
-	if(this->header.data_header.hasMixedStride() == false)
+	if(this->header.data_header.HasMixedStride() == false)
 		return;
 
 	// Recode integer types
@@ -351,79 +346,28 @@ void DataContainer::reformatStride(){
 	this->buffer_strides.reset();
 }
 
-const U32 DataContainer::getObjectSize(void) const{
+U32 DataContainer::GetObjectSize(void) const{
 	// In case data is encrypted
 	if(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 		return(this->buffer_data.size());
 
 	U32 total_size = this->buffer_data.size();
-	if(this->header.data_header.hasMixedStride())
+	if(this->header.data_header.HasMixedStride())
 		total_size += this->buffer_strides.size();
 
 	return(total_size);
 }
 
-const U64 DataContainer::getObjectSizeUncompressed(void) const{
+U64 DataContainer::GetObjectSizeUncompressed(void) const{
 	U64 total_size = this->buffer_data_uncompressed.size();
-	if(this->header.data_header.hasMixedStride())
+	if(this->header.data_header.HasMixedStride())
 		total_size += this->buffer_strides_uncompressed.size();
 
 	return(total_size);
 }
 
-void DataContainer::deltaEncode(){
-	if(this->size() == 0)
-		return;
-
-	// Recode integer types only
-	if(!(this->header.data_header.controller.type == YON_TYPE_32B && this->header.data_header.controller.signedness == 1)){
-		return;
-	}
-
-	if(this->header.data_header.controller.uniform == true)
-		return;
-
-	// At this point all integers are S32
-	const S32* const dat  = reinterpret_cast<const S32* const>(this->buffer_data_uncompressed.buffer);
-
-	// check for uniformity except first
-	if(this->header.n_additions > 1){
-		bool is_uniform_delta = true;
-		const S32 test_diff = dat[1] - dat[0];
-		for(U32 i = 2; i < this->header.n_additions; ++i){
-			if(dat[i] - dat[i - 1] != test_diff){
-				is_uniform_delta = false;
-				break;
-			}
-		}
-
-		if(is_uniform_delta){
-			this->header.n_entries   = 1;
-			this->header.n_additions = 1;
-			// Data pointers are updated in case there is no reformatting
-			// see StreamContainer::reformat()
-			this->buffer_data_uncompressed.n_chars             = sizeof(S32);
-			this->header.data_header.uLength                   = sizeof(S32);
-			this->header.data_header.cLength                   = sizeof(S32);
-			this->header.data_header.controller.uniform        = true;
-			this->header.data_header.controller.mixedStride    = false;
-			this->header.data_header.controller.encoder        = YON_ENCODE_NONE;
-			return;
-		}
-	}
-
-	this->buffer_data += dat[0];
-	for(U32 j = 1; j < this->header.n_additions; ++j){
-		this->buffer_data += dat[j] - dat[j-1];
-	}
-	memcpy(this->buffer_data_uncompressed.data(),
-			this->buffer_data.data(),
-			this->buffer_data.size());
-
-}
-
-void DataContainer::updateContainer(bool reformat){
-	// If the data container has entries in it but has
+void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
+	// If the data container Has entries in it but Has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
 		this->header.reset();
@@ -444,20 +388,279 @@ void DataContainer::updateContainer(bool reformat){
 
 	// Check if stream is uniform in content
 	if(this->header.data_header.controller.type != YON_TYPE_STRUCT){
-		this->checkUniformity();
+		this->CheckUniformity();
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->reformatInteger();
+		if(reformat_data) this->ReformatInteger();
 	}
 
 	// Set uncompressed length
 	this->header.data_header.uLength = this->buffer_data_uncompressed.size();
 
 	// If we have mixed striding
-	if(this->header.data_header.hasMixedStride()){
+	if(this->header.data_header.HasMixedStride()){
 		// Reformat stream to use as small word size as possible
-		if(reformat) this->reformatStride();
+		if(reformat_stride) this->ReformatStride();
 		this->header.stride_header.uLength = this->buffer_strides_uncompressed.size();
 	}
+}
+
+void DataContainer::AddStride(const U32 value){
+	// If this is the first stride set
+	if(this->header.n_strides == 0){
+		this->header.stride_header.controller.type = YON_TYPE_32B;
+		this->header.stride_header.controller.signedness = false;
+		this->SetStrideSize(value);
+	}
+
+	// Check if there are different strides
+	if(!this->CheckStrideSize(value)){
+		this->TriggerMixedStride();
+	}
+
+	// Add value
+	this->buffer_strides_uncompressed += (U32)value;
+	++this->header.n_strides;
+}
+
+bool DataContainer::Add(const BYTE& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added BYTE" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U16& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U16" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U32& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()){
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U32" << std::endl;
+		exit(1);
+		return false;
+	}
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const SBYTE& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added SBYTE" << std::endl;
+		exit(1);
+		return false;
+	}
+
+	if(value == bcf_int8_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int8eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int8_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int8miss" << std::endl;
+		return(true);
+	}
+
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S16& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S16" << std::endl;
+		exit(1);
+		return false;
+	}
+
+	if(value == bcf_int16_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int16eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int16_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int16miss" << std::endl;
+		return(true);
+	}
+
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S32& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_32B);
+		this->header.data_header.controller.signedness = false;
+	}
+	if(!this->CheckInteger()) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S32" << std::endl;
+		exit(1);
+		return false;
+	}
+
+	if(value == bcf_int32_vector_end){
+		this->buffer_data_uncompressed += (S32)bcf_int32_vector_end;
+		++this->header.n_additions;
+		//std::cerr << "value is int32eov" << std::endl;
+		return(true);
+	}
+
+	if(value == bcf_int32_missing){
+		this->buffer_data_uncompressed += (S32)bcf_int32_missing;
+		++this->header.n_additions;
+		//std::cerr << "value is int32miss" << std::endl;
+		return(true);
+	}
+
+	this->buffer_data_uncompressed += (S32)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const U64& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_64B);
+		this->header.data_header.controller.signedness = false;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added U64" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (U64)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const S64& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_64B);
+		this->header.data_header.controller.signedness = true;
+	}
+
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added S64" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (U64)value;
+	++this->header.n_additions;
+	//++this->n_entries;
+	return(true);
+}
+
+bool DataContainer::Add(const float& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_FLOAT);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added FLOAT" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (float)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::Add(const double& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_DOUBLE);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added DOUBLE" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (double)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::AddCharacter(const char& value){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_CHAR);
+		this->header.data_header.controller.signedness = true;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed += (char)value;
+	++this->header.n_additions;
+	return(true);
+}
+
+bool DataContainer::AddCharacter(const char* const string, const U32 l_string){
+	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+		this->header.data_header.SetType(YON_TYPE_CHAR);
+		this->header.data_header.controller.signedness = true;
+		//std::cerr << "triggering: string" << std::endl;
+	}
+
+	// Make checks
+	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
+		return false;
+	}
+
+	this->buffer_data_uncompressed.Add(string, l_string);
+	this->header.n_additions += l_string;
+	return(true);
 }
 
 }

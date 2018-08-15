@@ -12,24 +12,24 @@ InfoContainer<std::string>::InfoContainer() :
 InfoContainer<std::string>::InfoContainer(const data_container_type& container) :
 	__containers(nullptr)
 {
-if(container.header.data_header.hasMixedStride())
-	this->__setup(container);
-else
-	this->__setup(container, container.header.data_header.stride);
+	if(container.header.data_header.HasMixedStride())
+		this->__setup(container);
+	else
+		this->__setup(container, container.header.data_header.stride);
 }
 
 InfoContainer<std::string>::InfoContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches) :
 	__containers(nullptr)
 {
-if(data_container.header.data_header.hasMixedStride())
-	this->__setupBalanced(data_container, meta_container, pattern_matches);
-else
-	this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
+	if(data_container.header.data_header.HasMixedStride())
+		this->__setupBalanced(data_container, meta_container, pattern_matches);
+	else
+		this->__setupBalanced(data_container, meta_container, pattern_matches, data_container.header.data_header.stride);
 }
 
 InfoContainer<std::string>::~InfoContainer(void){
 for(std::size_t i = 0; i < this->n_entries; ++i)
-	((this->__containers + i)->~basic_string)();
+	((this->__containers + i)->~PrimitiveContainer)();
 
 ::operator delete[](static_cast<void*>(this->__containers));
 }
@@ -69,11 +69,11 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 
 	for(U32 i = 0; i < this->size(); ++i){
 		// Meta entry has no INFO
-		if(meta_container[i].getInfoPatternID() == -1){
+		if(meta_container[i].GetInfoPatternId() == -1){
 			new( &this->__containers[i] ) value_type( );
 		}
 		// If pattern matches
-		else if(pattern_matches[meta_container[i].getInfoPatternID()]){
+		else if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 			new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], strides[stride_offset]);
 			current_offset += strides[stride_offset];
 			++stride_offset;
@@ -110,14 +110,14 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-	if(data_container.header.data_header.isUniform() == false){
+	if(data_container.header.data_header.IsUniform() == false){
 		U32 current_offset = 0;
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If there are no INFO fields
-			if(meta_container[i].getInfoPatternID() == -1){
+			if(meta_container[i].GetInfoPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
 			} // If pattern matches
-			else if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			else if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type(&data_container.buffer_data_uncompressed.data()[current_offset], stride_size);
 				current_offset += stride_size;
 			}
@@ -132,7 +132,7 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 	else {
 		for(U32 i = 0; i < this->n_entries; ++i){
 			// If pattern matches
-			if(pattern_matches[meta_container[i].getInfoPatternID()]){
+			if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type(data_container.buffer_data_uncompressed.data(), stride_size);
 			}
 			// Otherwise place an empty

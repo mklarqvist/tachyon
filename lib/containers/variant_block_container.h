@@ -9,8 +9,8 @@
 #include "containers/format_container.h"
 #include "containers/format_container_string.h"
 #include "containers/interval_container.h"
-#include "containers/hash_container.h"
-#include "variant_block_mapper.h"
+#include "core/variant_reader_objects.h"
+#include "core/variant_record.h"
 
 namespace tachyon {
 namespace containers {
@@ -27,52 +27,49 @@ private:
     typedef VariantBlock          block_type;
     typedef VariantBlockHeader    block_header_type;
     typedef VariantBlockFooter    block_footer_type;
-    typedef VariantBlockMapper    block_mapper_type;
-    typedef core::VariantHeader   header_type;
+    typedef VariantHeader         global_header_type;
 	typedef containers::VariantBlock             block_entry_type;
 	typedef containers::MetaContainer            meta_container_type;
 	typedef containers::GenotypeContainer        gt_container_type;
 	typedef containers::InfoContainerInterface   info_interface_type;
 	typedef containers::FormatContainerInterface format_interface_type;
-	typedef containers::GenotypeSummary          genotype_summary_type;
 	typedef containers::IntervalContainer        interval_container_type;
-	typedef HashContainer                        hash_container_type;
 	typedef DataBlockSettings                    block_settings_type;
+	typedef VariantReaderObjects                 objects_type;
+
+	typedef std::unordered_map<int, int>    map_type;
 
 public:
 	VariantBlockContainer() :
-		header_(nullptr)
+		loaded_genotypes(false),
+		header_(nullptr),
+		gt_exp(nullptr)
 	{
 
 	}
 
-	VariantBlockContainer(const header_type& header) :
-		mapper_(header.header_magic.n_format_values, header.header_magic.n_info_values),
-		header_(&header)
+	VariantBlockContainer(const global_header_type& header) :
+		loaded_genotypes(false),
+		header_(&header),
+		gt_exp(nullptr)
 	{
-
+		delete [] this->gt_exp;
 	}
 
-	~VariantBlockContainer(void){}
+	~VariantBlockContainer(void){
+	}
 
-	self_type& operator<<(const header_type& header){
+	self_type& operator<<(const global_header_type& header){
 		this->header_ = &header;
-		this->mapper_ << header;
 		return(*this);
 	}
 
 	void reset(void){
 		this->block_.clear();
-		// Todo: reset hashes
 	}
 
-	bool buildMapper(const std::vector<U32>& info_keys, const std::vector<U32>& format_keys, const block_settings_type& block_settings){
-		if(this->mapper_.build(info_keys, format_keys, this->block_.footer) == false){
-			std::cerr << utility::timestamp("ERROR") << "Failed to build mapper..." << std::endl;
-			return false;
-		}
-		return(true);
-	}
+	bool ParseSettings(block_settings_type& settings);
+	bool ParseLoadedPatterns(block_settings_type& settings);
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
@@ -81,23 +78,7 @@ public:
 	 * @param settings Settings record describing reading parameters
 	 * @return         Returns FALSE if there was a problem, TRUE otherwise
 	 */
-	bool readBlock(std::ifstream& stream, block_settings_type& settings);
-
-	/**<
-	 * Calculates which INFO pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name INFO field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_info_field_pattern_matches(const std::string& field_name) const;
-
-	/**<
-	 * Calculates which FORMAT pattern matches are found for the given field
-	 * name in the current loaded block.
-	 * @param field_name FORMAT field name
-	 * @return           Returns a vector of booleans representing pattern matches
-	 */
-	const std::vector<bool> get_format_field_pattern_matches(const std::string& field_name) const;
+	bool ReadBlock(std::ifstream& stream, block_settings_type& settings);
 
 	/**<
 	 * Factory function for FORMAT container given an input `field` name
@@ -105,20 +86,7 @@ public:
 	 * @return           Returns an instance of a `FormatContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
-	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const{
-		core::HeaderMapEntry* match = nullptr;
-		int format_field_global_id = -2;
-		if(this->header_->getFormatField(field_name, match)){
-			format_field_global_id = match->IDX;
-		} else return nullptr;
-
-		if(format_field_global_id >= 0){
-			const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
-			if(target_local_id < 0) return nullptr;
-			return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], this->header_->getSampleNumber()));
-		}
-		else return nullptr;
-	}
+	containers::FormatContainer<T>* get_format_container(const std::string& field_name) const;
 
 	/**<
 	 * Factory function for balanced FORMAT container given an input `field` name.
@@ -129,32 +97,7 @@ public:
 	 * @return               Returns an instance of a balanced `FormatContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
-	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		if(meta_container.size() == 0)
-			return new containers::FormatContainer<T>();
-
-		core::HeaderMapEntry* match = nullptr;
-		int format_field_global_id = -2;
-		if(this->header_->getFormatField(field_name, match)){
-			format_field_global_id = match->IDX;
-		} else return nullptr;
-
-		if(format_field_global_id >= 0){
-			const std::vector<bool> pattern_matches = this->get_format_field_pattern_matches(field_name);
-			U32 matches = 0;
-			for(U32 i = 0; i < pattern_matches.size(); ++i)
-				matches += pattern_matches[i];
-
-			if(matches == 0)
-				return nullptr;
-
-			const S32& target_local_id = this->getMapper().getGlobalFormat(format_field_global_id).load_order_index;
-			if(target_local_id < 0) return nullptr;
-
-			return(new containers::FormatContainer<T>(this->getBlock().format_containers[target_local_id], meta_container, pattern_matches, this->header_->getSampleNumber()));
-		}
-		else return nullptr;
-	}
+	containers::FormatContainer<T>* get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const;
 
 	/**<
 	 * Factory function for INFO container given an input `field` name
@@ -162,20 +105,7 @@ public:
 	 * @return           Returns an instance of a `InfoContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
-	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const{
-		core::HeaderMapEntry* match = nullptr;
-		int info_field_global_id = -2;
-		if(this->header_->getInfoField(field_name, match)){
-			info_field_global_id = match->IDX;
-		} else return nullptr;
-
-		if(info_field_global_id >= 0){
-			const S32& target_local_id = this->getMapper().getGlobalInfo(info_field_global_id).load_order_index;
-			if(target_local_id < 0) return nullptr;
-			return(new containers::InfoContainer<T>(this->getBlock().info_containers[target_local_id]));
-		}
-		else return nullptr;
-	}
+	containers::InfoContainer<T>* get_info_container(const std::string& field_name) const;
 
 	/**<
 	 * Factory function for balanced INFO container given an input `field` name.
@@ -186,52 +116,135 @@ public:
 	 * @return               Returns an instance of a balanced `InfoContainer` if successful or a nullpointer otherwise
 	 */
 	template <class T>
-	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
-		if(meta_container.size() == 0)
-			return new containers::InfoContainer<T>();
-
-		core::HeaderMapEntry* match = nullptr;
-		int info_field_global_id = -2;
-		if(this->header_->getInfoField(field_name, match)){
-			info_field_global_id = match->IDX;
-		} else return nullptr;
-
-		if(info_field_global_id >= 0){
-			const std::vector<bool> pattern_matches = this->get_info_field_pattern_matches(field_name);
-
-			U32 matches = 0;
-			for(U32 i = 0; i < pattern_matches.size(); ++i)
-				matches += pattern_matches[i];
-
-			if(matches == 0)
-				return nullptr;
-
-			const S32& target_local_id = this->getMapper().getGlobalInfo(info_field_global_id).load_order_index;
-			if(target_local_id < 0) return nullptr;
-
-			return(new containers::InfoContainer<T>(this->getBlock().info_containers[target_local_id], meta_container, pattern_matches));
-		}
-		else return nullptr;
-	}
+	containers::InfoContainer<T>* get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const;
 
 	// Accessors
-	inline block_type& getBlock(void){ return(this->block_); }
-	inline const block_type& getBlock(void) const{ return(this->block_); }
-	inline block_mapper_type& getMapper(void){ return(this->mapper_); }
-	inline const block_mapper_type& getMapper(void) const{ return(this->mapper_); }
+	inline block_type& GetBlock(void){ return(this->block_); }
+	inline const block_type& GetBlock(void) const{ return(this->block_); }
 
 	// Checkers
-	inline const bool anyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
-	inline const bool hasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
-	inline const bool hasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
+	inline bool AnyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
+	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
+	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
+
+	inline void AllocateGenotypeMemory(void){ this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()]; }
+	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
+	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
+
+	/**<
+	 * Primary construction function for generating the appropriate instances of
+	 * iterators / containers
+	 * @param objects Target objects
+	 * @return        Returns reference to input target objects
+	 */
+	objects_type* LoadObjects(objects_type* objects, block_settings_type& block_settings);
+
+	objects_type* LoadObjects(block_settings_type& block_settings){
+		objects_type* obj = new objects_type();
+		return(this->LoadObjects(obj, block_settings));
+	}
+
+	yon1_t* LazyEvaluate(objects_type& objects);
 
 private:
-	block_mapper_type    mapper_; // global -> local, local -> global, loaded or not, primitive type
-	block_type           block_;
-	hash_container_type  h_tables_format_;
-	hash_container_type  h_tables_info_;
-	const header_type*   header_;
+	bool loaded_genotypes;
+	block_type                block_;
+	const global_header_type* header_;
+	std::vector<int>          info_id_local_loaded;
+	std::vector<int>          format_id_local_loaded;
+	std::vector<int>          info_id_global_loaded;
+	std::vector<int>          format_id_global_loaded;
+	std::vector< std::vector<int> > info_patterns_local;
+	std::vector< std::vector<int> > format_patterns_local;
+	map_type info_map_global;
+	map_type format_map_global;
+	// External memory allocation for linear use of lazy-evaluated
+	// expansion of genotype records. This is critical when the sample
+	// numbers are becoming large as allocating/deallocating hundreds
+	// of thousands of pointers for every variant is very time consuming.
+	yon_gt_rcd** gt_exp;
 };
+
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
+
+template <class T>
+containers::FormatContainer<T>* VariantBlockContainer::get_format_container(const std::string& field_name) const{
+	int format_field_global_id = -2;
+	YonFormat* fmt = this->header_->GetFormat(field_name);
+	if(fmt != nullptr){
+		format_field_global_id = fmt->idx;
+	} else return new containers::FormatContainer<T>();
+
+	DataContainer* container = this->block_.GetFormatContainer(format_field_global_id);
+	if(container == nullptr) new containers::FormatContainer<T>();
+
+	return(new containers::FormatContainer<T>(*container, this->header_->GetNumberSamples()));
+}
+
+template <class T>
+containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
+	if(meta_container.size() == 0)
+		return new containers::FormatContainer<T>();
+
+	int format_field_global_id = -2;
+	YonFormat* fmt = this->header_->GetFormat(field_name);
+	if(fmt != nullptr){
+		format_field_global_id = fmt->idx;
+	} else return new containers::FormatContainer<T>();
+
+	DataContainer* container = this->block_.GetFormatContainer(format_field_global_id);
+	if(container == nullptr) new containers::FormatContainer<T>();
+
+	const std::vector<bool> pattern_matches = this->block_.FormatPatternSetMembership(format_field_global_id);
+
+	U32 matches = 0;
+	for(U32 i = 0; i < pattern_matches.size(); ++i)
+		matches += pattern_matches[i];
+
+	if(matches == 0) return new containers::FormatContainer<T>();
+
+	return(new containers::FormatContainer<T>(*container, meta_container, pattern_matches, this->header_->GetNumberSamples()));
+
+}
+
+template <class T>
+containers::InfoContainer<T>* VariantBlockContainer::get_info_container(const std::string& field_name) const{
+	int info_field_global_id = -2;
+	YonInfo* info = this->header_->GetInfo(field_name);
+	if(info != nullptr){
+		info_field_global_id = info->idx;
+	} else return new containers::InfoContainer<T>();
+
+	DataContainer* container = this->block_.GetInfoContainer(info_field_global_id);
+	if(container == nullptr) new containers::InfoContainer<T>();
+
+	return(new containers::InfoContainer<T>(*container));
+}
+
+template <class T>
+containers::InfoContainer<T>* VariantBlockContainer::get_balanced_info_container(const std::string& field_name, const containers::MetaContainer& meta_container) const{
+	int info_field_global_id = -2;
+	YonInfo* info = this->header_->GetInfo(field_name);
+	if(info != nullptr){
+		info_field_global_id = info->idx;
+	} else return new containers::InfoContainer<T>();
+
+	DataContainer* container = this->block_.GetInfoContainer(info_field_global_id);
+	if(container == nullptr) new containers::InfoContainer<T>();
+
+	const std::vector<bool> pattern_matches = this->block_.InfoPatternSetMembership(info_field_global_id);
+
+	U32 matches = 0;
+	for(U32 i = 0; i < pattern_matches.size(); ++i)
+		matches += pattern_matches[i];
+
+	if(matches == 0) return new containers::InfoContainer<T>();
+
+	return(new containers::InfoContainer<T>(*container, meta_container, pattern_matches));
+}
 
 }
 }

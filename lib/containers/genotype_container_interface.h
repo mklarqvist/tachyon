@@ -4,26 +4,20 @@
 #include "data_container.h"
 #include "core/ts_tv_object.h"
 #include "math/square_matrix.h"
-#include "algorithm/permutation/permutation_manager.h"
-#include "core/genotype_object.h"
-#include "core/genotype_summary.h"
+#include "core/genotypes.h"
 
 namespace tachyon{
 namespace containers{
 
 // Todo: value type should be GT object
 class GenotypeContainerInterface{
-private:
+public:
     typedef GenotypeContainerInterface    self_type;
     typedef std::size_t                   size_type;
-
-protected:
     typedef core::MetaEntry               meta_type;
     typedef core::VariantController       hot_controller_type;
-    typedef core::GTObject                gt_object;
-    typedef GenotypeSummary               gt_summary;
+    typedef yon_gt_summary                gt_summary;
     typedef math::SquareMatrix<double>    square_matrix_type;
-    typedef algorithm::PermutationManager permutation_type;
     typedef core::TsTvObject              ts_tv_object_type;
 
     // Function pointers
@@ -37,7 +31,7 @@ public:
 
     GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
-		__data(new char[n_bytes]),
+		__data(new uint8_t[n_bytes]),
 		__meta(meta)
     {
     	memcpy(this->__data, data, n_bytes);
@@ -61,17 +55,19 @@ public:
     virtual gt_summary getSummary(void) const =0;
     virtual gt_summary& getSummary(gt_summary& gt_summary_object) const =0;
 
+    virtual yon_gt* GetObjects(const uint32_t n_samples) =0;
+    virtual yon_gt* GetObjects(yon_gt_ppa& ppa) =0;
 
-    virtual std::vector<gt_object> getLiteralObjects(void) const =0;
-    virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
-    virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
-	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const =0;
-	virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const =0;
-	virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
+    //virtual std::vector<gt_object> getLiteralObjects(void) const =0;
+    //virtual std::vector<gt_object> getObjects(const U64& n_samples) const =0;
+    //virtual std::vector<gt_object> getObjects(const U64& n_samples, const permutation_type& ppa_manager) const =0;
+	//virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects) const =0;
+	//virtual void getObjects(const U64& n_samples, std::vector<gt_object>& objects, const permutation_type& ppa_manager) const =0;
+	//virtual void getLiteralObjects(std::vector<gt_object>& objects) const =0;
     virtual void getTsTv(std::vector<ts_tv_object_type>& objects) const =0;
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
     inline const meta_type& getMeta(void) const{ return(this->__meta); }
 
@@ -103,7 +99,7 @@ protected:
 
 protected:
     size_type        n_entries;
-    char*            __data;
+    uint8_t*            __data;
     const meta_type  __meta;
 };
 

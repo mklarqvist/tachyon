@@ -3,7 +3,7 @@
 
 #include <stdio.h> // size_t
 
-#include "algorithm/permutation/permutation_manager.h"
+#include "core/genotypes.h"
 
 namespace tachyon{
 namespace math{
@@ -11,8 +11,8 @@ namespace math{
 template <class T>
 class SquareMatrix{
 private:
-	typedef SquareMatrix                  self_type;
-	typedef algorithm::PermutationManager ppa_type;
+	typedef SquareMatrix  self_type;
+	typedef yon_gt_ppa    ppa_type;
 
 public:
 	SquareMatrix(const U32 width) :

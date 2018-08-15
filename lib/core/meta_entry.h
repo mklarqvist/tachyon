@@ -8,8 +8,9 @@
 #include "core/header/variant_header.h"
 #include "meta_allele.h"
 #include "variant_controller.h"
-#include "io/bcf/BCFEntry.h"
 #include "containers/data_container.h"
+
+#include "htslib/vcf.h"
 
 namespace tachyon{
 namespace core{
@@ -23,62 +24,61 @@ public:
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;
 	typedef VariantController           controller_type;
-	typedef bcf::BCFEntry               bcf_entry_type;
 
 public:
 	MetaEntry();
 	MetaEntry(const self_type& other);
-	MetaEntry(const bcf_entry_type& bcf_entry); // transmute data from bcfentry
-	MetaEntry(const bcf_entry_type& bcf_entry, const U64 position_offset); // transmute from bcfentry with positional offset
+	MetaEntry(const bcf1_t* record);
+	MetaEntry(const bcf1_t* record, const U64 position_offset);
 	~MetaEntry();
 
 	// Check if a field is set
-	inline const bool check_info_field(const datablock_footer_type& block, const U32 info_identifier) const{
-		return(block.info_bit_vectors[this->info_pattern_id][info_identifier]);
+	inline bool CheckInfoField(const datablock_footer_type& block, const U32 info_identifier) const{
+		return(block.info_patterns[this->info_pattern_id][info_identifier]);
 	}
 
-	inline const bool check_format_field(const datablock_footer_type& block, const U32 format_identifier) const{
-		return(block.format_bit_vectors[this->format_pattern_id][format_identifier]);
+	inline bool CheckFormatField(const datablock_footer_type& block, const U32 format_identifier) const{
+		return(block.format_patterns[this->format_pattern_id][format_identifier]);
 	}
 
-	inline const bool check_filter_field(const datablock_footer_type& block, const U32 filter_identifier) const{
-		return(block.filter_bit_vectors[this->filter_pattern_id][filter_identifier]);
+	inline bool CheckFilterField(const datablock_footer_type& block, const U32 filter_identifier) const{
+		return(block.filter_patterns[this->filter_pattern_id][filter_identifier]);
 	}
 
 	// Boolean checks
 	// Supportive boolean functions
-	inline const bool hasGT(void) const{ return(this->controller.gt_available); }
-	inline const bool isBiallelic(void) const{ return(this->controller.biallelic); }
-	inline const bool isBiallelicSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
-	inline const bool isDiploid(void) const{ return(this->controller.diploid); }
-	inline const bool isMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
-	inline const bool isAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
-	inline const bool isAnyGTMixedPloidy(void) const{ return(this->controller.gt_anyNA); }
-	inline const bool isGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
-	inline const bool getControllerPhase(void) const{ return(this->controller.gt_phase); }
+	inline bool HasGT(void) const{ return(this->controller.gt_available); }
+	inline bool IsBiallelic(void) const{ return(this->controller.biallelic); }
+	inline bool IsBiallelicSNV(void) const{ return(this->controller.biallelic == true && this->controller.simple_snv == true); }
+	inline bool IsDiploid(void) const{ return(this->controller.diploid); }
+	inline bool IsMixedPloidy(void) const{ return(this->controller.mixed_ploidy); }
+	inline bool IsAnyGTMissing(void) const{ return(this->controller.gt_anyMissing); }
+	inline bool IsAnyGTMixedPloidy(void) const{ return(this->controller.gt_anyNA); }
+	inline bool IsGTMixedPhasing(void) const{ return(this->controller.gt_mixed_phasing); }
+	inline bool GetControllerPhase(void) const{ return(this->controller.gt_phase); }
 
-	inline const TACHYON_GT_ENCODING getGenotypeEncoding(void) const{ return(TACHYON_GT_ENCODING(this->controller.gt_compression_type)); }
-	inline const TACHYON_GT_PRIMITIVE_TYPE getGenotypeType(void) const{ return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type)); }
+	inline TACHYON_GT_ENCODING GetGenotypeEncoding(void) const{ return(TACHYON_GT_ENCODING(this->controller.gt_compression_type)); }
+	inline TACHYON_GT_PRIMITIVE_TYPE GetGenotypeType(void) const{ return(TACHYON_GT_PRIMITIVE_TYPE(this->controller.gt_primtive_type)); }
 
-	inline const float& getQuality(void){ return(this->quality); }
-	inline const std::string& getName(void){ return(this->name); }
-	inline const U16& getNumberAlleles(void){ return(this->n_alleles); }
-	inline const U32 getContigID(void){ return(this->contigID); }
-	inline const U64 getPosition(void){ return(this->position); }
+	inline const float& GetQuality(void){ return(this->quality); }
+	inline const std::string& GetName(void){ return(this->name); }
+	inline const U16& GetNumberAlleles(void){ return(this->n_alleles); }
+	inline U32 GetContigID(void){ return(this->contigID); }
+	inline U64 GetPosition(void){ return(this->position); }
 
-	inline const float& getQuality(void) const{ return(this->quality); }
-	inline const std::string& getName(void) const{ return(this->name); }
-	inline const U16& getNumberAlleles(void) const{ return(this->n_alleles); }
-	inline const U32 getContigID(void) const{ return(this->contigID); }
-	inline const U64 getPosition(void) const{ return(this->position); }
+	inline const float& GetQuality(void) const{ return(this->quality); }
+	inline const std::string& GetName(void) const{ return(this->name); }
+	inline const U16& GetNumberAlleles(void) const{ return(this->n_alleles); }
+	inline U32 GetContigID(void) const{ return(this->contigID); }
+	inline U64 GetPosition(void) const{ return(this->position); }
 
 	// Set and get for patterns
-	inline S32& getInfoPatternID(void){ return(this->info_pattern_id); }
-	inline S32& getFormatPatternID(void){ return(this->format_pattern_id); }
-	inline S32& getFilterPatternID(void){ return(this->filter_pattern_id); }
-	inline const S32& getInfoPatternID(void) const{ return(this->info_pattern_id); }
-	inline const S32& getFormatPatternID(void) const{ return(this->format_pattern_id); }
-	inline const S32& getFilterPatternID(void) const{ return(this->filter_pattern_id); }
+	inline S32& GetInfoPatternId(void){ return(this->info_pattern_id); }
+	inline S32& GetFormatPatternId(void){ return(this->format_pattern_id); }
+	inline S32& GetFilterPatternId(void){ return(this->filter_pattern_id); }
+	inline const S32& GetInfoPatternId(void) const{ return(this->info_pattern_id); }
+	inline const S32& GetFormatPatternId(void) const{ return(this->format_pattern_id); }
+	inline const S32& GetFilterPatternId(void) const{ return(this->filter_pattern_id); }
 
 	/**<
 	 * Check if it is possible to pack the REF and ALT allele strings into
@@ -86,7 +86,7 @@ public:
 	 * match the regular expression pattern "^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$"
 	 * @return Returns TRUE if it is possible to bitpack data or FALSE otherwise
 	 */
-	const bool usePackedRefAlt(void) const;
+	bool UsePackedRefAlt(void) const;
 
 	/**<
 	 * Bitpack biallelic, diploid REF and ALT data into a single BYTE. Failure
@@ -94,11 +94,36 @@ public:
 	 * errors.
 	 * @return Returns a bitpacked BYTE
 	 */
-	const BYTE packRefAltByte(void) const;
+	BYTE PackRefAltByte(void) const;
+
+	std::string GetAlleleString(void) const{
+		std::string ret = this->alleles[0].toString();
+		for(U32 i = 1; i < this->n_alleles; ++i)
+			ret += "," + this->alleles[i].toString();
+		return(ret);
+	}
+
+	/**<
+	 * Updates a htslib bcf1_t record with data available in this meta record.
+	 * This function is used when converting yon1_t records to bcf1_t records.
+	 * @param rec Input bcf1_t record that has been allocated.
+	 * @param hdr Input bcf hdr structure converted from tachyon header.
+	 * @return Returns the input bcf1_t record pointer.
+	 */
+	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
+		rec->rid = this->contigID;
+		rec->pos = this->position;
+		bcf_update_id(hdr, rec, this->name.data());
+		bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
+		rec->qual = this->quality;
+
+		return(rec);
+	}
 
 public:
 	// Markup: populate from streams
 	controller_type controller;
+	BYTE  n_base_ploidy;
 	U16   n_alleles;
 	S32   info_pattern_id;   // Info pattern ID
 	S32   filter_pattern_id; // Filter pattern ID
@@ -106,6 +131,17 @@ public:
 	float quality;
 	U64   contigID;
 	U64   position;
+	// Todo: Add end_position_longest. This would allow us to directly query
+	//       precomputed end positions.
+	// Todo: Axtend controller to U32 and add fields below or optionally add
+	//       another controller field with variant-identifying information.
+	//       This would support queries on type directly from precomputed
+	//       lookups.
+	// Fields of interest:
+	// isSNV
+	// isComplex
+	// isIndel
+	// isSV
 	std::string  name;
 	allele_type* alleles;
 };

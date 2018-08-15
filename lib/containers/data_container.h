@@ -31,7 +31,7 @@ public:
 	 * the objects in this container.
 	 * @param value Data primitive type
 	 */
-	inline void setType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
+	inline void SetType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
 
 	/**<
 	 * Set the stride size of this container to some value.
@@ -40,7 +40,11 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void setStrideSize(const S32 value){ this->header.data_header.stride = value; }
+	inline void SetStrideSize(const S32 value){ this->header.data_header.stride = value; }
+
+	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
+	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
+
 
 	/**<
 	 * Check if the stride size of this container matches the
@@ -49,8 +53,8 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline const bool checkStrideSize(const S32 value) const{
-		if(this->header.data_header.hasMixedStride() == false)
+	inline bool CheckStrideSize(const S32 value) const{
+		if(this->header.data_header.HasMixedStride() == false)
 			return false;
 
 		return(this->header.data_header.stride == value);
@@ -60,7 +64,7 @@ public:
 	 * Triggers the necessary switches to set this container
 	 * as having mixed strides
 	 */
-	inline void triggerMixedStride(void){
+	inline void TriggerMixedStride(void){
 		this->header.data_header.stride = -1;
 		this->header.data_header.controller.mixedStride = true;
 	}
@@ -79,6 +83,11 @@ public:
 		return(*this);
 	}
 
+	// Supportive
+	inline const U64& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const U64& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const U32& size(void) const{ return(this->header.n_entries); }
+
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
 	 * point all stride values added must be of type U32. This
@@ -86,186 +95,25 @@ public:
 	 * not.
 	 * @param value Stride value to add
 	 */
-	inline void addStride(const U32 value){
-		// If this is the first stride set
-		if(this->header.n_strides == 0){
-			this->header.stride_header.controller.type = YON_TYPE_32B;
-			this->header.stride_header.controller.signedness = false;
-			this->setStrideSize(value);
-		}
+	void AddStride(const U32 value);
 
-		// Check if there are different strides
-		if(!this->checkStrideSize(value)){
-			this->triggerMixedStride();
-		}
-
-		// Add value
-		this->buffer_strides_uncompressed += (U32)value;
-		++this->header.n_strides;
-	}
-
-	// Supportive
-	inline const U64& getSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& getSizeCompressed(void) const{ return(this->buffer_data.size()); }
-	inline const U32& size(void) const{ return(this->header.n_entries); }
-
-	inline bool Add(const BYTE& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const U16& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const U32& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const SBYTE& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const S16& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const S32& value){
-		if(!this->__checkInteger()) return false;
-		this->buffer_data_uncompressed += (S32)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const U64& value){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_64B);
-			this->header.data_header.controller.signedness = false;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)){
-			std::cerr << "Illegal primitive type match u64!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed += (U64)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const S64& value){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_64B);
-			this->header.data_header.controller.signedness = true;
-		}
-
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)){
-			std::cerr << "Illegal primitive type match s64!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed += (U64)value;
-		++this->header.n_additions;
-		//++this->n_entries;
-		return(true);
-	}
-
-	inline bool Add(const float& value){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_FLOAT);
-			this->header.data_header.controller.signedness = true;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)){
-			std::cerr << "Illegal primitive type match float!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed += (float)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool Add(const double& value){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_DOUBLE);
-			this->header.data_header.controller.signedness = true;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)){
-			std::cerr << "Illegal primitive type match double!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed += (double)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool AddCharacter(const char& value){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_CHAR);
-			this->header.data_header.controller.signedness = true;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
-			std::cerr << "Illegal primitive type match char!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed += (char)value;
-		++this->header.n_additions;
-		return(true);
-	}
-
-	inline bool AddCharacter(const char* const string, const U32 l_string){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_CHAR);
-			this->header.data_header.controller.signedness = true;
-			//std::cerr << "triggering: string" << std::endl;
-		}
-
-		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)){
-			std::cerr << "Illegal primitive type match string!" << std::endl;
-			exit(1);
-			return false;
-		}
-
-		this->buffer_data_uncompressed.Add(string, l_string);
-		this->header.n_additions += l_string;
-		return(true);
-	}
+	bool Add(const BYTE& value);
+	bool Add(const U16& value);
+	bool Add(const U32& value);
+	bool Add(const SBYTE& value);
+	bool Add(const S16& value);
+	bool Add(const S32& value);
+	bool Add(const U64& value);
+	bool Add(const S64& value);
+	bool Add(const float& value);
+	bool Add(const double& value);
+	bool AddCharacter(const char& value);
+	bool AddCharacter(const char* const string, const U32 l_string);
 	// Aliases
-	inline bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
-	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
+	bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 
 	/**<
 	 *
@@ -295,7 +143,7 @@ public:
 	 * data and, if set, the uncompressed strides data.
 	 * CRC32 checksums are stored in the header
 	 */
-	void generateCRC(void);
+	void GenerateMd5(void);
 
 	/**<
 	 *
@@ -306,16 +154,16 @@ public:
 	 * 3: Compressed strides data
 	 *
 	 * @param target Target buffer stream
-	 * @return       Returns TRUE if the CRC checksums are identical or FALSE otherwise
+	 * @return       Returns TRUE if the MD5 checksums are identical or FALSE otherwise
 	 */
-	bool checkCRC(int target = 0);
+	bool CheckMd5(int target = 0);
 
 	/**<
 	 * Checks if the current data is uniform given the provided
 	 * stride size
 	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
-	bool checkUniformity(void);
+	bool CheckUniformity(void);
 
 	/**<
 	 * This function is called during import to shrink each
@@ -323,27 +171,27 @@ public:
 	 * At this stage all integer values in the stream is of
 	 * type S32. No other values can be shrunk
 	 */
-	void reformatInteger(void);
+	void ReformatInteger(void);
 
 	/**<
 	 * This function is caled during import to shrink each
 	 * stride size element to the smallest possible primitive
 	 * type to describe it without losing precision.
 	 */
-	void reformatStride(void);
+	void ReformatStride(void);
 
 	/**<
 	 * Utility function that calculates the space this
 	 * object would take on disk if written out
 	 * @return Total size in bytes
 	 */
-	const U32 getObjectSize(void) const;
+	U32 GetObjectSize(void) const;
 
 	/**<
 	 *
 	 * @return
 	 */
-	const U64 getObjectSizeUncompressed(void) const;
+	U64 GetObjectSizeUncompressed(void) const;
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base
@@ -355,27 +203,18 @@ public:
 	 * @param container Data container
 	 * @param reormat   Reformat boolean
 	 */
-	void updateContainer(bool reformat = true);
-
-	/**<
-	 * Currently unused
-	 */
-	void deltaEncode(void);
-
-	inline const TACHYON_CORE_TYPE getDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
-	inline const TACHYON_CORE_TYPE getStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
+	void UpdateContainer(bool reformat_data = true, bool reformat_stride = true);
 
 private:
-	inline bool __checkInteger(void){
+	inline bool CheckInteger(void){
 		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
-			this->header.data_header.setType(YON_TYPE_32B);
+			this->header.data_header.SetType(YON_TYPE_32B);
 			this->header.data_header.controller.signedness = true;
 		}
 
 		// Make checks
 		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
-			std::cerr << "Illegal primitive type match integer!" << std::endl;
-			exit(1);
+			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type mismatch (integer)!" << std::endl;
 			return false;
 		}
 		return true;
@@ -383,7 +222,7 @@ private:
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.buffer_data;
-		if(entry.header.data_header.hasMixedStride())
+		if(entry.header.data_header.HasMixedStride())
 			stream << entry.buffer_strides;
 
 		return(stream);
@@ -395,7 +234,7 @@ private:
 			stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
 			entry.buffer_data.n_chars = entry.header.data_header.cLength;
 
-			if(entry.header.data_header.hasMixedStride()){
+			if(entry.header.data_header.HasMixedStride()){
 				entry.buffer_strides.resize(entry.header.stride_header.cLength);
 				stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
 				entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
@@ -409,7 +248,7 @@ private:
 	}
 
 public:
-	header_type header; // usually written elsewhere
+	header_type header;
 	buffer_type buffer_data;
 	buffer_type buffer_strides;
 	buffer_type buffer_data_uncompressed;

@@ -7,23 +7,21 @@ namespace tachyon{
 namespace algorithm{
 
 class UncompressedCodec : public CompressionContainer{
-private:
-	typedef UncompressedCodec             self_type;
-
-protected:
-	typedef containers::DataContainer     container_type;
-	typedef io::BasicBuffer               buffer_type;
-	typedef algorithm::PermutationManager permutation_type;
+public:
+	typedef UncompressedCodec          self_type;
+	typedef containers::DataContainer  container_type;
+	typedef io::BasicBuffer            buffer_type;
+	typedef yon_gt_ppa                 permutation_type;
 
 public:
 	UncompressedCodec() = default;
 	~UncompressedCodec() = default;
 
-	inline const bool compress(permutation_type& manager){ return true; }
-	const bool compress(container_type& container);
-	inline const bool compressStrides(container_type& container){ return true; }
-	const bool decompress(container_type& container);
-	const bool decompressStrides(container_type& container);
+	bool Compress(container_type& container, permutation_type& manager){ return true; }
+	bool Compress(container_type& container);
+	inline bool CompressStrides(container_type& container){ return true; }
+	bool Decompress(container_type& container);
+	bool DecompressStrides(container_type& container);
 
 protected:
 	buffer_type buffer;

@@ -18,13 +18,10 @@ public:
 		drop_format(false),
 		header_only(false),
 		show_header(true),
-		custom_delimiter(false),
-		custom_delimiter_char(0),
-		custom_output_format(false),
-		filter_any(false),
-		filter_all(false),
 		annotate_genotypes(false),
-		output_FORMAT_as_vector(false)
+		use_htslib(false),
+		output("-"),
+		output_type('v')
 	{}
 
 	~VariantReaderSettings() = default;
@@ -49,17 +46,12 @@ public:
 	bool drop_format; // drop FORMAT fields
 	bool header_only; // show only the VCF header
 	bool show_header; // show the VCF header
-	bool custom_delimiter; // output uses a custom delimiter
-	char custom_delimiter_char; // what is the custom delimiter
-	bool custom_output_format;  // output has a custom format
-	bool filter_any;  // filter output
-	bool filter_all;  // filter
 	bool annotate_genotypes;
-	bool output_FORMAT_as_vector;
+	bool use_htslib;
 	std::string input;
 	std::string output;
 	std::string keychain_file;
-	std::string output_type;
+	char output_type;
 	std::string sample_names_file;
 	std::vector<std::string> sample_names;
 };

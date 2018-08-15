@@ -9,9 +9,10 @@ DataContainerHeaderObject::DataContainerHeaderObject() :
 	cLength(0),
 	uLength(0),
 	eLength(0),
-	crc(0),
 	global_key(-1)
-{}
+{
+	memset(&this->crc[0], 0, MD5_DIGEST_LENGTH);
+}
 
 DataContainerHeaderObject::DataContainerHeaderObject(const DataContainerHeaderObject& other) :
 	controller(other.controller),
@@ -20,9 +21,9 @@ DataContainerHeaderObject::DataContainerHeaderObject(const DataContainerHeaderOb
 	cLength(other.cLength),
 	uLength(other.uLength),
 	eLength(other.eLength),
-	crc(other.crc),
 	global_key(other.global_key)
 {
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
 }
 
 DataContainerHeaderObject::DataContainerHeaderObject(DataContainerHeaderObject&& other) noexcept :
@@ -32,13 +33,11 @@ DataContainerHeaderObject::DataContainerHeaderObject(DataContainerHeaderObject&&
 	cLength(other.cLength),
 	uLength(other.uLength),
 	eLength(other.eLength),
-	crc(other.crc),
 	global_key(other.global_key)
 {
-
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
 }
 
- // copy assignment
 DataContainerHeaderObject& DataContainerHeaderObject::operator=(const DataContainerHeaderObject& other){
 	this->controller = other.controller;
 	this->stride     = other.stride;
@@ -46,13 +45,11 @@ DataContainerHeaderObject& DataContainerHeaderObject::operator=(const DataContai
 	this->cLength    = other.cLength;
 	this->uLength    = other.uLength;
 	this->eLength    = other.eLength;
-	this->crc        = other.crc;
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
 	this->global_key = other.global_key;
 	return *this;
 }
 
-
-/** Move assignment operator */
 DataContainerHeaderObject& DataContainerHeaderObject::operator=(DataContainerHeaderObject&& other) noexcept{
 	this->controller = other.controller;
 	this->stride     = other.stride;
@@ -60,7 +57,7 @@ DataContainerHeaderObject& DataContainerHeaderObject::operator=(DataContainerHea
 	this->cLength    = other.cLength;
 	this->uLength    = other.uLength;
 	this->eLength    = other.eLength;
-	this->crc        = other.crc;
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
 	this->global_key = other.global_key;
 	return *this;
 }
@@ -73,23 +70,25 @@ void DataContainerHeaderObject::reset(void){
 	this->offset     = 0;
 	this->cLength    = 0;
 	this->uLength    = 0;
-	this->crc        = 0;
+	memset(&this->crc[0], 0, MD5_DIGEST_LENGTH);
 	this->global_key = -1;
 }
 
-const bool DataContainerHeaderObject::operator==(const self_type& other) const{
+bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	if(this->stride     != other.stride)     return false;
 	if(this->offset     != other.offset)     return false;
 	if(this->cLength    != other.cLength)    return false;
 	if(this->uLength    != other.uLength)    return false;
 	if(this->eLength    != other.eLength)    return false;
-	if(this->crc        != other.crc)        return false;
 	if(this->global_key != other.global_key) return false;
 	if(this->controller != other.controller) return false;
+	for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i)
+		if(this->crc[i] != other.crc[i]) return false;
+
 	return true;
 }
 
-const SBYTE DataContainerHeaderObject::getPrimitiveWidth(void) const{
+SBYTE DataContainerHeaderObject::GetPrimitiveWidth(void) const{
 	// We do not care about signedness here
 	switch(this->controller.type){
 	case(YON_TYPE_UNKNOWN):

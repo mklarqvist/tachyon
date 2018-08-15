@@ -3,6 +3,9 @@
 
 #include <cstddef>
 #include <iostream>
+
+#include <cassert>
+
 #include "support/type_definitions.h"
 #include "support/helpers.h"
 
@@ -106,24 +109,13 @@ public:
 	inline const U64& capacity(void) const{ return this->width; }
 
 	void resize(const U64 new_size){
-		if(new_size <= this->capacity()){
-			if(new_size < this->size())
-				this->n_chars = new_size;
-
-			return;
-		}
-
-		U64 copy_to = this->size();
-		if(new_size < this->size()){
-			copy_to = new_size;
-			this->n_chars = copy_to;
-		}
-
-		//std::cerr << utility::timestamp("DEBUG") << "Resizing buffer: " << this->capacity() << " -> " << new_size << "\tcopyto: " << copy_to << std::endl;
-		char* target = this->buffer;
-		this->buffer = new char[new_size];
-		memcpy(&this->buffer[0], &target[0], copy_to);
-		delete [] target;
+		if(this->n_chars == 0 && new_size == 0) return;
+		char* temp = new char[new_size];
+		//std::cerr << this->size() << "<" << new_size << std::endl;
+		assert(this->size() < new_size);
+		memcpy(temp, this->buffer, this->size());
+		delete [] this->buffer;
+		this->buffer = temp;
 		this->width = new_size;
 	}
 
@@ -143,70 +135,70 @@ public:
 
 	void AddReadble(const SBYTE& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const S16& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const S32& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const BYTE& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U16& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U32& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const U64& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%llu", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const float& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%g", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const double& value){
 		if(this->n_chars + 100 >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%g", value);
 		this->n_chars += ret;
 	}
 
 	void AddReadble(const std::string& value){
 		if(this->n_chars + value.size() >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->n_chars + value.size() + 100, this->width*2));
 		*this += value;
 	}
 
@@ -222,7 +214,7 @@ public:
 
 	inline self_type& operator+=(const char& value){
 		if(this->n_chars + sizeof(char) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		this->buffer[this->n_chars] = value;
 		++this->n_chars;
@@ -231,7 +223,7 @@ public:
 
 	inline self_type& operator+=(const BYTE& value){
 		if(this->n_chars + sizeof(BYTE) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		BYTE* p = reinterpret_cast<BYTE*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -241,7 +233,7 @@ public:
 
 	inline self_type& operator+=(const float& value){
 		if(this->n_chars + sizeof(float) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		float* p = reinterpret_cast<float*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -251,7 +243,7 @@ public:
 
 	inline self_type& operator+=(const U16& value){
 		if(this->n_chars + sizeof(U16) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		U16* p = reinterpret_cast<U16*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -261,7 +253,7 @@ public:
 
 	inline self_type& operator+=(const short& value){
 		if(this->n_chars + sizeof(short) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		short* p = reinterpret_cast<short*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -271,7 +263,7 @@ public:
 
 	inline self_type& operator+=(const U32& value){
 		if(this->n_chars + sizeof(U32) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		U32* p = reinterpret_cast<U32*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -281,7 +273,7 @@ public:
 
 	inline self_type& operator+=(const S32& value){
 		if(this->n_chars + sizeof(S32) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		S32* p = reinterpret_cast<S32*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -291,7 +283,7 @@ public:
 
 	inline self_type& operator+=(const double& value){
 		if(this->n_chars + sizeof(double) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		double* p = reinterpret_cast<double*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -301,7 +293,7 @@ public:
 
 	inline self_type& operator+=(const U64& value){
 		if(this->n_chars + sizeof(U64) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		U64* p = reinterpret_cast<U64*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -309,9 +301,19 @@ public:
 		return *this;
 	}
 
+	inline self_type& operator+=(const int64_t& value){
+		if(this->n_chars + sizeof(int64_t) >= this->width)
+			this->resize(std::max(this->width + 1000, this->width*2));
+
+		int64_t* p = reinterpret_cast<int64_t*>(&this->buffer[this->n_chars]);
+		*p = value;
+		this->n_chars += sizeof(int64_t);
+		return *this;
+	}
+
 	inline self_type& operator+=(const size_t& value){
 		if(this->n_chars + sizeof(size_t) >= this->width)
-			this->resize(this->width*2);
+			this->resize(std::max(this->width + 1000, this->width*2));
 
 		size_t* p = reinterpret_cast<size_t*>(&this->buffer[this->n_chars]);
 		*p = value;
@@ -321,10 +323,7 @@ public:
 
 	inline self_type& operator+=(const std::string& value){
 		if(this->n_chars + value.size() + sizeof(BYTE) >= this->width){
-			U64 resize_to = this->width * 2;
-			while(this->n_chars + value.size() + sizeof(BYTE) >= resize_to)
-				resize_to *= 2;
-
+			U64 resize_to = std::max(this->n_chars + value.size() + sizeof(BYTE) + 1000, this->width * 2);
 			this->resize(resize_to);
 		}
 
@@ -395,6 +394,12 @@ private:
 		return(data);
 	}
 
+	friend self_type& operator>>(self_type& data, int64_t& target){
+		target = *reinterpret_cast<int64_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(int64_t);
+		return(data);
+	}
+
 	friend self_type& operator>>(self_type& data, float& target){
 		target = *reinterpret_cast<float*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(float);
@@ -425,6 +430,19 @@ public:
 	U64     iterator_position_;
 	pointer buffer;
 };
+
+void SerializeString(const std::string& string, io::BasicBuffer& buffer);
+void DeserializeString(std::string& string, io::BasicBuffer& buffer);
+
+template <class T>
+static void SerializePrimitive(const T& value, io::BasicBuffer& buffer){
+	buffer += value;
+}
+
+template <class T>
+static void DeserializePrimitive(T& value, io::BasicBuffer& buffer){
+	buffer >> value;
+}
 
 } /* namespace IO */
 } /* namespace Tomahawk */

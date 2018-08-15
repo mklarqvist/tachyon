@@ -17,7 +17,7 @@ namespace containers{
  */
 template <>
 class FormatContainer<std::string>  : public FormatContainerInterface{
-private:
+public:
     typedef FormatContainer       self_type;
     typedef PrimitiveGroupContainer<std::string> value_type;
     typedef value_type&           reference;
@@ -31,45 +31,14 @@ private:
     typedef MetaContainer         meta_container_type;
     typedef StrideContainer<U32>  stride_container_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     FormatContainer();
     FormatContainer(const data_container_type& container, const U64 n_samples);
     FormatContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64 n_samples); // use when balancing
     ~FormatContainer(void);
-
-    class iterator{
-    private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-    public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-    class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
     // Element access
     inline reference at(const size_type& position){ return(this->__containers[position]); }
@@ -84,7 +53,7 @@ public:
     inline const_reference back(void) const{ return(this->__containers[this->n_entries - 1]); }
 
     // Capacity
-    inline const bool empty(void) const{ return(this->n_entries == 0); }
+    inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
     // Iterator
@@ -96,11 +65,24 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{ utility::to_vcf_string(stream, this->at(position).at(sample)); return(stream); }
-	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample); return(buffer); }
-	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample); return(buffer); }
-	inline const bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
-	inline const bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+	inline std::ostream& to_vcf_string(std::ostream& stream,
+	                                   const U32 position,
+	                                   const U64 sample) const
+	{
+		//utility::to_vcf_string(stream, this->at(position).at(sample).data_);
+		//this->at(position).at(sample).data_;
+		assert(2 == 1);
+		return(stream);
+	}
+
+	bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
+		return(this->at(position).UpdateHtslibVcfRecordFormatString(rec, hdr, tag));
+	}
+
+	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+	inline bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<

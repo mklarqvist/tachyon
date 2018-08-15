@@ -5,8 +5,9 @@
 #include <iostream>
 #include <cmath>
 #include "support/type_definitions.h"
-#include "containers/primitive_container.h"
-#include "core/genotype_object.h"
+//#include "containers/primitive_container.h"
+#include "core/data_block_settings.h"
+#include "core/meta_entry.h"
 
 namespace tachyon{
 namespace utility{
@@ -22,66 +23,54 @@ namespace utility{
 #define YON_FLOAT_EOV           0x7F800002
 
 // Base functionality converting data to a valid VCF string
-std::ostream& to_vcf_string(std::ostream& stream, const BYTE* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const U16* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const U32* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const U64* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const SBYTE* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const S16* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const S32* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const char* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const float* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const double* const values, const U32 n_entries);
-std::ostream& to_vcf_string(std::ostream& stream, const std::string& string);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const BYTE* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const U16* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const U32* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const U64* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const SBYTE* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const S16* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const S32* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const char* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const float* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const double* const data, const size_t n_data);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const std::string& string);
 
-// Primitive container declarations
-// Unsigned values does not have missing values
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<BYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U32>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<U64>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<SBYTE>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S16>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<S32>& container);
-std::ostream& to_vcf_string_char(std::ostream& stream, const containers::PrimitiveContainer<char>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<float>& container);
-std::ostream& to_vcf_string(std::ostream& stream, const containers::PrimitiveContainer<double>& container);
+std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
+io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
+io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container);
-io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const BYTE* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const U16* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const U32* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const U64* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const SBYTE* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const S16* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const S32* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const float* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const double* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const std::string& data);
 
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<BYTE>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U16>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U32>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<U64>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<SBYTE>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S16>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<S32>& container);
-io::BasicBuffer& to_json_string_char(io::BasicBuffer& buffer, const containers::PrimitiveContainer<char>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<float>& container);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const containers::PrimitiveContainer<double>& container);
+int32_t* FormatDataHtslib(const BYTE* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const U16* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const U32* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const U64* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const SBYTE* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const S16* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const S32* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const S64* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const float* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const double* const src, int32_t* dst, const size_t n_entries);
 
-// Genotype objects
-std::ostream& to_vcf_string(std::ostream& stream, const core::GTObject& gt_object);
-std::ostream& to_vcf_string(std::ostream& stream, const std::vector<core::GTObject>& gt_objects);
-
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller);
-io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const core::VariantHeader& header, const DataBlockSettings& controller);
-
-}
+template <class T>
+float* FormatDataHtslib(const T* const src, float* dst, const size_t n_entries){
+	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+	return(dst);
 }
 
 
+}
+}
 
 #endif /* UTILITY_SUPPORT_VCF_H_ */

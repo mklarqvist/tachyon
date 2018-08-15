@@ -5,7 +5,8 @@
 #include <fstream>
 
 #include "index/index.h"
-#include "support/type_definitions.h"
+#include "support/magic_constants.h"
+#include "containers/data_container.h"
 
 namespace tachyon {
 
@@ -13,6 +14,7 @@ class VariantImportWriterInterface {
 private:
 	typedef VariantImportWriterInterface  self_type;
 	typedef index::Index                  sorted_index_type;
+	typedef containers::DataContainer     container_type;
 
 public:
 	VariantImportWriterInterface();
@@ -20,6 +22,22 @@ public:
 
 	void writeIndex(void);
 	virtual bool open(const std::string output) =0;
+
+	bool WriteBlockFooter(const container_type& footer){
+		if(this->stream == nullptr) return false;
+		const U64 start_footer_pos = this->stream->tellp();
+		utility::SerializePrimitive(footer.header.data_header.uLength, *this->stream);
+		utility::SerializePrimitive(footer.header.data_header.cLength, *this->stream);
+		this->stream->write(reinterpret_cast<const char*>(&footer.header.data_header.crc[0]), MD5_DIGEST_LENGTH);
+		*this->stream << footer.buffer_data;
+		return(this->stream->good());
+	}
+
+	bool WriteEndOfBlock(void){
+		if(this->stream == nullptr) return false;
+		utility::SerializePrimitive(constants::TACHYON_BLOCK_EOF, *this->stream);
+		return(this->stream->good());
+	}
 
 public:
 	U64 n_blocks_written;

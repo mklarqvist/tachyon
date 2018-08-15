@@ -1,14 +1,14 @@
 #ifndef COMPRESSIONCONTAINER_H_
 #define COMPRESSIONCONTAINER_H_
 
-#include "algorithm/permutation/permutation_manager.h"
+#include "core/genotypes.h"
 #include "containers/data_container.h"
 
 namespace tachyon{
 namespace algorithm{
 
 /**< Lower bounds threshold in fold-change for compression to be kept */
-#define MIN_COMPRESSION_FOLD 1.1
+#define MIN_COMPRESSION_FOLD 1.05
 
 /**
  * Permute bits from a byte-stream of U32 into target
@@ -20,45 +20,50 @@ namespace algorithm{
  * @param destination Destination char* buffer of permuted data
  * @return TRUE if passing or FALSE otherwise
  */
-inline const U32 permuteIntBits(const char* const  data,
-                                        const U32  size,
-                                             char* destination)
+inline U32 permuteIntBits(const char* const data,
+                          const uint32_t  size,
+                          char* destination)
 {
 	if(size == 0) return 0;
-	U32 internal_size = size + (32-size%32); // Balance bytes
+	// Balance the number of bytes in the output
+	// byte stream to be divisible by 32. Assert
+	// that this is true or the procedure fails.
+	const uint32_t internal_size = size + (32-size % 32); // Balance bytes
 	assert(internal_size % 32 == 0);
 
-	BYTE* dest = reinterpret_cast<BYTE*>(destination);
+	// Interpret the dst target as unsigned char
+	// to prevent annoying signedness.
+	uint8_t* dest = reinterpret_cast<uint8_t*>(destination);
 	memset(dest, 0, internal_size); // Set all bytes to 0
-	const BYTE* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
-	BYTE* target[32]; // Bucket pointers
-	const U32 partition_size = internal_size / 32; // Partition size
+	const uint8_t* const d = reinterpret_cast<const BYTE* const>(data); // Recast as uchar
+	uint8_t* target[32]; // Bucket pointers
+	const uint32_t partition_size = internal_size / 32; // Partition size
 
 	// Assign a pointer to each bucket
-	for(U32 i = 0; i < 32; ++i)
+	for(uint32_t i = 0; i < 32; ++i)
 		target[31-i] = &dest[partition_size*i];
 
-	U32 k = 0; U32 p = 0;
-	// Foreach U32
-	// Update position K for each element
-	// When K reaches position 7 then reset to 0
-	for(U32 i = 0; i + 4 < internal_size; i+=4, ++k){
+	uint32_t k = 0, p = 0;
+	// Iterate over the data and  update position K for
+	// each element. When K reaches position 7 then reset
+	// to 0.
+	for(uint32_t i = 0; i + 4 < internal_size; i+=4, ++k){
 		if(k == 8){ k = 0; ++p; }
 
 		// Foreach bit in U32
 		// Update target T at byte position P with bit J at position K
-		for(U32 j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
-		for(U32 j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
-		for(U32 j = 0; j < 8; ++j) target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
-		for(U32 j = 0; j < 8; ++j) target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
+		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
+		for(uint32_t j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
+		for(uint32_t j = 0; j < 8; ++j) target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
+		for(uint32_t j = 0; j < 8; ++j) target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
 	return internal_size;
 }
 
-inline const U32 unpermuteIntBits(char* data,
-                             const U32  size,
-                                  char* destination)
+inline U32 unpermuteIntBits(char* data,
+                            const U32  size,
+                            char* destination)
 {
 	if(size == 0) return 0;
 	//U32 internal_size = size + (32-size%32); // Balance bytes
@@ -76,13 +81,6 @@ inline const U32 unpermuteIntBits(char* data,
 	for(U32 i = 0; i < 32; ++i)
 		target[31-i] = &temp[partition_size*i];
 
-	/*
-	for(U32 i = 0; i < size; ++i){
-		std::cerr << (int)data[i] << ' ';
-	}
-	std::cerr << std::endl;
-	*/
-
 	U32 k = 0; U32 p = 0;
 	// Foreach U32
 	// Update position K for each element
@@ -90,18 +88,17 @@ inline const U32 unpermuteIntBits(char* data,
 	for(U32 i = 0; i < n_entries; ++i, ++k){
 		if(k == 8){ k = 0; ++p; }
 
-		for(U32 j = 0; j < 32; ++j){
+		for(U32 j = 0; j < 32; ++j)
 			dest[i] |= ((target[j][p] & (1 << k)) >> k) << j;
-		}
 	}
 
 	//std::cerr << "out: " << internal_size << "/" << size/sizeof(U32) << std::endl;
 	return size;
 }
 
-inline const U32 permuteByteBits(const char* const  data,
-                                        const U32  size,
-                                             char* destination)
+inline U32 permuteByteBits(const char* const  data,
+                           const U32  size,
+                           char* destination)
 {
 	if(size == 0) return 0;
 	U32 internal_size = size + (8 - size % 8); // Balance bytes
@@ -134,7 +131,7 @@ inline const U32 permuteByteBits(const char* const  data,
 	return internal_size;
 }
 
-inline const U32 unpermuteByteBits(char* data,
+inline U32 unpermuteByteBits(char* data,
                              const U32  size,
                                   char* destination)
 {
@@ -177,22 +174,20 @@ inline const U32 unpermuteByteBits(char* data,
 }
 
 class CompressionContainer{
-private:
+public:
 	typedef CompressionContainer          self_type;
-
-protected:
 	typedef containers::DataContainer     container_type;
 	typedef io::BasicBuffer               buffer_type;
-	typedef algorithm::PermutationManager permutation_type;
+	typedef yon_gt_ppa                    permutation_type;
 
 public:
 	CompressionContainer() = default;
 	virtual ~CompressionContainer() = default;
-	virtual const bool compress(permutation_type& manager)          =0;
-	virtual const bool compress(container_type& container)          =0;
-	virtual const bool compressStrides(container_type& container)   =0;
-	virtual const bool decompress(container_type& container)        =0;
-	virtual const bool decompressStrides(container_type& container) =0;
+	virtual bool Compress(container_type& container, permutation_type& manager) =0;
+	virtual bool Compress(container_type& container)          =0;
+	virtual bool CompressStrides(container_type& container)   =0;
+	virtual bool Decompress(container_type& container)        =0;
+	virtual bool DecompressStrides(container_type& container) =0;
 
 protected:
 	buffer_type buffer;

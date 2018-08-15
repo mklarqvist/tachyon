@@ -29,36 +29,36 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 #include "variant_reader.h"
 
+#include "core/occ.h"
+
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<
-	"About:  Convert YON->VCF/BCF or custom output; provides subset and slice operators data\n"
+	"About:  Convert YON->VCF/BCF; provides subsetting and slicing functionality\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " view [options] -i <in.yon>\n\n"
 	"Options:\n"
 	"  -i FILE   input YON file (required)\n"
-	"  -o FILE   output file (- for stdout; default: -)\n"
-	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
-	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	"  -o FILE   output file (- for stdout)[-]\n"
+	"  -k FILE   keychain file with encryption keys (required if the file is encrypted)\n"
+	"  -O <y|b|u|z|v> y: tachyon archive, b: compressed BCF, u: uncompressed BCF, \n"
+	"                 z: compressed VCF,  v: uncompressed VCF [v]\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
-	"  -R STRING path to file with interval strings\n"
-	"  -d CHAR   output delimiter (-c must be triggered)\n"
-	"  -y        custom output format (ignores VCF/BCF specification rules)\n"
-	"  -V        custom output data as vectors instead of per sample (valid only with -y)\n"
+	//"  -R STRING path to file with interval strings\n"
 	"  -G        drop all FORMAT fields from output\n"
-	"  -h/H      header only / no header\n"
-	"  -s        Hide all program messages\n\n"
+	"  -X        annotate FORMAT:GT data and add these statistics to the INFO column\n"
+	"  -h/H      header only / no header\n\n"
 
-	"Subset options:\n"
-	"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
-	"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n\n"
+	//"Subset options:\n"
+	//"  -s, --samples [^]<list>       comma separated list of samples to include (or exclude with \"^\" prefix)\n"
+	//"  -S, --samples-file [^]<file>  file of samples to include (or exclude with \"^\" prefix)\n\n"
 
 	"Filter options:\n"
 	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression pattern for the reference allele -a or for any alternative alleles -A\n"
 	"  -n,   --name-match <REGEX>                  regular expression pattern for the locus name\n"
     "  -c/C, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
-    "  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
+    //"  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
 	"  -q/Q, --min-quality/--max-quality           minimum/maximum quality value\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
@@ -68,14 +68,13 @@ void view_usage(void){
 	"  -l/L, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
-	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n"
-    "  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
+	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n\n";
+    //"  -v/V, --types/--exclude-types <list>        select/exclude comma-separated list of variant types: snps,indels,mnps,ref,bnd,other [null]\n\n";
 }
 
 int view(int argc, char** argv){
 	if(argc < 2){
-		programMessage();
-		programHelpDetailed();
+		programHelp();
 		return(1);
 	}
 
@@ -87,43 +86,40 @@ int view(int argc, char** argv){
 
 	int option_index = 0;
 	static struct option long_options[] = {
-		{"input",         required_argument, 0,  'i' },
-		{"output",        optional_argument, 0,  'o' },
-		{"keychain",      optional_argument, 0,  'k' },
-		{"filter",        optional_argument, 0,  'f' },
-		{"delimiter",     optional_argument, 0,  'd' },
-		{"output-type",   optional_argument, 0,  'O' },
-		{"vector-output", no_argument,       0,  'V' },
-		{"annotate-genotype", no_argument,   0,  'X' },
-		{"region",        optional_argument, 0,  'r' },
-		{"noHeader",      no_argument, 0,  'H' },
-		{"onlyHeader",    no_argument, 0,  'h' },
-		{"dropFormat",    no_argument, 0,  'G' },
-		{"customFormat",  no_argument, 0,  'y' },
-		{"silent",        no_argument, 0,  's' },
-		{"af-min",        optional_argument, 0,  'l' },
-		{"af-max",        optional_argument, 0,  'L' },
-		{"ac-min",        optional_argument, 0,  'c' },
-		{"ac-max",        optional_argument, 0,  'C' },
-		{"alleles-min",   optional_argument, 0,  'm' },
-		{"alleles-max",   optional_argument, 0,  'M' },
-		{"known",         no_argument,    0,  'z' },
-		{"novel",         no_argument,    0,  'Z' },
-		{"phased",        no_argument,    0,  'p' },
-		{"exclude-phased",no_argument,    0,  'P' },
-		{"mixed-phase",   no_argument,    0,  'j' },
-		{"no-mixed-phase",   no_argument,    0,  'J' },
-		{"uncalled",      no_argument,    0,  'u' },
-		{"exclude-uncalled", no_argument, 0,  'U' },
-		{"ref-match",   optional_argument, 0,  'a' },
-		{"alt-match",   optional_argument, 0,  'A' },
-		{"name-match",  optional_argument, 0,  'n' },
-		{"mixed-ploidy",no_argument,       0,  'w' },
-		{"no-mixed-ploidy",no_argument,       0,  'W' },
-		{"remove-unseen",no_argument,       0,  'e' },
-		{"keep-unseen",no_argument,       0,  'E' },
-		{"min-quality",optional_argument,       0,  'q' },
-		{"max-quality",optional_argument,       0,  'Q' },
+		{"input",             required_argument, 0,  'i' },
+		{"output",            optional_argument, 0,  'o' },
+		{"keychain",          optional_argument, 0,  'k' },
+		{"filter",            optional_argument, 0,  'f' },
+		{"output-type",       optional_argument, 0,  'O' },
+		{"annotate-genotype", no_argument,       0,  'X' },
+		{"region",            optional_argument, 0,  'r' },
+		{"noHeader",          no_argument,       0,  'H' },
+		{"onlyHeader",        no_argument,       0,  'h' },
+		{"dropFormat",        no_argument,       0,  'G' },
+		{"silent",            no_argument,       0,  's' },
+		{"af-min",            optional_argument, 0,  'l' },
+		{"af-max",            optional_argument, 0,  'L' },
+		{"ac-min",            optional_argument, 0,  'c' },
+		{"ac-max",            optional_argument, 0,  'C' },
+		{"alleles-min",       optional_argument, 0,  'm' },
+		{"alleles-max",       optional_argument, 0,  'M' },
+		{"known",             no_argument,       0,  'z' },
+		{"novel",             no_argument,       0,  'Z' },
+		{"phased",            no_argument,       0,  'p' },
+		{"exclude-phased"    ,no_argument,       0,  'P' },
+		{"mixed-phase",       no_argument,       0,  'j' },
+		{"no-mixed-phase",    no_argument,       0,  'J' },
+		{"uncalled",          no_argument,       0,  'u' },
+		{"exclude-uncalled",  no_argument,       0,  'U' },
+		{"ref-match",         optional_argument, 0,  'a' },
+		{"alt-match",         optional_argument, 0,  'A' },
+		{"name-match",        optional_argument, 0,  'n' },
+		{"mixed-ploidy",      no_argument,       0,  'w' },
+		{"no-mixed-ploidy",   no_argument,       0,  'W' },
+		{"remove-unseen",     no_argument,       0,  'e' },
+		{"keep-unseen",       no_argument,       0,  'E' },
+		{"min-quality",       optional_argument, 0,  'q' },
+		{"max-quality",       optional_argument, 0,  'Q' },
 		{0,0,0,0}
 	};
 
@@ -135,9 +131,9 @@ int view(int argc, char** argv){
 	SILENT = 0;
 	std::string temp;
 	tachyon::VariantReader reader;
-	tachyon::VariantReaderFilters& filters = reader.getFilterSettings();
+	tachyon::VariantReaderFilters& filters = reader.GetFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:GshHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -231,28 +227,8 @@ int view(int argc, char** argv){
 		case 's':
 			SILENT = 1;
 			break;
-		case 'y':
-			settings.custom_output_format = true;
-			break;
 		case 'r':
 			interval_strings.push_back(std::string(optarg));
-			break;
-		case 'd':
-			settings.custom_delimiter = true;
-			temp = std::string(optarg);
-			if(temp.size() != 1 && !(temp[0] == '\\' && temp.size() == 2)){
-				std::cerr << "not a legal delimiter" << std::endl;
-				return(1);
-			}
-			if(temp.size() == 1) settings.custom_delimiter_char = temp[0];
-			else {
-				if(temp[1] == 't') settings.custom_delimiter_char = '\t';
-				else if(temp[1] == 'n') settings.custom_delimiter_char = '\n';
-				else {
-					std::cerr << "not a legal delimiter" << std::endl;
-					return(1);
-				}
-			}
 			break;
 		case 'h':
 			settings.header_only = true;
@@ -260,11 +236,8 @@ int view(int argc, char** argv){
 		case 'H':
 			settings.show_header = false;
 			break;
-		case 'V':
-			settings.output_FORMAT_as_vector = true;
-			break;
 		case 'O':
-			settings.output_type = std::string(optarg);
+			settings.output_type = optarg[0];
 			break;
 		case 'X':
 			settings.annotate_genotypes = true;
@@ -279,7 +252,6 @@ int view(int argc, char** argv){
 			break;
 
 		default:
-			std::cerr << "here default" << std::endl;
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognized option: " << (char)c << std::endl;
 			return(1);
 		}
@@ -290,132 +262,75 @@ int view(int argc, char** argv){
 		return(1);
 	}
 
-	// Print messages
-	/*
-	if(!SILENT){
-		programMessage();
-		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
-	}
-	*/
-
-
-	reader.getSettings() = settings;
-
-	// temp
-	if(settings.keychain_file.size()){
-		if(reader.loadKeychainFile(settings.keychain_file) == false) return 1;
-	}
-
 	if(!reader.open(settings.input)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << settings.input << "..." << std::endl;
 		return 1;
 	}
 
 	if(settings.header_only){
-		reader.printHeaderVCF();
+		reader.PrintHeaderVCF();
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.getBlockSettings().parseCommandString(interpret_commands, reader.getGlobalHeader(), settings.custom_output_format)){
+		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetGlobalHeader())){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
 	} else {
-		reader.getBlockSettings().loadAll(true);
+		reader.GetBlockSettings().LoadAll(true);
 
 		if(settings.drop_format){
-			reader.getBlockSettings().loadGenotypes(false);
-			reader.getBlockSettings().ppa(false, false);
-			reader.getBlockSettings().format_all(false, false);
+			reader.GetBlockSettings().LoadGenotypes(false).LoadDisplayWrapper(false, YON_BLK_BV_PPA).LoadDisplayWrapper(false, YON_BLK_BV_FORMAT);
 		}
 	}
 
-	if(settings.custom_delimiter){
-		if(settings.custom_output_format == false){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -y when using a custom separator" << std::endl;
-			return(1);
-		}
-		reader.getBlockSettings().setCustomDelimiter(settings.custom_delimiter_char);
+	if(settings.output_type == 'v'){
+		settings.use_htslib = false;
+	} else if(settings.output_type == 'z'){
+		settings.output_type = 'z';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'b'){
+		settings.output_type = 'b';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'u'){
+		settings.output_type = 'u';
+		settings.use_htslib = true;
+	} else if(settings.output_type == 'y'){
+		std::cerr << "not supported yet" << std::endl;
+		return(1);
+	} else {
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
+		return(1);
 	}
 
-	reader.getBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
-
-	if(settings.output_type.size()){
-		std::transform(settings.output_type.begin(), settings.output_type.end(), settings.output_type.begin(), ::toupper); // transform to UPPERCASE
-		if(strncmp(&settings.output_type[0], "JSON", 4) == 0 && settings.output_type.size() == 4){
-			if(settings.custom_delimiter)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with JSON. Disabled..." << std::endl;
-
-			settings.custom_output_format = true;
-			reader.getBlockSettings().custom_output_format = true;
-			reader.getBlockSettings().output_json = true;
-			reader.getBlockSettings().output_format_vector = true;
-		} else if(strncmp(&settings.output_type[0], "VCF", 3) == 0 && settings.output_type.size() == 3){
-			if(settings.custom_delimiter)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with VCF. Disabled..." << std::endl;
-
-			reader.getBlockSettings().custom_output_format = false;
-			reader.getBlockSettings().custom_delimiter = false;
-			reader.getBlockSettings().custom_delimiter_char = '\t';
-
-			if(settings.output_FORMAT_as_vector)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Output FORMAT as vectors (-V) is incompatible with VCF output. Disabled..." << std::endl;
-
-			reader.getBlockSettings().output_format_vector = false;
-		} else if(strncmp(&settings.output_type[0], "BCF", 3) == 0 && settings.output_type.size() == 3){
-			reader.getBlockSettings().custom_output_format = false;
-			std::cerr << tachyon::utility::timestamp("ERROR") << "BCF output not supported yet." << std::endl;
-			return(1);
-		} else if(strncmp(&settings.output_type[0], "CUSTOM", 6) == 0 && settings.output_type.size() == 6){
-			reader.getBlockSettings().custom_output_format = true;
-			settings.custom_output_format = true;
-		} else {
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
-			return(1);
-		}
-	}
 
 	// If user is triggering annotation
 	if(settings.annotate_genotypes){
-		reader.getBlockSettings().annotate_extra = true;
-		reader.getBlockSettings().loadGenotypes(true);
-		reader.getBlockSettings().set_membership(true, true);
-		reader.getBlockSettings().alleles(true, true);
-		reader.getBlockSettings().positions(true, true);
+		reader.GetBlockSettings().annotate_extra = true;
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
+		reader.GetGlobalHeader().AddGenotypeAnnotationFields();
 	}
 
 	if(filters.doRequireGenotypes()){
-		reader.getBlockSettings().loadGenotypes(true);
-		reader.getBlockSettings().set_membership.load = true;
-		reader.getBlockSettings().alleles.load = true;
-		reader.getBlockSettings().positions.load = true;
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
 	}
 
-	reader.getBlockSettings().parseSettings(reader.getGlobalHeader());
+	reader.GetSettings() = settings;
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();
 
-	if(settings.show_header) reader.getBlockSettings().show_vcf_header = true;
-	else reader.getBlockSettings().show_vcf_header = false;
+	if(settings.show_header) reader.GetBlockSettings().show_vcf_header = true;
+	else reader.GetBlockSettings().show_vcf_header = false;
 
-	if(reader.addIntervals(interval_strings) == false) return(1);
+	if(reader.AddIntervals(interval_strings) == false) return(1);
 
-	U64 n_variants = 0;
-	if(settings.custom_output_format) n_variants = reader.outputCustom();
-	else n_variants = reader.outputVCF();
 
-	//std::cerr << "Blocks: " << n_blocks << std::endl;
-	/*
-	std::cerr << "Variants: "
-	          << tachyon::utility::ToPrettyString(n_variants) << " genotypes: "
-	          << tachyon::utility::ToPrettyString(n_variants*reader.header.getSampleNumber()) << '\t'
-	          << timer.ElapsedString() << '\t'
-	          << tachyon::utility::ToPrettyString((U64)((double)n_variants*reader.header.getSampleNumber()/timer.Elapsed().count()))
-	          << std::endl;
-	*/
+	reader.OutputRecords();
 
 	return 0;
 }

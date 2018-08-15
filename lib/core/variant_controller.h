@@ -89,7 +89,7 @@ struct VariantController{
 		this->all_snv          = other->all_snv;
 	}
 
-	inline const U16 toValue(void) const{ return((U16)*reinterpret_cast<const U16* const>(this)); }
+	inline U16 toValue(void) const{ return((U16)*reinterpret_cast<const U16* const>(this)); }
 
 	/**< Controller field. The first seven fields describes
 	 * genotype-specific information. The remainder bit-fields
