@@ -11,11 +11,6 @@ DataBlockSettings::DataBlockSettings() :
 	load_static(std::numeric_limits<U32>::max()),
 	display_static(std::numeric_limits<U32>::max()),
 	construct_occ_table(false),
-	custom_delimiter(false),
-	custom_output_format(false),
-	custom_delimiter_char('\t'),
-	output_json(false),
-	output_format_vector(false),
 	annotate_extra(false)
 {}
 
@@ -200,12 +195,6 @@ DataBlockSettings& DataBlockSettings::DisplayMinimumVcf(const bool set){
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::SetCustomDelimiter(const char delimiter){
-	this->custom_delimiter = true;
-	this->custom_delimiter_char = delimiter;
-	return(*this);
-}
-
 bool DataBlockSettings::Parse(const header_type& header){
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 
@@ -235,8 +224,7 @@ bool DataBlockSettings::Parse(const header_type& header){
 	return true;
 }
 
-bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat){
-	this->custom_output_format = customOutputFormat; // Todo
+bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& command, const header_type& header){
 	bool allGood = true;
 
 	this->display_static = 0;

@@ -374,8 +374,6 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 
 U64 VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
-
-	return(this->OutputHtslibVcf());
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 	//	return(0);
@@ -448,6 +446,12 @@ U64 VariantReader::OutputVcf(void){
 
 	this->interval_container.build(this->global_header);
 
+	std::cerr << "usehtslib: " << this->settings.use_htslib << std::endl;
+	if(this->settings.use_htslib){
+		std::cerr << "use htslib" << std::endl;
+		return(this->OutputHtslibVcf());
+	}
+
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervalsDummy;
 	if(this->interval_container.size()) return(this->OutputVcfSearch());
@@ -457,10 +461,17 @@ U64 VariantReader::OutputVcf(void){
 U64 VariantReader::OutputHtslibVcf(void){
 	this->variant_container.AllocateGenotypeMemory();
 
-	htsFile *fp = hts_open("/media/mdrk/NVMe/1kgp3/test_yon.bcf","wb");
+	//
+	// [rw]b  .. compressed BCF, BAM, FAI
+    // [rw]bu .. uncompressed BCF
+    // [rw]z  .. compressed VCF
+    // [rw]   .. uncompressed VCF
+	htsFile *fp = hts_open(this->settings.output.c_str(), "wb");
+	exit(1);
+
 	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(true);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
-		std::cerr << "Failed to write header to " << "/media/mdrk/NVMe/1kgp3/test_yon.bcf";
+		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
 	}
 	bcf1_t *rec = bcf_init1();
@@ -495,9 +506,8 @@ U64 VariantReader::OutputHtslibVcf(void){
 	bcf_destroy1(rec);
 	bcf_hdr_destroy(hdr);
 	int ret;
-	if ( (ret=hts_close(fp)) )
-	{
-		fprintf(stderr,"hts_close(%s): non-zero status %d\n","file",ret);
+	if ( (ret=hts_close(fp)) ) {
+		fprintf(stderr,"hts_close(%s): non-zero status %d\n",this->settings.output.data(),ret);
 		exit(ret);
 	}
 
@@ -538,16 +548,11 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 			   entry.meta->controller.gt_available &&
 			   (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
 			{
-				//std::cerr << "here1" << std::endl;
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
 				// Iterate over samples and print FORMAT:GT value in Vcf format.
-				//entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
-				//for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-				//	output_buffer += '\t';
-				//	entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
-				//}
+				// Todo: gt
 
 				entry.gt->d_exp = nullptr;
 			}
@@ -557,35 +562,19 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 			        entry.meta->controller.gt_available &&
 			        (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
 			{
-				//std::cerr << "here2" << std::endl;
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
-				for(U32 g = 1; g < n_format_avail; ++g){
+				// Todo: gt
+				for(U32 g = 1; g < n_format_avail; ++g)
 					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
-				}
 
 				entry.gt->d_exp = nullptr;
 			}
 			// All other cases.
 			else {
-				//std::cerr << "here3" << std::endl;
-				/*
-				entry.fmt[0]->to_vcf_string(output_buffer, 0);
-				for(U32 g = 1; g < n_format_avail; ++g){
-					output_buffer += ':';
-					entry.fmt[g]->to_vcf_string(output_buffer, 0);
-				}
-
-				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
-					output_buffer += '\t';
-					entry.fmt[0]->to_vcf_string(output_buffer, s);
-					for(U32 g = 1; g < n_format_avail; ++g){
-						output_buffer += ':';
-						entry.fmt[g]->to_vcf_string(output_buffer, s);
-					}
-				}
-				*/
+				for(U32 g = 0; g < n_format_avail; ++g)
+					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
 			}
 		}
 	}

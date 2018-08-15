@@ -46,10 +46,8 @@ public:
 	self_type& DisplayAllFormat(const bool set);
 	self_type& DisplayMinimumVcf(const bool set = true);
 
-	self_type& SetCustomDelimiter(const char delimiter);
-
 	bool Parse(const header_type& header);
-	bool ParseCommandString(const std::vector<std::string>& command, const header_type& header, const bool customOutputFormat = false);
+	bool ParseCommandString(const std::vector<std::string>& command, const header_type& header);
 
 public:
 	bool show_vcf_header;
@@ -63,14 +61,7 @@ public:
 	U32 load_static;
 	U32 display_static;
 
-
 	bool construct_occ_table;
-	bool custom_delimiter;
-	bool custom_output_format;
-	char custom_delimiter_char;
-
-	bool output_json;
-	bool output_format_vector;
 
 	bool annotate_extra;
 

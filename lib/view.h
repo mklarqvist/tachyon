@@ -40,13 +40,10 @@ void view_usage(void){
 	"  -i FILE   input YON file (required)\n"
 	"  -o FILE   output file (- for stdout; default: -)\n"
 	"  -k FILE   keychain with encryption keys (required if encrypted)\n"
-	//"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
+	"  -O STRING output format: can be either JSON,VCF,BCF, or CUSTOM (-c must be triggered)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
 	"  -R STRING path to file with interval strings\n"
-	//"  -d CHAR   output delimiter (-c must be triggered)\n"
-	//"  -y        custom output format (ignores VCF specification rules)\n"
-	//"  -V        custom output data as vectors instead of per sample (valid only with -y)\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -h/H      header only / no header\n"
 	"  -s        Hide all program messages\n\n"
@@ -92,15 +89,12 @@ int view(int argc, char** argv){
 		{"output",            optional_argument, 0,  'o' },
 		{"keychain",          optional_argument, 0,  'k' },
 		{"filter",            optional_argument, 0,  'f' },
-		{"delimiter",         optional_argument, 0,  'd' },
 		{"output-type",       optional_argument, 0,  'O' },
-		{"vector-output",     no_argument,       0,  'V' },
 		{"annotate-genotype", no_argument,       0,  'X' },
 		{"region",            optional_argument, 0,  'r' },
 		{"noHeader",          no_argument,       0,  'H' },
 		{"onlyHeader",        no_argument,       0,  'h' },
 		{"dropFormat",        no_argument,       0,  'G' },
-		{"customFormat",      no_argument,       0,  'y' },
 		{"silent",            no_argument,       0,  's' },
 		{"af-min",            optional_argument, 0,  'l' },
 		{"af-max",            optional_argument, 0,  'L' },
@@ -138,7 +132,7 @@ int view(int argc, char** argv){
 	tachyon::VariantReader reader;
 	tachyon::VariantReaderFilters& filters = reader.GetFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:d:O:r:yGshHVX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:GshHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -232,37 +226,14 @@ int view(int argc, char** argv){
 		case 's':
 			SILENT = 1;
 			break;
-		case 'y':
-			settings.custom_output_format = true;
-			break;
 		case 'r':
 			interval_strings.push_back(std::string(optarg));
-			break;
-		case 'd':
-			settings.custom_delimiter = true;
-			temp = std::string(optarg);
-			if(temp.size() != 1 && !(temp[0] == '\\' && temp.size() == 2)){
-				std::cerr << "not a legal delimiter" << std::endl;
-				return(1);
-			}
-			if(temp.size() == 1) settings.custom_delimiter_char = temp[0];
-			else {
-				if(temp[1] == 't') settings.custom_delimiter_char = '\t';
-				else if(temp[1] == 'n') settings.custom_delimiter_char = '\n';
-				else {
-					std::cerr << "not a legal delimiter" << std::endl;
-					return(1);
-				}
-			}
 			break;
 		case 'h':
 			settings.header_only = true;
 			break;
 		case 'H':
 			settings.show_header = false;
-			break;
-		case 'V':
-			settings.output_FORMAT_as_vector = true;
 			break;
 		case 'O':
 			settings.output_type = std::string(optarg);
@@ -290,8 +261,6 @@ int view(int argc, char** argv){
 		return(1);
 	}
 
-	reader.GetSettings() = settings;
-
 	if(!reader.open(settings.input)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << settings.input << "..." << std::endl;
 		return 1;
@@ -304,7 +273,7 @@ int view(int argc, char** argv){
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetGlobalHeader(), settings.custom_output_format)){
+		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetGlobalHeader())){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -316,44 +285,29 @@ int view(int argc, char** argv){
 		}
 	}
 
-	if(settings.custom_delimiter){
-		if(settings.custom_output_format == false){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Have to trigger -y when using a custom separator" << std::endl;
-			return(1);
-		}
-		reader.GetBlockSettings().SetCustomDelimiter(settings.custom_delimiter_char);
-	}
-	reader.GetBlockSettings().output_format_vector = settings.output_FORMAT_as_vector;
-
 	if(settings.output_type.size()){
-		std::transform(settings.output_type.begin(), settings.output_type.end(), settings.output_type.begin(), ::toupper); // transform to UPPERCASE
-		if(strncmp(&settings.output_type[0], "JSON", 4) == 0 && settings.output_type.size() == 4){
-			if(settings.custom_delimiter)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with JSON. Disabled..." << std::endl;
-
-			settings.custom_output_format = true;
-			reader.GetBlockSettings().custom_output_format = true;
-			reader.GetBlockSettings().output_json = true;
-			reader.GetBlockSettings().output_format_vector = true;
-		} else if(strncmp(&settings.output_type[0], "VCF", 3) == 0 && settings.output_type.size() == 3){
-			if(settings.custom_delimiter)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Custom output delimiter is incompatible with VCF. Disabled..." << std::endl;
-
-			reader.GetBlockSettings().custom_output_format = false;
-			reader.GetBlockSettings().custom_delimiter = false;
-			reader.GetBlockSettings().custom_delimiter_char = '\t';
-
-			if(settings.output_FORMAT_as_vector)
-				std::cerr << tachyon::utility::timestamp("WARNING") << "Output FORMAT as vectors (-V) is incompatible with VCF output. Disabled..." << std::endl;
-
-			reader.GetBlockSettings().output_format_vector = false;
-		} else if(strncmp(&settings.output_type[0], "BCF", 3) == 0 && settings.output_type.size() == 3){
-			reader.GetBlockSettings().custom_output_format = false;
-			std::cerr << tachyon::utility::timestamp("ERROR") << "BCF output not supported yet." << std::endl;
+		std::transform(settings.output_type.begin(),
+		               settings.output_type.end(),
+		               settings.output_type.begin(),
+		               ::toupper); // transform to UPPERCASE
+		if(strncasecmp(&settings.output_type[0], "JSON", 4) == 0 && settings.output_type.size() == 4){
+			std::cerr << "not supported yet" << std::endl;
 			return(1);
-		} else if(strncmp(&settings.output_type[0], "CUSTOM", 6) == 0 && settings.output_type.size() == 6){
-			reader.GetBlockSettings().custom_output_format = true;
-			settings.custom_output_format = true;
+		} else if(strncasecmp(&settings.output_type[0], "VCF", 3) == 0 && settings.output_type.size() == 3){
+			settings.use_htslib = false;
+		} else if(strncasecmp(&settings.output_type[0], "VCFGZ", 3) == 0 && settings.output_type.size() == 5){
+			settings.htslib_output_type = "wz";
+			settings.use_htslib = true;
+		} else if(strncasecmp(&settings.output_type[0], "BCF", 3) == 0 && settings.output_type.size() == 3){
+			settings.htslib_output_type = "wb";
+			settings.use_htslib = true;
+			std::cerr << "setting to bcf: " << settings.use_htslib << std::endl;
+		} else if(strncasecmp(&settings.output_type[0], "UBCF", 3) == 0 && settings.output_type.size() == 4){
+			settings.htslib_output_type = "bu";
+			settings.use_htslib = true;
+		} else if(strncasecmp(&settings.output_type[0], "YON", 3) == 0 && settings.output_type.size() == 3){
+			std::cerr << "not supported yet" << std::endl;
+			return(1);
 		} else {
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
 			return(1);
@@ -363,13 +317,17 @@ int view(int argc, char** argv){
 	// If user is triggering annotation
 	if(settings.annotate_genotypes){
 		reader.GetBlockSettings().annotate_extra = true;
-		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true).DisplayWrapper(false, YON_BLK_BV_GT);
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
 		reader.GetGlobalHeader().AddGenotypeAnnotationFields();
 	}
 
 	if(filters.doRequireGenotypes()){
-		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true).DisplayWrapper(false, YON_BLK_BV_GT);
+		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
+		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
 	}
+
+	reader.GetSettings() = settings;
 
 	tachyon::algorithm::Timer timer;
 	timer.Start();
