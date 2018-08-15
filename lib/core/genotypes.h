@@ -596,6 +596,25 @@ struct yon_gt {
    inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
    inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
    inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
+
+   bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) const{
+	   assert(this->d_exp != nullptr);
+
+	   int32_t* tmpi = new int32_t[this->n_s*this->m];
+	   uint32_t gt_offset = 0;
+	   for(U32 i = 0; i < this->n_s; ++i){
+		   for(U32 j = 0; j < this->m; ++j, ++gt_offset){
+			   if(this->d_exp[i]->allele[j] == 0)      tmpi[gt_offset] = 0;
+			   else if(this->d_exp[i]->allele[j] == 1) tmpi[gt_offset] = 1;
+			   else tmpi[gt_offset] = (((this->d_exp[i]->allele[j] >> 1) - 1) << 1) | (this->d_exp[i]->allele[j] & 1);
+		   }
+	   }
+	   assert(gt_offset == this->n_s*this->m);
+
+	   bcf_update_genotypes(hdr, rec, tmpi, this->n_s*this->m);
+	   delete [] tmpi;
+	   return(rec);
+   }
 };
 
 struct yon_gt_summary_obj{

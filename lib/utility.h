@@ -40,8 +40,8 @@ void programMessage(const bool separator = true){
 	std::cerr << "Program:   " << tachyon::constants::PROGRAM_NAME << "-" << VERSION << " (Tools for querying and manipulating variant call data)" << std::endl;
 	std::cerr << "Libraries: " << tachyon::constants::PROGRAM_NAME << '-' << tachyon::constants::TACHYON_LIB_VERSION
               << "; " << openssl_version_string
-              << "; ZSTD-" << ZSTD_versionString() << "; "
-			     "; htslib " << std::string(hts_version()) << std::endl;
+              << "; ZSTD-" << ZSTD_versionString()
+			  << "; htslib " << std::string(hts_version()) << std::endl;
 	std::cerr << "Contact: Marcus D. R. Klarqvist <mk819@cam.ac.uk>" << std::endl;
 	std::cerr << "Documentation: https://github.com/mklarqvist/tachyon" << std::endl;
 	std::cerr << "License: MIT" << std::endl;

@@ -14,6 +14,7 @@ Tachyon, or `YON` for short, is an open source C++ software library for reading,
 * **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl].
 * **Compression**: Tachyon files are generally many fold (in many cases many 10- to 100-folds) smaller than the current standard file-format.
 * **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries. This memory layout enables extremely rapid field-specific queries.  
+* **Performance**: The file-format is designed as independent blocks of data into independent byte streams. This approach is inherently amenable to paralellization through scatter-gather approaches on multiple cores or multiple machines.
 * **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
 * **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF` and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
@@ -49,7 +50,7 @@ Interested in contributing? Fork and submit a pull request and it will be review
 We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version
-This is Tachyon 0.1.0. Tachyon follows [semantic versioning](https://semver.org/).
+This is Tachyon 0.3.0. Tachyon follows [semantic versioning](https://semver.org/).
 
 ### History
 Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.

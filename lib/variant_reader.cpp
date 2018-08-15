@@ -414,8 +414,8 @@ U64 VariantReader::OutputVcfSearch(void){
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 
-	for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
-		this->GetBlock(this->interval_container.getBlockList()[i]);
+	for(U32 i = 0; i < this->interval_container.GetBlockList().size(); ++i){
+		this->GetBlock(this->interval_container.GetBlockList()[i]);
 
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
@@ -441,7 +441,7 @@ U64 VariantReader::OutputVcfSearch(void){
 }
 
 U64 VariantReader::OutputRecords(void){
-	this->interval_container.build(this->global_header);
+	this->interval_container.Build(this->global_header);
 
 	if(this->settings.use_htslib){
 		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());
@@ -490,6 +490,7 @@ U64 VariantReader::OutputHtslibVcfLinear(void){
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
 			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
 			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
+			this->OutputHtslibVcfFilter(rec, hdr, entries[i]);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
 				std::cerr << "Failed to write record to " << this->settings.output;
@@ -559,6 +560,7 @@ U64 VariantReader::OutputHtslibVcfSearch(void){
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
 			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
 			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
+			this->OutputHtslibVcfFilter(rec, hdr, entries[i]);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
 				std::cerr << "Failed to write record to " << this->settings.output;
@@ -623,10 +625,7 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 			{
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
-
-				// Iterate over samples and print FORMAT:GT value in Vcf format.
-				// Todo: gt
-
+				entry.gt->UpdateHtslibGenotypes(rec, hdr);
 				entry.gt->d_exp = nullptr;
 			}
 			// Case when there are > 1 Vcf Format fields and the GT field
@@ -638,7 +637,7 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
-				// Todo: gt
+				entry.gt->UpdateHtslibGenotypes(rec, hdr);
 				for(U32 g = 1; g < n_format_avail; ++g)
 					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
 
@@ -653,65 +652,13 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 	}
 }
 
-/**<
- * Outputs
- * @return
- */
-U64 VariantReader::outputVCF(void){
-	U64 n_variants = 0;
-
-	if(this->block_settings.annotate_extra){
-		// fixme
-		// if special
-		// "FS_A", "AN", "NM", "NPM", "AC", "AC_FW", "AC_REV", "AF", "HWE_P", "VT", "MULTI_ALLELIC", "F_PIC"
-		if(this->global_header.GetInfo("FS_A") == nullptr)          this->global_header.literals_ += "\n##INFO=<ID=FS_A,Number=A,Type=Float>";
-		if(this->global_header.GetInfo("AN") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AN,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("NM") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=NM,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("NPM") == nullptr)           this->global_header.literals_ += "\n##INFO=<ID=NPM,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("AC") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AC,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("AC_FWD") == nullptr)        this->global_header.literals_ += "\n##INFO=<ID=AC_FWD,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("AC_REV") == nullptr)        this->global_header.literals_ += "\n##INFO=<ID=AC_REV,Number=A,Type=Integer>";
-		if(this->global_header.GetInfo("HWE_P") == nullptr)         this->global_header.literals_ += "\n##INFO=<ID=HWE_P,Number=A,Type=Float>";
-		if(this->global_header.GetInfo("VT") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=VT,Number=A,Type=String>";
-		if(this->global_header.GetInfo("AF") == nullptr)            this->global_header.literals_ += "\n##INFO=<ID=AF,Number=A,Type=Float,Description=\"Estimated allele frequency in the range (0,1)\">";
-		if(this->global_header.GetInfo("MULTI_ALLELIC") == nullptr) this->global_header.literals_ += "\n##INFO=<ID=MULTI_ALLELIC,Number=0,Type=Flag>";
-		if(this->global_header.GetInfo("F_PIC") == nullptr)         this->global_header.literals_ += "\n##INFO=<ID=F_PIC,Number=A,Type=Float,Description=\"Population inbreeding coefficient (F-statistics)\">";
-	}
-
-	this->global_header.literals_ += "\n##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-	this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-			  + SSLeay_version(SSLEAY_VERSION) + "," + "ZSTD-" + ZSTD_versionString() + "; timestamp=" + utility::datetime();
-
-	this->global_header.literals_ += "\n##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + '\n';
-	this->global_header.literals_ += this->GetSettings().get_settings_string();
-
-	// Output VCF header
-	if(this->block_settings.show_vcf_header){
-		//this->global_header.writeHeaderVCF(std::cout, this->block_settings.format_all.load || this->block_settings.format_list.size());
-	}
-
-	// If seek is active for targetted intervals
-	if(this->interval_container.hasIntervals()){
-		if(this->interval_container.build(this->global_header) == false)
-			return false;
-
-		if(this->interval_container.getBlockList().size()){
-			for(U32 i = 0; i < this->interval_container.getBlockList().size(); ++i){
-				if(this->GetBlock(this->interval_container.getBlockList()[i]) == false){
-					return(0);
-				}
-				//n_variants += this->outputBlockVCF();
-			}
-
-			return(n_variants);
-		} else { // Provided intervals but no matching YON blocks
-			return(0);
+void VariantReader::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const{
+	if(entry.n_filter){
+		for(U32 k = 0; k < entry.filter_ids->size(); ++k){
+			int32_t tmpi = bcf_hdr_id2int(hdr, BCF_DT_ID, entry.filter_hdr[k]->id.data());
+			bcf_update_filter(hdr, rec, &tmpi, 1);
 		}
 	}
-
-	// While there are YON blocks
-	//while(this->NextBlock()) n_variants += this->outputBlockVCF();
-	return(n_variants);
 }
 
 }

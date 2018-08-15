@@ -19,7 +19,7 @@ IntervalContainer::~IntervalContainer(void){
 }
 
 // Interpret
-bool IntervalContainer::validateIntervalStrings(std::vector<std::string>& interval_strings){
+bool IntervalContainer::ValidateIntervalStrings(std::vector<std::string>& interval_strings){
 	if(interval_strings.size() == 0)
 		return true;
 
@@ -43,13 +43,13 @@ bool IntervalContainer::validateIntervalStrings(std::vector<std::string>& interv
 	return true;
 }
 
-bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_strings, const header_type& header, const index_type& index){
+bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_strings, const header_type& header, const index_type& index){
 	// Intervals pass expression tests
 	// No intervals to parse
 	if(interval_strings.size() == 0)
 		return(true);
 
-	if(this->validateIntervalStrings(interval_strings) == false)
+	if(this->ValidateIntervalStrings(interval_strings) == false)
 		return(false);
 
 	// Append given interval strings to internal vector of strings
@@ -150,11 +150,11 @@ bool IntervalContainer::parseIntervals(std::vector<std::string>& interval_string
 	return true;
 }
 
-bool IntervalContainer::build(const header_type& header){
+bool IntervalContainer::Build(const header_type& header){
 	if(this->interval_list_.size() == 0) return true;
 
 	// Dedupe blocks before building
-	this->dedupeBlockList();
+	this->DedupeBlockList();
 
 	this->n_entries_ = header.GetNumberContigs();
 	this->__entries  = static_cast<pointer>(::operator new[](this->n_entries_*sizeof(value_type)));
@@ -164,7 +164,7 @@ bool IntervalContainer::build(const header_type& header){
 	return true;
 }
 
-void IntervalContainer::dedupeBlockList(void){
+void IntervalContainer::DedupeBlockList(void){
 	if(this->block_list_.size() == 0) return;
 
 	// Dedupe

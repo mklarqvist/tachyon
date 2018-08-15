@@ -575,7 +575,7 @@ public:
 	    	}
 	    }
 	  } else {
-		  std::cerr << "hrec error" << std::endl;
+		  std::cerr << utility::timestamp("ERROR") << "hrec error" << std::endl;
 		  return;
 	  }
 
@@ -590,7 +590,8 @@ public:
 		  this->contigs_map_[c.name] = this->contigs_.size();
 		  this->contigs_.push_back(c);
 	  } else {
-		  std::cerr << "illegal: duplicated contig name" << std::endl;
+		  std::cerr << utility::timestamp("ERROR") << "Illegal: duplicated contig name" << std::endl;
+		  exit(1);
 	  }
 	}
 
@@ -619,11 +620,12 @@ public:
 			this->filter_fields_map_[f.id] = this->filter_fields_.size();
 			this->filter_fields_.push_back(f);
 		} else {
-			std::cerr << "illegal: duplicated filter name: " << f.id << std::endl;
+			std::cerr << utility::timestamp("ERROR")  << "Illegal: duplicated filter name: " << f.id << std::endl;
+			exit(1);
 		}
 
 	  } else {
-	    std::cerr << "Malformed FILTER field detected in header, leaving this "
+	    std::cerr << utility::timestamp("ERROR") << "Malformed FILTER field detected in header, leaving this "
 	                 "filter empty" << std::endl;
 	  }
 	}
@@ -661,11 +663,12 @@ public:
 			this->info_fields_map_[f.id] = this->info_fields_.size();
 			this->info_fields_.push_back(f);
 		} else {
-			std::cerr << "illegal: duplicated info name: " << f.id << std::endl;
+			std::cerr << utility::timestamp("ERROR")  << "Illegal: duplicated info name: " << f.id << std::endl;
+			exit(1);
 		}
 
 	  } else {
-	    std::cerr << "Malformed INFO field detected in header, leaving this "
+	    std::cerr << utility::timestamp("ERROR") << "Malformed INFO field detected in header, leaving this "
 	                 "info empty" << std::endl;
 	  }
 	}
@@ -699,11 +702,12 @@ public:
 			this->format_fields_map_[f.id] = this->format_fields_.size();
 			this->format_fields_.push_back(f);
 		} else {
-			std::cerr << "illegal: duplicated format name: " << f.id << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal: duplicated format name: " << f.id << std::endl;
+			exit(1);
 		}
 
 	  } else {
-	    std::cerr << "Malformed FORMAT field detected in header, leaving this "
+	    std::cerr << utility::timestamp("ERROR")  << "Malformed FORMAT field detected in header, leaving this "
 	                    "format empty" << std::endl;
 	  }
 	}
@@ -737,7 +741,8 @@ public:
 			this->samples_map_[sample_name] = this->samples_.size();
 			this->samples_.push_back(sample_name);
 		} else {
-			std::cerr << "illegal: duplicated sample name: " << sample_name << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Illegal: duplicated sample name: " << sample_name << std::endl;
+			exit(1);
 		}
 	}
 
@@ -859,7 +864,7 @@ public:
 		hts_vcf_header* hdr = bcf_hdr_init("r");
 		int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
 		if(ret != 0){
-			std::cerr << "failed to get bcf header from literals" << std::endl;
+			std::cerr << utility::timestamp("ERROR")  << "Failed to get bcf header from literals" << std::endl;
 			bcf_hdr_destroy(hdr);
 			return(nullptr);
 		}
@@ -926,7 +931,7 @@ public:
 };
 
 class VcfReader{
-private:
+public:
 	typedef VcfReader self_type;
 
 public:
@@ -936,13 +941,13 @@ public:
 	static std::unique_ptr<self_type> FromFile(const std::string& variants_path){
 		htsFile* fp = hts_open(variants_path.c_str(), "r");
 		if (fp == nullptr) {
-			std::cerr << "Could not open " << variants_path << std::endl;
+			std::cerr << utility::timestamp("ERROR")  << "Could not open " << variants_path << std::endl;
 			return nullptr;
 		}
 
 		bcf_hdr_t* header = bcf_hdr_read(fp);
 		if (header == nullptr){
-			std::cerr << "Couldn't parse header for " << fp->fn << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Couldn't parse header for " << fp->fn << std::endl;
 			return nullptr;
 		}
 
@@ -952,7 +957,7 @@ public:
 	bool next(const int unpack_level = BCF_UN_ALL){
 		if (bcf_read(this->fp_, this->header_, this->bcf1_) < 0) {
 			if (bcf1_->errcode) {
-				std::cerr << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
 				return false;
 			} else {
 				return false;
@@ -966,9 +971,10 @@ public:
 	bool next(bcf1_t* bcf_entry, const int unpack_level = BCF_UN_ALL){
 		if (bcf_read(this->fp_, this->header_, bcf_entry) < 0) {
 			if (bcf_entry->errcode) {
-				std::cerr << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
 				return false;
 			} else {
+				//std::cerr << utility::timestamp("ERROR") << "Failed to retrieve a htslib bcf1_t record!" << std::endl;
 				return false;
 			}
 		}
@@ -1011,13 +1017,13 @@ private:
     bcf1_(bcf_init())
 {
     if (this->header_->nhrec < 1) {
-        std::cerr << "Empty header, not a valid VCF." << std::endl;
+        std::cerr << utility::timestamp("ERROR") << "Empty header, not a valid VCF." << std::endl;
         return;
     }
 
     // Store the file-format header string
     if (std::string(this->header_->hrec[0]->key) != "fileformat") {
-        std::cerr << "Not a valid VCF, fileformat needed: " << variants_path << std::endl;
+        std::cerr << utility::timestamp("ERROR") << "Not a valid VCF, fileformat needed: " << variants_path << std::endl;
     } else {
     	this->vcf_header_.fileformat_string_ = std::string(this->header_->hrec[0]->key);
     }
@@ -1057,7 +1063,7 @@ private:
 			this->vcf_header_.AddExtra(hrec0);
 			break;
 		default:
-			std::cerr << "Unknown hrec0->type: " << hrec0->type << std::endl;
+			std::cerr << utility::timestamp("ERROR") << "Unknown hrec0->type: " << hrec0->type << std::endl;
 			break;
 		}
     }

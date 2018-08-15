@@ -42,25 +42,42 @@ void VcfContainer::resize(const size_t new_size){
 	}
 
 	pointer* temp = new pointer[new_size];
-	for(size_t i = 0; i < this->size(); ++i)
-		temp[i] = this->entries_[i];
+	for(size_t i = 0; i < new_size; ++i) temp[i] = nullptr;
+	for(size_t i = 0; i < this->size(); ++i) temp[i] = this->entries_[i];
 
 	delete [] this->entries_;
-	this->entries_ = temp;
+	this->entries_    = temp;
 	this->n_capacity_ = new_size;
 }
 
-bool VcfContainer::GetVariants(const int32_t n_variants, const int64_t n_bases, std::unique_ptr<io::VcfReader>& reader){
-	if(this->size() + n_variants >= this->capacity())
-		this->resize(this->size() + n_variants + 64);
+bool VcfContainer::GetVariants(const int32_t n_variants,
+                               const int64_t n_bases,
+                               std::unique_ptr<io::VcfReader>& reader)
+{
+	// Make sure enough records are available for
+	// overloading. If this is not the case we
+	// resize the container to the target size
+	// plus some padding.
+	if(this->size() + n_variants + this->n_carry_over_ >= this->capacity())
+		this->resize(this->size() + n_variants + this->n_carry_over_ + 64);
 
+
+	// Look at the back of the vector and check if
+	// that entry is a valid pointer to a htslib
+	// bcf1_t structure. If it is not then initialize
+	// a new bcf1_t structure. Next, read a new
+	// vcf records from the file stream and overload
+	// the bcf1_t record.
 	VcfContainer::pointer bcf1_ = this->end();
 	if(bcf1_ == nullptr) bcf1_  = bcf_init();
 	if(reader->next(bcf1_) == false)
 		return false;
 
+	// Push the overloaded bcf1_t structure to this
+	// container in the back.
 	*this += bcf1_;
 
+	// Track the current position and contig.
 	int64_t first_pos    = bcf1_->pos;
 	int32_t first_contig = bcf1_->rid;
 	if(this->size() != 1){

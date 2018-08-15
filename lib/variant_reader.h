@@ -201,17 +201,11 @@ public:
 	U64 OutputHtslibVcfSearch(void);
 	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
 	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
-
-	/**<
-	 * Wrapper function to call internal functions `outputCustom` or `outputBlockVCF`.
-	 * Decides internally what function to invoke.
-	 * @return
-	 */
-	U64 outputVCF(void);
+	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
 
 	// Filter interval intersection and dummy version
 	inline bool FilterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
-	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.find_overlaps(meta_entry).size()); }
+	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.FindOverlaps(meta_entry).size()); }
 
 	// Calculations
 	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
@@ -223,7 +217,7 @@ public:
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	inline bool AddIntervals(std::vector<std::string>& interval_strings){
-		return(this->interval_container.parseIntervals(interval_strings, this->global_header, this->index));
+		return(this->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
 	}
 
 

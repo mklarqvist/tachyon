@@ -39,7 +39,7 @@ bool VariantImporter::BuildVCF(void){
 
 	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
 		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
-			std::cerr << "No length declared for contig. Add maximum." << std::endl;
+			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig. Setting to INT32_MAX." << std::endl;
 			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<S32>::max();
 		}
 	}
@@ -127,7 +127,8 @@ bool VariantImporter::BuildVCF(void){
 		// the smallest and largest variant exceeds some distance in base pairs.
 		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
 		                                    this->settings_.checkpoint_bases,
-		                                    this->vcf_reader_) == false){
+		                                    this->vcf_reader_) == false)
+		{
 			break;
 		}
 
