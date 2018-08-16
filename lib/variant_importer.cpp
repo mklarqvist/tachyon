@@ -4,6 +4,8 @@
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 
+#include "third_party/mpmc_queue.h"
+
 namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :
@@ -23,8 +25,8 @@ void VariantImporter::clear(){
 }
 
 bool VariantImporter::Build(){
-	//if(!this->BuildVCF()){
-	if(!this->BuildParallel()){
+	if(!this->BuildVCF()){
+	//if(!this->BuildParallel()){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
@@ -294,11 +296,17 @@ bool VariantImporter::BuildParallel(void){
 	algorithm::Timer timer; timer.Start();
 
 	uint32_t c_offset = 0;
-	uint32_t n_containers = std::thread::hardware_concurrency();
+	uint32_t n_containers = 4;
+			//std::thread::hardware_concurrency();
 	vcf_container_type* c = new vcf_container_type[n_containers];
 
 	uint64_t n_entries_a = 0;
 	uint64_t n_entries_b = 0;
+	uint64_t n_entries_c = 0;
+
+	// Produced queue
+	rigtorp::MPMCQueue<vcf_container_type*> mpmc_queue(n_containers);
+
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
@@ -307,21 +315,36 @@ bool VariantImporter::BuildParallel(void){
 		// the smallest and largest variant exceeds some distance in base pairs.
 		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
 		                                    this->settings_.checkpoint_bases,
-		                                    this->vcf_reader_) == false)
+		                                    this->vcf_reader_, 0) == false)
 		{
 			break;
 		}
-		std::cerr << "got entries" << std::endl;
 		n_entries_a += this->vcf_container_.sizeWithoutCarryOver();
+		if(c_offset == n_containers){
+			vcf_container_type* v = nullptr;
+			for(U32 i = 0; i < n_containers; ++i){
+				mpmc_queue.pop(v);
+				std::cerr << "pop: " << v->size() << std::endl;
+				n_entries_c += v->sizeWithoutCarryOver();
+				v = nullptr;
+			}
 
-		if(c_offset == n_containers) c_offset = 0;
-		std::cerr << "before: " << this->vcf_container_.size() << "@" << c_offset << "/" << n_containers << std::endl;
+			c_offset = 0;
+		}
 		c[c_offset] = std::move(this->vcf_container_);
-		std::cerr << c[c_offset].size() << " and " << this->vcf_container_.size() << std::endl;
 		n_entries_b += c[c_offset].sizeWithoutCarryOver();
+		mpmc_queue.emplace(&c[c_offset]);
 		++c_offset;
 	}
-	std::cerr << n_entries_a << "==" << n_entries_b << std::endl;
+
+	vcf_container_type* v = nullptr;
+	while(mpmc_queue.try_pop(v)){
+		std::cerr << "pop: " << v->size() << std::endl;
+		n_entries_c += v->sizeWithoutCarryOver();
+		v = nullptr;
+	}
+
+	std::cerr << n_entries_a << "==" << n_entries_b << "==" << n_entries_c << std::endl;
 
 	delete [] c;
 

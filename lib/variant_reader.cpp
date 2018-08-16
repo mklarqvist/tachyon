@@ -97,6 +97,7 @@ bool VariantReader::open(void){
 		return false;
 	}
 
+	// Add global header pointer to variant container.
 	this->variant_container << this->global_header;
 
 	// Keep track of start position
@@ -196,33 +197,53 @@ bool VariantReader::LoadKeychainFile(void){
 
 TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const U32& allele) const{
 	const S32 ref_size = meta.alleles[0].size();
-	const S32 diff = ref_size - meta.alleles[allele].size();
-	//std::cerr << diff << ",";
-	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<') return(YON_VARIANT_CLASS_SV);
-	else if(diff == 0){
+	const S32 l_diff   = ref_size - meta.alleles[allele].size();
+
+	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<')
+		return(YON_VARIANT_CLASS_SV);
+	else if(l_diff == 0){
 		if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
-			if(meta.alleles[allele].allele[0] == 'A' || meta.alleles[allele].allele[0] == 'T' || meta.alleles[allele].allele[0] == 'G' || meta.alleles[allele].allele[0] == 'C')
+			if(meta.alleles[allele].allele[0] == 'A' ||
+			   meta.alleles[allele].allele[0] == 'T' ||
+			   meta.alleles[allele].allele[0] == 'G' ||
+			   meta.alleles[allele].allele[0] == 'C')
+			{
 				return(YON_VARIANT_CLASS_SNP);
+			}
 			else return(YON_VARIANT_CLASS_UNKNOWN);
 		}
 		else if(ref_size != 1){
-			U32 characters_identical = 0;
-			const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+			U32 n_characters_identical = 0;
+			const U32 length_shortest = ref_size < meta.alleles[allele].size()
+					                    ? ref_size
+					                    : meta.alleles[allele].size();
 
-			for(U32 c = 0; c < length_shortest; ++c){
-				characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
-			}
+			for(U32 c = 0; c < length_shortest; ++c)
+				n_characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
 
-			if(characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
+			if(n_characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
 			else return(YON_VARIANT_CLASS_CLUMPED);
 		}
 	} else {
-		const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
-		U32 characters_non_standard = 0;
+		const U32 length_shortest = ref_size < meta.alleles[allele].size()
+		                            ? ref_size
+		                            : meta.alleles[allele].size();
+
+		// Keep track of non-standard characters.
+		U32 n_characters_non_standard = 0;
+
+		// Iterate over available characters and check for non-standard
+		// genetic characters (ATGC).
 		for(U32 c = 0; c < length_shortest; ++c){
-			characters_non_standard += (meta.alleles[allele].allele[c] != 'A' && meta.alleles[allele].allele[c] != 'T' && meta.alleles[allele].allele[c] != 'C' && meta.alleles[allele].allele[c] !='G');
+			n_characters_non_standard += (meta.alleles[allele].allele[c] != 'A' &&
+			                              meta.alleles[allele].allele[c] != 'T' &&
+			                              meta.alleles[allele].allele[c] != 'C' &&
+			                              meta.alleles[allele].allele[c] != 'G');
 		}
-		if(characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
+
+		// If non-standard characters are found then return as unknown
+		// type. Otherwise, return classification as an indel.
+		if(n_characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
 		else return(YON_VARIANT_CLASS_INDEL);
 	}
 	return(YON_VARIANT_CLASS_UNKNOWN);
@@ -695,6 +716,56 @@ void VariantReader::UpdateHeaderView(void){
 	e.value = this->GetSettings().get_settings_string();
 	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
 	this->GetGlobalHeader().extra_fields_.push_back(e);
+}
+
+bool VariantReader::Stats(void){
+	this->variant_container.AllocateGenotypeMemory();
+	// temp
+	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
+	//	return(0);
+	//}
+
+	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+
+
+	while(this->NextBlock()){
+		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+		// If occ table is built.
+		//objects->occ = &occ;
+		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
+
+		for(U32 i = 0; i < objects->meta_container->size(); ++i){
+			// Each entry evaluate occ if available.
+			//entries[i].occ = objects->occ;
+			//entries[i].EvaluateOcc();
+
+			const uint32_t n_format_avail = entries[i].format_ids->size();
+			if(n_format_avail > 0 && entries[i].is_loaded_gt){
+				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
+				//s.Update(entries[i]);
+			}
+		}
+
+		delete [] entries;
+		//objects->occ = nullptr;
+		delete objects;
+	}
+
+	for(U32 i = 0; i < this->GetGlobalHeader().GetNumberSamples(); ++i){
+		s[i].LazyEvalute();
+		std::cout << this->global_header.samples_[i] << "\t" << s[i].n_ts << "\t" << s[i].n_tv << "\t" << s[i].ts_tv_ratio;
+		for(U32 j = 0; j < 9; ++j){
+			for(U32 k = 0; k < 9; ++k){
+				std::cout << "\t" << s[i].base_conv[j][k];
+			}
+		}
+		std::cout << std::endl;
+	}
+	std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
+
+	return true;
 }
 
 }

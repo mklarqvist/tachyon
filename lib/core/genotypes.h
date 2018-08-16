@@ -22,13 +22,20 @@ namespace tachyon{
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
 #define YON_GT_BCF1(ALLELE) ((( (ALLELE) >> 1) - 1) << 1) | (ALLELE & 1)
 
+// 0:  Nothing evaluated
+// 1:  rcds
+// 2:  d_bcf
+// 4:  d_bcf_ppa
+// 8:  d_exp
+// 16: d_occ
 #define YON_GT_UN_NONE       0       // nothing
-#define YON_GT_UN_INT        1       // rcds
-#define YON_GT_UN_BCF        2|YON_GT_UN_INT // bcf
-#define YON_GT_UN_SIMPLE     4|YON_GT_UN_INT // simple
-#define YON_GT_UN_BCF_PPA    8|YON_GT_UN_BCF // bcf unpermuted
-#define YON_GT_UN_SIMPLE_PPA 16|YON_GT_UN_SIMPLE // bcf unpermuted
-#define YON_GT_UN_ALL        (YON_GT_UN_BCF_PPA|YON_GT_UN_SIMPLE_PPA) // everything
+#define YON_GT_UN_RCDS       1       // rcds
+#define YON_GT_UN_BCF        (2|YON_GT_UN_RCDS) // bcf
+#define YON_GT_UN_BCF_PPA    (4|YON_GT_UN_BCF)  // bcf unpermuted
+#define YON_GT_UN_EXPAND     (8|YON_GT_UN_RCDS) // bcf unpermuted
+#define YON_GT_UN_OCC       (16|YON_GT_UN_RCDS) // bcf unpermuted
+#define YON_GT_UN_TREE      (32|YON_GT_UN_RCDS) // bcf unpermuted
+#define YON_GT_UN_ALL       (YON_GT_UN_RCDS|YON_GT_UN_EXPAND) // everything
 
 // 0 for missing and 1 for sentinel node. Note that the
 // sentinel node never occurs in this encoding type.
@@ -44,145 +51,45 @@ const std::vector< std::string > YON_GT_ANNOTATE_FIELDS = {"NM","NPM","AN","HWE_
 // genotypes in the ORIGINAL order. If this is not required
 // in your use-case then this structure has no value.
 struct yon_gt_ppa {
-	yon_gt_ppa(void) : n_samples(0), ordering(nullptr){}
-	yon_gt_ppa(const uint32_t n_samples) : n_samples(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
-	~yon_gt_ppa(void){ delete [] this->ordering; }
+	yon_gt_ppa(void);
+	yon_gt_ppa(const uint32_t n_samples);
+	~yon_gt_ppa(void);
 
 	uint32_t& operator[](const uint32_t& position){ return(this->ordering[position]); }
 	const uint32_t& operator[](const uint32_t& position) const{ return(this->ordering[position]); }
 	uint32_t& at(const uint32_t& position){ return(this->ordering[position]); }
 	const uint32_t& at(const uint32_t& position) const{ return(this->ordering[position]); }
 
-	void Allocate(const uint32_t n_samples){
-		delete [] this->ordering;
-		this->n_samples = n_samples;
-		this->ordering = new uint32_t[n_samples];
-		this->reset();
-	}
+	void Allocate(const uint32_t n_samples);
+	void reset(void);
 
-	void reset(void){
-		for(U32 i = 0; i < this->n_samples; ++i)
-			this->ordering[i] = i;
-	}
-
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
-		io::DeserializePrimitive(ppa.n_samples, buffer);
-		ppa.ordering = new uint32_t[ppa.n_samples];
-		for(U32 i = 0; i < ppa.n_samples; ++i)
-			io::DeserializePrimitive(ppa.ordering[i], buffer);
-
-		return(buffer);
-	}
-
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
-		io::SerializePrimitive(ppa.n_samples, buffer);
-		for(U32 i = 0; i < ppa.n_samples; ++i)
-			io::SerializePrimitive(ppa.ordering[i], buffer);
-
-		return(buffer);
-	}
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa);
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa);
 
 	uint32_t  n_samples;
 	uint32_t* ordering;
 };
 
 struct yon_radix_gt {
-	yon_radix_gt() : n_ploidy(0), n_allocated(4), id(0), alleles(new uint16_t[this->n_allocated]){
-		memset(this->alleles, 0, sizeof(uint16_t)*this->n_allocated);
-	}
-	~yon_radix_gt(){ delete [] this->alleles; }
-	yon_radix_gt(const yon_radix_gt& other) : n_ploidy(other.n_ploidy), n_allocated(other.n_allocated), id(other.id), alleles(new uint16_t[this->n_allocated])
-	{
-		memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
-	}
-	yon_radix_gt(yon_radix_gt&& other) : n_ploidy(other.n_ploidy), n_allocated(other.n_allocated), id(other.id), alleles(other.alleles)
-	{
-		other.alleles = nullptr;
-	}
+public:
+	yon_radix_gt();
+	~yon_radix_gt();
+	yon_radix_gt(const yon_radix_gt& other);
+	yon_radix_gt(yon_radix_gt&& other);
+	yon_radix_gt& operator=(const yon_radix_gt& other);
+	yon_radix_gt& operator=(yon_radix_gt&& other);
 
-	yon_radix_gt& operator=(const yon_radix_gt& other) // copy assignment
-	{
-		this->id = other.id;
-		this->n_ploidy = other.n_ploidy;
-		this->n_allocated = other.n_allocated;
-		delete [] this->alleles;
-		this->alleles = new uint16_t[this->n_allocated];
-		memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
-		return *this;
-	}
-	yon_radix_gt& operator=(yon_radix_gt&& other) // move assignment
-	{
-		if(this!=&other) // prevent self-move
-		{
-			this->id = other.id;
-			this->n_ploidy = other.n_ploidy;
-			this->n_allocated = other.n_allocated;
-			delete [] this->alleles;
-			this->alleles = other.alleles;
-			other.alleles = nullptr;
-		}
-		return *this;
-	}
-
-	bool operator<(const yon_radix_gt& other) const{
-		// Do not compare incremental sample identification
-		// numbers as that is not the desired outcome of
-		// the sort.
-		if(this->n_ploidy < other.n_ploidy) return true;
-		if(other.n_ploidy < this->n_ploidy) return false;
-
-		for(U32 i = 0; i < this->n_ploidy; ++i){
-			if(this->alleles[i] < other.alleles[i])
-				return true;
-		}
-		return false;
-	}
-
-	bool operator==(const yon_radix_gt& other) const{
-		// Do not compare incremental sample identification
-		// numbers as that is not the desired outcome of
-		// the comparison.
-		if(this->n_ploidy != other.n_ploidy)
-			return false;
-
-		for(U32 i = 0; i < this->n_ploidy; ++i){
-			if(this->alleles[i] != other.alleles[i])
-				return false;
-		}
-		return true;
-	}
-
+	bool operator<(const yon_radix_gt& other) const;
+	bool operator==(const yon_radix_gt& other) const;
 	inline bool operator!=(const yon_radix_gt& other) const{ return(!(*this == other)); }
 
-	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype){
-		stream << genotype.id << ":";
-		if(genotype.n_ploidy){
-			stream << genotype.alleles[0];
-			for(U32 i = 1; i < genotype.n_ploidy; ++i){
-				stream << "," << genotype.alleles[i];
-			}
-		}
-		return(stream);
-	}
+	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype);
 
-	U64 GetPackedInteger(const uint8_t& shift_size = 8) const{
-		U64 packed = 0;
-		for(U32 i = 0; i < this->n_ploidy; ++i){
-			packed <<= shift_size;
-			assert(((this->alleles[i] << shift_size) >> shift_size) == this->alleles[i]);
-			packed |= (this->alleles[i] & ((1 << shift_size)) - 1);
-		}
-		return packed;
-	}
+	U64 GetPackedInteger(const uint8_t& shift_size = 8) const;
 
-	void resize(const uint8_t new_ploidy){
-		uint16_t* temp = new uint16_t[new_ploidy];
-		memcpy(temp, this->alleles, this->n_allocated * sizeof(uint16_t));
-		delete [] this->alleles;
-		this->alleles = temp;
-		this->n_allocated = new_ploidy;
-	}
+	void resize(const uint8_t new_ploidy);
 
+public:
 	uint8_t   n_ploidy;
 	uint8_t   n_allocated;
 	uint64_t  id;
@@ -191,41 +98,17 @@ struct yon_radix_gt {
 
 // Primary generic Tachyon FORMAT:GT structure.
 struct yon_gt_rcd {
-	yon_gt_rcd() : run_length(0), allele(nullptr){}
-	~yon_gt_rcd(){ delete [] this->allele; }
+public:
+	yon_gt_rcd();
+	~yon_gt_rcd();
 	yon_gt_rcd(const yon_gt_rcd& other) = delete; // disallow copy ctor
 	yon_gt_rcd& operator=(const yon_gt_rcd& other) = delete; // disallow move assign
-	yon_gt_rcd(yon_gt_rcd&& other) : run_length(other.run_length), allele(other.allele){
-		other.allele = nullptr;
-	}
-	yon_gt_rcd& operator=(yon_gt_rcd&& other){
-		if(this == &other) return(*this);
-		delete this->allele;
-		this->allele = other.allele;
-		other.allele = nullptr;
-		this->run_length = other.run_length;
-		return(*this);
-	}
+	yon_gt_rcd(yon_gt_rcd&& other);
+	yon_gt_rcd& operator=(yon_gt_rcd&& other);
 
-	// Rule of 5
+	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy);
 
-	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
-		if(this->allele[0] == 1){
-			buffer += '.';
-			return(buffer);
-		}
-		if(this->allele[0] == 0) buffer += '.';
-		else buffer.AddReadble(((this->allele[0] >> 1) - 2));
-
-		for(U32 i = 1; i < n_ploidy; ++i){
-			if(this->allele[i] == 1) break;
-			buffer += ((this->allele[i] & 1) ? '|' : '/');
-			if(this->allele[i] == 0) buffer += '.';
-			else buffer.AddReadble(((this->allele[i] >> 1) - 2));
-		}
-		return(buffer);
-	}
-
+public:
 	uint32_t run_length;
 	//uint8_t alleles; // Determined from base ploidy
 	uint8_t* allele; // contains phase at first bit
@@ -235,6 +118,12 @@ struct yon_gt_rcd {
 struct yon_gt_summary;
 
 struct yon_gt {
+public:
+	typedef yonRawIterator<yon_gt_rcd>       iterator;
+	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
+
+public:
+	uint16_t eval_cont;
     uint8_t  add : 7,
              global_phase : 1;
     uint8_t  shift;
@@ -253,10 +142,8 @@ struct yon_gt {
     algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
 
-    typedef yonRawIterator<yon_gt_rcd>       iterator;
-	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
 
-    yon_gt() : add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
+    yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
                n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
 			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_occ(nullptr), d_occ(nullptr),
 			   itree(nullptr), dirty(false)
@@ -264,17 +151,49 @@ struct yon_gt {
 
     ~yon_gt();
 
-    bool Evaluate(void){
-    	if(this->method == 1) return(this->EvaluateRecordsM1());
-    	else if(this->method == 2) return(this->EvaluateRecordsM2());
-    	else if(this->method == 4) return(this->EvaluateRecordsM4());
-    	else {
-    		std::cerr << "not implemented method " << (int)this->method << std::endl;
-    	}
-    	return false;
-    }
+    // Accessors
+    template <class T>
+    inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }
+
+    template <class T>
+	inline T& GetPrimitivePpa(const uint32_t sample){ return(this->ppa[*reinterpret_cast<T*>(&this->data[sample])]); }
+
+    // Iterator
+   inline iterator begin(){ return iterator(&this->rcds[0]); }
+   inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
+   inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
+   inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
+   inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
+   inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
+
+   /**<
+    * Lazy-evaluate internal objects (yon_gt_rcd) from the provided data
+    * and method. Converts primitive encoded data into a record structure
+    * tuple with (run length, alleles) with the alleles encoded as the first
+    * bit for phasing and the remainder seven bits for allele encodings. The
+    * allele encoding is ALLELE + 2 for standard alleles and 0 for missing and
+    * 1 for the sentinel end-of-vector symbol.
+    * @return Returns TRUE upon success or FALSE otherwise
+    */
+   bool Evaluate(void){
+	   // Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
+		if(this->method == 1) return(this->EvaluateRecordsM1());
+		else if(this->method == 2) return(this->EvaluateRecordsM2());
+		else if(this->method == 4) return(this->EvaluateRecordsM4());
+		else {
+			std::cerr << "not implemented method " << (int)this->method << std::endl;
+		}
+		return false;
+	}
 
     bool EvaluateRecordsM1(){
+ 	    // Prevent double evaluation.
+ 		if(this->eval_cont & YON_GT_UN_RCDS)
+ 			return true;
+
     	switch(this->p){
     	case(1): return(this->EvaluateRecordsM1_<uint8_t>());
     	case(2): return(this->EvaluateRecordsM1_<uint16_t>());
@@ -288,6 +207,10 @@ struct yon_gt {
 
     template <class T>
     bool EvaluateRecordsM1_(){
+    	// Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
     	if(this->rcds != nullptr) delete [] this->rcds;
     	assert(this->m == 2);
     	assert(this->n_allele == 2);
@@ -320,9 +243,14 @@ struct yon_gt {
 			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);
+		this->eval_cont |= YON_GT_UN_RCDS;
     }
 
     bool EvaluateRecordsM2(){
+    	// Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
 		switch(this->p){
 		case(1): return(this->EvaluateRecordsM2_<uint8_t>());
 		case(2): return(this->EvaluateRecordsM2_<uint16_t>());
@@ -336,6 +264,10 @@ struct yon_gt {
 
 	template <class T>
 	bool EvaluateRecordsM2_(){
+		// Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
 		if(this->rcds != nullptr) delete [] this->rcds;
 		assert(this->m == 2);
 
@@ -367,9 +299,14 @@ struct yon_gt {
 			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);
+		this->eval_cont |= YON_GT_UN_RCDS;
 	}
 
 	 bool EvaluateRecordsM4(){
+		 // Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
 		switch(this->p){
 		case(1): return(this->EvaluateRecordsM4_<uint8_t>());
 		case(2): return(this->EvaluateRecordsM4_<uint16_t>());
@@ -383,6 +320,10 @@ struct yon_gt {
 
 	template <class T>
 	bool EvaluateRecordsM4_(){
+		// Prevent double evaluation.
+		if(this->eval_cont & YON_GT_UN_RCDS)
+			return true;
+
 		if(this->rcds != nullptr) delete [] this->rcds;
 		assert(this->m != 2);
 
@@ -408,14 +349,21 @@ struct yon_gt {
 			n_total += this->rcds[i].run_length;
 		}
 		assert(n_total == this->n_s);
+		this->eval_cont |= YON_GT_UN_RCDS;
 	}
 
 	// Requires base evaluation to rcds structures first.
 	bool EvaluateBcf(){
-		if(this->rcds == nullptr){
-			std::cerr << "have to evaluate rcds first" << std::endl;
-			return false;
+		// If data has not been evaluted to yon_gt_rcds yet
+		// then evaluate.
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
 		}
+
+		// Prevent re-evaluation.
+		if(this->eval_cont & YON_GT_UN_BCF)
+			return true;
 
 		switch(this->p){
 		case(1): return(this->EvaluateBcf_<uint8_t>());
@@ -430,6 +378,9 @@ struct yon_gt {
 
 	template <class T>
 	bool EvaluateBcf_(){
+		// Prevent re-evaluation.
+		if(this->eval_cont & YON_GT_UN_BCF) return true;
+
 		assert(this->rcds != nullptr);
 		if(this->d_bcf != nullptr) delete [] this->d_bcf;
 
@@ -438,15 +389,24 @@ struct yon_gt {
 		for(uint32_t i = 0; i < this->n_i; ++i){
 			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j){
 				for(uint32_t k = 0; k < this->m; ++k, ++cum_pos){
-					this->d_bcf[cum_pos] = this->rcds[i].allele[k]; // Todo: recode back from YON-style to htslib style (e.g. 0,1 special meaning in YON)
+					this->d_bcf[cum_pos] = this->rcds[i].allele[k];
 				}
 			}
 		}
 		assert(cum_pos == this->n_s * this->m);
+		this->eval_cont |= YON_GT_UN_BCF;
 		return true;
 	}
 
 	bool EvaluatePpaFromBcf(const uint8_t* d_bcf_pre){
+		if((this->eval_cont & YON_GT_UN_BCF) == false){
+			bool eval = this->EvaluateBcf();
+			if(eval == false) return false;
+		}
+
+		if(this->eval_cont & YON_GT_UN_BCF_PPA)
+			return true;
+
 		assert(d_bcf_pre != nullptr);
 		assert(this->ppa != nullptr);
 
@@ -464,10 +424,19 @@ struct yon_gt {
 		}
 
 		assert(cum_pos == this->n_s * this->m);
+		this->eval_cont |= YON_GT_UN_BCF_PPA;
 		return true;
 	}
 
 	bool EvaluateIntervalTree(void){
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
+		}
+
+		if(this->eval_cont & YON_GT_UN_TREE)
+			return true;
+
 		assert(this->rcds != nullptr);
 		if(this->itree != nullptr) delete this->itree;
 
@@ -484,6 +453,7 @@ struct yon_gt {
 		this->itree = new algorithm::IntervalTree<uint32_t, yon_gt_rcd*>(std::move(intervals));
 
 		assert(cum_pos == this->n_s);
+		this->eval_cont |= YON_GT_UN_TREE;
 		return true;
 	}
 
@@ -499,6 +469,14 @@ struct yon_gt {
 	 * @return Always returns TRUE if the critical assertions passes.
 	 */
 	bool ExpandRecordsPpa(void){
+		if(this->eval_cont & YON_GT_UN_EXPAND)
+			return true;
+
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
+		}
+
 		assert(this->rcds != nullptr);
 		assert(this->ppa != nullptr);
 
@@ -516,10 +494,16 @@ struct yon_gt {
 		}
 		assert(cum_sample == this->n_s);
 		assert(cum_offset == this->n_s * this->m * this->p);
+		this->eval_cont |= YON_GT_UN_EXPAND;
 		return true;
 	}
 
 	bool ExpandRecordsPpaExternal(yon_gt_rcd** d_expe){
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
+		}
+
 		assert(this->rcds != nullptr);
 		assert(this->ppa != nullptr);
 
@@ -551,6 +535,14 @@ struct yon_gt {
 
 
 	bool ExpandRecords(void){
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
+		}
+
+		if(this->eval_cont & YON_GT_UN_EXPAND)
+			return true;
+
 		assert(this->rcds != nullptr);
 
 		if(this->d_exp != nullptr) delete [] this->d_exp;
@@ -566,10 +558,16 @@ struct yon_gt {
 		}
 		assert(cum_sample == this->n_s);
 		assert(cum_offset == this->n_s * this->m * this->p);
+		this->eval_cont |= YON_GT_UN_EXPAND;
 		return true;
 	}
 
 	bool ExpandRecordsExternal(yon_gt_rcd** d_expe){
+		if((this->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = this->Evaluate();
+			if(eval == false) return false;
+		}
+
 		assert(this->rcds != nullptr);
 
 		uint64_t cum_sample = 0;
@@ -585,20 +583,6 @@ struct yon_gt {
 		return true;
 	}
 
-    template <class T>
-    inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }
-
-    template <class T>
-	inline T& GetPrimitivePpa(const uint32_t sample){ return(this->ppa[*reinterpret_cast<T*>(&this->data[sample])]); }
-
-    // Iterator
-   inline iterator begin(){ return iterator(&this->rcds[0]); }
-   inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
-   inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
-   inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
-   inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
-   inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
-
    /**<
     * Transform lazy-evaluated Tachyon genotype encodings (d_exp)
     * to htslib bcf1_t genotype encodings.
@@ -606,7 +590,16 @@ struct yon_gt {
     * @param hdr Input htslib bcf header.
     * @return    Returns the pointer to the input bcf1_t record.
     */
-   bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) const{
+   bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) {
+	   // Prevent double evaluation.
+	   if((this->eval_cont & YON_GT_UN_EXPAND)){
+		   bool check = this->Expand();
+		   if(check == false){
+			   std::cerr << utility::timestamp("ERROR","GT") << "Failed to lazy-expand genotype records..." << std::endl;
+			   return rec;
+		   }
+	   }
+
 	   assert(this->d_exp != nullptr);
 
 	   int32_t* tmpi = new int32_t[this->n_s*this->m];
@@ -621,23 +614,27 @@ struct yon_gt {
 	   assert(gt_offset == this->n_s*this->m);
 
 	   bcf_update_genotypes(hdr, rec, tmpi, this->n_s*this->m);
+
 	   delete [] tmpi;
 	   return(rec);
    }
 };
 
 struct yon_gt_summary_obj{
+public:
 	yon_gt_summary_obj() : n_cnt(0), children(nullptr){}
 	~yon_gt_summary_obj(){ delete [] this->children; }
 
 	inline yon_gt_summary_obj& operator[](const uint32_t pos){ return(this->children[pos]); }
 	inline const yon_gt_summary_obj& operator[](const uint32_t pos) const{ return(this->children[pos]); }
 
+public:
 	uint64_t n_cnt;
 	yon_gt_summary_obj* children;
 };
 
 struct yon_gt_summary_rcd {
+public:
 	yon_gt_summary_rcd() :
 		n_ploidy(0), n_ac_af(0), n_fs(0), ac(nullptr), af(nullptr),
 		nm(0), npm(0), an(0), ac_p(nullptr), fs_a(nullptr), hwe_p(0),
@@ -730,6 +727,7 @@ struct yon_gt_summary_rcd {
 		return(buffer);
 	}
 
+public:
 	uint8_t n_ploidy;
 	uint32_t n_ac_af;
 	uint32_t n_fs;
@@ -746,7 +744,8 @@ struct yon_gt_summary_rcd {
 	double heterozygosity;
 };
 
-struct yon_gt_summary{
+struct yon_gt_summary {
+public:
 	yon_gt_summary(void) :
 		n_ploidy(0),
 		n_alleles(0),

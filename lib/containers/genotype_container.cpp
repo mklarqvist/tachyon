@@ -6,7 +6,7 @@
 namespace tachyon{
 namespace containers{
 
-GenotypeContainer::GenotypeContainer(const block_type& block, const MetaContainer& meta) :
+GenotypeContainer::GenotypeContainer(const block_type& block, const meta_container_type& meta) :
 	n_entries(0),
 	__meta_container(block),
 	__iterators(nullptr)

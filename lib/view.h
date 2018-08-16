@@ -322,9 +322,6 @@ int view(int argc, char** argv){
 
 	reader.GetSettings() = settings;
 
-	tachyon::algorithm::Timer timer;
-	timer.Start();
-
 	if(settings.show_header) reader.GetBlockSettings().show_vcf_header = true;
 	else reader.GetBlockSettings().show_vcf_header = false;
 

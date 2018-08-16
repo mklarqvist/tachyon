@@ -55,9 +55,7 @@ int stats(int argc, char** argv){
 		{0,0,0,0}
 	};
 
-	std::string input;
-	std::string output;
-	std::string keychain_file;
+	tachyon::VariantReaderSettings settings;
 	SILENT = 0;
 
 	while ((c = getopt_long(argc, argv, "i:o:k:s?", long_options, &option_index)) != -1){
@@ -66,13 +64,13 @@ int stats(int argc, char** argv){
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
 		case 'i':
-			input = std::string(optarg);
+			settings.input = std::string(optarg);
 			break;
 		case 'o':
-			output = std::string(optarg);
+			settings.output = std::string(optarg);
 			break;
 		case 'k':
-			keychain_file = std::string(optarg);
+			settings.keychain_file = std::string(optarg);
 			break;
 		case 's':
 			SILENT = 1;
@@ -83,7 +81,7 @@ int stats(int argc, char** argv){
 		}
 	}
 
-	if(input.length() == 0){
+	if(settings.input.length() == 0){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
@@ -91,26 +89,20 @@ int stats(int argc, char** argv){
 	// Print messages
 	if(!SILENT){
 		programMessage();
-		std::cerr << tachyon::utility::timestamp("LOG") << "Calling view..." << std::endl;
+		std::cerr << tachyon::utility::timestamp("LOG") << "Calling stats..." << std::endl;
 	}
 
 	tachyon::VariantReader reader;
+	reader.GetSettings() = settings;
 
-	if(!reader.open(input)){
+	if(!reader.open(settings.input)){
 		std::cerr << "failed to open" << std::endl;
 		return 1;
 	}
 
-	U32 block_counter = 0;
-	std::vector<tachyon::core::TsTvObject> global_titv(reader.GetGlobalHeader().GetNumberSamples());
-	while(reader.NextBlock()){
-		//reader.getTiTVRatios(global_titv);
-	}
+	reader.GetBlockSettings().LoadMinimumVcf(true).LoadGenotypes(true);
 
-	std::cout << "Sample\tTransversions\tTransitions\tTiTV\tAA\tAT\tAG\tAC\tTA\tTT\tTG\tTC\tGA\tGT\tGG\tGC\tCA\tCT\tCG\tCC\ttotalVariants\tn_insertions\n";
-	for(U32 i = 0; i < global_titv.size(); ++i){
-		std::cout << reader.GetGlobalHeader().samples_[i] << '\t' << global_titv[i] << '\n';
-	}
+	reader.Stats();
 
 	return 0;
 }

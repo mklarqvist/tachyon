@@ -2,6 +2,185 @@
 
 namespace tachyon{
 
+yon_gt_ppa::yon_gt_ppa(void) : n_samples(0), ordering(nullptr){}
+yon_gt_ppa::yon_gt_ppa(const uint32_t n_samples) : n_samples(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
+yon_gt_ppa::~yon_gt_ppa(void){ delete [] this->ordering; }
+
+void yon_gt_ppa::Allocate(const uint32_t n_samples){
+	delete [] this->ordering;
+	this->n_samples = n_samples;
+	this->ordering = new uint32_t[n_samples];
+	this->reset();
+}
+
+void yon_gt_ppa::reset(void){
+	for(U32 i = 0; i < this->n_samples; ++i)
+		this->ordering[i] = i;
+}
+
+io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
+	io::DeserializePrimitive(ppa.n_samples, buffer);
+	ppa.ordering = new uint32_t[ppa.n_samples];
+	for(U32 i = 0; i < ppa.n_samples; ++i)
+		io::DeserializePrimitive(ppa.ordering[i], buffer);
+
+	return(buffer);
+}
+
+io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
+	io::SerializePrimitive(ppa.n_samples, buffer);
+	for(U32 i = 0; i < ppa.n_samples; ++i)
+		io::SerializePrimitive(ppa.ordering[i], buffer);
+
+	return(buffer);
+}
+
+yon_radix_gt::yon_radix_gt() :
+	n_ploidy(0),
+	n_allocated(4),
+	id(0),
+	alleles(new uint16_t[this->n_allocated])
+{
+	memset(this->alleles, 0, sizeof(uint16_t)*this->n_allocated);
+}
+
+yon_radix_gt::~yon_radix_gt(){ delete [] this->alleles; }
+
+yon_radix_gt::yon_radix_gt(const yon_radix_gt& other) :
+	n_ploidy(other.n_ploidy),
+	n_allocated(other.n_allocated),
+	id(other.id),
+	alleles(new uint16_t[this->n_allocated])
+{
+	memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
+}
+
+yon_radix_gt::yon_radix_gt(yon_radix_gt&& other) :
+	n_ploidy(other.n_ploidy),
+	n_allocated(other.n_allocated),
+	id(other.id),
+	alleles(other.alleles)
+{
+	other.alleles = nullptr;
+}
+
+yon_radix_gt& yon_radix_gt::operator=(const yon_radix_gt& other) // copy assignment
+{
+	this->id = other.id;
+	this->n_ploidy = other.n_ploidy;
+	this->n_allocated = other.n_allocated;
+	delete [] this->alleles;
+	this->alleles = new uint16_t[this->n_allocated];
+	memcpy(this->alleles, other.alleles, sizeof(uint16_t)*this->n_allocated);
+	return *this;
+}
+
+yon_radix_gt& yon_radix_gt::operator=(yon_radix_gt&& other) // move assignment
+{
+	if(this!=&other) // prevent self-move
+	{
+		this->id = other.id;
+		this->n_ploidy = other.n_ploidy;
+		this->n_allocated = other.n_allocated;
+		delete [] this->alleles;
+		this->alleles = other.alleles;
+		other.alleles = nullptr;
+	}
+	return *this;
+}
+
+bool yon_radix_gt::operator<(const yon_radix_gt& other) const{
+	// Do not compare incremental sample identification
+	// numbers as that is not the desired outcome of
+	// the sort.
+	if(this->n_ploidy < other.n_ploidy) return true;
+	if(other.n_ploidy < this->n_ploidy) return false;
+
+	for(U32 i = 0; i < this->n_ploidy; ++i){
+		if(this->alleles[i] < other.alleles[i])
+			return true;
+	}
+	return false;
+}
+
+bool yon_radix_gt::operator==(const yon_radix_gt& other) const{
+	// Do not compare incremental sample identification
+	// numbers as that is not the desired outcome of
+	// the comparison.
+	if(this->n_ploidy != other.n_ploidy)
+		return false;
+
+	for(U32 i = 0; i < this->n_ploidy; ++i){
+		if(this->alleles[i] != other.alleles[i])
+			return false;
+	}
+	return true;
+}
+
+std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype){
+	stream << genotype.id << ":";
+	if(genotype.n_ploidy){
+		stream << genotype.alleles[0];
+		for(U32 i = 1; i < genotype.n_ploidy; ++i){
+			stream << "," << genotype.alleles[i];
+		}
+	}
+	return(stream);
+}
+
+U64 yon_radix_gt::GetPackedInteger(const uint8_t& shift_size) const{
+	U64 packed = 0;
+	for(U32 i = 0; i < this->n_ploidy; ++i){
+		packed <<= shift_size;
+		assert(((this->alleles[i] << shift_size) >> shift_size) == this->alleles[i]);
+		packed |= (this->alleles[i] & ((1 << shift_size)) - 1);
+	}
+	return packed;
+}
+
+void yon_radix_gt::resize(const uint8_t new_ploidy){
+	uint16_t* temp = new uint16_t[new_ploidy];
+	memcpy(temp, this->alleles, this->n_allocated * sizeof(uint16_t));
+	delete [] this->alleles;
+	this->alleles = temp;
+	this->n_allocated = new_ploidy;
+}
+
+yon_gt_rcd::yon_gt_rcd() : run_length(0), allele(nullptr){}
+yon_gt_rcd::~yon_gt_rcd(){ delete [] this->allele; }
+yon_gt_rcd::yon_gt_rcd(yon_gt_rcd&& other) :
+		run_length(other.run_length),
+		allele(other.allele)
+{
+	other.allele = nullptr;
+}
+
+yon_gt_rcd& yon_gt_rcd::operator=(yon_gt_rcd&& other){
+	if(this == &other) return(*this);
+	delete this->allele;
+	this->allele = other.allele;
+	other.allele = nullptr;
+	this->run_length = other.run_length;
+	return(*this);
+}
+
+io::BasicBuffer& yon_gt_rcd::PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
+	if(this->allele[0] == 1){
+		buffer += '.';
+		return(buffer);
+	}
+	if(this->allele[0] == 0) buffer += '.';
+	else buffer.AddReadble(((this->allele[0] >> 1) - 2));
+
+	for(U32 i = 1; i < n_ploidy; ++i){
+		if(this->allele[i] == 1) break;
+		buffer += ((this->allele[i] & 1) ? '|' : '/');
+		if(this->allele[i] == 0) buffer += '.';
+		else buffer.AddReadble(((this->allele[i] >> 1) - 2));
+	}
+	return(buffer);
+}
+
 yon_gt::~yon_gt(){
 	delete [] d_bcf;
 	delete [] d_bcf_ppa,

@@ -78,7 +78,7 @@ public:
 	inline const_pointer end(void) const{ return(this->entries_[this->n_entries_]); }
 
 	void resize(const size_t new_size);
-	bool GetVariants(const int32_t n_variants, const int64_t n_bases, std::unique_ptr<io::VcfReader>& reader);
+	bool GetVariants(const int32_t n_variants, const int64_t n_bases, std::unique_ptr<io::VcfReader>& reader, const int unpack_level = BCF_UN_ALL);
 
 	// Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
 	// Warning: this function does NOT check if the FORMAT field GT exists either

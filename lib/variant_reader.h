@@ -34,6 +34,8 @@
 #include "utility/support_vcf.h"
 #include "io/basic_reader.h"
 
+#include "core/ts_tv_object.h"
+
 namespace tachyon{
 
 class VariantReader{
@@ -183,7 +185,7 @@ public:
 	 * Seeks to a specific YON block without loading anything.
 	 * This allows the user to seek to a specific block and
 	 * change the block_settings (i.e. what fields to load) and
-	 * then invoke nextBlock() for example.
+	 * then invoke NextBlock() for example.
 	 * @param blockID
 	 * @return
 	 */
@@ -236,6 +238,8 @@ public:
 	 * format.
 	 */
 	void UpdateHeaderView(void);
+
+	bool Stats(void);
 
 private:
 	basic_reader_type       basic_reader;

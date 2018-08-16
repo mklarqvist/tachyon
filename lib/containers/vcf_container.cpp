@@ -52,7 +52,8 @@ void VcfContainer::resize(const size_t new_size){
 
 bool VcfContainer::GetVariants(const int32_t n_variants,
                                const int64_t n_bases,
-                               std::unique_ptr<io::VcfReader>& reader)
+                               std::unique_ptr<io::VcfReader>& reader,
+							   const int unpack_level)
 {
 	// Make sure enough records are available for
 	// overloading. If this is not the case we
@@ -70,7 +71,7 @@ bool VcfContainer::GetVariants(const int32_t n_variants,
 	// the bcf1_t record.
 	VcfContainer::pointer bcf1_ = this->end();
 	if(bcf1_ == nullptr) bcf1_  = bcf_init();
-	if(reader->next(bcf1_) == false)
+	if(reader->next(bcf1_, unpack_level) == false)
 		return false;
 
 	// Push the overloaded bcf1_t structure to this
@@ -94,7 +95,7 @@ bool VcfContainer::GetVariants(const int32_t n_variants,
 		bcf1_ = this->end();
 		if(bcf1_ == nullptr) bcf1_  = bcf_init();
 
-		if(reader->next(bcf1_) == false)
+		if(reader->next(bcf1_, unpack_level) == false)
 			return(this->size());
 
 		*this += bcf1_;

@@ -119,9 +119,10 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 
 		// Iterate over all available samples.
 		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
-			this->gt_pattern[s].n_ploidy = base_ploidy;
-			this->gt_pattern[s].id = s;
-			assert(base_ploidy < gt_pattern[s].n_allocated);
+			yon_radix_gt& target_pattern = this->gt_pattern[s];
+			target_pattern.n_ploidy = base_ploidy;
+			target_pattern.id = s;
+			//assert(base_ploidy < gt_pattern[s].n_allocated);
 			// Iterate over the ploidy for this sample and update
 			// the allele for that chromosome in the pattern helper
 			// structure.
@@ -129,7 +130,7 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 				const uint8_t repacked = (this->gt_remap[gt[gt_offset] >> 1] << 1) | (gt[gt_offset] & 1);
 				assert((repacked >> 1) <= largest_n_alleles);
 				assert(repacked < largest_n_alleles_binary);
-				this->gt_pattern[s].alleles[a] = repacked;
+				target_pattern.alleles[a] = repacked;
 			}
 		}
 		assert(gt_offset == bcf->d.fmt[0].p_len);
@@ -138,19 +139,21 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 		// to different bins according to their bitpacked values.
 		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
 			// Hash the pattern of alleles
-			const U64 hash_pattern = XXH64(this->gt_pattern[this->permutation_array[s]].alleles,
-			                               sizeof(uint16_t) * this->gt_pattern[this->permutation_array[s]].n_ploidy,
+			yon_radix_gt& target_pattern = this->gt_pattern[this->permutation_array[s]];
+			const U64 hash_pattern = XXH64(target_pattern.alleles,
+			                               sizeof(uint16_t) * target_pattern.n_ploidy,
 			                               651232);
+
 			// Update const_iterators for the hash mapper.
 			it  = bin_used_map.find(hash_pattern);
 			end = bin_used_map.cend();
 			if(it == end){ // Case: does not exist in map.
 				bin_used_map[hash_pattern] = bin_used.size();
 				bin_used.push_back(std::vector<yon_radix_gt*>());
-				bin_used.back().push_back(&this->gt_pattern[this->permutation_array[s]]);
-				bin_used_packed_integer.push_back(this->gt_pattern[this->permutation_array[s]].GetPackedInteger(shift_size));
+				bin_used.back().push_back(&target_pattern);
+				bin_used_packed_integer.push_back(target_pattern.GetPackedInteger(shift_size));
 			} else { // Case: exist in map.
-				bin_used[it->second].push_back(&this->gt_pattern[this->permutation_array[s]]);
+				bin_used[it->second].push_back(&target_pattern);
 			}
 		}
 
@@ -163,7 +166,7 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 		U32 n_sample_c = 0;
 		for(U32 s = 0; s < sort_helper.size(); ++s){
 			for(U32 k = 0; k < bin_used[sort_helper[s].second].size(); ++k, ++n_sample_c){
-				permutation_array[n_sample_c] = bin_used[sort_helper[s].second][k]->id;
+				this->permutation_array[n_sample_c] = bin_used[sort_helper[s].second][k]->id;
 			}
 		}
 		assert(n_sample_c == this->GetNumberSamples());
