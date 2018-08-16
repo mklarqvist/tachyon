@@ -189,6 +189,14 @@ public:
 	 */
 	bool SeekBlock(const U32& blockID);
 
+	/**<
+	 * Open a yon encryption keychain and store the loaded object
+	 * in this reader.
+	 * @param path File path to archive.
+	 * @return     Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool LoadKeychainFile(void);
+
 	U64 OutputRecords(void);
 	U64 OutputVcfLinear(void);
 	U64 OutputVcfSearch(void);
@@ -220,63 +228,14 @@ public:
 		return(this->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
 	}
 
-
 	/**<
-	 *
-	 * @param path
-	 * @return
+	 * Adds provenance tracking information to the yon header. This data
+	 * corresponds to the version of tachyon, versions of the linked
+	 * libraries, the literal command line provided to the tachyon view
+	 * subroutine, and the internal interpreted setting used in JSON
+	 * format.
 	 */
-	bool LoadKeychainFile(void){
-		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
-			return false;
-		}
-
-		keychain_reader >> this->keychain;
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
-			return false;
-		}
-		return true;
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 */
-	void PrintHeaderVCF(std::ostream& stream = std::cout){
-		this->global_header.literals_ += "##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-		                             +   SSLeay_version(SSLEAY_VERSION) + ","
-		                             +  "ZSTD-" + ZSTD_versionString()
-		                             +  "; timestamp=" + tachyon::utility::datetime() + "\n";
-
-		this->global_header.literals_ += "##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		this->global_header.literals_ += this->GetSettings().get_settings_string();
-		this->global_header.literals_ += '\n';
-
-		this->global_header.PrintVcfHeader(stream);
-	}
-
-
-	//<----------------- EXAMPLE FUNCTIONS -------------------------->
-
-
-	/*
-			if(target_flag_set & 512){
-				// Classify
-				buffer += ";VT=";
-				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), 1)];
-
-				for(U32 p = 2; p < objects.meta_container->at(position).n_alleles; ++p){
-					buffer += ',';
-					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), p)];
-				}
-			}
-			*/
-
-
+	void UpdateHeaderView(void);
 
 private:
 	basic_reader_type       basic_reader;

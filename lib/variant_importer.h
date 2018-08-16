@@ -41,11 +41,12 @@ public:
 	~VariantImporterSettings() = default;
 
 	std::string GetInterpretedString(void) const{
-		return(std::string("##tachyon_importInterpretedCommand=input_file=" + this->input_file +
-		   ";output_prefix=" + this->output_prefix +
-		   ";checkpoint_snps=" + std::to_string(this->checkpoint_n_snps) +
-		   ";checkpoint_bases=" + std::to_string(this->checkpoint_bases) +
-		   ";compression_level=" + std::to_string(this->compression_level)
+		return(std::string("{\"input_file\":\"" + this->input_file +
+		   "\",\"output_prefix\":\"" + this->output_prefix +
+		   "\",\"checkpoint_snps\":" + std::to_string(this->checkpoint_n_snps) +
+		   ",\"checkpoint_bases\":" + std::to_string(this->checkpoint_bases) +
+		   ",\"compression_level\":" + std::to_string(this->compression_level) +
+		   "}"
 		));
 	}
 
@@ -77,12 +78,9 @@ private:
 	typedef VariantImportWriterFile         writer_file_type;
 	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
-
 	typedef index::IndexEntry               index_entry_type;
-
 	typedef io::VcfReader                   vcf_reader_type;
 	typedef containers::VcfContainer        vcf_container_type;
-
 	typedef algorithm::CompressionManager   compression_manager_type;
 	typedef algorithm::GenotypeSorter       radix_sorter_type;
 	typedef algorithm::GenotypeEncoder      gt_encoder_type;
@@ -100,11 +98,12 @@ public:
 	~VariantImporter();
 
 	bool Build();
-
-	void SetWriterTypeFile(void){ this->writer = new writer_file_type; }
-	void SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+	bool BuildParallel();
 
 	void clear(void);
+
+	inline void SetWriterTypeFile(void){ this->writer = new writer_file_type; }
+	inline void SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 private:
 	bool BuildVCF();
@@ -123,6 +122,7 @@ private:
 	bool WriteFinal(algorithm::VariantDigestManager& checksums);
 	bool WriteKeychain(const encryption::Keychain<>& keychain);
 	bool WriteYonHeader();
+	void UpdateHeaderImport(VariantHeader& header);
 	bool GenerateIdentifiers(void);
 
 private:

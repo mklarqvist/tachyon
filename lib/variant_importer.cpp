@@ -23,7 +23,8 @@ void VariantImporter::clear(){
 }
 
 bool VariantImporter::Build(){
-	if(!this->BuildVCF()){
+	//if(!this->BuildVCF()){
+	if(!this->BuildParallel()){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
@@ -203,13 +204,145 @@ bool VariantImporter::BuildVCF(void){
 	return(true);
 }
 
+bool VariantImporter::BuildParallel(void){
+	// Retrieve a unique VcfReader.
+	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
+	if(this->vcf_reader_ == nullptr){
+		return false;
+	}
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
+		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
+			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig. Setting to INT32_MAX." << std::endl;
+			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<S32>::max();
+		}
+	}
+
+	// Remap the global IDX fields in Vcf to the appropriate incremental order.
+	// This is useful in the situations when fields have been removed or added
+	// to the Vcf header section without reformatting the file.
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
+		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
+		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
+		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
+
+	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
+		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
+
+	// Predicate of a search for "GT" FORMAT field in the Vcf header.
+	this->GT_available_ = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
+
+	// Predicate of a search for "END" INFO field in the Vcf header.
+	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
+	if(vcf_info_end != nullptr)
+		this->settings_.info_end_key = vcf_info_end->idx;
+
+	// Allocate a new writer.
+	if(this->settings_.output_prefix.size() == 0 ||
+	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
+	{
+		this->writer = new writer_stream_type;
+	}
+	else this->writer = new writer_file_type;
+
+	// Open a file handle or standard out for writing.
+	if(!this->writer->open(this->settings_.output_prefix)){
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
+		return false;
+	}
+
+	// Setup the encryption container.
+	encryption::EncryptionDecorator encryption_manager;
+	encryption::Keychain<> keychain;
+
+	// Setup the checksums container.
+	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC   + 1, // Add one for global checksum.
+			this->vcf_reader_->vcf_header_.info_fields_.size()   + 1,
+			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
+
+	// The index needs to know how many contigs that's described in the
+	// Vcf header and their lenghts. This information is needed to construct
+	// the linear and quad-tree index most appropriate for the data.
+	this->writer->index.Add(this->vcf_reader_->vcf_header_.contigs_);
+
+	// Write out a fresh Tachyon header with the data from the Vcf header. As
+	// this data will not be modified during the import stage it is safe to
+	// write out now.
+	this->writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
+	this->WriteYonHeader();
+
+	// Setup genotype permuter and genotype encoder.
+	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
+
+	// Allocate containers and offsets for this file.
+	// This is not strictly necessary but prevents nasty resize
+	// calls in most cases.
+	this->block.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size(),
+	                     this->vcf_reader_->vcf_header_.format_fields_.size(),
+	                     this->vcf_reader_->vcf_header_.filter_fields_.size());
+
+	// Resize containers
+	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
+	this->block.resize(resize_to);
+
+	// Start porgress timer.
+	algorithm::Timer timer; timer.Start();
+
+	uint32_t c_offset = 0;
+	uint32_t n_containers = std::thread::hardware_concurrency();
+	vcf_container_type* c = new vcf_container_type[n_containers];
+
+	uint64_t n_entries_a = 0;
+	uint64_t n_entries_b = 0;
+	// Iterate over all available variants in the file or until encountering
+	// an error.
+	while(true){
+		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
+		// after retrieving a set number of variants or if the interval between
+		// the smallest and largest variant exceeds some distance in base pairs.
+		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
+		                                    this->settings_.checkpoint_bases,
+		                                    this->vcf_reader_) == false)
+		{
+			break;
+		}
+		std::cerr << "got entries" << std::endl;
+		n_entries_a += this->vcf_container_.sizeWithoutCarryOver();
+
+		if(c_offset == n_containers) c_offset = 0;
+		std::cerr << "before: " << this->vcf_container_.size() << "@" << c_offset << "/" << n_containers << std::endl;
+		c[c_offset] = std::move(this->vcf_container_);
+		std::cerr << c[c_offset].size() << " and " << this->vcf_container_.size() << std::endl;
+		n_entries_b += c[c_offset].sizeWithoutCarryOver();
+		++c_offset;
+	}
+	std::cerr << n_entries_a << "==" << n_entries_b << std::endl;
+
+	delete [] c;
+
+	// All done
+	return(true);
+}
+
 bool VariantImporter::AddRecords(const vcf_container_type& container){
+	// Allocate memory for the meta entries.
 	meta_type* meta_entries = static_cast<meta_type*>(::operator new[](container.sizeWithoutCarryOver() * sizeof(meta_type)));
+
+	// Iterate over the Vcf container and invoke the meta entry
+	// ctor with the target htslib bcf1_t entry provided. Internally
+	// converts the bcf1_t data members into the allelic structure
+	// that tachyon uses.
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		// Transmute a bcf record into a meta structure
 		new( meta_entries + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
 
-		// Add the record data
+		// Add the record data from the target bcf1_t entry to the
+		// block byte streams.
 		if(this->AddRecord(container, i, meta_entries[i]) == false)
 			return false;
 	}
@@ -217,9 +350,11 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 	// Add FORMAT:GT field data.
 	this->encoder.Encode(container, meta_entries, this->block, this->permutator.permutation_array);
 
-	// Add meta records to the block buffers
+	// Interleave meta records out to the destination block byte
+	// streams.
 	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries[i];
 
+	// Invoke destructor for meta entries.
 	for(std::size_t i = 0; i < container.sizeWithoutCarryOver(); ++i) (meta_entries + i)->~MetaEntry();
 	::operator delete[](static_cast<void*>(meta_entries));
 
@@ -227,14 +362,20 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 }
 
 bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta){
+	// Ascertain that the provided position does not exceed the maximum
+	// reported length of the target contig.
 	if(container.at(position)->pos > this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases){
-		std::cerr << utility::timestamp("ERROR", "IMPORT") << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->name << ':' << container.at(position)->pos + 1 << " > reported max size of contig (" << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases + 1 << ")..." << std::endl;
+		std::cerr << utility::timestamp("ERROR", "IMPORT") <<
+				this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->name << ':' << container.at(position)->pos + 1 <<
+				" > reported max size of contig (" << this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases + 1 << ")..." << std::endl;
 		return false;
 	}
 
+	// Add Filter and Info data.
 	if(this->AddVcfFilterInfo(container.at(position), meta) == false) return false;
 	if(this->AddVcfInfo(container.at(position), meta) == false) return false;
 
+	// Add Format data.
 	if(container.at(position)->n_fmt){
 		if(this->AddVcfFormatInfo(container.at(position), meta) == false) return false;
 
@@ -246,6 +387,7 @@ bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 p
 			meta.controller.gt_available = true;
 	}
 
+	// Update the tachyon index.
 	if(this->IndexRecord(container.at(position), meta) == false) return false;
 	return true;
 }
@@ -258,6 +400,8 @@ bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	// set-membership tests.
 	std::vector<int> filter_ids;
 	const int& n_filter_fields = record->d.n_flt;
+
+	// Iterate over available Filter fields.
 	for(U32 i = 0; i < n_filter_fields; ++i){
 		const int& hts_filter_key = record->d.flt[i]; // htslib IDX value
 		const U32 global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
@@ -273,6 +417,8 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	// Add INFO fields to the block
 	std::vector<int> info_ids;
 	const int n_info_fields = record->n_info;
+
+	// Iterate over available Info fields.
 	for(U32 i = 0; i < n_info_fields; ++i){
 		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
 		const U32 global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
@@ -331,9 +477,10 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 }
 
 bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
-	// Add FORMAT fields to the block
 	std::vector<int> format_ids;
 	const int n_format_fields = record->n_fmt;
+
+	// Iterate over available Format fields.
 	for(U32 i = 0; i < n_format_fields; ++i){
 		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
 		const U32 global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
@@ -446,7 +593,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 				case(BCF_BT_INT16): end = *reinterpret_cast<int16_t*>(record->d.info[i].vptr); break;
 				case(BCF_BT_INT32): end = *reinterpret_cast<int32_t*>(record->d.info[i].vptr); break;
 				default:
-					std::cerr << "Illegal END primitive type: " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
+					std::cerr << utility::timestamp("ERROR","INDEX") << "Illegal END primitive type: " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
 					return false;
 				}
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << record->pos + 1 << std::endl;
@@ -485,7 +632,9 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// in the index then many more blocks would have to be searched for each
 		// query as the few will dominate the many.
 		else {
-			index_bin = this->writer->index.index_[meta.contigID].add(record->pos, record->pos, (U32)this->writer->index.current_block_number());
+			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
+			                                                          record->pos,
+			                                                          (U32)this->writer->index.current_block_number());
 			//index_bin = 0;
 			//std::cerr << "fallback: " << record->pos+1 << std::endl;
 		}
@@ -527,7 +676,7 @@ bool VariantImporter::WriteBlock(){
 	this->block.PackFooter(); // Pack footer into buffer.
 	this->compression_manager.zstd_codec.Compress(block.footer_support);
 	this->writer->WriteBlockFooter(this->block.footer_support);
-	this->writer->WriteEndOfBlock(); // End-of-block marker
+	this->writer->WriteEndOfBlock(); // End-of-block marker.
 	this->UpdateIndex(); // Update index.
 	return(this->writer->stream->good());
 }
@@ -536,6 +685,7 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 	// Done importing
 	this->writer->stream->flush();
 
+	// Write global footer.
 	core::Footer footer;
 	footer.offset_end_of_data = this->writer->stream->tellp();
 	footer.n_blocks           = this->writer->n_blocks_written;
@@ -543,14 +693,14 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 	assert(footer.n_blocks == this->writer->index.GetLinearSize());
 
 	U64 last_pos = this->writer->stream->tellp();
-	this->writer->writeIndex(); // Write index
+	this->writer->writeIndex(); // Write index.
 	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
-	checksums.finalize();       // Finalize SHA-512 digests
+	checksums.finalize();       // Finalize SHA-512 digests.
 	*this->writer->stream << checksums;
 	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
-	*this->writer->stream << footer;
+	*this->writer->stream << footer; // Write global footer and EOF marker.
 	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 
 	this->writer->stream->flush();
@@ -558,7 +708,7 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 }
 
 bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
-	// Write keychain
+	// Write encryption keychain.
 	if(this->settings_.encrypt_data){
 		if(this->settings_.output_prefix.size()){
 			std::ofstream writer_keychain;
@@ -582,8 +732,14 @@ bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 }
 
 bool VariantImporter::WriteYonHeader(){
+	// Transmute a htslib-styled vcf header into a tachyon
+	// header.
 	VariantHeader yon_header(this->vcf_reader_->vcf_header_);
+	// Update the extra provenance fields in the new header.
+	this->UpdateHeaderImport(yon_header);
 
+	// Pack header into a byte-stream, compress it, and write
+	// it out.
 	io::BasicBuffer temp(500000);
 	io::BasicBuffer temp_cmp(temp);
 	temp << yon_header;
@@ -595,6 +751,26 @@ bool VariantImporter::WriteYonHeader(){
 	this->writer->stream->write(temp_cmp.data(), l_c_data);
 	return(this->writer->stream->good());
 }
+
+void VariantImporter::UpdateHeaderImport(VariantHeader& header){
+		io::VcfExtra e;
+		e.key = "tachyon_importVersion";
+		e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+		e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+				+   SSLeay_version(SSLEAY_VERSION) + ","
+				+  "ZSTD-" + ZSTD_versionString()
+				+  "; timestamp=" + tachyon::utility::datetime();
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+		e.key = "tachyon_importCommand";
+		e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+		e.key = "tachyon_importSettings";
+		e.value = this->settings_.GetInterpretedString();
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+	}
 
 bool VariantImporter::GenerateIdentifiers(void){
 	BYTE RANDOM_BYTES[32];

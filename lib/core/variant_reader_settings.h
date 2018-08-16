@@ -32,7 +32,7 @@ public:
 	 */
 	inline std::string get_settings_string(void) const{
 		return(std::string(
-		"##tachyon_viewCommandSettings={"
+		"{"
 		"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
 		",\"output\":" + (this->output.length() ? "\"" + this->output + "\"" : "null") +
 		",\"keychain_file\":" + (this->keychain_file.length() ? "\"" + this->keychain_file + "\"" : "null") +

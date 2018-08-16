@@ -268,7 +268,8 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.PrintHeaderVCF();
+		reader.UpdateHeaderView();
+		reader.GetGlobalHeader().PrintVcfHeader(std::cout);
 		return(0);
 	}
 

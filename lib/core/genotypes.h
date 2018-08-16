@@ -20,6 +20,7 @@ namespace tachyon{
 #define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> ((SHIFT) + 1)) & (((U64)1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & (((U64)1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
+#define YON_GT_BCF1(ALLELE) ((( (ALLELE) >> 1) - 1) << 1) | (ALLELE & 1)
 
 #define YON_GT_UN_NONE       0       // nothing
 #define YON_GT_UN_INT        1       // rcds
@@ -548,6 +549,7 @@ struct yon_gt {
 		else return(this->ExpandRecordsExternal(d_expe));
 	}
 
+
 	bool ExpandRecords(void){
 		assert(this->rcds != nullptr);
 
@@ -597,6 +599,13 @@ struct yon_gt {
    inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
    inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
 
+   /**<
+    * Transform lazy-evaluated Tachyon genotype encodings (d_exp)
+    * to htslib bcf1_t genotype encodings.
+    * @param rec Input bcf1_t record.
+    * @param hdr Input htslib bcf header.
+    * @return    Returns the pointer to the input bcf1_t record.
+    */
    bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) const{
 	   assert(this->d_exp != nullptr);
 
@@ -606,7 +615,7 @@ struct yon_gt {
 		   for(U32 j = 0; j < this->m; ++j, ++gt_offset){
 			   if(this->d_exp[i]->allele[j] == 0)      tmpi[gt_offset] = 0;
 			   else if(this->d_exp[i]->allele[j] == 1) tmpi[gt_offset] = 1;
-			   else tmpi[gt_offset] = (((this->d_exp[i]->allele[j] >> 1) - 1) << 1) | (this->d_exp[i]->allele[j] & 1);
+			   else tmpi[gt_offset] = YON_GT_BCF1(this->d_exp[i]->allele[j]);
 		   }
 	   }
 	   assert(gt_offset == this->n_s*this->m);
@@ -820,9 +829,9 @@ struct yon_gt_summary{
 	 */
 	bool LazyEvaluate(void);
 
-	uint8_t   n_ploidy; // base ploidy at site
-	uint8_t   n_alleles; // number of alleles
-	uint64_t* alleles; // allele counts
+	uint8_t    n_ploidy; // base ploidy at site
+	uint8_t    n_alleles; // number of alleles
+	uint64_t*  alleles; // allele counts
 	uint64_t** alleles_strand; // allelic counts per chromosome
 	yon_gt_summary_obj* gt; // full genotypic trie with branch-size n_alleles
 	yon_gt_summary_rcd* d; // lazy evaluated record

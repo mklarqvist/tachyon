@@ -133,7 +133,7 @@ inline U32 permuteByteBits(const char* const  data,
 
 inline U32 unpermuteByteBits(char* data,
                              const U32  size,
-                                  char* destination)
+                             char* destination)
 {
 	if(size == 0) return 0;
 	//U32 internal_size = size + (32-size%32); // Balance bytes

@@ -179,6 +179,21 @@ bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	return(this->NextBlock());
 }
 
+bool VariantReader::LoadKeychainFile(void){
+	std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
+	if(!keychain_reader.good()){
+		std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
+		return false;
+	}
+
+	keychain_reader >> this->keychain;
+	if(!keychain_reader.good()){
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
+		return false;
+	}
+	return true;
+}
+
 TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const U32& allele) const{
 	const S32 ref_size = meta.alleles[0].size();
 	const S32 diff = ref_size - meta.alleles[allele].size();
@@ -441,6 +456,7 @@ U64 VariantReader::OutputVcfSearch(void){
 }
 
 U64 VariantReader::OutputRecords(void){
+	this->UpdateHeaderView();
 	this->interval_container.Build(this->global_header);
 
 	if(this->settings.use_htslib){
@@ -659,6 +675,26 @@ void VariantReader::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 			bcf_update_filter(hdr, rec, &tmpi, 1);
 		}
 	}
+}
+
+void VariantReader::UpdateHeaderView(void){
+	io::VcfExtra e;
+	e.key = "tachyon_viewVersion";
+	e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+	e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+			+   SSLeay_version(SSLEAY_VERSION) + ","
+			+  "ZSTD-" + ZSTD_versionString()
+			+  "; timestamp=" + tachyon::utility::datetime();
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
+	e.key = "tachyon_viewCommand";
+	e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
+	e.key = "tachyon_viewCommandSettings";
+	e.value = this->GetSettings().get_settings_string();
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
 }
 
 }
