@@ -1,5 +1,6 @@
 #include "variant_reader.h"
 
+
 namespace tachyon{
 
 VariantReader::VariantReader()
@@ -13,15 +14,20 @@ VariantReader::~VariantReader(){}
 
 VariantReader::VariantReader(const self_type& other) :
 	basic_reader(other.basic_reader),
+	//variant_container(other.variant_container),
+
 	block_settings(other.block_settings),
 	settings(other.settings),
+	//variant_filters(other.variant_filters), // illeal to copy
+
 	global_header(other.global_header),
 	global_footer(other.global_footer),
 	index(other.index),
 	checksums(other.checksums),
-	keychain(other.keychain)
+	keychain(other.keychain),
+	interval_container(other.interval_container),
+	occ_table(other.occ_table)
 {
-	this->basic_reader.open();
 }
 
 bool VariantReader::open(void){
@@ -111,16 +117,7 @@ bool VariantReader::open(void){
 }
 
 bool VariantReader::NextBlock(){
-	// If the stream is faulty then return
-	if(!this->basic_reader.stream_.good()){
-		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
-		return false;
-	}
-
-	// If the current position is the EOF then
-	// exit the function
-	if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
-		return false;
+	if(this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
 	this->variant_container.reset();
@@ -166,20 +163,11 @@ containers::VariantBlockContainer VariantReader::ReturnBlock(void){
 	variant_container_type c;
 	c << this->GetGlobalHeader();
 
-	// If the stream is faulty then return
-	if(!this->basic_reader.stream_.good()){
-		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
-		return(c);
-	}
-
-	// If the current position is the EOF then
-	// exit the function
-	if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
-		return(c);
+	if(this->CheckNextValid() == false)
+		return c;
 
 	if(!c.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return(c);
-
 
 	if(!this->codec_manager.zstd_codec.Decompress(c.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
@@ -770,7 +758,7 @@ void VariantReader::UpdateHeaderView(void){
 }
 
 bool VariantReader::Stats(void){
-	this->variant_container.AllocateGenotypeMemory();
+	//this->variant_container.AllocateGenotypeMemory();
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 	//	return(0);
@@ -778,10 +766,33 @@ bool VariantReader::Stats(void){
 
 	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
 
+	// Todo: calculate number of blocks, partition data into these bins
 
-	while(this->NextBlock()){
-		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+	yon_stats_thread_pool pool(std::thread::hardware_concurrency());
+	for(U32 i = 0; i < pool.n_threads; ++i){
+		pool[i].tstv.n_s    = this->global_header.GetNumberSamples();
+		pool[i].tstv.sample = new yon_stats_sample[pool[i].tstv.n_s];
+	}
+
+	// stupid test
+	VariantReader v(*this);
+
+	while(v.CheckNextValid()){
+		variant_container_type c = v.ReturnBlock();
+		//variant_container_type& c = this->GetCurrentContainer();
+		c.AllocateGenotypeMemory();
+
+		// Move all data to new instance.
+		//variant_container_type c(std::move(this->variant_container));
+		//variant_container_type c;
+		//c = std::move(this->variant_container);
+		//variant_container_type c(this->variant_container);
+
+		objects_type* objects = c.LoadObjects(this->block_settings);
+		yon1_t* entries = c.LazyEvaluate(*objects);
+
+		std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
+
 		// If occ table is built.
 		//objects->occ = &occ;
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
@@ -793,19 +804,14 @@ bool VariantReader::Stats(void){
 
 			const uint32_t n_format_avail = entries[i].format_ids->size();
 			if(n_format_avail > 0 && entries[i].is_loaded_gt){
-				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
-				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
+				entries[i].gt->ExpandExternal(c.GetAllocatedGenotypeMemory());
+				s.Update(entries[i], c.GetAllocatedGenotypeMemory());
 				//s.Update(entries[i]);
 			}
 		}
 
-		std::cerr << this->variant_container.info_id_local_loaded.size() << std::endl;
-		variant_container_type c(std::move(this->variant_container));
-		std::cerr << this->variant_container.info_id_local_loaded.size() << "," << c.info_id_local_loaded.size() << std::endl;
-
-		this->variant_container = std::move(c);
-		std::cerr << this->variant_container.info_id_local_loaded.size() << "," << c.info_id_local_loaded.size() << std::endl;
-
+		// Move back.
+		//this->variant_container = std::move(c);
 
 		delete [] entries;
 		//objects->occ = nullptr;

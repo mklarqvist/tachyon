@@ -41,6 +41,7 @@ public:
 public:
 	VariantReaderFilters();
 	~VariantReaderFilters();
+
 	VariantReaderFilters(const VariantReaderFilters& other) = delete;
 
 	template <class T>

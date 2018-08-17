@@ -28,7 +28,17 @@ public:
 	BasicBuffer(const U64 size) : owns_data_(true), n_chars(0), width(size), iterator_position_(0), buffer(new char[size]){}
 	BasicBuffer(char* target, const size_t length) : owns_data_(false), n_chars(length), width(length), iterator_position_(0), buffer(target){}
 	BasicBuffer(const U64 size, char* target) : owns_data_(false), n_chars(0), width(size), iterator_position_(0), buffer(target){}
-	BasicBuffer(const self_type& other) : owns_data_(other.owns_data_), n_chars(0), width(other.width), iterator_position_(0), buffer(new char[other.width]){}
+
+	BasicBuffer(const self_type& other) :
+		owns_data_(other.owns_data_),
+		n_chars(other.n_chars),
+		width(other.width),
+		iterator_position_(other.iterator_position_),
+		buffer(new char[other.width])
+	{
+		memcpy(this->buffer, other.buffer, other.size());
+	}
+
 	virtual ~BasicBuffer(){
 		if(this->owns_data_)
 			delete [] this->buffer;
@@ -41,6 +51,7 @@ public:
 		this->width      = other.width;
 		this->iterator_position_ = other.iterator_position_;
 		this->buffer     = new char[other.width];
+		memcpy(this->buffer, other.buffer, other.size());
 		return(*this);
 	}
 

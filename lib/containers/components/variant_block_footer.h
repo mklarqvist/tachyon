@@ -81,7 +81,7 @@ struct yon_blk_bv_pair {
 	}
 
 	// Bit access
-	 inline bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+	inline bool operator[](const U32 position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
 
 
 	// Given the total number of fields allocate ceil(n_total_fields/8)
@@ -160,9 +160,8 @@ struct yon_blk_bv_pair {
 			return *this;
 		}
 
-		delete [] this->bit_bytes;
-		this->bit_bytes = other.bit_bytes;
-		other.bit_bytes = nullptr;
+		delete [] this->bit_bytes; this->bit_bytes = nullptr;
+		std::swap(this->bit_bytes, other.bit_bytes);
 		this->pattern = std::move(other.pattern);
 		this->l_bytes = other.l_bytes;
 		return(*this);

@@ -3,6 +3,96 @@
 namespace tachyon{
 namespace containers{
 
+VariantBlockContainer::VariantBlockContainer() :
+	loaded_genotypes(false),
+	header_(nullptr),
+	gt_exp(nullptr)
+{
+
+}
+
+VariantBlockContainer::VariantBlockContainer(const global_header_type& header) :
+	loaded_genotypes(false),
+	header_(&header),
+	gt_exp(nullptr)
+{
+
+}
+
+VariantBlockContainer::VariantBlockContainer(const self_type& other) :
+	loaded_genotypes(other.loaded_genotypes),
+	block_(other.block_),
+	header_(other.header_),
+	info_id_local_loaded(other.info_id_local_loaded),
+	format_id_local_loaded(other.format_id_local_loaded),
+	info_id_global_loaded(other.info_id_global_loaded),
+	format_id_global_loaded(other.format_id_global_loaded),
+	info_map_global(other.info_map_global),
+	format_map_global(other.format_map_global),
+	info_patterns_local(other.info_patterns_local),
+	format_patterns_local(other.format_patterns_local),
+	gt_exp(nullptr)
+{
+	if(other.gt_exp != nullptr){
+		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
+		for(U32 i = 0; i < this->header_->GetNumberSamples(); ++i)
+			this->gt_exp[i] = other.gt_exp[i];
+	}
+}
+
+VariantBlockContainer::VariantBlockContainer(self_type&& other) noexcept :
+	loaded_genotypes(other.loaded_genotypes),
+	block_(std::move(other.block_)),
+	header_(nullptr),
+	info_id_local_loaded(std::move(other.info_id_local_loaded)),
+	format_id_local_loaded(std::move(other.format_id_local_loaded)),
+	info_id_global_loaded(std::move(other.info_id_global_loaded)),
+	format_id_global_loaded(std::move(other.format_id_global_loaded)),
+	info_map_global(std::move(other.info_map_global)),
+	format_map_global(std::move(other.format_map_global)),
+	info_patterns_local(std::move(other.info_patterns_local)),
+	format_patterns_local(std::move(other.format_patterns_local)),
+	gt_exp(nullptr)
+{
+	std::swap(this->gt_exp, other.gt_exp);
+	std::swap(this->header_, other.header_);
+}
+
+VariantBlockContainer& VariantBlockContainer::operator=(const self_type& other){
+	delete [] this->gt_exp;
+	return *this = VariantBlockContainer(other);
+}
+
+VariantBlockContainer& VariantBlockContainer::operator=(self_type&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	this->loaded_genotypes = other.loaded_genotypes;
+	this->block_  = std::move(other.block_);
+	this->info_id_local_loaded    = std::move(other.info_id_local_loaded);
+	this->format_id_local_loaded  = std::move(other.format_id_local_loaded);
+	this->info_id_global_loaded   = std::move(other.info_id_global_loaded);
+	this->format_id_global_loaded = std::move(other.format_id_global_loaded);
+	this->info_map_global       = std::move(other.info_map_global);
+	this->format_map_global     = std::move(other.format_map_global);
+	this->info_patterns_local   = std::move(other.info_patterns_local);
+	this->format_patterns_local = std::move(other.format_patterns_local);
+	this->header_ = nullptr;
+	delete [] this->gt_exp; this->gt_exp  = nullptr;
+	std::swap(this->gt_exp, other.gt_exp);
+	std::swap(this->header_, other.header_);
+	return *this;
+}
+
+VariantBlockContainer::~VariantBlockContainer(void)
+{
+	// Do not delete header pointer as this object
+	// never owns that data.
+	delete [] this->gt_exp;
+}
+
 bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	// Clear previous information (if any).
 	this->info_id_global_loaded.clear();

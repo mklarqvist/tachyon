@@ -3,6 +3,7 @@
 
 #include <regex>
 #include <cmath>
+#include <thread>
 
 #include "zstd.h"
 #include "zstd_errors.h"
@@ -174,6 +175,21 @@ public:
 	 */
 	bool NextBlock(void);
 
+	bool CheckNextValid(void){
+		// If the stream is faulty then return
+		if(!this->basic_reader.stream_.good()){
+			std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+			return false;
+		}
+
+		// If the current position is the EOF then
+		// exit the function
+		if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+			return false;
+
+		std::cerr << (U64)this->basic_reader.stream_.tellg() << "==" << this->global_footer.offset_end_of_data << std::endl;
+		return true;
+	}
 	containers::VariantBlockContainer ReturnBlock(void);
 
 	/**<
@@ -257,6 +273,30 @@ private:
 	keychain_type           keychain;
 	interval_container_type interval_container;
 	yon_occ                 occ_table;
+};
+
+struct yon_stats_worker{
+	yon_stats_worker() : block_from(0), block_to(0), slave(nullptr), reader(nullptr){}
+	~yon_stats_worker(){
+		delete this->slave;
+	}
+
+	uint32_t block_from;
+	uint32_t block_to;
+	yon_stats_tstv tstv;
+	std::thread* slave;
+	VariantReader* reader;
+};
+
+struct yon_stats_thread_pool{
+	yon_stats_thread_pool(const uint32_t n_t) : n_threads(n_t), workers(new yon_stats_worker[n_t]){}
+	~yon_stats_thread_pool(void){ delete [] this->workers; }
+
+	inline yon_stats_worker& operator[](const uint32_t thread){ return(this->workers[thread]); }
+	inline const yon_stats_worker& operator[](const uint32_t thread) const{ return(this->workers[thread]); }
+
+	uint32_t n_threads;
+	yon_stats_worker* workers;
 };
 
 }

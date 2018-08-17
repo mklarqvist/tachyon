@@ -18,6 +18,48 @@ IntervalContainer::~IntervalContainer(void){
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
+IntervalContainer::IntervalContainer(const self_type& other) :
+	n_intervals_(other.n_intervals_),
+	n_entries_(other.n_entries_),
+    interval_strings_(other.interval_strings_),
+    interval_list_(other.interval_list_),
+    block_list_(other.block_list_),
+	__entries(static_cast<pointer>(::operator new[](this->n_entries_*sizeof(value_type))))
+{
+	for(U32 i = 0; i < this->size(); ++i)
+		new( &this->__entries[i] ) value_type( other.__entries[i] );
+}
+
+IntervalContainer::IntervalContainer(self_type&& other) noexcept :
+	n_intervals_(other.n_intervals_),
+	n_entries_(other.n_entries_),
+	interval_strings_(std::move(other.interval_strings_)),
+	interval_list_(std::move(other.interval_list_)),
+	block_list_(std::move(other.block_list_)),
+	__entries(nullptr)
+{
+	std::swap(this->__entries, other.__entries);
+}
+
+IntervalContainer& IntervalContainer::operator=(const self_type& other){
+	for(std::size_t i = 0; i < this->n_entries_; ++i)
+		(this->__entries + i)->~IntervalTree();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+	*this = IntervalContainer(other);
+	return(*this);
+}
+
+IntervalContainer& IntervalContainer::operator=(self_type&& other) noexcept{
+	for(std::size_t i = 0; i < this->n_entries_; ++i)
+		(this->__entries + i)->~IntervalTree();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+	this->__entries = nullptr;
+	*this = IntervalContainer(std::move(other));
+	return(*this);
+}
+
 // Interpret
 bool IntervalContainer::ValidateIntervalStrings(std::vector<std::string>& interval_strings){
 	if(interval_strings.size() == 0)

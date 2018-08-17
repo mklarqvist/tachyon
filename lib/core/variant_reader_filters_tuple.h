@@ -12,6 +12,7 @@ struct VariantReaderFiltersTupleInterface {
 public:
 	VariantReaderFiltersTupleInterface() : filter(false){}
 	VariantReaderFiltersTupleInterface(const bool filter) : filter(filter){}
+	VariantReaderFiltersTupleInterface(const VariantReaderFiltersTupleInterface& other) : filter(other.filter){}
 	virtual ~VariantReaderFiltersTupleInterface(){}
 
 	// Not possible to have a templated pure virtual functionality
@@ -71,6 +72,12 @@ public:
 			this->comparator = &self_type::__filterEqual;
 		}
 	}
+
+	VariantReaderFiltersTuple(const self_type& other) :
+		VariantReaderFiltersTupleInterface(other),
+		r_value(other.r_value),
+		comparator(other.comparator)
+	{}
 
 	void operator()(const ValueClass& r_value){
 		this->filter = true;
@@ -158,6 +165,13 @@ public:
 		case(YON_CMP_REGEX):         this->comparator = &self_type::__filterRegex;        break;
 		}
 	}
+
+	VariantReaderFiltersTuple(const self_type& other) :
+		VariantReaderFiltersTupleInterface(other),
+		r_value(other.r_value),
+		r_value_regex(other.r_value_regex),
+		comparator(other.comparator)
+	{}
 
 	void operator()(const std::string& r_value){
 		this->filter = true;

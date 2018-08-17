@@ -71,45 +71,16 @@ public:
 	~VariantBlockHeader();
 
 	inline const U32& size(void) const{ return(this->n_variants); }
-	inline const S32& getContigID(void) const{ return(this->contigID); }
-	inline const S64& getMinPosition(void) const{ return(this->minPosition); }
-	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
-	inline U64& getBlockID(void){ return(this->block_hash); }
-	inline const U64& getBlockID(void) const{ return(this->block_hash); }
+	inline const S32& GetContigID(void) const{ return(this->contigID); }
+	inline const S64& GetMinPosition(void) const{ return(this->minPosition); }
+	inline const S64& GetMaxPosition(void) const{ return(this->maxPosition); }
+	inline U64& GetBlockHash(void){ return(this->block_hash); }
+	inline const U64& GetBlockHash(void) const{ return(this->block_hash); }
 
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.block_hash),           sizeof(U64));
-		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(S64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(S64));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(U32));
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
 
-		return(stream);
-	}
-
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.block_hash),           sizeof(U64));
-		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(S64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(S64));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(U32));
-
-		return(stream);
-	}
-
-	void reset(void){
-		this->l_offset_footer    = 0;
-		this->block_hash         = 0;
-		this->controller.clear();
-		this->contigID           = -1;
-		this->minPosition        = 0;
-		this->maxPosition        = 0;
-		this->n_variants         = 0;
-	}
+	void reset(void);
 
 public:
 	// Allows jumping to the next block when streaming.

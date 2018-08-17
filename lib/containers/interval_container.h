@@ -35,7 +35,11 @@ public:
 
 public:
     IntervalContainer();
+    IntervalContainer(const self_type& other);
+    IntervalContainer(self_type&& other) noexcept;
     ~IntervalContainer(void);
+    IntervalContainer& operator=(const self_type& other);
+    IntervalContainer& operator=(self_type&& other) noexcept;
 
     // Element access
     inline reference at(const size_type& position){ return(this->__entries[position]); }
