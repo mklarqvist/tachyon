@@ -3,16 +3,19 @@
 
 namespace tachyon{
 
-VariantReader::VariantReader()
+VariantReader::VariantReader() :
+	b_data_start(0)
 {}
 
 VariantReader::VariantReader(const std::string& filename) :
+	b_data_start(0),
 	basic_reader(filename)
 {}
 
 VariantReader::~VariantReader(){}
 
 VariantReader::VariantReader(const self_type& other) :
+	b_data_start(other.b_data_start),
 	basic_reader(other.basic_reader),
 	//variant_container(other.variant_container),
 
@@ -28,6 +31,8 @@ VariantReader::VariantReader(const self_type& other) :
 	interval_container(other.interval_container),
 	occ_table(other.occ_table)
 {
+	this->basic_reader.stream_.seekg(this->b_data_start);
+	this->variant_container << this->global_header;
 }
 
 bool VariantReader::open(void){
@@ -102,6 +107,11 @@ bool VariantReader::open(void){
 		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;
 		return false;
 	}
+
+	// Keep track of start of data offset in the byte stream.
+	// We use this information if spawning copies of this
+	// reader object.
+	this->b_data_start = this->basic_reader.stream_.tellg();
 
 	// Add global header pointer to variant container.
 	this->variant_container << this->global_header;
@@ -764,15 +774,49 @@ bool VariantReader::Stats(void){
 	//	return(0);
 	//}
 
+	/*
+	uint32_t n_blocks = 0;
+	for(U32 i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
+		n_blocks += this->GetIndex().index_.linear_[i].size();
+	}
+	uint32_t n_threads = std::thread::hardware_concurrency();
+
+	std::cerr << "blocks: " << n_blocks << " and threads " << n_threads << std::endl;
+
+	std::vector<std::pair<uint32_t, uint32_t>> workload(n_threads);
+	uint32_t n_cumulative = 0;
+	assert(n_threads != 0);
+	uint32_t n_step_size = n_blocks / n_threads;
+	for(U32 i = 0; i < n_threads - 1; ++i){
+		workload[i] = std::pair<uint32_t, uint32_t>(n_cumulative, n_cumulative + n_step_size);
+		n_cumulative += n_step_size;
+	}
+	workload.back().first = n_cumulative;
+	workload.back().second = n_blocks;
+
+	for(U32 i = 0; i < n_threads; ++i){
+		std::cerr << i << ": " << workload[i].first << "-" << workload[i].second << std::endl;
+	}
+
+	// Final solution.
 	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
 
-	// Todo: calculate number of blocks, partition data into these bins
-
-	yon_stats_thread_pool pool(std::thread::hardware_concurrency());
-	for(U32 i = 0; i < pool.n_threads; ++i){
-		pool[i].tstv.n_s    = this->global_header.GetNumberSamples();
-		pool[i].tstv.sample = new yon_stats_sample[pool[i].tstv.n_s];
+	//
+	yon_stats_thread_pool pool(n_threads);
+	std::vector<std::thread*> threads(n_threads);
+	for(U32 i = 0; i < n_threads; ++i){
+		pool[i].reader      = new VariantReader(*this);
+		pool[i].block_from  = workload[i].first;
+		pool[i].block_to    = workload[i].second;
+		threads[i] = pool[i].Start();
 	}
+
+	for(U32 i = 0; i < n_threads; ++i) threads[i]->join();
+	std::cerr << "done joining" << std::endl;
+
+	return true;
+	*/
+	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
 
 	// stupid test
 	VariantReader v(*this);
@@ -791,6 +835,7 @@ bool VariantReader::Stats(void){
 		objects_type* objects = c.LoadObjects(this->block_settings);
 		yon1_t* entries = c.LazyEvaluate(*objects);
 
+		// Debug
 		std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
 
 		// If occ table is built.

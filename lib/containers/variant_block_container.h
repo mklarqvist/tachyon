@@ -115,7 +115,10 @@ public:
 	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
 	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
-	inline void AllocateGenotypeMemory(void){ this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()]; }
+	inline void AllocateGenotypeMemory(void){
+		delete [] this->gt_exp;
+		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
+	}
 	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
 	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
 
