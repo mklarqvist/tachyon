@@ -186,7 +186,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 			                               this->block_.base_containers[YON_BLK_PPA]);
 
 			this->block_.gt_ppa = new yon_gt_ppa;
-			this->block_.gt_ppa->n_samples = this->header_->GetNumberSamples();
+			this->block_.gt_ppa->n_s = this->header_->GetNumberSamples();
 		}
 	}
 

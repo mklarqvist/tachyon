@@ -124,7 +124,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	// Track all possible outcomes.
@@ -227,7 +227,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	// Track all possible outcomes.
@@ -379,7 +379,7 @@ yon_gt_assess GenotypeEncoder::AssessMultiploid(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	uint64_t n_runs[8]; // Number of runs.

@@ -21,7 +21,23 @@ private:
 	typedef io::BasicBuffer           buffer_type;
 
 public:
-	DataContainerHeader() : identifier(0), n_entries(0), n_additions(0), n_strides(0){}
+	DataContainerHeader() :
+		identifier(0),
+		n_entries(0),
+		n_additions(0),
+		n_strides(0)
+	{
+	}
+
+	DataContainerHeader(const self_type& other) :
+		identifier(other.identifier),
+		n_entries(other.n_entries),
+		n_additions(other.n_additions),
+		n_strides(other.n_strides)
+	{
+
+	}
+
 	~DataContainerHeader(){}
 
 	void reset(void){
@@ -43,8 +59,18 @@ public:
 		return(*this);
 	}
 
+	self_type& operator=(self_type&& other) noexcept{
+		this->identifier    = other.identifier;
+		this->n_entries     = other.n_entries;
+		this->n_additions   = other.n_additions;
+		this->n_strides     = other.n_strides;
+		this->data_header   = std::move(other.data_header);
+		this->stride_header = std::move(other.stride_header);
+		return(*this);
+	}
+
 	// Comparators
-	bool operator==(const self_type& other) const{
+	bool operator==(const self_type& other) const {
 		if(this->identifier    != other.identifier)    return false;
 		if(this->n_entries     != other.n_entries)     return false;
 		if(this->n_additions   != other.n_additions)   return false;
@@ -55,7 +81,7 @@ public:
 	}
 	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
-	self_type& operator+=(const self_type& other){
+	self_type& operator+=(const self_type& other) {
 		this->n_entries     += other.n_entries;
 		this->n_additions   += other.n_additions;
 		this->n_strides     += other.n_strides;

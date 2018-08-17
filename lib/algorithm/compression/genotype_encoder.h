@@ -245,7 +245,7 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	uint64_t n_runs = 0; // Number of runs.
@@ -310,7 +310,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	int64_t n_runs = 0; // Number of runs.
@@ -403,7 +403,7 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
 	const uint64_t limit = std::numeric_limits<YON_RLE_TYPE>::max();
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	// Remap genotype encoding such that 0 maps to missing and

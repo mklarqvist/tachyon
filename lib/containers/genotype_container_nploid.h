@@ -61,7 +61,7 @@ public:
 		x->p = sizeof(T);
 		x->n_i = this->n_entries;
 		x->method = 4;
-		x->n_s = ppa.n_samples;
+		x->n_s = ppa.n_s;
 		x->ppa = &ppa;
 		x->n_allele = this->__meta.n_alleles;
 

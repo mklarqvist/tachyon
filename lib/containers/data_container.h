@@ -25,6 +25,9 @@ public:
 	DataContainer();
 	DataContainer(const U32 start_size);
 	~DataContainer();
+	DataContainer(const self_type& other);
+	DataContainer& operator=(const self_type& other);
+	DataContainer& operator=(self_type&& other) noexcept;
 
 	/**<
 	 * Set the primitive (or higher-order primitive) type for
@@ -110,10 +113,10 @@ public:
 	bool AddCharacter(const char& value);
 	bool AddCharacter(const char* const string, const U32 l_string);
 	// Aliases
-	bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
-	bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
+	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 
 	/**<
 	 *

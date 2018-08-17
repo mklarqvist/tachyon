@@ -53,6 +53,9 @@ const std::vector< std::string > YON_GT_ANNOTATE_FIELDS = {"NM","NPM","AN","HWE_
 struct yon_gt_ppa {
 	yon_gt_ppa(void);
 	yon_gt_ppa(const uint32_t n_samples);
+	yon_gt_ppa(const yon_gt_ppa& other);
+	yon_gt_ppa(yon_gt_ppa&& other);
+
 	~yon_gt_ppa(void);
 
 	uint32_t& operator[](const uint32_t& position){ return(this->ordering[position]); }
@@ -66,7 +69,7 @@ struct yon_gt_ppa {
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa);
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa);
 
-	uint32_t  n_samples;
+	uint32_t  n_s;
 	uint32_t* ordering;
 };
 

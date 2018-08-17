@@ -34,6 +34,27 @@ public:
 			delete [] this->buffer;
 	}
 
+	self_type& operator=(const self_type& other){
+		if(this->owns_data_) delete [] this->buffer;
+		this->owns_data_ = other.owns_data_;
+		this->n_chars    = other.n_chars;
+		this->width      = other.width;
+		this->iterator_position_ = other.iterator_position_;
+		this->buffer     = new char[other.width];
+		return(*this);
+	}
+
+	self_type& operator=(self_type&& other) noexcept{
+		if(this->owns_data_) delete [] this->buffer;
+		this->buffer = nullptr;
+		std::swap(this->buffer, other.buffer);
+		this->owns_data_ = other.owns_data_;
+		this->n_chars    = other.n_chars;
+		this->width      = other.width;
+		this->iterator_position_ = other.iterator_position_;
+		return(*this);
+	}
+
 	inline reference back(void){ return(this->buffer[this->n_chars-1]); }
 	inline reference front(void){ return(this->buffer[0]); }
 	inline const_reference back(void) const{ return(this->buffer[this->n_chars-1]); }

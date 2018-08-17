@@ -53,10 +53,73 @@ public:
 		header_(&header),
 		gt_exp(nullptr)
 	{
-		delete [] this->gt_exp;
+
 	}
 
-	~VariantBlockContainer(void){
+	VariantBlockContainer(const self_type& other) :
+		loaded_genotypes(other.loaded_genotypes),
+		block_(other.block_),
+		header_(other.header_),
+		info_id_local_loaded(other.info_id_local_loaded),
+		format_id_local_loaded(other.format_id_local_loaded),
+		info_id_global_loaded(other.info_id_global_loaded),
+		format_id_global_loaded(other.format_id_global_loaded),
+		info_map_global(other.info_map_global),
+		format_map_global(other.format_map_global),
+		gt_exp(nullptr)
+	{
+		if(other.gt_exp != nullptr){
+			this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
+			for(U32 i = 0; i < this->header_->GetNumberSamples(); ++i)
+				this->gt_exp[i] = other.gt_exp[i];
+		}
+	}
+
+	VariantBlockContainer(self_type&& other) noexcept :
+		loaded_genotypes(other.loaded_genotypes),
+		block_(std::move(other.block_)),
+		header_(nullptr),
+		info_id_local_loaded(std::move(other.info_id_local_loaded)),
+		format_id_local_loaded(std::move(other.format_id_local_loaded)),
+		info_id_global_loaded(std::move(other.info_id_global_loaded)),
+		format_id_global_loaded(std::move(other.format_id_global_loaded)),
+		info_map_global(std::move(other.info_map_global)),
+		format_map_global(std::move(other.format_map_global)),
+		gt_exp(nullptr)
+	{
+		std::swap(this->gt_exp, other.gt_exp);
+		std::swap(this->header_, other.header_);
+	}
+
+	VariantBlockContainer& operator=(const self_type& other){
+		delete [] this->gt_exp;
+		return *this = VariantBlockContainer(other);
+	}
+
+	VariantBlockContainer& operator=(self_type&& other) noexcept{
+		if(this == &other){
+			// precautions against self-moves
+			return *this;
+		}
+
+		this->loaded_genotypes = other.loaded_genotypes;
+		this->block_  = std::move(other.block_);
+		this->info_id_local_loaded    = std::move(other.info_id_local_loaded);
+		this->format_id_local_loaded  = std::move(other.format_id_local_loaded);
+		this->info_id_global_loaded   = std::move(other.info_id_global_loaded);
+		this->format_id_global_loaded = std::move(other.format_id_global_loaded);
+		this->info_map_global   = std::move(other.info_map_global);
+		this->format_map_global = std::move(other.format_map_global);
+		this->header_ = nullptr;
+		this->gt_exp  = nullptr;
+		std::swap(this->gt_exp, other.gt_exp);
+		std::swap(this->header_, other.header_);
+		return *this;
+	}
+
+	~VariantBlockContainer(void)
+	{
+		delete [] this->gt_exp;
 	}
 
 	self_type& operator<<(const global_header_type& header){
@@ -146,7 +209,7 @@ public:
 
 	yon1_t* LazyEvaluate(objects_type& objects);
 
-private:
+public:
 	bool loaded_genotypes;
 	block_type                block_;
 	const global_header_type* header_;

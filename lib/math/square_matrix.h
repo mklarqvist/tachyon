@@ -126,7 +126,7 @@ SquareMatrix<T>& SquareMatrix<T>::operator*=(const self_type& other){
 
 template <class T>
 SquareMatrix<T>& SquareMatrix<T>::add(const self_type& other, const ppa_type& ppa_manager){
-	assert(ppa_manager.n_samples == this->__width);
+	assert(ppa_manager.n_s == this->__width);
 	for(U32 i = 0; i < this->__width; ++i){
 		for(U32 j = 0; j < this->__width; ++j){
 			//std::cerr << "(" << i << "," << j << ") -> (" << ppa_manager[i] << "," << ppa_manager[j] << ")" << std::endl;
@@ -138,7 +138,7 @@ SquareMatrix<T>& SquareMatrix<T>::add(const self_type& other, const ppa_type& pp
 
 template <class T>
 SquareMatrix<T>& SquareMatrix<T>::addUpperTriagonal(const self_type& other, const ppa_type& ppa_manager){
-	assert(ppa_manager.n_samples == this->__width);
+	assert(ppa_manager.n_s == this->__width);
 	for(U32 i = 0; i < this->__width; ++i){
 		const U32& pA = ppa_manager[i];
 

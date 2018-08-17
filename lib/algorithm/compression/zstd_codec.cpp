@@ -175,15 +175,15 @@ bool ZSTDCodec::CompressStrides(container_type& container){
 }
 
 bool ZSTDCodec::Compress(container_type& container, permutation_type& manager){
-	if(manager.n_samples == 0)
+	if(manager.n_s == 0)
 		return true;
 
 	container.buffer_data_uncompressed.reset();
-	container.buffer_data_uncompressed.resize(manager.n_samples*sizeof(U32) + 65536);
+	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(U32) + 65536);
 	container.buffer_data_uncompressed << manager;
 
 	this->buffer.reset();
-	this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
+	this->buffer.resize(manager.n_s*sizeof(U32) + 65536);
 
 	//const U32 in = manager.PPA.n_chars;
 	const int p_ret = permuteIntBits(container.buffer_data_uncompressed.data(),
@@ -308,8 +308,8 @@ bool ZSTDCodec::Decompress(container_type& container, permutation_type& manager)
 	this->buffer.reset();
 
 	container.buffer_data_uncompressed.reset();
-	container.buffer_data_uncompressed.resize(manager.n_samples*sizeof(U32) + 65536);
-	this->buffer.resize(manager.n_samples*sizeof(U32) + 65536);
+	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(U32) + 65536);
+	this->buffer.resize(manager.n_s*sizeof(U32) + 65536);
 	size_t ret = ZSTD_decompress(this->buffer.data(),
 								 this->buffer.capacity(),
 								 container.buffer_data.data(),

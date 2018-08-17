@@ -37,6 +37,84 @@ public:
 	VariantBlock(const uint16_t n_info, const uint16_t n_format);
 	~VariantBlock();
 
+	VariantBlock(const self_type& other) :
+		n_info_c_allocated(other.n_info_c_allocated),
+		n_format_c_allocated(other.n_info_c_allocated),
+		header(other.header),
+		footer(other.footer),
+		base_containers(new container_type[YON_BLK_N_STATIC]),
+		info_containers(new container_type[other.n_info_c_allocated]),
+		format_containers(new container_type[other.n_format_c_allocated]),
+		gt_ppa(nullptr),
+		end_block_(other.end_block_),
+		start_compressed_data_(other.start_compressed_data_),
+		end_compressed_data_(other.end_compressed_data_),
+		footer_support(other.footer_support)
+	{
+		if(other.gt_ppa != nullptr){
+			// Copy ppa data to new object.
+			this->gt_ppa = new yon_gt_ppa(*other.gt_ppa);
+		}
+
+		for(U32 i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i] = other.base_containers[i];
+		for(U32 i = 0; i < this->n_info_c_allocated; ++i)   this->info_containers[i]   = other.info_containers[i];
+		for(U32 i = 0; i < this->n_format_c_allocated; ++i) this->format_containers[i] = other.format_containers[i];
+	}
+
+	VariantBlock(self_type&& other) noexcept :
+		n_info_c_allocated(other.n_info_c_allocated),
+		n_format_c_allocated(other.n_info_c_allocated),
+		header(std::move(other.header)),
+		footer(std::move(other.footer)),
+		base_containers(nullptr),
+		info_containers(nullptr),
+		format_containers(nullptr),
+		gt_ppa(nullptr),
+		end_block_(other.end_block_),
+		start_compressed_data_(other.start_compressed_data_),
+		end_compressed_data_(other.end_compressed_data_),
+		footer_support(std::move(other.footer_support))
+	{
+		std::swap(this->base_containers, other.base_containers);
+		std::swap(this->info_containers, other.info_containers);
+		std::swap(this->format_containers, other.format_containers);
+		std::swap(this->gt_ppa, other.gt_ppa);
+	}
+
+	VariantBlock& operator=(const self_type& other){
+		delete [] this->base_containers;
+		delete [] this->info_containers;
+		delete [] this->format_containers;
+		delete this->gt_ppa;
+		*this = VariantBlock(other);
+		return(*this);
+	}
+
+	VariantBlock& operator=(self_type&& other) noexcept{
+		if(this == &other){
+			// precautions against self-moves
+			return *this;
+		}
+
+		this->n_info_c_allocated = other.n_info_c_allocated;
+		this->n_format_c_allocated = other.n_format_c_allocated;
+		this->header = std::move(other.header);
+		this->footer = std::move(other.footer);
+		delete [] this->base_containers; this->base_containers = nullptr;
+		std::swap(this->base_containers, other.base_containers);
+		delete [] this->info_containers; this->info_containers = nullptr;
+		std::swap(this->info_containers, other.info_containers);
+		delete [] this->format_containers; this->format_containers = nullptr;
+		std::swap(this->format_containers, other.format_containers);
+		delete this->gt_ppa; this->gt_ppa = nullptr;
+		std::swap(this->gt_ppa, other.gt_ppa);
+		this->end_block_ = other.end_block_;
+		this->start_compressed_data_ = other.start_compressed_data_;
+		this->end_compressed_data_ = other.end_compressed_data_;
+		this->footer_support = std::move(other.footer_support);
+		return(*this);
+	}
+
 	void Allocate(const uint16_t n_info,
 	              const uint16_t n_format,
 	              const uint16_t n_filter)
@@ -441,9 +519,9 @@ public:
 	yon_gt_ppa* gt_ppa;
 
 	// Utility
-	U64 end_block_;
-	U64 start_compressed_data_;
-	U64 end_compressed_data_;
+	uint64_t end_block_;
+	uint64_t start_compressed_data_;
+	uint64_t end_compressed_data_;
 	container_type footer_support; // used internally only
 };
 

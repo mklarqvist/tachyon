@@ -174,6 +174,8 @@ public:
 	 */
 	bool NextBlock(void);
 
+	containers::VariantBlockContainer ReturnBlock(void);
+
 	/**<
 	 * Get the target YON block
 	 * @return Returns TRUE if successful or FALSE otherwise

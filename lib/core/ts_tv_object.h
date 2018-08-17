@@ -19,6 +19,7 @@ const uint8_t YON_STATS_TSTV_LOOKUP[256] =
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 
 struct yon_stats_sample {
+public:
 	yon_stats_sample(void) :
 		n_ins(0), n_del(0), n_singleton(0), n_ts(0), n_tv(0), ts_tv_ratio(0)
 	{
@@ -43,7 +44,7 @@ struct yon_stats_sample {
 	bool LazyEvalute(void){
 		// Transversions: A->C, C->A, T->G, G->T, A->T, T->A, C->G, G->C
 		// Transitions:   A->G, G->A, C->T, T->C
-		// Maps: A->0, T->1, G->2, C->3
+		// Maps:          A->0, T->1, G->2, C->3
 		this->n_tv = this->base_conv[0][3] + this->base_conv[3][0] +
 		             this->base_conv[1][2] + this->base_conv[2][1] +
 		             this->base_conv[0][1] + this->base_conv[1][0] +
@@ -54,12 +55,41 @@ struct yon_stats_sample {
 		if(this->n_ts == 0) this->ts_tv_ratio = 0;
 		else this->ts_tv_ratio = ((double)this->n_ts / this->n_tv);
 
+		this->n_ins = this->base_conv[0][7] + this->base_conv[1][7] +
+		              this->base_conv[2][7] + this->base_conv[3][7];
+
 		return true;
 	}
 
+	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const {
+
+		buffer +=  "\"" + sample_name + "\":{";
+		buffer += " \"n_ins\":" + std::to_string(this->n_ins);
+		buffer += ",\"n_del\":" + std::to_string(this->n_del);
+		buffer += ",\"n_singleton\":" + std::to_string(this->n_singleton);
+		buffer += ",\"n_ts\":"  + std::to_string(this->n_ts);
+		buffer += ",\"n_tv\":"  + std::to_string(this->n_tv);
+		buffer += ",\"ts_tv\":" + std::to_string(this->ts_tv_ratio);
+		buffer += ",\"conv\":[";
+		for(U32 i = 0; i < 9; ++i){
+			if(i != 0) buffer += ',';
+			buffer += '[';
+			buffer.AddReadble((U64)this->base_conv[i][0]);
+			for(U32 j = 1; j < 9; ++j){
+				buffer += ',';
+				buffer.AddReadble((U64)this->base_conv[i][j]);
+			}
+			buffer += ']';
+		}
+		buffer += ']';
+		buffer += '}';
+		return(buffer);
+	}
+
+public:
 	uint64_t  n_ins, n_del, n_singleton;
 	uint64_t  n_ts, n_tv;
-	double ts_tv_ratio;
+	double    ts_tv_ratio;
 	uint64_t* base_conv[9]; // {A,T,G,C,unknown,'.',EOV,ins,del}
 };
 
@@ -138,10 +168,12 @@ public:
 			}
 
 			uint32_t n_non_ref = 0;
+			uint32_t t_non_ref = 0;
 			for(U32 i = 0; i < rcd.gt->n_s; ++i){
 				for(U32 j = 0; j < rcd.gt->m; ++j){
 					++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
 					n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
+					t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
 				}
 			}
 
@@ -149,7 +181,12 @@ public:
 			//	std::cerr << rcd.meta->position+1 << ": " << n_non_ref << std::endl;
 
 			if(n_non_ref == 0) ++this->n_no_alts;
-			else if(n_non_ref == 1) ++this->n_singleton;
+			else if(n_non_ref == 1){
+				++this->n_singleton;
+				++this->sample[t_non_ref].n_singleton;
+				assert(t_non_ref < this->n_s);
+				//std::cerr << "singleton@" << t_non_ref << std::endl;
+			}
 
 			delete [] allele_encodings;
 			delete [] non_ref_encodings;

@@ -74,7 +74,7 @@ bool yon_occ::BuildTable(const yon_gt_ppa& ppa){
 		return false;
 	}
 
-	assert(ppa.n_samples + 1 == this->table[0].size());
+	assert(ppa.n_s + 1 == this->table[0].size());
 
 	this->occ = std::vector< std::vector<uint32_t> >(this->table.size(), std::vector<uint32_t>( this->table[0].size(), 0));
 	this->cum_sums = std::vector< uint32_t >( this->occ.size() );

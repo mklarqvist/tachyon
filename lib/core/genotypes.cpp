@@ -2,34 +2,48 @@
 
 namespace tachyon{
 
-yon_gt_ppa::yon_gt_ppa(void) : n_samples(0), ordering(nullptr){}
-yon_gt_ppa::yon_gt_ppa(const uint32_t n_samples) : n_samples(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
+yon_gt_ppa::yon_gt_ppa(void) : n_s(0), ordering(nullptr){}
+yon_gt_ppa::yon_gt_ppa(const uint32_t n_samples) : n_s(n_samples), ordering(new uint32_t[n_samples]){ this->reset(); }
 yon_gt_ppa::~yon_gt_ppa(void){ delete [] this->ordering; }
 
-void yon_gt_ppa::Allocate(const uint32_t n_samples){
+yon_gt_ppa::yon_gt_ppa(const yon_gt_ppa& other) :
+	n_s(other.n_s),
+	ordering(new uint32_t[other.n_s])
+{
+	memcpy(this->ordering, other.ordering, sizeof(uint32_t)*this->n_s);
+}
+
+yon_gt_ppa::yon_gt_ppa(yon_gt_ppa&& other) :
+	n_s(other.n_s),
+	ordering(other.ordering)
+{
+	other.ordering = nullptr;
+}
+
+void yon_gt_ppa::Allocate(const uint32_t n_s){
 	delete [] this->ordering;
-	this->n_samples = n_samples;
-	this->ordering = new uint32_t[n_samples];
+	this->n_s = n_s;
+	this->ordering = new uint32_t[n_s];
 	this->reset();
 }
 
 void yon_gt_ppa::reset(void){
-	for(U32 i = 0; i < this->n_samples; ++i)
+	for(U32 i = 0; i < this->n_s; ++i)
 		this->ordering[i] = i;
 }
 
 io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
-	io::DeserializePrimitive(ppa.n_samples, buffer);
-	ppa.ordering = new uint32_t[ppa.n_samples];
-	for(U32 i = 0; i < ppa.n_samples; ++i)
+	io::DeserializePrimitive(ppa.n_s, buffer);
+	ppa.ordering = new uint32_t[ppa.n_s];
+	for(U32 i = 0; i < ppa.n_s; ++i)
 		io::DeserializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);
 }
 
 io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
-	io::SerializePrimitive(ppa.n_samples, buffer);
-	for(U32 i = 0; i < ppa.n_samples; ++i)
+	io::SerializePrimitive(ppa.n_s, buffer);
+	for(U32 i = 0; i < ppa.n_s; ++i)
 		io::SerializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);

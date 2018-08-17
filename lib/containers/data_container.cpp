@@ -22,6 +22,32 @@ DataContainer::DataContainer(const U32 start_size) :
 
 DataContainer::~DataContainer(){ }
 
+DataContainer::DataContainer(const self_type& other) :
+	header(other.header),
+	buffer_data(other.buffer_data),
+	buffer_strides(other.buffer_strides),
+	buffer_data_uncompressed(other.buffer_data_uncompressed),
+	buffer_strides_uncompressed(other.buffer_strides_uncompressed)
+{}
+
+DataContainer& DataContainer::operator=(const self_type& other){
+	this->buffer_data = other.buffer_data;
+	this->buffer_data_uncompressed = other.buffer_data_uncompressed;
+	this->buffer_strides = other.buffer_strides;
+	this->buffer_strides_uncompressed = other.buffer_strides_uncompressed;
+	this->header = other.header;
+	return(*this);
+}
+
+DataContainer& DataContainer::operator=(self_type&& other) noexcept{
+	this->buffer_data = std::move(other.buffer_data);
+	this->buffer_data_uncompressed = std::move(other.buffer_data_uncompressed);
+	this->buffer_strides = std::move(other.buffer_strides);
+	this->buffer_strides_uncompressed = std::move(other.buffer_strides_uncompressed);
+	this->header = std::move(other.header);
+	return(*this);
+}
+
 void DataContainer::reset(void){
 	this->buffer_data.reset();
 	this->buffer_data_uncompressed.reset();

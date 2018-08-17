@@ -162,6 +162,57 @@ bool VariantReader::NextBlock(){
 	return true;
 }
 
+containers::VariantBlockContainer VariantReader::ReturnBlock(void){
+	variant_container_type c;
+	c << this->GetGlobalHeader();
+
+	// If the stream is faulty then return
+	if(!this->basic_reader.stream_.good()){
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+		return(c);
+	}
+
+	// If the current position is the EOF then
+	// exit the function
+	if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+		return(c);
+
+	if(!c.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+		return(c);
+
+
+	if(!this->codec_manager.zstd_codec.Decompress(c.GetBlock().footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+	}
+	c.GetBlock().footer_support.buffer_data_uncompressed >> c.GetBlock().footer;
+
+	// Attempts to read a YON block with the settings provided
+	if(!c.ReadBlock(this->basic_reader.stream_, this->block_settings))
+		return(c);
+
+	// encryption manager ascertainment
+	if(c.AnyEncrypted()){
+		if(this->keychain.size() == 0){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
+			return(c);
+		}
+
+		encryption_manager_type encryption_manager;
+		if(!encryption_manager.decryptAES256(c.GetBlock(), this->keychain)){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
+			return(c);
+		}
+	}
+
+	// Internally decompress available data
+	if(!this->codec_manager.Decompress(c.GetBlock())){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
+		return(c);
+	}
+
+	return(c);
+}
+
 bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	// If the stream is not good then return.
 	if(!this->basic_reader.stream_.good()){
@@ -748,22 +799,31 @@ bool VariantReader::Stats(void){
 			}
 		}
 
+		std::cerr << this->variant_container.info_id_local_loaded.size() << std::endl;
+		variant_container_type c(std::move(this->variant_container));
+		std::cerr << this->variant_container.info_id_local_loaded.size() << "," << c.info_id_local_loaded.size() << std::endl;
+
+		this->variant_container = std::move(c);
+		std::cerr << this->variant_container.info_id_local_loaded.size() << "," << c.info_id_local_loaded.size() << std::endl;
+
+
 		delete [] entries;
 		//objects->occ = nullptr;
 		delete objects;
 	}
 
+	io::BasicBuffer json_buffer(250000);
+	json_buffer += "{\"PSI\":{\n";
 	for(U32 i = 0; i < this->GetGlobalHeader().GetNumberSamples(); ++i){
 		s[i].LazyEvalute();
-		std::cout << this->global_header.samples_[i] << "\t" << s[i].n_ts << "\t" << s[i].n_tv << "\t" << s[i].ts_tv_ratio;
-		for(U32 j = 0; j < 9; ++j){
-			for(U32 k = 0; k < 9; ++k){
-				std::cout << "\t" << s[i].base_conv[j][k];
-			}
-		}
-		std::cout << std::endl;
+		if(i != 0) json_buffer += ",\n";
+		s[i].ToJsonString(json_buffer, this->GetGlobalHeader().samples_[i]);
 	}
-	std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
+	json_buffer += "\n}\n}\n";
+
+	//std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
+	std::cout.write(json_buffer.data(), json_buffer.size());
+	std::cout.flush();
 
 	return true;
 }
