@@ -8,8 +8,8 @@ DataBlockSettings::DataBlockSettings() :
 	display_ref(true),
 	display_alt(true),
 	display_filter(true),
-	load_static(std::numeric_limits<U32>::max()),
-	display_static(std::numeric_limits<U32>::max()),
+	load_static(std::numeric_limits<uint32_t>::max()),
+	display_static(std::numeric_limits<uint32_t>::max()),
 	construct_occ_table(false),
 	annotate_extra(false)
 {}
@@ -33,16 +33,16 @@ DataBlockSettings& DataBlockSettings::LoadDisplayWrapper(bool set, const int fie
 }
 
 DataBlockSettings& DataBlockSettings::LoadCore(const bool set){
-	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
-		const U32 bv = 1 << i;
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
 		this->LoadWrapper(set, bv);
 	}
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::DisplayCore(const bool set){
-	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
-		const U32 bv = 1 << i;
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
 		this->DisplayWrapper(set, bv);
 	}
 	return(*this);
@@ -50,7 +50,7 @@ DataBlockSettings& DataBlockSettings::DisplayCore(const bool set){
 
 DataBlockSettings& DataBlockSettings::LoadAll(const bool set){
 	if(set){
-		this->load_static = std::numeric_limits<U32>::max();
+		this->load_static = std::numeric_limits<uint32_t>::max();
 	} else {
 		this->load_static = 0;
 	}
@@ -59,7 +59,7 @@ DataBlockSettings& DataBlockSettings::LoadAll(const bool set){
 
 DataBlockSettings& DataBlockSettings::DisplayAll(const bool set){
 	if(set){
-		this->display_static = std::numeric_limits<U32>::max();
+		this->display_static = std::numeric_limits<uint32_t>::max();
 	} else {
 		this->display_static = 0;
 	}
@@ -70,16 +70,16 @@ DataBlockSettings& DataBlockSettings::DisplayAll(const bool set){
 }
 
 DataBlockSettings& DataBlockSettings::LoadAllMeta(const bool set){
-	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
-		const U32 bv = 1 << i;
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
 		this->LoadWrapper(set, i);
 	}
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::DisplayAllMeta(const bool set){
-	for(U32 i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
-		const U32 bv = 1 << i;
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
 		this->DisplayWrapper(set, i);
 	}
 
@@ -122,7 +122,7 @@ DataBlockSettings& DataBlockSettings::LoadInfo(const std::string& field_name){
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::LoadInfo(const U32 field_id){
+DataBlockSettings& DataBlockSettings::LoadInfo(const uint32_t field_id){
 	this->info_id_global.push_back(field_id);
 	this->LoadMinimumVcf(true);
 	return(*this);
@@ -171,7 +171,7 @@ DataBlockSettings& DataBlockSettings::LoadFormat(const std::string& field_name){
 	return(*this);
 }
 
-DataBlockSettings& DataBlockSettings::LoadFormat(const U32 field_id){
+DataBlockSettings& DataBlockSettings::LoadFormat(const uint32_t field_id){
 	this->LoadMinimumVcf(true);
 	this->format_id_global.push_back(field_id);
 	return(*this);
@@ -198,9 +198,9 @@ DataBlockSettings& DataBlockSettings::DisplayMinimumVcf(const bool set){
 bool DataBlockSettings::Parse(const header_type& header){
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
 
-	for(U32 i = 0; i < this->info_list.size(); ++i){
+	for(uint32_t i = 0; i < this->info_list.size(); ++i){
 		std::vector<std::string> ind = utility::split(this->info_list[i], ',');
-		for(U32 j = 0; j < ind.size(); ++j){
+		for(uint32_t j = 0; j < ind.size(); ++j){
 			ind[j] = utility::remove_excess_whitespace(ind[j]);
 			if(std::regex_match(ind[j], field_identifier_regex)){
 				const io::VcfInfo* info = header.GetInfo(ind[j]);
@@ -217,7 +217,7 @@ bool DataBlockSettings::Parse(const header_type& header){
 		}
 	}
 
-	for(U32 i = 0; i < this->format_list.size(); ++i){
+	for(uint32_t i = 0; i < this->format_list.size(); ++i){
 
 	}
 
@@ -231,13 +231,13 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 	this->load_static = 0;
 
 	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
-	for(U32 i = 0; i < command.size(); ++i){
+	for(uint32_t i = 0; i < command.size(); ++i){
 		std::vector<std::string> partitions = utility::split(command[i], ';');
-		for(U32 p = 0; p < partitions.size(); ++p){
+		for(uint32_t p = 0; p < partitions.size(); ++p){
 			partitions[p].erase(std::remove(partitions[p].begin(), partitions[p].end(), ' '), partitions[p].end()); // remove all spaces
 			if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
 				std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
-				for(U32 j = 0; j < ind.size(); ++j){
+				for(uint32_t j = 0; j < ind.size(); ++j){
 					ind[j] = utility::remove_excess_whitespace(ind[j]);
 					if(std::regex_match(ind[j], field_identifier_regex)){
 						const io::VcfInfo* info = header.GetInfo(ind[j]);
@@ -262,7 +262,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 
 			} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
 				std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
-				for(U32 j = 0; j < ind.size(); ++j){
+				for(uint32_t j = 0; j < ind.size(); ++j){
 					std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
 					if(std::regex_match(ind[j], field_identifier_regex)){
 						// Special case for genotypes

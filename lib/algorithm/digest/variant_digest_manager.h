@@ -22,10 +22,10 @@ public:
 
 	void Finalize(void);
 
-	inline const_reference atINFO(const U32 position) const{ return(this->__entries_info[position]); }
-	inline const_reference atFORMAT(const U32 position) const{ return(this->__entries_format[position]); }
-	inline reference atINFO(const U32 position){ return(this->__entries_info[position]); }
-	inline reference atFORMAT(const U32 position){ return(this->__entries_format[position]); }
+	inline const_reference atINFO(const uint32_t position) const{ return(this->__entries_info[position]); }
+	inline const_reference atFORMAT(const uint32_t position) const{ return(this->__entries_format[position]); }
+	inline reference atINFO(const uint32_t position){ return(this->__entries_info[position]); }
+	inline reference atFORMAT(const uint32_t position){ return(this->__entries_format[position]); }
 
 	void operator+=(const variant_block_type& block);
 

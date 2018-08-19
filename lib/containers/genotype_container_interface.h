@@ -17,7 +17,7 @@ public:
     typedef yon_gt_summary                gt_summary;
 
     // Function pointers
-	typedef float (self_type::*matrix_comparator)(const BYTE& alleleA, const BYTE& ref_alleleA, const BYTE& alleleB, const BYTE& ref_alleleB);
+	typedef float (self_type::*matrix_comparator)(const uint8_t& alleleA, const uint8_t& ref_alleleA, const uint8_t& alleleB, const uint8_t& ref_alleleB);
 
 public:
     GenotypeContainerInterface(void) :
@@ -25,7 +25,7 @@ public:
 		__data(nullptr)
 	{}
 
-    GenotypeContainerInterface(const char* const data, const size_type& n_entries, const U32& n_bytes, const meta_type& meta) :
+    GenotypeContainerInterface(const char* const data, const size_type& n_entries, const uint32_t& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
 		__data(new uint8_t[n_bytes]),
 		__meta(meta)

@@ -18,7 +18,7 @@ VariantIndex::VariantIndex(const self_type& other) :
 	contigs_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)))),
 	linear_(static_cast<linear_type*>(::operator new[](this->capacity()*sizeof(linear_type))))
 {
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		new( &this->contigs_[i] ) value_type( other.contigs_[i] );
 		new( &this->linear_[i] )  linear_type( other.linear_[i] );
 	}
@@ -44,7 +44,7 @@ void VariantIndex::resize(void){
 
 
 	// Lift over values from old addresses
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		new( &this->contigs_[i] ) value_type( temp[i] );
 		new( &this->linear_[i] )  linear_type( temp_linear[i] );
 	}
@@ -62,19 +62,19 @@ void VariantIndex::resize(void){
 std::ostream& operator<<(std::ostream& stream, const VariantIndex& index){
 	stream.write(reinterpret_cast<const char*>(&index.n_contigs_), sizeof(std::size_t));
 	std::size_t n_items_written = 0;
-	for(U32 i = 0; i < index.size(); ++i){
+	for(uint32_t i = 0; i < index.size(); ++i){
 		if(index.contigs_[i].size_sites()) ++n_items_written;
 	}
 	stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(std::size_t));
 
-	for(U32 i = 0; i < index.size(); ++i){
+	for(uint32_t i = 0; i < index.size(); ++i){
 		// Write if contig[i] contains data
 		if(index.contigs_[i].size_sites())
 			stream << index.contigs_[i];
 	}
 
 	// Write linear index
-	for(U32 i = 0; i < index.size(); ++i) stream << index.linear_[i];
+	for(uint32_t i = 0; i < index.size(); ++i) stream << index.linear_[i];
 
 	return(stream);
 }
@@ -99,20 +99,20 @@ std::istream& operator>>(std::istream& stream, VariantIndex& index){
 	// Allocate new data
 	index.contigs_ = static_cast<VariantIndexContig*>(::operator new[](index.capacity()*sizeof(VariantIndexContig)));
 	index.linear_ = static_cast<VariantIndexLinear*>(::operator new[](index.capacity()*sizeof(VariantIndexLinear)));
-	for(U32 i = 0; i < index.size(); ++i) {
+	for(uint32_t i = 0; i < index.size(); ++i) {
 		new( &index.contigs_[i] ) VariantIndexContig( );
 		new( &index.linear_[i] ) VariantIndexLinear( );
 	}
 
 	// Load data and update accordingly
-	for(U32 i = 0; i < n_items_written; ++i){
+	for(uint32_t i = 0; i < n_items_written; ++i){
 		VariantIndexContig temp;
 		stream >> temp; // Read
 		index.at(temp.getContigID()) = temp;
 	}
 
 	// Load linear index
-	for(U32 i = 0; i < index.size(); ++i) stream >> index.linear_[i];
+	for(uint32_t i = 0; i < index.size(); ++i) stream >> index.linear_[i];
 
 	return(stream);
 }

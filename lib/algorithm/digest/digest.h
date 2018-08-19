@@ -64,11 +64,11 @@ public:
 	inline bool update(const buffer_type& data_buffer, const buffer_type& stride_buffer, const bool has_strides = true){
 		if(!this->hasInitialized) this->initialize();
 
-		if(!SHA512_Update(&this->data_context, (const BYTE*)data_buffer.data(), data_buffer.size()))
+		if(!SHA512_Update(&this->data_context, (const uint8_t*)data_buffer.data(), data_buffer.size()))
 			return false;
 
 		if(has_strides){
-			if(!SHA512_Update(&this->stride_context, (const BYTE*)stride_buffer.data(), stride_buffer.size()))
+			if(!SHA512_Update(&this->stride_context, (const uint8_t*)stride_buffer.data(), stride_buffer.size()))
 				return false;
 		}
 		return true;
@@ -121,8 +121,8 @@ public:
 	bool       hasFinished;
 	SHA512_CTX data_context;
 	SHA512_CTX stride_context;
-	BYTE       data_digest[64];
-	BYTE       stride_digest[64];
+	uint8_t       data_digest[64];
+	uint8_t       stride_digest[64];
 };
 
 struct DigitalDigestPair{

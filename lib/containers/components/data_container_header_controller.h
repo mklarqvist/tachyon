@@ -39,8 +39,8 @@ public:
 	}
 
 	inline bool isEncrypted(void) const{ return(this->encryption > 0); }
-	inline bool compareType(const BYTE& type) const{ return(this->type == type); }
-	inline bool compareTypeSign(const BYTE& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
+	inline bool compareType(const uint8_t& type) const{ return(this->type == type); }
+	inline bool compareTypeSign(const uint8_t& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
 
 	self_type& operator=(const self_type& other){
 		this->signedness  = other.signedness;
@@ -65,45 +65,45 @@ public:
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer,const self_type& controller){
-		const U16 c = controller.signedness  << 0  |
+		const uint16_t c = controller.signedness  << 0  |
 					  controller.mixedStride << 1  |
 					  controller.type        << 2  |
 					  controller.encoder     << 8  |
 					  controller.uniform     << 13 |
 					  controller.encryption  << 14;
 
-		//const U16* c = reinterpret_cast<const U16* const>(&controller);
+		//const uint16_t* c = reinterpret_cast<const uint16_t* const>(&controller);
 		buffer += c;
 		return(buffer);
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller){
-		const U16 c = controller.signedness  << 0  |
+		const uint16_t c = controller.signedness  << 0  |
 					  controller.mixedStride << 1  |
 					  controller.type        << 2  |
 					  controller.encoder     << 8  |
 					  controller.uniform     << 13 |
 					  controller.encryption  << 14;
 
-		//assert(*reinterpret_cast<const U16* const>(&controller) == c);
+		//assert(*reinterpret_cast<const uint16_t* const>(&controller) == c);
 
-		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&c), sizeof(uint16_t));
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& controller){
-		stream.read(reinterpret_cast<char*>(&controller), sizeof(U16));
+		stream.read(reinterpret_cast<char*>(&controller), sizeof(uint16_t));
 		return(stream);
 	}
 
 	friend buffer_type& operator>>(buffer_type& buffer, self_type& controller){
-		U16* c = reinterpret_cast<U16*>(&controller);
+		uint16_t* c = reinterpret_cast<uint16_t*>(&controller);
 		buffer >> *c;
 		return(buffer);
 	}
 
 public:
-	U16 signedness:  1, // Signed type
+	uint16_t signedness:  1, // Signed type
 		mixedStride: 1, // Different stride sizes
 		type:        6, // Base typing (extra bits saved for future use)
 		encoder:     5, // Encoder bits (see encoder for values)

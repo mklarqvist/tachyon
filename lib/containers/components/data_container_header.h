@@ -9,7 +9,6 @@
 #include "data_container_header_object.h"
 #include "io/basic_buffer.h"
 #include "support/enums.h"
-#include "support/type_definitions.h"
 
 namespace tachyon{
 namespace containers{
@@ -89,8 +88,8 @@ public:
 	}
 
 	// Accessors
-	inline S32& getGlobalKey(void){ return(this->data_header.global_key); }
-	inline const S32& getGlobalKey(void) const{ return(this->data_header.global_key); }
+	inline int32_t& getGlobalKey(void){ return(this->data_header.global_key); }
+	inline const int32_t& getGlobalKey(void) const{ return(this->data_header.global_key); }
 	inline bool hasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
 
 private:
@@ -119,10 +118,10 @@ private:
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.identifier),  sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.n_entries),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.identifier),  sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&entry.n_entries),   sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(uint32_t));
 		stream << entry.data_header;
 		if(entry.data_header.HasMixedStride())
 			stream << entry.stride_header;
@@ -131,10 +130,10 @@ private:
 	}
 
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.identifier),  sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.n_entries),   sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.identifier),  sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&entry.n_entries),   sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(uint32_t));
 		stream >> entry.data_header;
 		if(entry.data_header.HasMixedStride())
 			stream >> entry.stride_header;
@@ -143,10 +142,10 @@ private:
 	}
 
 public:
-	U64 identifier;
-	U32 n_entries;      // number of container entries
-	U32 n_additions;    // number of times an addition operation was executed
-	U32 n_strides;      // number of stride elements
+	uint64_t identifier;
+	uint32_t n_entries;      // number of container entries
+	uint32_t n_additions;    // number of times an addition operation was executed
+	uint32_t n_strides;      // number of stride elements
 	header_type data_header;
 	header_type stride_header;
 };

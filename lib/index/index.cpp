@@ -10,7 +10,7 @@ bool Index::buildMetaIndex(void){
 	if(this->index_.size() == 0)
 		return false;
 
-	for(U32 c = 0; c < this->index_.size(); ++c){ // foreach contig
+	for(uint32_t c = 0; c < this->index_.size(); ++c){ // foreach contig
 		if(this->index_.linear_at(c).size() == 0){
 			this->index_meta_ += entry_meta_type();
 			continue;
@@ -18,7 +18,7 @@ bool Index::buildMetaIndex(void){
 
 		entry_meta_type indexindex;
 		indexindex(this->index_.linear_at(c)[0]); // Start reference
-		for(U32 i = 1; i < this->index_.linear_at(c).size(); ++i){
+		for(uint32_t i = 1; i < this->index_.linear_at(c).size(); ++i){
 			if(indexindex == this->index_.linear_at(c)[i]) // If the blocks share the same contig identifier
 				indexindex += this->index_.linear_at(c)[i];
 			else { // Otherwise push one entry onto the chain and start a new reference
@@ -33,19 +33,19 @@ bool Index::buildMetaIndex(void){
 	return true;
 }
 
-std::vector<IndexEntry> Index::findOverlap(const U32& contig_id) const{
+std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id) const{
 	if(contig_id > this->getMetaIndex().size())
 		return(std::vector<entry_type>());
 
 	std::vector<entry_type> yon_blocks;
-	for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
+	for(uint32_t i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
 		yon_blocks.push_back(this->getIndex().linear_at(contig_id).at(i));
 	}
 
 	return(yon_blocks);
 }
 
-std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& start_pos, const U64& end_pos) const{
+std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const{
 	if(contig_id > this->getMetaIndex().size())
 		return(std::vector<entry_type>());
 
@@ -54,10 +54,10 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 		return(std::vector<entry_type>());
 	}
 
-	const U32 block_offset_start = this->getIndex().linear_at(contig_id).at(0).blockID;
+	const uint32_t block_offset_start = this->getIndex().linear_at(contig_id).at(0).blockID;
 
 	//std::cerr << "Linear index " << this->getIndex().linear_at(contig_id).size() << std::endl;
-	//for(U32 i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
+	//for(uint32_t i = 0; i < this->getIndex().linear_at(contig_id).size(); ++i){
 	//	this->getIndex().linear_at(contig_id).at(i).print(std::cerr) << std::endl;
 	//}
 	//std::cerr << "block offset: " << block_offset_start << std::endl;
@@ -68,14 +68,14 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	// Retrieve vector of bins that might contain the data
 	// The possibleBins function does not check if they exist
 	std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(start_pos, end_pos);
-	std::vector<U32> yon_blocks;
+	std::vector<uint32_t> yon_blocks;
 	//std::cerr << "Possible chunks: " << possible_chunks.size() << std::endl;
 
 	// Check if possible bins exists in the linear index
-	for(U32 i = 0; i < possible_chunks.size(); ++i){
+	for(uint32_t i = 0; i < possible_chunks.size(); ++i){
 		// Cycle over the YON blocks this bin have data mapping to
-		for(U32 j = 0; j < possible_chunks[i].size(); ++j){
-			const U32 used_bins = possible_chunks[i][j] - block_offset_start;
+		for(uint32_t j = 0; j < possible_chunks[i].size(); ++j){
+			const uint32_t used_bins = possible_chunks[i][j] - block_offset_start;
 			//std::cerr << i << "/" << possible_chunks[i].size() << ",raw bin: " << possible_chunks[i][j] << ", used bin: " << used_bins << "\t";
 			//possible_chunks[i].print(std::cerr) << std::endl;
 			//std::cerr << "Comparing: " << this->getIndex().linear_at(contig_id)[used_bins].minPosition << "<" << end_pos
@@ -109,7 +109,7 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 	std::vector<entry_type> yon_blocks_deduped;
 	yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[0]]);
 
-	for(U32 i = 1; i < yon_blocks.size(); ++i){
+	for(uint32_t i = 1; i < yon_blocks.size(); ++i){
 		if(yon_blocks[i] != yon_blocks_deduped.back().blockID - block_offset_start){
 			yon_blocks_deduped.push_back(this->getIndex().linear_at(contig_id)[yon_blocks[i]]);
 		}
@@ -117,7 +117,7 @@ std::vector<IndexEntry> Index::findOverlap(const U32& contig_id, const U64& star
 
 	// Debug
 	//std::cerr << "Final\n" << std::endl;
-	//for(U32 i = 0; i < yon_blocks_deduped.size(); ++i){
+	//for(uint32_t i = 0; i < yon_blocks_deduped.size(); ++i){
 	//	yon_blocks_deduped[i].print(std::cerr);
 	//	std::cerr << std::endl;
 	//}

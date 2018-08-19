@@ -19,25 +19,25 @@ public:
 
 public:
 	GenotypeSorter();
-	GenotypeSorter(const U64 n_samples);
+	GenotypeSorter(const uint64_t n_samples);
 	~GenotypeSorter();
 
 	// Reset does NOT need to cast after each
 	// iteration as values are overwritten
 	// each cycle
 	void reset(void);
-	void SetSamples(const U64 n_samples);
+	void SetSamples(const uint64_t n_samples);
 
 	bool Build(const vcf_container_type& vcf_container, io::VcfHeader& vcf_header);
 	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
 
-	inline const U64& GetNumberSamples(void) const{ return(this->n_samples); }
+	inline const uint64_t& GetNumberSamples(void) const{ return(this->n_samples); }
 
 public:
-	U64           n_samples; // total number of entries in file
+	uint64_t      n_samples; // total number of entries in file
 	yon_gt_ppa    permutation_array;
 	yon_radix_gt* gt_pattern;
-	uint8_t gt_remap[256];
+	uint8_t       gt_remap[256];
 };
 
 }

@@ -4,7 +4,7 @@
 namespace tachyon{
 namespace encryption{
 
-template <BYTE KeyLength = 32, BYTE IVLength = 16>
+template <uint8_t KeyLength = 32, uint8_t IVLength = 16>
 struct KeychainKey{
 public:
 	typedef KeychainKey     self_type;
@@ -31,9 +31,9 @@ public:
 	}
 
 	virtual void print(void){
-		for(U32 i = 0; i < KeyLength; ++i) std::cerr << std::hex << (int)this->key[i];
+		for(uint32_t i = 0; i < KeyLength; ++i) std::cerr << std::hex << (int)this->key[i];
 		std::cerr << '\t';
-		for(U32 i = 0; i < IVLength; ++i) std::cerr << std::hex << (int)this->iv[i];
+		for(uint32_t i = 0; i < IVLength; ++i) std::cerr << std::hex << (int)this->iv[i];
 	}
 
 	inline bool initiateRandom(void){
@@ -52,13 +52,13 @@ private:
 	}
 
 public:
-	U64  field_id;
-	BYTE encryption_type;
-	BYTE key[KeyLength];  // 256 bit key
-	BYTE iv[IVLength];   // 128 bit initiation vector
+	uint64_t  field_id;
+	uint8_t encryption_type;
+	uint8_t key[KeyLength];  // 256 bit key
+	uint8_t iv[IVLength];   // 128 bit initiation vector
 };
 
-template <BYTE KeyLength = 32, BYTE IVLength = 16, BYTE TagLength = 16>
+template <uint8_t KeyLength = 32, uint8_t IVLength = 16, uint8_t TagLength = 16>
 struct KeychainKeyGCM : public KeychainKey<KeyLength, IVLength>{
 public:
 	typedef KeychainKeyGCM                   self_type;
@@ -84,18 +84,18 @@ public:
 	}
 
 	void print(void){
-		for(U32 i = 0; i < KeyLength; ++i) std::cerr << std::hex << (int)this->key[i];
+		for(uint32_t i = 0; i < KeyLength; ++i) std::cerr << std::hex << (int)this->key[i];
 		std::cerr << '\t';
-		for(U32 i = 0; i < IVLength; ++i) std::cerr << std::hex << (int)this->iv[i];
+		for(uint32_t i = 0; i < IVLength; ++i) std::cerr << std::hex << (int)this->iv[i];
 		std::cerr << '\t';
-		for(U32 i = 0; i < TagLength; ++i) std::cerr << std::hex << (int)this->tag[i];
+		for(uint32_t i = 0; i < TagLength; ++i) std::cerr << std::hex << (int)this->tag[i];
 		std::cerr << std::dec;
 	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& key){
-		stream.write(reinterpret_cast<const char*>(&key.field_id), sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&key.encryption_type), sizeof(BYTE));
+		stream.write(reinterpret_cast<const char*>(&key.field_id), sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&key.encryption_type), sizeof(uint8_t));
 		stream.write((const char*)&key.key[0], KeyLength);
 		stream.write((const char*)&key.iv[0],  IVLength);
 		stream.write((const char*)&key.tag[0], TagLength);
@@ -103,8 +103,8 @@ private:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& key){
-		stream.read(reinterpret_cast<char*>(&key.field_id), sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&key.encryption_type), sizeof(BYTE));
+		stream.read(reinterpret_cast<char*>(&key.field_id), sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&key.encryption_type), sizeof(uint8_t));
 		stream.read((char*)&key.key[0], KeyLength);
 		stream.read((char*)&key.iv[0],  IVLength);
 		stream.read((char*)&key.tag[0], TagLength);
@@ -130,7 +130,7 @@ private:
 	}
 
 public:
-	BYTE tag[TagLength];  // validation tag for gcm
+	uint8_t tag[TagLength];  // validation tag for gcm
 };
 
 }

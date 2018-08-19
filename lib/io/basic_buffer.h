@@ -3,10 +3,10 @@
 
 #include <cstddef>
 #include <iostream>
-
+#include <inttypes.h>
+#include <stdint.h>
 #include <cassert>
 
-#include "support/type_definitions.h"
 #include "support/helpers.h"
 
 namespace tachyon {
@@ -25,9 +25,9 @@ private:
 
 public:
 	BasicBuffer() : owns_data_(true), n_chars(0), width(0), iterator_position_(0), buffer(nullptr){}
-	BasicBuffer(const U64 size) : owns_data_(true), n_chars(0), width(size), iterator_position_(0), buffer(new char[size]){}
+	BasicBuffer(const uint64_t size) : owns_data_(true), n_chars(0), width(size), iterator_position_(0), buffer(new char[size]){}
 	BasicBuffer(char* target, const size_t length) : owns_data_(false), n_chars(length), width(length), iterator_position_(0), buffer(target){}
-	BasicBuffer(const U64 size, char* target) : owns_data_(false), n_chars(0), width(size), iterator_position_(0), buffer(target){}
+	BasicBuffer(const uint64_t size, char* target) : owns_data_(false), n_chars(0), width(size), iterator_position_(0), buffer(target){}
 
 	BasicBuffer(const self_type& other) :
 		owns_data_(other.owns_data_),
@@ -136,11 +136,11 @@ public:
 
 	inline void reset(){ this->n_chars = 0; this->iterator_position_ = 0; }
 	inline void resetIterator(){ this->iterator_position_ = 0; }
-	inline void move(const U64 to){ this->n_chars = to; }
-	inline const U64& size(void) const{ return this->n_chars; }
-	inline const U64& capacity(void) const{ return this->width; }
+	inline void move(const uint64_t to){ this->n_chars = to; }
+	inline const uint64_t& size(void) const{ return this->n_chars; }
+	inline const uint64_t& capacity(void) const{ return this->width; }
 
-	void resize(const U64 new_size){
+	void resize(const uint64_t new_size){
 		if(this->n_chars == 0 && new_size == 0) return;
 		char* temp = new char[new_size];
 		//std::cerr << this->size() << "<" << new_size << std::endl;
@@ -157,7 +157,7 @@ public:
 		}
 	}
 
-	void Add(const char* data, const U32 length){
+	void Add(const char* data, const uint32_t length){
 		if(this->size() + length >= this->capacity())
 			this->resize((this->size() + length) * 2);
 
@@ -165,52 +165,52 @@ public:
 		this->n_chars += length;
 	}
 
-	void AddReadble(const SBYTE& value){
+	void AddReadble(const int8_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const S16& value){
+	void AddReadble(const int16_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const S32& value){
+	void AddReadble(const int32_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%d", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const BYTE& value){
+	void AddReadble(const uint8_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const U16& value){
+	void AddReadble(const uint16_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const U32& value){
+	void AddReadble(const uint32_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
 		const int ret = sprintf(&this->buffer[this->n_chars], "%u", value);
 		this->n_chars += ret;
 	}
 
-	void AddReadble(const U64& value){
+	void AddReadble(const uint64_t& value){
 		if(this->n_chars + 100 >= this->width)
 			this->resize(std::max(this->width + 100, this->width*2));
-		const int ret = sprintf(&this->buffer[this->n_chars], "%llu", value);
+		const int ret = sprintf(&this->buffer[this->n_chars], "%" PRIu64, value);
 		this->n_chars += ret;
 	}
 
@@ -253,13 +253,22 @@ public:
 		return *this;
 	}
 
-	inline self_type& operator+=(const BYTE& value){
-		if(this->n_chars + sizeof(BYTE) >= this->width)
+	inline self_type& operator+=(const int8_t& value){
+		if(this->n_chars + sizeof(int8_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
-		BYTE* p = reinterpret_cast<BYTE*>(&this->buffer[this->n_chars]);
+		this->buffer[this->n_chars] = value;
+		++this->n_chars;
+		return *this;
+	}
+
+	inline self_type& operator+=(const uint8_t& value){
+		if(this->n_chars + sizeof(uint8_t) >= this->width)
+			this->resize(std::max(this->width + 1000, this->width*2));
+
+		uint8_t* p = reinterpret_cast<uint8_t*>(&this->buffer[this->n_chars]);
 		*p = value;
-		this->n_chars += sizeof(BYTE);
+		this->n_chars += sizeof(uint8_t);
 		return *this;
 	}
 
@@ -273,18 +282,18 @@ public:
 		return *this;
 	}
 
-	inline self_type& operator+=(const U16& value){
-		if(this->n_chars + sizeof(U16) >= this->width)
+	inline self_type& operator+=(const uint16_t& value){
+		if(this->n_chars + sizeof(uint16_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
-		U16* p = reinterpret_cast<U16*>(&this->buffer[this->n_chars]);
+		uint16_t* p = reinterpret_cast<uint16_t*>(&this->buffer[this->n_chars]);
 		*p = value;
-		this->n_chars += sizeof(U16);
+		this->n_chars += sizeof(uint16_t);
 		return *this;
 	}
 
-	inline self_type& operator+=(const short& value){
-		if(this->n_chars + sizeof(short) >= this->width)
+	inline self_type& operator+=(const int16_t& value){
+		if(this->n_chars + sizeof(int16_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
 		short* p = reinterpret_cast<short*>(&this->buffer[this->n_chars]);
@@ -293,23 +302,23 @@ public:
 		return *this;
 	}
 
-	inline self_type& operator+=(const U32& value){
-		if(this->n_chars + sizeof(U32) >= this->width)
+	inline self_type& operator+=(const uint32_t& value){
+		if(this->n_chars + sizeof(uint32_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
-		U32* p = reinterpret_cast<U32*>(&this->buffer[this->n_chars]);
+		uint32_t* p = reinterpret_cast<uint32_t*>(&this->buffer[this->n_chars]);
 		*p = value;
-		this->n_chars += sizeof(U32);
+		this->n_chars += sizeof(uint32_t);
 		return *this;
 	}
 
-	inline self_type& operator+=(const S32& value){
-		if(this->n_chars + sizeof(S32) >= this->width)
+	inline self_type& operator+=(const int32_t& value){
+		if(this->n_chars + sizeof(int32_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
-		S32* p = reinterpret_cast<S32*>(&this->buffer[this->n_chars]);
+		int32_t* p = reinterpret_cast<int32_t*>(&this->buffer[this->n_chars]);
 		*p = value;
-		this->n_chars += sizeof(S32);
+		this->n_chars += sizeof(int32_t);
 		return *this;
 	}
 
@@ -323,13 +332,13 @@ public:
 		return *this;
 	}
 
-	inline self_type& operator+=(const U64& value){
-		if(this->n_chars + sizeof(U64) >= this->width)
+	inline self_type& operator+=(const uint64_t& value){
+		if(this->n_chars + sizeof(uint64_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
 
-		U64* p = reinterpret_cast<U64*>(&this->buffer[this->n_chars]);
+		uint64_t* p = reinterpret_cast<uint64_t*>(&this->buffer[this->n_chars]);
 		*p = value;
-		this->n_chars += sizeof(U64);
+		this->n_chars += sizeof(uint64_t);
 		return *this;
 	}
 
@@ -343,6 +352,7 @@ public:
 		return *this;
 	}
 
+	/*
 	inline self_type& operator+=(const size_t& value){
 		if(this->n_chars + sizeof(size_t) >= this->width)
 			this->resize(std::max(this->width + 1000, this->width*2));
@@ -352,14 +362,15 @@ public:
 		this->n_chars += sizeof(size_t);
 		return *this;
 	}
+	*/
 
 	inline self_type& operator+=(const std::string& value){
-		if(this->n_chars + value.size() + sizeof(BYTE) >= this->width){
-			U64 resize_to = std::max(this->n_chars + value.size() + sizeof(BYTE) + 1000, this->width * 2);
+		if(this->n_chars + value.size() + sizeof(uint8_t) >= this->width){
+			uint64_t resize_to = std::max(this->n_chars + value.size() + sizeof(uint8_t) + 1000, this->width * 2);
 			this->resize(resize_to);
 		}
 
-		for(U32 i = 0; i < value.size(); ++i){
+		for(uint32_t i = 0; i < value.size(); ++i){
 			this->buffer[this->n_chars] = value[i];
 			++this->n_chars;
 		}
@@ -367,62 +378,56 @@ public:
 		return *this;
 	}
 
-	inline reference operator[](const U64 position){ return this->buffer[position]; }
-	inline const_reference operator[](const U64 position) const{ return this->buffer[position]; }
-	inline reference at(const U64 position){ return this->buffer[position]; }
-	inline const_reference at(const U64 position) const{ return this->buffer[position]; }
+	inline reference operator[](const uint64_t position){ return this->buffer[position]; }
+	inline const_reference operator[](const uint64_t position) const{ return this->buffer[position]; }
+	inline reference at(const uint64_t position){ return this->buffer[position]; }
+	inline const_reference at(const uint64_t position) const{ return this->buffer[position]; }
 	inline pointer data(void){ return(this->buffer); }
 	inline const_pointer data(void) const{ return(this->buffer); }
 
-	void read(char* target, const U32 n_length){
+	void read(char* target, const uint32_t n_length){
 		memcpy(target, &this->buffer[this->iterator_position_], n_length);
 		this->iterator_position_ += n_length;
 	}
 
 private:
-	friend self_type& operator>>(self_type& data, BYTE& target){
-		target = *reinterpret_cast<BYTE*>(&data.buffer[data.iterator_position_++]);
+	friend self_type& operator>>(self_type& data, uint8_t& target){
+		target = *reinterpret_cast<uint8_t*>(&data.buffer[data.iterator_position_++]);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, U16& target){
-		target = *reinterpret_cast<U16*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(U16);
+	friend self_type& operator>>(self_type& data, uint16_t& target){
+		target = *reinterpret_cast<uint16_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(uint16_t);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, U32& target){
-		target = *reinterpret_cast<U32*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(U32);
+	friend self_type& operator>>(self_type& data, uint32_t& target){
+		target = *reinterpret_cast<uint32_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(uint32_t);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, U64& target){
-		target = *reinterpret_cast<U64*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(U64);
+	friend self_type& operator>>(self_type& data, uint64_t& target){
+		target = *reinterpret_cast<uint64_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(uint64_t);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, SBYTE& target){
-		target = *reinterpret_cast<SBYTE*>(&data.buffer[data.iterator_position_++]);
+	friend self_type& operator>>(self_type& data, int8_t& target){
+		target = *reinterpret_cast<int8_t*>(&data.buffer[data.iterator_position_++]);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, S16& target){
-		target = *reinterpret_cast<S16*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(S16);
+	friend self_type& operator>>(self_type& data, int16_t& target){
+		target = *reinterpret_cast<int16_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(int16_t);
 		return(data);
 	}
 
-	friend self_type& operator>>(self_type& data, S32& target){
-		target = *reinterpret_cast<S32*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(S32);
-		return(data);
-	}
-
-	friend self_type& operator>>(self_type& data, S64& target){
-		target = *reinterpret_cast<S64*>(&data.buffer[data.iterator_position_]);
-		data.iterator_position_ += sizeof(S64);
+	friend self_type& operator>>(self_type& data, int32_t& target){
+		target = *reinterpret_cast<int32_t*>(&data.buffer[data.iterator_position_]);
+		data.iterator_position_ += sizeof(int32_t);
 		return(data);
 	}
 
@@ -444,11 +449,13 @@ private:
 		return(data);
 	}
 
+	/*
 	friend self_type& operator>>(self_type& data, size_type& target){
 		target = *reinterpret_cast<size_type*>(&data.buffer[data.iterator_position_]);
 		data.iterator_position_ += sizeof(size_type);
 		return(data);
 	}
+	*/
 
 	friend std::ostream& operator<<(std::ostream& out, const self_type& data){
 		out.write(data.data(), data.size());
@@ -457,9 +464,9 @@ private:
 
 public:
 	bool    owns_data_;
-	U64     n_chars;
-	U64     width;
-	U64     iterator_position_;
+	uint64_t     n_chars;
+	uint64_t     width;
+	uint64_t     iterator_position_;
 	pointer buffer;
 };
 

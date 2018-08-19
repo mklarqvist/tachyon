@@ -82,23 +82,23 @@ bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	if(this->eLength    != other.eLength)    return false;
 	if(this->global_key != other.global_key) return false;
 	if(this->controller != other.controller) return false;
-	for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i)
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i)
 		if(this->crc[i] != other.crc[i]) return false;
 
 	return true;
 }
 
-SBYTE DataContainerHeaderObject::GetPrimitiveWidth(void) const{
+int8_t DataContainerHeaderObject::GetPrimitiveWidth(void) const{
 	// We do not care about signedness here
 	switch(this->controller.type){
 	case(YON_TYPE_UNKNOWN):
 	case(YON_TYPE_STRUCT): return(-1);
 	case(YON_TYPE_BOOLEAN):
 	case(YON_TYPE_CHAR):   return(sizeof(char));
-	case(YON_TYPE_8B):     return(sizeof(BYTE));
-	case(YON_TYPE_16B):    return(sizeof(U16));
-	case(YON_TYPE_32B):    return(sizeof(U32));
-	case(YON_TYPE_64B):    return(sizeof(U64));
+	case(YON_TYPE_8B):     return(sizeof(uint8_t));
+	case(YON_TYPE_16B):    return(sizeof(uint16_t));
+	case(YON_TYPE_32B):    return(sizeof(uint32_t));
+	case(YON_TYPE_64B):    return(sizeof(uint64_t));
 	case(YON_TYPE_FLOAT):  return(sizeof(float));
 	case(YON_TYPE_DOUBLE): return(sizeof(double));
 	}

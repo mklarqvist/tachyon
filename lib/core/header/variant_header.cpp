@@ -242,31 +242,31 @@ std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
 
 	size_t l_helper = header.samples_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.samples_.size(); ++i) utility::SerializeString(header.samples_[i], stream);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) utility::SerializeString(header.samples_[i], stream);
 
 	l_helper = header.contigs_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.contigs_.size(); ++i) stream << header.contigs_[i];
+	for(uint32_t i = 0; i < header.contigs_.size(); ++i) stream << header.contigs_[i];
 
 	l_helper = header.info_fields_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.info_fields_.size(); ++i) stream << header.info_fields_[i];
+	for(uint32_t i = 0; i < header.info_fields_.size(); ++i) stream << header.info_fields_[i];
 
 	l_helper = header.format_fields_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.format_fields_.size(); ++i) stream << header.format_fields_[i];
+	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) stream << header.format_fields_[i];
 
 	l_helper = header.filter_fields_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.filter_fields_.size(); ++i) stream << header.filter_fields_[i];
+	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) stream << header.filter_fields_[i];
 
 	l_helper = header.structured_extra_fields_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) stream << header.structured_extra_fields_[i];
+	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) stream << header.structured_extra_fields_[i];
 
 	l_helper = header.extra_fields_.size();
 	utility::SerializePrimitive(l_helper, stream);
-	for(U32 i = 0; i < header.extra_fields_.size(); ++i) stream << header.extra_fields_[i];
+	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) stream << header.extra_fields_[i];
 
 	return(stream);
 }
@@ -278,31 +278,31 @@ std::istream& operator>>(std::istream& stream, VariantHeader& header){
 	size_t l_helper;
 	utility::DeserializePrimitive(l_helper, stream);
 	header.samples_.resize(l_helper);
-	for(U32 i = 0; i < header.samples_.size(); ++i) utility::DeserializeString(header.samples_[i], stream);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) utility::DeserializeString(header.samples_[i], stream);
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.contigs_.resize(l_helper);
-	for(U32 i = 0; i < header.contigs_.size(); ++i) stream >> header.contigs_[i];
+	for(uint32_t i = 0; i < header.contigs_.size(); ++i) stream >> header.contigs_[i];
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.info_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.info_fields_.size(); ++i) stream >> header.info_fields_[i];
+	for(uint32_t i = 0; i < header.info_fields_.size(); ++i) stream >> header.info_fields_[i];
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.format_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.format_fields_.size(); ++i) stream >> header.format_fields_[i];
+	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) stream >> header.format_fields_[i];
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.filter_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.filter_fields_.size(); ++i) stream >> header.filter_fields_[i];
+	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) stream >> header.filter_fields_[i];
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.structured_extra_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) stream >> header.structured_extra_fields_[i];
+	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) stream >> header.structured_extra_fields_[i];
 
 	utility::DeserializePrimitive(l_helper, stream);
 	header.extra_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.extra_fields_.size(); ++i) stream >> header.extra_fields_[i];
+	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) stream >> header.extra_fields_[i];
 
 	header.BuildMaps();
 	header.BuildReverseMaps();
@@ -316,31 +316,31 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantHeader& header
 
 	uint32_t l_helper = header.samples_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.samples_.size(); ++i) io::SerializeString(header.samples_[i], buffer);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) io::SerializeString(header.samples_[i], buffer);
 
 	l_helper = header.contigs_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.contigs_.size(); ++i) buffer << header.contigs_[i];
+	for(uint32_t i = 0; i < header.contigs_.size(); ++i) buffer << header.contigs_[i];
 
 	l_helper = header.info_fields_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.info_fields_.size(); ++i) buffer << header.info_fields_[i];
+	for(uint32_t i = 0; i < header.info_fields_.size(); ++i) buffer << header.info_fields_[i];
 
 	l_helper = header.format_fields_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.format_fields_.size(); ++i) buffer << header.format_fields_[i];
+	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) buffer << header.format_fields_[i];
 
 	l_helper = header.filter_fields_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.filter_fields_.size(); ++i) buffer << header.filter_fields_[i];
+	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) buffer << header.filter_fields_[i];
 
 	l_helper = header.structured_extra_fields_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) buffer << header.structured_extra_fields_[i];
+	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) buffer << header.structured_extra_fields_[i];
 
 	l_helper = header.extra_fields_.size();
 	io::SerializePrimitive(l_helper, buffer);
-	for(U32 i = 0; i < header.extra_fields_.size(); ++i) buffer << header.extra_fields_[i];
+	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) buffer << header.extra_fields_[i];
 
 	return(buffer);
 }
@@ -352,31 +352,31 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantHeader& header){
 	uint32_t l_helper;
 	io::DeserializePrimitive(l_helper, buffer);
 	header.samples_.resize(l_helper);
-	for(U32 i = 0; i < header.samples_.size(); ++i) io::DeserializeString(header.samples_[i], buffer);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) io::DeserializeString(header.samples_[i], buffer);
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.contigs_.resize(l_helper);
-	for(U32 i = 0; i < header.contigs_.size(); ++i)       buffer >> header.contigs_[i];
+	for(uint32_t i = 0; i < header.contigs_.size(); ++i)       buffer >> header.contigs_[i];
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.info_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.info_fields_.size(); ++i)   buffer >> header.info_fields_[i];
+	for(uint32_t i = 0; i < header.info_fields_.size(); ++i)   buffer >> header.info_fields_[i];
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.format_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.format_fields_.size(); ++i) buffer >> header.format_fields_[i];
+	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) buffer >> header.format_fields_[i];
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.filter_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.filter_fields_.size(); ++i) buffer >> header.filter_fields_[i];
+	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) buffer >> header.filter_fields_[i];
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.structured_extra_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.structured_extra_fields_.size(); ++i) buffer >> header.structured_extra_fields_[i];
+	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) buffer >> header.structured_extra_fields_[i];
 
 	io::DeserializePrimitive(l_helper, buffer);
 	header.extra_fields_.resize(l_helper);
-	for(U32 i = 0; i < header.extra_fields_.size(); ++i) buffer >> header.extra_fields_[i];
+	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) buffer >> header.extra_fields_[i];
 
 	header.BuildMaps();
 	header.BuildReverseMaps();

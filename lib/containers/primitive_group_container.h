@@ -49,7 +49,7 @@ public:
 
 public:
     PrimitiveGroupContainer();
-    PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each);
+    PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
 	// Element access
@@ -79,12 +79,12 @@ public:
 
 	bcf1_t* UpdateHtslibVcfRecordFormatInt32(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
 		uint32_t n_records = 0;
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			n_records += this->at(i).size();
 
 		int32_t* dst = new int32_t[n_records];
 		uint32_t n_offset = 0;
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
 			n_offset += this->at(i).size();
 		}
@@ -97,12 +97,12 @@ public:
 
 	bcf1_t* UpdateHtslibVcfRecordFormatFloat(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
 		uint32_t n_records = 0;
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			n_records += this->at(i).size();
 
 		float* dst = new float[n_records];
 		uint32_t n_offset = 0;
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			utility::FormatDataHtslib(this->at(i).data(), &dst[n_offset], this->at(i).size());
 			n_offset += this->at(i).size();
 		}
@@ -121,7 +121,7 @@ public:
 
 private:
 	template <class actual_primitive_type>
-	void __setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each);
+	void __setup(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each);
 
 private:
     pointer   __containers;
@@ -135,17 +135,17 @@ template <class return_type>
 PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : __containers(nullptr){}
 
 template <class return_type>
-PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each) :
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each) :
 	PrimitiveGroupContainerInterface(n_objects),
 	__containers(static_cast<pointer>(::operator new[](this->n_objects_*sizeof(value_type))))
 {
 
 	if(container.header.data_header.IsSigned()){
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, offset, n_objects, strides_each));  break;
-		case(YON_TYPE_16B):    (this->__setup<S16>(container, offset, n_objects, strides_each));    break;
-		case(YON_TYPE_32B):    (this->__setup<S32>(container, offset, n_objects, strides_each));    break;
-		case(YON_TYPE_64B):    (this->__setup<S64>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_8B):     (this->__setup<int8_t>(container, offset, n_objects, strides_each));  break;
+		case(YON_TYPE_16B):    (this->__setup<int16_t>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_32B):    (this->__setup<int32_t>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_64B):    (this->__setup<int64_t>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
 		case(YON_TYPE_BOOLEAN):
@@ -156,10 +156,10 @@ PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_contain
 		}
 	} else {
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset, n_objects, strides_each));   break;
-		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset, n_objects, strides_each));    break;
-		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset, n_objects, strides_each));    break;
-		case(YON_TYPE_64B):    (this->__setup<U64>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, offset, n_objects, strides_each));   break;
+		case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, offset, n_objects, strides_each));    break;
+		case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, offset, n_objects, strides_each));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset, n_objects, strides_each));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset, n_objects, strides_each)); break;
 		case(YON_TYPE_BOOLEAN):
@@ -181,9 +181,9 @@ PrimitiveGroupContainer<return_type>::~PrimitiveGroupContainer(){
 
 template <class return_type>
 template <class actual_primitive_type>
-void PrimitiveGroupContainer<return_type>::__setup(const data_container_type& container, const U32& offset, const U32 n_objects, const U32 strides_each){
-	U32 current_offset = offset;
-	for(U32 i = 0; i < this->n_objects_; ++i){
+void PrimitiveGroupContainer<return_type>::__setup(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each){
+	uint32_t current_offset = offset;
+	for(uint32_t i = 0; i < this->n_objects_; ++i){
 		new( &this->__containers[i] ) value_type( container, current_offset, strides_each );
 		current_offset += strides_each * sizeof(actual_primitive_type);
 	}

@@ -15,7 +15,7 @@ namespace containers{
  * Primary container to handle integer data from data containers
  * This class should be considered for internal use only
  */
-template <class return_primitive = U32>
+template <class return_primitive = uint32_t>
 class StrideContainer{
 public:
 	typedef StrideContainer   self_type;
@@ -187,10 +187,10 @@ StrideContainer<return_primitive>::~StrideContainer(void){
 template <class return_primitive>
 void StrideContainer<return_primitive>::__setup(const data_container_type& container){
 	switch(container.GetStridePrimitiveType()){
-	case(YON_TYPE_8B):  this->__allocate<BYTE>(container); break;
-	case(YON_TYPE_16B): this->__allocate<U16>(container);  break;
-	case(YON_TYPE_32B): this->__allocate<U32>(container);  break;
-	case(YON_TYPE_64B): this->__allocate<U64>(container);  break;
+	case(YON_TYPE_8B):  this->__allocate<uint8_t>(container); break;
+	case(YON_TYPE_16B): this->__allocate<uint16_t>(container);  break;
+	case(YON_TYPE_32B): this->__allocate<uint32_t>(container);  break;
+	case(YON_TYPE_64B): this->__allocate<uint64_t>(container);  break;
 	case(YON_TYPE_FLOAT):
 	case(YON_TYPE_DOUBLE):
 	case(YON_TYPE_BOOLEAN):

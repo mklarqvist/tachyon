@@ -98,14 +98,14 @@ public:
 		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
 			this->resize();
 
-		for(U32 i = 0; i < contigs.size(); ++i){
-			const U64 contig_length = contigs[i].n_bases;
-			BYTE n_levels = 7;
-			U64 bins_lowest = pow(4,n_levels);
+		for(uint32_t i = 0; i < contigs.size(); ++i){
+			const uint64_t contig_length = contigs[i].n_bases;
+			uint8_t n_levels = 7;
+			uint64_t bins_lowest = pow(4,n_levels);
 			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
 
 			if(used / bins_lowest < 2500){
-				for(S32 i = n_levels; i != 0; --i){
+				for(int32_t i = n_levels; i != 0; --i){
 					if(used/pow(4,i) > 2500){
 						n_levels = i;
 						break;
@@ -116,7 +116,7 @@ public:
 			this->Add(i, contig_length, n_levels);
 			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
 			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
-			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (uint64_t)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
 		}
 		return(*this);
 	}
@@ -127,7 +127,7 @@ public:
 	 * @param n_levels Number of desired 4^N levels
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& Add(const U32& contigID, const U64& l_contig, const BYTE& n_levels){
+	inline self_type& Add(const uint32_t& contigID, const uint64_t& l_contig, const uint8_t& n_levels){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();
 
@@ -143,7 +143,7 @@ public:
 	 * @param entry    Target index entry to push back onto the linear index vector
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& Add(const U32& contigID, const linear_entry_type& entry){
+	inline self_type& Add(const uint32_t& contigID, const linear_entry_type& entry){
 		this->linear_[contigID] += entry;
 		return(*this);
 	}

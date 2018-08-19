@@ -40,26 +40,26 @@ bool VariantImporter::BuildVCF(void){
 		return false;
 	}
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
 		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
 			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig. Setting to INT32_MAX." << std::endl;
-			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<S32>::max();
+			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<int32_t>::max();
 		}
 	}
 
 	// Remap the global IDX fields in Vcf to the appropriate incremental order.
 	// This is useful in the situations when fields have been removed or added
 	// to the Vcf header section without reformatting the file.
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
 		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
 		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
 		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
 
 	// Predicate of a search for "GT" FORMAT field in the Vcf header.
@@ -116,7 +116,7 @@ bool VariantImporter::BuildVCF(void){
 	                     this->vcf_reader_->vcf_header_.filter_fields_.size());
 
 	// Resize containers
-	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
+	const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
 	// Start porgress timer.
@@ -213,26 +213,26 @@ bool VariantImporter::BuildParallel(void){
 		return false;
 	}
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
 		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
 			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig. Setting to INT32_MAX." << std::endl;
-			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<S32>::max();
+			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<int32_t>::max();
 		}
 	}
 
 	// Remap the global IDX fields in Vcf to the appropriate incremental order.
 	// This is useful in the situations when fields have been removed or added
 	// to the Vcf header section without reformatting the file.
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
 		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
 		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
 		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
 
-	for(U32 i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
+	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
 
 	// Predicate of a search for "GT" FORMAT field in the Vcf header.
@@ -289,7 +289,7 @@ bool VariantImporter::BuildParallel(void){
 	                     this->vcf_reader_->vcf_header_.filter_fields_.size());
 
 	// Resize containers
-	const U32 resize_to = this->settings_.checkpoint_n_snps * sizeof(U32) * 2; // small initial allocation
+	const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
 	// Start porgress timer.
@@ -322,7 +322,7 @@ bool VariantImporter::BuildParallel(void){
 		n_entries_a += this->vcf_container_.sizeWithoutCarryOver();
 		if(c_offset == n_containers){
 			vcf_container_type* v = nullptr;
-			for(U32 i = 0; i < n_containers; ++i){
+			for(uint32_t i = 0; i < n_containers; ++i){
 				mpmc_queue.pop(v);
 				std::cerr << "pop: " << v->size() << std::endl;
 				n_entries_c += v->sizeWithoutCarryOver();
@@ -360,7 +360,7 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 	// ctor with the target htslib bcf1_t entry provided. Internally
 	// converts the bcf1_t data members into the allelic structure
 	// that tachyon uses.
-	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i){
+	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i){
 		// Transmute a bcf record into a meta structure
 		new( meta_entries + i ) meta_type( this->vcf_container_[i], this->block.header.minPosition );
 
@@ -375,7 +375,7 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 
 	// Interleave meta records out to the destination block byte
 	// streams.
-	for(U32 i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries[i];
+	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries[i];
 
 	// Invoke destructor for meta entries.
 	for(std::size_t i = 0; i < container.sizeWithoutCarryOver(); ++i) (meta_entries + i)->~MetaEntry();
@@ -384,7 +384,7 @@ bool VariantImporter::AddRecords(const vcf_container_type& container){
 	return true;
 }
 
-bool VariantImporter::AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta){
+bool VariantImporter::AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta){
 	// Ascertain that the provided position does not exceed the maximum
 	// reported length of the target contig.
 	if(container.at(position)->pos > this->vcf_reader_->vcf_header_.GetContig(container.at(position)->rid)->n_bases){
@@ -425,10 +425,10 @@ bool VariantImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	const int& n_filter_fields = record->d.n_flt;
 
 	// Iterate over available Filter fields.
-	for(U32 i = 0; i < n_filter_fields; ++i){
+	for(uint32_t i = 0; i < n_filter_fields; ++i){
 		const int& hts_filter_key = record->d.flt[i]; // htslib IDX value
-		const U32 global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
-		const U32 target_container = this->block.AddFilter(global_key);
+		const uint32_t global_key = this->filter_reorder_map_[hts_filter_key]; // tachyon global IDX value
+		const uint32_t target_container = this->block.AddFilter(global_key);
 		assert(target_container < 65536);
 		filter_ids.push_back(global_key);
 	}
@@ -442,10 +442,10 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	const int n_info_fields = record->n_info;
 
 	// Iterate over available Info fields.
-	for(U32 i = 0; i < n_info_fields; ++i){
+	for(uint32_t i = 0; i < n_info_fields; ++i){
 		const int& hts_info_key = record->d.info[i].key; // htslib IDX value
-		const U32 global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
-		const U32 target_container = this->block.AddInfo(global_key);
+		const uint32_t global_key = this->info_reorder_map_[hts_info_key]; // tachyon global IDX value
+		const uint32_t target_container = this->block.AddInfo(global_key);
 		assert(target_container < 65536);
 		info_ids.push_back(global_key);
 
@@ -459,26 +459,26 @@ bool VariantImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		if(info_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);
 			assert(data_length % element_stride_size == 0);
-			const SBYTE* data_local = reinterpret_cast<const SBYTE*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int8_t* data_local = reinterpret_cast<const int8_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_INT16){
 			element_stride_size = sizeof(int16_t);
 			assert(data_length % element_stride_size == 0);
-			const S16* data_local = reinterpret_cast<const S16*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int16_t* data_local = reinterpret_cast<const int16_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_INT32){
 			element_stride_size = sizeof(int32_t);
 			assert(data_length % element_stride_size == 0);
-			const S32* data_local = reinterpret_cast<const S32*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int32_t* data_local = reinterpret_cast<const int32_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_FLOAT){
 			element_stride_size = sizeof(float);
 			assert(data_length % element_stride_size == 0);
 			const float* data_local = reinterpret_cast<const float*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 		} else if(info_primitive_type == BCF_BT_CHAR){
 			element_stride_size = sizeof(char);
@@ -504,10 +504,10 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 	const int n_format_fields = record->n_fmt;
 
 	// Iterate over available Format fields.
-	for(U32 i = 0; i < n_format_fields; ++i){
+	for(uint32_t i = 0; i < n_format_fields; ++i){
 		const int& hts_format_key = record->d.fmt[i].id;; // htslib IDX value
-		const U32 global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
-		const U32 target_container = this->block.AddFormat(global_key);
+		const uint32_t global_key = this->format_reorder_map_[hts_format_key]; // tachyon global IDX value
+		const uint32_t target_container = this->block.AddFormat(global_key);
 		assert(target_container < 65536);
 		format_ids.push_back(global_key);
 
@@ -528,29 +528,29 @@ bool VariantImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		if(format_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);
 			assert(data_length % element_stride_size == 0);
-			const SBYTE* data_local = reinterpret_cast<const SBYTE*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int8_t* data_local = reinterpret_cast<const int8_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_INT16){
 			element_stride_size = sizeof(int16_t);
 			assert(data_length % element_stride_size == 0);
-			const S16* data_local = reinterpret_cast<const S16*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int16_t* data_local = reinterpret_cast<const int16_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_INT32){
 			element_stride_size = sizeof(int32_t);
 			assert(data_length % element_stride_size == 0);
-			const S32* data_local = reinterpret_cast<const S32*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			const int32_t* data_local = reinterpret_cast<const int32_t*>(data);
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_FLOAT){
 			element_stride_size = sizeof(float);
 			assert(data_length % element_stride_size == 0);
 			const float* data_local = reinterpret_cast<const float*>(data);
-			for(U32 j = 0; j < data_length/element_stride_size; ++j)
+			for(uint32_t j = 0; j < data_length/element_stride_size; ++j)
 				destination_container.Add(data_local[j]);
 			assert(stride_size * element_stride_size * this->vcf_reader_->vcf_header_.GetNumberSamples() == data_length);
 		} else if(format_primitive_type == BCF_BT_CHAR){
@@ -591,7 +591,7 @@ bool VariantImporter::AddVcfFilterPattern(const std::vector<int>& pattern, meta_
 }
 
 bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
-	S32 index_bin = -1;
+	int32_t index_bin = -1;
 
 	// Ascertain that the meta entry has been evaluated
 	// prior to executing this function.
@@ -600,7 +600,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		return false;
 	}
 
-	S64 end_position_used = record->pos;
+	int64_t end_position_used = record->pos;
 
 	// The Info field END is used as the end position of an internal if it is available. This field
 	// is usually only set for non-standard variants such as SVs or other special meaning records.
@@ -608,9 +608,9 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// Linear search for the END key: this is not optimal but is probably faster
 		// than first constructing a hash table for each record.
 		const int n_info_fields = record->n_info;
-		for(U32 i = 0; i < n_info_fields; ++i){
+		for(uint32_t i = 0; i < n_info_fields; ++i){
 			if(record->d.info[i].key == this->settings_.info_end_key){
-				U32 end = 0;
+				uint32_t end = 0;
 				switch(record->d.info[i].type){
 				case(BCF_BT_INT8):  end = *reinterpret_cast<int8_t*> (record->d.info[i].vptr); break;
 				case(BCF_BT_INT16): end = *reinterpret_cast<int16_t*>(record->d.info[i].vptr); break;
@@ -620,7 +620,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 					return false;
 				}
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << record->pos + 1 << std::endl;
-				index_bin = this->writer->index.index_[meta.contigID].add(record->pos, end, (U32)this->writer->index.current_block_number());
+				index_bin = this->writer->index.index_[meta.contigID].add(record->pos, end, (uint32_t)this->writer->index.current_block_number());
 				//index_bin = 0;
 				break;
 			}
@@ -629,11 +629,11 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 	// If the END field cannot be found then we check if the variant is a
 	if(index_bin == -1){
-		S32 longest = -1;
+		int32_t longest = -1;
 		// Iterate over available allele information and find the longest
 		// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
 		// simple SNV/indels.
-		for(U32 i = 0; i < meta.n_alleles; ++i){
+		for(uint32_t i = 0; i < meta.n_alleles; ++i){
 			if(std::regex_match(meta.alleles[i].allele, utility::YON_VARIANT_STANDARD)){
 				if(meta.alleles[i].l_allele > longest)
 					longest = meta.alleles[i].l_allele;
@@ -644,7 +644,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		if(longest > 1){
 			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
 			                                                          record->pos + longest,
-			                                                          (U32)this->writer->index.current_block_number());
+			                                                          (uint32_t)this->writer->index.current_block_number());
 			//index_bin = 0;
 			end_position_used = record->pos + longest;
 		}
@@ -657,7 +657,7 @@ bool VariantImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		else {
 			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
 			                                                          record->pos,
-			                                                          (U32)this->writer->index.current_block_number());
+			                                                          (uint32_t)this->writer->index.current_block_number());
 			//index_bin = 0;
 			//std::cerr << "fallback: " << record->pos+1 << std::endl;
 		}
@@ -715,16 +715,16 @@ bool VariantImporter::WriteFinal(algorithm::VariantDigestManager& checksums){
 	footer.n_variants         = this->writer->n_variants_written;
 	assert(footer.n_blocks == this->writer->index.GetLinearSize());
 
-	U64 last_pos = this->writer->stream->tellp();
+	uint64_t last_pos = this->writer->stream->tellp();
 	this->writer->writeIndex(); // Write index.
-	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
 	checksums.finalize();       // Finalize SHA-512 digests.
 	*this->writer->stream << checksums;
-	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 	last_pos = this->writer->stream->tellp();
 	*this->writer->stream << footer; // Write global footer and EOF marker.
-	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((U64)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 
 	this->writer->stream->flush();
 	return(this->writer->stream->good());
@@ -745,7 +745,7 @@ bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 				writer_keychain << keychain;
 				writer_keychain.flush();
 			}
-			const U32 keychain_size = writer_keychain.tellp();
+			const uint32_t keychain_size = writer_keychain.tellp();
 			writer_keychain.close();
 			if(!SILENT)
 				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::toPrettyDiskString(keychain_size) << "..." << std::endl;
@@ -796,9 +796,9 @@ void VariantImporter::UpdateHeaderImport(VariantHeader& header){
 	}
 
 bool VariantImporter::GenerateIdentifiers(void){
-	BYTE RANDOM_BYTES[32];
-	for(U32 i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
-		U64 b_hash;
+	uint8_t RANDOM_BYTES[32];
+	for(uint32_t i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
+		uint64_t b_hash;
 		while(true){
 			RAND_bytes(&RANDOM_BYTES[0], 32);
 			b_hash = XXH64(&RANDOM_BYTES[0], 32, 1337);

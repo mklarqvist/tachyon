@@ -25,7 +25,7 @@ public:
 
 	bool WriteBlockFooter(const container_type& footer){
 		if(this->stream == nullptr) return false;
-		const U64 start_footer_pos = this->stream->tellp();
+		const uint64_t start_footer_pos = this->stream->tellp();
 		utility::SerializePrimitive(footer.header.data_header.uLength, *this->stream);
 		utility::SerializePrimitive(footer.header.data_header.cLength, *this->stream);
 		this->stream->write(reinterpret_cast<const char*>(&footer.header.data_header.crc[0]), MD5_DIGEST_LENGTH);
@@ -40,8 +40,8 @@ public:
 	}
 
 public:
-	U64 n_blocks_written;
-	U64 n_variants_written;
+	uint64_t n_blocks_written;
+	uint64_t n_variants_written;
 	std::ostream* stream;
 	sorted_index_type index;
 };

@@ -25,10 +25,10 @@ public:
 
 private:
 	std::string SecondsToTimestring(const double seconds){
-		const S32 hours = ((S32)seconds / 60 / 60);
-		const S32 minutes = ((S32)seconds / 60) % 60;
-		const S32 sec = (S32)seconds % 60;
-		const S32 remainder = (seconds - (S32)seconds)*1000;
+		const int32_t hours     = ((int32_t)seconds / 60 / 60);
+		const int32_t minutes   = ((int32_t)seconds / 60) % 60;
+		const int32_t sec       = (int32_t)seconds % 60;
+		const int32_t remainder = (seconds - (int32_t)seconds)*1000;
 
 		if(hours > 0){
 			sprintf(&this->buffer[0], "%02uh%02um%02u,%03us",

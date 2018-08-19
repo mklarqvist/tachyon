@@ -67,12 +67,12 @@ struct VariantController{
 	~VariantController(){}
 
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
-		buffer += (U16)*reinterpret_cast<const U16* const>(&entry);
+		buffer += (uint16_t)*reinterpret_cast<const uint16_t* const>(&entry);
 		return(buffer);
 
 	}
 
-	void operator=(const U16& value){
+	void operator=(const uint16_t& value){
 		const self_type* const other = reinterpret_cast<const self_type* const>(&value);
 		this->gt_available     = other->gt_available;
 		this->gt_anyMissing    = other->gt_anyMissing;
@@ -89,7 +89,7 @@ struct VariantController{
 		this->all_snv          = other->all_snv;
 	}
 
-	inline U16 toValue(void) const{ return((U16)*reinterpret_cast<const U16* const>(this)); }
+	inline uint16_t toValue(void) const{ return((uint16_t)*reinterpret_cast<const uint16_t* const>(this)); }
 
 	/**< Controller field. The first seven fields describes
 	 * genotype-specific information. The remainder bit-fields
@@ -107,13 +107,13 @@ struct VariantController{
 	 * 11) If allele data is bit-packed
 	 * 12) If all alleles are SNVs
 	 */
-	U16 gt_available:        1, // if there is any GT data
+	uint16_t gt_available:        1, // if there is any GT data
         gt_anyMissing:       1, // any missing
         gt_phase:            1, // all phased/unphased
 		gt_anyNA:            1, // any NA
         gt_mixed_phasing:    1, // has mixed phasing
 		gt_compression_type: 3, // GT compression algorithm
-		gt_primtive_type:    2, // type of compression primitive (BYTE, U16, U32, U64)
+		gt_primtive_type:    2, // type of compression primitive (BYTE, uint16_t, U32, U64)
         biallelic:           1, // is biallelic
         simple_snv:          1, // is simple SNV->SNV
 		diploid:             1, // is diploid

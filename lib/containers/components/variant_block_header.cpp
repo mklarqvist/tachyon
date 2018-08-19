@@ -19,25 +19,25 @@ VariantBlockHeader::VariantBlockHeader() :
 VariantBlockHeader::~VariantBlockHeader(){}
 
 std::ostream& operator<<(std::ostream& stream, const VariantBlockHeader& entry){
-	stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
-	stream.write(reinterpret_cast<const char*>(&entry.block_hash),        sizeof(U64));
+	stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.block_hash),        sizeof(uint64_t));
 	stream << entry.controller;
-	stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
-	stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(S64));
-	stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(S64));
-	stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(U32));
+	stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(int64_t));
+	stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(int64_t));
+	stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(uint32_t));
 
 	return(stream);
 }
 
 std::ifstream& operator>>(std::ifstream& stream, VariantBlockHeader& entry){
-	stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(U32));
-	stream.read(reinterpret_cast<char*>(&entry.block_hash),        sizeof(U64));
+	stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.block_hash),        sizeof(uint64_t));
 	stream >> entry.controller;
-	stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
-	stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(S64));
-	stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(S64));
-	stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(U32));
+	stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(int64_t));
+	stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(int64_t));
+	stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(uint32_t));
 
 	return(stream);
 }

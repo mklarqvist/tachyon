@@ -54,7 +54,7 @@ public:
     PrimitiveContainer();
     PrimitiveContainer(const return_type value);
     PrimitiveContainer(const container_type& container);
-    PrimitiveContainer(const container_type& container, const U32& offset, const U32 n_entries);
+    PrimitiveContainer(const container_type& container, const uint32_t& offset, const uint32_t n_entries);
     ~PrimitiveContainer(void);
 
     // Element access
@@ -89,10 +89,10 @@ public:
 
 private:
     template <class native_primitive>
-    void __setup(const container_type& container, const U32& offset);
+    void __setup(const container_type& container, const uint32_t& offset);
 
     template <class native_primitive>
-    void __setupSigned(const container_type& container, const U32& offset);
+    void __setupSigned(const container_type& container, const uint32_t& offset);
 
 private:
     pointer __entries;
@@ -190,10 +190,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 
 	if(container.header.data_header.IsSigned()){
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, 0));  break;
-		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, 0));    break;
-		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, 0));    break;
-		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, 0));    break;
+		case(YON_TYPE_8B):     (this->__setupSigned<int8_t>(container, 0));  break;
+		case(YON_TYPE_16B):    (this->__setupSigned<int16_t>(container, 0));    break;
+		case(YON_TYPE_32B):    (this->__setupSigned<int32_t>(container, 0));    break;
+		case(YON_TYPE_64B):    (this->__setupSigned<int64_t>(container, 0));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));        break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0));       break;
 		case(YON_TYPE_BOOLEAN):
@@ -206,10 +206,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		}
 	} else {
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, 0));   break;
-		case(YON_TYPE_16B):    (this->__setup<U16>(container, 0));    break;
-		case(YON_TYPE_32B):    (this->__setup<U32>(container, 0));    break;
-		case(YON_TYPE_64B):    (this->__setup<U64>(container, 0));    break;
+		case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, 0));   break;
+		case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, 0));    break;
+		case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, 0));    break;
+		case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, 0));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, 0));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, 0)); break;
 		case(YON_TYPE_BOOLEAN):
@@ -225,17 +225,17 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& container,
-                                                              const U32& offset,
-                                                              const U32  n_entries) :
+                                                              const uint32_t& offset,
+                                                              const uint32_t  n_entries) :
     PrimitiveContainerInterface(false, n_entries),
 	__entries(new value_type[n_entries])
 {
 	if(container.header.data_header.IsSigned()){
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setupSigned<SBYTE>(container, offset));  break;
-		case(YON_TYPE_16B):    (this->__setupSigned<S16>(container, offset));    break;
-		case(YON_TYPE_32B):    (this->__setupSigned<S32>(container, offset));    break;
-		case(YON_TYPE_64B):    (this->__setupSigned<S64>(container, offset));    break;
+		case(YON_TYPE_8B):     (this->__setupSigned<int8_t>(container, offset));  break;
+		case(YON_TYPE_16B):    (this->__setupSigned<int16_t>(container, offset));    break;
+		case(YON_TYPE_32B):    (this->__setupSigned<int32_t>(container, offset));    break;
+		case(YON_TYPE_64B):    (this->__setupSigned<int64_t>(container, offset));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));        break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset));       break;
 		case(YON_TYPE_BOOLEAN):
@@ -246,10 +246,10 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		}
 	} else {
 		switch(container.header.data_header.GetPrimitiveType()){
-		case(YON_TYPE_8B):     (this->__setup<BYTE>(container, offset));   break;
-		case(YON_TYPE_16B):    (this->__setup<U16>(container, offset));    break;
-		case(YON_TYPE_32B):    (this->__setup<U32>(container, offset));    break;
-		case(YON_TYPE_64B):    (this->__setup<U64>(container, offset));    break;
+		case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, offset));   break;
+		case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, offset));    break;
+		case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, offset));    break;
+		case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, offset));    break;
 		case(YON_TYPE_FLOAT):  (this->__setup<float>(container, offset));  break;
 		case(YON_TYPE_DOUBLE): (this->__setup<double>(container, offset)); break;
 		case(YON_TYPE_BOOLEAN):
@@ -268,23 +268,23 @@ PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::__setup(const container_type& container, const U32& offset){
+void PrimitiveContainer<return_type>::__setup(const container_type& container, const uint32_t& offset){
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
 
-	for(U32 i = 0; i < this->size(); ++i)
+	for(uint32_t i = 0; i < this->size(); ++i)
 		this->__entries[i] = data[i];
 }
 
 template <class return_type>
 template <class native_primitive>
-void PrimitiveContainer<return_type>::__setupSigned(const container_type& container, const U32& offset){
+void PrimitiveContainer<return_type>::__setupSigned(const container_type& container, const uint32_t& offset){
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
 
 	if(sizeof(native_primitive) == sizeof(return_type)){
 		return(this->__setup<native_primitive>(container, offset));
 	}
 	else {
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			// If the data is missing in the native format
 			if(data[i] == std::numeric_limits<native_primitive>::min()){
 				this->__entries[i] = std::numeric_limits<return_type>::min();

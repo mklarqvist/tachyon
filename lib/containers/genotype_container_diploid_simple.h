@@ -21,15 +21,15 @@ private:
 
 public:
     GenotypeContainerDiploidSimple();
-    GenotypeContainerDiploidSimple(const char* const data, const U32 n_entries, const meta_type& meta_entry);
+    GenotypeContainerDiploidSimple(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     ~GenotypeContainerDiploidSimple();
 
-    void operator()(const char* const data, const U32 n_entries, const meta_type& meta_entry){
+    void operator()(const char* const data, const uint32_t n_entries, const meta_type& meta_entry){
 		this->n_entries = n_entries;
 		delete [] this->__data;
 
 		const T* const re = reinterpret_cast<const T* const>(data);
-		for(U32 i = 0; i < n_entries; ++i)
+		for(uint32_t i = 0; i < n_entries; ++i)
 			this->__data[i] = re[i];
     }
 
@@ -93,7 +93,7 @@ GenotypeContainerDiploidSimple<return_type>::GenotypeContainerDiploidSimple(){
 }
 
 template <class return_type>
-GenotypeContainerDiploidSimple<return_type>::GenotypeContainerDiploidSimple(const char* const data, const U32 n_entries, const meta_type& meta_entry) :
+GenotypeContainerDiploidSimple<return_type>::GenotypeContainerDiploidSimple(const char* const data, const uint32_t n_entries, const meta_type& meta_entry) :
 	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
 {
 

@@ -4,7 +4,6 @@
 #include <regex>
 
 #include "support/magic_constants.h"
-#include "support/type_definitions.h"
 #include "support/helpers.h"
 #include "third_party/intervalTree.h"
 #include "index/index.h"
@@ -19,8 +18,8 @@ class IntervalContainer {
 public:
 	typedef IntervalContainer      self_type;
     typedef std::size_t            size_type;
-    typedef algorithm::Interval<U32, S64> interval_type;
-    typedef algorithm::IntervalTree<U32, S64>  value_type;
+    typedef algorithm::Interval<uint32_t, int64_t> interval_type;
+    typedef algorithm::IntervalTree<uint32_t, int64_t>  value_type;
     typedef value_type&            reference;
     typedef const value_type&      const_reference;
     typedef value_type*            pointer;
@@ -83,7 +82,7 @@ public:
 
 	bool Build(const header_type& header);
 
-	inline std::vector<interval_type> FindOverlaps(const U32& contigID, const S64& start_position, const S64& end_position) const{
+	inline std::vector<interval_type> FindOverlaps(const uint32_t& contigID, const int64_t& start_position, const int64_t& end_position) const{
 		if(contigID > this->size()) return(std::vector<interval_type>());
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
@@ -97,7 +96,7 @@ private:
 	void DedupeBlockList(void);
 
 private:
-	U32 n_intervals_;
+	uint32_t n_intervals_;
     std::vector<std::string>   interval_strings_;
     std::vector< std::vector<interval_type> > interval_list_;
     std::vector<index_entry_type> block_list_;

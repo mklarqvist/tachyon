@@ -49,7 +49,7 @@ public:
 	 * Internal use only
 	 * @param s Size in bytes
 	 */
-	void resize(const U32 s);
+	void resize(const uint32_t s);
 
 	/**< @brief Recycle structure without releasing memory
 	 * Internal use only: Clears data by resetting
@@ -58,7 +58,7 @@ public:
 	 */
 	void clear(void);
 
-	inline const U32& size(void) const{ return(this->header.n_variants); }
+	inline const uint32_t& size(void) const{ return(this->header.n_variants); }
 
 	/**< @brief Reads all digital objects from disk
 	 * Primary function for reading data from disk. Data
@@ -104,8 +104,8 @@ public:
 		std::vector<int> info_ids_found;
 		if(info_ids_global.size() == 0) return(info_ids_found);
 
-		for(U32 i = 0; i < info_ids_global.size(); ++i){
-			for(U32 j = 0; j < this->footer.n_info_streams; ++j){
+		for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+			for(uint32_t j = 0; j < this->footer.n_info_streams; ++j){
 				if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
 					info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
 			}
@@ -119,8 +119,8 @@ public:
 		if(info_ids_global.size() == 0) return(info_ids_found);
 		assert(local_id < this->footer.n_info_patterns);
 
-		for(U32 i = 0; i < info_ids_global.size(); ++i){
-			for(U32 k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
+		for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+			for(uint32_t k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
 				if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
 					info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
 				}
@@ -140,8 +140,8 @@ public:
 		std::vector<int> format_ids_found;
 		if(format_ids_global.size() == 0) return(format_ids_found);
 
-		for(U32 i = 0; i < format_ids_global.size(); ++i){
-			for(U32 j = 0; j < this->footer.n_format_streams; ++j){
+		for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+			for(uint32_t j = 0; j < this->footer.n_format_streams; ++j){
 				if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
 					format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
 			}
@@ -155,8 +155,8 @@ public:
 		if(format_ids_global.size() == 0) return(format_ids_found);
 		assert(local_id < this->footer.n_format_patterns);
 
-		for(U32 i = 0; i < format_ids_global.size(); ++i){
-			for(U32 k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
+		for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+			for(uint32_t k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
 				if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
 					format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
 			}
@@ -165,17 +165,17 @@ public:
 		return(format_ids_found);
 	}
 
-	std::vector<U32> GetFormatKeys(void) const{
-		std::vector<U32> ret;
-		for(U32 i = 0; i < this->footer.n_format_streams; ++i)
+	std::vector<uint32_t> GetFormatKeys(void) const{
+		std::vector<uint32_t> ret;
+		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
 			ret.push_back(this->footer.format_offsets[i].data_header.global_key);
 
 		return(ret);
 	}
 
-	std::vector<U32> GetInfoKeys(void) const{
-		std::vector<U32> ret;
-		for(U32 i = 0; i < this->footer.n_info_streams; ++i)
+	std::vector<uint32_t> GetInfoKeys(void) const{
+		std::vector<uint32_t> ret;
+		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
 			ret.push_back(this->footer.info_offsets[i].data_header.global_key);
 
 		return(ret);
@@ -231,7 +231,7 @@ public:
 	 * block
 	 * @return Returns the sum total disk size
 	 */
-	U64 DetermineCompressedSize(void) const;
+	uint64_t DetermineCompressedSize(void) const;
 
 	inline void PackFooter(void){
 		this->footer_support.reset();
@@ -239,64 +239,64 @@ public:
 		++this->footer_support;
 	}
 
-	inline U32 AddInfoPattern(const std::vector<int>& pattern){ return(this->footer.AddInfoPattern(pattern)); }
-	inline U32 AddFormatPattern(const std::vector<int>& pattern){ return(this->footer.AddFormatPattern(pattern)); }
-	inline U32 AddFilterPattern(const std::vector<int>& pattern){ return(this->footer.AddFilterPattern(pattern)); }
-	inline U32 AddInfo(const U32 id){ return(this->footer.AddInfo(id)); }
-	inline U32 AddFormat(const U32 id){ return(this->footer.AddFormat(id)); }
-	inline U32 AddFilter(const U32 id){ return(this->footer.AddFilter(id)); }
+	inline uint32_t AddInfoPattern(const std::vector<int>& pattern){ return(this->footer.AddInfoPattern(pattern)); }
+	inline uint32_t AddFormatPattern(const std::vector<int>& pattern){ return(this->footer.AddFormatPattern(pattern)); }
+	inline uint32_t AddFilterPattern(const std::vector<int>& pattern){ return(this->footer.AddFilterPattern(pattern)); }
+	inline uint32_t AddInfo(const uint32_t id){ return(this->footer.AddInfo(id)); }
+	inline uint32_t AddFormat(const uint32_t id){ return(this->footer.AddFormat(id)); }
+	inline uint32_t AddFilter(const uint32_t id){ return(this->footer.AddFilter(id)); }
 	inline void Finalize(void){ this->footer.Finalize(); }
 
-	S32 GetInfoPosition(const U32 global_id) const{
+	int32_t GetInfoPosition(const uint32_t global_id) const{
 		if(this->footer.info_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
 		if(it == this->footer.info_map->end()) return -1;
 		return(it->second);
 	}
 
-	S32 GetFormatPosition(const U32 global_id) const{
+	int32_t GetFormatPosition(const uint32_t global_id) const{
 		if(this->footer.format_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
 		if(it == this->footer.format_map->end()) return -1;
 		return(it->second);
 	}
 
-	S32 GetFilterPosition(const U32 global_id) const{
+	int32_t GetFilterPosition(const uint32_t global_id) const{
 		if(this->footer.filter_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
 		if(it == this->footer.filter_map->end()) return -1;
 		return(it->second);
 	}
 
-	bool HasInfo(const U32 global_id) const{
+	bool HasInfo(const uint32_t global_id) const{
 		if(this->footer.info_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
 		if(it == this->footer.info_map->end()) return false;
 		return(true);
 	}
 
-	bool HasFormat(const U32 global_id) const{
+	bool HasFormat(const uint32_t global_id) const{
 		if(this->footer.format_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
 		if(it == this->footer.format_map->end()) return false;
 		return(true);
 	}
 
-	bool HasFilter(const U32 global_id) const{
+	bool HasFilter(const uint32_t global_id) const{
 		if(this->footer.filter_map == nullptr) return false;
 		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
 		if(it == this->footer.filter_map->end()) return false;
 		return(true);
 	}
 
-	container_type* GetInfoContainer(const U32 global_id) const{
+	container_type* GetInfoContainer(const uint32_t global_id) const{
 		if(this->HasInfo(global_id))
 			return(&this->info_containers[this->footer.info_map->at(global_id)]);
 		else
 			return nullptr;
 	}
 
-	container_type* GetFormatContainer(const U32 global_id) const{
+	container_type* GetFormatContainer(const uint32_t global_id) const{
 		if(this->HasFormat(global_id))
 			return(&this->format_containers[this->footer.format_map->at(global_id)]);
 		else
@@ -305,8 +305,8 @@ public:
 
 	std::vector<bool> InfoPatternSetMembership(const int value) const{
 		std::vector<bool> matches(this->footer.n_info_patterns, false);
-		for(U32 i = 0; i < this->footer.n_info_patterns; ++i){
-			for(U32 j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
+		for(uint32_t i = 0; i < this->footer.n_info_patterns; ++i){
+			for(uint32_t j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
 				if(this->footer.info_patterns[i].pattern[j] == value){
 					matches[i] = true;
 					break;
@@ -318,8 +318,8 @@ public:
 
 	std::vector<bool> FormatPatternSetMembership(const int value) const{
 		std::vector<bool> matches(this->footer.n_format_patterns, false);
-		for(U32 i = 0; i < this->footer.n_format_patterns; ++i){
-			for(U32 j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
+		for(uint32_t i = 0; i < this->footer.n_format_patterns; ++i){
+			for(uint32_t j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
 				if(this->footer.format_patterns[i].pattern[j] == value){
 					matches[i] = true;
 					break;
@@ -331,8 +331,8 @@ public:
 
 	std::vector<bool> FilterPatternSetMembership(const int value) const{
 		std::vector<bool> matches(this->footer.n_filter_patterns, false);
-		for(U32 i = 0; i < this->footer.n_filter_patterns; ++i){
-			for(U32 j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
+		for(uint32_t i = 0; i < this->footer.n_filter_patterns; ++i){
+			for(uint32_t j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
 				if(this->footer.filter_patterns[i].pattern[j] == value){
 					matches[i] = true;
 					break;
@@ -359,7 +359,7 @@ private:
 	 * @param container Target container hosting the header
 	 */
 	inline void UpdateHeader(offset_type& offset, const container_type& container){
-		const U32 global_key = offset.data_header.global_key; // carry over global key
+		const uint32_t global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
 		offset.data_header.global_key = global_key;
@@ -373,9 +373,9 @@ private:
 	 */
 	inline void UpdateHeader(offset_type& offset,
 	                         const container_type& container,
-	                         const U32& virtual_offset)
+	                         const uint32_t& virtual_offset)
 	{
-		const U32 global_key = offset.data_header.global_key; // carry over global key
+		const uint32_t global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
 		offset.data_header.global_key = global_key;
@@ -392,7 +392,7 @@ private:
 	inline void WriteContainer(std::ostream& stream,
 	                           offset_type& offset,
 	                           const container_type& container,
-	                           const U32 virtual_offset)
+	                           const uint32_t virtual_offset)
 	{
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
@@ -412,7 +412,7 @@ private:
 	inline void WriteContainerEncrypted(std::ostream& stream,
 	                                    offset_type& offset,
 	                                    const container_type& container,
-	                                    const U32 virtual_offset)
+	                                    const uint32_t virtual_offset)
 	{
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.eLength);

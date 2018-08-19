@@ -55,7 +55,7 @@ bool yon1_t::EvaluateOcc(){
 	this->gt->n_occ = new uint32_t[this->gt->n_o];
 	this->gt->d_occ = new yon_gt_rcd*[this->gt->n_o];
 
-	for(U32 i = 0; i < this->gt->n_o; ++i){
+	for(uint32_t i = 0; i < this->gt->n_o; ++i){
 		this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
 
 		uint32_t cum_sum  = 0; // Total cumulative genotypes observed.
@@ -63,7 +63,7 @@ bool yon1_t::EvaluateOcc(){
 		uint32_t n_offset = 0; // Virtual offset in destination array.
 
 		// Iterate over available gt rcds.
-		for(U32 j = 0; j < this->gt->n_i; ++j){
+		for(uint32_t j = 0; j < this->gt->n_i; ++j){
 			const uint32_t to   = this->occ->occ[i][cum_sum + this->gt->rcds[j].run_length];
 			const uint32_t from = this->occ->occ[i][cum_sum];
 			if(to - from != 0){
@@ -71,7 +71,7 @@ bool yon1_t::EvaluateOcc(){
 				this->gt->d_occ[i][n_offset].allele = new uint8_t[this->gt->m];
 
 				// Copy allelic data from recerence gt rcd.
-				for(U32 k = 0; k < this->gt->m; ++k){
+				for(uint32_t k = 0; k < this->gt->m; ++k){
 					this->gt->d_occ[i][n_offset].allele[k] = this->gt->rcds[j].allele[k];
 				}
 

@@ -18,9 +18,9 @@ public:
 	ZSTDCodec();
 	~ZSTDCodec();
 
-	inline void SetCompressionLevel(const S32& c){ this->compression_level_data = c; this->compression_level_strides = c; }
-	inline void SetCompressionLevelData(const S32& c){ this->compression_level_data = c; }
-	inline void SetCompressionLevelStrides(const S32& c){ this->compression_level_strides = c; }
+	inline void SetCompressionLevel(const int32_t& c){ this->compression_level_data = c; this->compression_level_strides = c; }
+	inline void SetCompressionLevelData(const int32_t& c){ this->compression_level_data = c; }
+	inline void SetCompressionLevelStrides(const int32_t& c){ this->compression_level_strides = c; }
 
 	bool Compress(container_type& container);
 	bool CompressStrides(container_type& container);
@@ -33,8 +33,8 @@ public:
 	bool Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst);
 
 private:
-	S32 compression_level_data;
-	S32 compression_level_strides;
+	int32_t compression_level_data;
+	int32_t compression_level_strides;
 	ZSTD_CCtx* compression_context_;
 	ZSTD_DCtx* decompression_context_;
 };

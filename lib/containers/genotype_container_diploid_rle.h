@@ -21,7 +21,7 @@ private:
 
 public:
     GenotypeContainerDiploidRLE();
-    GenotypeContainerDiploidRLE(const char* const data, const U32 n_entries, const meta_type& meta_entry);
+    GenotypeContainerDiploidRLE(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     ~GenotypeContainerDiploidRLE();
 
     // Element access
@@ -83,7 +83,7 @@ GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(){
 }
 
 template <class T>
-GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(const char* const data, const U32 n_entries, const meta_type& meta_entry) :
+GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(const char* const data, const uint32_t n_entries, const meta_type& meta_entry) :
 	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
 {
 

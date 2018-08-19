@@ -179,13 +179,13 @@ bool ZSTDCodec::Compress(container_type& container, permutation_type& manager){
 		return true;
 
 	container.buffer_data_uncompressed.reset();
-	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(U32) + 65536);
+	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(uint32_t) + 65536);
 	container.buffer_data_uncompressed << manager;
 
 	this->buffer.reset();
-	this->buffer.resize(manager.n_s*sizeof(U32) + 65536);
+	this->buffer.resize(manager.n_s*sizeof(uint32_t) + 65536);
 
-	//const U32 in = manager.PPA.n_chars;
+	//const uint32_t in = manager.PPA.n_chars;
 	const int p_ret = permuteIntBits(container.buffer_data_uncompressed.data(),
 	                                 container.buffer_data_uncompressed.size(),
 									 this->buffer.data());
@@ -198,10 +198,10 @@ bool ZSTDCodec::Compress(container_type& container, permutation_type& manager){
 										this->buffer.size(),
 										manager.PPA.data());
 
-	U32 crc2 = crc32(0, NULL, 0);
+	uint32_t crc2 = crc32(0, NULL, 0);
 	crc2 = crc32(crc2, (Bytef*)manager.PPA.data(), up_ret);
 
-	for(U32 i = 0; i < manager.n_samples; ++i)
+	for(uint32_t i = 0; i < manager.n_samples; ++i)
 		std::cerr << manager[i] << ' ';
 	std::cerr << std::endl;
 
@@ -263,7 +263,7 @@ bool ZSTDCodec::Decompress(container_type& container){
 
 	assert(ret >= 0);
 	container.buffer_data_uncompressed.n_chars = ret;
-	assert((U32)ret == container.header.data_header.uLength);
+	assert((uint32_t)ret == container.header.data_header.uLength);
 	assert(container.CheckMd5(0));
 
 	return true;
@@ -297,7 +297,7 @@ bool ZSTDCodec::DecompressStrides(container_type& container){
 
 	assert(ret_stride >= 0);
 	container.buffer_strides_uncompressed.n_chars = ret_stride;
-	assert((U32)ret_stride == container.header.stride_header.uLength);
+	assert((uint32_t)ret_stride == container.header.stride_header.uLength);
 	//std::cerr << "ENCODE_ZSTD | STRIDE | CRC check " << (container.checkCRC(0) ? "PASS" : "FAIL") << std::endl;
 	assert(container.CheckMd5(1));
 
@@ -308,8 +308,8 @@ bool ZSTDCodec::Decompress(container_type& container, permutation_type& manager)
 	this->buffer.reset();
 
 	container.buffer_data_uncompressed.reset();
-	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(U32) + 65536);
-	this->buffer.resize(manager.n_s*sizeof(U32) + 65536);
+	container.buffer_data_uncompressed.resize(manager.n_s*sizeof(uint32_t) + 65536);
+	this->buffer.resize(manager.n_s*sizeof(uint32_t) + 65536);
 	size_t ret = ZSTD_decompress(this->buffer.data(),
 								 this->buffer.capacity(),
 								 container.buffer_data.data(),

@@ -62,7 +62,7 @@ private:
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
-	typedef algorithm::Interval<U32, S64>          interval_type;
+	typedef algorithm::Interval<uint32_t, int64_t>          interval_type;
 	typedef io::BasicReader                        basic_reader_type;
 	typedef encryption::EncryptionDecorator        encryption_manager_type;
 
@@ -144,14 +144,14 @@ public:
 	 * @param index Block index value in range [0..n_blocks)
 	 * @return      Returns TRUE if operation was successful or FALSE otherwise
 	 */
-	bool operator[](const U32 position);
+	bool operator[](const uint32_t position);
 
 	/**<
 	 * Not implemented
 	 * @param position
 	 * @return
 	 */
-	bool SeektoBlock(const U32 position);
+	bool SeektoBlock(const uint32_t position);
 
 	/**<
 	 * Not implemented
@@ -167,7 +167,7 @@ public:
 	 * @param to_bp_position
 	 * @return
 	 */
-	bool SeekToBlockChromosome(const std::string& chromosome_name, const U32 from_bp_position, const U32 to_bp_position);
+	bool SeekToBlockChromosome(const std::string& chromosome_name, const uint32_t from_bp_position, const uint32_t to_bp_position);
 
 	/**<
 	 * Get the next YON block in-order
@@ -184,7 +184,7 @@ public:
 
 		// If the current position is the EOF then
 		// exit the function
-		if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+		if((uint64_t)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
 			return false;
 
 		return true;
@@ -207,9 +207,9 @@ public:
 	 * @param blockID
 	 * @return
 	 */
-	bool SeekBlock(const U32& blockID){
+	bool SeekBlock(const uint32_t& blockID){
 		uint32_t cumulative = 0;
-		for(U32 i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
+		for(uint32_t i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
 			if(cumulative + this->GetIndex().index_.linear_[i].size() > blockID){
 				const uint64_t offset = this->GetIndex().index_.linear_[i].at(blockID - cumulative).byte_offset;
 				std::cerr << "offset is " << offset << std::endl;
@@ -236,16 +236,16 @@ public:
 	 */
 	bool LoadKeychainFile(void);
 
-	U64 OutputRecords(void);
-	U64 OutputVcfLinear(void);
-	U64 OutputVcfSearch(void);
+	uint64_t OutputRecords(void);
+	uint64_t OutputVcfLinear(void);
+	uint64_t OutputVcfSearch(void);
 	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;
 	void OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const;
 	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
-	U64 OutputHtslibVcfLinear(void);
-	U64 OutputHtslibVcfSearch(void);
+	uint64_t OutputHtslibVcfLinear(void);
+	uint64_t OutputHtslibVcfSearch(void);
 	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
 	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
 	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
@@ -255,7 +255,7 @@ public:
 	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.FindOverlaps(meta_entry).size()); }
 
 	// Calculations
-	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
+	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const uint32_t& allele) const;
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression
@@ -319,7 +319,7 @@ struct yon_stats_worker{
 
 		reader->GetCurrentContainer().AllocateGenotypeMemory();
 
-		for(U32 i = block_from; i < block_to; ++i){
+		for(uint32_t i = block_from; i < block_to; ++i){
 			if(reader->NextBlock() == false){
 				std::cerr << "cannot get next block" << std::endl;
 				return false;
@@ -328,7 +328,7 @@ struct yon_stats_worker{
 			VariantReaderObjects* objects = reader->GetCurrentContainer().LoadObjects(reader->GetBlockSettings());
 			yon1_t* entries = reader->GetCurrentContainer().LazyEvaluate(*objects);
 
-			for(U32 j = 0; j < objects->meta_container->size(); ++j){
+			for(uint32_t j = 0; j < objects->meta_container->size(); ++j){
 				// Each entry evaluate occ if available.
 				//entries[i].occ = objects->occ;
 				//entries[i].EvaluateOcc();

@@ -53,7 +53,7 @@ public:
 
     // special
     bool correctRelativePositions(const block_header_type& header){
-    	for(U32 i = 0; i < this->size(); ++i){
+    	for(uint32_t i = 0; i < this->size(); ++i){
     		this->at(i).position += header.minPosition;
     	}
     	return true;

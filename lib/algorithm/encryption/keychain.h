@@ -18,13 +18,13 @@ private:
     typedef const value_type&         const_reference;
     typedef value_type*               pointer;
     typedef const value_type*         const_pointer;
-    typedef hash::HashTable<U64, U32> hash_table;
+    typedef hash::HashTable<uint64_t, uint32_t> hash_table;
     typedef containers::VariantBlock  variant_block_type;
     typedef containers::DataContainer container_type;
 
 public:
     Keychain();
-    Keychain(const U32 start_capacity);
+    Keychain(const uint32_t start_capacity);
     Keychain(const self_type& other);
     ~Keychain();
 
@@ -92,20 +92,20 @@ public:
 	void resize(const size_type new_capacity);
 	void resize(void);
 
-	U64 getRandomHashIdentifier();
-	bool getHashIdentifier(const U64& value, U32*& match);
+	uint64_t getRandomHashIdentifier();
+	bool getHashIdentifier(const uint64_t& value, uint32_t*& match);
 
 private:
 	bool __buildHashTable(void);
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& keychain){
 		stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_PATCH),   sizeof(S32));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(int32_t));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(int32_t));
+		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_PATCH),   sizeof(int32_t));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
-		for(U32 i = 0; i < keychain.size(); ++i) stream << keychain[i];
+		for(uint32_t i = 0; i < keychain.size(); ++i) stream << keychain[i];
 		return(stream);
 	}
 
@@ -117,14 +117,14 @@ private:
 			return(stream);
 		}
 
-		stream.read(reinterpret_cast<char*>(&keychain.version_major_),   sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&keychain.version_minor_),   sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&keychain.version_release_), sizeof(S32));
+		stream.read(reinterpret_cast<char*>(&keychain.version_major_),   sizeof(int32_t));
+		stream.read(reinterpret_cast<char*>(&keychain.version_minor_),   sizeof(int32_t));
+		stream.read(reinterpret_cast<char*>(&keychain.version_release_), sizeof(int32_t));
 		stream.read(reinterpret_cast<char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&keychain.n_capacity_), sizeof(size_type));
 		delete [] keychain.entries_;
 		keychain.entries_ = new value_type[keychain.n_capacity_];
-		for(U32 i = 0; i < keychain.size(); ++i) stream >> keychain[i];
+		for(uint32_t i = 0; i < keychain.size(); ++i) stream >> keychain[i];
 		keychain.__buildHashTable();
 		return(stream);
 	}
@@ -132,7 +132,7 @@ private:
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& keychain){
 		buffer += keychain.n_entries_;
 		buffer += keychain.n_capacity_;
-		for(U32 i = 0; i < keychain.size(); ++i) buffer += keychain[i];
+		for(uint32_t i = 0; i < keychain.size(); ++i) buffer += keychain[i];
 		return(buffer);
 	}
 
@@ -141,15 +141,15 @@ private:
 		buffer >> keychain.n_capacity_;
 		delete [] keychain.entries_;
 		keychain.entries_ = new value_type[keychain.n_capacity_];
-		for(U32 i = 0; i < keychain.size(); ++i) buffer >> keychain.entries_[i];
+		for(uint32_t i = 0; i < keychain.size(); ++i) buffer >> keychain.entries_[i];
 		keychain.__buildHashTable();
 		return(buffer);
 	}
 
 private:
-	S32 version_major_;
-	S32 version_minor_;
-	S32 version_release_;
+	int32_t version_major_;
+	int32_t version_minor_;
+	int32_t version_release_;
     size_type   n_entries_;
     size_type   n_capacity_;
     pointer     entries_;
@@ -170,7 +170,7 @@ Keychain<KeyType>::Keychain() :
 }
 
 template <class KeyType>
-Keychain<KeyType>::Keychain(const U32 start_capacity) :
+Keychain<KeyType>::Keychain(const uint32_t start_capacity) :
 	version_major_(0),
 	version_minor_(0),
 	version_release_(0),
@@ -190,7 +190,7 @@ Keychain<KeyType>::Keychain(const self_type& other) :
 	entries_(new value_type[this->n_capacity_]),
 	htable_identifiers_(new hash_table(500000))
 {
-	for(U32 i = 0; i < this->size(); ++i) this->entries_[i] = other.entries_[i];
+	for(uint32_t i = 0; i < this->size(); ++i) this->entries_[i] = other.entries_[i];
 	this->__buildHashTable();
 }
 
@@ -217,7 +217,7 @@ void Keychain<KeyType>::resize(const size_type new_capacity){
 
 	pointer old = this->entries_;
 	this->entries_ = new value_type[new_capacity];
-	for(U32 i = 0; i < this->size(); ++i) this->entries_[i] = old[i];
+	for(uint32_t i = 0; i < this->size(); ++i) this->entries_[i] = old[i];
 	delete [] old;
 	this->n_capacity_ =  new_capacity;
 }
@@ -226,21 +226,21 @@ template <class KeyType>
 void Keychain<KeyType>::resize(void){ this->resize(this->capacity()*2); }
 
 template <class KeyType>
-U64 Keychain<KeyType>::getRandomHashIdentifier(){
+uint64_t Keychain<KeyType>::getRandomHashIdentifier(){
 	if(this->htable_identifiers_ == nullptr) return false;
-	BYTE RANDOM_BYTES[32];
-	U64 value = 0;
-	U32* match = nullptr;
+	uint8_t RANDOM_uint8_tS[32];
+	uint64_t value = 0;
+	uint32_t* match = nullptr;
 	while(true){
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		value = XXH64(&RANDOM_BYTES[0], 32, 1337);
+		RAND_bytes(&RANDOM_uint8_tS[0], 32);
+		value = XXH64(&RANDOM_uint8_tS[0], 32, 1337);
 
 		if(value == 0) continue;
 
-		if(this->htable_identifiers_->GetItem(&value, match, sizeof(U64)))
+		if(this->htable_identifiers_->GetItem(&value, match, sizeof(uint64_t)))
 			continue;
 
-		if(!this->htable_identifiers_->SetItem(&value, this->size(), sizeof(U64))){
+		if(!this->htable_identifiers_->SetItem(&value, this->size(), sizeof(uint64_t))){
 			std::cerr << utility::timestamp("ERROR","HASH") << "Failed to add field identifier..." << std::endl;
 			return 0;
 		}
@@ -251,9 +251,9 @@ U64 Keychain<KeyType>::getRandomHashIdentifier(){
 }
 
 template <class KeyType>
-bool Keychain<KeyType>::getHashIdentifier(const U64& value, U32*& match){
+bool Keychain<KeyType>::getHashIdentifier(const uint64_t& value, uint32_t*& match){
 	if(this->htable_identifiers_ == nullptr) return false;
-	if(this->htable_identifiers_->GetItem(&value, match, sizeof(U64))){
+	if(this->htable_identifiers_->GetItem(&value, match, sizeof(uint64_t))){
 		return true;
 	}
 	return false;
@@ -265,8 +265,8 @@ bool Keychain<KeyType>::__buildHashTable(void){
 
 	if(this->size()*2 < 50e3) this->htable_identifiers_ = new hash_table(50e3);
 	else this->htable_identifiers_ = new hash_table(this->size()*2);
-	for(U32 i = 0; i < this->size(); ++i){
-		if(!this->htable_identifiers_->SetItem(&this->at(i).field_id, i, sizeof(U64))){
+	for(uint32_t i = 0; i < this->size(); ++i){
+		if(!this->htable_identifiers_->SetItem(&this->at(i).field_id, i, sizeof(uint64_t))){
 			std::cerr << utility::timestamp("ERROR", "KEYCHAIN") << "Failed to generate ID..." << std::endl;
 			return false;
 		}

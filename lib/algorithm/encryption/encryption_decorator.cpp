@@ -12,18 +12,18 @@ bool EncryptionDecorator::encrypt(variant_block_type& block, keychain_type& keyc
 
 bool EncryptionDecorator::decryptAES256(variant_block_type& block, keychain_type& keychain){
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(!this->decryptAES256(block.base_containers[i], keychain)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl;
 			return false;
 		}
 	}
 
-	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(!this->decryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
 	}
 
-	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(!this->decryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
 	}
 
@@ -31,21 +31,21 @@ bool EncryptionDecorator::decryptAES256(variant_block_type& block, keychain_type
 }
 
 bool EncryptionDecorator::encryptAES256(variant_block_type& block, keychain_type& keychain){
-	BYTE RANDOM_BYTES[32];
-	RAND_bytes(&RANDOM_BYTES[0], 32);
-	block.header.block_hash = XXH64(&RANDOM_BYTES[0], 32, 1337);
+	uint8_t RANDOM_uint8_tS[32];
+	RAND_bytes(&RANDOM_uint8_tS[0], 32);
+	block.header.block_hash = XXH64(&RANDOM_uint8_tS[0], 32, 1337);
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(!this->encryptAES256(block.base_containers[i], keychain)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl;
 			return false;
 		}
 	}
-	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(!this->encryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 	}
 
-	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(!this->encryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
 	}
 
@@ -58,7 +58,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	entry.encryption_type = YON_ENCRYPTION_AES_256_GCM;
 
 	EVP_CIPHER_CTX *ctx = NULL;
-	S32 len = 0;
+	int32_t len = 0;
 
 	if(!(ctx = EVP_CIPHER_CTX_new())){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to initialise the encryption context..." << std::endl;
@@ -70,7 +70,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 		return false;
 	}
 
-	// 16 bytes = 128 bits
+	// 16 uint8_ts = 128 bits
 	if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 16, NULL)){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to initialise the encryption tag..." << std::endl;
 		return false;
@@ -87,25 +87,25 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	temp << container.header;
 	this->buffer.resize(container.buffer_data.size() + container.buffer_strides.size() + temp.size() + 65536);
 
-	if(1 != EVP_EncryptUpdate(ctx, (BYTE*)this->buffer.data(), &len, (BYTE*)temp.data(), temp.size())){
+	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)this->buffer.data(), &len, (uint8_t*)temp.data(), temp.size())){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
 	this->buffer.n_chars = len;
 
-	if(1 != EVP_EncryptUpdate(ctx, (BYTE*)&this->buffer[this->buffer.n_chars], &len, (BYTE*)container.buffer_data.data(), container.buffer_data.size())){
+	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.n_chars], &len, (uint8_t*)container.buffer_data.data(), container.buffer_data.size())){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
 	this->buffer.n_chars += len;
 
-	if(1 != EVP_EncryptUpdate(ctx, (BYTE*)&this->buffer[this->buffer.n_chars], &len, (BYTE*)container.buffer_strides.data(), container.buffer_strides.size())){
+	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.n_chars], &len, (uint8_t*)container.buffer_strides.data(), container.buffer_strides.size())){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
 	this->buffer.n_chars += len;
 
-	if(1 != EVP_EncryptFinal_ex(ctx, (BYTE*)this->buffer.data() + len, &len)){
+	if(1 != EVP_EncryptFinal_ex(ctx, (uint8_t*)this->buffer.data() + len, &len)){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to finalise the encryption..." << std::endl;
 		return false;
 	}
@@ -126,7 +126,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	container.buffer_data.n_chars = this->buffer.size();
 	container.header.data_header.eLength = this->buffer.size();
 
-	const U64 hashID = keychain.getRandomHashIdentifier();
+	const uint64_t hashID = keychain.getRandomHashIdentifier();
 	container.header.identifier = hashID;
 	entry.field_id = hashID;
 	keychain += entry; // add key to keychain
@@ -146,7 +146,7 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 		return false;
 	}
 
-	U32* match = nullptr;
+	uint32_t* match = nullptr;
 	if(keychain.getHashIdentifier(container.header.identifier, match) == false){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Did not find ID in keychain..." << std::endl;
 		return false;
@@ -154,7 +154,7 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 	KeychainKeyGCM<>& entry = keychain[*match];
 
 	EVP_CIPHER_CTX *ctx = NULL;
-	S32 len = 0, plaintext_len = 0, ret;
+	int32_t len = 0, plaintext_len = 0, ret;
 
 	/* Create and initialise the context */
 	if(!(ctx = EVP_CIPHER_CTX_new())){
@@ -182,7 +182,7 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 	this->buffer.reset();
 	if(container.buffer_data.size()){
 		this->buffer.resize(container.buffer_data.size() + 65536);
-		if(!EVP_DecryptUpdate(ctx, (BYTE*)this->buffer.data(), &len, (BYTE*)container.buffer_data.data(), container.buffer_data.size())){
+		if(!EVP_DecryptUpdate(ctx, (uint8_t*)this->buffer.data(), &len, (uint8_t*)container.buffer_data.data(), container.buffer_data.size())){
 			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the decryption..." << std::endl;
 			return(false);
 		}
@@ -198,7 +198,7 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 	/* Finalise the decryption. A positive return value indicates success,
 	 * anything else is a failure - the plaintext is not trustworthy.
 	 */
-	ret = EVP_DecryptFinal_ex(ctx, (BYTE*)this->buffer.data() + len, &len);
+	ret = EVP_DecryptFinal_ex(ctx, (uint8_t*)this->buffer.data() + len, &len);
 	EVP_CIPHER_CTX_free(ctx);
 
 	if(ret > 0){

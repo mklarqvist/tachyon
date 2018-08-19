@@ -13,7 +13,6 @@
 #include "index/index_index_entry.h"
 #include "io/vcf_utils.h"
 #include "support/helpers.h"
-#include "support/type_definitions.h"
 #include "algorithm/digest/variant_digest_manager.h"
 #include "core/footer/footer.h"
 #include "algorithm/encryption/encryption_decorator.h"
@@ -52,21 +51,21 @@ public:
 
 	inline void SetInputFile(const std::string& input_name){ this->input_file = input_name; }
 	inline void SetOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
-	inline void SetThreads(const U32 n_threads){ this->n_threads = n_threads; }
+	inline void SetThreads(const uint32_t n_threads){ this->n_threads = n_threads; }
 	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
 	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void SetCompressionLevel(const U32 compression_level){ this->compression_level = compression_level; }
+	inline void SetCompressionLevel(const uint32_t compression_level){ this->compression_level = compression_level; }
 
 public:
 	bool permute_genotypes;   // permute GT flag
 	bool encrypt_data;        // encryption flag
 	bool drop_invariant_sites;// drop sites that are invariant
-	U32 checkpoint_n_snps;    // number of variants until checkpointing
-	U32 checkpoint_bases;     // number of bases until checkpointing
-	U32 n_threads;            // number of parallel importer threads
-	S32 info_end_key;         // key mapping to the INFO field END
-	S32 info_svlen_key;       // key mapping to the INFO field SVLEN
-	U32 compression_level;    // compression level sent to ZSTD
+	uint32_t checkpoint_n_snps;    // number of variants until checkpointing
+	uint32_t checkpoint_bases;     // number of bases until checkpointing
+	uint32_t n_threads;            // number of parallel importer threads
+	int32_t info_end_key;         // key mapping to the INFO field END
+	int32_t info_svlen_key;       // key mapping to the INFO field SVLEN
+	uint32_t compression_level;    // compression level sent to ZSTD
 	std::string input_file;   // input file name
 	std::string output_prefix;// output file prefix
 };
@@ -89,8 +88,8 @@ private:
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
-	typedef std::unordered_map<U32, U32>    reorder_map_type;
-	typedef std::unordered_map<U64, U32>    hash_map_type;
+	typedef std::unordered_map<uint32_t, uint32_t>    reorder_map_type;
+	typedef std::unordered_map<uint64_t, uint32_t>    hash_map_type;
 
 public:
 	VariantImporter();
@@ -108,7 +107,7 @@ public:
 private:
 	bool BuildVCF();
 	bool AddRecords(const vcf_container_type& container);
-	bool AddRecord(const vcf_container_type& container, const U32 position, meta_type& meta);
+	bool AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta);
 	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);

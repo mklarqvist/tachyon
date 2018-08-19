@@ -191,8 +191,8 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 
 	const std::vector<bool> pattern_matches = this->block_.FormatPatternSetMembership(format_field_global_id);
 
-	U32 matches = 0;
-	for(U32 i = 0; i < pattern_matches.size(); ++i)
+	uint32_t matches = 0;
+	for(uint32_t i = 0; i < pattern_matches.size(); ++i)
 		matches += pattern_matches[i];
 
 	if(matches == 0) return new containers::FormatContainer<T>();
@@ -228,8 +228,8 @@ containers::InfoContainer<T>* VariantBlockContainer::get_balanced_info_container
 
 	const std::vector<bool> pattern_matches = this->block_.InfoPatternSetMembership(info_field_global_id);
 
-	U32 matches = 0;
-	for(U32 i = 0; i < pattern_matches.size(); ++i)
+	uint32_t matches = 0;
+	for(uint32_t i = 0; i < pattern_matches.size(); ++i)
 		matches += pattern_matches[i];
 
 	if(matches == 0) return new containers::InfoContainer<T>();

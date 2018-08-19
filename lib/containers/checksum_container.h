@@ -28,7 +28,7 @@ private:
 public:
 	ChecksumContainer(void);
 	ChecksumContainer(const size_type capacity);
-	ChecksumContainer(const char* const data, const U32 l_data);
+	ChecksumContainer(const char* const data, const uint32_t l_data);
 	ChecksumContainer(const buffer_type& buffer);
 	~ChecksumContainer(void);
 

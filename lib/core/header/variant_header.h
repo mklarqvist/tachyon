@@ -2,7 +2,6 @@
 #define CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 
 #include "support/enums.h"
-#include "support/type_definitions.h"
 #include "support/helpers.h"
 #include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
@@ -35,7 +34,7 @@ public:
 
 		size_t size_helper = contig.extra.size();
 		utility::SerializePrimitive(size_helper, stream);
-		for(U32 i = 0; i < contig.extra.size(); ++i){
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
 			utility::SerializeString(contig.extra[i].first, stream);
 			utility::SerializeString(contig.extra[i].second, stream);
 		}
@@ -52,7 +51,7 @@ public:
 		size_t l_extra;
 		utility::DeserializePrimitive(l_extra, stream);
 		contig.extra.resize(l_extra);
-		for(U32 i = 0; i < contig.extra.size(); ++i){
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
 			utility::DeserializeString(contig.extra[i].first, stream);
 			utility::DeserializeString(contig.extra[i].second, stream);
 		}
@@ -68,7 +67,7 @@ public:
 
 		size_t size_helper = contig.extra.size();
 		io::SerializePrimitive(size_helper, buffer);
-		for(U32 i = 0; i < contig.extra.size(); ++i){
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
 			io::SerializeString(contig.extra[i].first, buffer);
 			io::SerializeString(contig.extra[i].second, buffer);
 		}
@@ -85,7 +84,7 @@ public:
 		size_t l_extra;
 		io::DeserializePrimitive(l_extra, buffer);
 		contig.extra.resize(l_extra);
-		for(U32 i = 0; i < contig.extra.size(); ++i){
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
 			io::DeserializeString(contig.extra[i].first, buffer);
 			io::DeserializeString(contig.extra[i].second, buffer);
 		}
@@ -280,15 +279,15 @@ public:
 		this->BuildReverseMaps();
 
 		this->contigs_.resize(other.contigs_.size());
-		for(U32 i = 0; i < other.contigs_.size(); ++i)
+		for(uint32_t i = 0; i < other.contigs_.size(); ++i)
 			this->contigs_[i] = other.contigs_[i];
 
 		this->info_fields_.resize(other.info_fields_.size());
-		for(U32 i = 0; i < other.info_fields_.size(); ++i)
+		for(uint32_t i = 0; i < other.info_fields_.size(); ++i)
 			this->info_fields_[i] = other.info_fields_[i];
 
 		this->format_fields_.resize(other.format_fields_.size());
-		for(U32 i = 0; i < other.format_fields_.size(); ++i)
+		for(uint32_t i = 0; i < other.format_fields_.size(); ++i)
 			this->format_fields_[i] = other.format_fields_[i];
 
 		this->RecodeIndices();
@@ -416,12 +415,12 @@ public:
 	std::string ToString(const bool is_bcf = false) const{
 		std::string string = "##fileformat=VCFv4.1\n";
 		uint32_t idx = 0;
-		for(U32 i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
-		for(U32 i = 0; i < this->structured_extra_fields_.size(); ++i) string += this->structured_extra_fields_[i].ToVcfString() + "\n";
-		for(U32 i = 0; i < this->filter_fields_.size(); ++i) string += this->filter_fields_[i].ToVcfString(idx++) + "\n";
-		for(U32 i = 0; i < this->info_fields_.size(); ++i)   string += this->info_fields_[i].ToVcfString(idx++) + "\n";
-		for(U32 i = 0; i < this->format_fields_.size(); ++i) string += this->format_fields_[i].ToVcfString(idx++) + "\n";
-		for(U32 i = 0; i < this->extra_fields_.size(); ++i)  string += this->extra_fields_[i].ToVcfString() + "\n";
+		for(uint32_t i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
+		for(uint32_t i = 0; i < this->structured_extra_fields_.size(); ++i) string += this->structured_extra_fields_[i].ToVcfString() + "\n";
+		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) string += this->filter_fields_[i].ToVcfString(idx++) + "\n";
+		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   string += this->info_fields_[i].ToVcfString(idx++) + "\n";
+		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) string += this->format_fields_[i].ToVcfString(idx++) + "\n";
+		for(uint32_t i = 0; i < this->extra_fields_.size(); ++i)  string += this->extra_fields_[i].ToVcfString() + "\n";
 		return(string);
 	}
 

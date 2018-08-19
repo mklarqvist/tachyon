@@ -35,7 +35,7 @@ public:
 	typedef std::ptrdiff_t       difference_type;
 	typedef std::size_t          size_type;
 
-	typedef bool (self_type::*filter_function)(const_pointer pair, const yon1_t& objects, const U32& position) const;
+	typedef bool (self_type::*filter_function)(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
 	typedef bool (self_type::*family_filter_function)(void) const;
 
 public:
@@ -52,38 +52,38 @@ public:
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
 	// Has mixed phasing
-	inline bool filterMixedPhasing(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterMixedPhasing(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		return(pair->applyFilter(objects.meta->IsGTMixedPhasing()));
 	}
 
-	inline bool filterKnownNovel(const_pointer pair, const yon1_t& objects, const U32& position) const{
-		return(pair->applyFilter((U32)objects.meta->name.size()));
+	inline bool filterKnownNovel(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+		return(pair->applyFilter((uint32_t)objects.meta->name.size()));
 	}
 
-	inline bool filterQuality(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterQuality(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		return(pair->applyFilter(objects.meta->quality));
 	}
 
 	// GT data matches this
-	inline bool filterUniformMatchPhase(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterUniformMatchPhase(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		if(objects.meta->IsGTMixedPhasing() == true) return false;
 		return(pair->applyFilter(objects.meta->controller.gt_phase));
 	}
 
 	// BCFtools calculate this as the SUM of all ALT counts
 	// We filter based on ANY ALT frequency OPERATOR the target frequency
-	bool filterAlleleFrequency(const_pointer pair, const yon1_t& objects, const U32& position) const;
-	bool filterUnseenAlternativeAlleles(const_pointer pair, const yon1_t& objects, const U32& position) const;
+	bool filterAlleleFrequency(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
+	bool filterUnseenAlternativeAlleles(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
 
-	inline bool filterAlternativeAlleles(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterAlternativeAlleles(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
 		return(pair->applyFilter(objects.meta->GetNumberAlleles() - 1));
 	}
 
-	inline bool filterAlleleCount(const_pointer pair, const yon1_t& objects, const U32& position) const{
-		for(U32 i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
-			if(pair->applyFilter((U32)objects.gt_sum->d->ac[i])){
+	inline bool filterAlleleCount(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+		for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
+			if(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[i])){
 				return true;
 			}
 		}
@@ -91,38 +91,38 @@ public:
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
-	inline bool filterHasMissingGenotypes(const_pointer pair, const yon1_t& objects, const U32& position) const{
-		return(pair->applyFilter((U32)objects.gt_sum->d->ac[0]));
+	inline bool filterHasMissingGenotypes(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+		return(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[0]));
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
-	inline bool filterMixedPloidy(const_pointer pair, const yon1_t& objects, const U32& position) const{
-		return(pair->applyFilter((U32)objects.gt_sum->d->ac[1]));
+	inline bool filterMixedPloidy(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+		return(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[1]));
 	}
 
-	inline bool filterReferenceAllele(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterReferenceAllele(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		//std::cerr << objects.meta->at(position).alleles[0].toString() << std::endl;
 		return(pair->applyFilter(objects.meta->alleles[0].toString()));
 	}
 
-	inline bool filterAlternativeAllele(const_pointer pair, const yon1_t& objects, const U32& position) const{
-		for(U32 i = 1; i < objects.meta->n_alleles; ++i){
+	inline bool filterAlternativeAllele(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+		for(uint32_t i = 1; i < objects.meta->n_alleles; ++i){
 			if(pair->applyFilter(objects.meta->alleles[i].toString()))
 				return true;
 		}
 		return false;
 	}
 
-	inline bool filterName(const_pointer pair, const yon1_t& objects, const U32& position) const{
+	inline bool filterName(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
 		return(pair->applyFilter(objects.meta->name));
 	}
 
 	// Not implemented
-	bool filterPloidy(const_pointer pair, const yon1_t& objects, const U32& position) const;
-	bool filterSampleList(const_pointer pair, const yon1_t& objects, const U32& position) const;
-	bool filterVariantClassification(const_pointer pair, const yon1_t& objects, const U32& position) const;
-	bool filterFILTER(const_pointer pair, const yon1_t& objects, const U32& position) const;  // Filter by desired FILTER values
-	bool filterINFO(const_pointer pair, const yon1_t& objects, const U32& position) const;    // custom filter. e.g. AC<1024
+	bool filterPloidy(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
+	bool filterSampleList(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
+	bool filterVariantClassification(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;
+	bool filterFILTER(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;  // Filter by desired FILTER values
+	bool filterINFO(const_pointer pair, const yon1_t& objects, const uint32_t& position) const;    // custom filter. e.g. AC<1024
 
 	/**<
 	 * Iteratively apply filters in the filter pointer vector
@@ -130,7 +130,7 @@ public:
 	 * @param position Target position (relative loci) in the container
 	 * @return         Returns TRUE if passes filtering or FALSE otherwise
 	 */
-	bool filter(yon1_t& objects, const U32 position) const;
+	bool filter(yon1_t& objects, const uint32_t position) const;
 
 	/**<
 	 * Checks if any filter function require genotype data to be loaded and prepared

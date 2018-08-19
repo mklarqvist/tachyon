@@ -47,8 +47,8 @@ void InfoContainer<std::string>::__setup(const data_container_type& container){
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-	U32 current_offset = 0;
-	for(U32 i = 0; i < this->size(); ++i){
+	uint32_t current_offset = 0;
+	for(uint32_t i = 0; i < this->size(); ++i){
 		new( &this->__containers[i] ) value_type(&container.buffer_data_uncompressed.data()[current_offset], strides[i]);
 		current_offset += strides[i];
 	}
@@ -64,10 +64,10 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 	stride_container_type strides(data_container);
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
-	U32 current_offset = 0;
-	U32 stride_offset = 0;
+	uint32_t current_offset = 0;
+	uint32_t stride_offset = 0;
 
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		// Meta entry has no INFO
 		if(meta_container[i].GetInfoPatternId() == -1){
 			new( &this->__containers[i] ) value_type( );
@@ -87,14 +87,14 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 }
 
 // For fixed strides
-void InfoContainer<std::string>::__setup(const data_container_type& container, const U32 stride_size){
+void InfoContainer<std::string>::__setup(const data_container_type& container, const uint32_t stride_size){
 	if(this->n_entries == 0)
 		return;
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-	U32 current_offset = 0;
-	for(U32 i = 0; i < this->n_entries; ++i){
+	uint32_t current_offset = 0;
+	for(uint32_t i = 0; i < this->n_entries; ++i){
 		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 		new( &this->__containers[i] ) value_type(&container.buffer_data_uncompressed.data()[current_offset], stride_size);
 		current_offset += stride_size;
@@ -102,7 +102,7 @@ void InfoContainer<std::string>::__setup(const data_container_type& container, c
 	assert(current_offset == container.buffer_data_uncompressed.size());
 }
 
-void InfoContainer<std::string>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size){
+void InfoContainer<std::string>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint32_t stride_size){
 	this->n_entries = meta_container.size();
 
 	if(this->n_entries == 0)
@@ -111,8 +111,8 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
 	if(data_container.header.data_header.IsUniform() == false){
-		U32 current_offset = 0;
-		for(U32 i = 0; i < this->n_entries; ++i){
+		uint32_t current_offset = 0;
+		for(uint32_t i = 0; i < this->n_entries; ++i){
 			// If there are no INFO fields
 			if(meta_container[i].GetInfoPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -130,7 +130,7 @@ void InfoContainer<std::string>::__setupBalanced(const data_container_type& data
 	}
 	// Data is uniform
 	else {
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(uint32_t i = 0; i < this->n_entries; ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type(data_container.buffer_data_uncompressed.data(), stride_size);

@@ -5,7 +5,6 @@
 #include <cmath>
 #include <vector>
 
-#include "support/type_definitions.h"
 #include "variant_index_bin.h"
 
 namespace tachyon{
@@ -23,7 +22,7 @@ private:
 
 public:
     VariantIndexContig();
-    VariantIndexContig(const U32 contigID, const U64 l_contig, const BYTE n_levels);
+    VariantIndexContig(const uint32_t contigID, const uint64_t l_contig, const uint8_t n_levels);
     VariantIndexContig(const self_type& other);
     void operator=(const self_type& other);
     ~VariantIndexContig();
@@ -89,8 +88,8 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->bins_[this->n_bins_]); }
 
 	// Accessor
-	inline U32& getContigID(void){ return(this->contigID_); }
-	inline const U32& getContigID(void) const{ return(this->contigID_); }
+	inline uint32_t& getContigID(void){ return(this->contigID_); }
+	inline const uint32_t& getContigID(void) const{ return(this->contigID_); }
 
 	/**<
 	 * Add a target interval tuple (from,to,block_ID)
@@ -99,7 +98,7 @@ public:
 	 * @param yon_block_id Tachyon block ID (generally a cumulative integer)
 	 * @return
 	 */
-	S32 add(const U64& fromPosition, const U64& toPosition, const U32& yon_block_id);
+	int32_t add(const uint64_t& fromPosition, const uint64_t& toPosition, const uint32_t& yon_block_id);
 
 	/**<
 	 * Computes the possible bins an interval might overlap
@@ -107,7 +106,7 @@ public:
 	 * @param to_position   To position of interval
 	 * @return              Returns a vector of viable overlapping bins
 	 */
-	std::vector<value_type> possibleBins(const U64& from_position, const U64& to_position, const bool filter = true) const;
+	std::vector<value_type> possibleBins(const uint64_t& from_position, const uint64_t& to_position, const bool filter = true) const;
 
 private:
 	/**<
@@ -115,8 +114,8 @@ private:
 	 * @param length Input integer start value
 	 * @return       Return a target integer divisible by 4
 	 */
-    inline U64 roundLengthClosestBase4_(const U64& length) const{
-		return( ( pow(4,this->n_levels_) - (length % (U64)pow(4,this->n_levels_)) ) + length );
+    inline uint64_t roundLengthClosestBase4_(const uint64_t& length) const{
+		return( ( pow(4,this->n_levels_) - (length % (uint64_t)pow(4,this->n_levels_)) ) + length );
     }
 
     /**<
@@ -127,30 +126,30 @@ private:
     	if(this->n_levels_ == 0) return;
 
     	delete [] this->bins_cumsum_;
-    	this->bins_cumsum_ = new U32[this->n_levels_ + 1]; // inclusive last
+    	this->bins_cumsum_ = new uint32_t[this->n_levels_ + 1]; // inclusive last
 
-    	U32 total = 0;
-    	for(U32 i = 0; i <= this->n_levels_; ++i){
+    	uint32_t total = 0;
+    	for(uint32_t i = 0; i <= this->n_levels_; ++i){
     		total += pow(4,i);
     		this->bins_cumsum_[i] = total - 1; // remove 0 to start relative zero
     	}
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const self_type& contig){
-    	stream.write(reinterpret_cast<const char*>(&contig.contigID_),         sizeof(U32));
-    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_),         sizeof(U64));
-    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_rounded_), sizeof(U64));
+    	stream.write(reinterpret_cast<const char*>(&contig.contigID_),         sizeof(uint32_t));
+    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_),         sizeof(uint64_t));
+    	stream.write(reinterpret_cast<const char*>(&contig.l_contig_rounded_), sizeof(uint64_t));
     	stream.write(reinterpret_cast<const char*>(&contig.n_bins_),           sizeof(size_type));
-    	stream.write(reinterpret_cast<const char*>(&contig.n_levels_),         sizeof(BYTE));
+    	stream.write(reinterpret_cast<const char*>(&contig.n_levels_),         sizeof(uint8_t));
     	stream.write(reinterpret_cast<const char*>(&contig.n_sites_),          sizeof(size_type));
 
     	size_type n_items_written = 0;
-    	for(U32 i = 0; i < contig.size(); ++i){
+    	for(uint32_t i = 0; i < contig.size(); ++i){
     		if(contig.bins_[i].size()) ++n_items_written;
     	}
     	stream.write(reinterpret_cast<const char*>(&n_items_written), sizeof(size_type));
 
-    	for(U32 i = 0; i < contig.size(); ++i){
+    	for(uint32_t i = 0; i < contig.size(); ++i){
     		// If bins[i] contains data
     		if(contig.bins_[i].size())
     			stream << contig.bins_[i];
@@ -170,11 +169,11 @@ private:
 		delete [] contig.bins_cumsum_;
 		contig.bins_cumsum_ = nullptr;
 
-		stream.read(reinterpret_cast<char*>(&contig.contigID_),         sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&contig.l_contig_),         sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&contig.l_contig_rounded_), sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&contig.contigID_),         sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&contig.l_contig_),         sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&contig.l_contig_rounded_), sizeof(uint64_t));
 		stream.read(reinterpret_cast<char*>(&contig.n_bins_),           sizeof(size_type));
-		stream.read(reinterpret_cast<char*>(&contig.n_levels_),         sizeof(BYTE));
+		stream.read(reinterpret_cast<char*>(&contig.n_levels_),         sizeof(uint8_t));
 		stream.read(reinterpret_cast<char*>(&contig.n_sites_),          sizeof(size_type));
 		contig.n_capacity_ = contig.n_bins_ + 64;
 		size_type n_items_written = 0;
@@ -182,14 +181,14 @@ private:
 
 		// Allocate new
 		contig.bins_ = static_cast<pointer>(::operator new[](contig.capacity()*sizeof(value_type)));
-		for(U32 i = 0; i < contig.size(); ++i){
+		for(uint32_t i = 0; i < contig.size(); ++i){
 			new( &contig.bins_[i] ) value_type(  );
 			contig.bins_[i].binID_ = i;
 		}
 		contig.calculateCumulativeSums_();
 
 		// Load data accordingly
-		for(U32 i = 0; i < n_items_written; ++i){
+		for(uint32_t i = 0; i < n_items_written; ++i){
 			value_type temp;
 			stream >> temp;
 			//std::cerr << "loading: " << temp.size() << " entries" << std::endl;
@@ -200,14 +199,14 @@ private:
 	}
 
 private:
-    U32       contigID_;
-	U64       l_contig_;         // as described in header
-	U64       l_contig_rounded_; // rounded up to next base-4
+    uint32_t       contigID_;
+	uint64_t       l_contig_;         // as described in header
+	uint64_t       l_contig_rounded_; // rounded up to next base-4
 	size_type n_bins_;
 	size_type n_capacity_;
-	BYTE      n_levels_;    // 7 by default
+	uint8_t      n_levels_;    // 7 by default
 	size_type n_sites_;
-	U32*      bins_cumsum_; // 1, 1+4, 1+4+16, 1+4+16+64, ...
+	uint32_t*      bins_cumsum_; // 1, 1+4, 1+4+16, 1+4+16+64, ...
 	pointer   bins_;        // bin information
 };
 

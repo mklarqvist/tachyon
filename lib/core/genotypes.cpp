@@ -28,14 +28,14 @@ void yon_gt_ppa::Allocate(const uint32_t n_s){
 }
 
 void yon_gt_ppa::reset(void){
-	for(U32 i = 0; i < this->n_s; ++i)
+	for(uint32_t i = 0; i < this->n_s; ++i)
 		this->ordering[i] = i;
 }
 
 io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
 	io::DeserializePrimitive(ppa.n_s, buffer);
 	ppa.ordering = new uint32_t[ppa.n_s];
-	for(U32 i = 0; i < ppa.n_s; ++i)
+	for(uint32_t i = 0; i < ppa.n_s; ++i)
 		io::DeserializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);
@@ -43,7 +43,7 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
 
 io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
 	io::SerializePrimitive(ppa.n_s, buffer);
-	for(U32 i = 0; i < ppa.n_s; ++i)
+	for(uint32_t i = 0; i < ppa.n_s; ++i)
 		io::SerializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);
@@ -110,7 +110,7 @@ bool yon_radix_gt::operator<(const yon_radix_gt& other) const{
 	if(this->n_ploidy < other.n_ploidy) return true;
 	if(other.n_ploidy < this->n_ploidy) return false;
 
-	for(U32 i = 0; i < this->n_ploidy; ++i){
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
 		if(this->alleles[i] < other.alleles[i])
 			return true;
 	}
@@ -124,7 +124,7 @@ bool yon_radix_gt::operator==(const yon_radix_gt& other) const{
 	if(this->n_ploidy != other.n_ploidy)
 		return false;
 
-	for(U32 i = 0; i < this->n_ploidy; ++i){
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
 		if(this->alleles[i] != other.alleles[i])
 			return false;
 	}
@@ -135,16 +135,16 @@ std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype){
 	stream << genotype.id << ":";
 	if(genotype.n_ploidy){
 		stream << genotype.alleles[0];
-		for(U32 i = 1; i < genotype.n_ploidy; ++i){
+		for(uint32_t i = 1; i < genotype.n_ploidy; ++i){
 			stream << "," << genotype.alleles[i];
 		}
 	}
 	return(stream);
 }
 
-U64 yon_radix_gt::GetPackedInteger(const uint8_t& shift_size) const{
-	U64 packed = 0;
-	for(U32 i = 0; i < this->n_ploidy; ++i){
+uint64_t yon_radix_gt::GetPackedInteger(const uint8_t& shift_size) const{
+	uint64_t packed = 0;
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
 		packed <<= shift_size;
 		assert(((this->alleles[i] << shift_size) >> shift_size) == this->alleles[i]);
 		packed |= (this->alleles[i] & ((1 << shift_size)) - 1);
@@ -186,7 +186,7 @@ io::BasicBuffer& yon_gt_rcd::PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_
 	if(this->allele[0] == 0) buffer += '.';
 	else buffer.AddReadble(((this->allele[0] >> 1) - 2));
 
-	for(U32 i = 1; i < n_ploidy; ++i){
+	for(uint32_t i = 1; i < n_ploidy; ++i){
 		if(this->allele[i] == 1) break;
 		buffer += ((this->allele[i] & 1) ? '|' : '/');
 		if(this->allele[i] == 0) buffer += '.';
@@ -201,7 +201,7 @@ yon_gt::~yon_gt(){
 	delete [] rcds;
 	delete [] d_exp;
 	if(d_occ != nullptr){
-		for(U32 i = 0; i < this->n_o; ++i)
+		for(uint32_t i = 0; i < this->n_o; ++i)
 			delete [] d_occ[i];
 	}
 	delete [] n_occ;
@@ -215,7 +215,7 @@ bool yon_gt_summary::AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth)
 		target->children = new yon_gt_summary_obj[this->n_alleles];
 	}
 
-	for(U32 i = 0; i < this->n_alleles; ++i)
+	for(uint32_t i = 0; i < this->n_alleles; ++i)
 		this->AddGenotypeLayer(&target->children[i], depth+1);
 
 	return false;
@@ -225,13 +225,13 @@ yon_gt_summary& yon_gt_summary::operator+=(const yon_gt& gt){
 	assert(gt.rcds != nullptr);
 
 	// Iterate over available genotype records.
-	for(U32 i = 0; i < gt.n_i; ++i){
+	for(uint32_t i = 0; i < gt.n_i; ++i){
 		// Target root node.
 		yon_gt_summary_obj* target = &this->gt[gt.rcds[i].allele[0] >> 1];
 		target->n_cnt += gt.rcds[i].run_length;
 
 		// Iterate over alleles given the base ploidy.
-		for(U32 j = 0; j < gt.m; ++j){
+		for(uint32_t j = 0; j < gt.m; ++j){
 			assert((gt.rcds[i].allele[j] >> 1) < this->n_alleles);
 			// Add allelic counts.
 			this->alleles[gt.rcds[i].allele[j] >> 1] += gt.rcds[i].run_length;
@@ -240,7 +240,7 @@ yon_gt_summary& yon_gt_summary::operator+=(const yon_gt& gt){
 		}
 
 		// Update remainder.
-		for(U32 j = 1; j < gt.m; ++j){
+		for(uint32_t j = 1; j < gt.m; ++j){
 			target = &target->children[gt.rcds[i].allele[j] >> 1];
 			target->n_cnt += gt.rcds[i].run_length;
 		}
@@ -250,7 +250,7 @@ yon_gt_summary& yon_gt_summary::operator+=(const yon_gt& gt){
 
 std::vector<uint64_t> yon_gt_summary::GetAlleleCounts(void) const{
 	std::vector<uint64_t> c_allele(this->n_alleles, 0);
-	for(U32 i = 0; i < this->n_alleles; ++i)
+	for(uint32_t i = 0; i < this->n_alleles; ++i)
 		c_allele[i] = this->alleles[i];
 
 	return(c_allele);
@@ -259,17 +259,17 @@ std::vector<uint64_t> yon_gt_summary::GetAlleleCounts(void) const{
 std::vector< std::pair<uint64_t,double> > yon_gt_summary::GetAlleleCountFrequency(void) const{
 	std::vector< std::pair<uint64_t,double> > c_allele(this->n_alleles);
 	uint64_t n_total = 0;
-	for(U32 i = 0; i < 2; ++i){
+	for(uint32_t i = 0; i < 2; ++i){
 		c_allele[i].first = this->alleles[i];
 	}
 
-	for(U32 i = 2; i < this->n_alleles; ++i){
+	for(uint32_t i = 2; i < this->n_alleles; ++i){
 		c_allele[i].first = this->alleles[i];
 		n_total += this->alleles[i];
 	}
 
 	if(n_total != 0){
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			c_allele[i].second = (double)c_allele[i].first / n_total;
 		}
 	}
@@ -279,8 +279,8 @@ std::vector< std::pair<uint64_t,double> > yon_gt_summary::GetAlleleCountFrequenc
 
 std::vector< std::vector<uint64_t> > yon_gt_summary::GetAlleleStrandCounts(void) const{
 	std::vector< std::vector<uint64_t> > c_allele(this->n_ploidy, std::vector<uint64_t>(this->n_alleles));
-	for(U32 i = 0; i < this->n_ploidy; ++i){
-		for(U32 j = 0; j < this->n_alleles; ++j){
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
+		for(uint32_t j = 0; j < this->n_alleles; ++j){
 			c_allele[i][j] = this->alleles_strand[i][j];
 		}
 	}
@@ -294,7 +294,7 @@ bool yon_gt_summary::GetGenotype(std::vector<uint64_t>& data,
 {
 	if(depth + 1 == this->n_ploidy){
 		assert(target->children != nullptr);
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			if(target->children[i].n_cnt != 0){
 				data.push_back(target->children[i].n_cnt);
 			}
@@ -302,7 +302,7 @@ bool yon_gt_summary::GetGenotype(std::vector<uint64_t>& data,
 		return false;
 	}
 
-	for(U32 i = 0; i < this->n_alleles; ++i){
+	for(uint32_t i = 0; i < this->n_alleles; ++i){
 		this->GetGenotype(data, &target->children[i], depth + 1);
 	}
 
@@ -320,19 +320,19 @@ std::vector<yon_gt_rcd> yon_gt_summary::GetGenotypeCounts(bool drop_empty) const
 	// the genotypes by traversing the trie. Otherwise the genotypes
 	// are the allele counts at the roots.
 	if(this->n_ploidy > 1){
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			//std::cerr << "outer " << i << "/" << (int)this->n_alleles << std::endl;
 			this->GetGenotype(d, &this->gt[i], 1);
 		}
 	} else {
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			if(this->gt[i].n_cnt != 0){
 				d.push_back(this->gt[i].n_cnt);
 			}
 		}
 	}
 	uint64_t n_total = 0;
-	for(U32 i = 0; i < d.size(); ++i)
+	for(uint32_t i = 0; i < d.size(); ++i)
 		n_total += d[i];
 	std::cerr << "collected: " << d.size() << " total = " << n_total << std::endl;
 	return(genotypes);
@@ -347,7 +347,7 @@ std::vector<double> yon_gt_summary::GetStrandBiasAlleles(const bool phred_scale)
 
 	uint64_t n_cnt_fwd = 0;
 	uint64_t n_cnt_rev = 0;
-	for(U32 i = 2; i < this->n_alleles; ++i){
+	for(uint32_t i = 2; i < this->n_alleles; ++i){
 		n_cnt_fwd += this->alleles_strand[0][i];
 		n_cnt_rev += this->alleles_strand[1][i];
 	}
@@ -364,7 +364,7 @@ std::vector<double> yon_gt_summary::GetStrandBiasAlleles(const bool phred_scale)
 
 	// If n_alleles = 2 then they are identical because of symmetry
 	if(this->n_alleles - 2 > 2){
-		for(U32 p = 3; p < this->n_alleles; ++p){
+		for(uint32_t p = 3; p < this->n_alleles; ++p){
 			kt_fisher_exact(
 			this->alleles_strand[0][p], // A: Allele on forward strand
 			this->alleles_strand[1][p], // B: Allele on reverse strand
@@ -382,12 +382,12 @@ std::vector<double> yon_gt_summary::GetStrandBiasAlleles(const bool phred_scale)
 double yon_gt_summary::CalculateHardyWeinberg(void) const{
 	if(this->n_ploidy != 2 || this->n_alleles - 2 != 2) return -1;
 
-	U64 obs_hets = this->gt[2][3].n_cnt + this->gt[3][2].n_cnt; // alts
-	U64 obs_hom1 = this->gt[2][2].n_cnt; // hom ref
-	U64 obs_hom2 = this->gt[3][3].n_cnt; // hom alt
+	uint64_t obs_hets = this->gt[2][3].n_cnt + this->gt[3][2].n_cnt; // alts
+	uint64_t obs_hom1 = this->gt[2][2].n_cnt; // hom ref
+	uint64_t obs_hom2 = this->gt[3][3].n_cnt; // hom alt
 
-	U64 obs_homc = obs_hom1 < obs_hom2 ? obs_hom2 : obs_hom1;
-	U64 obs_homr = obs_hom1 < obs_hom2 ? obs_hom1 : obs_hom2;
+	uint64_t obs_homc = obs_hom1 < obs_hom2 ? obs_hom2 : obs_hom1;
+	uint64_t obs_homr = obs_hom1 < obs_hom2 ? obs_hom1 : obs_hom2;
 
 	int64_t rare_copies = 2 * obs_homr + obs_hets;
 	int64_t genotypes   = obs_hets + obs_homc + obs_homr;
@@ -464,18 +464,18 @@ bool yon_gt_summary::LazyEvaluate(void){
 	this->d->af       = new double[this->n_alleles];
 
 	uint64_t n_total = 0;
-	for(U32 i = 0; i < 2; ++i) this->d->ac[i] = this->alleles[i];
-	for(U32 i = 2; i < this->n_alleles; ++i){
+	for(uint32_t i = 0; i < 2; ++i) this->d->ac[i] = this->alleles[i];
+	for(uint32_t i = 2; i < this->n_alleles; ++i){
 		this->d->ac[i] = this->alleles[i];
 		n_total += this->alleles[i];
 	}
 
 	if(n_total != 0){
-		for(U32 i = 0; i < this->n_alleles; ++i)
+		for(uint32_t i = 0; i < this->n_alleles; ++i)
 			this->d->af[i] = (double)this->d->ac[i] / n_total;
 
 	} else {
-		for(U32 i = 0; i < this->n_alleles; ++i)
+		for(uint32_t i = 0; i < this->n_alleles; ++i)
 			this->d->af[i] = 0;
 	}
 
@@ -496,7 +496,7 @@ bool yon_gt_summary::LazyEvaluate(void){
 		double fisher_left_p, fisher_right_p, fisher_twosided_p;
 		uint64_t n_cnt_fwd = 0;
 		uint64_t n_cnt_rev = 0;
-		for(U32 i = 2; i < this->n_alleles; ++i){
+		for(uint32_t i = 2; i < this->n_alleles; ++i){
 			n_cnt_fwd += this->alleles_strand[0][i];
 			n_cnt_rev += this->alleles_strand[1][i];
 		}
@@ -513,7 +513,7 @@ bool yon_gt_summary::LazyEvaluate(void){
 		// If n_alleles = 2 then they are identical because of symmetry
 		uint8_t pos = 1;
 		if(this->n_alleles - 2 > 2){
-			for(U32 p = 3; p < this->n_alleles; ++p){
+			for(uint32_t p = 3; p < this->n_alleles; ++p){
 				kt_fisher_exact(
 				this->alleles_strand[0][p], // A: Allele on forward strand
 				this->alleles_strand[1][p], // B: Allele on reverse strand

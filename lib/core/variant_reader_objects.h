@@ -47,11 +47,11 @@ public:
 		delete this->genotype_container;
 		delete this->genotype_summary;
 
-		for(U32 i = 0; i < this->info_id_loaded.size(); ++i)
+		for(uint32_t i = 0; i < this->info_id_loaded.size(); ++i)
 			delete this->info_containers[this->info_id_loaded[i]];
 		delete [] this->info_containers;
 
-		for(U32 i = 0; i < this->format_id_loaded.size(); ++i)
+		for(uint32_t i = 0; i < this->format_id_loaded.size(); ++i)
 			delete this->format_containers[this->format_id_loaded[i]];
 		delete [] this->format_containers;
 		delete this->occ;

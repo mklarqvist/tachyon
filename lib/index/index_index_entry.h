@@ -82,37 +82,37 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.contigID),         sizeof(S32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),         sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),       sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_begin),sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end),  sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition),      sizeof(U64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),      sizeof(U64));
+		stream.write(reinterpret_cast<const char*>(&entry.contigID),         sizeof(int32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.n_blocks),         sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.n_variants),       sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_begin),sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end),  sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&entry.minPosition),      sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),      sizeof(uint64_t));
 
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.contigID),         sizeof(S32));
-		stream.read(reinterpret_cast<char*>(&entry.n_blocks),         sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),       sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offset_begin),sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end),  sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition),      sizeof(U64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition),      sizeof(U64));
+		stream.read(reinterpret_cast<char*>(&entry.contigID),         sizeof(int32_t));
+		stream.read(reinterpret_cast<char*>(&entry.n_blocks),         sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&entry.n_variants),       sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offset_begin),sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end),  sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&entry.minPosition),      sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&entry.maxPosition),      sizeof(uint64_t));
 
 		return(stream);
 	}
 
 public:
-	S32 contigID;           // contig ID
-	U32 n_blocks;           // number of index entries for this contigID
-	U64 n_variants;         // total number of variants
-	U64 byte_offset_begin;  // start virtual offset
-	U64 byte_offest_end;    // end virtual offset
-	U64 minPosition;        // smallest bp position observed
-	U64 maxPosition;        // largest  bp position observed
+	int32_t contigID;           // contig ID
+	uint32_t n_blocks;           // number of index entries for this contigID
+	uint64_t n_variants;         // total number of variants
+	uint64_t byte_offset_begin;  // start virtual offset
+	uint64_t byte_offest_end;    // end virtual offset
+	uint64_t minPosition;        // smallest bp position observed
+	uint64_t maxPosition;        // largest  bp position observed
 };
 
 }

@@ -21,7 +21,7 @@ private:
 
 public:
     GenotypeContainerDiploidBCF();
-    GenotypeContainerDiploidBCF(const char* const data, const U32 n_entries, const meta_type& meta_entry);
+    GenotypeContainerDiploidBCF(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     ~GenotypeContainerDiploidBCF();
 
     // Element access
@@ -54,7 +54,7 @@ GenotypeContainerDiploidBCF<T>::GenotypeContainerDiploidBCF(){
 
 template <class T>
 GenotypeContainerDiploidBCF<T>::GenotypeContainerDiploidBCF(const char* const  data,
-                                                                    const U32  n_entries,
+                                                                    const uint32_t  n_entries,
                                                               const meta_type& meta_entry) :
 	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
 {

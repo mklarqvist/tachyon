@@ -24,7 +24,7 @@ public:
 		__entries(new value_type[this->n_capacity])
 	{}
 
-    VariantIndexLinear(const U32 contig_id) :
+    VariantIndexLinear(const uint32_t contig_id) :
 		contig_id_(contig_id),
 		n_entries(0),
 		n_capacity(1000),
@@ -37,7 +37,7 @@ public:
 		n_capacity(other.n_capacity),
 		__entries(new value_type[this->n_capacity])
     {
-    	for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+    	for(uint32_t i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
     }
 
 	~VariantIndexLinear(){
@@ -120,7 +120,7 @@ public:
 		this->__entries = new value_type[this->capacity()];
 
 		// Lift over values from old addresses
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			this->__entries[i] = temp[i];
 
 		delete [] temp;
@@ -128,15 +128,15 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.contig_id_), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&entry.contig_id_), sizeof(uint32_t));
 		stream.write(reinterpret_cast<const char*>(&entry.n_entries), sizeof(size_type));
-		for(U32 i = 0; i < entry.size(); ++i) stream << entry[i];
+		for(uint32_t i = 0; i < entry.size(); ++i) stream << entry[i];
 
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.contig_id_), sizeof(U32));
+		stream.read(reinterpret_cast<char*>(&entry.contig_id_), sizeof(uint32_t));
 		stream.read(reinterpret_cast<char*>(&entry.n_entries), sizeof(size_type));
 
 		if(entry.size() > entry.capacity()){
@@ -145,14 +145,14 @@ private:
 			entry.__entries = new value_type[entry.capacity()];
 		}
 
-		for(U32 i = 0; i < entry.size(); ++i)
+		for(uint32_t i = 0; i < entry.size(); ++i)
 			stream >> entry[i];
 
 		return(stream);
 	}
 
 private:
-	U32 contig_id_;
+	uint32_t contig_id_;
 	size_type n_entries;
 	size_type n_capacity;
 	pointer   __entries;

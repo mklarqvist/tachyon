@@ -35,7 +35,7 @@ VariantBlockContainer::VariantBlockContainer(const self_type& other) :
 {
 	if(other.gt_exp != nullptr){
 		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
-		for(U32 i = 0; i < this->header_->GetNumberSamples(); ++i)
+		for(uint32_t i = 0; i < this->header_->GetNumberSamples(); ++i)
 			this->gt_exp[i] = other.gt_exp[i];
 	}
 }
@@ -107,7 +107,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	//       (e.g. AC or AF already existing).
 	std::unordered_map<uint32_t, std::string> blocked_list;
 	if(settings.annotate_extra){
-		for(U32 i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
+		for(uint32_t i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
 			const YonInfo* info = this->header_->GetInfo(YON_GT_ANNOTATE_FIELDS[i]);
 			if(info != nullptr){
 				blocked_list[info->idx] = YON_GT_ANNOTATE_FIELDS[i];
@@ -121,7 +121,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	// of target global identifiers we have to first map these to the
 	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_INFO){
-		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
+		for(uint32_t i = 0; i < this->block_.footer.n_info_streams; ++i){
 			const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->block_.footer.info_offsets[i].data_header.global_key);
 			if(it == blocked_list.end()){
 				//std::cerr << "adding not blocked" << std::endl;
@@ -136,7 +136,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	} else {
 		std::vector<int> local_ids;
 		std::vector<int> global_ids;
-		for(U32 i = 0; i < settings.info_id_global.size(); ++i){
+		for(uint32_t i = 0; i < settings.info_id_global.size(); ++i){
 			// Searches for the global Vcf:INFO idx value in the block. If
 			// it is found then return that local idx otherwise -1. If the
 			// idx is found store it in the loaded idx vector.
@@ -153,7 +153,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 		if(local_ids.size()){
 			// Dedupe vectors. This prevents multiple parsings of the same
 			// target data container as this is illegal.
-			for(U32 i = 0; i < local_ids.size(); ++i){
+			for(uint32_t i = 0; i < local_ids.size(); ++i){
 				map_type::const_iterator it = this->info_map_global.find(global_ids[i]);
 				if(it == this->info_map_global.end()){
 					this->info_id_local_loaded.push_back(local_ids[i]);
@@ -169,7 +169,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	// of target global identifiers we have to first map these to the
 	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_FORMAT){
-		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
+		for(uint32_t i = 0; i < this->block_.footer.n_format_streams; ++i){
 			this->format_id_local_loaded.push_back(i);
 			this->format_id_global_loaded.push_back(this->block_.footer.format_offsets[i].data_header.global_key);
 			this->format_map_global[this->format_id_global_loaded[i]] = i;
@@ -177,7 +177,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 	} else {
 		std::vector<int> local_ids;
 		std::vector<int> global_ids;
-		for(U32 i = 0; i < settings.format_id_global.size(); ++i){
+		for(uint32_t i = 0; i < settings.format_id_global.size(); ++i){
 			// Searches for the global Vcf:FORMAT idx value in the block. If
 			// it is found then return that local idx otherwise -1. If the
 			// idx is found store it in the loaded idx vector.
@@ -191,7 +191,7 @@ bool VariantBlockContainer::ParseSettings(block_settings_type& settings){
 		if(local_ids.size()){
 			// Dedupe vectors. This prevents multiple parsings of the same
 			// target data container as this is illegal.
-			for(U32 i = 0; i < local_ids.size(); ++i){
+			for(uint32_t i = 0; i < local_ids.size(); ++i){
 				map_type::const_iterator it = this->format_map_global.find(global_ids[i]);
 				if(it == this->format_map_global.end()){
 					this->format_id_local_loaded.push_back(local_ids[i]);
@@ -218,11 +218,11 @@ bool VariantBlockContainer::ParseLoadedPatterns(block_settings_type& settings){
 		// in the stored order to guarantee bit-exactness. Otherwise
 		// return in the order requested.
 		if((settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
-			for(U32 p = 0; p < this->block_.footer.n_info_patterns; ++p){
+			for(uint32_t p = 0; p < this->block_.footer.n_info_patterns; ++p){
 				this->info_patterns_local[p] = this->block_.footer.info_patterns[p].pattern;
 			}
 		} else { // Return in requested order.
-			for(U32 p = 0; p < this->block_.footer.n_info_patterns; ++p){
+			for(uint32_t p = 0; p < this->block_.footer.n_info_patterns; ++p){
 				this->info_patterns_local[p] = this->block_.IntersectInfoPatterns(this->info_id_global_loaded, p);
 			}
 		}
@@ -234,11 +234,11 @@ bool VariantBlockContainer::ParseLoadedPatterns(block_settings_type& settings){
 			// If all Vcf::FORMAT fields are desired then return them
 			// in the stored order to guarantee bit-exactness. Otherwise
 			// return in the order requested.
-			for(U32 p = 0; p < this->block_.footer.n_format_patterns; ++p){
+			for(uint32_t p = 0; p < this->block_.footer.n_format_patterns; ++p){
 				this->format_patterns_local[p] = this->block_.footer.format_patterns[p].pattern;
 			}
 		} else {
-			for(U32 p = 0; p < this->block_.footer.n_format_patterns; ++p){
+			for(uint32_t p = 0; p < this->block_.footer.n_format_patterns; ++p){
 				this->format_patterns_local[p] = this->block_.IntersectFormatPatterns(this->format_id_global_loaded, p);
 			}
 		}
@@ -281,7 +281,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	}
 
 	// Load base meta containers.
-	for(U32 i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
+	for(uint32_t i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
 		if(settings.load_static & (1 << i)){
 			this->block_.LoadContainerSeek(stream,
 			                               this->block_.footer.offsets[i],
@@ -317,7 +317,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	if(this->block_.footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.info_offsets[0].data_header.offset);
 
-		for(U32 i = 0; i < this->block_.footer.n_info_streams; ++i){
+		for(uint32_t i = 0; i < this->block_.footer.n_info_streams; ++i){
 			this->block_.LoadContainer(stream,
 			                           this->block_.footer.info_offsets[i],
 			                           this->block_.info_containers[i]);
@@ -325,7 +325,7 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	}
 	// If we have a user-supplied list of identifiers parsed above.
 	else {
-		for(U32 i = 0; i < this->info_id_local_loaded.size(); ++i){
+		for(uint32_t i = 0; i < this->info_id_local_loaded.size(); ++i){
 			this->block_.LoadContainerSeek(stream,
 			                               this->block_.footer.info_offsets[this->info_id_local_loaded[i]],
 			                               this->block_.info_containers[this->info_id_local_loaded[i]]);
@@ -339,16 +339,16 @@ bool VariantBlockContainer::ReadBlock(std::ifstream& stream, block_settings_type
 	// all available data. There is no such guarntees for the second case.
 	if(this->block_.footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
 		stream.seekg(this->block_.start_compressed_data_ + this->block_.footer.format_offsets[0].data_header.offset);
-		for(U32 i = 0; i < this->block_.footer.n_format_streams; ++i){
+		for(uint32_t i = 0; i < this->block_.footer.n_format_streams; ++i){
 			this->block_.LoadContainerSeek(stream, this->block_.footer.format_offsets[i], this->block_.format_containers[i]);
 		}
 		// At this point the stream should be located at the end-of-block
 		// marker as the Format information is stored last.
-		assert(this->block_.end_compressed_data_ == (U64)stream.tellg());
+		assert(this->block_.end_compressed_data_ == (uint64_t)stream.tellg());
 	}
 	// If we have a user-supplied list of identifiers parsed above.
 	else {
-		for(U32 i = 0; i < this->format_id_local_loaded.size(); ++i){
+		for(uint32_t i = 0; i < this->format_id_local_loaded.size(); ++i){
 			this->block_.LoadContainerSeek(stream, this->block_.footer.format_offsets[this->format_id_local_loaded[i]], this->block_.format_containers[this->format_id_local_loaded[i]]);
 		}
 	}
@@ -381,10 +381,10 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 
 	// Handle Vcf:FORMAT fields.
 	if(objects->n_loaded_format){
-		for(U32 i = 0; i < objects->n_loaded_format; ++i){
-			//const U32 global_key = this->block_.footer.format_offsets[i].getGlobalKey();
-			const U32 global_key = this->format_id_global_loaded[i];
-			const U32 local_key  = this->format_id_local_loaded[i];
+		for(uint32_t i = 0; i < objects->n_loaded_format; ++i){
+			//const uint32_t global_key = this->block_.footer.format_offsets[i].getGlobalKey();
+			const uint32_t global_key = this->format_id_global_loaded[i];
+			const uint32_t local_key  = this->format_id_local_loaded[i];
 			objects->format_id_loaded.push_back(local_key);
 
 			// Evaluate the set-membership of a given global key in the available Format patterns
@@ -392,7 +392,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			std::vector<bool> matches = this->block_.FormatPatternSetMembership(global_key);
 
 			if(this->header_->format_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
-				objects->format_containers[local_key] = new containers::FormatContainer<S32>(this->GetBlock().format_containers[local_key],
+				objects->format_containers[local_key] = new containers::FormatContainer<int32_t>(this->GetBlock().format_containers[local_key],
 				                                                                             *objects->meta_container,
 				                                                                             matches,
 				                                                                             this->header_->GetNumberSamples());
@@ -425,10 +425,10 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 
 	// Handle Vcf:INFO fields.
 	if(objects->n_loaded_info){
-		for(U32 i = 0; i < objects->n_loaded_info; ++i){
-			//const U32 global_key = this->block_.footer.info_offsets[i].getGlobalKey();
-			const U32 global_key = this->info_id_global_loaded[i];
-			const U32 local_key  = this->info_id_local_loaded[i];
+		for(uint32_t i = 0; i < objects->n_loaded_info; ++i){
+			//const uint32_t global_key = this->block_.footer.info_offsets[i].getGlobalKey();
+			const uint32_t global_key = this->info_id_global_loaded[i];
+			const uint32_t local_key  = this->info_id_local_loaded[i];
 			objects->info_id_loaded.push_back(local_key);
 
 			// Evaluate the set-membership of a given global key in the available Info patterns
@@ -436,7 +436,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			std::vector<bool> matches = this->block_.InfoPatternSetMembership(global_key);
 
 			if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_INTEGER){
-				objects->info_containers[local_key] = new containers::InfoContainer<S32>(this->GetBlock().info_containers[local_key], *objects->meta_container, matches);
+				objects->info_containers[local_key] = new containers::InfoContainer<int32_t>(this->GetBlock().info_containers[local_key], *objects->meta_container, matches);
 			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_STRING ||
 					  this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_CHARACTER)
 			{
@@ -444,7 +444,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			} else if(this->header_->info_fields_[global_key].yon_type == YON_VCF_HEADER_FLOAT){
 				objects->info_containers[local_key] = new containers::InfoContainer<float>(this->GetBlock().info_containers[local_key], *objects->meta_container, matches);
 			} else {
-				objects->info_containers[local_key] = new containers::InfoContainer<U32>();
+				objects->info_containers[local_key] = new containers::InfoContainer<uint32_t>();
 			}
 			objects->info_container_map[this->header_->info_fields_[global_key].id] = objects->info_containers[local_key];
 		}
@@ -458,7 +458,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 	yon1_t* records = new yon1_t[objects.meta_container->size()];
 
 	// Iterate over the sites described in the meta container.
-	for(U32 i = 0; i < objects.meta_container->size(); ++i){
+	for(uint32_t i = 0; i < objects.meta_container->size(); ++i){
 		records[i].is_dirty       = false;
 		records[i].is_loaded_meta = true; // todo
 		records[i].is_loaded_gt   = objects.loaded_genotypes;
@@ -486,7 +486,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			records[i].info_containers = new InfoContainerInterface*[this->block_.footer.n_info_streams];
 
 			// Populate Info data.
-			for(U32 j = 0; j < records[i].info_ids->size(); ++j){
+			for(uint32_t j = 0; j < records[i].info_ids->size(); ++j){
 				InfoContainerInterface* info_cnt = objects.info_container_map[this->header_->info_fields_[records[i].info_ids->at(j)].id];
 				records[i].info_containers[j] = info_cnt;
 				records[i].info_hdr.push_back(&this->header_->info_fields_[records[i].info_ids->at(j)]);
@@ -495,7 +495,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 
 				switch(this->header_->info_fields_[records[i].info_ids->at(j)].yon_type){
 				case(YON_VCF_HEADER_INTEGER):
-					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<S32>*>(info_cnt)->at(i);
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<int32_t>*>(info_cnt)->at(i);
 					break;
 				case(YON_VCF_HEADER_FLOAT):
 					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<float>*>(info_cnt)->at(i);
@@ -505,7 +505,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<std::string>*>(info_cnt)->at(i);
 					break;
 				default:
-					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<U32>*>(info_cnt)->at(0);
+					records[i].info[j] = &reinterpret_cast<containers::InfoContainer<uint32_t>*>(info_cnt)->at(0);
 					break;
 				}
 			}
@@ -518,7 +518,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			records[i].format_containers = new FormatContainerInterface*[this->block_.footer.n_format_streams];
 
 			// Populate Format data.
-			for(U32 j = 0; j < records[i].format_ids->size(); ++j){
+			for(uint32_t j = 0; j < records[i].format_ids->size(); ++j){
 				FormatContainerInterface* fmt_cnt = objects.format_container_map[this->header_->format_fields_[records[i].format_ids->at(j)].id];
 				records[i].format_containers[j] = fmt_cnt;
 				records[i].format_hdr.push_back(&this->header_->format_fields_[records[i].format_ids->at(j)]);
@@ -527,7 +527,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 
 				switch(this->header_->format_fields_[records[i].format_ids->at(j)].yon_type){
 				case(YON_VCF_HEADER_INTEGER):
-					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<S32>*>(fmt_cnt)->at(i);
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<int32_t>*>(fmt_cnt)->at(i);
 					break;
 				case(YON_VCF_HEADER_FLOAT):
 					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<float>*>(fmt_cnt)->at(i);
@@ -538,7 +538,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 					break;
 				default:
 					std::cerr << "fmt at default: illegal primitive in assignment" << std::endl;
-					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<U32>*>(fmt_cnt)->at(0);
+					records[i].fmt[j] = &reinterpret_cast<containers::FormatContainer<uint32_t>*>(fmt_cnt)->at(0);
 					break;
 				}
 			}
@@ -551,7 +551,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 
 			// Populate Filter.
 			records[i].filter_ids = &this->block_.footer.filter_patterns[objects.meta_container->at(i).filter_pattern_id].pattern;
-			for(U32 j = 0; j < records[i].filter_ids->size(); ++j){
+			for(uint32_t j = 0; j < records[i].filter_ids->size(); ++j){
 				records[i].filter_hdr.push_back(&this->header_->filter_fields_[records[i].filter_ids->at(j)]);
 			}
 		}

@@ -25,7 +25,7 @@ private:
 
 public:
     PrimitiveGroupContainer();
-    PrimitiveGroupContainer(const data_container_type& container, const U32& offset, const U32& n_entries, const U32 strides_each);
+    PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t& n_entries, const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
 	// Element access
@@ -68,7 +68,7 @@ public:
 	bcf1_t* UpdateHtslibVcfRecordFormatString(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
 		const char** dst = new const char*[this->size()];
 
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			dst[i] = this->at(i).data_.data();
 			//std::cerr << dst[i] << std::endl;
 		}

@@ -24,8 +24,8 @@ struct VariantImporterStatsObject{
 		return(stream);
 	}
 
-	U64 cost_uncompressed;
-	U64 cost_compressed;
+	uint64_t cost_uncompressed;
+	uint64_t cost_compressed;
 };
 
 class VariantImporterContainerStats{
@@ -44,7 +44,7 @@ public:
 		n_capacity_(200),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-    	for(U32 i = 0; i < this->capacity(); ++i)
+    	for(uint32_t i = 0; i < this->capacity(); ++i)
     		new( &this->entries_[i] ) value_type( );
     }
 
@@ -53,7 +53,7 @@ public:
 		n_capacity_(start_capacity),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-    	for(U32 i = 0; i < this->capacity(); ++i)
+    	for(uint32_t i = 0; i < this->capacity(); ++i)
 			new( &this->entries_[i] ) value_type( );
     }
 
@@ -141,7 +141,7 @@ public:
 		this->entries_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 
 		// Lift over values from old addresses
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( temp[i] );
 
 

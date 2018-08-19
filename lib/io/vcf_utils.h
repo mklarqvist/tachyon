@@ -31,7 +31,7 @@ public:
 		std::string ret = "##contig=<ID=" + this->name;
 		if(extra.size()){
 			ret += "," + this->extra[0].first + "=" + this->extra[0].second;
-			for(U32 i = 1; i < this->extra.size(); ++i){
+			for(uint32_t i = 1; i < this->extra.size(); ++i){
 				ret += "," + this->extra[i].first + "=" + this->extra[i].second;
 			}
 		}
@@ -322,7 +322,7 @@ public:
 		// ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
 		std::string ret = "##" + this->key + "=<";
 		ret += this->fields[0].key + "=" + this->fields[0].value;
-		for(U32 i = 1; i < this->fields.size(); ++i)
+		for(uint32_t i = 1; i < this->fields.size(); ++i)
 			ret += "," + this->fields[i].key + "=" + this->fields[i].value;
 		ret += ">";
 		return(ret);
@@ -332,7 +332,7 @@ public:
 		utility::SerializeString(extra.key, stream);
 		size_t l_extra = extra.fields.size();
 		stream.write((const char*)&l_extra, sizeof(size_t));
-		for(U32 i = 0; i < extra.fields.size(); ++i)
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			stream << extra.fields[i];
 
 		return(stream);
@@ -343,7 +343,7 @@ public:
 		size_t l_extra;
 		stream.read((char*)&l_extra, sizeof(size_t));
 		extra.fields.resize(l_extra);
-		for(U32 i = 0; i < extra.fields.size(); ++i)
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			stream >> extra.fields[i];
 
 		return(stream);
@@ -353,7 +353,7 @@ public:
 		io::SerializeString(extra.key, buffer);
 		size_t l_extra = extra.fields.size();
 		io::SerializePrimitive(l_extra, buffer);
-		for(U32 i = 0; i < extra.fields.size(); ++i)
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			buffer << extra.fields[i];
 
 		return(buffer);
@@ -364,7 +364,7 @@ public:
 		size_t l_extra;
 		io::DeserializePrimitive(l_extra, buffer);
 		extra.fields.resize(l_extra);
-		for(U32 i = 0; i < extra.fields.size(); ++i)
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			buffer >> extra.fields[i];
 
 		return(buffer);

@@ -46,14 +46,14 @@ public:
 	// Element access
 	inline pointer         data(void){ return(this->__iterators); }
 	inline const_pointer   data(void) const{ return(this->__iterators); }
-	inline reference       operator[](const U32& position){ return(this->__iterators[position]); }
-	inline const_reference operator[](const U32& position) const{ return(this->__iterators[position]); }
-	inline reference       at(const U32& position){ return(this->__iterators[position]); }
-	inline const_reference at(const U32& position) const{ return(this->__iterators[position]); }
+	inline reference       operator[](const uint32_t& position){ return(this->__iterators[position]); }
+	inline const_reference operator[](const uint32_t& position) const{ return(this->__iterators[position]); }
+	inline reference       at(const uint32_t& position){ return(this->__iterators[position]); }
+	inline const_reference at(const uint32_t& position) const{ return(this->__iterators[position]); }
 
 private:
     template <class intrinsic_primitive>
-    inline U32 GetNative(const buffer_type& buffer, const U32 position) const{
+    inline uint32_t GetNative(const buffer_type& buffer, const uint32_t position) const{
     	return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
     }
 

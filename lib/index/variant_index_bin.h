@@ -4,8 +4,6 @@
 #include <cstring>
 #include <fstream>
 
-#include "support/type_definitions.h"
-
 namespace tachyon{
 namespace index{
 
@@ -13,7 +11,7 @@ struct VariantIndexBin{
 private:
 	typedef VariantIndexBin    self_type;
     typedef std::size_t        size_type;
-    typedef U32                value_type;
+    typedef uint32_t                value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
@@ -47,7 +45,7 @@ public:
     	this->binID_      = other.binID_;
     	this->n_blocks_   = other.n_blocks_;
     	this->n_capacity_ = other.n_capacity_;
-    	for(U32 i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
+    	for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
 
     	return(*this);
     }
@@ -120,7 +118,7 @@ public:
 		pointer old = this->blocks_;
 		this->n_capacity_ *= 2;
 		this->blocks_ = new value_type[this->capacity()*2];
-		for(U32 i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
+		for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
 		delete [] old;
 	}
 
@@ -128,7 +126,7 @@ public:
 	 * Update
 	 * @param variant_block_number
 	 */
-    void add(const U32& variant_block_number){
+    void add(const uint32_t& variant_block_number){
 		if(this->size() + 1 >= this->capacity())
 			this->resize();
 
@@ -147,7 +145,7 @@ public:
     	stream << "ID: " << this->binID_ << ", variants: " << this->n_variants_ << ", associated blocks: " << this->n_blocks_;
     	if(this->size()){
     		stream << ", yon-blocks ids: " << this->blocks_[0];
-    		for(U32 i = 1; i < this->size(); ++i)
+    		for(uint32_t i = 1; i < this->size(); ++i)
     			stream << ',' << this->blocks_[i];
     	}
 
@@ -156,10 +154,10 @@ public:
 
 private:
     friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
-		stream.write(reinterpret_cast<const char*>(&bin.binID_),     sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(U32));
+		stream.write(reinterpret_cast<const char*>(&bin.binID_),     sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(uint32_t));
 		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_),   sizeof(size_type));
-		for(U32 i = 0; i < bin.size(); ++i)
+		for(uint32_t i = 0; i < bin.size(); ++i)
 			stream.write(reinterpret_cast<const char*>(&bin.blocks_[i]), sizeof(value_type));
 
 		return(stream);
@@ -167,21 +165,21 @@ private:
 
     friend std::istream& operator>>(std::istream& stream, self_type& bin){
     	delete [] bin.blocks_;
- 		stream.read(reinterpret_cast<char*>(&bin.binID_),     sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(U32));
+ 		stream.read(reinterpret_cast<char*>(&bin.binID_),     sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(uint32_t));
 		stream.read(reinterpret_cast<char*>(&bin.n_blocks_),   sizeof(size_type));
 		bin.n_capacity_ = bin.size() + 64;
 		bin.blocks_ = new value_type[bin.capacity()];
 
-		for(U32 i = 0; i < bin.size(); ++i)
+		for(uint32_t i = 0; i < bin.size(); ++i)
 			stream.read(reinterpret_cast<char*>(&bin.blocks_[i]), sizeof(value_type));
 
 		return(stream);
 	}
 
 public:
-	U32       binID_;
-	U32       n_variants_; // number of variants belonging to this bin
+	uint32_t       binID_;
+	uint32_t       n_variants_; // number of variants belonging to this bin
 	size_type n_blocks_;
 	size_type n_capacity_;
 	pointer   blocks_;    // tachyon blocks belonging to this bin

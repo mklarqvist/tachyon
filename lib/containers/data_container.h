@@ -23,7 +23,7 @@ class DataContainer{
 
 public:
 	DataContainer();
-	DataContainer(const U32 start_size);
+	DataContainer(const uint32_t start_size);
 	~DataContainer();
 	DataContainer(const self_type& other);
 	DataContainer& operator=(const self_type& other);
@@ -43,7 +43,7 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void SetStrideSize(const S32 value){ this->header.data_header.stride = value; }
+	inline void SetStrideSize(const int32_t value){ this->header.data_header.stride = value; }
 
 	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
@@ -56,7 +56,7 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline bool CheckStrideSize(const S32 value) const{
+	inline bool CheckStrideSize(const int32_t value) const{
 		if(this->header.data_header.HasMixedStride() == false)
 			return false;
 
@@ -87,33 +87,33 @@ public:
 	}
 
 	// Supportive
-	inline const U64& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
-	inline const U32& size(void) const{ return(this->header.n_entries); }
+	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
+	inline const uint64_t& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const uint32_t& size(void) const{ return(this->header.n_entries); }
 
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
-	 * point all stride values added must be of type U32. This
+	 * point all stride values added must be of type uint32_t. This
 	 * function internally checks if stride sizes is mixed or
 	 * not.
 	 * @param value Stride value to add
 	 */
-	void AddStride(const U32 value);
+	void AddStride(const uint32_t value);
 
-	bool Add(const BYTE& value);
-	bool Add(const U16& value);
-	bool Add(const U32& value);
-	bool Add(const SBYTE& value);
-	bool Add(const S16& value);
-	bool Add(const S32& value);
-	bool Add(const U64& value);
-	bool Add(const S64& value);
+	bool Add(const uint8_t& value);
+	bool Add(const uint16_t& value);
+	bool Add(const uint32_t& value);
+	bool Add(const int8_t& value);
+	bool Add(const int16_t& value);
+	bool Add(const int32_t& value);
+	bool Add(const uint64_t& value);
+	bool Add(const int64_t& value);
 	bool Add(const float& value);
 	bool Add(const double& value);
 	bool AddCharacter(const char& value);
-	bool AddCharacter(const char* const string, const U32 l_string);
+	bool AddCharacter(const char* const string, const uint32_t l_string);
 	// Aliases
-	inline bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
+	inline bool AddString(const char* const string, const uint32_t l_string){ return(this->AddCharacter(string, l_string)); }
 	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
@@ -133,13 +133,13 @@ public:
 	 * @param string
 	 * @param l_string
 	 */
-	inline void AddLiteral(const char* const string, const U32 l_string){
+	inline void AddLiteral(const char* const string, const uint32_t l_string){
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
 	}
 
 	void reset(void);
-	void resize(const U32 size);
+	void resize(const uint32_t size);
 
 	/**<
 	 * Generates a CRC32 checksum of the uncompressed
@@ -172,7 +172,7 @@ public:
 	 * This function is called during import to shrink each
 	 * word-type to fit min(x) and max(x) in the worst case.
 	 * At this stage all integer values in the stream is of
-	 * type S32. No other values can be shrunk
+	 * type int32_t. No other values can be shrunk
 	 */
 	void ReformatInteger(void);
 
@@ -188,13 +188,13 @@ public:
 	 * object would take on disk if written out
 	 * @return Total size in bytes
 	 */
-	U32 GetObjectSize(void) const;
+	uint32_t GetObjectSize(void) const;
 
 	/**<
 	 *
 	 * @return
 	 */
-	U64 GetObjectSizeUncompressed(void) const;
+	uint64_t GetObjectSizeUncompressed(void) const;
 
 	/**< @brief Update base container header data and evaluate output byte streams
 	 * Internal use only (import): Collectively updates base

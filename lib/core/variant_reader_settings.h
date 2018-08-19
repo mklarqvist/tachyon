@@ -10,8 +10,8 @@ struct VariantReaderSettings{
 public:
 	typedef VariantReaderSettings          self_type;
 	typedef index::IndexEntry              index_entry_type;
-	typedef algorithm::Interval<U32, S64>  interval_type;
-	typedef algorithm::IntervalTree<interval_type, S64> interval_tree_type;
+	typedef algorithm::Interval<uint32_t, int64_t>  interval_type;
+	typedef algorithm::IntervalTree<interval_type, int64_t> interval_tree_type;
 
 public:
 	VariantReaderSettings() :

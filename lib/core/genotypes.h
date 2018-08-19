@@ -17,8 +17,8 @@ namespace tachyon{
 #define YON_GT_RLE_ALLELE_B(PRIMITIVE, SHIFT, ADD)   (((PRIMITIVE) & ((1 << (SHIFT)) - 1) << ((ADD)+(SHIFT))) >> ((ADD)+(SHIFT)));
 #define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD)     ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
 #define YON_GT_DIPLOID_ALLELE_LOOKUP(A,B,shift,mask) (((A) & (mask)) << (shift)) | ((B) & (mask))
-#define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> ((SHIFT) + 1)) & (((U64)1 << (SHIFT)) - 1))
-#define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & (((U64)1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> ((SHIFT) + 1)) & (((uint64_t)1 << (SHIFT)) - 1))
+#define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & (((uint64_t)1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
 #define YON_GT_BCF1(ALLELE) ((( (ALLELE) >> 1) - 1) << 1) | (ALLELE & 1)
 
@@ -88,7 +88,7 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype);
 
-	U64 GetPackedInteger(const uint8_t& shift_size = 8) const;
+	uint64_t GetPackedInteger(const uint8_t& shift_size = 8) const;
 
 	void resize(const uint8_t new_ploidy);
 
@@ -232,7 +232,7 @@ public:
     	// Iterate over the internal run-length encoded genotypes
     	// and populate the rcds structure.
 		for(uint32_t i = 0; i < this->n_i; ++i){
-			BYTE phasing = 0;
+			uint8_t phasing = 0;
 			if(add) phasing = r_data[i] & 1;
 			else    phasing = this->global_phase;
 
@@ -288,7 +288,7 @@ public:
 		// Iterate over the internal run-length encoded genotypes
 		// and populate the rcds structure.
 		for(uint32_t i = 0; i < this->n_i; ++i){
-			BYTE phasing = 0;
+			uint8_t phasing = 0;
 			if(add) phasing = r_data[i] & 1;
 			else    phasing = this->global_phase;
 
@@ -346,7 +346,7 @@ public:
 
 			this->rcds[i].run_length = *run_length;
 			this->rcds[i].allele = new uint8_t[this->m];
-			for(U32 j = 0; j < this->m; ++j, ++b_offset)
+			for(uint32_t j = 0; j < this->m; ++j, ++b_offset)
 				this->rcds[i].allele[j] = this->data[b_offset];
 
 			n_total += this->rcds[i].run_length;
@@ -607,8 +607,8 @@ public:
 
 	   int32_t* tmpi = new int32_t[this->n_s*this->m];
 	   uint32_t gt_offset = 0;
-	   for(U32 i = 0; i < this->n_s; ++i){
-		   for(U32 j = 0; j < this->m; ++j, ++gt_offset){
+	   for(uint32_t i = 0; i < this->n_s; ++i){
+		   for(uint32_t j = 0; j < this->m; ++j, ++gt_offset){
 			   if(this->d_exp[i]->allele[j] == 0)      tmpi[gt_offset] = 0;
 			   else if(this->d_exp[i]->allele[j] == 1) tmpi[gt_offset] = 1;
 			   else tmpi[gt_offset] = YON_GT_BCF1(this->d_exp[i]->allele[j]);
@@ -650,26 +650,26 @@ public:
 	}
 
 	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
-		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NM", (const U64*)&this->nm, 1);
-		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NPM", (const U64*)&this->npm, 1);
-		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AN", (const U64*)&this->an, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NM", (const uint64_t*)&this->nm, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "NPM", (const uint64_t*)&this->npm, 1);
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AN", (const uint64_t*)&this->an, 1);
 		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "HWE_P", (const double*)&this->hwe_p, 1);
 
 		if(this->n_ac_af > 4)
 			bcf_update_info_flag(hdr, rec, "MULTI_ALLELIC", NULL, 1);
 
 		if(this->n_ac_af > 2){
-			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC", (const U64*)&this->ac[2], this->n_ac_af - 2);
+			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC", (const uint64_t*)&this->ac[2], this->n_ac_af - 2);
 			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AF", (const double*)&this->af[2], this->n_ac_af - 2);
 		}
 
 		std::vector<uint64_t> ac_p;
-		for(U32 p = 0; p < this->n_ploidy; ++p){
-			for(U32 i = 2; i < this->n_ac_af; ++i){
+		for(uint32_t p = 0; p < this->n_ploidy; ++p){
+			for(uint32_t i = 2; i < this->n_ac_af; ++i){
 				ac_p.push_back(this->ac_p[p][i]);
 			}
 		}
-		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC_P", (const U64*)ac_p.data(), ac_p.size());
+		utility::UpdateHtslibVcfRecordInfo(rec, hdr, "AC_P", (const uint64_t*)ac_p.data(), ac_p.size());
 
 		if(this->fs_a != nullptr)
 			utility::UpdateHtslibVcfRecordInfo(rec, hdr, "FS_A", this->fs_a, this->n_fs);
@@ -683,39 +683,39 @@ public:
 	}
 
 	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer){
-		buffer +=  "NM=";     buffer.AddReadble((U64)this->nm);
-		buffer += ";NPM=";    buffer.AddReadble((U64)this->npm);
-		buffer += ";AN=";     buffer.AddReadble((U64)this->an);
+		buffer +=  "NM=";     buffer.AddReadble((uint64_t)this->nm);
+		buffer += ";NPM=";    buffer.AddReadble((uint64_t)this->npm);
+		buffer += ";AN=";     buffer.AddReadble((uint64_t)this->an);
 		buffer += ";HWE_P=";  buffer.AddReadble((double)this->hwe_p);
 		if(this->n_ac_af > 4) buffer += ";MULTI_ALLELIC";
 
 		if(this->n_ac_af > 2){
-			buffer += ";AC="; buffer.AddReadble((U64)this->ac[2]);
-			for(U32 i = 3; i < this->n_ac_af; ++i){
-				buffer += ','; buffer.AddReadble((U64)this->ac[i]);
+			buffer += ";AC="; buffer.AddReadble((uint64_t)this->ac[2]);
+			for(uint32_t i = 3; i < this->n_ac_af; ++i){
+				buffer += ','; buffer.AddReadble((uint64_t)this->ac[i]);
 			}
 			buffer += ";AF="; buffer.AddReadble((double)this->af[2]);
-			for(U32 i = 3; i < this->n_ac_af; ++i){
+			for(uint32_t i = 3; i < this->n_ac_af; ++i){
 				buffer += ','; buffer.AddReadble((double)this->af[i]);
 			}
 		}
 
 		buffer += ";AC_P=";
-		buffer.AddReadble((U64)this->ac_p[0][2]);
-		for(U32 i = 3; i < this->n_ac_af; ++i){
-			buffer += ','; buffer.AddReadble((U64)this->ac_p[0][i]);
+		buffer.AddReadble((uint64_t)this->ac_p[0][2]);
+		for(uint32_t i = 3; i < this->n_ac_af; ++i){
+			buffer += ','; buffer.AddReadble((uint64_t)this->ac_p[0][i]);
 		}
 
-		for(U32 p = 1; p < this->n_ploidy; ++p){
-			for(U32 i = 2; i < this->n_ac_af; ++i){
-				buffer += ','; buffer.AddReadble((U64)this->ac_p[p][i]);
+		for(uint32_t p = 1; p < this->n_ploidy; ++p){
+			for(uint32_t i = 2; i < this->n_ac_af; ++i){
+				buffer += ','; buffer.AddReadble((uint64_t)this->ac_p[p][i]);
 			}
 		}
 
 		if(this->fs_a != nullptr){
 			buffer += ";FS_A=";
 			buffer.AddReadble((double)this->fs_a[0]);
-			for(U32 i = 1; i < this->n_fs; ++i){
+			for(uint32_t i = 1; i < this->n_fs; ++i){
 				buffer += ','; buffer.AddReadble((double)this->fs_a[i]);
 			}
 		}
@@ -769,13 +769,13 @@ public:
 		d(nullptr)
 	{
 		memset(this->alleles, 0, sizeof(uint64_t)*this->n_alleles);
-		for(U32 i = 0; i < this->n_ploidy; ++i){
+		for(uint32_t i = 0; i < this->n_ploidy; ++i){
 			this->alleles_strand[i] = new uint64_t[this->n_alleles];
 			memset(this->alleles_strand[i], 0, sizeof(uint64_t)*this->n_alleles);
 		}
 
 		// Add layers to the root node.
-		for(U32 i = 0; i < this->n_alleles; ++i)
+		for(uint32_t i = 0; i < this->n_alleles; ++i)
 			this->AddGenotypeLayer(&this->gt[i], 1);
 	}
 
@@ -783,7 +783,7 @@ public:
 		delete [] this->alleles;
 		delete [] this->gt;
 		if(this->alleles_strand != nullptr){
-			for(U32 i = 0; i < this->n_ploidy; ++i)
+			for(uint32_t i = 0; i < this->n_ploidy; ++i)
 				delete this->alleles_strand[i];
 			delete [] this->alleles_strand;
 		}

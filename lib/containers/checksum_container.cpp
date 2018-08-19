@@ -4,17 +4,17 @@ namespace tachyon{
 namespace containers{
 
 ChecksumContainer::ChecksumContainer(void) :
-		n_entries(0),
-		n_capacity(1000),
-		__entries(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+	n_entries(0),
+	n_capacity(1000),
+	__entries(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
 {
 
 }
 
 ChecksumContainer::ChecksumContainer(const size_type capacity) :
-		n_entries(0),
-		n_capacity(capacity),
-		__entries(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+	n_entries(0),
+	n_capacity(capacity),
+	__entries(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
 {
 
 }
@@ -61,7 +61,7 @@ void ChecksumContainer::finalize(void){
 }
 
 bool ChecksumContainer::update(const block_type& block, const header_type& header){
-	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		//assert(mapTable[block.index_entry.info_offsets[i].key] < this->size());
 		if(!(*this)[block.footer.info_offsets[i].data_header.global_key].uncompressed.update(block.info_containers[i].buffer_data_uncompressed, block.info_containers[i].buffer_strides_uncompressed, block.info_containers[i].header.data_header.HasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
@@ -75,7 +75,7 @@ bool ChecksumContainer::update(const block_type& block, const header_type& heade
 		}
 	}
 
-	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(!(*this)[block.footer.format_offsets[i].data_header.global_key].uncompressed.update(block.format_containers[i].buffer_data_uncompressed, block.format_containers[i].buffer_strides_uncompressed, block.format_containers[i].header.data_header.HasMixedStride())){
 			std::cerr << utility::timestamp("ERROR","DIGEST") << "Failed to update digest..." << std::endl;
 			return false;

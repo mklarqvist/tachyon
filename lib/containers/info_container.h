@@ -25,7 +25,7 @@ private:
     typedef io::BasicBuffer                 buffer_type;
     typedef DataContainer                   data_container_type;
     typedef MetaContainer                   meta_container_type;
-    typedef StrideContainer<U32>            stride_container_type;
+    typedef StrideContainer<uint32_t>            stride_container_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
@@ -58,22 +58,22 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-    inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position) const{
+    inline std::ostream& to_vcf_string(std::ostream& stream, const uint32_t position) const{
     	//utility::to_vcf_string(stream, this->at(position).data(), this->at(position).size());
     	return(stream);
     }
 
-    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position) const{
+    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position) const{
     	utility::to_vcf_string(buffer, this->at(position).data(), this->at(position).size());
     	return(buffer);
     }
 
-    inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position) const{
+    inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const uint32_t position) const{
     	//utility::to_json_string(buffer, this->at(position));
 		return(buffer);
     }
 
-    inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
+    inline bool emptyPosition(const uint32_t& position) const{ return(this->at(position).empty()); }
 
 private:
     // For mixed strides
@@ -88,10 +88,10 @@ private:
 
     // For fixed strides
 	template <class actual_primitive>
-	void __setup(const data_container_type& container, const U32 stride_size);
+	void __setup(const data_container_type& container, const uint32_t stride_size);
 
 	template <class actual_primitive>
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U32 stride_size);
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint32_t stride_size);
 
 private:
     pointer __containers;
@@ -134,10 +134,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 	if(data_container.header.data_header.HasMixedStride()){
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<int8_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<int16_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<int32_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<int64_t>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
@@ -148,10 +148,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			}
 		} else {
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<uint8_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<uint16_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<uint32_t>(data_container, meta_container, pattern_matches));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<uint64_t>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches));  break;
 			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
@@ -164,10 +164,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 	} else {
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<int8_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<int16_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<int32_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<int64_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
@@ -178,10 +178,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
 			}
 		} else {
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<uint8_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<uint16_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<uint32_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<uint64_t>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_BOOLEAN):(this->__setupBalancedFlag(data_container, meta_container, pattern_matches));  break;
@@ -205,10 +205,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 	if(container.header.data_header.HasMixedStride()){
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container));  break;
-			case(YON_TYPE_16B):    (this->__setup<S16>(container));    break;
-			case(YON_TYPE_32B):    (this->__setup<S32>(container));    break;
-			case(YON_TYPE_64B):    (this->__setup<S64>(container));    break;
+			case(YON_TYPE_8B):     (this->__setup<int8_t>(container));  break;
+			case(YON_TYPE_16B):    (this->__setup<int16_t>(container));    break;
+			case(YON_TYPE_32B):    (this->__setup<int32_t>(container));    break;
+			case(YON_TYPE_64B):    (this->__setup<int64_t>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
 			case(YON_TYPE_BOOLEAN):
@@ -219,10 +219,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<BYTE>(container));   break;
-			case(YON_TYPE_16B):    (this->__setup<U16>(container));    break;
-			case(YON_TYPE_32B):    (this->__setup<U32>(container));    break;
-			case(YON_TYPE_64B):    (this->__setup<U64>(container));    break;
+			case(YON_TYPE_8B):     (this->__setup<uint8_t>(container));   break;
+			case(YON_TYPE_16B):    (this->__setup<uint16_t>(container));    break;
+			case(YON_TYPE_32B):    (this->__setup<uint32_t>(container));    break;
+			case(YON_TYPE_64B):    (this->__setup<uint64_t>(container));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container)); break;
 			case(YON_TYPE_BOOLEAN):
@@ -235,10 +235,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 	} else {
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setup<S16>(container, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->__setup<S32>(container, container.header.data_header.stride));    break;
-			case(YON_TYPE_64B):    (this->__setup<S64>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->__setup<int8_t>(container, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setup<int16_t>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->__setup<int32_t>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_64B):    (this->__setup<int64_t>(container, container.header.data_header.stride));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
@@ -249,10 +249,10 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& container) 
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<BYTE>(container, container.header.data_header.stride));   break;
-			case(YON_TYPE_16B):    (this->__setup<U16>(container, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->__setup<U32>(container, container.header.data_header.stride));    break;
-			case(YON_TYPE_64B):    (this->__setup<U64>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, container.header.data_header.stride));    break;
+			case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, container.header.data_header.stride));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
@@ -288,8 +288,8 @@ void InfoContainer<return_type>::__setup(const data_container_type& container){
 	this->__containers = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 	stride_container_type strides(container);
 
-	U32 current_offset = 0;
-	U32 i = 0;
+	uint32_t current_offset = 0;
+	uint32_t i = 0;
 	while(true){
 		new( &this->__containers[i] ) value_type( container, current_offset, strides[i] );
 		current_offset += strides[i] * sizeof(actual_primitive);
@@ -319,10 +319,10 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 	stride_container_type strides(data_container);
 
-	U32 current_offset = 0;
-	U32 stride_offset  = 0;
+	uint32_t current_offset = 0;
+	uint32_t stride_offset  = 0;
 
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		// There are no INFO fields
 		if(meta_container[i].GetInfoPatternId() == -1){
 			new( &this->__containers[i] ) value_type( );
@@ -355,7 +355,7 @@ void InfoContainer<return_type>::__setupBalancedFlag(const data_container_type& 
 
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		// There are no INFO fields
 		if(meta_container[i].GetInfoPatternId() == -1){
 			new( &this->__containers[i] ) value_type( false );
@@ -375,7 +375,7 @@ void InfoContainer<return_type>::__setupBalancedFlag(const data_container_type& 
 
 template <class return_type>
 template <class actual_primitive>
-void InfoContainer<return_type>::__setup(const data_container_type& container, const U32 stride_size){
+void InfoContainer<return_type>::__setup(const data_container_type& container, const uint32_t stride_size){
 	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
 
 	if(this->size() == 0)
@@ -383,8 +383,8 @@ void InfoContainer<return_type>::__setup(const data_container_type& container, c
 
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
-	U32 current_offset = 0;
-	for(U32 i = 0; i < this->size(); ++i){
+	uint32_t current_offset = 0;
+	for(uint32_t i = 0; i < this->size(); ++i){
 		//const actual_primitive* const data = reinterpret_cast<const actual_primitive* const>(&container.buffer_data_uncompressed[current_offset]);
 		new( &this->__containers[i] ) value_type( container, current_offset, stride_size );
 		current_offset += stride_size * sizeof(actual_primitive);
@@ -397,7 +397,7 @@ template <class actual_primitive>
 void InfoContainer<return_type>::__setupBalanced(const data_container_type& data_container,
                                                  const meta_container_type& meta_container,
                                                    const std::vector<bool>& pattern_matches,
-                                                                 const U32  stride_size)
+                                                                 const uint32_t  stride_size)
 {
 	this->n_entries = meta_container.size();
 	if(this->size() == 0)
@@ -405,10 +405,10 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 
 	this->__containers = static_cast<pointer>(::operator new[](this->size()*sizeof(value_type)));
 
-	U32 current_offset = 0;
+	uint32_t current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.data_header.IsUniform()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			// There are no INFO fields
 			if(meta_container[i].GetInfoPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -424,7 +424,7 @@ void InfoContainer<return_type>::__setupBalanced(const data_container_type& data
 	}
 	// Case 2: if data is not uniform
 	else {
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].GetInfoPatternId()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, stride_size );

@@ -21,7 +21,7 @@ private:
 
 public:
     GenotypeContainerNploid();
-    GenotypeContainerNploid(const char* const data, const U32 n_entries, const meta_type& meta_entry);
+    GenotypeContainerNploid(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     ~GenotypeContainerNploid();
 
     // Element access
@@ -79,7 +79,7 @@ GenotypeContainerNploid<T>::GenotypeContainerNploid(){
 }
 
 template <class T>
-GenotypeContainerNploid<T>::GenotypeContainerNploid(const char* const data, const U32 n_entries, const meta_type& meta_entry) :
+GenotypeContainerNploid<T>::GenotypeContainerNploid(const char* const data, const uint32_t n_entries, const meta_type& meta_entry) :
 	parent_type(data, n_entries, n_entries*(sizeof(value_type) + meta_entry.n_base_ploidy*sizeof(uint8_t)), meta_entry)
 {
 

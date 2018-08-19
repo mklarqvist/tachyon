@@ -22,72 +22,72 @@ MetaContainer::~MetaContainer(void){
 
 void MetaContainer::__ctor_setup(const block_type& block){
 	// Build containers for hot/cold depending on what is available
-	PrimitiveContainer<U32>   contigs(block.base_containers[YON_BLK_CONTIG]);
-	PrimitiveContainer<U16>   controllers(block.base_containers[YON_BLK_CONTROLLER]);
-	PrimitiveContainer<U32>   positions(block.base_containers[YON_BLK_POSITION]);
+	PrimitiveContainer<uint32_t>   contigs(block.base_containers[YON_BLK_CONTIG]);
+	PrimitiveContainer<uint16_t>   controllers(block.base_containers[YON_BLK_CONTROLLER]);
+	PrimitiveContainer<uint32_t>   positions(block.base_containers[YON_BLK_POSITION]);
 	PrimitiveContainer<float> quality(block.base_containers[YON_BLK_QUALITY]);
-	PrimitiveContainer<BYTE>  refalt(block.base_containers[YON_BLK_REFALT]);
-	PrimitiveContainer<S32>   filterID(block.base_containers[YON_BLK_ID_FILTER]);
-	PrimitiveContainer<S32>   formatID(block.base_containers[YON_BLK_ID_FORMAT]);
-	PrimitiveContainer<S32>   infoID(block.base_containers[YON_BLK_ID_INFO]);
-	PrimitiveContainer<BYTE>  ploidy(block.base_containers[YON_BLK_GT_PLOIDY]);
+	PrimitiveContainer<uint8_t>  refalt(block.base_containers[YON_BLK_REFALT]);
+	PrimitiveContainer<int32_t>   filterID(block.base_containers[YON_BLK_ID_FILTER]);
+	PrimitiveContainer<int32_t>   formatID(block.base_containers[YON_BLK_ID_FORMAT]);
+	PrimitiveContainer<int32_t>   infoID(block.base_containers[YON_BLK_ID_INFO]);
+	PrimitiveContainer<uint8_t>  ploidy(block.base_containers[YON_BLK_GT_PLOIDY]);
 
-	for(U32 i = 0; i < this->size(); ++i){
+	for(uint32_t i = 0; i < this->size(); ++i){
 		new( &this->__entries[i] ) value_type( );
 	}
 
 	if(contigs.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(contigs.isUniform()) this->__entries[i].contigID = contigs[0];
 			else this->__entries[i].contigID = contigs[i];
 		}
 	}
 
 	if(positions.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(positions.isUniform()) this->__entries[i].position = positions[0];
 			else this->__entries[i].position = positions[i];
 		}
 	}
 
 	if(controllers.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(controllers.isUniform()) this->__entries[i].controller = controllers[0];
 			else this->__entries[i].controller = controllers[i];
 		}
 	}
 
 	if(quality.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(quality.isUniform()) this->__entries[i].quality = quality[0];
 			else this->__entries[i].quality = quality[i];
 		}
 	}
 
 	if(filterID.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(filterID.isUniform()) this->__entries[i].filter_pattern_id = filterID[0];
 			else this->__entries[i].filter_pattern_id = filterID[i];
 		}
 	}
 
 	if(infoID.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(infoID.isUniform()) this->__entries[i].info_pattern_id = infoID[0];
 			else this->__entries[i].info_pattern_id = infoID[i];
 		}
 	}
 
 	if(formatID.size()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(formatID.isUniform()) this->__entries[i].format_pattern_id = formatID[0];
 			else 	this->__entries[i].format_pattern_id = formatID[i];
 		}
 	}
 
 	if(refalt.size()){ // execute only if we have data
-		U32 refalt_position = 0;
-		for(U32 i = 0; i < this->size(); ++i){
+		uint32_t refalt_position = 0;
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(this->__entries[i].controller.alleles_packed){
 				// load from special packed
 				// this is always diploid
@@ -127,18 +127,18 @@ void MetaContainer::__ctor_setup(const block_type& block){
 	}
 
 	if(block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed.size()){
-		StrideContainer<U32> strides(block.base_containers[YON_BLK_ALLELES]);
-		U32 offset = 0;
-		U32 stride_offset = 0;
-		for(U32 i = 0; i < this->size(); ++i){
+		StrideContainer<uint32_t> strides(block.base_containers[YON_BLK_ALLELES]);
+		uint32_t offset = 0;
+		uint32_t stride_offset = 0;
+		for(uint32_t i = 0; i < this->size(); ++i){
 			if(this->__entries[i].controller.alleles_packed == false){
 				this->__entries[i].n_alleles = strides[stride_offset];
 				this->__entries[i].alleles   = static_cast<value_type::allele_type*>(::operator new[](strides[stride_offset]*sizeof(value_type::allele_type)));
 
-				for(U32 j = 0; j < strides[stride_offset]; ++j){
-					const U16& l_string = *reinterpret_cast<const U16* const>(&block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed[offset]);
+				for(uint32_t j = 0; j < strides[stride_offset]; ++j){
+					const uint16_t& l_string = *reinterpret_cast<const uint16_t* const>(&block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed[offset]);
 					new( &this->__entries[i].alleles[j] ) value_type::allele_type( &block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed[offset] );
-					offset += sizeof(U16) + l_string;
+					offset += sizeof(uint16_t) + l_string;
 				}
 				++stride_offset;
 			}
@@ -148,10 +148,10 @@ void MetaContainer::__ctor_setup(const block_type& block){
 
 	// Parse name
 	if(block.base_containers[YON_BLK_NAMES].GetSizeUncompressed()){
-		StrideContainer<U32> strides(block.base_containers[YON_BLK_NAMES]);
-		U32 offset = 0;
+		StrideContainer<uint32_t> strides(block.base_containers[YON_BLK_NAMES]);
+		uint32_t offset = 0;
 		assert(strides.size() == this->size());
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			this->__entries[i].name = std::string(&block.base_containers[YON_BLK_NAMES].buffer_data_uncompressed.data()[offset], strides[i]);
 			offset += strides[i];
 		}
@@ -160,12 +160,12 @@ void MetaContainer::__ctor_setup(const block_type& block){
 	// Parse ploidy.
 	if(ploidy.size()){
 		if(ploidy.isUniform()){
-			for(U32 i = 0; i < this->size(); ++i){
+			for(uint32_t i = 0; i < this->size(); ++i){
 				this->at(i).n_base_ploidy = ploidy[0];
 			}
 		} else {
 			assert(ploidy.size() == this->size());
-			for(U32 i = 0; i < this->size(); ++i){
+			for(uint32_t i = 0; i < this->size(); ++i){
 				this->at(i).n_base_ploidy = ploidy[i];
 				std::cerr << (int)ploidy[i] << std::endl;
 			}

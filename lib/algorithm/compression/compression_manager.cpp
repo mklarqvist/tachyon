@@ -4,7 +4,7 @@
 namespace tachyon{
 namespace algorithm{
 
-bool CompressionManager::Compress(variant_block_type& block, const BYTE general_level, const BYTE float_level){
+bool CompressionManager::Compress(variant_block_type& block, const uint8_t general_level, const uint8_t float_level){
 	zstd_codec.SetCompressionLevel(general_level);
 	zstd_codec.SetCompressionLevelData(float_level);
 
@@ -15,14 +15,14 @@ bool CompressionManager::Compress(variant_block_type& block, const BYTE general_
 
 	zstd_codec.SetCompressionLevel(general_level);
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].header.n_entries){
 			zstd_codec.Compress(block.base_containers[i]);
 			//std::cerr << "Compress: " << i << ": " << block.base_containers[i].buffer_data_uncompressed.size() << "->" << block.base_containers[i].buffer_data.size() << std::endl;
 		}
 	}
 
-	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 			zstd_codec.SetCompressionLevelData(float_level);
@@ -35,7 +35,7 @@ bool CompressionManager::Compress(variant_block_type& block, const BYTE general_
 		//std::cerr << "Compress INFO: " << i << ": " << block.info_containers[i].buffer_data_uncompressed.size() << "->" << block.info_containers[i].buffer_data.size() << std::endl;
 	}
 
-	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
 			zstd_codec.SetCompressionLevelData(float_level);
@@ -59,7 +59,7 @@ bool CompressionManager::Decompress(variant_block_type& block){
 		}
 	}
 
-	for(U32 i = 1; i < YON_BLK_N_STATIC; ++i){
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].GetSizeCompressed()){
 			if(!this->Decompress(block.base_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress basic container!" << std::endl;
@@ -68,7 +68,7 @@ bool CompressionManager::Decompress(variant_block_type& block){
 		}
 	}
 
-	for(U32 i = 0; i < block.footer.n_info_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(block.info_containers[i].GetSizeCompressed()){
 			if(!this->Decompress(block.info_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress INFO container " << i << "/" << block.footer.n_info_streams << "!" << std::endl;
@@ -77,7 +77,7 @@ bool CompressionManager::Decompress(variant_block_type& block){
 		}
 	}
 
-	for(U32 i = 0; i < block.footer.n_format_streams; ++i){
+	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(block.format_containers[i].GetSizeCompressed()){
 			if(!this->Decompress(block.format_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress FORMAT container " << i << "/" << block.footer.n_format_streams << "!" << std::endl;
