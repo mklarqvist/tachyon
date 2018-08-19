@@ -2,7 +2,6 @@
 
 #include <cassert>
 
-
 namespace tachyon{
 namespace containers{
 
@@ -152,7 +151,7 @@ VariantBlockFooter& VariantBlockFooter::operator=(const self_type& other){
 	delete this->info_pattern_map;
 	delete this->format_pattern_map;
 	delete this->filter_pattern_map;
-	*this = VariantBlockFooter(other);
+	*this = VariantBlockFooter(other); // invoke standard copy ctor followed by move ctor.
 	return(*this);
 }
 
@@ -162,17 +161,17 @@ VariantBlockFooter& VariantBlockFooter::operator=(self_type&& other) noexcept{
 		return *this;
 	}
 
-	delete [] this->offsets; this->offsets = nullptr;
-	delete [] this->info_offsets; this->info_offsets = nullptr;
-	delete [] this->format_offsets; this->format_offsets = nullptr;
-	delete [] this->filter_offsets; this->filter_offsets = nullptr;
-	delete [] this->info_patterns; this->info_patterns = nullptr;
+	delete [] this->offsets;         this->offsets         = nullptr;
+	delete [] this->info_offsets;    this->info_offsets    = nullptr;
+	delete [] this->format_offsets;  this->format_offsets  = nullptr;
+	delete [] this->filter_offsets;  this->filter_offsets  = nullptr;
+	delete [] this->info_patterns;   this->info_patterns   = nullptr;
 	delete [] this->format_patterns; this->format_patterns = nullptr;
 	delete [] this->filter_patterns; this->filter_patterns = nullptr;
-	delete this->info_map; this->info_map = nullptr;
+	delete this->info_map;   this->info_map   = nullptr;
 	delete this->format_map; this->format_map = nullptr;
 	delete this->filter_map; this->filter_map = nullptr;
-	delete this->info_pattern_map; this->info_pattern_map = nullptr;
+	delete this->info_pattern_map;   this->info_pattern_map   = nullptr;
 	delete this->format_pattern_map; this->format_pattern_map = nullptr;
 	delete this->filter_pattern_map; this->filter_pattern_map = nullptr;
 
@@ -237,7 +236,6 @@ void VariantBlockFooter::resetTables(){
 	if(this->filter_pattern_map != nullptr) this->filter_pattern_map->clear();
 }
 
-// Allocate offset vectors
 void VariantBlockFooter::AllocateInfoHeaders(const uint32_t n_info_streams){
 	delete [] this->info_offsets;
 	if(n_info_streams == 0){
@@ -266,8 +264,8 @@ void VariantBlockFooter::AllocateFilterHeaders(const uint32_t n_filter_streams){
 }
 
 void VariantBlockFooter::AllocateHeaders(const uint32_t n_info_streams,
-							const uint32_t n_format_streams,
-							const uint32_t n_filter_streams)
+                                         const uint32_t n_format_streams,
+                                         const uint32_t n_filter_streams)
 {
 	this->AllocateInfoHeaders(n_info_streams);
 	this->AllocateFormatHeaders(n_format_streams);
@@ -296,9 +294,9 @@ bool VariantBlockFooter::ConstructFilterBitVector(std::unordered_map<uint32_t,ui
 }
 
 uint32_t VariantBlockFooter::AddPatternWrapper(const std::vector<int>& pattern,
-					  map_pattern_type* pattern_map,
-					  yon_blk_bv_pair* bv_pairs,
-					  uint16_t& stream_counter)
+                                               map_pattern_type* pattern_map,
+                                               yon_blk_bv_pair* bv_pairs,
+                                               uint16_t& stream_counter)
 {
 	uint64_t pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
 	const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
@@ -312,7 +310,7 @@ uint32_t VariantBlockFooter::AddPatternWrapper(const std::vector<int>& pattern,
 }
 
 uint32_t VariantBlockFooter::AddInfoPattern(const std::vector<int>& pattern){
-	if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->info_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_info_patterns_allocated == 0){
 		delete [] this->info_patterns;
 		this->info_patterns = new yon_blk_bv_pair[100];
@@ -338,7 +336,7 @@ uint32_t VariantBlockFooter::AddInfoPattern(const std::vector<int>& pattern){
 }
 
 uint32_t VariantBlockFooter::AddFormatPattern(const std::vector<int>& pattern){
-	if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->format_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_format_patterns_allocated == 0){
 		delete [] this->format_patterns;
 		this->format_patterns = new yon_blk_bv_pair[100];
@@ -364,7 +362,7 @@ uint32_t VariantBlockFooter::AddFormatPattern(const std::vector<int>& pattern){
 }
 
 uint32_t VariantBlockFooter::AddFilterPattern(const std::vector<int>& pattern){
-	if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->filter_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_filter_patterns_allocated == 0){
 		delete [] this->filter_patterns;
 		this->filter_patterns = new yon_blk_bv_pair[100];
@@ -393,8 +391,8 @@ uint32_t VariantBlockFooter::AddFilterPattern(const std::vector<int>& pattern){
 // already been loaded. This occurs when loading an object from
 // disk/buffer.
 uint32_t VariantBlockFooter::UpdatePatternWrapper(const std::vector<int>& pattern,
-					  map_pattern_type* pattern_map,
-					  const uint16_t& stream_counter)
+                                                  map_pattern_type* pattern_map,
+                                                  const uint16_t& stream_counter)
 {
 	uint64_t pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
 	const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
@@ -405,7 +403,7 @@ uint32_t VariantBlockFooter::UpdatePatternWrapper(const std::vector<int>& patter
 }
 
 uint32_t VariantBlockFooter::UpdateInfoPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
-	if(this->info_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->info_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_info_patterns_allocated == 0){
 		delete [] this->info_patterns;
 		this->info_patterns = new yon_blk_bv_pair[100];
@@ -415,7 +413,7 @@ uint32_t VariantBlockFooter::UpdateInfoPattern(const std::vector<int>& pattern, 
 }
 
 uint32_t VariantBlockFooter::UpdateFormatPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
-	if(this->format_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->format_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_format_patterns_allocated == 0){
 		delete [] this->format_patterns;
 		this->format_patterns = new yon_blk_bv_pair[100];
@@ -425,7 +423,7 @@ uint32_t VariantBlockFooter::UpdateFormatPattern(const std::vector<int>& pattern
 }
 
 uint32_t VariantBlockFooter::UpdateFilterPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
-	if(this->filter_pattern_map == nullptr) this->BuildPatternMaps();
+	if(this->filter_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_filter_patterns_allocated == 0){
 		delete [] this->filter_patterns;
 		this->filter_patterns = new yon_blk_bv_pair[100];
@@ -440,7 +438,7 @@ void VariantBlockFooter::Finalize(void){
 	this->ConstructFilterBitVector(this->filter_map);
 }
 
-bool VariantBlockFooter::BuildMaps(void){
+bool VariantBlockFooter::AllocateMaps(void){
 	delete this->info_map;
 	delete this->filter_map;
 	delete this->format_map;
@@ -452,7 +450,7 @@ bool VariantBlockFooter::BuildMaps(void){
 	return true;
 }
 
-bool VariantBlockFooter::BuildPatternMaps(void){
+bool VariantBlockFooter::AllocatePatternMaps(void){
 	delete this->info_pattern_map;
 	this->info_pattern_map = new map_pattern_type();
 	if(this->n_info_patterns_allocated == 0){
@@ -477,7 +475,10 @@ bool VariantBlockFooter::BuildPatternMaps(void){
 	return true;
 }
 
-uint32_t VariantBlockFooter::UpdateOffsetMapWrapper(const header_type& offset, map_type* map, const uint16_t& stream_counter){
+uint32_t VariantBlockFooter::UpdateOffsetMapWrapper(const header_type& offset,
+                                                    map_type* map,
+                                                    const uint16_t& stream_counter)
+{
 	map_type::const_iterator it = map->find(offset.data_header.global_key);
 	if(it == map->end())
 		(*map)[offset.data_header.global_key] = stream_counter;
@@ -486,21 +487,24 @@ uint32_t VariantBlockFooter::UpdateOffsetMapWrapper(const header_type& offset, m
 }
 
 uint32_t VariantBlockFooter::UpdateInfo(const header_type& offset, const uint16_t position){
-	if(this->info_map == nullptr) this->BuildMaps();
+	if(this->info_map == nullptr) this->AllocateMaps();
 	return(this->UpdateOffsetMapWrapper(offset, this->info_map, position));
 }
 
 uint32_t VariantBlockFooter::UpdateFormat(const header_type& offset, const uint16_t position){
-	if(this->format_map == nullptr) this->BuildMaps();
+	if(this->format_map == nullptr) this->AllocateMaps();
 	return(this->UpdateOffsetMapWrapper(offset, this->format_map, position));
 }
 
 uint32_t VariantBlockFooter::UpdateFilter(const header_type& offset, const uint16_t position){
-	if(this->filter_map == nullptr) this->BuildMaps();
+	if(this->filter_map == nullptr) this->AllocateMaps();
 	return(this->UpdateOffsetMapWrapper(offset, this->filter_map, position));
 }
 
-uint32_t VariantBlockFooter::AddStreamWrapper(const uint32_t id, map_type* map, header_type*& offsets, uint16_t& stream_counter){
+uint32_t VariantBlockFooter::AddStreamWrapper(const uint32_t id, map_type* map,
+                                              header_type*& offsets,
+                                              uint16_t& stream_counter)
+{
 	map_type::const_iterator it = map->find(id);
 	if(it == map->end()){
 		(*map)[id] = stream_counter;
@@ -512,17 +516,17 @@ uint32_t VariantBlockFooter::AddStreamWrapper(const uint32_t id, map_type* map, 
 }
 
 uint32_t VariantBlockFooter::AddInfo(const uint32_t id){
-	if(this->info_map == nullptr) this->BuildMaps();
+	if(this->info_map == nullptr) this->AllocateMaps();
 	return(this->AddStreamWrapper(id, this->info_map, this->info_offsets, this->n_info_streams));
 }
 
 uint32_t VariantBlockFooter::AddFormat(const uint32_t id){
-	if(this->format_map == nullptr) this->BuildMaps();
+	if(this->format_map == nullptr) this->AllocateMaps();
 	return(this->AddStreamWrapper(id, this->format_map, this->format_offsets, this->n_format_streams));
 }
 
 uint32_t VariantBlockFooter::AddFilter(const uint32_t id){
-	if(this->filter_map == nullptr) this->BuildMaps();
+	if(this->filter_map == nullptr) this->AllocateMaps();
 	return(this->AddStreamWrapper(id, this->filter_map, this->filter_offsets, this->n_filter_streams));
 }
 
@@ -561,8 +565,8 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 	entry.l_format_bitvector = ceil((float)entry.n_format_streams  / 8);
 	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams  / 8);
 
-	entry.BuildMaps(); // Construct new maps.
-	entry.BuildPatternMaps(); // Construct new pattern maps.
+	entry.AllocateMaps(); // Construct new maps.
+	entry.AllocatePatternMaps(); // Construct new pattern maps.
 	entry.offsets        = new DataContainerHeader[YON_BLK_N_STATIC];
 	entry.info_offsets   = new DataContainerHeader[entry.n_info_streams];
 	entry.format_offsets = new DataContainerHeader[entry.n_format_streams];

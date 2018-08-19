@@ -228,12 +228,12 @@ void Keychain<KeyType>::resize(void){ this->resize(this->capacity()*2); }
 template <class KeyType>
 uint64_t Keychain<KeyType>::getRandomHashIdentifier(){
 	if(this->htable_identifiers_ == nullptr) return false;
-	uint8_t RANDOM_uint8_tS[32];
+	uint8_t RANDOM_BYTES[32];
 	uint64_t value = 0;
 	uint32_t* match = nullptr;
 	while(true){
-		RAND_bytes(&RANDOM_uint8_tS[0], 32);
-		value = XXH64(&RANDOM_uint8_tS[0], 32, 1337);
+		RAND_bytes(&RANDOM_BYTES[0], 32);
+		value = XXH64(&RANDOM_BYTES[0], 32, 1337);
 
 		if(value == 0) continue;
 

@@ -10,6 +10,13 @@
 
 namespace tachyon {
 
+/**<
+ * These definitions correspond to the array offsets for the
+ * invariant containers in the VariantBlock/VariantBlockFooter.
+ * These correspond to the core components for site information
+ * and internals such as CONTROLLER, ID_*, and GT_SUPPORT and
+ * GT_PLOIDY.
+ */
 #define YON_BLK_N_STATIC   25// Total number of invariant headers
 #define YON_BLK_PPA         0 // Sample permutation array
 #define YON_BLK_CONTIG      1
@@ -67,59 +74,99 @@ namespace tachyon {
 #define YON_BLK_BV_FORMAT      1 << (YON_BLK_N_STATIC + 1)
 #define YON_BLK_BV_GT          ((YON_BLK_BV_GT_INT8)|(YON_BLK_BV_GT_INT16)|(YON_BLK_BV_GT_INT32)|(YON_BLK_BV_GT_INT64)|(YON_BLK_BV_GT_S_INT8)|(YON_BLK_BV_GT_S_INT16)|(YON_BLK_BV_GT_S_INT32)|(YON_BLK_BV_GT_S_INT64)|(YON_BLK_BV_GT_N_INT8)|(YON_BLK_BV_GT_N_INT16)|(YON_BLK_BV_GT_N_INT32)|(YON_BLK_BV_GT_N_INT64)|(YON_BLK_BV_GT_SUPPORT)|(YON_BLK_BV_GT_PLOIDY))
 
-namespace containers {
-
 struct yon_blk_bv_pair {
-	yon_blk_bv_pair() : l_uint8_ts(0), bit_uint8_ts(nullptr){}
-	~yon_blk_bv_pair(){ delete [] this->bit_uint8_ts; }
+	yon_blk_bv_pair() : l_bytes(0), bit_bytes(nullptr){}
+	~yon_blk_bv_pair(){ delete [] this->bit_bytes; }
 
 	void clear(void){
 		this->pattern.clear();
-		this->l_uint8_ts = 0;
-		delete [] this->bit_uint8_ts;
-		this->bit_uint8_ts = nullptr;
+		this->l_bytes = 0;
+		delete [] this->bit_bytes;
+		this->bit_bytes = nullptr;
 	}
 
-	// Bit access
-	inline bool operator[](const uint32_t position) const{ return((this->bit_uint8_ts[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+	yon_blk_bv_pair& operator=(const yon_blk_bv_pair& other){
+		delete [] this->bit_bytes;
+		this->pattern   = other.pattern;
+		this->l_bytes   = other.l_bytes;
+		this->bit_bytes = new uint8_t[this->l_bytes];
+		memcpy(this->bit_bytes, other.bit_bytes, this->l_bytes);
+		return(*this);
+	}
 
+	yon_blk_bv_pair& operator=(yon_blk_bv_pair&& other) noexcept{
+		if (this == &other){
+			// take precautions against self-moves
+			return *this;
+		}
 
-	// Given the total number of fields allocate ceil(n_total_fields/8)
-	// uint8_ts for the base array.
-	void Build(const uint32_t n_total_fields, const std::unordered_map<uint32_t, uint32_t>* local_map){
+		delete [] this->bit_bytes; this->bit_bytes = nullptr;
+		std::swap(this->bit_bytes, other.bit_bytes);
+		this->pattern = std::move(other.pattern);
+		other.pattern.clear(); // Clear the src pattern vector.
+		this->l_bytes = other.l_bytes;
+		other.l_bytes = 0; // Clear the src byte length.
+		return(*this);
+	}
+
+	/**<
+	 * Predicate for a target local idx field in this pattern. Returns
+	 * TRUE if the bit is set or FALSE otherwise. This function performs
+	 * no checks for the target bit position being out-of-bounds.
+	 * @param position Target bit position.
+	 * @return         Returns TRUE if the bit is set or FALSE otherwise.
+	 */
+	inline bool operator[](const uint32_t position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+
+	/**<
+	 * Construct the lookup bit-vector for this object. This function needs
+	 * to know the total number of fields that are set in the parent
+	 * VariantBlockFooter structure as this will determine that byte-width
+	 * of the bit-vector. Additionally, this function needs to be given a
+	 * pointer to the map from global idx to local idx as the bit-vector
+	 * bits corresponds to local idx predicates.
+	 *
+	 * Internally the bit-vector for all objects in a VariantBlockFooter
+	 * structure has ceil(n_total_fields/8) bytes allocated for the base
+	 * array.
+	 * @param n_footer_total_fields Total number of fields set in the parent VariantBlockFooter.
+	 * @param local_map             Pointer to map from global idx to local idx.
+	 */
+	void Build(const uint32_t n_footer_total_fields, const std::unordered_map<uint32_t, uint32_t>* local_map){
 		if(this->pattern.size() == 0) return;
 		assert(local_map != nullptr);
 
-		// Determine the required width in uint8_ts of the bit-vector
-		uint8_t bitvector_width = ceil((float)(n_total_fields+1)/8);
+		// Determine the required byte width of the bit-vector.
+		uint8_t bitvector_width = ceil((float)(n_footer_total_fields + 1) / 8);
 
-		// Allocate new bit-vectors
-		delete [] this->bit_uint8_ts;
-		this->l_uint8_ts = bitvector_width;
-		this->bit_uint8_ts = new uint8_t[bitvector_width];
+		// Allocate new bit-vectors.
+		delete [] this->bit_bytes;
+		this->l_bytes = bitvector_width;
+		this->bit_bytes = new uint8_t[bitvector_width];
+		memset(this->bit_bytes, 0, sizeof(uint8_t)*bitvector_width);
 
-		// Cycle over pattern size
+		// Cycle over global idx values in the vector.
 		for(uint32_t i = 0; i < this->pattern.size(); ++i){
 			std::unordered_map<uint32_t, uint32_t>::const_iterator it = local_map->find(this->pattern[i]);
 			assert(it != local_map->end());
 
 			// Map from absolute key to local key.
 			uint32_t local_key = it->second;
-			assert(local_key <= n_total_fields);
+			assert(local_key <= n_footer_total_fields);
 
-			// Set bit at local key position
-			this->bit_uint8_ts[local_key/8] |= 1 << (local_key % 8);
+			// Set the target bit to TRUE at the local key position.
+			this->bit_bytes[local_key/8] |= 1 << (local_key % 8);
 		}
 	}
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry){
-		io::SerializePrimitive(entry.l_uint8_ts, buffer);
+		io::SerializePrimitive(entry.l_bytes, buffer);
 		buffer += (uint32_t)entry.pattern.size();
 		for(uint32_t i = 0; i < entry.pattern.size(); ++i)
 			io::SerializePrimitive(entry.pattern[i], buffer);
 
-		for(uint32_t i = 0; i < entry.l_uint8_ts; ++i)
-			io::SerializePrimitive(entry.bit_uint8_ts[i], buffer);
+		for(uint32_t i = 0; i < entry.l_bytes; ++i)
+			io::SerializePrimitive(entry.bit_bytes[i], buffer);
 
 
 		return(buffer);
@@ -127,7 +174,7 @@ struct yon_blk_bv_pair {
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry){
 		entry.pattern.clear();
-		io::DeserializePrimitive(entry.l_uint8_ts, buffer);
+		io::DeserializePrimitive(entry.l_bytes, buffer);
 		uint32_t l_vector;
 		buffer >> l_vector;
 		//entry.pattern.resize(l_vector);
@@ -138,46 +185,21 @@ struct yon_blk_bv_pair {
 			entry.pattern.push_back(temp);
 		}
 
-		entry.bit_uint8_ts = new uint8_t[entry.l_uint8_ts];
-		for(uint32_t i = 0; i < entry.l_uint8_ts; ++i)
-			io::DeserializePrimitive(entry.bit_uint8_ts[i], buffer);
+		entry.bit_bytes = new uint8_t[entry.l_bytes];
+		for(uint32_t i = 0; i < entry.l_bytes; ++i)
+			io::DeserializePrimitive(entry.bit_bytes[i], buffer);
 
 		return(buffer);
 	}
 
-	yon_blk_bv_pair& operator=(const yon_blk_bv_pair& other){
-		delete [] this->bit_uint8_ts;
-		this->pattern = other.pattern;
-		this->l_uint8_ts = other.l_uint8_ts;
-		this->bit_uint8_ts = new uint8_t[this->l_uint8_ts];
-		memcpy(this->bit_uint8_ts, other.bit_uint8_ts, this->l_uint8_ts);
-		return(*this);
-	}
-
-	yon_blk_bv_pair& operator=(yon_blk_bv_pair&& other) noexcept{
-		if (this == &other){
-			// take precautions against self-moves
-			return *this;
-		}
-
-		delete [] this->bit_uint8_ts; this->bit_uint8_ts = nullptr;
-		std::swap(this->bit_uint8_ts, other.bit_uint8_ts);
-		this->pattern = std::move(other.pattern);
-		this->l_uint8_ts = other.l_uint8_ts;
-		return(*this);
-	}
-
 public:
-	std::vector<int> pattern;
-	uint8_t l_uint8_ts;
-	uint8_t* bit_uint8_ts;
+	std::vector<int> pattern; // vector of global idx values.
+	uint8_t  l_bytes; // number of bytes in bit-vector.
+	uint8_t* bit_bytes; // byte array interpreted as a bit-vector.
 };
 
-// It is possible of getting mapping local indices to global IDX
-// for either  FILTER/FORMAT/INFO fields by iterating over the
-// relevant DataContainerHeader structures and tracking the incremental
-// position they occur at (local IDX) and read the global IDX in the
-// header structure.
+namespace containers {
+
 struct VariantBlockFooter {
 public:
 	typedef VariantBlockFooter        self_type;
@@ -196,47 +218,28 @@ public:
 	void reset(void);
 	void resetTables(void);
 
-	// Allocate offset vectors
-	void AllocateInfoHeaders(const uint32_t n_info_streams);
-	void AllocateFormatHeaders(const uint32_t n_format_streams);
-	void AllocateFilterHeaders(const uint32_t n_filter_streams);
-
 	/**<
-	 * Wrapper function for allocating new offset objects for INFO,
-	 * FORMAT, and FILTER patterns and streams
+	 * Wrapper function for allocating memory for new offset objects
+	 * for Info, Format, and Filter patterns and streams
 	 * @param n_info_streams   Number of unique info streams
 	 * @param n_format_streams Number of unique format streams
 	 * @param n_filter_streams Number of unique filter streams
 	 */
 	void AllocateHeaders(const uint32_t n_info_streams,
-		                        const uint32_t n_format_streams,
-		                        const uint32_t n_filter_streams);
-	bool ConstructInfoBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
-	bool ConstructFormatBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
-	bool ConstructFilterBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
+		                 const uint32_t n_format_streams,
+		                 const uint32_t n_filter_streams);
+
+	void AllocateInfoHeaders(const uint32_t n_info_streams);
+	void AllocateFormatHeaders(const uint32_t n_format_streams);
+	void AllocateFilterHeaders(const uint32_t n_filter_streams);
 
 	uint32_t AddPatternWrapper(const std::vector<int>& pattern,
-	                      map_pattern_type* pattern_map,
-	                      yon_blk_bv_pair* bv_pairs,
-	                      uint16_t& stream_counter);
+	                           map_pattern_type* pattern_map,
+	                           yon_blk_bv_pair* bv_pairs,
+	                           uint16_t& stream_counter);
 	uint32_t AddInfoPattern(const std::vector<int>& pattern);
 	uint32_t AddFormatPattern(const std::vector<int>& pattern);
 	uint32_t AddFilterPattern(const std::vector<int>& pattern);
-
-	// This wrapper adds patterns to the hash map when the data has
-	// already been loaded. This occurs when loading an object from
-	// disk/buffer.
-	uint32_t UpdatePatternWrapper(const std::vector<int>& pattern,
-	                         map_pattern_type* pattern_map,
-	                         const uint16_t& stream_counter);
-
-	uint32_t UpdateInfoPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
-	uint32_t UpdateFormatPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
-	uint32_t UpdateFilterPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
-
-	void Finalize(void);
-	bool BuildMaps(void);
-	bool BuildPatternMaps(void);
 
 	uint32_t UpdateOffsetMapWrapper(const header_type& offset, map_type* map, const uint16_t& stream_counter);
 	uint32_t UpdateInfo(const header_type& offset, const uint16_t position);
@@ -247,6 +250,10 @@ public:
 	uint32_t AddInfo(const uint32_t id);
 	uint32_t AddFormat(const uint32_t id);
 	uint32_t AddFilter(const uint32_t id);
+
+	void Finalize(void);
+	bool AllocateMaps(void);
+	bool AllocatePatternMaps(void);
 
 	/**<
 		* Static function that calculates the 64-bit hash value for the target
@@ -278,6 +285,40 @@ public:
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+
+private:
+	/**<
+	 * This wrapper adds patterns to the hash map when the data has
+	 * already been loaded. This occurs when loading an object from
+	 * disk/buffer. Do not directly call this wrapper! Invokation of
+	 * this function comes from the functions UpdateInfoPattern(),
+	 * UpdateFormatPattern(), and UpdateFilterPattern().
+	 * @param pattern        Input vector of global idxs for the target field.
+	 * @param pattern_map    Pointer to target map from global idx to local idx.
+	 * @param stream_counter Reference target number of patterns to expect.
+	 * @return               Returns the target local idx position where the pattern was set.
+	 */
+	uint32_t UpdatePatternWrapper(const std::vector<int>& pattern,
+								  map_pattern_type* pattern_map,
+								  const uint16_t& stream_counter);
+
+	uint32_t UpdateInfoPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
+	uint32_t UpdateFormatPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
+	uint32_t UpdateFilterPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
+
+
+	/**<
+	 * Wrappers for constructing new Info/Format/Filter bit-vectors
+	 * in the footer. This function requires you to pass the map
+	 * from global idx values to local idx values. These wrappers
+	 * are called from the Finalize() function when finishing a block
+	 * for writing.
+	 * @param pattern_map Pointer to target map from global idx to local idx.
+	 * @return            Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool ConstructInfoBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
+	bool ConstructFormatBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
+	bool ConstructFilterBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map);
 
 public:
 	// Utility members. l_*_bitvector stores the uint8_t-length

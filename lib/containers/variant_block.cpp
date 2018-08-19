@@ -144,14 +144,9 @@ void VariantBlock::Allocate(const uint16_t n_info,
 }
 
 void VariantBlock::clear(void){
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)
-		this->base_containers[i].reset();
-
-	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
-		this->info_containers[i].reset();
-
-	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
-		this->format_containers[i].reset();
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].reset();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   this->info_containers[i].reset();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) this->format_containers[i].reset();
 
 	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
 	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
@@ -165,23 +160,15 @@ void VariantBlock::clear(void){
 	this->footer.reset();
 	this->footer_support.reset();
 
-	if(this->gt_ppa != nullptr)
-		this->gt_ppa->reset();
+	if(this->gt_ppa != nullptr) this->gt_ppa->reset();
 }
 
 void VariantBlock::resize(const uint32_t s){
 	if(s == 0) return;
 
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)
-		this->base_containers[i].resize(s);
-
-	for(uint32_t i = 0; i < n_info_c_allocated; ++i){
-		this->info_containers[i].resize(s);
-	}
-
-	for(uint32_t i = 0; i < n_format_c_allocated; ++i){
-		this->format_containers[i].resize(s);
-	}
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_info_c_allocated; ++i) this->info_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
 }
 
 void VariantBlock::UpdateContainers(void){
