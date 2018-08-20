@@ -840,7 +840,8 @@ bool VariantReader::Stats(void){
 		std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
 
 		// Debug
-		containers::DataContainer dc2(500000);
+		containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
+		std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
 
 
 
@@ -852,9 +853,6 @@ bool VariantReader::Stats(void){
 			// Each entry evaluate occ if available.
 			//entries[i].occ = objects->occ;
 			//entries[i].EvaluateOcc();
-			entries[i].fmt[1]->UpdateDataContainer(dc2);
-			std::cerr << i << "/" << objects->meta_container->size() << "\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
-
 
 			const uint32_t n_format_avail = entries[i].format_ids->size();
 			if(n_format_avail > 0 && entries[i].is_loaded_gt){

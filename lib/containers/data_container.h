@@ -87,7 +87,7 @@ public:
 		return(*this);
 	}
 
-	// Supportive
+	// Utility functions.
 	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
 	inline const uint64_t& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
 	inline const uint32_t& size(void) const{ return(this->header.n_entries); }
