@@ -65,28 +65,34 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	inline std::ostream& to_vcf_string(std::ostream& stream, const uint32_t position, const uint64_t sample) const{
+	inline std::ostream& ToVcfString(std::ostream& stream, const uint32_t position, const uint64_t sample) const{
 		//utility::to_vcf_string(stream, this->at(position).at(sample).data(), this->at(position).at(sample).size());
 		return(stream);
 	}
 
-	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
+	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
 		utility::ToVcfString(buffer, this->at(position).at(sample).data(), this->at(position).at(sample).size());
 		return(buffer);
 	}
 
-	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
+	inline io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
 		//utility::to_json_string(buffer, this->at(position).at(sample));
 		return(buffer);
 	}
 
 	bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
-		if(this->primitive_type == YON_TYPE_8B || this->primitive_type == YON_TYPE_16B || this->primitive_type == YON_TYPE_32B || this->primitive_type == YON_TYPE_64B){
+		if(this->primitive_type == YON_TYPE_8B  ||
+		   this->primitive_type == YON_TYPE_16B ||
+		   this->primitive_type == YON_TYPE_32B ||
+		   this->primitive_type == YON_TYPE_64B)
+		{
 			return(this->at(position).UpdateHtslibVcfRecordFormatInt32(rec, hdr, tag));
-		} else if(this->primitive_type == YON_TYPE_FLOAT || this->primitive_type == YON_TYPE_DOUBLE){
+		} else if(this->primitive_type == YON_TYPE_FLOAT ||
+		          this->primitive_type == YON_TYPE_DOUBLE)
+		{
 			return(this->at(position).UpdateHtslibVcfRecordFormatFloat(rec, hdr, tag));
 		} else {
-			std::cerr << "illegal type: " << (int)this->primitive_type << std::endl;
+			std::cerr << utility::timestamp("ERROR","FMT") << "Illegal type: " << (int)this->primitive_type << std::endl;
 			exit(1);
 		}
 		return rec;

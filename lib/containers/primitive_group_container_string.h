@@ -46,6 +46,35 @@ public:
 		return(*this);
 	}
 
+	DataContainer ToDataContainer(void){
+		uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i)
+			n_entries += this->at(i).size();
+
+		DataContainer d;
+		d.buffer_data_uncompressed.resize(n_entries + 128);
+		d.buffer_strides_uncompressed.resize(n_entries + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(d);
+
+		return(d);
+	}
+
+	DataContainer& UpdateDataContainer(DataContainer& container){
+		uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i)
+			n_entries += this->at(i).size();
+
+		if(container.buffer_data_uncompressed.size() + n_entries > container.buffer_data_uncompressed.capacity())
+			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+n_entries)*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(container);
+
+		return(container);
+	}
+
 	void resize(void);
 	void resize(const size_t new_size);
 

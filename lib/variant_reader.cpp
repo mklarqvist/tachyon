@@ -839,6 +839,11 @@ bool VariantReader::Stats(void){
 		// Debug
 		std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
 
+		// Debug
+		containers::DataContainer dc2(500000);
+
+
+
 		// If occ table is built.
 		//objects->occ = &occ;
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
@@ -847,6 +852,9 @@ bool VariantReader::Stats(void){
 			// Each entry evaluate occ if available.
 			//entries[i].occ = objects->occ;
 			//entries[i].EvaluateOcc();
+			entries[i].fmt[1]->UpdateDataContainer(dc2);
+			std::cerr << i << "/" << objects->meta_container->size() << "\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
+
 
 			const uint32_t n_format_avail = entries[i].format_ids->size();
 			if(n_format_avail > 0 && entries[i].is_loaded_gt){

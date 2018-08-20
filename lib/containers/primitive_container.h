@@ -90,6 +90,22 @@ public:
 	virtual void operator+=(const double entry)   =0;
 	virtual void operator+=(const std::string& entry) =0;
 
+	/**<
+	 * Convert a PrimitiveContainer into a DataContainer. This is primarily
+	 * done for writing out a Tachyon archive.
+	 * @return Returns a DataContainer with the contextual representation of the data into this container.
+	 */
+	virtual DataContainer ToDataContainer(void) =0;
+
+	/**<
+	 * Add data from a PrimitiveContainer into an already existing DataContainer.
+	 * This is primarily done when iterative updating a DataContainer as for example
+	 * when iterating over PrimitiveGroupContainer classes.
+	 * @param container Destination DataContainer.
+	 * @return          Returns a reference to the input DataContainer with the contextual representation of the data in this container added to it.
+	 */
+	virtual DataContainer& UpdateDataContainer(DataContainer& container) =0;
+
 	// Capacity
 	inline bool empty(void) const{ return(this->n_entries_ == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries_); }
@@ -105,7 +121,7 @@ public:
 	virtual io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const =0;
 
 	/**<
-	 * Update a given htslib bcf1_t record destionation Info field
+	 * Update a given htslib bcf1_t record destination Info field
 	 * with the information in a given PrimitiveContainer. Takes as
 	 * arguments pointers to the dst bcf1_t record and global Vcf
 	 * header and a reference to the dst tag name. The dst tag name
@@ -115,7 +131,9 @@ public:
 	 * @param tag Reference of destination tag string.
 	 * @return    Returns a pointer to the input bcf1_t record.
 	 */
-	virtual bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const =0;
+	virtual bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
+	                                          bcf_hdr_t* hdr,
+	                                          const std::string& tag) const =0;
 
 protected:
 	bool    is_uniform_;
@@ -143,43 +161,14 @@ public:
     PrimitiveContainer();
     PrimitiveContainer(const return_type value);
     PrimitiveContainer(const container_type& container);
-    PrimitiveContainer(const container_type& container, const uint32_t& offset, const uint32_t n_entries);
+    PrimitiveContainer(const container_type& container,
+                       const uint32_t& offset,
+                       const uint32_t n_entries);
     ~PrimitiveContainer(void);
-
-    PrimitiveContainer(const self_type& other) :
-    	PrimitiveContainerInterface(other),
-		entries_(new value_type[this->n_capacity_])
-    {
-    	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());
-    }
-
-    PrimitiveContainer(self_type&& other) noexcept  :
-		PrimitiveContainerInterface(other),
-		entries_(nullptr)
-    {
-    	std::swap(this->entries_, other.entries_);
-    }
-
-    PrimitiveContainer& operator=(const self_type& other){
-    	delete [] this->entries_;
-    	this->is_uniform_ = other.is_uniform_;
-    	this->n_entries_  = other.n_entries_;
-    	this->n_capacity_ = other.n_capacity_;
-    	this->entries_    = new value_type[this->capacity()];
-    	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());
-    	return(*this);
-    }
-
-    PrimitiveContainer& operator=(self_type&& other) noexcept{
-    	if(this == other){ return(*this); }
-
-		delete [] this->entries_; this->entries_ = nullptr;
-		this->is_uniform_ = other.is_uniform_;
-		this->n_entries_  = other.n_entries_;
-		this->n_capacity_ = other.n_capacity_;
-		std::swap(this->entries_, other.entries_);
-		return(*this);
-    }
+    PrimitiveContainer(const self_type& other);
+    PrimitiveContainer(self_type&& other) noexcept;
+    PrimitiveContainer& operator=(const self_type& other);
+    PrimitiveContainer& operator=(self_type&& other) noexcept;
 
     inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
     PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
@@ -207,6 +196,33 @@ public:
 	void operator+=(const float entry);
 	void operator+=(const double entry);
 	void operator+=(const std::string& entry);
+
+	DataContainer ToDataContainer(void){
+		DataContainer d;
+		d.buffer_data_uncompressed.resize(this->size() + 128);
+		d.buffer_strides_uncompressed.resize(this->size() + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i){
+			d.Add(this->at(i));
+			d.AddStride(1);
+			++d;
+		}
+
+		return(d);
+	}
+
+	DataContainer& UpdateDataContainer(DataContainer& container){
+		if(container.buffer_data_uncompressed.size() + this->size() > container.buffer_data_uncompressed.capacity())
+			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+this->size())*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i){
+			container.Add(this->at(i));
+			container.AddStride(1);
+			++container;
+		}
+
+		return(container);
+	}
 
     // Element access
     inline reference at(const size_type& position){ return(this->entries_[position]); }
@@ -300,6 +316,33 @@ public:
 	inline void operator+=(const float entry){ this->data_ += std::to_string(entry); }
 	inline void operator+=(const double entry){ this->data_ += std::to_string(entry); }
 	inline void operator+=(const std::string& entry){ this->data_ += entry; }
+
+	DataContainer ToDataContainer(void){
+		DataContainer d;
+		d.buffer_data_uncompressed.resize(this->size() + 128);
+		d.buffer_strides_uncompressed.resize(this->size() + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i){
+			d.AddString(this->data_);
+			d.AddStride(this->data_.size());
+			++d;
+		}
+
+		return(d);
+	}
+
+	DataContainer& UpdateDataContainer(DataContainer& container){
+		if(container.buffer_data_uncompressed.size() + this->size() > container.buffer_data_uncompressed.capacity())
+			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+this->size())*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i){
+			container.AddString(this->data_);
+			container.AddStride(this->data_.size());
+			++container;
+		}
+
+		return(container);
+	}
 
 	// Element access
 	inline pointer data(void){ return(&this->data_); }
@@ -450,6 +493,48 @@ PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 }
 
 template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(const self_type& other) :
+PrimitiveContainerInterface(other),
+	entries_(new value_type[this->n_capacity_])
+{
+	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(self_type&& other) noexcept  :
+	PrimitiveContainerInterface(other),
+	entries_(nullptr)
+{
+	std::swap(this->entries_, other.entries_);
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(const self_type& other){
+	delete [] this->entries_;
+	this->is_uniform_ = other.is_uniform_;
+	this->n_entries_  = other.n_entries_;
+	this->n_capacity_ = other.n_capacity_;
+	this->entries_    = new value_type[this->capacity()];
+	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());
+	return(*this);
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(self_type&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	delete [] this->entries_; this->entries_ = nullptr;
+	this->is_uniform_ = other.is_uniform_;
+	this->n_entries_  = other.n_entries_;
+	this->n_capacity_ = other.n_capacity_;
+	std::swap(this->entries_, other.entries_);
+	return(*this);
+}
+
+template <class return_type>
 template <class native_primitive>
 void PrimitiveContainer<return_type>::Setup(const container_type& container, const uint32_t& offset){
 	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data()[offset]);
@@ -468,13 +553,12 @@ void PrimitiveContainer<return_type>::SetupSigned(const container_type& containe
 	}
 	else {
 		for(uint32_t i = 0; i < this->size(); ++i){
-			// If the data is missing in the native format
+			// If the data is missing in the native format.
 			if(data[i] == std::numeric_limits<native_primitive>::min()){
 				this->entries_[i] = std::numeric_limits<return_type>::min();
 			}
-			// If the data is EOV in the native format
+			// If the data is EOV in the native format.
 			else if(data[i] == std::numeric_limits<native_primitive>::min() + 1){
-				//std::cerr << "is eov: " << std::bitset<sizeof(native_primitive)*8>(data[i]) << "\t" << std::bitset<sizeof(return_type)*8>(std::numeric_limits<return_type>::min() + 1) << std::endl;
 				this->entries_[i] = std::numeric_limits<return_type>::min() + 1;
 			}
 			else

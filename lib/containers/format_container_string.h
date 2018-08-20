@@ -65,9 +65,9 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	inline std::ostream& to_vcf_string(std::ostream& stream,
-	                                   const uint32_t position,
-	                                   const uint64_t sample) const
+	inline std::ostream& ToVcfString(std::ostream& stream,
+	                                 const uint32_t position,
+	                                 const uint64_t sample) const
 	{
 		//utility::to_vcf_string(stream, this->at(position).at(sample).data_);
 		//this->at(position).at(sample).data_;
@@ -79,8 +79,8 @@ public:
 		return(this->at(position).UpdateHtslibVcfRecordFormatString(rec, hdr, tag));
 	}
 
-	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
-	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
 	inline bool emptyPosition(const uint32_t& position) const{ return(this->at(position).empty()); }
 	inline bool emptyPosition(const uint32_t& position, const uint64_t& sample) const{ return(this->at(position).at(sample).empty()); }
 

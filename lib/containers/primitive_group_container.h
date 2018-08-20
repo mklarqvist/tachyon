@@ -47,6 +47,21 @@ public:
 	virtual PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src) =0;
 
 	/**<
+	 * Convert a PrimitiveGroupContainer into a DataContainer. This is primarily
+	 * done for writing out a Tachyon archive.
+	 * @return Returns a DataContainer with the contextual representation of the data into this container.
+	 */
+	virtual DataContainer ToDataContainer(void) =0;
+
+	/**<
+	 * Add data from a PrimitiveGroupContainer into an already existing DataContainer.
+	 * @param container Destination DataContainer.
+	 * @return          Returns a reference to the input DataContainer with the contextual representation of the data in this container added to it.
+	 */
+	virtual DataContainer& UpdateDataContainer(DataContainer& container) =0;
+
+
+	/**<
 	 * Convert the data in a given PrimitiveGroupContainer to valid Vcf
 	 * formatting. Requires a valid array offset to the target
 	 * container of interest.
@@ -124,6 +139,35 @@ public:
 		std::swap(this->containers_, o->containers_);
 
 		return(*this);
+	}
+
+    DataContainer ToDataContainer(void){
+    	uint32_t n_entries = 0;
+    	for(uint32_t i = 0; i < this->size(); ++i)
+    		n_entries += this->at(i).size();
+
+		DataContainer d;
+		d.buffer_data_uncompressed.resize(n_entries + 128);
+		d.buffer_strides_uncompressed.resize(n_entries + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(d);
+
+		return(d);
+	}
+
+	DataContainer& UpdateDataContainer(DataContainer& container){
+		uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i)
+			n_entries += this->at(i).size();
+
+		if(container.buffer_data_uncompressed.size() + n_entries > container.buffer_data_uncompressed.capacity())
+			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+n_entries)*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(container);
+
+		return(container);
 	}
 
     void resize(void);

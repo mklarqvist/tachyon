@@ -18,9 +18,9 @@ public:
 	inline bool empty(void) const{ return(this->n_entries == 0); }
 	inline const size_type& size(void) const{ return(this->n_entries); }
 
-    virtual std::ostream& to_vcf_string(std::ostream& stream, const uint32_t position, const uint64_t sample_number) const =0;
-    virtual io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const =0;
-    virtual io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const =0;
+    virtual std::ostream& ToVcfString(std::ostream& stream, const uint32_t position, const uint64_t sample_number) const =0;
+    virtual io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const =0;
+    virtual io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const =0;
     virtual bool emptyPosition(const uint32_t& position) const =0;
     virtual bool emptyPosition(const uint32_t& position, const uint64_t& sample) const =0;
 
