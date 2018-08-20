@@ -16,7 +16,7 @@ namespace containers{
  * streams and its associated data required to restore
  * the input object.
  */
-class DataContainer{
+class DataContainer {
 public:
 	typedef DataContainer       self_type;
 	typedef DataContainerHeader header_type;

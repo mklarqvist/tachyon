@@ -14,6 +14,7 @@ namespace containers{
 
 // Controller type for stream container
 struct DataContainerHeaderController{
+public:
 	typedef DataContainerHeaderController self_type;
 	typedef io::BasicBuffer               buffer_type;
 

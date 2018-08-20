@@ -105,5 +105,62 @@ int8_t DataContainerHeaderObject::GetPrimitiveWidth(void) const{
 	return 0;
 }
 
+bool DataContainerHeaderObject::CheckChecksum(const uint8_t* compare) const{
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i){
+		if(compare[i] != this->crc[i])
+			return false;
+	}
+	return true;
+}
+
+io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const DataContainerHeaderObject& entry){
+	buffer << entry.controller;
+	buffer += entry.stride;
+	buffer += entry.offset;
+	buffer += entry.cLength;
+	buffer += entry.uLength;
+	buffer += entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer += entry.crc[i];
+	buffer += entry.global_key;
+	return(buffer);
+}
+
+std::ostream& operator<<(std::ostream& stream, const DataContainerHeaderObject& entry){
+	stream << entry.controller;
+	stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(int32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.crc[0]),    sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(int32_t));
+	return(stream);
+}
+
+io::BasicBuffer& operator>>(io::BasicBuffer& buffer, DataContainerHeaderObject& entry){
+	buffer >> entry.controller;
+	buffer >> entry.stride;
+	buffer >> entry.offset;
+	buffer >> entry.cLength;
+	buffer >> entry.uLength;
+	buffer >> entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer >> entry.crc[i];
+	buffer >> entry.global_key;
+	return(buffer);
+}
+
+std::ifstream& operator>>(std::ifstream& stream, DataContainerHeaderObject& entry){
+	stream >> entry.controller;
+	stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(int32_t));
+	stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.crc[0]),     sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(int32_t));
+
+	return(stream);
+}
+
 }
 }

@@ -35,8 +35,8 @@ public:
 private:
 	int32_t compression_level_data;
 	int32_t compression_level_strides;
-	ZSTD_CCtx* compression_context_;
-	ZSTD_DCtx* decompression_context_;
+	ZSTD_CCtx* compression_context_; // recycle contexts
+	ZSTD_DCtx* decompression_context_; // recycle contexts
 };
 
 }
