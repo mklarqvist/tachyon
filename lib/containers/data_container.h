@@ -119,21 +119,12 @@ public:
 	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 
-	/**<
-	 *
-	 * @param value
-	 */
 	template <class T>
 	inline void AddLiteral(const T& value){
 		this->buffer_data_uncompressed += (T)value;
 		++this->header.n_additions;
 	}
 
-	/**<
-	 *
-	 * @param string
-	 * @param l_string
-	 */
 	inline void AddLiteral(const char* const string, const uint32_t l_string){
 		this->buffer_data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
@@ -143,9 +134,9 @@ public:
 	void resize(const uint32_t size);
 
 	/**<
-	 * Generates a CRC32 checksum of the uncompressed
+	 * Generates a MD5 checksum of the uncompressed
 	 * data and, if set, the uncompressed strides data.
-	 * CRC32 checksums are stored in the header
+	 * The MD5 checksums are stored in the header.
 	 */
 	void GenerateMd5(void);
 
@@ -163,7 +154,7 @@ public:
 
 	/**<
 	 * Checks if the current data is uniform given the provided
-	 * stride size
+	 * stride size.
 	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
 	bool CheckUniformity(void);
@@ -172,7 +163,7 @@ public:
 	 * This function is called during import to shrink each
 	 * word-type to fit min(x) and max(x) in the worst case.
 	 * At this stage all integer values in the stream is of
-	 * type int32_t. No other values can be shrunk
+	 * type int32_t. No other values can be shrunk.
 	 */
 	void ReformatInteger(void);
 
@@ -224,32 +215,8 @@ private:
 		return true;
 	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream << entry.buffer_data;
-		if(entry.header.data_header.HasMixedStride())
-			stream << entry.buffer_strides;
-
-		return(stream);
-	}
-
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		if(entry.header.data_header.controller.encryption == YON_ENCRYPTION_NONE){
-			entry.buffer_data.resize(entry.header.data_header.cLength);
-			stream.read(entry.buffer_data.data(), entry.header.data_header.cLength);
-			entry.buffer_data.n_chars_ = entry.header.data_header.cLength;
-
-			if(entry.header.data_header.HasMixedStride()){
-				entry.buffer_strides.resize(entry.header.stride_header.cLength);
-				stream.read(entry.buffer_strides.data(), entry.header.stride_header.cLength);
-				entry.buffer_strides.n_chars_ = entry.header.stride_header.cLength;
-			}
-		} else { // Data is encrypted
-			entry.buffer_data.resize(entry.header.data_header.eLength);
-			stream.read(entry.buffer_data.data(), entry.header.data_header.eLength);
-			entry.buffer_data.n_chars_ = entry.header.data_header.eLength;
-		}
-		return(stream);
-	}
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::istream& operator>>(std::istream& stream, self_type& entry);
 
 public:
 	header_type header;

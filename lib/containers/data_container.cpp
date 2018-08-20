@@ -697,5 +697,32 @@ bool DataContainer::AddCharacter(const char* const string, const uint32_t l_stri
 	return(true);
 }
 
+std::ostream& operator<<(std::ostream& stream, const DataContainer& entry){
+	stream << entry.buffer_data;
+	if(entry.header.data_header.HasMixedStride())
+		stream << entry.buffer_strides;
+
+	return(stream);
+}
+
+std::istream& operator>>(std::istream& stream, DataContainer& entry){
+	if(entry.header.data_header.controller.encryption == YON_ENCRYPTION_NONE){
+		entry.buffer_data.resize(entry.header.data_header.cLength);
+		stream.read(entry.buffer_data.data(), entry.header.data_header.cLength);
+		entry.buffer_data.n_chars_ = entry.header.data_header.cLength;
+
+		if(entry.header.data_header.HasMixedStride()){
+			entry.buffer_strides.resize(entry.header.stride_header.cLength);
+			stream.read(entry.buffer_strides.data(), entry.header.stride_header.cLength);
+			entry.buffer_strides.n_chars_ = entry.header.stride_header.cLength;
+		}
+	} else { // Data is encrypted
+		entry.buffer_data.resize(entry.header.data_header.eLength);
+		stream.read(entry.buffer_data.data(), entry.header.data_header.eLength);
+		entry.buffer_data.n_chars_ = entry.header.data_header.eLength;
+	}
+	return(stream);
+}
+
 }
 }
