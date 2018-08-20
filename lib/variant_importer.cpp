@@ -4,8 +4,6 @@
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 
-#include "third_party/mpmc_queue.h"
-
 namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :

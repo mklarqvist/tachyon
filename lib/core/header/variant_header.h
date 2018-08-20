@@ -368,7 +368,7 @@ public:
 		return(nullptr);
 	}
 
-	const int32_t GetSampleId(const std::string& name) const {
+	int32_t GetSampleId(const std::string& name) const {
 		map_type::const_iterator it = this->samples_map_.find(name);
 		if(it != this->samples_map_.end()) return(it->second);
 		return(-1);
@@ -399,30 +399,9 @@ public:
 	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }
 
 	// Print the literals and the column header.
-	std::ostream& PrintVcfHeader(std::ostream& stream) const{
-		stream << this->literals_;
-		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-		if(this->samples_.size()){
-			stream << "\tFORMAT\t";
-			stream << this->samples_[0];
-			for(size_t i = 1; i < this->samples_.size(); ++i)
-				stream << "\t" + this->samples_[i];
-		}
-		stream << "\n";
-		return(stream);
-	}
+	std::ostream& PrintVcfHeader(std::ostream& stream) const;
 
-	std::string ToString(const bool is_bcf = false) const{
-		std::string string = "##fileformat=VCFv4.1\n";
-		uint32_t idx = 0;
-		for(uint32_t i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
-		for(uint32_t i = 0; i < this->structured_extra_fields_.size(); ++i) string += this->structured_extra_fields_[i].ToVcfString() + "\n";
-		for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) string += this->filter_fields_[i].ToVcfString(idx++) + "\n";
-		for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   string += this->info_fields_[i].ToVcfString(idx++) + "\n";
-		for(uint32_t i = 0; i < this->format_fields_.size(); ++i) string += this->format_fields_[i].ToVcfString(idx++) + "\n";
-		for(uint32_t i = 0; i < this->extra_fields_.size(); ++i)  string += this->extra_fields_[i].ToVcfString() + "\n";
-		return(string);
-	}
+	std::string ToString(const bool is_bcf = false) const;
 
 	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header);
 	friend std::istream& operator>>(std::istream& stream, VariantHeader& header);

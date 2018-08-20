@@ -122,7 +122,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "1";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "AN";
+		npm.description = "Total number of alleles in called genotypes";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -135,7 +135,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "1";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
-		npm.description = "HWE_P";
+		npm.description = "Hardy-Weinberg equilibrium P-value";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -145,10 +145,10 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 	if(info == nullptr){
 		YonInfo npm;
 		npm.id = "AC";
-		npm.number = ".";
+		npm.number = "A";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "AC";
+		npm.description = "Allele count in genotypes, for each REF and ALT allele, in the same order as listed with REF first";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -158,10 +158,10 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 	if(info == nullptr){
 		YonInfo npm;
 		npm.id = "AF";
-		npm.number = ".";
+		npm.number = "A";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
-		npm.description = "AF";
+		npm.description = "Allele Frequency, for each REF and ALT allele, in the same order as listed with REF first. In the range [0, 1]";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -171,7 +171,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 	if(info == nullptr){
 		YonInfo npm;
 		npm.id = "AC_P";
-		npm.number = ".";
+		npm.number = "A";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
 		npm.description = "AC_P";
@@ -184,7 +184,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 	if(info == nullptr){
 		YonInfo npm;
 		npm.id = "FS_A";
-		npm.number = ".";
+		npm.number = "A";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
 		npm.description = "FS_A";
@@ -213,7 +213,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Float";
 		nm.yon_type = YON_VCF_HEADER_FLOAT;
-		nm.description = "HET";
+		nm.description = "Heterozygosity at this locus calculated as number of 0/1 or 1/0 genotypes divided by all non-missing genotypes";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -226,7 +226,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Flag";
 		nm.yon_type = YON_VCF_HEADER_FLAG;
-		nm.description = "MULTI_ALLELIC";
+		nm.description = "Flag indicating if a site is multi-allelic (>1 ALT alleles)";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -234,6 +234,32 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 
 	this->BuildMaps();
 	this->BuildReverseMaps();
+}
+
+std::ostream& VariantHeader::PrintVcfHeader(std::ostream& stream) const{
+	stream << this->literals_;
+	stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+	if(this->samples_.size()){
+		stream << "\tFORMAT\t";
+		stream << this->samples_[0];
+		for(size_t i = 1; i < this->samples_.size(); ++i)
+			stream << "\t" + this->samples_[i];
+	}
+	stream << "\n";
+	return(stream);
+}
+
+
+std::string VariantHeader::ToString(const bool is_bcf = false) const{
+	std::string string = "##fileformat=VCFv4.1\n";
+	uint32_t idx = 0;
+	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
+	for(uint32_t i = 0; i < this->structured_extra_fields_.size(); ++i) string += this->structured_extra_fields_[i].ToVcfString() + "\n";
+	for(uint32_t i = 0; i < this->filter_fields_.size(); ++i) string += this->filter_fields_[i].ToVcfString(idx++) + "\n";
+	for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   string += this->info_fields_[i].ToVcfString(idx++) + "\n";
+	for(uint32_t i = 0; i < this->format_fields_.size(); ++i) string += this->format_fields_[i].ToVcfString(idx++) + "\n";
+	for(uint32_t i = 0; i < this->extra_fields_.size(); ++i)  string += this->extra_fields_[i].ToVcfString() + "\n";
+	return(string);
 }
 
 std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
