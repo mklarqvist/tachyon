@@ -305,8 +305,9 @@ bool VariantImporter::BuildParallel(void){
 	uint64_t n_entries_c = 0;
 
 	// Produced queue
-	rigtorp::MPMCQueue<vcf_container_type*> mpmc_queue(n_containers);
+	//rigtorp::MPMCQueue<vcf_container_type*> mpmc_queue(n_containers);
 
+	/*
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
@@ -347,6 +348,7 @@ bool VariantImporter::BuildParallel(void){
 	std::cerr << n_entries_a << "==" << n_entries_b << "==" << n_entries_c << std::endl;
 
 	delete [] c;
+	*/
 
 	// All done
 	return(true);
