@@ -8,7 +8,7 @@ namespace containers{
 
 template <class T>
 class GenotypeContainerDiploidBCF : public GenotypeContainerInterface{
-private:
+public:
 	typedef GenotypeContainerInterface    parent_type;
     typedef GenotypeContainerDiploidBCF   self_type;
     typedef T                             value_type;

@@ -37,32 +37,32 @@ public:
     ~InfoContainer(void);
 
     // Element access
-    inline reference at(const size_type& position){ return(this->__containers[position]); }
-    inline const_reference at(const size_type& position) const{ return(this->__containers[position]); }
-    inline reference operator[](const size_type& position){ return(this->__containers[position]); }
-    inline const_reference operator[](const size_type& position) const{ return(this->__containers[position]); }
-    inline pointer data(void){ return(this->__containers); }
-    inline const_pointer data(void) const{ return(this->__containers); }
-    inline reference front(void){ return(this->__containers[0]); }
-    inline const_reference front(void) const{ return(this->__containers[0]); }
-    inline reference back(void){ return(this->__containers[this->n_entries - 1]); }
-    inline const_reference back(void) const{ return(this->__containers[this->n_entries - 1]); }
+    inline reference at(const size_type& position){ return(this->containers_[position]); }
+    inline const_reference at(const size_type& position) const{ return(this->containers_[position]); }
+    inline reference operator[](const size_type& position){ return(this->containers_[position]); }
+    inline const_reference operator[](const size_type& position) const{ return(this->containers_[position]); }
+    inline pointer data(void){ return(this->containers_); }
+    inline const_pointer data(void) const{ return(this->containers_); }
+    inline reference front(void){ return(this->containers_[0]); }
+    inline const_reference front(void) const{ return(this->containers_[0]); }
+    inline reference back(void){ return(this->containers_[this->n_entries - 1]); }
+    inline const_reference back(void) const{ return(this->containers_[this->n_entries - 1]); }
 
     // Capacity
     inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->__containers[0]); }
-    inline iterator end()  { return iterator(&this->__containers[this->n_entries]); }
-    inline const_iterator begin()  const{ return const_iterator(&this->__containers[0]); }
-    inline const_iterator end()    const{ return const_iterator(&this->__containers[this->n_entries]); }
-    inline const_iterator cbegin() const{ return const_iterator(&this->__containers[0]); }
-    inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
+    inline iterator begin(){ return iterator(&this->containers_[0]); }
+    inline iterator end()  { return iterator(&this->containers_[this->n_entries]); }
+    inline const_iterator begin()  const{ return const_iterator(&this->containers_[0]); }
+    inline const_iterator end()    const{ return const_iterator(&this->containers_[this->n_entries]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
+    inline const_iterator cend()   const{ return const_iterator(&this->containers_[this->n_entries]); }
 
-    inline std::ostream& to_vcf_string(std::ostream& stream, const uint32_t position) const{ return(stream << this->at(position).data_); }
-    inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position) const{ buffer += this->at(position).data_; return(buffer); }
-    inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const uint32_t position) const{
+    inline std::ostream& ToVcfString(std::ostream& stream, const uint32_t position) const{ return(stream << this->at(position).data_); }
+    inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position) const{ buffer += this->at(position).data_; return(buffer); }
+    inline io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position) const{
     	if(this->at(position).size() == 0){
     		buffer += "null";
     		return(buffer);
@@ -75,14 +75,14 @@ public:
 
 private:
     // For mixed strides
-    void __setup(const data_container_type& container);
-    void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
+    void Setup(const data_container_type& container);
+    void SetupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches);
     // For fixed strides
-	void __setup(const data_container_type& container, const uint32_t stride_size);
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint32_t stride_size);
+	void Setup(const data_container_type& container, const uint32_t stride_size);
+	void SetupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint32_t stride_size);
 
 private:
-    pointer __containers;
+    pointer containers_;
 };
 
 }

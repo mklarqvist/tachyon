@@ -78,11 +78,16 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool ParseIntervals(std::vector<std::string>& interval_strings, const header_type& header, const index_type& index);
+	bool ParseIntervals(std::vector<std::string>& interval_strings,
+	                    const header_type& header,
+	                    const index_type& index);
 
 	bool Build(const header_type& header);
 
-	inline std::vector<interval_type> FindOverlaps(const uint32_t& contigID, const int64_t& start_position, const int64_t& end_position) const{
+	inline std::vector<interval_type> FindOverlaps(const uint32_t& contigID,
+	                                               const int64_t& start_position,
+	                                               const int64_t& end_position) const
+	{
 		if(contigID > this->size()) return(std::vector<interval_type>());
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}

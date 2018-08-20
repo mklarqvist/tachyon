@@ -150,7 +150,6 @@ public:
 	void GenerateMd5(void);
 
 	/**<
-	 *
 	 * Targets:
 	 * 0: Uncompressed data
 	 * 1: Uncompressed strides data
@@ -192,8 +191,9 @@ public:
 	uint32_t GetObjectSize(void) const;
 
 	/**<
-	 *
-	 * @return
+	 * Utility function that returns the total number of
+	 * uncompressed bytes for this object.
+	 * @return Number of uncompressed bytes.
 	 */
 	uint64_t GetObjectSizeUncompressed(void) const;
 

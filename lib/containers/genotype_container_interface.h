@@ -7,7 +7,6 @@
 namespace tachyon{
 namespace containers{
 
-// Todo: value type should be GT object
 class GenotypeContainerInterface{
 public:
     typedef GenotypeContainerInterface    self_type;

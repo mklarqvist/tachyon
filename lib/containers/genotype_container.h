@@ -17,7 +17,7 @@ template <class T> class GenotypeContainerDiploidSimple;
 
 
 class GenotypeContainer {
-private:
+public:
     typedef GenotypeContainer          self_type;
     typedef GenotypeContainerInterface value_type;
     typedef value_type&                reference;

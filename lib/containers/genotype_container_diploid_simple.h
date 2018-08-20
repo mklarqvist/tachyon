@@ -8,7 +8,7 @@ namespace containers{
 
 template <class T>
 class GenotypeContainerDiploidSimple : public GenotypeContainerInterface{
-private:
+public:
 	typedef GenotypeContainerInterface       parent_type;
     typedef GenotypeContainerDiploidSimple   self_type;
     typedef T                                value_type;

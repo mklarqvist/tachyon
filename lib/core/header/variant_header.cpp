@@ -250,7 +250,7 @@ std::ostream& VariantHeader::PrintVcfHeader(std::ostream& stream) const{
 }
 
 
-std::string VariantHeader::ToString(const bool is_bcf = false) const{
+std::string VariantHeader::ToString(const bool is_bcf) const{
 	std::string string = "##fileformat=VCFv4.1\n";
 	uint32_t idx = 0;
 	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
