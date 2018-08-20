@@ -12,11 +12,12 @@ namespace tachyon{
 namespace containers{
 
 /**<
- * Primary data container in Tachyon. Stores the data itself
- * in compressed/uncompressed form and possibly the data stride
- * size in compressed/uncompressed form
+ * Primary data container in Tachyon. Store actual byte
+ * streams and its associated data required to restore
+ * the input object.
  */
 class DataContainer{
+public:
 	typedef DataContainer       self_type;
 	typedef DataContainerHeader header_type;
 	typedef io::BasicBuffer     buffer_type;
@@ -119,6 +120,14 @@ public:
 	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 
+	/**<
+	 * Add a literal primitive/string to the byte stream without conversion
+	 * and without performing any checks. This is function is only used
+	 * when storing explicit data structures into the byte stream and not
+	 * arrays of values. This function should generally not be called by
+	 * end users.
+	 * @param value Src primitive type.
+	 */
 	template <class T>
 	inline void AddLiteral(const T& value){
 		this->buffer_data_uncompressed += (T)value;
@@ -137,10 +146,19 @@ public:
 	 * Generates a MD5 checksum of the uncompressed
 	 * data and, if set, the uncompressed strides data.
 	 * The MD5 checksums are stored in the header.
+	 *
+	 * Checksums for compressed buffers are computed
+	 * by the appropriate compression wrapper.
 	 */
 	void GenerateMd5(void);
 
 	/**<
+	 * Calculates the MD5 checksum from the target data
+	 * buffer and compares that value to the expected
+	 * value stored in the data header. MD5 checksums
+	 * for compressed buffers are always checked during
+	 * decompression to ascertain correctness.
+	 *
 	 * Targets:
 	 * 0: Uncompressed data
 	 * 1: Uncompressed strides data
@@ -175,32 +193,38 @@ public:
 	void ReformatStride(void);
 
 	/**<
-	 * Utility function that calculates the space this
-	 * object would take on disk if written out
-	 * @return Total size in bytes
+	 * Utility function that calculates the number of bytes this
+	 * object would occupy if written to a stream.
+	 * @return Total number of bytes.
 	 */
 	uint32_t GetObjectSize(void) const;
 
 	/**<
-	 * Utility function that returns the total number of
-	 * uncompressed bytes for this object.
+	 * Utility function that calculates the number of actual bytes
+	 * this object occupies internally when uncompressed.
 	 * @return Number of uncompressed bytes.
 	 */
 	uint64_t GetObjectSizeUncompressed(void) const;
 
-	/**< @brief Update base container header data and evaluate output byte streams
-	 * Internal use only (import): Collectively updates base
-	 * container offsets and checks/builds
-	 * 1) If the byte stream is uniform
-	 * 2) Generates CRC checksums for both data and strides
-	 * 3) Reformat (change used word-size) for strides and data; if possible
+	/**<
+	 * Update base container header data and evaluate output byte streams.
+	 * Collectively updates base container offsets and checks/builds:
+	 * 1) If the byte stream is uniform;
+	 * 2) Generates CRC checksums for both data and strides;
+	 * 3) Reformat (change used word-size) for strides and data; if possible.
 	 *
-	 * @param container Data container
-	 * @param reormat   Reformat boolean
+	 * @param reformat_data   Flag for whether data should be reformatted.
+	 * @param reformat_stride Flag for whether strides should be reformatted.
 	 */
 	void UpdateContainer(bool reformat_data = true, bool reformat_stride = true);
 
 private:
+	/**<
+	 * Predicate for uniformity of primitive family type. If integers are
+	 * stored in a byte stream then only other integers and not for example
+	 * floats, doubles, or strings may be stored in the same stream.
+	 * @return Returns TRUE if acceptable addition or FALSE otherwise.
+	 */
 	inline bool CheckInteger(void){
 		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.SetType(YON_TYPE_32B);
