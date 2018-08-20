@@ -390,46 +390,46 @@ uint32_t VariantBlockFooter::AddFilterPattern(const std::vector<int>& pattern){
 // This wrapper adds patterns to the hash map when the data has
 // already been loaded. This occurs when loading an object from
 // disk/buffer.
-uint32_t VariantBlockFooter::UpdatePatternWrapper(const std::vector<int>& pattern,
+uint32_t VariantBlockFooter::UpdatePatternMapWrapper(const std::vector<int>& pattern,
                                                   map_pattern_type* pattern_map,
-                                                  const uint16_t& stream_counter)
+                                                  const uint16_t& local_position)
 {
 	uint64_t pattern_hash = VariantBlockFooter::HashIdentifiers(pattern);
 	const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
 	if(it == pattern_map->end())
-		(*pattern_map)[pattern_hash] = stream_counter;
+		(*pattern_map)[pattern_hash] = local_position;
 
 	return((*pattern_map)[pattern_hash]);
 }
 
-uint32_t VariantBlockFooter::UpdateInfoPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
+uint32_t VariantBlockFooter::UpdateInfoPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
 	if(this->info_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_info_patterns_allocated == 0){
 		delete [] this->info_patterns;
 		this->info_patterns = new yon_blk_bv_pair[100];
 		this->n_info_patterns_allocated = 100;
 	}
-	return(this->UpdatePatternWrapper(pattern, this->info_pattern_map, pattern_id));
+	return(this->UpdatePatternMapWrapper(pattern, this->info_pattern_map, local_position));
 }
 
-uint32_t VariantBlockFooter::UpdateFormatPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
+uint32_t VariantBlockFooter::UpdateFormatPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
 	if(this->format_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_format_patterns_allocated == 0){
 		delete [] this->format_patterns;
 		this->format_patterns = new yon_blk_bv_pair[100];
 		this->n_format_patterns_allocated = 100;
 	}
-	return(this->UpdatePatternWrapper(pattern, this->format_pattern_map, pattern_id));
+	return(this->UpdatePatternMapWrapper(pattern, this->format_pattern_map, local_position));
 }
 
-uint32_t VariantBlockFooter::UpdateFilterPattern(const std::vector<int>& pattern, const uint16_t pattern_id){
+uint32_t VariantBlockFooter::UpdateFilterPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
 	if(this->filter_pattern_map == nullptr) this->AllocatePatternMaps();
 	if(this->n_filter_patterns_allocated == 0){
 		delete [] this->filter_patterns;
 		this->filter_patterns = new yon_blk_bv_pair[100];
 		this->n_filter_patterns_allocated = 100;
 	}
-	return(this->UpdatePatternWrapper(pattern, this->filter_pattern_map, pattern_id));
+	return(this->UpdatePatternMapWrapper(pattern, this->filter_pattern_map, local_position));
 }
 
 void VariantBlockFooter::Finalize(void){
@@ -477,57 +477,59 @@ bool VariantBlockFooter::AllocatePatternMaps(void){
 
 uint32_t VariantBlockFooter::UpdateOffsetMapWrapper(const header_type& offset,
                                                     map_type* map,
-                                                    const uint16_t& stream_counter)
+                                                    const uint16_t& local_position)
 {
+	assert(map != nullptr);
 	map_type::const_iterator it = map->find(offset.data_header.global_key);
 	if(it == map->end())
-		(*map)[offset.data_header.global_key] = stream_counter;
+		(*map)[offset.data_header.global_key] = local_position;
 
 	return((*map)[offset.data_header.global_key]);
 }
 
-uint32_t VariantBlockFooter::UpdateInfo(const header_type& offset, const uint16_t position){
+uint32_t VariantBlockFooter::UpdateInfoMap(const header_type& offset, const uint16_t local_position){
 	if(this->info_map == nullptr) this->AllocateMaps();
-	return(this->UpdateOffsetMapWrapper(offset, this->info_map, position));
+	return(this->UpdateOffsetMapWrapper(offset, this->info_map, local_position));
 }
 
-uint32_t VariantBlockFooter::UpdateFormat(const header_type& offset, const uint16_t position){
+uint32_t VariantBlockFooter::UpdateFormatMap(const header_type& offset, const uint16_t local_position){
 	if(this->format_map == nullptr) this->AllocateMaps();
-	return(this->UpdateOffsetMapWrapper(offset, this->format_map, position));
+	return(this->UpdateOffsetMapWrapper(offset, this->format_map, local_position));
 }
 
-uint32_t VariantBlockFooter::UpdateFilter(const header_type& offset, const uint16_t position){
+uint32_t VariantBlockFooter::UpdateFilterMap(const header_type& offset, const uint16_t local_position){
 	if(this->filter_map == nullptr) this->AllocateMaps();
-	return(this->UpdateOffsetMapWrapper(offset, this->filter_map, position));
+	return(this->UpdateOffsetMapWrapper(offset, this->filter_map, local_position));
 }
 
-uint32_t VariantBlockFooter::AddStreamWrapper(const uint32_t id, map_type* map,
+uint32_t VariantBlockFooter::AddStreamWrapper(const uint32_t global_id,
+                                              map_type* map,
                                               header_type*& offsets,
-                                              uint16_t& stream_counter)
+                                              uint16_t& n_streams)
 {
-	map_type::const_iterator it = map->find(id);
+	map_type::const_iterator it = map->find(global_id);
 	if(it == map->end()){
-		(*map)[id] = stream_counter;
-		offsets[stream_counter].data_header.global_key = id;
-		++stream_counter;
+		(*map)[global_id] = n_streams;
+		offsets[n_streams].data_header.global_key = global_id;
+		++n_streams;
 	}
 
-	return((*map)[id]);
+	return((*map)[global_id]);
 }
 
-uint32_t VariantBlockFooter::AddInfo(const uint32_t id){
+uint32_t VariantBlockFooter::AddInfo(const uint32_t global_id){
 	if(this->info_map == nullptr) this->AllocateMaps();
-	return(this->AddStreamWrapper(id, this->info_map, this->info_offsets, this->n_info_streams));
+	return(this->AddStreamWrapper(global_id, this->info_map, this->info_offsets, this->n_info_streams));
 }
 
-uint32_t VariantBlockFooter::AddFormat(const uint32_t id){
+uint32_t VariantBlockFooter::AddFormat(const uint32_t global_id){
 	if(this->format_map == nullptr) this->AllocateMaps();
-	return(this->AddStreamWrapper(id, this->format_map, this->format_offsets, this->n_format_streams));
+	return(this->AddStreamWrapper(global_id, this->format_map, this->format_offsets, this->n_format_streams));
 }
 
-uint32_t VariantBlockFooter::AddFilter(const uint32_t id){
+uint32_t VariantBlockFooter::AddFilter(const uint32_t global_id){
 	if(this->filter_map == nullptr) this->AllocateMaps();
-	return(this->AddStreamWrapper(id, this->filter_map, this->filter_offsets, this->n_filter_streams));
+	return(this->AddStreamWrapper(global_id, this->filter_map, this->filter_offsets, this->n_filter_streams));
 }
 
 io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantBlockFooter& entry){
@@ -580,37 +582,37 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 
 	for(uint32_t i = 0; i < entry.n_info_streams; ++i){
 		buffer >> entry.info_offsets[i];
-		entry.UpdateInfo(entry.info_offsets[i], i);
+		entry.UpdateInfoMap(entry.info_offsets[i], i);
 	}
 
 	for(uint32_t i = 0; i < entry.n_format_streams; ++i){
 		buffer >> entry.format_offsets[i];
-		entry.UpdateFormat(entry.format_offsets[i], i);
+		entry.UpdateFormatMap(entry.format_offsets[i], i);
 	}
 
 	for(uint32_t i = 0; i < entry.n_filter_streams; ++i){
 		buffer >> entry.filter_offsets[i];
-		entry.UpdateFilter(entry.filter_offsets[i], i);
+		entry.UpdateFilterMap(entry.filter_offsets[i], i);
 	}
 
 	entry.info_patterns = new yon_blk_bv_pair[entry.n_info_patterns];
 	for(uint32_t i = 0; i < entry.n_info_patterns; ++i){
 		buffer >> entry.info_patterns[i];
-		entry.UpdateInfoPattern(entry.info_patterns[i].pattern, i);
+		entry.UpdateInfoPatternMap(entry.info_patterns[i].pattern, i);
 		entry.info_patterns[i].Build(entry.n_info_streams, entry.info_map);
 	}
 
 	entry.format_patterns = new yon_blk_bv_pair[entry.n_format_patterns];
 	for(uint32_t i = 0; i < entry.n_format_patterns; ++i){
 		buffer >> entry.format_patterns[i];
-		entry.UpdateFormatPattern(entry.format_patterns[i].pattern, i);
+		entry.UpdateFormatPatternMap(entry.format_patterns[i].pattern, i);
 		entry.format_patterns[i].Build(entry.n_format_streams, entry.format_map);
 	}
 
 	entry.filter_patterns = new yon_blk_bv_pair[entry.n_filter_patterns];
 	for(uint32_t i = 0; i < entry.n_filter_patterns; ++i){
 		buffer >> entry.filter_patterns[i];
-		entry.UpdateFilterPattern(entry.filter_patterns[i].pattern, i);
+		entry.UpdateFilterPatternMap(entry.filter_patterns[i].pattern, i);
 		entry.filter_patterns[i].Build(entry.n_filter_streams, entry.filter_map);
 	}
 

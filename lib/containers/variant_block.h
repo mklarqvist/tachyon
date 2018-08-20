@@ -95,7 +95,7 @@ public:
  * provides encapsulated and abstracted access to its
  * contents.
  */
-class VariantBlock{
+class VariantBlock {
 public:
 	typedef VariantBlock                    self_type;
 	typedef DataContainer                   container_type;

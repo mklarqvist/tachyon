@@ -44,34 +44,34 @@ namespace tachyon {
 #define YON_BLK_GT_SUPPORT 23 // Genotype support
 #define YON_BLK_GT_PLOIDY  24 // Genotype ploidy
 
-#define YON_BLK_BV_PPA         1 << YON_BLK_PPA
-#define YON_BLK_BV_CONTIG      1 << YON_BLK_CONTIG
-#define YON_BLK_BV_POSITION    1 << YON_BLK_POSITION
-#define YON_BLK_BV_REFALT      1 << YON_BLK_REFALT
-#define YON_BLK_BV_CONTROLLER  1 << YON_BLK_CONTROLLER
-#define YON_BLK_BV_QUALITY     1 << YON_BLK_QUALITY
-#define YON_BLK_BV_NAMES       1 << YON_BLK_NAMES
-#define YON_BLK_BV_ALLELES     1 << YON_BLK_ALLELES
-#define YON_BLK_BV_ID_INFO     1 << YON_BLK_ID_INFO
-#define YON_BLK_BV_ID_FORMAT   1 << YON_BLK_ID_FORMAT
-#define YON_BLK_BV_ID_FILTER   1 << YON_BLK_ID_FILTER
-#define YON_BLK_BV_GT_INT8     1 << YON_BLK_GT_INT8
-#define YON_BLK_BV_GT_INT16    1 << YON_BLK_GT_INT16
-#define YON_BLK_BV_GT_INT32    1 << YON_BLK_GT_INT32
-#define YON_BLK_BV_GT_INT64    1 << YON_BLK_GT_INT64
-#define YON_BLK_BV_GT_S_INT8   1 << YON_BLK_GT_S_INT8
-#define YON_BLK_BV_GT_S_INT16  1 << YON_BLK_GT_S_INT16
-#define YON_BLK_BV_GT_S_INT32  1 << YON_BLK_GT_S_INT32
-#define YON_BLK_BV_GT_S_INT64  1 << YON_BLK_GT_S_INT64
-#define YON_BLK_BV_GT_N_INT8   1 << YON_BLK_GT_N_INT8
-#define YON_BLK_BV_GT_N_INT16  1 << YON_BLK_GT_N_INT16
-#define YON_BLK_BV_GT_N_INT32  1 << YON_BLK_GT_N_INT32
-#define YON_BLK_BV_GT_N_INT64  1 << YON_BLK_GT_N_INT64
-#define YON_BLK_BV_GT_SUPPORT  1 << YON_BLK_GT_SUPPORT
-#define YON_BLK_BV_GT_PLOIDY   1 << YON_BLK_GT_PLOIDY
+#define YON_BLK_BV_PPA         (1 << YON_BLK_PPA)
+#define YON_BLK_BV_CONTIG      (1 << YON_BLK_CONTIG)
+#define YON_BLK_BV_POSITION    (1 << YON_BLK_POSITION)
+#define YON_BLK_BV_REFALT      (1 << YON_BLK_REFALT)
+#define YON_BLK_BV_CONTROLLER  (1 << YON_BLK_CONTROLLER)
+#define YON_BLK_BV_QUALITY     (1 << YON_BLK_QUALITY)
+#define YON_BLK_BV_NAMES       (1 << YON_BLK_NAMES)
+#define YON_BLK_BV_ALLELES     (1 << YON_BLK_ALLELES)
+#define YON_BLK_BV_ID_INFO     (1 << YON_BLK_ID_INFO)
+#define YON_BLK_BV_ID_FORMAT   (1 << YON_BLK_ID_FORMAT)
+#define YON_BLK_BV_ID_FILTER   (1 << YON_BLK_ID_FILTER)
+#define YON_BLK_BV_GT_INT8     (1 << YON_BLK_GT_INT8)
+#define YON_BLK_BV_GT_INT16    (1 << YON_BLK_GT_INT16)
+#define YON_BLK_BV_GT_INT32    (1 << YON_BLK_GT_INT32)
+#define YON_BLK_BV_GT_INT64    (1 << YON_BLK_GT_INT64)
+#define YON_BLK_BV_GT_S_INT8   (1 << YON_BLK_GT_S_INT8)
+#define YON_BLK_BV_GT_S_INT16  (1 << YON_BLK_GT_S_INT16)
+#define YON_BLK_BV_GT_S_INT32  (1 << YON_BLK_GT_S_INT32)
+#define YON_BLK_BV_GT_S_INT64  (1 << YON_BLK_GT_S_INT64)
+#define YON_BLK_BV_GT_N_INT8   (1 << YON_BLK_GT_N_INT8)
+#define YON_BLK_BV_GT_N_INT16  (1 << YON_BLK_GT_N_INT16)
+#define YON_BLK_BV_GT_N_INT32  (1 << YON_BLK_GT_N_INT32)
+#define YON_BLK_BV_GT_N_INT64  (1 << YON_BLK_GT_N_INT64)
+#define YON_BLK_BV_GT_SUPPORT  (1 << YON_BLK_GT_SUPPORT)
+#define YON_BLK_BV_GT_PLOIDY   (1 << YON_BLK_GT_PLOIDY)
 
-#define YON_BLK_BV_INFO        1 << (YON_BLK_N_STATIC)
-#define YON_BLK_BV_FORMAT      1 << (YON_BLK_N_STATIC + 1)
+#define YON_BLK_BV_INFO        (1 << (YON_BLK_N_STATIC))
+#define YON_BLK_BV_FORMAT      (1 << (YON_BLK_N_STATIC + 1))
 #define YON_BLK_BV_GT          ((YON_BLK_BV_GT_INT8)|(YON_BLK_BV_GT_INT16)|(YON_BLK_BV_GT_INT32)|(YON_BLK_BV_GT_INT64)|(YON_BLK_BV_GT_S_INT8)|(YON_BLK_BV_GT_S_INT16)|(YON_BLK_BV_GT_S_INT32)|(YON_BLK_BV_GT_S_INT64)|(YON_BLK_BV_GT_N_INT8)|(YON_BLK_BV_GT_N_INT16)|(YON_BLK_BV_GT_N_INT32)|(YON_BLK_BV_GT_N_INT64)|(YON_BLK_BV_GT_SUPPORT)|(YON_BLK_BV_GT_PLOIDY))
 
 struct yon_blk_bv_pair {
@@ -202,10 +202,10 @@ namespace containers {
 
 struct VariantBlockFooter {
 public:
-	typedef VariantBlockFooter        self_type;
-	typedef DataContainerHeader       header_type;
-	typedef std::unordered_map<uint32_t, uint32_t>    map_type;
-	typedef std::unordered_map<uint64_t, uint32_t>    map_pattern_type;
+	typedef VariantBlockFooter  self_type;
+	typedef DataContainerHeader header_type;
+	typedef std::unordered_map<uint32_t, uint32_t> map_type;
+	typedef std::unordered_map<uint64_t, uint32_t> map_pattern_type;
 
 public:
 	VariantBlockFooter();
@@ -221,9 +221,9 @@ public:
 	/**<
 	 * Wrapper function for allocating memory for new offset objects
 	 * for Info, Format, and Filter patterns and streams
-	 * @param n_info_streams   Number of unique info streams
-	 * @param n_format_streams Number of unique format streams
-	 * @param n_filter_streams Number of unique filter streams
+	 * @param n_info_streams   Number of unique info streams.
+	 * @param n_format_streams Number of unique format streams.
+	 * @param n_filter_streams Number of unique filter streams.
 	 */
 	void AllocateHeaders(const uint32_t n_info_streams,
 		                 const uint32_t n_format_streams,
@@ -233,6 +233,25 @@ public:
 	void AllocateFormatHeaders(const uint32_t n_format_streams);
 	void AllocateFilterHeaders(const uint32_t n_filter_streams);
 
+	/**<
+	 * Wrapper function for adding a pattern to the block. The
+	 * integers in the input vector is first hashed and check against
+	 * the map of existing patterns. If the pattern does not exist
+	 * then add it and return the local idx. Otherwise return the
+	 * local idx for this pattern.
+	 *
+	 * Do not directly call this wrapper.
+	 *
+	 * Invocation of this function comes from the functions
+	 * AddInfoPattern(), AddFormatPattern(), and
+	 * AddFilterPattern().
+	 *
+	 * @param pattern        Input vector of global idx values.
+	 * @param pattern_map    Target reference map of hashed global idx values.
+	 * @param bv_pairs       Dst pointer of bit-vector entries.
+	 * @param stream_counter Reference of current number of unique hash patterns.
+	 * @return               Returns an array offset to the matching pattern (could be newly created).
+	 */
 	uint32_t AddPatternWrapper(const std::vector<int>& pattern,
 	                           map_pattern_type* pattern_map,
 	                           yon_blk_bv_pair* bv_pairs,
@@ -241,22 +260,37 @@ public:
 	uint32_t AddFormatPattern(const std::vector<int>& pattern);
 	uint32_t AddFilterPattern(const std::vector<int>& pattern);
 
-	uint32_t UpdateOffsetMapWrapper(const header_type& offset, map_type* map, const uint16_t& stream_counter);
-	uint32_t UpdateInfo(const header_type& offset, const uint16_t position);
-	uint32_t UpdateFormat(const header_type& offset, const uint16_t position);
-	uint32_t UpdateFilter(const header_type& offset, const uint16_t position);
-
-	uint32_t AddStreamWrapper(const uint32_t id, map_type* map, header_type*& offsets, uint16_t& stream_counter);
-	uint32_t AddInfo(const uint32_t id);
-	uint32_t AddFormat(const uint32_t id);
-	uint32_t AddFilter(const uint32_t id);
+	/**<
+	 * Wrapper function to add a new byte stream to the block. Takes
+	 * a input a global idx for a field and checks if that field is
+	 * already set. If it is not then set it at the next available
+	 * position and return that local idx. Otherwise, return the local
+	 * idx of where this global idx has been set.
+	 *
+	 * Do not directly call this wrapper.
+	 *
+	 * Invocation of this function comes from the functions
+	 * AddInfo(), AddFormat(), and
+	 * AddFilter().
+	 *
+	 * @param global_id Input global idx.
+	 * @param map       Target map from global to local idx.
+	 * @param offsets   Pointer to dst offsets.
+	 * @param n_streams Reference to number of currently set fields.
+	 * @return          Returns the local idx for this global idx.
+	 */
+	uint32_t AddStreamWrapper(const uint32_t global_id,
+	                          map_type* map,
+	                          header_type*& offsets,
+	                          uint16_t& n_streams);
+	uint32_t AddInfo(const uint32_t global_id);
+	uint32_t AddFormat(const uint32_t global_id);
+	uint32_t AddFilter(const uint32_t global_id);
 
 	void Finalize(void);
-	bool AllocateMaps(void);
-	bool AllocatePatternMaps(void);
 
 	/**<
-		* Static function that calculates the 64-bit hash value for the target
+	* Static function that calculates the 64-bit hash value for the target
 	* FORMAT/FILTER/INFO vector of id fields. The id fields must be of type
 	* int (S32). Example of using this function:
 	*
@@ -287,25 +321,57 @@ public:
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
 
 private:
+	bool AllocateMaps(void);
+	bool AllocatePatternMaps(void);
+
 	/**<
 	 * This wrapper adds patterns to the hash map when the data has
 	 * already been loaded. This occurs when loading an object from
-	 * disk/buffer. Do not directly call this wrapper! Invokation of
-	 * this function comes from the functions UpdateInfoPattern(),
-	 * UpdateFormatPattern(), and UpdateFilterPattern().
+	 * disk/buffer.
+	 *
+	 * Do not directly call this wrapper.
+	 *
+	 * Invocation of this function comes from the functions
+	 * UpdateInfoPatternMap(), UpdateFormatPatternMap(), and
+	 * UpdateFilterPatternMap().
+	 *
 	 * @param pattern        Input vector of global idxs for the target field.
 	 * @param pattern_map    Pointer to target map from global idx to local idx.
 	 * @param stream_counter Reference target number of patterns to expect.
 	 * @return               Returns the target local idx position where the pattern was set.
 	 */
-	uint32_t UpdatePatternWrapper(const std::vector<int>& pattern,
-								  map_pattern_type* pattern_map,
-								  const uint16_t& stream_counter);
+	uint32_t UpdatePatternMapWrapper(const std::vector<int>& pattern,
+								     map_pattern_type* pattern_map,
+								     const uint16_t& local_position);
 
-	uint32_t UpdateInfoPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
-	uint32_t UpdateFormatPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
-	uint32_t UpdateFilterPattern(const std::vector<int>& pattern, const uint16_t pattern_id);
+	uint32_t UpdateInfoPatternMap(const std::vector<int>& pattern, const uint16_t local_position);
+	uint32_t UpdateFormatPatternMap(const std::vector<int>& pattern, const uint16_t local_position);
+	uint32_t UpdateFilterPatternMap(const std::vector<int>& pattern, const uint16_t local_position);
 
+	/**<
+	 * Update a given stream offset in the situation where the streams
+	 * have already been loaded (during IO operations) and the number
+	 * of fields are already known. The purpose of this function is to
+	 * iterate over those fields and update the map from global to local
+	 * idx.
+	 *
+	 * Do not directly call this wrapper.
+	 *
+	 * Invocation of this function comes from the functions
+	 * UpdateInfoMap(), UpdateFormatMap(), and
+	 * UpdateFilterMap().
+	 *
+	 * @param offset         Source header that has been preloaded and contains valid global idx information.
+	 * @param map            Pointer to target map from global to local idx.
+	 * @param local_position Local idx (array offset).
+	 * @return               Returns the local idx offset.
+	 */
+	uint32_t UpdateOffsetMapWrapper(const header_type& offset,
+									map_type* map,
+									const uint16_t& local_position);
+	uint32_t UpdateInfoMap(const header_type& offset, const uint16_t local_position);
+	uint32_t UpdateFormatMap(const header_type& offset, const uint16_t local_position);
+	uint32_t UpdateFilterMap(const header_type& offset, const uint16_t local_position);
 
 	/**<
 	 * Wrappers for constructing new Info/Format/Filter bit-vectors
