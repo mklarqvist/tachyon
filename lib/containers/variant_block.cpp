@@ -301,23 +301,18 @@ bool VariantBlock::read(std::ifstream& stream){
 
 bool VariantBlock::ParseSettings(DataBlockSettings& settings, const VariantHeader& header){
 	// Clear previous information (if any).
-	this->load_settings->info_id_global_loaded.clear();
-	this->load_settings->info_id_local_loaded.clear();
-	this->load_settings->info_map_global.clear();
-	this->load_settings->format_id_global_loaded.clear();
-	this->load_settings->format_id_local_loaded.clear();
-	this->load_settings->format_map_global.clear();
+	this->load_settings->clear();
 
-	// Todo: if performing genotype annotating then we have to remove
-	//       fields that are annotate by tachyon to prevent duplicates
-	//       (e.g. AC or AF already existing).
+	// Construct a black-list of INFO fields that should not be loaded
+	// or displayed as they are being re-calculated internally and
+	// emitted. If a blacklisted field is available in this block then
+	// add that tag to the map.
 	std::unordered_map<uint32_t, std::string> blocked_list;
 	if(settings.annotate_extra){
 		for(uint32_t i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
 			const YonInfo* info = header.GetInfo(YON_GT_ANNOTATE_FIELDS[i]);
 			if(info != nullptr){
 				blocked_list[info->idx] = YON_GT_ANNOTATE_FIELDS[i];
-				//std::cerr << "Add to blocked list: " << YON_GT_ANNOTATE_FIELDS[i] << "@" << info->idx << std::endl;
 			}
 		}
 	}
@@ -564,7 +559,7 @@ bool VariantBlock::read(std::ifstream& stream,
 	return(true);
 }
 
-uint64_t VariantBlock::DetermineCompressedSize(void) const{
+uint64_t VariantBlock::GetCompressedSize(void) const{
 	uint64_t total = 0;
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		total += this->base_containers[YON_BLK_PPA].GetObjectSize();
@@ -607,7 +602,7 @@ bool VariantBlock::write(std::ostream& stream,
 	}
 
 	const uint64_t begin_pos = stream.tellp();
-	this->header.l_offset_footer = this->DetermineCompressedSize();
+	this->header.l_offset_footer = this->GetCompressedSize();
 	stream << this->header;
 	const uint64_t start_pos = stream.tellp();
 	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
@@ -696,6 +691,213 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 	++this->base_containers[YON_BLK_GT_PLOIDY];
 
 	return true;
+}
+
+std::vector<int> VariantBlock::IntersectInfoKeys(const std::vector<int>& info_ids_global) const{
+	std::vector<int> info_ids_found;
+	if(info_ids_global.size() == 0) return(info_ids_found);
+
+	for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_info_streams; ++j){
+			if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
+				info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(info_ids_found);
+}
+
+std::vector<int> VariantBlock::IntersectFormatKeys(const std::vector<int>& format_ids_global) const{
+	std::vector<int> format_ids_found;
+	if(format_ids_global.size() == 0) return(format_ids_found);
+
+	for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_format_streams; ++j){
+			if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
+				format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(format_ids_found);
+}
+
+std::vector<int> VariantBlock::IntersectFilterKeys(const std::vector<int>& filter_ids_global) const{
+	std::vector<int> filter_ids_found;
+	if(filter_ids_global.size() == 0) return(filter_ids_found);
+
+	for(uint32_t i = 0; i < filter_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_filter_streams; ++j){
+			if(this->footer.filter_offsets[j].data_header.global_key == filter_ids_global[i])
+				filter_ids_found.push_back(this->footer.filter_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(filter_ids_found);
+}
+
+std::vector<int> VariantBlock::IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const{
+	std::vector<int> info_ids_found;
+	if(info_ids_global.size() == 0) return(info_ids_found);
+	assert(local_id < this->footer.n_info_patterns);
+
+	for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
+				info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
+			}
+		}
+	}
+
+	return(info_ids_found);
+}
+
+std::vector<int> VariantBlock::IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const{
+	std::vector<int> format_ids_found;
+	if(format_ids_global.size() == 0) return(format_ids_found);
+	assert(local_id < this->footer.n_format_patterns);
+
+	for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
+				format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
+		}
+	}
+
+	return(format_ids_found);
+}
+
+std::vector<int> VariantBlock::IntersectFilterPatterns(const std::vector<int>& filter_ids_global, const uint32_t local_id) const{
+	std::vector<int> filter_ids_found;
+	if(filter_ids_global.size() == 0) return(filter_ids_found);
+	assert(local_id < this->footer.n_filter_patterns);
+
+	for(uint32_t i = 0; i < filter_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.filter_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.filter_patterns[local_id].pattern[k] == filter_ids_global[i])
+				filter_ids_found.push_back(this->footer.filter_patterns[local_id].pattern[k]);
+		}
+	}
+
+	return(filter_ids_found);
+}
+
+std::vector<uint32_t> VariantBlock::GetInfoKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
+		ret.push_back(this->footer.info_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+std::vector<uint32_t> VariantBlock::GetFormatKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
+		ret.push_back(this->footer.format_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+std::vector<uint32_t> VariantBlock::GetFilterKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_filter_streams; ++i)
+		ret.push_back(this->footer.filter_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+int32_t VariantBlock::GetInfoPosition(const uint32_t global_id) const{
+	if(this->footer.info_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+	if(it == this->footer.info_map->end()) return -1;
+	return(it->second);
+}
+
+int32_t VariantBlock::GetFormatPosition(const uint32_t global_id) const{
+	if(this->footer.format_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+	if(it == this->footer.format_map->end()) return -1;
+	return(it->second);
+}
+
+int32_t VariantBlock::GetFilterPosition(const uint32_t global_id) const{
+	if(this->footer.filter_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+	if(it == this->footer.filter_map->end()) return -1;
+	return(it->second);
+}
+
+bool VariantBlock::HasInfo(const uint32_t global_id) const{
+	if(this->footer.info_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
+	if(it == this->footer.info_map->end()) return false;
+	return(true);
+}
+
+bool VariantBlock::HasFormat(const uint32_t global_id) const{
+	if(this->footer.format_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
+	if(it == this->footer.format_map->end()) return false;
+	return(true);
+}
+
+bool VariantBlock::HasFilter(const uint32_t global_id) const{
+	if(this->footer.filter_map == nullptr) return false;
+	VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+	if(it == this->footer.filter_map->end()) return false;
+	return(true);
+}
+
+DataContainer* VariantBlock::GetInfoContainer(const uint32_t global_id) const{
+	if(this->HasInfo(global_id))
+		return(&this->info_containers[this->footer.info_map->at(global_id)]);
+	else
+		return nullptr;
+}
+
+DataContainer* VariantBlock::GetFormatContainer(const uint32_t global_id) const{
+	if(this->HasFormat(global_id))
+		return(&this->format_containers[this->footer.format_map->at(global_id)]);
+	else
+		return nullptr;
+}
+
+std::vector<bool> VariantBlock::InfoPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_info_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_info_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
+			if(this->footer.info_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
+}
+
+std::vector<bool> VariantBlock::FormatPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_format_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_format_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
+			if(this->footer.format_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
+}
+
+std::vector<bool> VariantBlock::FilterPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_filter_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_filter_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
+			if(this->footer.filter_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
 }
 
 }

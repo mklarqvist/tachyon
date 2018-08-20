@@ -133,9 +133,6 @@ public:
 
 	inline const uint32_t& size(void) const{ return(this->header.n_variants); }
 
-	bool ParseSettings(DataBlockSettings& settings, const VariantHeader& header);
-	bool ParseLoadedPatterns(DataBlockSettings& settings);
-
 	/**<
 	 * Reads all objects from disk. Primary function for reading
 	 * entire blocks of data from disk. Data read in this way is
@@ -189,91 +186,34 @@ public:
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
 	/**<
-	 * Compares a vector of global INFO identifiers to the identifier set in this
-	 * block and returns the set intersection of keys
-	 * @param info_ids Vector of global INFO keys
-	 * @return         Returns the set intersection of provided keys and local keys
+	 * Compares a vector of global Info/Format/Filter identifiers to the identifier set in this
+	 * block and returns the set intersection of keys.
+	 * @param keys Vector of global Info/Format/Filter keys
+	 * @return     Returns the set intersection of the provided keys and the local keys.
 	 */
-	std::vector<int> IntersectInfoKeys(const std::vector<int>& info_ids_global) const{
-		std::vector<int> info_ids_found;
-		if(info_ids_global.size() == 0) return(info_ids_found);
-
-		for(uint32_t i = 0; i < info_ids_global.size(); ++i){
-			for(uint32_t j = 0; j < this->footer.n_info_streams; ++j){
-				if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
-					info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
-			}
-		}
-
-		return(info_ids_found);
-	}
-
-	std::vector<int> IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const{
-		std::vector<int> info_ids_found;
-		if(info_ids_global.size() == 0) return(info_ids_found);
-		assert(local_id < this->footer.n_info_patterns);
-
-		for(uint32_t i = 0; i < info_ids_global.size(); ++i){
-			for(uint32_t k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
-				if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
-					info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
-				}
-			}
-		}
-
-		return(info_ids_found);
-	}
+	std::vector<int> IntersectInfoKeys(const std::vector<int>& info_ids_global) const;
+	std::vector<int> IntersectFormatKeys(const std::vector<int>& format_ids_global) const;
+	std::vector<int> IntersectFilterKeys(const std::vector<int>& filter_ids_global) const;
 
 	/**<
-	 * Compares a vector of global FORMAT identifiers to the identifier set in this
-	 * block and returns the set intersection of keys
-	 * @param info_ids Vector of global FORMAT keys
-	 * @return         Returns the set intersection of provided keys and local keys
+	 * Intersects a provided vector of global identifiers to a given pattern vector for
+	 * a given Info/Format/Filter type.
+	 * @param keys     Provided vector of global Info/Format/Filter keys.
+	 * @param local_id Array offset to a local container.
+	 * @return         Returns the set intersection of the provided keys and the target pattern keys.
 	 */
-	std::vector<int> IntersectFormatKeys(const std::vector<int>& format_ids_global) const{
-		std::vector<int> format_ids_found;
-		if(format_ids_global.size() == 0) return(format_ids_found);
+	std::vector<int> IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const;
+	std::vector<int> IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const;
+	std::vector<int> IntersectFilterPatterns(const std::vector<int>& filter_ids_global, const uint32_t local_id) const;
 
-		for(uint32_t i = 0; i < format_ids_global.size(); ++i){
-			for(uint32_t j = 0; j < this->footer.n_format_streams; ++j){
-				if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
-					format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
-			}
-		}
-
-		return(format_ids_found);
-	}
-
-	std::vector<int> IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const{
-		std::vector<int> format_ids_found;
-		if(format_ids_global.size() == 0) return(format_ids_found);
-		assert(local_id < this->footer.n_format_patterns);
-
-		for(uint32_t i = 0; i < format_ids_global.size(); ++i){
-			for(uint32_t k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
-				if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
-					format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
-			}
-		}
-
-		return(format_ids_found);
-	}
-
-	std::vector<uint32_t> GetFormatKeys(void) const{
-		std::vector<uint32_t> ret;
-		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
-			ret.push_back(this->footer.format_offsets[i].data_header.global_key);
-
-		return(ret);
-	}
-
-	std::vector<uint32_t> GetInfoKeys(void) const{
-		std::vector<uint32_t> ret;
-		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
-			ret.push_back(this->footer.info_offsets[i].data_header.global_key);
-
-		return(ret);
-	}
+	/**<
+	 * Utility functions to retrieve all Info/Format/Filter keys from the footer as
+	 * a vector of integers.
+	 * @return Returns a vector of global identifiers.
+	 */
+	std::vector<uint32_t> GetInfoKeys(void) const;
+	std::vector<uint32_t> GetFormatKeys(void) const;
+	std::vector<uint32_t> GetFilterKeys(void) const;
 
 	/**<
 	 * Wrapper function to load a data container from packed YON blocks
@@ -311,9 +251,10 @@ public:
 		return(stream.good());
 	}
 
-	/**< @brief Update base container header data and evaluate output byte streams
-	 * Internal use only (import): Collectively updates base
-	 * container offsets and checks/builds
+	/**<
+	 * Update base container header data and evaluate output byte streams
+	 * Internal use only (import): Collectively updates base container
+	 * offsets and checks/builds.
 	 * 1) If the byte stream is uniform
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
@@ -322,10 +263,10 @@ public:
 
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
-	 * block
-	 * @return Returns the sum total disk size
+	 * block.
+	 * @return Returns the total number of bytes that will be written.
 	 */
-	uint64_t DetermineCompressedSize(void) const;
+	uint64_t GetCompressedSize(void) const;
 
 	inline void PackFooter(void){
 		this->footer_support.reset();
@@ -339,104 +280,44 @@ public:
 	inline uint32_t AddInfo(const uint32_t id){ return(this->footer.AddInfo(id)); }
 	inline uint32_t AddFormat(const uint32_t id){ return(this->footer.AddFormat(id)); }
 	inline uint32_t AddFilter(const uint32_t id){ return(this->footer.AddFilter(id)); }
+
 	inline void Finalize(void){ this->footer.Finalize(); }
 
-	int32_t GetInfoPosition(const uint32_t global_id) const{
-		if(this->footer.info_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
-		if(it == this->footer.info_map->end()) return -1;
-		return(it->second);
-	}
+	int32_t GetInfoPosition(const uint32_t global_id)   const;
+	int32_t GetFormatPosition(const uint32_t global_id) const;
+	int32_t GetFilterPosition(const uint32_t global_id) const;
 
-	int32_t GetFormatPosition(const uint32_t global_id) const{
-		if(this->footer.format_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
-		if(it == this->footer.format_map->end()) return -1;
-		return(it->second);
-	}
+	bool HasInfo(const uint32_t global_id)   const;
+	bool HasFormat(const uint32_t global_id) const;
+	bool HasFilter(const uint32_t global_id) const;
 
-	int32_t GetFilterPosition(const uint32_t global_id) const{
-		if(this->footer.filter_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
-		if(it == this->footer.filter_map->end()) return -1;
-		return(it->second);
-	}
+	container_type* GetInfoContainer(const uint32_t global_id)   const;
+	container_type* GetFormatContainer(const uint32_t global_id) const;
 
-	bool HasInfo(const uint32_t global_id) const{
-		if(this->footer.info_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
-		if(it == this->footer.info_map->end()) return false;
-		return(true);
-	}
-
-	bool HasFormat(const uint32_t global_id) const{
-		if(this->footer.format_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
-		if(it == this->footer.format_map->end()) return false;
-		return(true);
-	}
-
-	bool HasFilter(const uint32_t global_id) const{
-		if(this->footer.filter_map == nullptr) return false;
-		VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
-		if(it == this->footer.filter_map->end()) return false;
-		return(true);
-	}
-
-	container_type* GetInfoContainer(const uint32_t global_id) const{
-		if(this->HasInfo(global_id))
-			return(&this->info_containers[this->footer.info_map->at(global_id)]);
-		else
-			return nullptr;
-	}
-
-	container_type* GetFormatContainer(const uint32_t global_id) const{
-		if(this->HasFormat(global_id))
-			return(&this->format_containers[this->footer.format_map->at(global_id)]);
-		else
-			return nullptr;
-	}
-
-	std::vector<bool> InfoPatternSetMembership(const int value) const{
-		std::vector<bool> matches(this->footer.n_info_patterns, false);
-		for(uint32_t i = 0; i < this->footer.n_info_patterns; ++i){
-			for(uint32_t j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
-				if(this->footer.info_patterns[i].pattern[j] == value){
-					matches[i] = true;
-					break;
-				}
-			}
-		}
-		return(matches);
-	}
-
-	std::vector<bool> FormatPatternSetMembership(const int value) const{
-		std::vector<bool> matches(this->footer.n_format_patterns, false);
-		for(uint32_t i = 0; i < this->footer.n_format_patterns; ++i){
-			for(uint32_t j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
-				if(this->footer.format_patterns[i].pattern[j] == value){
-					matches[i] = true;
-					break;
-				}
-			}
-		}
-		return(matches);
-	}
-
-	std::vector<bool> FilterPatternSetMembership(const int value) const{
-		std::vector<bool> matches(this->footer.n_filter_patterns, false);
-		for(uint32_t i = 0; i < this->footer.n_filter_patterns; ++i){
-			for(uint32_t j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
-				if(this->footer.filter_patterns[i].pattern[j] == value){
-					matches[i] = true;
-					break;
-				}
-			}
-		}
-		return(matches);
-	}
+	std::vector<bool> InfoPatternSetMembership(const int value)  const;
+	std::vector<bool> FormatPatternSetMembership(const int value) const;
+	std::vector<bool> FilterPatternSetMembership(const int value) const;
 
 private:
+	/**<
+	 * Parse user-provided settings that provide information regarding
+	 * how to slice and/or display data from this block prior to loading
+	 * from disk/stream.
+	 * @param settings Reference to user-provided settings.
+	 * @param header   Reference to the global variant header object.
+	 * @return         Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool ParseSettings(DataBlockSettings& settings, const VariantHeader& header);
+
+	/**<
+	 * Parse what data will be displayed given the requested fields and
+	 * what is available in the block. This is a private function as is
+	 * called internally from ParseSettings().
+	 * @param settings Reference to user-provided settings.
+	 * @return         Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool ParseLoadedPatterns(DataBlockSettings& settings);
+
 	/**<
 	 *
 	 * @param stats_basic
@@ -522,7 +403,7 @@ public:
 	container_type*   base_containers;
 	container_type*   info_containers;
 	container_type*   format_containers;
-	yon_gt_ppa* gt_ppa;
+	yon_gt_ppa*       gt_ppa;
 	yon_blk_load_settings* load_settings;
 
 	// Utility
