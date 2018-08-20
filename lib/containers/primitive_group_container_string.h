@@ -52,8 +52,8 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
 
-	io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t position) const{
-		this->at(position).to_vcf_string(buffer);
+	io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t position) const{
+		this->at(position).ToVcfString(buffer);
 		return(buffer);
 	}
 

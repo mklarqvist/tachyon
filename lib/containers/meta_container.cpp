@@ -22,14 +22,14 @@ MetaContainer::~MetaContainer(void){
 
 void MetaContainer::__ctor_setup(const block_type& block){
 	// Build containers for hot/cold depending on what is available
-	PrimitiveContainer<uint32_t>   contigs(block.base_containers[YON_BLK_CONTIG]);
-	PrimitiveContainer<uint16_t>   controllers(block.base_containers[YON_BLK_CONTROLLER]);
-	PrimitiveContainer<uint32_t>   positions(block.base_containers[YON_BLK_POSITION]);
-	PrimitiveContainer<float> quality(block.base_containers[YON_BLK_QUALITY]);
+	PrimitiveContainer<uint32_t> contigs(block.base_containers[YON_BLK_CONTIG]);
+	PrimitiveContainer<uint16_t> controllers(block.base_containers[YON_BLK_CONTROLLER]);
+	PrimitiveContainer<uint32_t> positions(block.base_containers[YON_BLK_POSITION]);
+	PrimitiveContainer<float>    quality(block.base_containers[YON_BLK_QUALITY]);
 	PrimitiveContainer<uint8_t>  refalt(block.base_containers[YON_BLK_REFALT]);
-	PrimitiveContainer<int32_t>   filterID(block.base_containers[YON_BLK_ID_FILTER]);
-	PrimitiveContainer<int32_t>   formatID(block.base_containers[YON_BLK_ID_FORMAT]);
-	PrimitiveContainer<int32_t>   infoID(block.base_containers[YON_BLK_ID_INFO]);
+	PrimitiveContainer<int32_t>  filterID(block.base_containers[YON_BLK_ID_FILTER]);
+	PrimitiveContainer<int32_t>  formatID(block.base_containers[YON_BLK_ID_FORMAT]);
+	PrimitiveContainer<int32_t>  infoID(block.base_containers[YON_BLK_ID_INFO]);
 	PrimitiveContainer<uint8_t>  ploidy(block.base_containers[YON_BLK_GT_PLOIDY]);
 
 	for(uint32_t i = 0; i < this->size(); ++i){
@@ -38,49 +38,49 @@ void MetaContainer::__ctor_setup(const block_type& block){
 
 	if(contigs.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(contigs.isUniform()) this->__entries[i].contigID = contigs[0];
+			if(contigs.IsUniform()) this->__entries[i].contigID = contigs[0];
 			else this->__entries[i].contigID = contigs[i];
 		}
 	}
 
 	if(positions.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(positions.isUniform()) this->__entries[i].position = positions[0];
+			if(positions.IsUniform()) this->__entries[i].position = positions[0];
 			else this->__entries[i].position = positions[i];
 		}
 	}
 
 	if(controllers.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(controllers.isUniform()) this->__entries[i].controller = controllers[0];
+			if(controllers.IsUniform()) this->__entries[i].controller = controllers[0];
 			else this->__entries[i].controller = controllers[i];
 		}
 	}
 
 	if(quality.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(quality.isUniform()) this->__entries[i].quality = quality[0];
+			if(quality.IsUniform()) this->__entries[i].quality = quality[0];
 			else this->__entries[i].quality = quality[i];
 		}
 	}
 
 	if(filterID.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(filterID.isUniform()) this->__entries[i].filter_pattern_id = filterID[0];
+			if(filterID.IsUniform()) this->__entries[i].filter_pattern_id = filterID[0];
 			else this->__entries[i].filter_pattern_id = filterID[i];
 		}
 	}
 
 	if(infoID.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(infoID.isUniform()) this->__entries[i].info_pattern_id = infoID[0];
+			if(infoID.IsUniform()) this->__entries[i].info_pattern_id = infoID[0];
 			else this->__entries[i].info_pattern_id = infoID[i];
 		}
 	}
 
 	if(formatID.size()){
 		for(uint32_t i = 0; i < this->size(); ++i){
-			if(formatID.isUniform()) this->__entries[i].format_pattern_id = formatID[0];
+			if(formatID.IsUniform()) this->__entries[i].format_pattern_id = formatID[0];
 			else 	this->__entries[i].format_pattern_id = formatID[i];
 		}
 	}
@@ -114,7 +114,7 @@ void MetaContainer::__ctor_setup(const block_type& block){
 					new( &this->__entries[i].alleles[0] ) value_type::allele_type( s );
 				}
 				// Do not increment in case this data is uniform
-				if(refalt.isUniform() == false) ++refalt_position;
+				if(refalt.IsUniform() == false) ++refalt_position;
 			}
 			// otherwise load from literal cold
 			else {
@@ -122,7 +122,7 @@ void MetaContainer::__ctor_setup(const block_type& block){
 			}
 		} // end loop
 
-		if(refalt.isUniform()) refalt_position = 1;
+		if(refalt.IsUniform()) refalt_position = 1;
 		assert(refalt_position == refalt.size());
 	}
 
@@ -159,7 +159,7 @@ void MetaContainer::__ctor_setup(const block_type& block){
 
 	// Parse ploidy.
 	if(ploidy.size()){
-		if(ploidy.isUniform()){
+		if(ploidy.IsUniform()){
 			for(uint32_t i = 0; i < this->size(); ++i){
 				this->at(i).n_base_ploidy = ploidy[0];
 			}

@@ -64,7 +64,7 @@ public:
     }
 
     inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t position) const{
-    	utility::to_vcf_string(buffer, this->at(position).data(), this->at(position).size());
+    	utility::ToVcfString(buffer, this->at(position).data(), this->at(position).size());
     	return(buffer);
     }
 

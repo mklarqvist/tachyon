@@ -16,6 +16,80 @@
 namespace tachyon{
 namespace containers{
 
+struct yon_blk_load_settings {
+public:
+	yon_blk_load_settings() : loaded_genotypes(false){}
+	~yon_blk_load_settings(){}
+	yon_blk_load_settings(const yon_blk_load_settings& other) :
+		loaded_genotypes(other.loaded_genotypes),
+		info_id_local_loaded(other.info_id_local_loaded),
+		format_id_local_loaded(other.format_id_local_loaded),
+		info_id_global_loaded(other.info_id_global_loaded),
+		format_id_global_loaded(other.format_id_global_loaded),
+		info_patterns_local(other.info_patterns_local),
+		format_patterns_local(other.format_patterns_local),
+		info_map_global(other.info_map_global),
+		format_map_global(other.format_map_global)
+	{
+
+	}
+
+	yon_blk_load_settings(yon_blk_load_settings&& other) noexcept :
+		loaded_genotypes(other.loaded_genotypes),
+		info_id_local_loaded(std::move(other.info_id_local_loaded)),
+		format_id_local_loaded(std::move(other.format_id_local_loaded)),
+		info_id_global_loaded(std::move(other.info_id_global_loaded)),
+		format_id_global_loaded(std::move(other.format_id_global_loaded)),
+		info_patterns_local(std::move(other.info_patterns_local)),
+		format_patterns_local(std::move(other.format_patterns_local)),
+		info_map_global(std::move(other.info_map_global)),
+		format_map_global(std::move(other.format_map_global))
+	{
+
+	}
+
+	yon_blk_load_settings& operator=(const yon_blk_load_settings& other){
+		*this = yon_blk_load_settings(other);
+		return(*this);
+	}
+
+	yon_blk_load_settings& operator=(yon_blk_load_settings&& other) noexcept{
+		loaded_genotypes = other.loaded_genotypes;
+		info_id_local_loaded = std::move(other.info_id_local_loaded);
+		format_id_local_loaded = std::move(other.format_id_local_loaded);
+		info_id_global_loaded = std::move(other.info_id_global_loaded);
+		format_id_global_loaded = std::move(other.format_id_global_loaded);
+		info_patterns_local = std::move(other.info_patterns_local);
+		format_patterns_local = std::move(other.format_patterns_local);
+		info_map_global = std::move(other.info_map_global);
+		format_map_global = std::move(other.format_map_global);
+		return(*this);
+	}
+
+	void clear(){
+		this->loaded_genotypes = false;
+		this->info_id_local_loaded.clear();
+		this->format_id_local_loaded.clear();
+		this->info_id_global_loaded.clear();
+		this->format_id_global_loaded.clear();
+		this->info_patterns_local.clear();
+		this->format_patterns_local.clear();
+		this->info_map_global.clear();
+		this->format_map_global.clear();
+	}
+
+public:
+	bool loaded_genotypes;
+	std::vector<int> info_id_local_loaded;
+	std::vector<int> format_id_local_loaded;
+	std::vector<int> info_id_global_loaded;
+	std::vector<int> format_id_global_loaded;
+	std::vector< std::vector<int> > info_patterns_local;
+	std::vector< std::vector<int> > format_patterns_local;
+	std::unordered_map<int, int> info_map_global;
+	std::unordered_map<int, int> format_map_global;
+};
+
 /**
  * Primary Tachyon block object: stores containers of data and
  * provides encapsulated and abstracted access to its
@@ -59,6 +133,9 @@ public:
 
 	inline const uint32_t& size(void) const{ return(this->header.n_variants); }
 
+	bool ParseSettings(DataBlockSettings& settings, const VariantHeader& header);
+	bool ParseLoadedPatterns(DataBlockSettings& settings);
+
 	/**<
 	 * Reads all objects from disk. Primary function for reading
 	 * entire blocks of data from disk. Data read in this way is
@@ -68,119 +145,17 @@ public:
 	 */
 	bool read(std::ifstream& stream);
 
-	bool readSlice(std::ifstream& stream){
-		block_settings_type& settings;
-
-		// Allocate memory for the Format and Info containers.
-		// Info containers.
-		delete [] this->info_containers;
-		this->info_containers = new VariantBlock::container_type[this->footer.n_info_streams];
-		this->n_info_c_allocated = this->footer.n_info_streams;
-		// Format containers.
-		delete [] this->format_containers;
-		this->format_containers = new VariantBlock::container_type[this->footer.n_format_streams];
-		this->n_format_c_allocated = this->footer.n_format_streams;
-
-		// Interpret the user-specified block-settings if any. This step converts
-		// global index offset values into local offsets and computes new pattern
-		// vectors if required. The ordering of the values are according to the
-		// input sequence not according to the actual stored order.
-		this->ParseSettings(settings);
-
-		// Load the FORMAT:GT (GBPBWT) permutation array.
-		if(settings.load_static & YON_BLK_BV_PPA){
-			// If there is FORMAT:GT field data available AND that data has
-			// been permuted then create a new yon_gt_ppa object to store
-			// this data.
-			if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
-				stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
-				this->LoadContainerSeek(stream,
-											   this->footer.offsets[YON_BLK_PPA],
-											   this->base_containers[YON_BLK_PPA]);
-
-				this->gt_ppa = new yon_gt_ppa;
-				this->gt_ppa->n_s = this->header_->GetNumberSamples();
-			}
-		}
-
-		// Load base meta containers.
-		for(uint32_t i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
-			if(settings.load_static & (1 << i)){
-				this->LoadContainerSeek(stream,
-											   this->footer.offsets[i],
-											   this->base_containers[i]);
-			}
-		}
-
-		// Load genotype containers. At the moment, genotype containers cannot be loaded
-		// individually by using this wrapper routine. If you wish to load these separately
-		// you will have to do so manually.
-		if((settings.load_static & YON_BLK_BV_GT) || (settings.load_static & YON_BLK_BV_FORMAT)){
-			this->loaded_genotypes = true;
-			this->LoadContainerSeek(stream, this->footer.offsets[YON_BLK_GT_INT8], this->base_containers[YON_BLK_GT_INT8]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT16],    this->base_containers[YON_BLK_GT_INT16]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT32],    this->base_containers[YON_BLK_GT_INT32]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT64],    this->base_containers[YON_BLK_GT_INT64]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8],   this->base_containers[YON_BLK_GT_S_INT8]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16],  this->base_containers[YON_BLK_GT_S_INT16]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32],  this->base_containers[YON_BLK_GT_S_INT32]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64],  this->base_containers[YON_BLK_GT_S_INT64]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT8],   this->base_containers[YON_BLK_GT_N_INT8]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT16],  this->base_containers[YON_BLK_GT_N_INT16]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT32],  this->base_containers[YON_BLK_GT_N_INT32]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT64],  this->base_containers[YON_BLK_GT_N_INT64]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT],  this->base_containers[YON_BLK_GT_SUPPORT]);
-			this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_PLOIDY],   this->base_containers[YON_BLK_GT_PLOIDY]);
-		}
-
-		// Load Info containers. Technically there is no difference between the two
-		// conditions below in terms of outcome. However, the first case guarantees
-		// that data is loaded linearly from disk as this can be guaranteed when loading
-		// all available data. There is no such guarntees for the second case.
-		if(this->footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
-			stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
-
-			for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
-				this->LoadContainer(stream,
-										   this->footer.info_offsets[i],
-										   this->info_containers[i]);
-			}
-		}
-		// If we have a user-supplied list of identifiers parsed above.
-		else {
-			for(uint32_t i = 0; i < this->info_id_local_loaded.size(); ++i){
-				this->LoadContainerSeek(stream,
-				                        this->footer.info_offsets[this->info_id_local_loaded[i]],
-				                        this->info_containers[this->info_id_local_loaded[i]]);
-			}
-
-		}
-
-		// Load Format containers. Technically there is no difference between the two
-		// conditions below in terms of outcome. However, the first case guarantees
-		// that data is loaded linearly from disk as this can be guaranteed when loading
-		// all available data. There is no such guarntees for the second case.
-		if(this->footer.n_format_streams && (settings.load_static & YON_BLK_BV_FORMAT)){
-			stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
-			for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
-				this->LoadContainerSeek(stream, this->footer.format_offsets[i], this->format_containers[i]);
-			}
-			// At this point the stream should be located at the end-of-block
-			// marker as the Format information is stored last.
-			assert(this->end_compressed_data_ == (uint64_t)stream.tellg());
-		}
-		// If we have a user-supplied list of identifiers parsed above.
-		else {
-			for(uint32_t i = 0; i < this->format_id_local_loaded.size(); ++i){
-				this->LoadContainerSeek(stream, this->footer.format_offsets[this->format_id_local_loaded[i]], this->format_containers[this->format_id_local_loaded[i]]);
-			}
-		}
-
-		// Seek to end-of-block position.
-		stream.seekg(this->end_block_);
-		return(true);
-
-	}
+	/**< @brief Reads one or more separate digital objects from disk
+	 * Primary function for reading partial data from disk. Data
+	 * read in this way is not checked for integrity here.
+	 * @param stream   Input stream
+	 * @param settings Settings record describing reading parameters
+	 * @param header   Reference global header.
+	 * @return         Returns FALSE if there was a problem, TRUE otherwise
+	 */
+	bool read(std::ifstream& stream,
+	          block_settings_type& settings,
+	          const VariantHeader& header);
 
 	/**<
 	 * Read the header and footer of a block.
@@ -548,6 +523,7 @@ public:
 	container_type*   info_containers;
 	container_type*   format_containers;
 	yon_gt_ppa* gt_ppa;
+	yon_blk_load_settings* load_settings;
 
 	// Utility
 	uint64_t end_block_;

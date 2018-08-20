@@ -1,7 +1,6 @@
 #ifndef UTILITY_SUPPORT_VCF_H_
 #define UTILITY_SUPPORT_VCF_H_
 
-
 #include <iostream>
 #include <cmath>
 
@@ -9,34 +8,35 @@
 #include "core/meta_entry.h"
 
 namespace tachyon{
-namespace utility{
 
-#define YON_BYTE_MISSING        0x80
-#define YON_BYTE_EOV            0x81
-#define YON_SHORT_MISSING       0x8000
-#define YON_SHORT_EOV           0x8001
-#define YON_INT_MISSING         0x80000000
-#define YON_INT_EOV             0x80000001
+#define YON_BYTE_MISSING        INT8_MIN
+#define YON_BYTE_EOV            (INT8_MIN+1)
+#define YON_SHORT_MISSING       INT16_MIN
+#define YON_SHORT_EOV           (INT16_MIN+1)
+#define YON_INT_MISSING         INT32_MIN
+#define YON_INT_EOV             (INT32_MIN+1)
 #define YON_FLOAT_NAN           0x7FC00000
 #define YON_FLOAT_MISSING       0x7F800001
 #define YON_FLOAT_EOV           0x7F800002
 
-// Base functionality converting data to a valid VCF string
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const uint8_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const uint16_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const uint32_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const uint64_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const int8_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const int16_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const int32_t* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const char* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const float* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const double* const data, const size_t n_data);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& stream, const std::string& string);
+namespace utility{
 
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
+// Base functionality converting data to a valid VCF string
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint8_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint16_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint32_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint64_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int8_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int16_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int32_t* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const char* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const float* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const double* const data, const size_t n_data);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const std::string& string);
+
+std::ostream& ToVcfString(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header);
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
 io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
 io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller);
 

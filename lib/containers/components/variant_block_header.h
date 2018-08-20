@@ -91,7 +91,7 @@ public:
 	int32_t contigID;       // contig identifier
 	int64_t minPosition;    // minimum coordinate in this block
 	int64_t maxPosition;    // maximum coordinate in this block
-	uint32_t n_variants;     // number of variants in this block
+	uint32_t n_variants;    // number of variants in this block
 };
 
 }

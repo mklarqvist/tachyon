@@ -9,14 +9,15 @@
 namespace tachyon{
 namespace containers{
 
-#define YON_INTEGER_CONTAINER_DEFAULT_START_SIZE 1000
-
 /**<
- * Primary container to handle integer data from data containers
- * This class should be considered for internal use only
+ * Do not use resize or operator+= functionality external to this
+ * class as the StrideContainer is a contextual representation of
+ * the strides stored in the VariantBlock structure. As such, any
+ * changes to the strides should be represented there, not in
+ * this representation.
  */
 template <class return_primitive = uint32_t>
-class StrideContainer{
+class StrideContainer {
 public:
 	typedef StrideContainer   self_type;
     typedef std::size_t       size_type;
@@ -34,38 +35,46 @@ public:
 public:
     StrideContainer();
     StrideContainer(const size_type start_capacity);
-    StrideContainer(const value_type uniform_value, const size_type n_entries);
+    StrideContainer(const value_type uniform_value, const size_type n_entries_);
     StrideContainer(const data_container_type& container);
     StrideContainer(const self_type& other);
     ~StrideContainer(void);
+    StrideContainer(self_type&& other) noexcept;
+    StrideContainer& operator=(const self_type& other);
+    StrideContainer& operator=(self_type&& other) noexcept;
 
     // Element access
-    inline reference at(const size_type& position){ return(this->__entries[position]); }
-    inline const_reference at(const size_type& position) const{ return(this->__entries[position]); }
-    inline reference operator[](const size_type& position){ return(this->__entries[position]); }
-    inline const_reference operator[](const size_type& position) const{ return(this->__entries[position]); }
-    inline pointer data(void){ return(this->__entries); }
-    inline const_pointer data(void) const{ return(this->__entries); }
-    inline reference front(void){ return(this->__entries[0]); }
-    inline const_reference front(void) const{ return(this->__entries[0]); }
-    inline reference back(void){ return(this->__entries[this->n_entries - 1]); }
-    inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
+    inline reference at(const size_type& position){ return(this->entries_[position]); }
+    inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
+    inline reference operator[](const size_type& position){ return(this->entries_[position]); }
+    inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
+    inline pointer data(void){ return(this->entries_); }
+    inline const_pointer data(void) const{ return(this->entries_); }
+    inline reference front(void){ return(this->entries_[0]); }
+    inline const_reference front(void) const{ return(this->entries_[0]); }
+    inline reference back(void){ return(this->entries_[this->n_entries_ - 1]); }
+    inline const_reference back(void) const{ return(this->entries_[this->n_entries_ - 1]); }
 
     // Capacity
-    inline bool empty(void) const{ return(this->n_entries == 0); }
-    inline const size_type& size(void) const{ return(this->n_entries); }
-    inline const size_type& capacity(void) const{ return(this->n_capacity); }
+    inline bool& IsUniform(void) const{ return(this->is_uniform_); }
+    inline bool empty(void) const{ return(this->n_entries_ == 0); }
+    inline const size_type& size(void) const{ return(this->n_entries_); }
+    inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->__entries[0]); }
-    inline iterator end(){ return iterator(&this->__entries[this->n_entries]); }
-    inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
-    inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
+    inline iterator begin(){ return iterator(&this->entries_[0]); }
+    inline iterator end(){ return iterator(&this->entries_[this->n_entries_]); }
+    inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
+    inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries_]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
+    inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
 
     /**<
-     * Overloaded += operator for incrementally adding values
+     * Overloaded += operator for incrementally adding values to
+     * this container. External uses of this function should be
+     * avoided as StrideContainer objects are not used when writing
+     * objects to disk. Data written from disk is sourced from the
+     * DataBlock buffers themselves.
      * @param value Target value to be added
      */
     template <class T>
@@ -73,55 +82,42 @@ public:
     	if(this->size() + 1 == this->capacity())
     		this->resize();
 
-    	this->__entries[this->n_entries] = value;
+    	this->entries_[this->n_entries_] = value;
     }
 
     template <class T>
     inline void add(const T& value){ *this += value; }
 
-    void resize(const size_type new_capacity){
-    	if(new_capacity < this->capacity()){
-    		this->n_entries = new_capacity;
-    		return;
-    	}
-
-    	pointer old = this->__entries;
-    	this->__entries = new value_type[new_capacity];
-    	memcpy(this->data(), old, this->size()*sizeof(value_type));
-    	delete [] old;
-    	this->n_capacity =  new_capacity;
-    }
-
-    void resize(void){ this->resize(this->capacity()*2); }
+    void resize(const size_type new_capacity);
+    inline void resize(void){ this->resize(this->capacity()*2); }
 
 private:
     /**<
      * Constructor invokes this function to in turn invoke
-     * the correct `__allocate` funciton given the intrinsic
-     * primitive
+     * the correct Allocate() function given the intrinsic
+     * primitive.
      * @param container Input data container
      */
-    void __setup(const data_container_type& container);
+    void Setup(const data_container_type& container);
 
     /**<
-     * Called from `__allocate` to correctly copy data from
-     * a given primitive to the current return primitive type
-     * @param container Input data container
+     * Called from Setup() to correctly copy data from
+     * a given primitive to the desired return primitive type.
+     * Note that this function is double templated: the first
+     * correspond to the desired return primitive type and the
+     * second the primitive type used to store the data in the
+     * source byte stream.
+     * @param container Input data container.
      */
     template <class intrinsic_type>
-    void __allocate(const data_container_type& container);
+    void Allocate(const data_container_type& container);
 
-    // Todo:
-    bool determineUniformity(void);
-    int findSmallestPrimitive(void);
-    // 1) run find smallest primitive
-    // 2) invoke stride container ctor with (larger_stride_container)
 
 private:
-    bool       isUniform_;
-    size_type  n_capacity;
-    size_type  n_entries;
-    pointer    __entries;
+    bool       is_uniform_;
+    size_type  n_capacity_;
+    size_type  n_entries_;
+    pointer    entries_;
 };
 
 
@@ -130,67 +126,97 @@ private:
 
 template <class return_primitive>
 StrideContainer<return_primitive>::StrideContainer() :
-	isUniform_(false),
-	n_capacity(YON_INTEGER_CONTAINER_DEFAULT_START_SIZE),
-	n_entries(0),
-	__entries(new value_type[this->capacity()])
+	is_uniform_(false),
+	n_capacity_(1000),
+	n_entries_(0),
+	entries_(new value_type[this->capacity()])
 {
 }
 
 template <class return_primitive>
 StrideContainer<return_primitive>::StrideContainer(const size_type start_capacity) :
-	isUniform_(false),
-	n_capacity(start_capacity),
-	n_entries(0),
-	__entries(new value_type[this->capacity()])
+	is_uniform_(false),
+	n_capacity_(start_capacity),
+	n_entries_(0),
+	entries_(new value_type[this->capacity()])
 {
 }
 
 template <class return_primitive>
-StrideContainer<return_primitive>::StrideContainer(const value_type uniform_value, const size_type n_entries) :
-	isUniform_(true),
-	n_capacity(n_entries),
-	n_entries(n_entries),
-	__entries(new value_type[this->capacity()])
+StrideContainer<return_primitive>::StrideContainer(const value_type uniform_value, const size_type n_entries_) :
+	is_uniform_(true),
+	n_capacity_(n_entries_),
+	n_entries_(n_entries_),
+	entries_(new value_type[this->capacity()])
 {
 	for(size_type i = 0; i < this->size(); ++i)
-		this->__entries[i] = uniform_value;
+		this->entries_[i] = uniform_value;
 }
 
 template <class return_primitive>
 StrideContainer<return_primitive>::StrideContainer(const data_container_type& container) :
-	isUniform_(false),
-	n_capacity(0),
-	n_entries(0),
-	__entries(nullptr)
+	is_uniform_(false),
+	n_capacity_(0),
+	n_entries_(0),
+	entries_(nullptr)
 {
-	this->__setup(container);
+	this->Setup(container);
 }
 
 template <class return_primitive>
 StrideContainer<return_primitive>::StrideContainer(const self_type& other) :
-	isUniform_(other.isUniform_),
-	n_capacity(other.n_capacity),
-	n_entries(other.n_entries),
-	__entries(new value_type[this->size()])
+	is_uniform_(other.is_uniform_),
+	n_capacity_(other.n_capacity_),
+	n_entries_(other.n_entries_),
+	entries_(new value_type[this->size()])
 {
-	// Do not invoke memcpy as these two objects may have different primitive types
+	// Do not use a memcpy call here as the stored primitive type
+	// could be different from the desired return primitive type.
 	for(size_type i = 0; i < this->size(); ++i)
-		this->__entries[i] = other.__entries[i];
+		this->entries_[i] = other.entries_[i];
+}
+
+template <class return_primitive>
+StrideContainer<return_primitive>::StrideContainer(self_type&& other) noexcept :
+	is_uniform_(other.is_uniform_),
+	n_capacity_(other.n_capacity_),
+	n_entries_(other.n_entries_),
+	entries_(nullptr)
+{
+	std::swap(this->entries_, other.entries_);
 }
 
 template <class return_primitive>
 StrideContainer<return_primitive>::~StrideContainer(void){
-	delete [] this->__entries;
+	delete [] this->entries_;
 }
 
 template <class return_primitive>
-void StrideContainer<return_primitive>::__setup(const data_container_type& container){
+StrideContainer<return_primitive>& StrideContainer<return_primitive>::operator=(self_type&& other) noexcept {
+	this->is_uniform_ = other.is_uniform_;
+	this->n_capacity_ = other.n_capacity_;
+	this->n_entries_  = other.n_entries_;
+	delete [] this->entries_; this->entries_ = nullptr;
+	std::swap(this->entries_, other.entries_);
+}
+
+template <class return_primitive>
+StrideContainer<return_primitive>& StrideContainer<return_primitive>::operator=(const self_type& other) {
+	this->is_uniform_ = other.is_uniform_;
+	this->n_capacity_ = other.n_capacity_;
+	this->n_entries_  = other.n_entries_;
+	delete [] this->entries_;
+	this->entries_ = new value_type[this->capacity()];
+	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());
+}
+
+template <class return_primitive>
+void StrideContainer<return_primitive>::Setup(const data_container_type& container){
 	switch(container.GetStridePrimitiveType()){
-	case(YON_TYPE_8B):  this->__allocate<uint8_t>(container); break;
-	case(YON_TYPE_16B): this->__allocate<uint16_t>(container);  break;
-	case(YON_TYPE_32B): this->__allocate<uint32_t>(container);  break;
-	case(YON_TYPE_64B): this->__allocate<uint64_t>(container);  break;
+	case(YON_TYPE_8B):  this->Allocate<uint8_t>(container);  break;
+	case(YON_TYPE_16B): this->Allocate<uint16_t>(container); break;
+	case(YON_TYPE_32B): this->Allocate<uint32_t>(container); break;
+	case(YON_TYPE_64B): this->Allocate<uint64_t>(container); break;
 	case(YON_TYPE_FLOAT):
 	case(YON_TYPE_DOUBLE):
 	case(YON_TYPE_BOOLEAN):
@@ -203,19 +229,45 @@ void StrideContainer<return_primitive>::__setup(const data_container_type& conta
 
 template <class return_primitive>
 template <class intrinsic_type>
-void StrideContainer<return_primitive>::__allocate(const data_container_type& container){
+void StrideContainer<return_primitive>::Allocate(const data_container_type& container){
+	// Assert that the input type is divisible by the primitive
+	// type byte width. If this is not true then the data it
+	// guaranteed to be corrupted. Alternatively, the primitive
+	// type could be misrepresented in the data header.
 	assert(container.buffer_strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
-	this->n_entries  = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
-	this->__entries  = new value_type[this->size()];
-	this->n_capacity = this->size();
 
+	this->n_entries_  = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
+	this->entries_    = new value_type[this->size()];
+	this->n_capacity_ = this->size();
+
+	// Cast the buffer as the primitive type it was stored as. This
+	// is required for correct interpretation of the byte stream.
 	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.buffer_strides_uncompressed.data());
 
+	// Iterate over available data and copy it over. Do not use a memcpy
+	// call here as the stored primitive type could be different from the
+	// desired return primitive type.
 	for(size_type i = 0; i < this->size(); ++i)
-		this->__entries[i] = strides[i];
+		this->entries_[i] = strides[i];
 
+	// If the data is uniform then trigger a flag remembering
+	// this fact.
 	if(container.header.stride_header.controller.uniform)
-		this->isUniform_ = true;
+		this->is_uniform_ = true;
+}
+
+template <class return_primitive>
+void StrideContainer<return_primitive>::resize(const size_type new_capacity){
+	if(new_capacity < this->capacity()){
+		this->n_entries_ = new_capacity;
+		return;
+	}
+
+	pointer old    = this->entries_;
+	this->entries_ = new value_type[new_capacity];
+	memcpy(this->data(), old, this->size()*sizeof(value_type));
+	delete [] old;
+	this->n_capacity_ =  new_capacity;
 }
 
 }

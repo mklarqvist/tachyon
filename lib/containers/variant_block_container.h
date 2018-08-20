@@ -12,6 +12,9 @@
 #include "core/variant_reader_objects.h"
 #include "core/variant_record.h"
 
+#include "algorithm/compression/compression_manager.h"
+#include "algorithm/encryption/encryption_decorator.h"
+
 namespace tachyon {
 namespace containers {
 
@@ -37,6 +40,9 @@ private:
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
 
+	typedef algorithm::CompressionManager        compression_manager_type;
+	typedef encryption::EncryptionDecorator      encryption_manager_type;
+
 	typedef std::unordered_map<int, int>    map_type;
 
 public:
@@ -55,9 +61,6 @@ public:
 	}
 
 	inline void reset(void){ this->block_.clear(); }
-
-	bool ParseSettings(block_settings_type& settings);
-	bool ParseLoadedPatterns(block_settings_type& settings);
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
@@ -137,18 +140,11 @@ public:
 
 	yon1_t* LazyEvaluate(objects_type& objects);
 
-public:
-	bool loaded_genotypes;
+private:
 	block_type                block_;
+	compression_manager_type  compression_manager;
+	encryption_manager_type   encryption_manager;
 	const global_header_type* header_;
-	std::vector<int>          info_id_local_loaded;
-	std::vector<int>          format_id_local_loaded;
-	std::vector<int>          info_id_global_loaded;
-	std::vector<int>          format_id_global_loaded;
-	std::vector< std::vector<int> > info_patterns_local;
-	std::vector< std::vector<int> > format_patterns_local;
-	map_type info_map_global;
-	map_type format_map_global;
 	// External memory allocation for linear use of lazy-evaluated
 	// expansion of genotype records. This is critical when the sample
 	// numbers are becoming large as allocating/deallocating hundreds

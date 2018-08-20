@@ -3,7 +3,7 @@
 namespace tachyon{
 namespace utility{
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint8_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -18,7 +18,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint8_t* data, con
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint16_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -33,7 +33,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint16_t* data, co
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -48,7 +48,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint32_t* data, co
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -63,7 +63,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const uint64_t* data, co
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int8_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -94,7 +94,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int8_t* data, cons
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int16_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -125,7 +125,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int16_t* data, con
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int32_t* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -157,7 +157,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const int32_t* data, con
 }
 
 // Special case
-io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
+io::BasicBuffer& ToVcfString_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -172,7 +172,7 @@ io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const char* data, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const float* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -203,7 +203,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const double* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -234,12 +234,12 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, cons
 	return(buffer);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
+std::ostream& ToVcfString(std::ostream& stream, const std::string& string){
 	stream << string;
 	return(stream);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+std::ostream& ToVcfString(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
 	stream.write(&header.GetContig(meta_entry.contigID)->name[0], header.GetContig(meta_entry.contigID)->name.size()) << '\t';
 	stream << meta_entry.position + 1 << delimiter;
 
@@ -271,7 +271,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const c
 	return(stream);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
 	buffer += header.GetContig(meta_entry.contigID)->name;
 	buffer += delimiter;
 	buffer.AddReadble(meta_entry.position + 1);
@@ -306,7 +306,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	//if(controller.contig.display){
 		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += delimiter;

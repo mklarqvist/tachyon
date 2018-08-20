@@ -135,9 +135,9 @@ bool VariantReader::NextBlock(){
 	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-
 	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+		return false;
 	}
 	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
 
@@ -299,7 +299,7 @@ TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_en
 }
 
 void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const{
-	utility::to_vcf_string(output_buffer, '\t', *entry.meta, this->global_header);
+	utility::ToVcfString(output_buffer, '\t', *entry.meta, this->global_header);
 	output_buffer += '\t';
 
 	// Print Filter, Info, and Format if available.
@@ -324,7 +324,7 @@ void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry)
 			} else {
 				output_buffer += entry.info_hdr[0]->id;
 				output_buffer += '=';
-				entry.info[0]->to_vcf_string(output_buffer);
+				entry.info[0]->ToVcfString(output_buffer);
 			}
 
 			for(uint32_t j = 1; j < n_info_avail; ++j){
@@ -334,11 +334,12 @@ void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry)
 				} else {
 					output_buffer += entry.info_hdr[j]->id;
 					output_buffer += '=';
-					entry.info[j]->to_vcf_string(output_buffer);
+					entry.info[j]->ToVcfString(output_buffer);
 				}
 			}
 
 			if(this->GetBlockSettings().annotate_extra){
+				output_buffer += ';';
 				entry.EvaluateSummary(true);
 				entry.gt_sum->d->PrintVcf(output_buffer);
 			}
@@ -407,14 +408,14 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
 				for(uint32_t g = 1; g < n_format_avail; ++g){
 					output_buffer += ':';
-					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+					entry.fmt[g]->ToVcfString(output_buffer, 0);
 				}
 				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
 					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
 					for(uint32_t g = 1; g < n_format_avail; ++g){
 						output_buffer += ':';
-						entry.fmt[g]->to_vcf_string(output_buffer, s);
+						entry.fmt[g]->ToVcfString(output_buffer, s);
 					}
 				}
 
@@ -422,18 +423,18 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 			}
 			// All other cases.
 			else {
-				entry.fmt[0]->to_vcf_string(output_buffer, 0);
+				entry.fmt[0]->ToVcfString(output_buffer, 0);
 				for(uint32_t g = 1; g < n_format_avail; ++g){
 					output_buffer += ':';
-					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+					entry.fmt[g]->ToVcfString(output_buffer, 0);
 				}
 
 				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
-					entry.fmt[0]->to_vcf_string(output_buffer, s);
+					entry.fmt[0]->ToVcfString(output_buffer, s);
 					for(uint32_t g = 1; g < n_format_avail; ++g){
 						output_buffer += ':';
-						entry.fmt[g]->to_vcf_string(output_buffer, s);
+						entry.fmt[g]->ToVcfString(output_buffer, s);
 					}
 				}
 			}
