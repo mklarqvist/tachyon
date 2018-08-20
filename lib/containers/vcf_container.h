@@ -7,6 +7,12 @@
 namespace tachyon{
 namespace containers{
 
+/**<
+ * This class is both a container and iterator for htslib
+ * vcf entries. Primarily used during import from Vcf/Bcf
+ * into a Tachyon archive. Retrieves Vcf records from a byte
+ * stream or disk if an active VcfReader is provided.
+ */
 class VcfContainer{
 public:
 	typedef VcfContainer       self_type;
@@ -25,40 +31,9 @@ public:
 	VcfContainer(void);
 	VcfContainer(const size_type& start_capacity);
 	VcfContainer(const VcfContainer& other) = delete; // Disallow copy ctor
-
-	VcfContainer& operator=(self_type&& other) noexcept
-	{
-		if(this->entries_ != nullptr){
-			for(std::size_t i = 0; i < this->n_entries_; ++i)
-				bcf_destroy(this->entries_[i]);
-
-			::operator delete[](static_cast<void*>(this->entries_));
-		}
-
-		this->n_carry_over_ = 0;
-		this->n_capacity_   = other.n_capacity_;
-		this->entries_      = other.entries_;
-		this->n_entries_    = other.n_entries_;
-
-		other.entries_ = new pointer[other.n_capacity_];
-		for(size_type i = 0; i < other.capacity(); ++i)
-			other.entries_[i] = nullptr;
-
-		if(other.n_carry_over_){
-			other.entries_[0] = this->at(this->size()-1);
-			assert(this->at(this->size()-1) != nullptr);
-			this->entries_[this->size()-1] = nullptr;
-			other.n_carry_over_ = 0;
-			other.n_entries_    = 1;
-			--this->n_entries_;
-		} else {
-			other.n_entries_ = 0;
-			other.n_carry_over_ = 0;
-		}
-		return(*this);
-	}
-
 	~VcfContainer();
+	VcfContainer& operator=(self_type&& other) noexcept;
+	VcfContainer& operator=(const self_type& other) = delete; // Disallow assign copy
 
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline size_type sizeWithoutCarryOver(void) const{ return(this->n_entries_ - this->n_carry_over_); }
@@ -78,14 +53,40 @@ public:
 	inline const_pointer end(void) const{ return(this->entries_[this->n_entries_]); }
 
 	void resize(const size_t new_size);
-	bool GetVariants(const int32_t n_variants, const int64_t n_bases, std::unique_ptr<io::VcfReader>& reader, const int unpack_level = BCF_UN_ALL);
 
-	// Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
-	// Warning: this function does NOT check if the FORMAT field GT exists either
-	// in the header or in the structure itself. The assumption is that it does
-	// exist and according to the Bcf specification has to be the first FORMAT
-	// field set.
+	/**<
+	 * Read and, optionally, parse htslib bcf1_t entries using the provided
+	 * VcfReader. Continues to load records until reaching either a fixed
+	 * number of variants or number of base-pairs, whichever comes first.
+	 * Automatically breaks if a record maps to a different contig relative
+	 * the first one retrieved. This is required for importing into a sorted
+	 * Tachyon archive.
+	 * @param n_variants   Maximum number of records to load.
+	 * @param n_bases      Maximum number of base-pairs to load.
+	 * @param reader       VcfReader object with an active input stream.
+	 * @param unpack_level htslib unpack level (see BCF_UN_ALL).
+	 * @return             Returns TRUE if any data was loaded or FALSE otherwise.
+	 */
+	bool GetVariants(const int32_t n_variants,
+	                 const int64_t n_bases,
+	                 std::unique_ptr<io::VcfReader>& reader,
+	                 const int unpack_level = BCF_UN_ALL);
+
+	/**<
+	 * Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
+	 * Warning: this function does NOT check if the FORMAT field GT exists either
+	 * in the header or in the structure itself. The assumption is that it does
+	 * exist and according to the Bcf specification has to be the first FORMAT
+	 * field set.
+	 * @param position  Array offset to src htslib bcf1_t entry in this container.
+	 * @param n_samples Number of samples as described in the Vcf header.
+	 * @return          Returns a VcfGenotypeSummary object.
+	 */
 	io::VcfGenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const;
+
+	/**<
+	 * Clear data without releasing allocated memory.
+	 */
 	void clear(void);
 
 public:

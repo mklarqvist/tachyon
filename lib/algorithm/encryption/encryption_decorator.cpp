@@ -91,25 +91,33 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
-	this->buffer.n_chars = len;
+	this->buffer.n_chars_ = len;
 
-	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.n_chars], &len, (uint8_t*)container.buffer_data.data(), container.buffer_data.size())){
+	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.size()], &len, (uint8_t*)container.buffer_data.data(), container.buffer_data.size())){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
-	this->buffer.n_chars += len;
+	this->buffer.n_chars_ += len;
 
-	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.n_chars], &len, (uint8_t*)container.buffer_strides.data(), container.buffer_strides.size())){
+	if(1 != EVP_EncryptUpdate(ctx,
+		                      (uint8_t*)&this->buffer[this->buffer.size()],
+	                          &len,
+		                      (uint8_t*)container.buffer_strides.data(),
+		                      container.buffer_strides.size()))
+	{
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
-	this->buffer.n_chars += len;
+	this->buffer.n_chars_ += len;
 
-	if(1 != EVP_EncryptFinal_ex(ctx, (uint8_t*)this->buffer.data() + len, &len)){
+	if(1 != EVP_EncryptFinal_ex(ctx,
+	                            (uint8_t*)this->buffer.data() + len,
+		                        &len))
+	{
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to finalise the encryption..." << std::endl;
 		return false;
 	}
-	this->buffer.n_chars += len;
+	this->buffer.n_chars_ += len;
 
 	container.buffer_data.resize(this->buffer.size());
 	if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, &entry.tag[0])){
@@ -123,7 +131,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	container.header.reset(); // reset data
 	container.header.data_header.controller.encryption = YON_ENCRYPTION_AES_256_GCM;
 	memcpy(container.buffer_data.data(), this->buffer.data(), this->buffer.size());
-	container.buffer_data.n_chars = this->buffer.size();
+	container.buffer_data.n_chars_ = this->buffer.size();
 	container.header.data_header.eLength = this->buffer.size();
 
 	const uint64_t hashID = keychain.getRandomHashIdentifier();
@@ -212,8 +220,8 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 		memcpy(container.buffer_data.data(), &this->buffer[this->buffer.iterator_position_], container.header.data_header.cLength);
 		memcpy(container.buffer_strides.data(), &this->buffer[this->buffer.iterator_position_ + container.header.data_header.cLength], container.header.stride_header.cLength);
 		container.header.data_header.controller.encryption = YON_ENCRYPTION_NONE;
-		container.buffer_data.n_chars = container.header.data_header.cLength;
-		container.buffer_strides.n_chars = container.header.stride_header.cLength;
+		container.buffer_data.n_chars_    = container.header.data_header.cLength;
+		container.buffer_strides.n_chars_ = container.header.stride_header.cLength;
 		container.header.data_header.eLength = 0;
 		return(true);
 	} else {

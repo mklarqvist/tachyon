@@ -28,6 +28,27 @@ public:
     PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t& n_entries, const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
+    inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
+	PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src){
+		self_type* o = reinterpret_cast<self_type*>(&src);
+		this->n_capacity_ = o->n_capacity_;
+		this->n_objects_  = o->n_objects_;
+
+		for(std::size_t i = 0; i < this->size(); ++i)
+			((this->containers_ + i)->~PrimitiveContainer)();
+
+		::operator delete[](static_cast<void*>(this->containers_));
+
+		this->containers_ = nullptr;
+
+		std::swap(this->containers_, o->containers_);
+
+		return(*this);
+	}
+
+	void resize(void);
+	void resize(const size_t new_size);
+
 	// Element access
 	inline reference at(const size_type& position){ return(this->containers_[position]); }
 	inline const_reference at(const size_type& position) const{ return(this->containers_[position]); }

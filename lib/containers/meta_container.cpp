@@ -9,8 +9,59 @@ MetaContainer::MetaContainer(const block_type& block) :
 	n_entries(block.header.n_variants),
 	__entries(static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type))))
 {
-	this->__ctor_setup(block);
-	this->correctRelativePositions(block.header);
+	this->Setup(block);
+	this->CorrectRelativePositions(block.header);
+}
+
+MetaContainer::MetaContainer(const self_type& other) :
+	n_entries(other.n_entries),
+	__entries(static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type))))
+{
+	for(uint32_t i = 0; i < other.n_entries; ++i)
+		new( &this->__entries[i] ) value_type( other.__entries[i] );
+}
+
+MetaContainer::MetaContainer(self_type&& other) noexcept :
+	n_entries(other.n_entries),
+	__entries(nullptr)
+{
+	std::swap(this->__entries, other.__entries);
+}
+
+MetaContainer& MetaContainer::operator=(const self_type& other){
+	// Destroy current entries.
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		(this->__entries + i)->~MetaEntry();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+
+	// Copy data over.
+	this->n_entries = other.n_entries;
+	this->__entries = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
+	for(uint32_t i = 0; i < other.n_entries; ++i)
+		new( &this->__entries[i] ) value_type( other.__entries[i] );
+
+	return(*this);
+}
+
+MetaContainer& MetaContainer::operator=(self_type&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	// Destroy current entries.
+	for(std::size_t i = 0; i < this->n_entries; ++i)
+		(this->__entries + i)->~MetaEntry();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+	this->__entries = nullptr;
+
+	// Move data over.
+	this->n_entries = other.n_entries;
+	std::swap(this->__entries, other.__entries);
+
+	return(*this);
 }
 
 MetaContainer::~MetaContainer(void){
@@ -20,7 +71,7 @@ MetaContainer::~MetaContainer(void){
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
-void MetaContainer::__ctor_setup(const block_type& block){
+void MetaContainer::Setup(const block_type& block){
 	// Build containers for hot/cold depending on what is available
 	PrimitiveContainer<uint32_t> contigs(block.base_containers[YON_BLK_CONTIG]);
 	PrimitiveContainer<uint16_t> controllers(block.base_containers[YON_BLK_CONTROLLER]);

@@ -35,8 +35,31 @@ public:
 
 	virtual ~PrimitiveContainerInterface(){}
 
+	/**<
+	 * Virtual clone (copy) constructor for the situation when
+	 * iteratively copying from an array of PrimitiveContainerInterface
+	 * objects.
+	 * @return Returns a pointer to the newly cloned object.
+	 */
 	virtual PrimitiveContainerInterface* Clone() =0;
-	virtual PrimitiveContainerInterface& Move(PrimitiveContainerInterface& other) =0;
+
+	/**<
+	 * Virtual move constructor for the situation when iteratively
+	 * moving from an array of PrimitiveContainerInterface objects.
+	 * The src interface reference will be reinterpreted to the
+	 * correct derived class in the virtual function invocation in
+	 * the derived class.
+	 *
+	 * Example:
+	 *     PrimitiveContainerInterface** x;
+	 *     PrimitiveContainerInterface** y;
+	 *     //Move x[0] to y[0];
+	 *     y[0]->Move(x[0]);
+	 *
+	 * @param src Reference to a PrimitiveContainerInterface.
+	 * @return    Returns a reference to the moved object.
+	 */
+	virtual PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src) =0;
 
 	virtual void resize(void) =0;
 	virtual void resize(const size_t new_size) =0;
@@ -159,14 +182,14 @@ public:
     }
 
     inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
-    PrimitiveContainerInterface& Move(PrimitiveContainerInterface& other){
-    	self_type* o   = reinterpret_cast<self_type*>(this);
-    	o->is_uniform_ = this->is_uniform_;
-    	o->n_capacity_ = this->n_capacity_;
-    	o->n_entries_  = this->n_entries_;
-    	o->entries_    = nullptr;
-    	std::swap(o->entries_, this->entries_);
-    	return(other);
+    PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
+    	self_type* o   = reinterpret_cast<self_type*>(&src);
+    	this->is_uniform_ = o->is_uniform_;
+    	this->n_capacity_ = o->n_capacity_;
+    	this->n_entries_  = o->n_entries_;
+    	this->entries_    = nullptr;
+    	std::swap(this->entries_, o->entries_);
+    	return(*this);
     }
 
     void resize(void);
@@ -253,13 +276,13 @@ public:
 	~PrimitiveContainer(void){}
 
 	inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
-	PrimitiveContainerInterface& Move(PrimitiveContainerInterface& other){
-		self_type* o   = reinterpret_cast<self_type*>(this);
-		o->is_uniform_ = this->is_uniform_;
-		o->n_capacity_ = this->n_capacity_;
-		o->n_entries_  = this->n_entries_;
-		o->data_       = std::move(this->data_);
-		return(other);
+	PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
+		self_type* o   = reinterpret_cast<self_type*>(&src);
+		this->is_uniform_ = o->is_uniform_;
+		this->n_capacity_ = o->n_capacity_;
+		this->n_entries_  = o->n_entries_;
+		this->data_ = std::move(o->data_);
+		return(*this);
 	}
 
 	inline void resize(void){}
@@ -429,7 +452,7 @@ PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 template <class return_type>
 template <class native_primitive>
 void PrimitiveContainer<return_type>::Setup(const container_type& container, const uint32_t& offset){
-	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
+	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data()[offset]);
 
 	for(uint32_t i = 0; i < this->size(); ++i)
 		this->entries_[i] = data[i];
@@ -438,7 +461,7 @@ void PrimitiveContainer<return_type>::Setup(const container_type& container, con
 template <class return_type>
 template <class native_primitive>
 void PrimitiveContainer<return_type>::SetupSigned(const container_type& container, const uint32_t& offset){
-	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.buffer[offset]);
+	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data()[offset]);
 
 	if(sizeof(native_primitive) == sizeof(return_type)){
 		return(this->Setup<native_primitive>(container, offset));

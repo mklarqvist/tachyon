@@ -34,5 +34,45 @@ PrimitiveGroupContainer<std::string>::~PrimitiveGroupContainer(){
 	::operator delete[](static_cast<void*>(this->containers_));
 }
 
+void PrimitiveGroupContainer<std::string>::resize(void){
+	pointer temp       = this->containers_;
+	this->n_capacity_ *= 2;
+	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
+
+	for(uint32_t i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( temp[i] );
+
+	// Delete old data.
+	for(std::size_t i = 0; i < this->size(); ++i)
+		((temp + i)->~PrimitiveContainer)();
+
+	::operator delete[](static_cast<void*>(temp));
+}
+
+void PrimitiveGroupContainer<std::string>::resize(const size_t new_size){
+	// if new size < current capacity
+	if(new_size < this->n_capacity_){
+		// if new size < current number of entries
+		if(new_size < this->n_objects_){
+			this->n_objects_ = new_size;
+			return;
+		}
+		return;
+	}
+
+	pointer temp       = this->containers_;
+	this->n_capacity_  = new_size;
+	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
+
+	for(uint32_t i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( temp[i] );
+
+	// Delete old data.
+	for(std::size_t i = 0; i < this->size(); ++i)
+		((temp + i)->~PrimitiveContainer)();
+
+	::operator delete[](static_cast<void*>(temp));
+}
+
 }
 }

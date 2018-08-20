@@ -17,16 +17,37 @@ public:
 	PrimitiveGroupContainerInterface(const size_type n_objects) : n_capacity_(n_objects), n_objects_(n_objects){ }
 	virtual ~PrimitiveGroupContainerInterface(){}
 
-	/*
-	virtual PrimitiveGroupContainerInterface* Clone() =0;
-	virtual PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& other) =0;
-
 	virtual void resize(void) =0;
 	virtual void resize(const size_t new_size) =0;
-	*/
 
 	/**<
-	 * Convert the data in a given PrimitiveContainer to valid Vcf
+	 * Virtual clone (copy) constructor for the situation when
+	 * iteratively copying from an array of PrimitiveGroupContainerInterface
+	 * objects.
+	 * @return Returns a pointer to the newly cloned object.
+	 */
+	virtual PrimitiveGroupContainerInterface* Clone() =0;
+
+	/**<
+	 * Virtual move constructor for the situation when iteratively
+	 * moving from an array of PrimitiveGroupContainerInterface objects.
+	 * The src interface reference will be reinterpreted to the
+	 * correct derived class in the virtual function invocation in
+	 * the derived class.
+	 *
+	 * Example:
+	 *     PrimitiveGroupContainerInterface** x;
+	 *     PrimitiveGroupContainerInterface** y;
+	 *     //Move x[0] to y[0];
+	 *     y[0]->Move(x[0]);
+	 *
+	 * @param src Reference to a PrimitiveGroupContainerInterface.
+	 * @return    Returns a reference to the moved object.
+	 */
+	virtual PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src) =0;
+
+	/**<
+	 * Convert the data in a given PrimitiveGroupContainer to valid Vcf
 	 * formatting. Requires a valid array offset to the target
 	 * container of interest.
 	 * @param buffer Destination buffer.
@@ -81,8 +102,32 @@ public:
 
 public:
     PrimitiveGroupContainer();
-    PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t n_objects, const uint32_t strides_each);
+    PrimitiveGroupContainer(const data_container_type& container,
+                            const uint32_t& offset,
+	                        const uint32_t n_objects,
+	                        const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
+
+    inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
+    PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src){
+		self_type* o = reinterpret_cast<self_type*>(&src);
+		this->n_capacity_ = o->n_capacity_;
+		this->n_objects_  = o->n_objects_;
+
+		// delete data here
+		for(std::size_t i = 0; i < this->n_objects_; ++i)
+			((this->containers_ + i)->~value_type)();
+
+		::operator delete[](static_cast<void*>(this->containers_));
+		this->containers_ = nullptr;
+
+		std::swap(this->containers_, o->containers_);
+
+		return(*this);
+	}
+
+    void resize(void);
+	void resize(const size_t new_size);
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->containers_[position]); }
@@ -228,6 +273,48 @@ bcf1_t* PrimitiveGroupContainer<return_type>::UpdateHtslibVcfRecordFormatString(
 	std::cerr << utility::timestamp("ERROR","PGC") << "Illegal conversion from non-character primitive group container to string" << std::endl;
 	exit(1);
 	return(rec);
+}
+
+template <class return_type>
+void PrimitiveGroupContainer<return_type>::resize(void){
+	pointer temp       = this->containers_;
+	this->n_capacity_ *= 2;
+	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
+
+	for(uint32_t i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( temp[i] );
+
+	// Delete old data.
+	for(std::size_t i = 0; i < this->size(); ++i)
+		((temp + i)->~value_type)();
+
+	::operator delete[](static_cast<void*>(temp));
+}
+
+template <class return_type>
+void PrimitiveGroupContainer<return_type>::resize(const size_t new_size){
+	// if new size < current capacity
+	if(new_size < this->n_capacity_){
+		// if new size < current number of entries
+		if(new_size < this->n_objects_){
+			this->n_objects_ = new_size;
+			return;
+		}
+		return;
+	}
+
+	pointer temp       = this->containers_;
+	this->n_capacity_  = new_size;
+	this->containers_  = static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type)));
+
+	for(uint32_t i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( temp[i] );
+
+	// Delete old data.
+	for(std::size_t i = 0; i < this->size(); ++i)
+		((temp + i)->~value_type)();
+
+	::operator delete[](static_cast<void*>(temp));
 }
 
 }

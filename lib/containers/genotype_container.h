@@ -54,7 +54,7 @@ public:
 private:
     template <class intrinsic_primitive>
     inline uint32_t GetNative(const buffer_type& buffer, const uint32_t position) const{
-    	return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer[position*sizeof(intrinsic_primitive)]));
+    	return(*reinterpret_cast<const intrinsic_primitive* const>(&buffer.buffer_[position*sizeof(intrinsic_primitive)]));
     }
 
 private:

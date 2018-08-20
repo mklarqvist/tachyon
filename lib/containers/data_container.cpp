@@ -20,6 +20,16 @@ DataContainer::DataContainer(const uint32_t start_size) :
 
 DataContainer::~DataContainer(){ }
 
+DataContainer::DataContainer(self_type&& other) noexcept :
+	header(std::move(other.header)),
+	buffer_data(std::move(other.buffer_data)),
+	buffer_strides(std::move(other.buffer_strides)),
+	buffer_data_uncompressed(std::move(other.buffer_data_uncompressed)),
+	buffer_strides_uncompressed(std::move(other.buffer_strides_uncompressed))
+{
+
+}
+
 DataContainer::DataContainer(const self_type& other) :
 	header(other.header),
 	buffer_data(other.buffer_data),
@@ -131,7 +141,7 @@ bool DataContainer::CheckUniformity(void){
 
 	uint64_t cumulative_position = stride_update;
 	for(uint32_t i = 1; i < this->header.n_entries; ++i){
-		if(XXH64(&this->buffer_data_uncompressed.buffer[cumulative_position], stride_update, 2147483647) != first_hash){
+		if(XXH64(&this->buffer_data_uncompressed.buffer_[cumulative_position], stride_update, 2147483647) != first_hash){
 			return(false);
 		}
 		cumulative_position += stride_update;
@@ -140,7 +150,7 @@ bool DataContainer::CheckUniformity(void){
 
 	this->header.n_entries   = 1;
 	this->header.n_strides   = 0;
-	this->buffer_data_uncompressed.n_chars          = stride_size * word_width;
+	this->buffer_data_uncompressed.n_chars_         = stride_size * word_width;
 	this->header.data_header.uLength                = stride_size * word_width;
 	this->header.data_header.cLength                = stride_size * word_width;
 	this->header.data_header.controller.uniform     = true;
@@ -288,9 +298,9 @@ void DataContainer::ReformatInteger(){
 	assert(this->buffer_data.size() % byte_width == 0);
 	assert(this->header.n_additions * byte_width == this->buffer_data.size());
 
-	memcpy(this->buffer_data_uncompressed.buffer, this->buffer_data.buffer, this->buffer_data.size());
-	this->buffer_data_uncompressed.n_chars = this->buffer_data.size();
-	this->header.data_header.uLength       = this->buffer_data_uncompressed.size();
+	memcpy(this->buffer_data_uncompressed.data(), this->buffer_data.data(), this->buffer_data.size());
+	this->buffer_data_uncompressed.n_chars_ = this->buffer_data.size();
+	this->header.data_header.uLength        = this->buffer_data_uncompressed.size();
 	this->buffer_data.reset();
 }
 
@@ -365,8 +375,8 @@ void DataContainer::ReformatStride(){
 		exit(1);
 	}
 	memcpy(this->buffer_strides_uncompressed.data(), this->buffer_strides.data(), this->buffer_strides.size());
-	this->buffer_strides_uncompressed.n_chars = this->buffer_strides.size();
-	this->header.stride_header.uLength        = this->buffer_strides_uncompressed.size();
+	this->buffer_strides_uncompressed.n_chars_ = this->buffer_strides.size();
+	this->header.stride_header.uLength         = this->buffer_strides_uncompressed.size();
 	this->buffer_strides.reset();
 }
 

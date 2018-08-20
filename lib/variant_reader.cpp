@@ -92,7 +92,7 @@ bool VariantReader::open(void){
 	utility::DeserializePrimitive(l_c_data, this->basic_reader.stream_);
 
 	io::BasicBuffer header_uncompressed(l_data + 1024);
-	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars   = l_c_data;
+	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars_ = l_c_data;
 
 	this->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 

@@ -244,9 +244,9 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 
 	this->footer_support.resize(footer_cLength);
 	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
-	this->footer_support.buffer_data.n_chars = footer_cLength;
+	this->footer_support.buffer_data.n_chars_ = footer_cLength;
 	this->footer_support.buffer_data_uncompressed.resize(footer_uLength);
-	this->footer_support.buffer_data_uncompressed.n_chars      = footer_uLength;
+	this->footer_support.buffer_data_uncompressed.n_chars_     = footer_uLength;
 	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
 	this->footer_support.header.data_header.cLength            = footer_cLength;
 	this->footer_support.header.data_header.uLength            = footer_uLength;

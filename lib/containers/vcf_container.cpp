@@ -32,6 +32,38 @@ VcfContainer::~VcfContainer(){
 	}
 }
 
+VcfContainer& VcfContainer::operator=(self_type&& other) noexcept
+{
+	if(this->entries_ != nullptr){
+		for(std::size_t i = 0; i < this->n_entries_; ++i)
+			bcf_destroy(this->entries_[i]);
+
+		::operator delete[](static_cast<void*>(this->entries_));
+	}
+
+	this->n_carry_over_ = 0;
+	this->n_capacity_   = other.n_capacity_;
+	this->entries_      = other.entries_;
+	this->n_entries_    = other.n_entries_;
+
+	other.entries_ = new pointer[other.n_capacity_];
+	for(size_type i = 0; i < other.capacity(); ++i)
+		other.entries_[i] = nullptr;
+
+	if(other.n_carry_over_){
+		other.entries_[0] = this->at(this->size()-1);
+		assert(this->at(this->size()-1) != nullptr);
+		this->entries_[this->size()-1] = nullptr;
+		other.n_carry_over_ = 0;
+		other.n_entries_    = 1;
+		--this->n_entries_;
+	} else {
+		other.n_entries_ = 0;
+		other.n_carry_over_ = 0;
+	}
+	return(*this);
+}
+
 void VcfContainer::resize(const size_t new_size){
 	if(new_size < this->capacity()){
 		for(size_t i = new_size; i < this->n_entries_; ++i)
