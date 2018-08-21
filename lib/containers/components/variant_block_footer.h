@@ -132,7 +132,9 @@ struct yon_blk_bv_pair {
 	 * @param n_footer_total_fields Total number of fields set in the parent VariantBlockFooter.
 	 * @param local_map             Pointer to map from global idx to local idx.
 	 */
-	void Build(const uint32_t n_footer_total_fields, const std::unordered_map<uint32_t, uint32_t>* local_map){
+	void Build(const uint32_t n_footer_total_fields,
+	           const std::unordered_map<uint32_t, uint32_t>* local_map)
+	{
 		if(this->pattern.size() == 0) return;
 		assert(local_map != nullptr);
 
@@ -287,6 +289,10 @@ public:
 	uint32_t AddFormat(const uint32_t global_id);
 	uint32_t AddFilter(const uint32_t global_id);
 
+	/**<
+	 * Perform operations required prior to writing disk to an output stream.
+	 * At the moment, this involves constructing bit-vectors.
+	 */
 	void Finalize(void);
 
 	/**<
@@ -299,28 +305,17 @@ public:
 	* @param id_vector Input vector of FORMAT/FILTER/INFO identifiers.
 	* @return          Returns a 64-bit hash value.
 	*/
-	static uint64_t HashIdentifiers(const std::vector<int>& id_vector){
-		XXH64_state_t* const state = XXH64_createState();
-		if (state==NULL) abort();
-
-		XXH_errorcode const resetResult = XXH64_reset(state, 71236251);
-		if (resetResult == XXH_ERROR) abort();
-
-		for(uint32_t i = 0; i < id_vector.size(); ++i){
-			XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
-			if (addResult == XXH_ERROR) abort();
-		}
-
-		uint64_t hash = XXH64_digest(state);
-		XXH64_freeState(state);
-
-		return hash;
-	}
+	static uint64_t HashIdentifiers(const std::vector<int>& id_vector);
 
 	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
 
 private:
+	/**<
+	 * Allocation functions for creating the stream and pattern maps
+	 * from global idx to local idx.
+	 * @return Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool AllocateMaps(void);
 	bool AllocatePatternMaps(void);
 

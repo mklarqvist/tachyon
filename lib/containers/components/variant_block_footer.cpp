@@ -619,5 +619,23 @@ io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantBlockFooter& entry){
 	return(buffer);
 }
 
+uint64_t VariantBlockFooter::HashIdentifiers(const std::vector<int>& id_vector){
+	XXH64_state_t* const state = XXH64_createState();
+	if (state==NULL) abort();
+
+	XXH_errorcode const resetResult = XXH64_reset(state, 71236251);
+	if (resetResult == XXH_ERROR) abort();
+
+	for(uint32_t i = 0; i < id_vector.size(); ++i){
+		XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
+		if (addResult == XXH_ERROR) abort();
+	}
+
+	uint64_t hash = XXH64_digest(state);
+	XXH64_freeState(state);
+
+	return hash;
+}
+
 }
 }
