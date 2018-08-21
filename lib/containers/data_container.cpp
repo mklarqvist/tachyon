@@ -401,7 +401,7 @@ uint64_t DataContainer::GetObjectSizeUncompressed(void) const{
 }
 
 void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
-	// If the data container Has entries in it but Has
+	// If the data container Has entries in it but has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->buffer_data_uncompressed.size() == 0){
 		this->header.reset();

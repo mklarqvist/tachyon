@@ -32,6 +32,29 @@ VcfContainer::~VcfContainer(){
 	}
 }
 
+VcfContainer::VcfContainer(self_type&& other) noexcept :
+	n_carry_over_(0),
+	n_entries_(other.n_entries_),
+	n_capacity_(other.n_capacity_),
+	entries_(other.entries_)
+{
+	other.entries_ = new pointer[other.n_capacity_];
+	for(size_type i = 0; i < other.capacity(); ++i)
+		other.entries_[i] = nullptr;
+
+	if(other.n_carry_over_){
+		other.entries_[0] = this->at(this->size()-1);
+		assert(this->at(this->size()-1) != nullptr);
+		this->entries_[this->size()-1] = nullptr;
+		other.n_carry_over_ = 0;
+		other.n_entries_    = 1;
+		--this->n_entries_;
+	} else {
+		other.n_entries_ = 0;
+		other.n_carry_over_ = 0;
+	}
+}
+
 VcfContainer& VcfContainer::operator=(self_type&& other) noexcept
 {
 	if(this->entries_ != nullptr){

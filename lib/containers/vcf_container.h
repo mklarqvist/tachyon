@@ -31,6 +31,7 @@ public:
 	VcfContainer(void);
 	VcfContainer(const size_type& start_capacity);
 	VcfContainer(const VcfContainer& other) = delete; // Disallow copy ctor
+	VcfContainer(self_type&& other) noexcept;
 	~VcfContainer();
 	VcfContainer& operator=(self_type&& other) noexcept;
 	VcfContainer& operator=(const self_type& other) = delete; // Disallow assign copy

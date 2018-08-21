@@ -50,6 +50,9 @@ public:
 	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
+	inline int32_t& GetIdx(void){ return(this->header.data_header.global_key); }
+	inline const int32_t& GetIdx(void) const{ return(this->header.data_header.global_key); }
+
 
 	/**<
 	 * Check if the stride size of this container matches the

@@ -4,6 +4,9 @@
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 
+#include <mutex>
+#include <condition_variable>
+
 namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :
@@ -23,8 +26,8 @@ void VariantImporter::clear(){
 }
 
 bool VariantImporter::Build(){
-	if(!this->BuildVCF()){
-	//if(!this->BuildParallel()){
+	//if(!this->BuildVCF()){
+	if(!this->BuildParallel()){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
@@ -290,13 +293,8 @@ bool VariantImporter::BuildParallel(void){
 	const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
-	// Start porgress timer.
+	// Start progress timer.
 	algorithm::Timer timer; timer.Start();
-
-	uint32_t c_offset = 0;
-	uint32_t n_containers = 4;
-			//std::thread::hardware_concurrency();
-	vcf_container_type* c = new vcf_container_type[n_containers];
 
 	uint64_t n_entries_a = 0;
 	uint64_t n_entries_b = 0;
@@ -305,47 +303,195 @@ bool VariantImporter::BuildParallel(void){
 	// Produced queue
 	//rigtorp::MPMCQueue<vcf_container_type*> mpmc_queue(n_containers);
 
+	struct yon_pool_vcfc {
+	public:
+		yon_pool_vcfc(int capacity) :
+			c(new vcf_container_type*[capacity]),
+			n_capacity(capacity), n_c(0),
+			front(0), rear(0), alive(false)
+		{
+
+		}
+
+		~yon_pool_vcfc(){
+			delete[] c;
+		}
+
+		void emplace(vcf_container_type* data){
+			std::unique_lock<std::mutex> l(lock);
+
+			not_full.wait(l, [this](){ return this->n_c != this->n_capacity; });
+
+			c[rear] = data;
+			rear = (rear + 1) % n_capacity;
+			++n_c;
+
+			l.unlock();
+			not_empty.notify_one();
+		}
+
+		vcf_container_type* pop(void){
+			std::unique_lock<std::mutex> l(lock);
+
+			not_empty.wait(l, [this](){
+				if(this->n_c == 0 && this->alive == false) return true;
+				return this->n_c != 0;
+			});
+
+			if(this->n_c == 0){
+				std::cerr << "is empty return nullptr" << std::endl;
+				return nullptr;
+			}
+
+			vcf_container_type* result = c[front];
+			c[front] = nullptr;
+			front = (front + 1) % n_capacity;
+			--n_c;
+
+			l.unlock();
+			not_full.notify_one();
+
+			return result;
+		}
+
+	public:
+		vcf_container_type** c;
+		int n_capacity;
+		int n_c;
+		int front;
+		int rear;
+		bool alive;
+
+		std::mutex lock;
+		std::condition_variable not_full;
+		std::condition_variable not_empty;
+	};
+
+	struct yon_producer_vcfc {
+
+		yon_producer_vcfc(const settings_type& settings, std::unique_ptr<vcf_reader_type>& reader) :
+			data_available(false),
+			data_pool(10),
+			settings(settings),
+			reader(reader)
+		{}
+
+
+		std::thread& Start(void){
+			this->thread_ = std::thread(&yon_producer_vcfc::Produce, this);
+			return(this->thread_);
+		}
+
+		bool Produce(void){
+			uint32_t n_blocks = 0;
+			this->data_available = true;
+			data_pool.alive = true;
+			while(true){
+				// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
+				// after retrieving a set number of variants or if the interval between
+				// the smallest and largest variant exceeds some distance in base pairs.
+				// Vcf records are NOT lazy evaluated (unpacked) in the producer step.
+				if(this->container.GetVariants(this->settings.checkpoint_n_snps,
+											   this->settings.checkpoint_bases,
+											   this->reader, 0) == false)
+				{
+
+					this->data_available = false;
+					data_pool.alive = false;
+					while(data_pool.n_c){
+						std::cerr << "notify: " << data_pool.n_c << std::endl;
+						data_pool.not_empty.notify_all();
+					}
+					break;
+				}
+				std::cerr << "produce block: " << n_blocks++ << std::endl;
+
+				this->data_pool.emplace(new vcf_container_type(std::move(this->container)));
+			}
+			return true;
+		}
+
+
+		std::atomic<bool> data_available;
+		yon_pool_vcfc data_pool;
+		vcf_container_type container;
+		const settings_type& settings;
+		std::thread thread_;
+		std::unique_ptr<vcf_reader_type>& reader;
+	};
+
+	struct yon_consumer_vcfc {
+		yon_consumer_vcfc(void) : thread_id(0), data_available(nullptr), data_pool(nullptr){}
+		yon_consumer_vcfc(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vcfc& data_pool) :
+			thread_id(thread_id), data_available(&data_available), data_pool(&data_pool)
+		{}
+
+		std::thread& Start(void){
+			this->thread_ = std::thread(&yon_consumer_vcfc::Consume, this);
+			return(this->thread_);
+		}
+
+		bool Consume(void){
+			while(data_available){
+				vcf_container_type* c = data_pool->pop();
+				if(c == nullptr){
+					std::cerr << "is exit conditon: nullptr" << std::endl;
+					break;
+				}
+				std::cerr << thread_id << " popped: " << c->sizeWithoutCarryOver() << std::endl;
+
+				// Unpack bcf1_t records.
+				for(int i = 0; i < c->sizeWithoutCarryOver(); ++i){
+					bcf_unpack(c->at(i), BCF_UN_ALL);
+				}
+
+				delete c;
+			}
+			return true;
+		}
+
+		uint32_t thread_id;
+		std::atomic<bool>* data_available;
+		yon_pool_vcfc* data_pool;
+		std::thread thread_;
+	};
+
+	yon_producer_vcfc producer(this->settings_, this->vcf_reader_);
+	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[10];
+	producer.Start();
+	for(uint32_t i = 0; i < 10; ++i){
+		consumers[i].thread_id = i;
+		consumers[i].data_available = &producer.data_available;
+		consumers[i].data_pool = &producer.data_pool;
+		consumers[i].Start();
+	}
+	producer.thread_.join();
+	for(uint32_t i = 0; i < 10; ++i) consumers[i].thread_.join();
+
 	/*
+	uint32_t n_blocks = 0;
 	// Iterate over all available variants in the file or until encountering
 	// an error.
 	while(true){
 		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
 		// after retrieving a set number of variants or if the interval between
 		// the smallest and largest variant exceeds some distance in base pairs.
+		// Vcf records are NOT lazy evaluated (unpacked) in the producer step.
 		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
 		                                    this->settings_.checkpoint_bases,
 		                                    this->vcf_reader_, 0) == false)
 		{
 			break;
 		}
+
 		n_entries_a += this->vcf_container_.sizeWithoutCarryOver();
-		if(c_offset == n_containers){
-			vcf_container_type* v = nullptr;
-			for(uint32_t i = 0; i < n_containers; ++i){
-				mpmc_queue.pop(v);
-				std::cerr << "pop: " << v->size() << std::endl;
-				n_entries_c += v->sizeWithoutCarryOver();
-				v = nullptr;
-			}
-
-			c_offset = 0;
-		}
-		c[c_offset] = std::move(this->vcf_container_);
-		n_entries_b += c[c_offset].sizeWithoutCarryOver();
-		mpmc_queue.emplace(&c[c_offset]);
-		++c_offset;
+		producer_pool.emplace(new vcf_container_type(std::move(this->vcf_container_)));
+		vcf_container_type* re = producer_pool.pop();
+		n_entries_b += re->sizeWithoutCarryOver();
+		std::cerr << n_blocks++ << ": " << re->sizeWithoutCarryOver() << ", " << re->front()->pos << "->" << re->back()->pos << std::endl;
+		delete re;
 	}
-
-	vcf_container_type* v = nullptr;
-	while(mpmc_queue.try_pop(v)){
-		std::cerr << "pop: " << v->size() << std::endl;
-		n_entries_c += v->sizeWithoutCarryOver();
-		v = nullptr;
-	}
-
 	std::cerr << n_entries_a << "==" << n_entries_b << "==" << n_entries_c << std::endl;
-
-	delete [] c;
 	*/
 
 	// All done

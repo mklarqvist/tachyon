@@ -185,6 +185,25 @@ public:
 	bool operator+=(meta_entry_type& meta_entry);
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
+	// Todo:
+	bool AddInfo(const DataContainer& dc, container_type* dst_containers, int32_t(VariantBlock::*StreamFieldLookup)(int32_t)){
+		if(dc.GetIdx() == -1){
+			std::cerr << utility::timestamp("ERROR","IMPORT") << "DataContainer does not have not set the required field global idx." << std::endl;
+			return false;
+		}
+
+		// 1) Search for global idx
+		int32_t info_exists = (this->*StreamFieldLookup)(dc.GetIdx());
+		if(info_exists >= 0){
+			std::cerr << "field is already set. overwriting @ " << info_exists  << std::endl;
+			dst_containers[info_exists] = dc;
+		} else {
+			std::cerr << "field does not exist. adding. " << info_exists  << std::endl;
+		}
+
+		return true;
+	}
+
 	/**<
 	 * Compares a vector of global Info/Format/Filter identifiers to the identifier set in this
 	 * block and returns the set intersection of keys.
