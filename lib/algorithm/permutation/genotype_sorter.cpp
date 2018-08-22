@@ -122,7 +122,7 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 			yon_radix_gt& target_pattern = this->gt_pattern[s];
 			target_pattern.n_ploidy = base_ploidy;
 			target_pattern.id = s;
-			//assert(base_ploidy < gt_pattern[s].n_allocated);
+
 			// Iterate over the ploidy for this sample and update
 			// the allele for that chromosome in the pattern helper
 			// structure.

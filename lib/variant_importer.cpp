@@ -4,9 +4,6 @@
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 
-#include <mutex>
-#include <condition_variable>
-
 namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :
@@ -293,191 +290,29 @@ bool VariantImporter::BuildParallel(void){
 	const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
 	this->block.resize(resize_to);
 
+	yon_producer_vcfc  producer(this->settings_, this->vcf_reader_, this->settings_.n_threads);
+	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[this->settings_.n_threads];
+
 	// Start progress timer.
 	algorithm::Timer timer; timer.Start();
-
-	uint64_t n_entries_a = 0;
-	uint64_t n_entries_b = 0;
-	uint64_t n_entries_c = 0;
-
-	// Produced queue
-	//rigtorp::MPMCQueue<vcf_container_type*> mpmc_queue(n_containers);
-
-	struct yon_pool_vcfc {
-	public:
-		yon_pool_vcfc(int capacity) :
-			c(new vcf_container_type*[capacity]),
-			n_capacity(capacity), n_c(0),
-			front(0), rear(0), alive(false)
-		{
-
-		}
-
-		~yon_pool_vcfc(){
-			delete[] c;
-		}
-
-		void emplace(vcf_container_type* data){
-			std::unique_lock<std::mutex> l(lock);
-
-			not_full.wait(l, [this](){ return this->n_c != this->n_capacity; });
-
-			c[rear] = data;
-			rear = (rear + 1) % n_capacity;
-			++n_c;
-
-			l.unlock();
-			not_empty.notify_one();
-		}
-
-		vcf_container_type* pop(void){
-			std::unique_lock<std::mutex> l(lock);
-
-			not_empty.wait(l, [this](){
-				if(this->n_c == 0 && this->alive == false) return true;
-				return this->n_c != 0;
-			});
-
-			if(this->n_c == 0){
-				std::cerr << "is empty return nullptr" << std::endl;
-				return nullptr;
-			}
-
-			vcf_container_type* result = c[front];
-			c[front] = nullptr;
-			front = (front + 1) % n_capacity;
-			--n_c;
-
-			l.unlock();
-			not_full.notify_one();
-
-			return result;
-		}
-
-	public:
-		vcf_container_type** c;
-		int n_capacity;
-		int n_c;
-		int front;
-		int rear;
-		bool alive;
-
-		std::mutex lock;
-		std::condition_variable not_full;
-		std::condition_variable not_empty;
-	};
-
-	struct yon_producer_vcfc {
-
-		yon_producer_vcfc(const settings_type& settings, std::unique_ptr<vcf_reader_type>& reader, uint32_t pool_size) :
-			n_rcds_loaded(0),
-			data_available(false),
-			data_pool(pool_size),
-			settings(settings),
-			reader(reader)
-		{}
-
-
-		std::thread& Start(void){
-			this->thread_ = std::thread(&yon_producer_vcfc::Produce, this);
-			return(this->thread_);
-		}
-
-		bool Produce(void){
-			uint32_t n_blocks = 0;
-			this->data_available = true;
-			data_pool.alive = true;
-			while(true){
-				// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
-				// after retrieving a set number of variants or if the interval between
-				// the smallest and largest variant exceeds some distance in base pairs.
-				// Vcf records are NOT lazy evaluated (unpacked) in the producer step.
-				if(this->container.GetVariants(this->settings.checkpoint_n_snps,
-											   this->settings.checkpoint_bases,
-											   this->reader, 0) == false)
-				{
-
-					this->data_available = false;
-					data_pool.alive = false;
-					while(data_pool.n_c){
-						std::cerr << "notify: " << data_pool.n_c << std::endl;
-						data_pool.not_empty.notify_all();
-					}
-					break;
-				}
-				n_rcds_loaded += this->container.sizeWithoutCarryOver();
-				std::cerr << "produce block: " << n_blocks++ << "\t" << n_rcds_loaded << std::endl;
-
-				this->data_pool.emplace(new vcf_container_type(std::move(this->container)));
-			}
-			return true;
-		}
-
-		uint64_t n_rcds_loaded;
-		std::atomic<bool> data_available;
-		yon_pool_vcfc data_pool;
-		vcf_container_type container;
-		const settings_type& settings;
-		std::thread thread_;
-		std::unique_ptr<vcf_reader_type>& reader;
-	};
-
-	struct yon_consumer_vcfc {
-		yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr){}
-		yon_consumer_vcfc(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vcfc& data_pool) :
-			n_rcds_processed(0), thread_id(thread_id), data_available(&data_available), data_pool(&data_pool)
-		{}
-
-		yon_consumer_vcfc& operator+=(const yon_consumer_vcfc& other){
-			this->n_rcds_processed += other.n_rcds_processed;
-			return(*this);
-		}
-
-		std::thread& Start(void){
-			this->thread_ = std::thread(&yon_consumer_vcfc::Consume, this);
-			return(this->thread_);
-		}
-
-		bool Consume(void){
-			while(data_available){
-				vcf_container_type* c = data_pool->pop();
-				if(c == nullptr){
-					std::cerr << "is exit conditon: nullptr" << std::endl;
-					break;
-				}
-				std::cerr << thread_id << " popped: " << c->sizeWithoutCarryOver() << std::endl;
-
-				// Unpack bcf1_t records.
-				n_rcds_processed += c->sizeWithoutCarryOver();
-				for(int i = 0; i < c->sizeWithoutCarryOver(); ++i){
-					bcf_unpack(c->at(i), BCF_UN_ALL);
-				}
-
-				delete c;
-			}
-			return true;
-		}
-
-		uint64_t n_rcds_processed;
-		uint32_t thread_id;
-		std::atomic<bool>* data_available;
-		yon_pool_vcfc* data_pool;
-		std::thread thread_;
-	};
-
-	yon_producer_vcfc  producer(this->settings_, this->vcf_reader_, this->settings_.n_threads + 3);
-	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[this->settings_.n_threads];
 	producer.Start();
 	for(uint32_t i = 0; i < this->settings_.n_threads; ++i){
 		consumers[i].thread_id = i;
 		consumers[i].data_available = &producer.data_available;
 		consumers[i].data_pool = &producer.data_pool;
+		consumers[i].global_header = &this->vcf_reader_->vcf_header_;
 		consumers[i].Start();
 	}
-	producer.thread_.join();
+
 	for(uint32_t i = 0; i < this->settings_.n_threads; ++i) consumers[i].thread_.join();
 	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
+	producer.all_finished = true;
+	producer.thread_.join();
+
 	std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
+	std::cerr << timer.ElapsedString() << std::endl;
+	std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
+	std::cerr << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
 
 	// All done
 	return(true);
