@@ -209,7 +209,7 @@ bool VariantImporter::BuildVCF(void){
 
 bool VariantImporter::BuildParallel(void){
 	// Retrieve a unique VcfReader.
-	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
+	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file, this->settings_.htslib_extra_threads);
 	if(this->vcf_reader_ == nullptr){
 		return false;
 	}
@@ -369,9 +369,10 @@ bool VariantImporter::BuildParallel(void){
 
 	struct yon_producer_vcfc {
 
-		yon_producer_vcfc(const settings_type& settings, std::unique_ptr<vcf_reader_type>& reader) :
+		yon_producer_vcfc(const settings_type& settings, std::unique_ptr<vcf_reader_type>& reader, uint32_t pool_size) :
+			n_rcds_loaded(0),
 			data_available(false),
-			data_pool(10),
+			data_pool(pool_size),
 			settings(settings),
 			reader(reader)
 		{}
@@ -404,14 +405,15 @@ bool VariantImporter::BuildParallel(void){
 					}
 					break;
 				}
-				std::cerr << "produce block: " << n_blocks++ << std::endl;
+				n_rcds_loaded += this->container.sizeWithoutCarryOver();
+				std::cerr << "produce block: " << n_blocks++ << "\t" << n_rcds_loaded << std::endl;
 
 				this->data_pool.emplace(new vcf_container_type(std::move(this->container)));
 			}
 			return true;
 		}
 
-
+		uint64_t n_rcds_loaded;
 		std::atomic<bool> data_available;
 		yon_pool_vcfc data_pool;
 		vcf_container_type container;
@@ -421,10 +423,15 @@ bool VariantImporter::BuildParallel(void){
 	};
 
 	struct yon_consumer_vcfc {
-		yon_consumer_vcfc(void) : thread_id(0), data_available(nullptr), data_pool(nullptr){}
+		yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr){}
 		yon_consumer_vcfc(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vcfc& data_pool) :
-			thread_id(thread_id), data_available(&data_available), data_pool(&data_pool)
+			n_rcds_processed(0), thread_id(thread_id), data_available(&data_available), data_pool(&data_pool)
 		{}
+
+		yon_consumer_vcfc& operator+=(const yon_consumer_vcfc& other){
+			this->n_rcds_processed += other.n_rcds_processed;
+			return(*this);
+		}
 
 		std::thread& Start(void){
 			this->thread_ = std::thread(&yon_consumer_vcfc::Consume, this);
@@ -441,6 +448,7 @@ bool VariantImporter::BuildParallel(void){
 				std::cerr << thread_id << " popped: " << c->sizeWithoutCarryOver() << std::endl;
 
 				// Unpack bcf1_t records.
+				n_rcds_processed += c->sizeWithoutCarryOver();
 				for(int i = 0; i < c->sizeWithoutCarryOver(); ++i){
 					bcf_unpack(c->at(i), BCF_UN_ALL);
 				}
@@ -450,49 +458,26 @@ bool VariantImporter::BuildParallel(void){
 			return true;
 		}
 
+		uint64_t n_rcds_processed;
 		uint32_t thread_id;
 		std::atomic<bool>* data_available;
 		yon_pool_vcfc* data_pool;
 		std::thread thread_;
 	};
 
-	yon_producer_vcfc producer(this->settings_, this->vcf_reader_);
-	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[10];
+	yon_producer_vcfc  producer(this->settings_, this->vcf_reader_, this->settings_.n_threads + 3);
+	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[this->settings_.n_threads];
 	producer.Start();
-	for(uint32_t i = 0; i < 10; ++i){
+	for(uint32_t i = 0; i < this->settings_.n_threads; ++i){
 		consumers[i].thread_id = i;
 		consumers[i].data_available = &producer.data_available;
 		consumers[i].data_pool = &producer.data_pool;
 		consumers[i].Start();
 	}
 	producer.thread_.join();
-	for(uint32_t i = 0; i < 10; ++i) consumers[i].thread_.join();
-
-	/*
-	uint32_t n_blocks = 0;
-	// Iterate over all available variants in the file or until encountering
-	// an error.
-	while(true){
-		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
-		// after retrieving a set number of variants or if the interval between
-		// the smallest and largest variant exceeds some distance in base pairs.
-		// Vcf records are NOT lazy evaluated (unpacked) in the producer step.
-		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
-		                                    this->settings_.checkpoint_bases,
-		                                    this->vcf_reader_, 0) == false)
-		{
-			break;
-		}
-
-		n_entries_a += this->vcf_container_.sizeWithoutCarryOver();
-		producer_pool.emplace(new vcf_container_type(std::move(this->vcf_container_)));
-		vcf_container_type* re = producer_pool.pop();
-		n_entries_b += re->sizeWithoutCarryOver();
-		std::cerr << n_blocks++ << ": " << re->sizeWithoutCarryOver() << ", " << re->front()->pos << "->" << re->back()->pos << std::endl;
-		delete re;
-	}
-	std::cerr << n_entries_a << "==" << n_entries_b << "==" << n_entries_c << std::endl;
-	*/
+	for(uint32_t i = 0; i < this->settings_.n_threads; ++i) consumers[i].thread_.join();
+	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
+	std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
 
 	// All done
 	return(true);

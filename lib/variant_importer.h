@@ -34,7 +34,8 @@ public:
 		n_threads(std::thread::hardware_concurrency()),
 		info_end_key(-1),
 		info_svlen_key(-1),
-		compression_level(6)
+		compression_level(6),
+		htslib_extra_threads(0)
 	{}
 
 	~VariantImporterSettings() = default;
@@ -68,6 +69,7 @@ public:
 	uint32_t compression_level;    // compression level sent to ZSTD
 	std::string input_file;   // input file name
 	std::string output_prefix;// output file prefix
+	uint32_t htslib_extra_threads;
 };
 
 class VariantImporter {

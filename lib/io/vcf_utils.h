@@ -938,8 +938,16 @@ public:
 	// Singleton design pattern for retrieving a guaranteed unique pointer
 	// to a VcfReader. This choice is to prevent inadvertent writes to the
 	// target file as another file-handle is accessing it.
-	static std::unique_ptr<self_type> FromFile(const std::string& variants_path){
+	static std::unique_ptr<self_type> FromFile(const std::string& variants_path, uint32_t n_extra_threads = 0){
 		htsFile* fp = hts_open(variants_path.c_str(), "r");
+		if(n_extra_threads){
+			int ret = hts_set_threads(fp, n_extra_threads);
+			if(ret < 0){
+				std::cerr << "failed to open multiple handles" << std::endl;
+				return nullptr;
+			}
+		}
+
 		if (fp == nullptr) {
 			std::cerr << utility::timestamp("ERROR")  << "Could not open " << variants_path << std::endl;
 			return nullptr;
