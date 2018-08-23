@@ -11,11 +11,13 @@
 #include "core/header/variant_header.h"
 #include "io/vcf_utils.h"
 
+#include "containers/components/generic_iterator.h"
+
 namespace tachyon{
 namespace index{
 
-class VariantIndex{
-private:
+class VariantIndex {
+public:
 	typedef VariantIndex       self_type;
     typedef std::size_t        size_type;
     typedef VariantIndexContig value_type;
@@ -25,46 +27,15 @@ private:
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
     typedef IndexEntry         linear_entry_type;
-    typedef YonContig      contig_type;
+    typedef YonContig          contig_type;
+
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
 	VariantIndex();
 	VariantIndex(const self_type& other);
-	~VariantIndex();;
-
-	class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
+	~VariantIndex();
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->contigs_[position]); }
@@ -154,7 +125,6 @@ public:
 	 */
 	void resize(void);
 
-private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& index);
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 

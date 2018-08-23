@@ -11,7 +11,7 @@ namespace tachyon{
 namespace index{
 
 class Index{
-private:
+public:
 	typedef Index              self_type;
     typedef std::size_t        size_type;
 	typedef VariantIndex       container_type;
@@ -36,7 +36,7 @@ public:
 	 * index entries all belonging to the same contig.
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
-	bool buildMetaIndex(void);
+	bool BuildMetaIndex(void);
 
 	// Capacity
 	inline bool empty(void) const{ return(this->index_.empty()); }
@@ -70,7 +70,7 @@ public:
 	 * @param contig_id
 	 * @return
 	 */
-	std::vector<entry_type> findOverlap(const uint32_t& contig_id) const;
+	std::vector<entry_type> FindOverlap(const uint32_t& contig_id) const;
 
 	/**<
 	 * Return interval of YON blocks overlapping target tuple (contigID, position, position)
@@ -78,8 +78,8 @@ public:
 	 * @param position
 	 * @return
 	 */
-	inline std::vector<entry_type> findOverlap(const uint32_t& contig_id, const uint64_t& position) const{
-		return(this->findOverlap(contig_id, position, position));
+	inline std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& position) const{
+		return(this->FindOverlap(contig_id, position, position));
 	}
 
 	/**<
@@ -89,9 +89,9 @@ public:
 	 * @param end_pos
 	 * @return
 	 */
-	std::vector<entry_type> findOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const;
+	std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const;
 
-	inline const uint64_t& current_block_number(void) const{ return(this->number_blocks); }
+	inline const uint64_t& GetNumberBlocks(void) const{ return(this->number_blocks); }
 	inline void operator++(void){ ++this->number_blocks; }
 
 	/**<

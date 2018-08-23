@@ -22,7 +22,7 @@ VariantImportWriterInterface::~VariantImportWriterInterface()
 }
 
 void VariantImportWriterInterface::writeIndex(void){
-	this->index.buildMetaIndex();
+	this->index.BuildMetaIndex();
 	*this->stream << this->index;
 	this->stream->flush();
 }

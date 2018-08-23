@@ -7,7 +7,7 @@ namespace tachyon{
 namespace index{
 
 class VariantIndexLinear{
-private:
+public:
 	typedef VariantIndexLinear   self_type;
     typedef std::size_t          size_type;
     typedef IndexEntry           value_type;
@@ -15,6 +15,9 @@ private:
     typedef const value_type&    const_reference;
     typedef value_type*          pointer;
     typedef const value_type*    const_pointer;
+
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
     VariantIndexLinear() :
@@ -43,40 +46,6 @@ public:
 	~VariantIndexLinear(){
 		delete [] this->__entries;
 	}
-
-	class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->__entries[position]); }

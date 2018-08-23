@@ -5,13 +5,14 @@
 #include <cmath>
 #include <vector>
 
+#include "containers/components/generic_iterator.h"
 #include "variant_index_bin.h"
 
 namespace tachyon{
 namespace index{
 
 class VariantIndexContig{
-private:
+public:
 	typedef VariantIndexContig self_type;
     typedef std::size_t        size_type;
     typedef VariantIndexBin    value_type;
@@ -20,46 +21,15 @@ private:
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
 
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     VariantIndexContig();
     VariantIndexContig(const uint32_t contigID, const uint64_t l_contig, const uint8_t n_levels);
     VariantIndexContig(const self_type& other);
     void operator=(const self_type& other);
     ~VariantIndexContig();
-
-    class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->bins_[position]); }
@@ -88,8 +58,8 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->bins_[this->n_bins_]); }
 
 	// Accessor
-	inline uint32_t& getContigID(void){ return(this->contigID_); }
-	inline const uint32_t& getContigID(void) const{ return(this->contigID_); }
+	inline uint32_t& GetContigID(void){ return(this->contigID_); }
+	inline const uint32_t& GetContigID(void) const{ return(this->contigID_); }
 
 	/**<
 	 * Add a target interval tuple (from,to,block_ID)
@@ -98,7 +68,7 @@ public:
 	 * @param yon_block_id Tachyon block ID (generally a cumulative integer)
 	 * @return
 	 */
-	int32_t add(const uint64_t& fromPosition, const uint64_t& toPosition, const uint32_t& yon_block_id);
+	int32_t Add(const uint64_t& fromPosition, const uint64_t& toPosition, const uint32_t& yon_block_id);
 
 	/**<
 	 * Computes the possible bins an interval might overlap
@@ -106,7 +76,7 @@ public:
 	 * @param to_position   To position of interval
 	 * @return              Returns a vector of viable overlapping bins
 	 */
-	std::vector<value_type> possibleBins(const uint64_t& from_position, const uint64_t& to_position, const bool filter = true) const;
+	std::vector<value_type> PossibleBins(const uint64_t& from_position, const uint64_t& to_position, const bool filter = true) const;
 
 private:
 	/**<
@@ -114,7 +84,7 @@ private:
 	 * @param length Input integer start value
 	 * @return       Return a target integer divisible by 4
 	 */
-    inline uint64_t roundLengthClosestBase4_(const uint64_t& length) const{
+    inline uint64_t RoundLengthClosestBase4(const uint64_t& length) const{
 		return( ( pow(4,this->n_levels_) - (length % (uint64_t)pow(4,this->n_levels_)) ) + length );
     }
 
@@ -122,7 +92,7 @@ private:
      * Pre-calculate the cumulative distribution of 4^(0:levels-1).
      * These values are used to find the array offset for levels > 0
      */
-    void calculateCumulativeSums_(void){
+    void CalculateCumulativeSums(void){
     	if(this->n_levels_ == 0) return;
 
     	delete [] this->bins_cumsum_;
@@ -185,7 +155,7 @@ private:
 			new( &contig.bins_[i] ) value_type(  );
 			contig.bins_[i].binID_ = i;
 		}
-		contig.calculateCumulativeSums_();
+		contig.CalculateCumulativeSums();
 
 		// Load data accordingly
 		for(uint32_t i = 0; i < n_items_written; ++i){

@@ -117,7 +117,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 			}
 
 			//std::cerr << "Parsed: " << interval_strings[i] << " -> " << contig->name << ":" << contig->idx << std::endl;
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(0, contig->n_bases, contig->idx));
 		}
@@ -139,7 +139,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 			uint64_t position = atof(substrings[1].data());
 			//std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx, position);
 			//std::cerr << "overlaps: " << target_blocks.size() << std::endl;
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(position, position, contig->idx));
@@ -170,7 +170,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 
 			//std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position_from, position_to);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx, position_from, position_to);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(position_from, position_to, contig->idx));
 

@@ -30,9 +30,9 @@ VariantIndexContig::VariantIndexContig(const uint32_t contigID, const uint64_t l
 	bins_cumsum_(nullptr),
 	bins_(nullptr)
 {
-	this->l_contig_rounded_ = this->roundLengthClosestBase4_(this->l_contig_);
+	this->l_contig_rounded_ = this->RoundLengthClosestBase4(this->l_contig_);
 	if(this->n_levels_ != 0){
-		this->calculateCumulativeSums_();
+		this->CalculateCumulativeSums();
 		this->n_capacity_ = this->bins_cumsum_[this->n_levels_] + 64;
 		this->n_bins_     = this->bins_cumsum_[this->n_levels_];
 		this->bins_       = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
@@ -54,7 +54,7 @@ VariantIndexContig::VariantIndexContig(const self_type& other) :
 	bins_cumsum_(nullptr),
 	bins_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
 {
-	this->calculateCumulativeSums_();
+	this->CalculateCumulativeSums();
 	for(uint32_t i = 0; i < this->size(); ++i)
 		new( &this->bins_[i] ) value_type( other.bins_[i] );
 }
@@ -74,7 +74,7 @@ void VariantIndexContig::operator=(const self_type& other){
 	this->n_capacity_ = other.n_capacity_;
 	this->n_levels_ = other.n_levels_;
 	this->bins_cumsum_ = nullptr;
-	this->calculateCumulativeSums_();
+	this->CalculateCumulativeSums();
 
 	this->bins_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 	for(uint32_t i = 0; i < this->size(); ++i)
@@ -89,7 +89,7 @@ VariantIndexContig::~VariantIndexContig(){
 	::operator delete[](static_cast<void*>(this->bins_));
 }
 
-int32_t VariantIndexContig::add(const uint64_t& fromPosition, const uint64_t& toPosition, const uint32_t& yon_block_id){
+int32_t VariantIndexContig::Add(const uint64_t& fromPosition, const uint64_t& toPosition, const uint32_t& yon_block_id){
 	for(int32_t i = this->n_levels_; i != 0; --i){
 		uint32_t binFrom = int64_t(fromPosition/(this->l_contig_rounded_ / pow(4,i)));
 		uint32_t binTo   = int64_t(toPosition/(this->l_contig_rounded_ / pow(4,i)));
@@ -109,7 +109,7 @@ int32_t VariantIndexContig::add(const uint64_t& fromPosition, const uint64_t& to
 	return(0);
 }
 
-std::vector<VariantIndexBin> VariantIndexContig::possibleBins(const uint64_t& from_position, const uint64_t& to_position, const bool filter) const{
+std::vector<VariantIndexBin> VariantIndexContig::PossibleBins(const uint64_t& from_position, const uint64_t& to_position, const bool filter) const{
 	std::vector<value_type> overlapping_chunks;
 	//overlapping_chunks.push_back(this->at(0)); // level 0
 

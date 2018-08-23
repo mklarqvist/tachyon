@@ -6,11 +6,8 @@
 namespace tachyon{
 namespace index{
 
-/**<
- * Index of index entries
- */
 struct IndexIndexEntry{
-private:
+public:
 	typedef IndexIndexEntry self_type;
 	typedef IndexEntry entry_type;
 
@@ -24,18 +21,6 @@ public:
 		minPosition(0),
 		maxPosition(0)
 	{}
-
-	IndexIndexEntry(const self_type& other) :
-		contigID(other.contigID),
-		n_blocks(other.n_blocks),
-		n_variants(other.n_variants),
-		byte_offset_begin(other.byte_offset_begin),
-		byte_offest_end(other.byte_offest_end),
-		minPosition(other.minPosition),
-		maxPosition(other.maxPosition)
-	{
-
-	}
 
 	~IndexIndexEntry(){}
 
@@ -106,8 +91,8 @@ private:
 	}
 
 public:
-	int32_t contigID;           // contig ID
-	uint32_t n_blocks;           // number of index entries for this contigID
+	int32_t contigID;            // contig ID
+	uint32_t n_blocks;           // number of index entries for this contig
 	uint64_t n_variants;         // total number of variants
 	uint64_t byte_offset_begin;  // start virtual offset
 	uint64_t byte_offest_end;    // end virtual offset

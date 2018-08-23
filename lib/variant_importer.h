@@ -256,8 +256,8 @@ public:
 	typedef std::unordered_map<uint64_t, uint32_t>    hash_map_type;
 
 public:
-	VcfImporter() : vcf_header_(nullptr), GT_available_(false){}
-	VcfImporter(const settings_type& settings) : vcf_header_(nullptr), GT_available_(false){}
+	VcfImporter() : block_id(0), vcf_header_(nullptr), GT_available_(false){}
+	VcfImporter(const settings_type& settings) : block_id(0), vcf_header_(nullptr), GT_available_(false){}
 	VcfImporter(const self_type& other) = delete;
 	VcfImporter(self_type&& other) noexcept = delete;
 	VcfImporter& operator=(const self_type& other) = delete;
@@ -266,9 +266,11 @@ public:
 		// do not delete vcf_header, it is not owned by this class
 	}
 
-	bool Add(vcf_container_type& container){
+	bool Add(vcf_container_type& container, const uint32_t block_id){
 		this->block.clear();
 		this->index_entry.reset();
+
+		this->block_id = block_id;
 
 		// Allocate containers and offsets for this file.
 		// This is not strictly necessary but prevents nasty resize
@@ -355,6 +357,8 @@ public:
 	}
 
 public:
+	uint32_t block_id;
+	index::Index index;
 	vcf_header_type* vcf_header_;
 
 	settings_type settings_; // internal settings
@@ -611,7 +615,7 @@ struct yon_consumer_vcfc {
 				bcf_unpack(d->c->at(i), BCF_UN_ALL);
 			}
 
-			assert(this->importer.Add(*d->c) == true);
+			assert(this->importer.Add(*d->c, d->block_id) == true);
 
 			this->poolw->cv_next_checkpoint.notify_all();
 			this->poolw->emplace(d->block_id, *d->c, this->importer);

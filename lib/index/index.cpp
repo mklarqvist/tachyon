@@ -5,7 +5,7 @@
 namespace tachyon{
 namespace index{
 
-bool Index::buildMetaIndex(void){
+bool Index::BuildMetaIndex(void){
 	// This criterion should never be satisfied
 	if(this->index_.size() == 0)
 		return false;
@@ -33,7 +33,7 @@ bool Index::buildMetaIndex(void){
 	return true;
 }
 
-std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id) const{
+std::vector<IndexEntry> Index::FindOverlap(const uint32_t& contig_id) const{
 	if(contig_id > this->getMetaIndex().size())
 		return(std::vector<entry_type>());
 
@@ -45,7 +45,7 @@ std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id) const{
 	return(yon_blocks);
 }
 
-std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const{
+std::vector<IndexEntry> Index::FindOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const{
 	if(contig_id > this->getMetaIndex().size())
 		return(std::vector<entry_type>());
 
@@ -67,7 +67,7 @@ std::vector<IndexEntry> Index::findOverlap(const uint32_t& contig_id, const uint
 
 	// Retrieve vector of bins that might contain the data
 	// The possibleBins function does not check if they exist
-	std::vector<bin_type> possible_chunks = this->index_[contig_id].possibleBins(start_pos, end_pos);
+	std::vector<bin_type> possible_chunks = this->index_[contig_id].PossibleBins(start_pos, end_pos);
 	std::vector<uint32_t> yon_blocks;
 	//std::cerr << "Possible chunks: " << possible_chunks.size() << std::endl;
 

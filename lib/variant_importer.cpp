@@ -297,7 +297,10 @@ bool VariantImporter::BuildParallel(void){
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
 		consumers[i].importer.contig_reorder_map_ = this->contig_reorder_map_;
-
+		// The index needs to know how many contigs that's described in the
+		// Vcf header and their lenghts. This information is needed to construct
+		// the linear and quad-tree index most appropriate for the data.
+		consumers[i].importer.index.Add(this->vcf_reader_->vcf_header_.contigs_);
 		consumers[i].Start();
 	}
 
@@ -382,7 +385,7 @@ bool VcfImporter::AddRecord(const vcf_container_type& container, const uint32_t 
 	}
 
 	// Update the tachyon index.
-	//if(this->IndexRecord(container.at(position), meta) == false) return false;
+	if(this->IndexRecord(container.at(position), meta) == false) return false;
 	return true;
 }
 
@@ -561,7 +564,6 @@ bool VcfImporter::AddVcfFilterPattern(const std::vector<int>& pattern, meta_type
 	return true;
 }
 
-/*
 bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 	int32_t index_bin = -1;
 
@@ -592,7 +594,7 @@ bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 					return false;
 				}
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << record->pos + 1 << std::endl;
-				index_bin = this->writer->index.index_[meta.contigID].add(record->pos, end, (uint32_t)this->writer->index.current_block_number());
+				index_bin = this->index.index_[meta.contigID].Add(record->pos, end, this->block_id);
 				//index_bin = 0;
 				break;
 			}
@@ -614,9 +616,9 @@ bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 		// Update the variant index with the target bin(s) found.
 		if(longest > 1){
-			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
-			                                                          record->pos + longest,
-			                                                          (uint32_t)this->writer->index.current_block_number());
+			index_bin = this->index.index_[meta.contigID].Add(record->pos,
+			                                                  record->pos + longest,
+															  this->block_id);
 			//index_bin = 0;
 			end_position_used = record->pos + longest;
 		}
@@ -628,9 +630,9 @@ bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// query as the few special cases will dominate the many general cases. For
 		// this reason special-meaning alleles are not completely indexed.
 		else {
-			index_bin = this->writer->index.index_[meta.contigID].add(record->pos,
-			                                                          record->pos,
-			                                                          (uint32_t)this->writer->index.current_block_number());
+			index_bin = this->index.index_[meta.contigID].Add(record->pos,
+			                                                  record->pos,
+			                                                  this->block_id);
 			//index_bin = 0;
 			//std::cerr << "fallback: " << record->pos+1 << std::endl;
 		}
@@ -647,7 +649,6 @@ bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 	return true;
 }
-*/
 
 bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 	// Write encryption keychain.

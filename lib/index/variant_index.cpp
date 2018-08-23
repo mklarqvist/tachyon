@@ -108,7 +108,7 @@ std::istream& operator>>(std::istream& stream, VariantIndex& index){
 	for(uint32_t i = 0; i < n_items_written; ++i){
 		VariantIndexContig temp;
 		stream >> temp; // Read
-		index.at(temp.getContigID()) = temp;
+		index.at(temp.GetContigID()) = temp;
 	}
 
 	// Load linear index
