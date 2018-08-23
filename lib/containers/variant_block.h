@@ -300,7 +300,31 @@ public:
 	inline uint32_t AddFormat(const uint32_t id){ return(this->footer.AddFormat(id)); }
 	inline uint32_t AddFilter(const uint32_t id){ return(this->footer.AddFilter(id)); }
 
-	inline void Finalize(void){ this->footer.Finalize(); }
+	inline void Finalize(void){
+		this->footer.Finalize();
+
+		uint64_t b_offset = 0;
+
+		if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
+			this->UpdateHeader(this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], 0);
+			b_offset += this->base_containers[YON_BLK_PPA].GetObjectSize();
+		}
+
+		for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
+			this->UpdateHeader(this->footer.offsets[i], this->base_containers[i], b_offset);
+			b_offset += this->base_containers[i].GetObjectSize();
+		}
+
+		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
+			this->UpdateHeader(this->footer.info_offsets[i], this->info_containers[i], b_offset);
+			b_offset += this->info_containers[i].GetObjectSize();
+		}
+
+		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
+			this->UpdateHeader(this->footer.format_offsets[i], this->format_containers[i], b_offset);
+			b_offset += this->format_containers[i].GetObjectSize();
+		}
+	}
 
 	int32_t GetInfoPosition(const uint32_t global_id)   const;
 	int32_t GetFormatPosition(const uint32_t global_id) const;
@@ -391,6 +415,7 @@ private:
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
+		assert(offset.data_header.offset == virtual_offset);
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);
 		stream << container;
