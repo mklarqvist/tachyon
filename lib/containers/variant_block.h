@@ -300,11 +300,20 @@ public:
 	inline uint32_t AddFormat(const uint32_t id){ return(this->footer.AddFormat(id)); }
 	inline uint32_t AddFilter(const uint32_t id){ return(this->footer.AddFilter(id)); }
 
-	inline void Finalize(void){
+	/**<
+	 * Finalize this block for writing. Tells the header and footer objects to
+	 * finish and then precomputes the virtual file offsets for each byte stream
+	 * (container) and moves that offset to the footer. This operation is mandatory
+	 * prior to writing this block!
+	 */
+	void Finalize(void){
 		this->footer.Finalize();
 
+		// Pre-calculate the virtual file offsets prior to writing the block
+		// to disk. This is required during parallel processing as we do not
+		// want to the writer slave to spend time compressing or doing any
+		// other compute instead of simply writing at I/O saturated speeds.
 		uint64_t b_offset = 0;
-
 		if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
 			this->UpdateHeader(this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], 0);
 			b_offset += this->base_containers[YON_BLK_PPA].GetObjectSize();

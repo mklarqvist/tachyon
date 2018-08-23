@@ -19,7 +19,7 @@ VariantImporter::~VariantImporter(){
 }
 
 void VariantImporter::clear(){
-	this->vcf_container_.clear();
+	//
 }
 
 bool VariantImporter::Build(){
@@ -305,18 +305,21 @@ bool VariantImporter::BuildParallel(void){
 	}
 
 	for(uint32_t i = 0; i < this->settings_.n_threads; ++i) consumers[i].thread_.join();
-	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
 	producer.all_finished = true;
 	producer.thread_.join();
+	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
+	std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
 
 	std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
 	std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
 	std::cerr << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
-	std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds" << std::endl;
-	std::cerr << timer.ElapsedString() << std::endl;
-
-	// Do not delete the borrowed pointer.
-	this->block.gt_ppa = nullptr;
+	std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
+	for(int i = 0; i < consumers[0].importer.stats_basic.size(); ++i)
+		std::cerr << i << "\t" << consumers[0].importer.stats_basic.at(i) << std::endl;
+	for(int i = 0; i < consumers[0].importer.stats_format.size(); ++i)
+		std::cerr << i << "\t" << consumers[0].importer.stats_format.at(i) << std::endl;
+	for(int i = 0; i < consumers[0].importer.stats_info.size(); ++i)
+		std::cerr << i << "\t" << consumers[0].importer.stats_info.at(i) << std::endl;
 
 	// Finalize writing procedure.
 	write.WriteFinal(checksums);

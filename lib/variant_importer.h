@@ -74,8 +74,11 @@ public:
 	uint32_t htslib_extra_threads;
 };
 
-
-struct yon_pool_vcfc_payload{
+/**<
+ * Cyclic queue payload object used when importing htslib Vcf
+ * entries. Used exclusively in the yon_pool_vcf struct.
+ */
+struct yon_pool_vcfc_payload {
 	yon_pool_vcfc_payload() : block_id(0), c(nullptr){}
 	yon_pool_vcfc_payload(const uint32_t bid, containers::VcfContainer* vc) : block_id(bid), c(vc){}
 	~yon_pool_vcfc_payload(){ delete c; }
@@ -98,8 +101,21 @@ struct yon_pool_vcfc_payload{
 	containers::VcfContainer* c;
 };
 
+/**<
+ * Cyclic pool of loaded VcfContainers. Uses conditional variables
+ * and mutex locks to control flow to and from this object. Use
+ * emplace() to add a payload and pop() to retrieve an object.
+ */
 struct yon_pool_vcfc {
 public:
+	yon_pool_vcfc(void) :
+		c(nullptr),
+		n_capacity(0), n_c(0),
+		front(0), rear(0), alive(false)
+	{
+
+	}
+
 	yon_pool_vcfc(uint32_t capacity) :
 		c(new yon_pool_vcfc_payload*[capacity]),
 		n_capacity(capacity), n_c(0),
@@ -108,14 +124,43 @@ public:
 
 	}
 
-	~yon_pool_vcfc(){
-		delete[] c;
+	yon_pool_vcfc(const yon_pool_vcfc& other) = delete; // disallow copy
+	yon_pool_vcfc& operator=(const yon_pool_vcfc& other) = delete; // disallow assign copy
+
+	yon_pool_vcfc(yon_pool_vcfc&& other) noexcept :
+		c(nullptr),
+		n_capacity(other.n_capacity), n_c(other.n_c),
+		front(other.front), rear(other.rear), alive(other.alive.load())
+	{
+		std::swap(this->c, other.c);
 	}
 
+	yon_pool_vcfc& operator=(yon_pool_vcfc&& other) noexcept {
+		if(this == &other){ return(*this); }
+		delete [] this->c;
+		this->c = nullptr;
+		this->n_capacity = other.n_capacity;
+		this->n_c = other.n_c;
+		this->front = other.front;
+		this->rear = other.rear;
+		this->alive = other.alive.load();
+		std::swap(this->c, other.c);
+		return(*this);
+	}
+
+	~yon_pool_vcfc(){
+		delete [] this->c;
+	}
+
+	/**<
+	 * Add payload to the cyclic queue. If the queue is full then
+	 * wait until an item has been popped.
+	 * @param data Input pointer to payload.
+	 */
 	void emplace(yon_pool_vcfc_payload* data){
 		std::unique_lock<std::mutex> l(lock);
 
-		not_full.wait(l, [this](){
+		this->not_full.wait(l, [this](){
 			if(this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != this->n_capacity;
 		});
@@ -123,23 +168,28 @@ public:
 		if(this->n_c == 0 && this->alive == false){
 			std::cerr << "is empty in wait full" << std::endl;
 			l.unlock();
-			not_full.notify_all();
-			not_empty.notify_all();
+			this->not_full.notify_all();
+			this->not_empty.notify_all();
 			return;
 		}
 
-		c[rear] = data;
-		rear = (rear + 1) % n_capacity;
-		++n_c;
+		this->c[this->rear] = data;
+		this->rear = (this->rear + 1) % this->n_capacity;
+		++this->n_c;
 
 		l.unlock();
-		not_empty.notify_one();
+		this->not_empty.notify_one();
 	}
 
+	/**<
+	 * Retrieve payload from the cyclic queue. If the queue is empty
+	 * then wait until an item has been inserted.
+	 * @return Returns a pointer to the retrieved payload or a nullpointer in the special case the producer operations has finished.
+	 */
 	yon_pool_vcfc_payload* pop(void){
 		std::unique_lock<std::mutex> l(lock);
 
-		not_empty.wait(l, [this](){
+		this->not_empty.wait(l, [this](){
 			if(this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != 0;
 		});
@@ -147,18 +197,18 @@ public:
 		if(this->n_c == 0){
 			std::cerr << "is empty return nullptr" << std::endl;
 			l.unlock();
-			not_empty.notify_all();
-			not_full.notify_all();
+			this->not_empty.notify_all();
+			this->not_full.notify_all();
 			return nullptr;
 		}
 
-		yon_pool_vcfc_payload* result = c[front];
-		c[front] = nullptr;
-		front = (front + 1) % n_capacity;
-		--n_c;
+		yon_pool_vcfc_payload* result = this->c[this->front];
+		this->c[this->front] = nullptr;
+		this->front = (this->front + 1) % this->n_capacity;
+		--this->n_c;
 
 		l.unlock();
-		not_full.notify_one();
+		this->not_full.notify_one();
 
 		return result;
 	}
@@ -175,9 +225,16 @@ public:
 	std::condition_variable not_empty;
 };
 
+/**<
+ * Single producer (albeit spawning many htslib decompressor threads)
+ * reading htslib Vcf records from a stream into a VcfContainer and
+ * inserts that object into the cyclic producer queue.
+ */
 struct yon_producer_vcfc {
 public:
-	yon_producer_vcfc(const VariantImporterSettings& settings, std::unique_ptr<io::VcfReader>& reader, uint32_t pool_size) :
+	yon_producer_vcfc(const VariantImporterSettings& settings,
+	                  std::unique_ptr<io::VcfReader>& reader,
+	                  uint32_t pool_size) :
 		all_finished(false),
 		n_rcds_loaded(0),
 		data_available(false),
@@ -186,12 +243,16 @@ public:
 		reader(reader)
 	{}
 
-
+	/**<
+	 * Spawn worker reading data into the producer data pool.
+	 * @return Returns a reference to the spawned thread.
+	 */
 	std::thread& Start(void){
 		this->thread_ = std::thread(&yon_producer_vcfc::Produce, this);
 		return(this->thread_);
 	}
 
+private:
 	bool Produce(void){
 		uint32_t n_blocks = 0;
 		this->data_available  = true;
@@ -203,14 +264,14 @@ public:
 			// Vcf records are NOT lazy evaluated (unpacked) in the producer step
 			// that is the job of the consumers.
 			if(this->container.GetVariants(this->settings.checkpoint_n_snps,
-										   this->settings.checkpoint_bases,
-										   this->reader, 0) == false)
+			                               this->settings.checkpoint_bases,
+			                               this->reader,
+			                               0) == false)
 			{
 
 				this->data_available  = false;
 				this->data_pool.alive = false;
 				while(data_pool.n_c && all_finished == false){
-					std::cerr << "flushing: " << data_pool.n_c << std::endl;
 					data_pool.not_empty.notify_all();
 					data_pool.not_full.notify_all();
 				}
@@ -218,8 +279,9 @@ public:
 				break;
 			}
 			this->n_rcds_loaded += this->container.sizeWithoutCarryOver();
+			// Peculiar syntax for adding a new payload to the cyclic queue. The
+			// move semantics is required for intended functionality!
 			this->data_pool.emplace(new yon_pool_vcfc_payload(n_blocks++, new containers::VcfContainer(std::move(this->container))));
-			std::cerr << "produce block: " << n_blocks << "\t" << this->n_rcds_loaded << std::endl;
 		}
 		return true;
 	}
@@ -235,11 +297,15 @@ public:
 	std::unique_ptr<io::VcfReader>& reader;
 };
 
+/**<
+ * Slave worker instantiation of VariantImporter. Used exclusively during htslib
+ * Vcf importing. Data has to be provided through the cyclic queue generated by the
+ * appropriate producer.
+ */
 class VcfImporter {
 public:
 	typedef VcfImporter                     self_type;
 	typedef VariantImportWriterInterface    writer_type;
-
 	typedef io::BasicBuffer                 buffer_type;
 	typedef index::IndexEntry               index_entry_type;
 	typedef io::VcfHeader                   vcf_header_type;
@@ -252,12 +318,12 @@ public:
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
-	typedef std::unordered_map<uint32_t, uint32_t>    reorder_map_type;
-	typedef std::unordered_map<uint64_t, uint32_t>    hash_map_type;
+	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
+	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
 public:
-	VcfImporter() : block_id(0), vcf_header_(nullptr), GT_available_(false){}
-	VcfImporter(const settings_type& settings) : block_id(0), vcf_header_(nullptr), GT_available_(false){}
+	VcfImporter() : n_blocks_processed(0), block_id(0), vcf_header_(nullptr), GT_available_(false){}
+	VcfImporter(const settings_type& settings) : n_blocks_processed(0), block_id(0), vcf_header_(nullptr), GT_available_(false){}
 	VcfImporter(const self_type& other) = delete;
 	VcfImporter(self_type&& other) noexcept = delete;
 	VcfImporter& operator=(const self_type& other) = delete;
@@ -266,22 +332,41 @@ public:
 		// do not delete vcf_header, it is not owned by this class
 	}
 
+	VcfImporter& operator+=(const VcfImporter& other){
+		this->n_blocks_processed += other.n_blocks_processed;
+		this->stats_basic += other.stats_basic;
+		this->stats_info += other.stats_info;
+		this->stats_format += other.stats_format;
+		return(*this);
+	}
+
+	/**<
+	 * Import the contents from a provided VcfContainer and target block id
+	 * into the local VariantBlock while preparing it for writing.
+	 * @param container
+	 * @param block_id
+	 * @return
+	 */
 	bool Add(vcf_container_type& container, const uint32_t block_id){
+		// Clear current data.
 		this->block.clear();
 		this->index_entry.reset();
 
+		// Assign new block id. This is provided by the producer.
 		this->block_id = block_id;
 
-		// Allocate containers and offsets for this file.
-		// This is not strictly necessary but prevents nasty resize
-		// calls in most cases.
-		this->block.Allocate(this->vcf_header_->info_fields_.size(),
-				this->vcf_header_->format_fields_.size(),
-				this->vcf_header_->filter_fields_.size());
+		if(this->n_blocks_processed++ == 0){
+			// Allocate containers and offsets for this file.
+			// This is not strictly necessary but prevents nasty resize
+			// calls in most cases.
+			this->block.Allocate(this->vcf_header_->info_fields_.size(),
+								 this->vcf_header_->format_fields_.size(),
+								 this->vcf_header_->filter_fields_.size());
 
-		// Resize containers
-		const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
-		this->block.resize(resize_to);
+			// Resize containers
+			const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
+			this->block.resize(resize_to);
+		}
 
 		// This pointer here is borrowed from the PPA manager
 		// during import stages. Do not destroy the target block
@@ -329,10 +414,6 @@ public:
 		this->block.PackFooter(); // Pack footer into buffer.
 		this->compression_manager.zstd_codec.Compress(block.footer_support);
 
-		// Clear current data.
-		//this->clear();
-		//this->block.clear();
-		//this->index_entry.reset();
 		return true;
 	}
 
@@ -357,6 +438,7 @@ public:
 	}
 
 public:
+	uint32_t n_blocks_processed;
 	uint32_t block_id;
 	index::Index index;
 	vcf_header_type* vcf_header_;
@@ -383,8 +465,6 @@ public:
 	reorder_map_type info_reorder_map_;
 	reorder_map_type format_reorder_map_;
 	reorder_map_type contig_reorder_map_;
-
-	hash_map_type block_hash_map;
 };
 
 class VariantImporter {
@@ -422,15 +502,13 @@ public:
 	inline void SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 private:
-	bool BuildVCF();
-
 	bool WriteFinal(algorithm::VariantDigestManager& checksums);
 	bool WriteKeychain(const encryption::Keychain<>& keychain);
 	bool WriteYonHeader();
 	void UpdateHeaderImport(VariantHeader& header);
 
 private:
-	settings_type settings_; // internal settings
+	settings_type settings_; // import settings
 	bool GT_available_;
 
 	// Stats
@@ -440,14 +518,8 @@ private:
 
 	// Read/write fields
 	writer_interface_type* writer; // writer
-	index_entry_type  index_entry; // streaming index entry
-	radix_sorter_type permutator;  // GT permuter
-	gt_encoder_type   encoder;     // RLE packer
 
 	compression_manager_type compression_manager;
-
-	// Data container
-	block_type block;
 
 	// Map from BCF global FORMAT/INFO/FILTER IDX to local IDX such that
 	// FORMAT maps to [0, f-1], and INFO maps to [0, i-1] and FILTER to
@@ -461,7 +533,6 @@ private:
 	reorder_map_type contig_reorder_map_;
 
 	std::unique_ptr<vcf_reader_type> vcf_reader_;
-	vcf_container_type vcf_container_;
 
 	hash_map_type block_hash_map;
 };
@@ -571,6 +642,7 @@ struct yon_writer_sync {
 };
 
 struct yon_consumer_vcfc {
+public:
 	yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), b_shared(0), b_indiv(0), data_available(nullptr), data_pool(nullptr), global_header(nullptr), poolw(nullptr){}
 	yon_consumer_vcfc(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vcfc& data_pool) :
 		n_rcds_processed(0), thread_id(thread_id), b_shared(0), b_indiv(0), data_available(&data_available), data_pool(&data_pool), global_header(nullptr),
@@ -581,6 +653,7 @@ struct yon_consumer_vcfc {
 		this->n_rcds_processed += other.n_rcds_processed;
 		this->b_shared += other.b_shared;
 		this->b_indiv  += other.b_indiv;
+		this->importer += other.importer;
 		return(*this);
 	}
 
@@ -589,6 +662,7 @@ struct yon_consumer_vcfc {
 		return(this->thread_);
 	}
 
+private:
 	bool Consume(void){
 		algorithm::GenotypeSorter sorter;
 		sorter.SetSamples(this->global_header->GetNumberSamples());
@@ -596,7 +670,7 @@ struct yon_consumer_vcfc {
 		while(data_available){
 			yon_pool_vcfc_payload* d = data_pool->pop();
 			if(d == nullptr){
-				std::cerr << "is exit conditon: nullptr" << std::endl;
+				//std::cerr << "is exit conditon: nullptr" << std::endl;
 				break;
 			}
 			assert(d->c != nullptr);
@@ -607,27 +681,28 @@ struct yon_consumer_vcfc {
 			}
 			this->b_shared += b_l_shared;
 			this->b_indiv  += b_l_indiv;
-			std::cerr << thread_id << " popped block " << d->block_id << ": " << d->c->sizeWithoutCarryOver() << "\t" << d->c->front()->rid << ":" << d->c->front()->pos << "->" << d->c->back()->pos << "\t" << b_l_indiv << "," << b_l_shared << std::endl;
 
 			// Unpack bcf1_t records.
 			n_rcds_processed += d->c->sizeWithoutCarryOver();
-			for(int i = 0; i < d->c->sizeWithoutCarryOver(); ++i){
+			for(int i = 0; i < d->c->sizeWithoutCarryOver(); ++i)
 				bcf_unpack(d->c->at(i), BCF_UN_ALL);
-			}
 
+			// Add data from the container to the local importer.
 			assert(this->importer.Add(*d->c, d->block_id) == true);
 
+			// Push
 			this->poolw->cv_next_checkpoint.notify_all();
 			this->poolw->emplace(d->block_id, *d->c, this->importer);
 
-				//}
-			//}
-
+			// Cleanup data popped from the producer queue.
 			delete d;
 		}
+
+		// Done.
 		return true;
 	}
 
+public:
 	uint64_t n_rcds_processed;
 	uint32_t thread_id;
 	uint64_t b_shared, b_indiv;
