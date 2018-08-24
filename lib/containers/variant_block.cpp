@@ -601,6 +601,14 @@ bool VariantBlock::write(std::ostream& stream,
 		return false;
 	}
 
+	// Resize stats containers to accomodate all the streams
+	// described in this block.
+	if(stats_basic.size() == 0)  stats_basic.Allocate(YON_BLK_N_STATIC + 1);
+	if(stats_info.size() == 0)   stats_info.Allocate(this->footer.n_info_streams + 1);
+	if(stats_format.size() == 0) stats_format.Allocate(this->footer.n_format_streams + 1);
+
+	// Keep track of start offset and other offets in the
+	// stream.
 	const uint64_t begin_pos = stream.tellp();
 	this->header.l_offset_footer = this->GetCompressedSize();
 	stream << this->header;

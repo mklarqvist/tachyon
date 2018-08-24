@@ -15,8 +15,7 @@ Tachyon, or `YON` for short, is an open source C++ software library for reading,
 * **Compression**: Tachyon files are generally many fold (in many cases many 10- to 100-folds) smaller than the current standard file-format.
 * **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries. This memory layout enables extremely rapid field-specific queries.  
 * **Performance**: The file-format is designed as independent blocks of data into independent byte streams. This approach is inherently amenable to paralellization through scatter-gather approaches on multiple cores or multiple machines.
-* **High-level API**: User-friendly C++/C API for quering, manipulating, and exploring sequence data with minimal programming experience
-* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF` and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
+* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF`, `VCF.GZ`, and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
 
 ---  
 
