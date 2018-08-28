@@ -3,6 +3,8 @@
 
 #include <cstring>
 #include <fstream>
+#include <algorithm>
+#include <iostream>
 
 #include "containers/components/generic_iterator.h"
 
@@ -57,6 +59,38 @@ public:
 
     ~VariantIndexBin(){ delete [] this->blocks_; }
 
+    self_type& operator+=(const self_type& other){
+    	this->n_variants_ += other.n_variants_;
+    	if(this->n_blocks_ + other.n_blocks_ > this->capacity())
+    		this->resize(this->n_blocks_ + other.n_blocks_ + 64);
+
+    	for(int i = 0; i < other.n_blocks_; ++i){
+    		//std::cerr << "adding block " << other.blocks_[i] << " to offset " << this->n_ << std::endl;
+    		this->blocks_[this->n_blocks_ + i] = other.blocks_[i];
+    	}
+
+    	this->n_blocks_ += other.n_blocks_;
+
+    	// Sort and dedupe.
+    	if(this->size() > 1){
+			std::sort(&this->blocks_[0], &this->blocks_[this->n_blocks_]);
+
+			value_type* temp = new value_type[this->size()];
+			temp[0] = this->blocks_[0];
+			int new_size = 1;
+			for(int i = 1; i < this->size(); ++i){
+				if(temp[new_size - 1] != this->blocks_[i]){
+					temp[new_size++] = this->blocks_[i];
+				}
+			}
+			memcpy(temp, this->blocks_, new_size*sizeof(value_type));
+			delete [] temp;
+			this->n_blocks_ = new_size;
+    	}
+
+    	return(*this);
+    }
+
     inline bool operator<(const self_type& other) const{ return(this->binID_ < other.binID_); }
 
 	// Element access
@@ -93,11 +127,19 @@ public:
 		delete [] old;
 	}
 
+	void resize(const uint32_t new_size){
+		pointer old = this->blocks_;
+		this->n_capacity_ = new_size;
+		this->blocks_ = new value_type[this->capacity()*2];
+		for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
+		delete [] old;
+	}
+
 	/**<
 	 * Update
 	 * @param variant_block_number
 	 */
-    void add(const uint32_t& variant_block_number){
+    void Add(const uint32_t& variant_block_number){
 		if(this->size() + 1 >= this->capacity())
 			this->resize();
 
@@ -112,7 +154,7 @@ public:
     	}
     }
 
-    std::ostream& print(std::ostream& stream){
+    std::ostream& Print(std::ostream& stream){
     	stream << "ID: " << this->binID_ << ", variants: " << this->n_variants_ << ", associated blocks: " << this->n_blocks_;
     	if(this->size()){
     		stream << ", yon-blocks ids: " << this->blocks_[0];
@@ -149,8 +191,8 @@ private:
 	}
 
 public:
-	uint32_t       binID_;
-	uint32_t       n_variants_; // number of variants belonging to this bin
+	uint32_t  binID_;
+	uint32_t  n_variants_; // number of variants belonging to this bin
 	size_type n_blocks_;
 	size_type n_capacity_;
 	pointer   blocks_;    // tachyon blocks belonging to this bin

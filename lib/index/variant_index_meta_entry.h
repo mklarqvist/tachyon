@@ -1,28 +1,30 @@
 #ifndef INDEX_INDEX_INDEX_ENTRY_H_
 #define INDEX_INDEX_INDEX_ENTRY_H_
 
-#include "index/index_entry.h"
+#include "variant_index_entry.h"
 
 namespace tachyon{
 namespace index{
 
-struct IndexIndexEntry{
+struct VariantIndexMetaEntry{
 public:
-	typedef IndexIndexEntry self_type;
-	typedef IndexEntry entry_type;
+	typedef VariantIndexMetaEntry self_type;
+	typedef VariantIndexEntry entry_type;
 
 public:
-	IndexIndexEntry() :
+	VariantIndexMetaEntry() :
 		contigID(-1),
 		n_blocks(0),
 		n_variants(0),
 		byte_offset_begin(0),
 		byte_offest_end(0),
 		minPosition(0),
-		maxPosition(0)
+		maxPosition(0),
+		start_block(0),
+		end_block(0)
 	{}
 
-	~IndexIndexEntry(){}
+	~VariantIndexMetaEntry(){}
 
 	void reset(void){
 		this->contigID          = -1;
@@ -32,9 +34,11 @@ public:
 		this->byte_offest_end   = 0;
 		this->minPosition       = 0;
 		this->maxPosition       = 0;
+		this->start_block       = 0;
+		this->end_block         = 0;
 	}
 
-	void operator()(const entry_type& entry){
+	void operator=(const entry_type& entry){
 		this->contigID          = entry.contigID;
 		this->n_blocks          = 1;
 		this->n_variants        = entry.n_variants;
@@ -42,6 +46,8 @@ public:
 		this->byte_offest_end   = entry.byte_offset_end;
 		this->minPosition       = entry.minPosition;
 		this->maxPosition       = entry.maxPosition;
+		this->start_block       = entry.blockID;
+		this->end_block         = entry.blockID;
 	}
 
 	inline bool operator==(const entry_type& entry) const{ return(this->contigID == entry.contigID); }
@@ -55,6 +61,8 @@ public:
 		if(this->byte_offest_end   != other.byte_offest_end) return false;
 		if(this->minPosition       != other.minPosition) return false;
 		if(this->maxPosition       != other.maxPosition) return false;
+		if(this->start_block       != other.start_block) return false;
+		if(this->end_block         != other.end_block) return false;
 		return true;
 	}
 
@@ -63,6 +71,12 @@ public:
 		this->n_variants     += entry.n_variants;
 		this->byte_offest_end = entry.byte_offset_end;
 		this->maxPosition     = entry.maxPosition;
+		this->end_block       = entry.blockID;
+	}
+
+	std::ostream& Print(std::ostream& stream) const{
+		stream << contigID << ":" << minPosition << "-" << maxPosition << ", " << n_variants << "," << n_blocks << " @ " << byte_offset_begin << "-" << byte_offest_end << " blocks: " << start_block << "-" << end_block;
+		return(stream);
 	}
 
 private:
@@ -74,6 +88,8 @@ private:
 		stream.write(reinterpret_cast<const char*>(&entry.byte_offest_end),  sizeof(uint64_t));
 		stream.write(reinterpret_cast<const char*>(&entry.minPosition),      sizeof(uint64_t));
 		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),      sizeof(uint64_t));
+		stream.write(reinterpret_cast<const char*>(&entry.start_block),      sizeof(uint32_t));
+		stream.write(reinterpret_cast<const char*>(&entry.end_block),        sizeof(uint32_t));
 
 		return(stream);
 	}
@@ -86,6 +102,8 @@ private:
 		stream.read(reinterpret_cast<char*>(&entry.byte_offest_end),  sizeof(uint64_t));
 		stream.read(reinterpret_cast<char*>(&entry.minPosition),      sizeof(uint64_t));
 		stream.read(reinterpret_cast<char*>(&entry.maxPosition),      sizeof(uint64_t));
+		stream.read(reinterpret_cast<char*>(&entry.start_block),      sizeof(uint32_t));
+		stream.read(reinterpret_cast<char*>(&entry.end_block),        sizeof(uint32_t));
 
 		return(stream);
 	}
@@ -98,6 +116,8 @@ public:
 	uint64_t byte_offest_end;    // end virtual offset
 	uint64_t minPosition;        // smallest bp position observed
 	uint64_t maxPosition;        // largest  bp position observed
+	uint32_t start_block;        // start block
+	uint32_t end_block;          // end block
 };
 
 }

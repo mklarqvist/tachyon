@@ -21,8 +21,7 @@ VariantImportWriterInterface::~VariantImportWriterInterface()
 {
 }
 
-void VariantImportWriterInterface::writeIndex(void){
-	this->index.BuildMetaIndex();
+void VariantImportWriterInterface::WriteIndex(void){
 	*this->stream << this->index;
 	this->stream->flush();
 }

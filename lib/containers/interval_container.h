@@ -25,7 +25,7 @@ public:
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
     typedef index::Index           index_type;
-    typedef index::IndexEntry      index_entry_type;
+    typedef index::VariantIndexEntry      index_entry_type;
     typedef VariantHeader          header_type;
     typedef core::MetaEntry        meta_entry_type;
 

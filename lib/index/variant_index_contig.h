@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <cassert>
 
 #include "containers/components/generic_iterator.h"
 #include "variant_index_bin.h"
@@ -30,6 +31,16 @@ public:
     VariantIndexContig(const self_type& other);
     void operator=(const self_type& other);
     ~VariantIndexContig();
+
+    self_type& operator+=(const self_type& other){
+    	this->n_sites_ += other.n_sites_;
+    	assert(this->n_bins_ == other.n_bins_);
+    	assert(this->n_levels_ == other.n_levels_);
+    	for(int i = 0; i < this->n_bins_; ++i)
+    		this->bins_[i] += other.bins_[i];
+
+    	return(*this);
+    }
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->bins_[position]); }

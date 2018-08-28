@@ -163,16 +163,9 @@ public:
 
 	/**<
 	 * Standard way of writing out a YON block.
-	 * @param stream       Target output stream
-	 * @param stats_basic  Tracking for basic containers
-	 * @param stats_info   Tracking for INFO containers
-	 * @param stats_format Tracking for FORMAT containers
 	 * @return             Returns TRUE upon success or FALSE otherwise
 	 */
-	bool write(std::ostream& stream,
-	           import_stats_type& stats_basic,
-	           import_stats_type& stats_info,
-	           import_stats_type& stats_format);
+	bool write(std::ostream& stream);
 
 	/**<
 	 * Add the data from a MetaEntry object to this block. Internally
@@ -350,6 +343,16 @@ public:
 	std::vector<bool> FormatPatternSetMembership(const int value) const;
 	std::vector<bool> FilterPatternSetMembership(const int value) const;
 
+	/**<
+	 *
+	 * @param stats_basic
+	 * @param stats_info
+	 * @param stats_format
+	 */
+	void UpdateOutputStatistics(import_stats_type& stats_basic,
+								import_stats_type& stats_info,
+								import_stats_type& stats_format);
+
 private:
 	/**<
 	 * Parse user-provided settings that provide information regarding
@@ -369,16 +372,6 @@ private:
 	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool ParseLoadedPatterns(DataBlockSettings& settings);
-
-	/**<
-	 *
-	 * @param stats_basic
-	 * @param stats_info
-	 * @param stats_format
-	 */
-	void UpdateOutputStatistics(import_stats_type& stats_basic,
-	                            import_stats_type& stats_info,
-	                            import_stats_type& stats_format);
 
 	/**<
 	 * Move over pair of headers from a data container to a block footer

@@ -1,17 +1,17 @@
 #ifndef INDEX_INDEX_META_CONTAINER_H_
 #define INDEX_INDEX_META_CONTAINER_H_
 
-#include "index_index_entry.h"
+#include "variant_index_meta_entry.h"
 #include "containers/components/generic_iterator.h"
 
 namespace tachyon{
 namespace index{
 
-class IndexMetaContainer{
+class VariantIndexMeta{
 public:
-	typedef IndexMetaContainer self_type;
+	typedef VariantIndexMeta self_type;
     typedef std::size_t        size_type;
-    typedef IndexIndexEntry    value_type;
+    typedef VariantIndexMetaEntry    value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
@@ -21,13 +21,13 @@ public:
 	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-    IndexMetaContainer() :
+    VariantIndexMeta() :
 		n_entries(0),
 		n_capacity(1000),
 		__entries(new value_type[this->n_capacity])
 	{}
 
-    IndexMetaContainer(const self_type& other) :
+    VariantIndexMeta(const self_type& other) :
     	n_entries(other.n_entries),
 		n_capacity(other.n_capacity),
 		__entries(new value_type[this->n_capacity])
@@ -36,7 +36,7 @@ public:
     		this->__entries[i] = other.__entries[i];
     }
 
-	~IndexMetaContainer(){
+	~VariantIndexMeta(){
 		delete [] this->__entries;
 	}
 
@@ -86,6 +86,24 @@ public:
 			this->__entries[i] = temp[i];
 
 		delete [] temp;
+	}
+
+	void resize(const uint32_t new_size){
+		pointer temp = this->__entries;
+
+		this->n_capacity = new_size;
+		this->__entries = new value_type[this->capacity()];
+
+		// Lift over values from old addresses
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->__entries[i] = temp[i];
+
+		delete [] temp;
+	}
+
+	void reserve(const uint32_t new_size){
+		this->resize(new_size);
+		this->n_entries = new_size;
 	}
 
 private:

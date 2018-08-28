@@ -50,7 +50,7 @@ private:
 	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
-	typedef index::IndexEntry                      index_entry_type;
+	typedef index::VariantIndexEntry               index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef encryption::Keychain<>                 keychain_type;
 	typedef VariantReaderObjects                   objects_type;
@@ -208,24 +208,14 @@ public:
 	 * @return
 	 */
 	bool SeekBlock(const uint32_t& blockID){
-		uint32_t cumulative = 0;
-		for(uint32_t i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
-			if(cumulative + this->GetIndex().index_.linear_[i].size() > blockID){
-				const uint64_t offset = this->GetIndex().index_.linear_[i].at(blockID - cumulative).byte_offset;
-				std::cerr << "offset is " << offset << std::endl;
-				this->basic_reader.stream_.seekg(offset);
-				if(this->basic_reader.stream_.good() == false){
-					std::cerr << "failed to seek" << std::endl;
-					return false;
-				}
-				return true;
-			}
-			//std::cerr << "cumualtive: " << i << "/" << this->GetIndex().index_.n_contigs_ << ":" << cumulative << std::endl;
-			cumulative += this->GetIndex().index_.linear_[i].size();
+		const uint64_t offset = this->GetIndex().linear_.at(blockID).byte_offset;
+		std::cerr << "offset is " << offset << std::endl;
+		this->basic_reader.stream_.seekg(offset);
+		if(this->basic_reader.stream_.good() == false){
+			std::cerr << "failed to seek" << std::endl;
+			return false;
 		}
-
-		std::cerr << "cannot find: " << blockID << "/" << cumulative << std::endl;
-		return false;
+		return true;
 	}
 
 	/**<

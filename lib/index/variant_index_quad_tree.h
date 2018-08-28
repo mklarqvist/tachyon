@@ -16,9 +16,25 @@
 namespace tachyon{
 namespace index{
 
-class VariantIndex {
+/*
+class VIndex {
+
+
+	// Does not required sorted data. Linear array of variant block
+	// offsets.
+	VariantIndexLinear* c;
+	// If data is sorted then the meta index is equivalent to
+	// a run of linear blocks.
+	VariantIndexMeta* m;
+	// If data is sorted then the quad-tree allows random access
+	// lookups of data.
+	VariantIndexQuad* q;
+};
+*/
+
+class VariantIndexQuadTree {
 public:
-	typedef VariantIndex       self_type;
+	typedef VariantIndexQuadTree       self_type;
     typedef std::size_t        size_type;
     typedef VariantIndexContig value_type;
     typedef VariantIndexLinear linear_type;
@@ -26,16 +42,25 @@ public:
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
-    typedef IndexEntry         linear_entry_type;
+    typedef VariantIndexEntry  linear_entry_type;
     typedef YonContig          contig_type;
+    typedef linear_type*       linear_pointer;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-	VariantIndex();
-	VariantIndex(const self_type& other);
-	~VariantIndex();
+   	VariantIndexQuadTree();
+   	VariantIndexQuadTree(const self_type& other);
+	~VariantIndexQuadTree();
+
+	self_type& operator+=(const self_type& other){
+		assert(this->n_contigs_ == other.n_contigs_);
+		for(int i = 0; i < this->n_contigs_; ++i)
+			this->contigs_[i] += other.contigs_[i];
+
+		return(*this);
+	}
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->contigs_[position]); }
@@ -48,9 +73,6 @@ public:
 	inline const_reference front(void) const{ return(this->contigs_[0]); }
 	inline reference back(void){ return(this->contigs_[this->n_contigs_ - 1]); }
 	inline const_reference back(void) const{ return(this->contigs_[this->n_contigs_ - 1]); }
-
-	inline linear_type& linear_at(const size_type& contig_id){ return(this->linear_[contig_id]); }
-	inline const linear_type& linear_at(const size_type& contig_id) const{ return(this->linear_[contig_id]); }
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_contigs_ == 0); }
@@ -103,19 +125,7 @@ public:
 			this->resize();
 
 		new( &this->contigs_[this->n_contigs_] ) value_type( contigID, l_contig, n_levels );
-		new( &this->linear_[this->n_contigs_] ) linear_type( contigID );
 		++this->n_contigs_;
-		return(*this);
-	}
-
-	/**<
-	 * Add index entry to the linear index given a contig id
-	 * @param contigID Target linear index at position contigID
-	 * @param entry    Target index entry to push back onto the linear index vector
-	 * @return         Returns a reference of self
-	 */
-	inline self_type& Add(const uint32_t& contigID, const linear_entry_type& entry){
-		this->linear_[contigID] += entry;
 		return(*this);
 	}
 
@@ -129,15 +139,12 @@ public:
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 
 public:
-	size_type    n_contigs_; // number of contigs
-	size_type    n_capacity_;
-	pointer      contigs_;
-	linear_type* linear_;
+	size_type      n_contigs_; // number of contigs
+	size_type      n_capacity_;
+	pointer        contigs_;
 };
 
 }
 }
-
-
 
 #endif /* INDEX_VARIANT_INDEX_H_ */

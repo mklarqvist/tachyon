@@ -133,7 +133,6 @@ public:
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
 	self_type& operator+=(const self_type& other){
-		std::cerr << "invoking +=" << std::endl;
 		while(other.size() > this->size()) this->resize();
 
 		for(uint32_t i = 0; i < other.size(); ++i)
@@ -173,21 +172,25 @@ public:
 		for(uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( temp[i] );
 
-		for(std::size_t i = 0; i < this->size(); ++i)
-			(temp + i)->~VariantImporterStatsObject();
+		if(temp != nullptr){
+			for(std::size_t i = 0; i < this->size(); ++i)
+				(temp + i)->~VariantImporterStatsObject();
 
-		::operator delete[](static_cast<void*>(temp));
+			::operator delete[](static_cast<void*>(temp));
+		}
 	}
 
 	inline void resize(void){ return(this->resize(this->capacity()*2)); }
 
 	void Allocate(const uint32_t entries){
 		// Delete previous entries.
-		for(std::size_t i = 0; i < this->size(); ++i)
-			(this->entries_ + i)->~VariantImporterStatsObject();
+		if(this->entries_ != nullptr){
+			for(std::size_t i = 0; i < this->size(); ++i)
+				(this->entries_ + i)->~VariantImporterStatsObject();
+			::operator delete[](static_cast<void*>(this->entries_));
 
-		::operator delete[](static_cast<void*>(this->entries_));
-		this->entries_ = nullptr;
+			this->entries_ = nullptr;
+		}
 
 		if(entries > this->capacity()) this->resize(entries);
 

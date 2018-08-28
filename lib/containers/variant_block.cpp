@@ -592,20 +592,11 @@ void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic,
 	}
 }
 
-bool VariantBlock::write(std::ostream& stream,
-                     import_stats_type& stats_basic,
-                     import_stats_type& stats_info,
-                     import_stats_type& stats_format)
+bool VariantBlock::write(std::ostream& stream)
 {
 	if(stream.good() == false){
 		return false;
 	}
-
-	// Resize stats containers to accomodate all the streams
-	// described in this block.
-	if(stats_basic.size() == 0)  stats_basic.Allocate(YON_BLK_N_STATIC + 1);
-	if(stats_info.size() == 0)   stats_info.Allocate(this->footer.n_info_streams + 1);
-	if(stats_format.size() == 0) stats_format.Allocate(this->footer.n_format_streams + 1);
 
 	// Keep track of start offset and other offets in the
 	// stream.
@@ -613,7 +604,6 @@ bool VariantBlock::write(std::ostream& stream,
 	this->header.l_offset_footer = this->GetCompressedSize();
 	stream << this->header;
 	const uint64_t start_pos = stream.tellp();
-	stats_basic[0].cost_uncompressed += start_pos - begin_pos;
 
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (uint64_t)stream.tellp() - start_pos);
@@ -631,9 +621,6 @@ bool VariantBlock::write(std::ostream& stream,
 
 	// Assert that the written amount equals the expected amount.
 	assert(this->header.l_offset_footer == (uint64_t)stream.tellp() - start_pos);
-
-	// Update stats
-	this->UpdateOutputStatistics(stats_basic, stats_info, stats_format);
 
 	return(stream.good());
 }

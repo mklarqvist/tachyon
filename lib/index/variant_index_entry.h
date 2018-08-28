@@ -7,14 +7,12 @@
 namespace tachyon{
 namespace index{
 
-/**<
- * Sorted index entry
- */
-struct IndexEntry{
-	typedef IndexEntry self_type;
+struct VariantIndexEntry{
+public:
+	typedef VariantIndexEntry self_type;
 
 public:
-	IndexEntry() :
+	VariantIndexEntry() :
 		blockID(0),
 		contigID(-1),
 		n_variants(0),
@@ -25,20 +23,6 @@ public:
 		minBin(std::numeric_limits<int32_t>::max()),
 		maxBin(0)
 	{}
-
-	IndexEntry(const self_type& other) :
-		blockID(other.blockID),
-		contigID(other.contigID),
-		n_variants(other.n_variants),
-		byte_offset(other.byte_offset),
-		byte_offset_end(other.byte_offset_end),
-		minPosition(other.minPosition),
-		maxPosition(other.maxPosition),
-		minBin(other.minBin),
-		maxBin(other.maxBin)
-	{
-
-	}
 
 	bool operator!=(const self_type& other) const{
 		if(this->blockID         != other.blockID)         return true;
@@ -71,7 +55,7 @@ public:
 		return true;
 	}
 
-	~IndexEntry(){}
+	~VariantIndexEntry(){}
 
 	void reset(void){
 		this->blockID         = 0;
@@ -120,14 +104,13 @@ private:
 	}
 
 public:
-	// Global index
-	uint64_t blockID;        // this data is duplicated
-	int32_t contigID;       // this data is duplicated
-	uint32_t n_variants;     // this data is duplicated
-	uint64_t byte_offset;	// tellg() position in stream for start of record in Tomahawk file
-	uint64_t byte_offset_end;// tellg() position in stream for start of record in Tomahawk file
-	uint64_t minPosition;	// smallest bp position
-	uint64_t maxPosition;	// largest  bp position
+	uint64_t blockID; // this data is duplicated
+	int32_t contigID; // this data is duplicated
+	uint32_t n_variants; // this data is duplicated
+	uint64_t byte_offset; // tellg() position in stream for start of record in Tachyon file
+	uint64_t byte_offset_end;// tellg() position in stream for start of record in Tachyon file
+	uint64_t minPosition;   // smallest bp position
+	uint64_t maxPosition;  // largest  bp position
 	int32_t minBin;
 	int32_t maxBin;
 };

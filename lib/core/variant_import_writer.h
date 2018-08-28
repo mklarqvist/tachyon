@@ -20,7 +20,7 @@ public:
 	VariantImportWriterInterface();
 	virtual ~VariantImportWriterInterface();
 
-	void writeIndex(void);
+	void WriteIndex(void);
 	virtual bool open(const std::string output) =0;
 
 	bool WriteBlockFooter(const container_type& footer){

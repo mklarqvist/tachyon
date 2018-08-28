@@ -11,8 +11,8 @@
 #include "containers/variant_block.h"
 #include "core/variant_import_writer.h"
 #include "core/variant_importer_container_stats.h"
-#include "index/index_entry.h"
-#include "index/index_index_entry.h"
+#include "index/variant_index_entry.h"
+#include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
 #include "support/helpers.h"
 #include "algorithm/digest/variant_digest_manager.h"
@@ -166,7 +166,7 @@ public:
 		});
 
 		if(this->n_c == 0 && this->alive == false){
-			std::cerr << "is empty in wait full" << std::endl;
+			//std::cerr << "is empty in wait full" << std::endl;
 			l.unlock();
 			this->not_full.notify_all();
 			this->not_empty.notify_all();
@@ -195,7 +195,7 @@ public:
 		});
 
 		if(this->n_c == 0){
-			std::cerr << "is empty return nullptr" << std::endl;
+			//std::cerr << "is empty return nullptr" << std::endl;
 			l.unlock();
 			this->not_empty.notify_all();
 			this->not_full.notify_all();
@@ -307,7 +307,7 @@ public:
 	typedef VcfImporter                     self_type;
 	typedef VariantImportWriterInterface    writer_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef index::IndexEntry               index_entry_type;
+	typedef index::VariantIndexEntry        index_entry_type;
 	typedef io::VcfHeader                   vcf_header_type;
 	typedef containers::VcfContainer        vcf_container_type;
 	typedef algorithm::CompressionManager   compression_manager_type;
@@ -334,9 +334,7 @@ public:
 
 	VcfImporter& operator+=(const VcfImporter& other){
 		this->n_blocks_processed += other.n_blocks_processed;
-		this->stats_basic += other.stats_basic;
-		this->stats_info += other.stats_info;
-		this->stats_format += other.stats_format;
+		this->index += other.index;
 		return(*this);
 	}
 
@@ -354,6 +352,7 @@ public:
 
 		// Assign new block id. This is provided by the producer.
 		this->block_id = block_id;
+		this->index_entry.blockID = block_id;
 
 		if(this->n_blocks_processed++ == 0){
 			// Allocate containers and offsets for this file.
@@ -446,11 +445,6 @@ public:
 	settings_type settings_; // internal settings
 	bool GT_available_;
 
-	// Stats
-	import_stats_type stats_basic;
-	import_stats_type stats_info;
-	import_stats_type stats_format;
-
 	// Read/write fields
 	index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter
@@ -474,7 +468,7 @@ public:
 	typedef VariantImportWriterFile         writer_file_type;
 	typedef VariantImportWriterStream       writer_stream_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef index::IndexEntry               index_entry_type;
+	typedef index::VariantIndexEntry        index_entry_type;
 	typedef io::VcfReader                   vcf_reader_type;
 	typedef containers::VcfContainer        vcf_container_type;
 	typedef algorithm::CompressionManager   compression_manager_type;
@@ -537,7 +531,7 @@ private:
 	hash_map_type block_hash_map;
 };
 
-// Synchronized writer.
+// Synchronised writer.
 struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
@@ -551,18 +545,17 @@ struct yon_writer_sync {
 		});
 
 		if(this->alive == false){
-			std::cerr << "is exit condition in wblock" << std::endl;
+			//std::cerr << "is exit condition in wblock" << std::endl;
 			l.unlock();
 			cv_next_checkpoint.notify_all();
 			return;
 		}
 
-		// do something
-		std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << container.sizeWithoutCarryOver() << std::endl;
-
+		// Write data container.
 		this->Write(importer.block, container, importer.index_entry);
-		std::cerr << utility::timestamp("LOG") << "Writing: " << importer.block.GetCompressedSize() << " bytes." << std::endl;
-
+		// Update compression/storage statistics.
+		importer.block.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
+		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;
 
 		++this->next_block_id;
 		this->n_written_rcds += container.sizeWithoutCarryOver();
@@ -571,31 +564,37 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
-	bool Write(containers::VariantBlock& block, const containers::VcfContainer& container, index::IndexEntry& index_entry){
+	bool Write(containers::VariantBlock& block,
+	           const containers::VcfContainer& container,
+	           index::VariantIndexEntry& index_entry)
+	{
 		this->WriteBlock(block, index_entry); // write block
 		this->UpdateIndex(container, index_entry); // Update index.
 		return(this->writer->stream->good());
 	}
 
-	bool UpdateIndex(const containers::VcfContainer& container, index::IndexEntry& index_entry){
+	bool UpdateIndex(const containers::VcfContainer& container, index::VariantIndexEntry& index_entry){
 		assert(this->writer != nullptr);
 		index_entry.blockID         = this->writer->n_blocks_written;
 		index_entry.byte_offset_end = this->writer->stream->tellp();
 		index_entry.contigID        = container.front()->rid;
 		index_entry.minPosition     = container.front()->pos;
 		index_entry.n_variants      = container.sizeWithoutCarryOver();
-		this->writer->index.index_.linear_at(index_entry.contigID) += index_entry;
+		this->writer->index        += index_entry;
+
+		index_entry.print(std::cerr);
+		std::cerr << std::endl;
+
 		index_entry.reset();
 		++this->writer->n_blocks_written;
 		this->writer->n_variants_written += container.sizeWithoutCarryOver();
-		++this->writer->index.number_blocks;
 
 		return true;
 	}
 
-	bool WriteBlock(containers::VariantBlock& block, index::IndexEntry& index_entry){
+	bool WriteBlock(containers::VariantBlock& block, index::VariantIndexEntry& index_entry){
 		index_entry.byte_offset = this->writer->stream->tellp();
-		block.write(*this->writer->stream, this->stats_basic, this->stats_info, this->stats_format);
+		block.write(*this->writer->stream);
 		this->writer->WriteBlockFooter(block.footer_support);
 		this->writer->WriteEndOfBlock(); // End-of-block marker.
 
@@ -614,7 +613,7 @@ struct yon_writer_sync {
 		assert(footer.n_blocks == this->writer->index.GetLinearSize());
 
 		uint64_t last_pos = this->writer->stream->tellp();
-		this->writer->writeIndex(); // Write index.
+		this->writer->WriteIndex(); // Write index.
 		std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 		last_pos = this->writer->stream->tellp();
 		checksums.finalize();       // Finalize SHA-512 digests.
@@ -628,6 +627,7 @@ struct yon_writer_sync {
 		return(this->writer->stream->good());
 	}
 
+public:
 	uint64_t n_written_rcds;
 	uint32_t next_block_id;
 	std::atomic<bool> alive;
@@ -635,6 +635,7 @@ struct yon_writer_sync {
 	std::condition_variable cv_next_checkpoint;
 
 	VariantImportWriterInterface* writer; // writer
+
 	// Stats
 	support::VariantImporterContainerStats stats_basic;
 	support::VariantImporterContainerStats stats_info;

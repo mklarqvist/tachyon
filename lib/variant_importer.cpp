@@ -281,6 +281,10 @@ bool VariantImporter::BuildParallel(void){
 	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[this->settings_.n_threads];
 	yon_writer_sync    write; write.writer = this->writer;
 
+	write.stats_basic.Allocate(YON_BLK_N_STATIC + 1);
+	write.stats_info.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size() + 1);
+	write.stats_format.Allocate(this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
+
 	// Start progress timer.
 	algorithm::Timer timer; timer.Start();
 	producer.Start();
@@ -297,6 +301,7 @@ bool VariantImporter::BuildParallel(void){
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
 		consumers[i].importer.contig_reorder_map_ = this->contig_reorder_map_;
+
 		// The index needs to know how many contigs that's described in the
 		// Vcf header and their lenghts. This information is needed to construct
 		// the linear and quad-tree index most appropriate for the data.
@@ -308,18 +313,24 @@ bool VariantImporter::BuildParallel(void){
 	producer.all_finished = true;
 	producer.thread_.join();
 	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
-	std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
 
-	std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
-	std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
-	std::cerr << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
-	std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
-	for(int i = 0; i < consumers[0].importer.stats_basic.size(); ++i)
-		std::cerr << i << "\t" << consumers[0].importer.stats_basic.at(i) << std::endl;
-	for(int i = 0; i < consumers[0].importer.stats_format.size(); ++i)
-		std::cerr << i << "\t" << consumers[0].importer.stats_format.at(i) << std::endl;
-	for(int i = 0; i < consumers[0].importer.stats_info.size(); ++i)
-		std::cerr << i << "\t" << consumers[0].importer.stats_info.at(i) << std::endl;
+	//std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
+	//std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
+	//std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
+	//std::cerr << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
+	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
+
+	/*
+	for(int i = 0; i < write.stats_basic.size(); ++i)
+		std::cerr << i << "\t" << write.stats_basic.at(i) << std::endl;
+	for(int i = 0; i < write.stats_info.size(); ++i)
+		std::cerr << this->vcf_reader_->vcf_header_.info_fields_[i].id << "\t" << write.stats_info.at(i) << std::endl;
+	for(int i = 0; i < write.stats_format.size(); ++i)
+		std::cerr << this->vcf_reader_->vcf_header_.format_fields_[i].id << "\t" << write.stats_format.at(i) << std::endl;
+	*/
+
+	this->writer->index += consumers[0].importer.index;
+	//this->writer->index.Print(std::cerr);
 
 	// Finalize writing procedure.
 	write.WriteFinal(checksums);
