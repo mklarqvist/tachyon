@@ -108,7 +108,7 @@ public:
 	 * Wrapper function for adding a list of contigs to the index
 	 * @param contigs
 	 */
-	inline void Add(const std::vector<io::VcfContig>& contigs){
+	void Setup(const std::vector<io::VcfContig>& contigs){
 		this->index_.Add(contigs);
 		this->index_meta_.reserve(contigs.size());
 		for(int i = 0; i < contigs.size(); ++i)

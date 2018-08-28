@@ -138,7 +138,7 @@ public:
 			++this->n_biallelic;
 		}
 
-		// For SNV->SNV,insertion. It is not possible to have a deletion
+		// For SNV to SNV or insertion. It is not possible to have a deletion
 		// if the reference value is represented as a SNV.
 		if(rcd.meta->alleles[0].size() == 1){
 			// Encode alleles.
@@ -253,7 +253,7 @@ public:
 				++this->n_singleton;
 				++this->sample[t_non_ref].n_singleton;
 				assert(t_non_ref < this->n_s);
-				std::cerr << "singleton@" << t_non_ref << std::endl;
+				//std::cerr << "singleton@" << t_non_ref << std::endl;
 			}
 
 			delete [] allele_encodings;

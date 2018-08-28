@@ -769,7 +769,7 @@ void VariantReader::UpdateHeaderView(void){
 }
 
 bool VariantReader::Stats(void){
-	//this->variant_container.AllocateGenotypeMemory();
+	this->variant_container.AllocateGenotypeMemory();
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 	//	return(0);
@@ -820,12 +820,12 @@ bool VariantReader::Stats(void){
 	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
 
 	// stupid test
-	VariantReader v(*this);
+	//VariantReader v(*this);
 
-	while(v.CheckNextValid()){
-		variant_container_type c = v.ReturnBlock();
+	while(this->NextBlock()){
+		//variant_container_type c = v.ReturnBlock();
 		//variant_container_type& c = this->GetCurrentContainer();
-		c.AllocateGenotypeMemory();
+		//c.AllocateGenotypeMemory();
 
 		// Move all data to new instance.
 		//variant_container_type c(std::move(this->variant_container));
@@ -833,15 +833,15 @@ bool VariantReader::Stats(void){
 		//c = std::move(this->variant_container);
 		//variant_container_type c(this->variant_container);
 
-		objects_type* objects = c.LoadObjects(this->block_settings);
-		yon1_t* entries = c.LazyEvaluate(*objects);
+		objects_type* objects = this->variant_container.LoadObjects(this->block_settings);
+		yon1_t* entries = this->variant_container.LazyEvaluate(*objects);
 
 		// Debug
-		std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
+		//std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
 
 		// Debug
-		containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
-		std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
+		//containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
+		//std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
 
 
 
@@ -856,14 +856,11 @@ bool VariantReader::Stats(void){
 
 			const uint32_t n_format_avail = entries[i].format_ids->size();
 			if(n_format_avail > 0 && entries[i].is_loaded_gt){
-				entries[i].gt->ExpandExternal(c.GetAllocatedGenotypeMemory());
-				s.Update(entries[i], c.GetAllocatedGenotypeMemory());
+				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
 				//s.Update(entries[i]);
 			}
 		}
-
-		// Move back.
-		//this->variant_container = std::move(c);
 
 		delete [] entries;
 		//objects->occ = nullptr;

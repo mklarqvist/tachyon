@@ -4,6 +4,8 @@
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 
+#include "algorithm/parallel/vcf_slaves.h"
+
 namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :
@@ -267,9 +269,10 @@ bool VariantImporter::BuildParallel(void){
 	}
 
 	// The index needs to know how many contigs that's described in the
-	// Vcf header and their lenghts. This information is needed to construct
-	// the linear and quad-tree index most appropriate for the data.
-	this->writer->index.Add(this->vcf_reader_->vcf_header_.contigs_);
+	// Vcf header and their lengths in base-pairs. This information is
+	// needed to construct the linear and quad-tree index most appropriate
+	// for the data lengths.
+	this->writer->index.Setup(this->vcf_reader_->vcf_header_.contigs_);
 
 	// Write out a fresh Tachyon header with the data from the Vcf header. As
 	// this data will not be modified during the import stage it is safe to
@@ -294,9 +297,9 @@ bool VariantImporter::BuildParallel(void){
 		consumers[i].data_pool = &producer.data_pool;
 		consumers[i].global_header = &this->vcf_reader_->vcf_header_;
 		consumers[i].poolw = &write;
-		consumers[i].importer.GT_available_ = this->GT_available_;
+		consumers[i].importer.GT_available_       = this->GT_available_;
 		consumers[i].importer.SetVcfHeader(&this->vcf_reader_->vcf_header_);
-		consumers[i].importer.settings_ = this->settings_;
+		consumers[i].importer.settings_           = this->settings_;
 		consumers[i].importer.info_reorder_map_   = this->info_reorder_map_;
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
@@ -305,7 +308,7 @@ bool VariantImporter::BuildParallel(void){
 		// The index needs to know how many contigs that's described in the
 		// Vcf header and their lenghts. This information is needed to construct
 		// the linear and quad-tree index most appropriate for the data.
-		consumers[i].importer.index.Add(this->vcf_reader_->vcf_header_.contigs_);
+		consumers[i].importer.index.Setup(this->vcf_reader_->vcf_header_.contigs_);
 		consumers[i].Start();
 	}
 
@@ -340,7 +343,7 @@ bool VariantImporter::BuildParallel(void){
 	return(true);
 }
 
-bool VcfImporter::AddRecords(const vcf_container_type& container){
+bool VcfImporterSlave::AddRecords(const vcf_container_type& container){
 	// Allocate memory for the meta entries.
 	meta_type* meta_entries = static_cast<meta_type*>(::operator new[](container.sizeWithoutCarryOver() * sizeof(meta_type)));
 
@@ -372,7 +375,7 @@ bool VcfImporter::AddRecords(const vcf_container_type& container){
 	return true;
 }
 
-bool VcfImporter::AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta){
+bool VcfImporterSlave::AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta){
 	// Ascertain that the provided position does not exceed the maximum
 	// reported length of the target contig.
 	if(container.at(position)->pos > this->vcf_header_->GetContig(container.at(position)->rid)->n_bases){
@@ -403,7 +406,7 @@ bool VcfImporter::AddRecord(const vcf_container_type& container, const uint32_t 
 	return true;
 }
 
-bool VcfImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	// Add FILTER id list to the block. Filter information is unique in that the
 	// data is not stored as (key,value)-tuples but as a key id. Because no data
 	// is stored in the block, only the unique vectors of ids and their unique
@@ -424,7 +427,7 @@ bool VcfImporter::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 	return(this->AddVcfFilterPattern(filter_ids, meta));
 }
 
-bool VcfImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	// Add INFO fields to the block
 	std::vector<int> info_ids;
 	const int n_info_fields = record->n_info;
@@ -487,7 +490,7 @@ bool VcfImporter::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 	return(this->AddVcfInfoPattern(info_ids, meta));
 }
 
-bool VcfImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 	std::vector<int> format_ids;
 	const int n_format_fields = record->n_fmt;
 
@@ -557,28 +560,28 @@ bool VcfImporter::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 	return(this->AddVcfFormatPattern(format_ids, meta));
 }
 
-bool VcfImporter::AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta){
 	if(pattern.size())
 		meta.info_pattern_id = this->block.AddInfoPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporter::AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta){
 	if(pattern.size())
 		meta.format_pattern_id = this->block.AddFormatPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporter::AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta){
 	if(pattern.size())
 		meta.filter_pattern_id = this->block.AddFilterPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporter::IndexRecord(const bcf1_t* record, const meta_type& meta){
+bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 	int32_t index_bin = -1;
 
 	// Ascertain that the meta entry has been evaluated
@@ -730,7 +733,7 @@ void VariantImporter::UpdateHeaderImport(VariantHeader& header){
 }
 
 /*
-bool VcfImporter::GenerateIdentifiers(void){
+bool VcfImporterSlave::GenerateIdentifiers(void){
 	uint8_t RANDOM_BYTES[32];
 	for(uint32_t i = 0; i < this->vcf_container_.sizeWithoutCarryOver(); ++i){
 		uint64_t b_hash;
