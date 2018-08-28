@@ -576,18 +576,16 @@ void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic,
                                           import_stats_type& stats_format)
 {
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
-		stats_basic[1] += this->base_containers[YON_BLK_PPA];
+		stats_basic[0] += this->base_containers[YON_BLK_PPA];
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
-		stats_basic[i+1] += this->base_containers[i];
+		stats_basic[i] += this->base_containers[i];
 
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
-		stats_basic[22] += this->info_containers[i];
 		stats_info[this->footer.info_offsets[i].data_header.global_key] += this->info_containers[i];
 	}
 
 	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
-		stats_basic[23] += this->format_containers[i];
 		stats_format[this->footer.format_offsets[i].data_header.global_key] += this->format_containers[i];
 	}
 }

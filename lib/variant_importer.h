@@ -2,8 +2,6 @@
 #define VARIANT_IMPORTER_H_
 
 #include <unordered_map>
-#include <mutex>
-#include <condition_variable>
 
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
@@ -248,6 +246,7 @@ private:
 	reorder_map_type contig_reorder_map_;
 
 	std::unique_ptr<vcf_reader_type> vcf_reader_;
+	VariantHeader yon_header_;
 
 	hash_map_type block_hash_map;
 };

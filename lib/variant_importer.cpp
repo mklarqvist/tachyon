@@ -282,11 +282,12 @@ bool VariantImporter::BuildParallel(void){
 
 	yon_producer_vcfc  producer(this->settings_, this->vcf_reader_, this->settings_.n_threads);
 	yon_consumer_vcfc* consumers = new yon_consumer_vcfc[this->settings_.n_threads];
-	yon_writer_sync    write; write.writer = this->writer;
+	yon_writer_sync    write;
+	write.writer = this->writer;
 
-	write.stats_basic.Allocate(YON_BLK_N_STATIC + 1);
-	write.stats_info.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size() + 1);
-	write.stats_format.Allocate(this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
+	write.stats_basic.Allocate(YON_BLK_N_STATIC);
+	write.stats_info.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size());
+	write.stats_format.Allocate(this->vcf_reader_->vcf_header_.format_fields_.size());
 
 	// Start progress timer.
 	algorithm::Timer timer; timer.Start();
@@ -320,17 +321,20 @@ bool VariantImporter::BuildParallel(void){
 	//std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
 	//std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
 	//std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
-	//std::cerr << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
+	std::cerr << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << std::endl;
 	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
 
-	/*
+
+	std::cerr << "Field\tCompressed\tUncompressed\tFold" << std::endl;
 	for(int i = 0; i < write.stats_basic.size(); ++i)
-		std::cerr << i << "\t" << write.stats_basic.at(i) << std::endl;
+		std::cerr << YON_BLK_PRINT_NAMES[i] << "\t" <<  write.stats_basic.at(i) << std::endl;
+
 	for(int i = 0; i < write.stats_info.size(); ++i)
-		std::cerr << this->vcf_reader_->vcf_header_.info_fields_[i].id << "\t" << write.stats_info.at(i) << std::endl;
+		std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << write.stats_info.at(i) << std::endl;
+
 	for(int i = 0; i < write.stats_format.size(); ++i)
-		std::cerr << this->vcf_reader_->vcf_header_.format_fields_[i].id << "\t" << write.stats_format.at(i) << std::endl;
-	*/
+		std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << write.stats_format.at(i) << std::endl;
+
 
 	this->writer->index += consumers[0].importer.index;
 	//this->writer->index.Print(std::cerr);
@@ -694,15 +698,15 @@ bool VariantImporter::WriteKeychain(const encryption::Keychain<>& keychain){
 bool VariantImporter::WriteYonHeader(){
 	// Transmute a htslib-styled vcf header into a tachyon
 	// header.
-	VariantHeader yon_header(this->vcf_reader_->vcf_header_);
+	this->yon_header_ = VariantHeader(this->vcf_reader_->vcf_header_);
 	// Update the extra provenance fields in the new header.
-	this->UpdateHeaderImport(yon_header);
+	this->UpdateHeaderImport(this->yon_header_);
 
 	// Pack header into a byte-stream, compress it, and write
 	// it out.
 	io::BasicBuffer temp(500000);
 	io::BasicBuffer temp_cmp(temp);
-	temp << yon_header;
+	temp << this->yon_header_;
 	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 20);
 	uint32_t l_data   = temp.size();
 	uint32_t l_c_data = temp_cmp.size();

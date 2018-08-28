@@ -291,7 +291,6 @@ public:
 			this->format_fields_[i] = other.format_fields_[i];
 
 		this->RecodeIndices();
-
 	}
 
 	~VariantHeader() = default;

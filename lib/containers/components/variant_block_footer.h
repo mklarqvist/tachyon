@@ -10,6 +10,14 @@
 
 namespace tachyon {
 
+const std::vector<std::string> YON_BLK_PRINT_NAMES = {
+		"PPA","CONTIG","POSITION","REFALT","CONTROLLER","QUALITY","NAMES",
+		"ALLELES","ID_INFO","ID_FORMAT","ID_FILTER",
+		"GT_INT8","GT_INT16","GT_INT32","GT_INT64",
+		"GT_S_INT8","GT_S_INT16","GT_S_INT32","GT_S_INT64",
+		"GT_N_INT8","GT_N_INT16","GT_N_INT32","GT_N_INT64",
+		"GT_SUPPORT","GT_PLOIDY"};
+
 /**<
  * These definitions correspond to the array offsets for the
  * invariant containers in the VariantBlock/VariantBlockFooter.
