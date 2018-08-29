@@ -177,7 +177,7 @@ void MetaContainer::Setup(const block_type& block){
 		assert(refalt_position == refalt.size());
 	}
 
-	if(block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed.size()){
+	if(block.base_containers[YON_BLK_ALLELES].data_uncompressed.size()){
 		StrideContainer<uint32_t> strides(block.base_containers[YON_BLK_ALLELES]);
 		uint32_t offset = 0;
 		uint32_t stride_offset = 0;
@@ -187,8 +187,8 @@ void MetaContainer::Setup(const block_type& block){
 				this->__entries[i].alleles   = static_cast<value_type::allele_type*>(::operator new[](strides[stride_offset]*sizeof(value_type::allele_type)));
 
 				for(uint32_t j = 0; j < strides[stride_offset]; ++j){
-					const uint16_t& l_string = *reinterpret_cast<const uint16_t* const>(&block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed[offset]);
-					new( &this->__entries[i].alleles[j] ) value_type::allele_type( &block.base_containers[YON_BLK_ALLELES].buffer_data_uncompressed[offset] );
+					const uint16_t& l_string = *reinterpret_cast<const uint16_t* const>(&block.base_containers[YON_BLK_ALLELES].data_uncompressed[offset]);
+					new( &this->__entries[i].alleles[j] ) value_type::allele_type( &block.base_containers[YON_BLK_ALLELES].data_uncompressed[offset] );
 					offset += sizeof(uint16_t) + l_string;
 				}
 				++stride_offset;
@@ -203,7 +203,7 @@ void MetaContainer::Setup(const block_type& block){
 		uint32_t offset = 0;
 		assert(strides.size() == this->size());
 		for(uint32_t i = 0; i < this->size(); ++i){
-			this->__entries[i].name = std::string(&block.base_containers[YON_BLK_NAMES].buffer_data_uncompressed.data()[offset], strides[i]);
+			this->__entries[i].name = std::string(&block.base_containers[YON_BLK_NAMES].data_uncompressed.data()[offset], strides[i]);
 			offset += strides[i];
 		}
 	}

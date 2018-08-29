@@ -234,15 +234,15 @@ void StrideContainer<return_primitive>::Allocate(const data_container_type& cont
 	// type byte width. If this is not true then the data it
 	// guaranteed to be corrupted. Alternatively, the primitive
 	// type could be misrepresented in the data header.
-	assert(container.buffer_strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
+	assert(container.strides_uncompressed.size() % sizeof(intrinsic_type) == 0);
 
-	this->n_entries_  = container.buffer_strides_uncompressed.size() / sizeof(intrinsic_type);
+	this->n_entries_  = container.strides_uncompressed.size() / sizeof(intrinsic_type);
 	this->entries_    = new value_type[this->size()];
 	this->n_capacity_ = this->size();
 
 	// Cast the buffer as the primitive type it was stored as. This
 	// is required for correct interpretation of the byte stream.
-	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.buffer_strides_uncompressed.data());
+	const intrinsic_type* const strides = reinterpret_cast<const intrinsic_type* const>(container.strides_uncompressed.data());
 
 	// Iterate over available data and copy it over. Do not use a memcpy
 	// call here as the stored primitive type could be different from the

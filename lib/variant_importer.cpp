@@ -11,7 +11,6 @@ namespace tachyon {
 
 VariantImporter::VariantImporter(const settings_type& settings) :
 		settings_(settings),
-		GT_available_(false),
 		writer(nullptr)
 {
 
@@ -239,7 +238,7 @@ bool VariantImporter::BuildParallel(void){
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
 
 	// Predicate of a search for "GT" FORMAT field in the Vcf header.
-	this->GT_available_ = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
+	bool GT_available = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
 
 	// Predicate of a search for "END" INFO field in the Vcf header.
 	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
@@ -298,13 +297,17 @@ bool VariantImporter::BuildParallel(void){
 		consumers[i].data_pool = &producer.data_pool;
 		consumers[i].global_header = &this->vcf_reader_->vcf_header_;
 		consumers[i].poolw = &write;
-		consumers[i].importer.GT_available_       = this->GT_available_;
+		consumers[i].importer.GT_available_       = GT_available;
 		consumers[i].importer.SetVcfHeader(&this->vcf_reader_->vcf_header_);
 		consumers[i].importer.settings_           = this->settings_;
 		consumers[i].importer.info_reorder_map_   = this->info_reorder_map_;
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
 		consumers[i].importer.contig_reorder_map_ = this->contig_reorder_map_;
+
+		consumers[i].importer.stats_basic.Allocate(YON_BLK_N_STATIC);
+		consumers[i].importer.stats_info.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size());
+		consumers[i].importer.stats_format.Allocate(this->vcf_reader_->vcf_header_.format_fields_.size());
 
 		// The index needs to know how many contigs that's described in the
 		// Vcf header and their lenghts. This information is needed to construct
@@ -317,6 +320,9 @@ bool VariantImporter::BuildParallel(void){
 	producer.all_finished = true;
 	producer.thread_.join();
 	for(uint32_t i = 1; i < this->settings_.n_threads; ++i) consumers[0] += consumers[i];
+	write.stats_basic += consumers[0].importer.stats_basic;
+	write.stats_info += consumers[0].importer.stats_info;
+	write.stats_format += consumers[0].importer.stats_format;
 
 	//std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
 	//std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
@@ -325,9 +331,9 @@ bool VariantImporter::BuildParallel(void){
 	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
 
 
-	std::cerr << "Field\tCompressed\tUncompressed\tFold" << std::endl;
+	std::cerr << "Field\tCompressed\tUncompressed\tFold\tBinaryVcf\tFold-Bcf" << std::endl;
 	for(int i = 0; i < write.stats_basic.size(); ++i)
-		std::cerr << YON_BLK_PRINT_NAMES[i] << "\t" <<  write.stats_basic.at(i) << std::endl;
+		std::cerr << YON_BLK_PRINT_NAMES[i] << "\t" << write.stats_basic.at(i) << std::endl;
 
 	for(int i = 0; i < write.stats_info.size(); ++i)
 		std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << write.stats_info.at(i) << std::endl;

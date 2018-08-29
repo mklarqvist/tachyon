@@ -10,15 +10,15 @@
 
 namespace tachyon {
 
-class VariantImportWriterInterface {
+class VariantWriterInterface {
 public:
-	typedef VariantImportWriterInterface  self_type;
+	typedef VariantWriterInterface  self_type;
 	typedef index::Index                  sorted_index_type;
 	typedef containers::DataContainer     container_type;
 
 public:
-	VariantImportWriterInterface();
-	virtual ~VariantImportWriterInterface();
+	VariantWriterInterface();
+	virtual ~VariantWriterInterface();
 
 	void WriteIndex(void);
 	virtual bool open(const std::string output) =0;
@@ -29,7 +29,7 @@ public:
 		utility::SerializePrimitive(footer.header.data_header.uLength, *this->stream);
 		utility::SerializePrimitive(footer.header.data_header.cLength, *this->stream);
 		this->stream->write(reinterpret_cast<const char*>(&footer.header.data_header.crc[0]), MD5_DIGEST_LENGTH);
-		*this->stream << footer.buffer_data;
+		*this->stream << footer.data;
 		return(this->stream->good());
 	}
 
@@ -46,17 +46,17 @@ public:
 	sorted_index_type index;
 };
 
-class VariantImportWriterFile : public VariantImportWriterInterface{
+class VariantWriterFile : public VariantWriterInterface{
 public:
-	typedef VariantImportWriterFile self_type;
+	typedef VariantWriterFile self_type;
 
 public:
-	VariantImportWriterFile();
-	~VariantImportWriterFile();
+	VariantWriterFile();
+	~VariantWriterFile();
 	bool open(const std::string output);
 
 private:
-	void checkOutputNames(const std::string& input);
+	void CheckOutputNames(const std::string& input);
 
 public:
 	// Stream information
@@ -65,13 +65,13 @@ public:
 	std::string   baseName;
 };
 
-class VariantImportWriterStream : public VariantImportWriterInterface{
+class VariantWriterStream : public VariantWriterInterface{
 public:
-	typedef VariantImportWriterStream self_type;
+	typedef VariantWriterStream self_type;
 
 public:
-	VariantImportWriterStream();
-	~VariantImportWriterStream();
+	VariantWriterStream();
+	~VariantWriterStream();
 	bool open(const std::string output){ return true; }
 
 };

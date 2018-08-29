@@ -82,18 +82,18 @@ public:
 
 	self_type& operator+=(const self_type& other){
 		// Add buffers together
-		this->buffer_data                 += other.buffer_data;
-		this->buffer_data_uncompressed    += other.buffer_data_uncompressed;
-		this->buffer_strides              += other.buffer_strides;
-		this->buffer_strides_uncompressed += other.buffer_strides_uncompressed;
+		this->data                 += other.data;
+		this->data_uncompressed    += other.data_uncompressed;
+		this->strides              += other.strides;
+		this->strides_uncompressed += other.strides_uncompressed;
 		// Add header counters together
 		this->header += other.header;
 		return(*this);
 	}
 
 	// Utility functions.
-	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const uint64_t& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
+	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->data_uncompressed.size()); }
+	inline const uint64_t& GetSizeCompressed(void) const{ return(this->data.size()); }
 	inline const uint32_t& size(void) const{ return(this->header.n_entries); }
 
 	/**<
@@ -133,12 +133,12 @@ public:
 	 */
 	template <class T>
 	inline void AddLiteral(const T& value){
-		this->buffer_data_uncompressed += (T)value;
+		this->data_uncompressed += (T)value;
 		++this->header.n_additions;
 	}
 
 	inline void AddLiteral(const char* const string, const uint32_t l_string){
-		this->buffer_data_uncompressed.Add(string, l_string);
+		this->data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
 	}
 
@@ -247,10 +247,10 @@ private:
 
 public:
 	header_type header;
-	buffer_type buffer_data;
-	buffer_type buffer_strides;
-	buffer_type buffer_data_uncompressed;
-	buffer_type buffer_strides_uncompressed;
+	buffer_type data;
+	buffer_type strides;
+	buffer_type data_uncompressed;
+	buffer_type strides_uncompressed;
 };
 
 }

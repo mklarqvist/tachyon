@@ -199,8 +199,8 @@ public:
 
 	DataContainer ToDataContainer(void){
 		DataContainer d;
-		d.buffer_data_uncompressed.resize(this->size() + 128);
-		d.buffer_strides_uncompressed.resize(this->size() + 128);
+		d.data_uncompressed.resize(this->size() + 128);
+		d.strides_uncompressed.resize(this->size() + 128);
 
 		for(uint32_t i = 0; i < this->size(); ++i){
 			d.Add(this->at(i));
@@ -212,8 +212,8 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
-		if(container.buffer_data_uncompressed.size() + this->size() > container.buffer_data_uncompressed.capacity())
-			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+this->size())*2);
+		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i){
 			container.Add(this->at(i));
@@ -319,8 +319,8 @@ public:
 
 	DataContainer ToDataContainer(void){
 		DataContainer d;
-		d.buffer_data_uncompressed.resize(this->size() + 128);
-		d.buffer_strides_uncompressed.resize(this->size() + 128);
+		d.data_uncompressed.resize(this->size() + 128);
+		d.strides_uncompressed.resize(this->size() + 128);
 
 		for(uint32_t i = 0; i < this->size(); ++i){
 			d.AddString(this->data_);
@@ -332,8 +332,8 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
-		if(container.buffer_data_uncompressed.size() + this->size() > container.buffer_data_uncompressed.capacity())
-			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+this->size())*2);
+		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i){
 			container.AddString(this->data_);
@@ -404,9 +404,9 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 	if(container.header.data_header.GetPrimitiveWidth() == -1)
 		return;
 
-	assert(container.buffer_data_uncompressed.size() % container.header.data_header.GetPrimitiveWidth() == 0);
+	assert(container.data_uncompressed.size() % container.header.data_header.GetPrimitiveWidth() == 0);
 
-	this->n_entries_ = container.buffer_data_uncompressed.size() / container.header.data_header.GetPrimitiveWidth();
+	this->n_entries_ = container.data_uncompressed.size() / container.header.data_header.GetPrimitiveWidth();
 	this->entries_ = new value_type[this->n_entries_];
 
 	if(this->n_entries_ == 0)
@@ -537,7 +537,7 @@ PrimitiveContainer<return_type>& PrimitiveContainer<return_type>::operator=(self
 template <class return_type>
 template <class native_primitive>
 void PrimitiveContainer<return_type>::Setup(const container_type& container, const uint32_t& offset){
-	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data()[offset]);
+	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.data_uncompressed.data()[offset]);
 
 	for(uint32_t i = 0; i < this->size(); ++i)
 		this->entries_[i] = data[i];
@@ -546,7 +546,7 @@ void PrimitiveContainer<return_type>::Setup(const container_type& container, con
 template <class return_type>
 template <class native_primitive>
 void PrimitiveContainer<return_type>::SetupSigned(const container_type& container, const uint32_t& offset){
-	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.buffer_data_uncompressed.data()[offset]);
+	const native_primitive* const data = reinterpret_cast<const native_primitive* const>(&container.data_uncompressed.data()[offset]);
 
 	if(sizeof(native_primitive) == sizeof(return_type)){
 		return(this->Setup<native_primitive>(container, offset));

@@ -196,7 +196,6 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
 	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
 	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer();
-
 	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
 	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false, true);
@@ -243,10 +242,10 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 	stream.read(reinterpret_cast<char*>(&footer_crc[0]), MD5_DIGEST_LENGTH);
 
 	this->footer_support.resize(footer_cLength);
-	stream.read(this->footer_support.buffer_data.data(), footer_cLength);
-	this->footer_support.buffer_data.n_chars_ = footer_cLength;
-	this->footer_support.buffer_data_uncompressed.resize(footer_uLength);
-	this->footer_support.buffer_data_uncompressed.n_chars_     = footer_uLength;
+	stream.read(this->footer_support.data.data(), footer_cLength);
+	this->footer_support.data.n_chars_ = footer_cLength;
+	this->footer_support.data_uncompressed.resize(footer_uLength);
+	this->footer_support.data_uncompressed.n_chars_     = footer_uLength;
 	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
 	this->footer_support.header.data_header.cLength            = footer_cLength;
 	this->footer_support.header.data_header.uLength            = footer_uLength;
@@ -603,15 +602,8 @@ bool VariantBlock::write(std::ostream& stream)
 	stream << this->header;
 	const uint64_t start_pos = stream.tellp();
 
-	std::cerr << begin_pos << "," << start_pos << "," << this->header.l_offset_footer << std::endl;
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i){
-		std::cerr << YON_BLK_PRINT_NAMES[i] << ": " << this->footer.offsets[i].data_header.offset << std::endl;
-	}
-
-	std::cerr << "tellp 0: " << (uint64_t)stream.tellp() << std::endl;
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (uint64_t)stream.tellp() - start_pos);
-	std::cerr << "tellp 1: " << (uint64_t)stream.tellp() << std::endl;
 
 	// Start at offset 1 because offset 0 (YON_BLK_PPA) is encoding for the
 	// genotype permutation array that is handled differently.

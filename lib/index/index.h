@@ -73,8 +73,7 @@ public:
 	inline variant_linear_type& GetLinearIndex(void){ return(this->linear_); }
 	inline const variant_linear_type& GetLinearIndex(void) const{ return(this->linear_); }
 
-	// Overlap
-	// Answer to the questions:
+	// Overlap functionality used to answer the questions:
 	// 1) Overlapping bins given a contig
 	// 2) Overlapping bins given a contig and a single position
 	// 3) Overlapping bins given a contig and a start and end position
@@ -133,6 +132,7 @@ public:
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+		utility::SerializePrimitive(entry.is_sorted, stream);
 		stream << entry.index_;
 		stream << entry.index_meta_;
 		stream << entry.linear_;
@@ -141,6 +141,7 @@ private:
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		utility::DeserializePrimitive(entry.is_sorted, stream);
 		stream >> entry.index_;
 		stream >> entry.index_meta_;
 		stream >> entry.linear_;
@@ -150,9 +151,9 @@ private:
 
 public:
 	bool is_sorted;
-	variant_meta_type   index_meta_;
+	variant_meta_type      index_meta_;
 	variant_quad_tree_type index_;
-	variant_linear_type           linear_;
+	variant_linear_type    linear_;
 };
 
 }

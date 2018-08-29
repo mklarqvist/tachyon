@@ -18,11 +18,11 @@ PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_contain
 		size_type j = 0;
 		for(; j < strides_each; ++j){
 			// Find premature end-of-string marker
-			if(container.buffer_data_uncompressed[current_offset + j] == '\0'){
+			if(container.data_uncompressed[current_offset + j] == '\0'){
 				break;
 			}
 		}
-		new( &this->containers_[i] ) value_type( &container.buffer_data_uncompressed[current_offset], j );
+		new( &this->containers_[i] ) value_type( &container.data_uncompressed[current_offset], j );
 		current_offset += strides_each;
 	}
 }

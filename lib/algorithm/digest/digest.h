@@ -160,8 +160,8 @@ public:
 	}
 
 	void operator+=(const container_type& container){
-		this->compressed.update(container.buffer_data, container.buffer_strides, container.header.hasMixedStride());
-		this->uncompressed.update(container.buffer_data_uncompressed, container.buffer_strides_uncompressed, container.header.hasMixedStride());
+		this->compressed.update(container.data, container.strides, container.header.hasMixedStride());
+		this->uncompressed.update(container.data_uncompressed, container.strides_uncompressed, container.header.hasMixedStride());
 	}
 
 private:

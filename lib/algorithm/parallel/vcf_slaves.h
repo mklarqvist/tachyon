@@ -343,7 +343,7 @@ public:
 	std::mutex lock;
 	std::condition_variable cv_next_checkpoint;
 
-	VariantImportWriterInterface* writer; // writer
+	VariantWriterInterface* writer; // writer
 
 	// Stats
 	support::VariantImporterContainerStats stats_basic;
@@ -351,6 +351,13 @@ public:
 	support::VariantImporterContainerStats stats_format;
 };
 
+/**<
+ * Primary consumer instance for importing htslib bcf1_t records
+ * into a tachyon archive. Invoking the Start() function will invoke
+ * the spawning of a new thread that keeps popping yon_pool_vcfc_payload
+ * objects from the shared pooled of payloads until end-of-file has been
+ * reached in the production thread(s).
+ */
 struct yon_consumer_vcfc {
 public:
 	yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), b_shared(0), b_indiv(0), data_available(nullptr), data_pool(nullptr), global_header(nullptr), poolw(nullptr){}

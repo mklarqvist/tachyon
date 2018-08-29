@@ -177,6 +177,8 @@ bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		const uint8_t* data            = record->d.info[i].vptr;
 		int element_stride_size        = 0;
 
+		this->stats_info[global_key].cost_bcf += data_length;
+
 		if(info_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);
 			assert(data_length % element_stride_size == 0);
@@ -245,6 +247,8 @@ bool VcfImporterSlave::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		const uint32_t& data_length      = record->d.fmt[i].p_len;
 		const uint8_t* data              = record->d.fmt[i].p;
 		int element_stride_size          = 0;
+
+		this->stats_format[global_key].cost_bcf += data_length;
 
 		if(format_primitive_type == BCF_BT_INT8){
 			element_stride_size = sizeof(int8_t);

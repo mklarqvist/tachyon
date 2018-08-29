@@ -271,7 +271,7 @@ public:
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
-	void UpdateContainers(void);
+	void UpdateContainers();
 
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a
@@ -282,7 +282,7 @@ public:
 
 	inline void PackFooter(void){
 		this->footer_support.reset();
-		this->footer_support.buffer_data_uncompressed << this->footer;
+		this->footer_support.data_uncompressed << this->footer;
 		++this->footer_support;
 	}
 
@@ -378,7 +378,7 @@ private:
 	 * @param offset    Destination header in footer
 	 * @param container Target container hosting the header
 	 */
-	inline void UpdateHeader(offset_type& offset, const container_type& container){
+	inline static void UpdateHeader(offset_type& offset, const container_type& container){
 		const uint32_t global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -391,7 +391,7 @@ private:
 	 * @param container      Target container hosting the header
 	 * @param virtual_offset Block virtual offset
 	 */
-	inline void UpdateHeader(offset_type& offset,
+	static void UpdateHeader(offset_type& offset,
 	                         const container_type& container,
 	                         const uint32_t& virtual_offset)
 	{
@@ -403,43 +403,43 @@ private:
 	}
 
 	/**<
-	 *
-	 * @param stream
-	 * @param offset
-	 * @param container
-	 * @param virtual_offset
+	 * Write a src container to a dst output stream.
+	 * @param stream         Dst output stream.
+	 * @param offset         Dst offset header in the footer to update.
+	 * @param container      Src container to write.
+	 * @param virtual_offset Virtual file/stream offset at the start of this container.
 	 */
-	inline void WriteContainer(std::ostream& stream,
+	void static WriteContainer(std::ostream& stream,
 	                           offset_type& offset,
 	                           const container_type& container,
 	                           const uint32_t virtual_offset)
 	{
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
-			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
+			return(VariantBlock::WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
-		std::cerr << offset.data_header.offset << "==" << virtual_offset << std::endl;
 		assert(offset.data_header.offset == virtual_offset);
-		this->UpdateHeader(offset, container, virtual_offset);
-		assert(container.buffer_data.size() == offset.data_header.cLength);
+		VariantBlock::UpdateHeader(offset, container, virtual_offset);
+		assert(container.data.size() == offset.data_header.cLength);
 		stream << container;
 	}
 
 	/**<
-	 *
+	 * Write a src container to a dst output stream when the src container
+	 * is partially/completely encrypted.
 	 * @param stream
 	 * @param offset
 	 * @param container
 	 * @param virtual_offset
 	 */
-	inline void WriteContainerEncrypted(std::ostream& stream,
+	static void WriteContainerEncrypted(std::ostream& stream,
 	                                    offset_type& offset,
 	                                    const container_type& container,
 	                                    const uint32_t virtual_offset)
 	{
-		this->UpdateHeader(offset, container, virtual_offset);
-		assert(container.buffer_data.size() == offset.data_header.eLength);
+		VariantBlock::UpdateHeader(offset, container, virtual_offset);
+		assert(container.data.size() == offset.data_header.eLength);
 		// Encrypted data is concatenated: write only data buffer
-		stream.write(container.buffer_data.data(), container.buffer_data.size());
+		stream.write(container.data.data(), container.data.size());
 	}
 
 public:

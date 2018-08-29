@@ -26,7 +26,7 @@ namespace tachyon{
 class VcfImporterSlave {
 public:
 	typedef VcfImporterSlave                self_type;
-	typedef VariantImportWriterInterface    writer_type;
+	typedef VariantWriterInterface          writer_type;
 	typedef io::BasicBuffer                 buffer_type;
 	typedef index::VariantIndexEntry        index_entry_type;
 	typedef io::VcfHeader                   vcf_header_type;
@@ -56,6 +56,9 @@ public:
 	VcfImporterSlave& operator+=(const VcfImporterSlave& other){
 		this->n_blocks_processed += other.n_blocks_processed;
 		this->index += other.index;
+		this->stats_basic += other.stats_basic;
+		this->stats_format += other.stats_format;
+		this->stats_info += other.stats_info;
 		return(*this);
 	}
 
@@ -102,6 +105,11 @@ public:
 	reorder_map_type info_reorder_map_;
 	reorder_map_type format_reorder_map_;
 	reorder_map_type contig_reorder_map_;
+
+	// Stats
+	support::VariantImporterContainerStats stats_basic;
+	support::VariantImporterContainerStats stats_info;
+	support::VariantImporterContainerStats stats_format;
 };
 
 }

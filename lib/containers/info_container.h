@@ -45,8 +45,8 @@ public:
 			n_entries += this->at(i).size();
 
 		DataContainer d;
-		d.buffer_data_uncompressed.resize(n_entries + 128);
-		d.buffer_strides_uncompressed.resize(n_entries + 128);
+		d.data_uncompressed.resize(n_entries + 128);
+		d.strides_uncompressed.resize(n_entries + 128);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(d);
@@ -59,8 +59,8 @@ public:
 		for(uint32_t i = 0; i < this->size(); ++i)
 			n_entries += this->at(i).size();
 
-		if(container.buffer_data_uncompressed.size() + n_entries > container.buffer_data_uncompressed.capacity())
-			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+n_entries)*2);
+		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(container);
@@ -164,7 +164,7 @@ InfoContainer<return_type>::InfoContainer(const data_container_type& data_contai
                                             const std::vector<bool>& pattern_matches) :
 	containers_(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0 && data_container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN){
+	if(data_container.data_uncompressed.size() == 0 && data_container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN){
 		return;
 	}
 
@@ -235,7 +235,7 @@ template <class return_type>
 InfoContainer<return_type>::InfoContainer(const data_container_type& container) :
 	containers_(nullptr)
 {
-	if(container.buffer_data_uncompressed.size() == 0 && container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN)
+	if(container.data_uncompressed.size() == 0 && container.header.data_header.GetPrimitiveType() != YON_TYPE_BOOLEAN)
 		return;
 
 
@@ -314,11 +314,11 @@ InfoContainer<return_type>::~InfoContainer(){
 template <class return_type>
 template <class actual_primitive>
 void InfoContainer<return_type>::Setup(const data_container_type& container){
-	if(container.buffer_strides_uncompressed.size() == 0)
+	if(container.strides_uncompressed.size() == 0)
 		return;
 
 	// Worst case number of entries
-	this->n_capacity = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+	this->n_capacity = container.data_uncompressed.size() / sizeof(actual_primitive);
 	if(this->capacity() == 0)
 		return;
 
@@ -334,13 +334,13 @@ void InfoContainer<return_type>::Setup(const data_container_type& container){
 		++i;
 
 		// Break condition
-		if(current_offset == container.buffer_data_uncompressed.size())
+		if(current_offset == container.data_uncompressed.size())
 			break;
 
 		// Assertion of critical error
-		assert(current_offset < container.buffer_data_uncompressed.size());
+		assert(current_offset < container.data_uncompressed.size());
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -376,7 +376,7 @@ void InfoContainer<return_type>::SetupBalanced(const data_container_type& data_c
 		}
 	}
 
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 	assert(stride_offset == strides.size());
 }
 
@@ -413,7 +413,7 @@ void InfoContainer<return_type>::SetupBalancedFlag(const data_container_type& da
 template <class return_type>
 template <class actual_primitive>
 void InfoContainer<return_type>::Setup(const data_container_type& container, const uint32_t stride_size){
-	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive);
+	this->n_entries = container.data_uncompressed.size() / sizeof(actual_primitive);
 
 	if(this->size() == 0)
 		return;
@@ -426,7 +426,7 @@ void InfoContainer<return_type>::Setup(const data_container_type& container, con
 		new( &this->containers_[i] ) value_type( container, current_offset, stride_size );
 		current_offset += stride_size * sizeof(actual_primitive);
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -473,7 +473,7 @@ void InfoContainer<return_type>::SetupBalanced(const data_container_type& data_c
 			}
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 }

@@ -87,7 +87,7 @@ public:
 	{
 		// We only use the uncompressed buffer
 		// no strides or compressed buffers
-		container.buffer_data_uncompressed.resize(start_capacity);
+		container.data_uncompressed.resize(start_capacity);
 	}
 	~GenotypeEncoderSlaveHelper(){}
 

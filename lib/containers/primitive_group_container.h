@@ -147,8 +147,8 @@ public:
     		n_entries += this->at(i).size();
 
 		DataContainer d;
-		d.buffer_data_uncompressed.resize(n_entries + 128);
-		d.buffer_strides_uncompressed.resize(n_entries + 128);
+		d.data_uncompressed.resize(n_entries + 128);
+		d.strides_uncompressed.resize(n_entries + 128);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(d);
@@ -161,8 +161,8 @@ public:
 		for(uint32_t i = 0; i < this->size(); ++i)
 			n_entries += this->at(i).size();
 
-		if(container.buffer_data_uncompressed.size() + n_entries > container.buffer_data_uncompressed.capacity())
-			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+n_entries)*2);
+		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(container);

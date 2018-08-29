@@ -10,29 +10,49 @@ struct VariantImporterStatsObject{
 	typedef VariantImporterStatsObject self_type;
 	typedef containers::DataContainer data_container_type;
 
-	VariantImporterStatsObject(void) : cost_uncompressed(0), cost_compressed(0){}
+	VariantImporterStatsObject(void) :
+		cost_uncompressed(0),
+		cost_strides(0),
+		cost_compressed(0),
+		cost_strides_compressed(0),
+		cost_bcf(0)
+	{}
 	~VariantImporterStatsObject(){}
 
 	self_type& operator+=(const self_type& other){
 		this->cost_compressed += other.cost_compressed;
+		this->cost_strides += other.cost_strides;
+		this->cost_strides_compressed += other.cost_strides_compressed;
 		this->cost_uncompressed += other.cost_uncompressed;
+		this->cost_bcf += other.cost_bcf;
 		return(*this);
 	}
 
 	self_type& operator+=(const data_container_type& container){
-		this->cost_uncompressed += container.GetObjectSizeUncompressed();
-		this->cost_compressed   += container.GetObjectSize();
+		this->cost_uncompressed += container.data_uncompressed.size();
+		if(container.header.data_header.HasMixedStride())
+			this->cost_strides += container.strides_uncompressed.size();
+
+		this->cost_compressed   += container.data.size();
+		if(container.header.data_header.HasMixedStride())
+			this->cost_strides_compressed += container.strides.size();
+
 		return(*this);
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed << '\t' <<
-				(entry.cost_compressed ? (double)entry.cost_uncompressed/entry.cost_compressed : 0);
+		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed <<
+				'\t' << entry.cost_strides_compressed << "\t" << entry.cost_strides <<
+				'\t' << (entry.cost_compressed+entry.cost_strides ? (double)(entry.cost_uncompressed+entry.cost_strides)/(entry.cost_compressed+entry.cost_strides_compressed) : 0) <<
+				'\t' << entry.cost_bcf << '\t' << (entry.cost_uncompressed ? (double)entry.cost_bcf/(entry.cost_uncompressed) : 0);
 		return(stream);
 	}
 
 	uint64_t cost_uncompressed;
+	uint64_t cost_strides;
 	uint64_t cost_compressed;
+	uint64_t cost_strides_compressed;
+	uint64_t cost_bcf;
 };
 
 class VariantImporterContainerStats{

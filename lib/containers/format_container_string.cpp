@@ -15,7 +15,7 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& data_co
                                                               const uint64_t  n_samples) :
 	__containers(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0)
+	if(data_container.data_uncompressed.size() == 0)
 		return;
 
 	if(data_container.header.data_header.HasMixedStride()){
@@ -28,7 +28,7 @@ FormatContainer<std::string>::FormatContainer(const data_container_type& data_co
 FormatContainer<std::string>::FormatContainer(const data_container_type& container, const uint64_t n_samples) :
 	__containers(nullptr)
 {
-	if(container.buffer_data_uncompressed.size() == 0)
+	if(container.data_uncompressed.size() == 0)
 		return;
 
 	if(container.header.data_header.controller.mixedStride){
@@ -46,10 +46,10 @@ FormatContainer<std::string>::~FormatContainer(){
 }
 
 void FormatContainer<std::string>::__setup(const data_container_type& container, const uint64_t& n_samples){
-	if(container.buffer_strides_uncompressed.size() == 0)
+	if(container.strides_uncompressed.size() == 0)
 		return;
 
-	this->n_capacity = container.buffer_data_uncompressed.size() / n_samples;
+	this->n_capacity = container.data_uncompressed.size() / n_samples;
 	this->n_entries  = 0;
 
 	if(this->n_capacity == 0)
@@ -65,11 +65,11 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 		new( &this->__containers[current_position] ) value_type( container, current_offset, n_samples, strides[current_position] );
 		current_offset += strides[current_position] * n_samples;
 		++this->n_entries;
-		if(current_offset == container.buffer_data_uncompressed.size()) break;
-		assert(current_offset <= container.buffer_data_uncompressed.size());
+		if(current_offset == container.data_uncompressed.size()) break;
+		assert(current_offset <= container.data_uncompressed.size());
 		++current_position;
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 void FormatContainer<std::string>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples){
@@ -98,7 +98,7 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 				new( &this->__containers[i] ) value_type( );
 			}
 		}
-		assert(current_offset == data_container.buffer_data_uncompressed.size());
+		assert(current_offset == data_container.data_uncompressed.size());
 }
 
 void FormatContainer<std::string>::__setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples, const uint32_t stride_size){
@@ -146,11 +146,11 @@ void FormatContainer<std::string>::__setupBalanced(const data_container_type& da
 			}
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 void FormatContainer<std::string>::__setup(const data_container_type& container, const uint64_t& n_samples, const uint32_t stride_size){
-	this->n_entries = container.buffer_data_uncompressed.size() / n_samples / stride_size;
+	this->n_entries = container.data_uncompressed.size() / n_samples / stride_size;
 
 	if(this->n_entries == 0)
 		return;
@@ -172,7 +172,7 @@ void FormatContainer<std::string>::__setup(const data_container_type& container,
 			current_offset += stride_size * n_samples;
 		}
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 }

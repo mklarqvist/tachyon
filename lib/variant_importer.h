@@ -25,9 +25,9 @@ namespace tachyon {
 class VariantImporter {
 public:
 	typedef VariantImporter                 self_type;
-	typedef VariantImportWriterInterface    writer_interface_type;
-	typedef VariantImportWriterFile         writer_file_type;
-	typedef VariantImportWriterStream       writer_stream_type;
+	typedef VariantWriterInterface    writer_interface_type;
+	typedef VariantWriterFile         writer_file_type;
+	typedef VariantWriterStream       writer_stream_type;
 	typedef io::VcfReader                   vcf_reader_type;
 	typedef algorithm::CompressionManager   compression_manager_type;
 	typedef VariantImporterSettings         settings_type;
@@ -55,7 +55,6 @@ private:
 
 private:
 	settings_type settings_; // import settings
-	bool GT_available_;
 
 	// Read/write fields
 	writer_interface_type* writer; // writer

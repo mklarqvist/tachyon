@@ -139,7 +139,7 @@ bool VariantReader::NextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
-	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
+	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
 
 	// Attempts to read a YON block with the settings provided
 	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
@@ -182,7 +182,7 @@ containers::VariantBlockContainer VariantReader::ReturnBlock(void){
 	if(!this->codec_manager.zstd_codec.Decompress(c.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	c.GetBlock().footer_support.buffer_data_uncompressed >> c.GetBlock().footer;
+	c.GetBlock().footer_support.data_uncompressed >> c.GetBlock().footer;
 
 	// Attempts to read a YON block with the settings provided
 	if(!c.ReadBlock(this->basic_reader.stream_, this->block_settings))
@@ -474,7 +474,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
 
 		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			// Each entry evaluate occ if available.
@@ -511,7 +511,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
 				continue;
 
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);
@@ -571,7 +571,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
@@ -641,7 +641,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
 				continue;
 
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);

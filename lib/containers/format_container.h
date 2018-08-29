@@ -48,8 +48,8 @@ public:
     	}
 
     	DataContainer d;
-		d.buffer_data_uncompressed.resize(n_entries + 128);
-		d.buffer_strides_uncompressed.resize(n_entries + 128);
+		d.data_uncompressed.resize(n_entries + 128);
+		d.strides_uncompressed.resize(n_entries + 128);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(d);
@@ -64,8 +64,8 @@ public:
 				n_entries += this->at(i).at(j).size();
 		}
 
-		if(container.buffer_data_uncompressed.size() + n_entries > container.buffer_data_uncompressed.capacity())
-			container.buffer_data_uncompressed.resize((container.buffer_data_uncompressed.size()+n_entries)*2);
+		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(container);
@@ -199,7 +199,7 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
                                                               const uint64_t  n_samples) :
 	__containers(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0)
+	if(data_container.data_uncompressed.size() == 0)
 		return;
 
 	if(data_container.header.data_header.HasMixedStride()){
@@ -270,7 +270,7 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
                                               const uint64_t n_samples) :
 	__containers(nullptr)
 {
-	if(container.buffer_data_uncompressed.size() == 0)
+	if(container.data_uncompressed.size() == 0)
 		return;
 
 	if(container.header.data_header.controller.mixedStride){
@@ -333,10 +333,10 @@ template <class actual_primitive>
 void FormatContainer<return_type>::__setup(const data_container_type& container,
                                            const uint64_t& n_samples)
 {
-	if(container.buffer_strides_uncompressed.size() == 0)
+	if(container.strides_uncompressed.size() == 0)
 		return;
 
-	this->n_capacity = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
+	this->n_capacity = container.data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
 	this->n_entries  = 0;
 
 	if(this->n_capacity == 0)
@@ -352,7 +352,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 		current_offset += strides[i] * sizeof(actual_primitive) * n_samples;
 		++this->n_entries;
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -389,7 +389,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 			new( &this->__containers[i] ) value_type( );
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -442,7 +442,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 			}
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -451,7 +451,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
                                            const uint64_t& n_samples,
                                            const uint32_t stride_size)
 {
-	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
+	this->n_entries = container.data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
 
 	if(this->n_entries == 0)
 		return;
@@ -473,7 +473,7 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 			current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 		}
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 }

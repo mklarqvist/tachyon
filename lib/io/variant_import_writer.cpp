@@ -11,22 +11,22 @@
 
 namespace tachyon {
 
-VariantImportWriterInterface::VariantImportWriterInterface() :
+VariantWriterInterface::VariantWriterInterface() :
 	n_blocks_written(0),
 	n_variants_written(0),
 	stream(nullptr)
 {}
 
-VariantImportWriterInterface::~VariantImportWriterInterface()
+VariantWriterInterface::~VariantWriterInterface()
 {
 }
 
-void VariantImportWriterInterface::WriteIndex(void){
+void VariantWriterInterface::WriteIndex(void){
 	*this->stream << this->index;
 	this->stream->flush();
 }
 
-bool VariantImportWriterFile::open(const std::string output){
+bool VariantWriterFile::open(const std::string output){
 	if(output.size() == 0){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "No output file/file prefix provided!" << std::endl;
 		return false;
@@ -34,7 +34,7 @@ bool VariantImportWriterFile::open(const std::string output){
 	std::ofstream* ostream = reinterpret_cast<std::ofstream*>(this->stream);
 
 	this->filename = output;
-	this->checkOutputNames(output);
+	this->CheckOutputNames(output);
 	ostream->open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
@@ -50,7 +50,7 @@ bool VariantImportWriterFile::open(const std::string output){
 	return true;
 }
 
-void VariantImportWriterFile::checkOutputNames(const std::string& input){
+void VariantWriterFile::CheckOutputNames(const std::string& input){
 	std::vector<std::string> paths = utility::filePathBaseExtension(input);
 	this->basePath = paths[0];
 	if(this->basePath.size() > 0)
@@ -61,13 +61,16 @@ void VariantImportWriterFile::checkOutputNames(const std::string& input){
 	else this->baseName = paths[1];
 }
 
-VariantImportWriterFile::VariantImportWriterFile(){ this->stream = new std::ofstream; }
-VariantImportWriterFile::~VariantImportWriterFile(){
+VariantWriterFile::VariantWriterFile(){ this->stream = new std::ofstream; }
+
+VariantWriterFile::~VariantWriterFile(){
 	this->stream->flush();
 	delete this->stream;
 }
-VariantImportWriterStream::VariantImportWriterStream(){ this->stream = &std::cout; }
-VariantImportWriterStream::~VariantImportWriterStream(){
+
+VariantWriterStream::VariantWriterStream(){ this->stream = &std::cout; }
+
+VariantWriterStream::~VariantWriterStream(){
 	this->stream->flush();;
 }
 
