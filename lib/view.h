@@ -29,8 +29,6 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 #include "variant_reader.h"
 
-#include "core/occ.h"
-
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<

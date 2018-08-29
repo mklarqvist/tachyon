@@ -417,6 +417,7 @@ private:
 		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(this->WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
+		std::cerr << offset.data_header.offset << "==" << virtual_offset << std::endl;
 		assert(offset.data_header.offset == virtual_offset);
 		this->UpdateHeader(offset, container, virtual_offset);
 		assert(container.buffer_data.size() == offset.data_header.cLength);

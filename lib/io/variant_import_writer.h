@@ -1,5 +1,5 @@
-#ifndef CORE_TOMAHAWKIMPORTWRITER_H_
-#define CORE_TOMAHAWKIMPORTWRITER_H_
+#ifndef IO_VARIANT_IMPORTWRITER_H_
+#define IO_VARIANT_IMPORTWRITER_H_
 
 #include <cassert>
 #include <fstream>
@@ -11,7 +11,7 @@
 namespace tachyon {
 
 class VariantImportWriterInterface {
-private:
+public:
 	typedef VariantImportWriterInterface  self_type;
 	typedef index::Index                  sorted_index_type;
 	typedef containers::DataContainer     container_type;
@@ -47,7 +47,7 @@ public:
 };
 
 class VariantImportWriterFile : public VariantImportWriterInterface{
-private:
+public:
 	typedef VariantImportWriterFile self_type;
 
 public:
@@ -66,7 +66,7 @@ public:
 };
 
 class VariantImportWriterStream : public VariantImportWriterInterface{
-private:
+public:
 	typedef VariantImportWriterStream self_type;
 
 public:
@@ -76,6 +76,6 @@ public:
 
 };
 
-} /* namespace Tomahawk */
+}
 
-#endif /* CORE_TOMAHAWKIMPORTWRITER_H_ */
+#endif /* IO_VARIANT_IMPORTWRITER_H_ */

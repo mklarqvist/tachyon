@@ -6,6 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
 #include "core/variant_import_settings.h"
 #include "core/variant_importer_container_stats.h"

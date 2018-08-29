@@ -603,11 +603,18 @@ bool VariantBlock::write(std::ostream& stream)
 	stream << this->header;
 	const uint64_t start_pos = stream.tellp();
 
+	std::cerr << begin_pos << "," << start_pos << "," << this->header.l_offset_footer << std::endl;
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i){
+		std::cerr << YON_BLK_PRINT_NAMES[i] << ": " << this->footer.offsets[i].data_header.offset << std::endl;
+	}
+
+	std::cerr << "tellp 0: " << (uint64_t)stream.tellp() << std::endl;
 	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
 		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (uint64_t)stream.tellp() - start_pos);
+	std::cerr << "tellp 1: " << (uint64_t)stream.tellp() << std::endl;
 
-	// Start at offset 1 because offset 0 is encoding for the genotype
-	// permutation array that is handled differently.
+	// Start at offset 1 because offset 0 (YON_BLK_PPA) is encoding for the
+	// genotype permutation array that is handled differently.
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
 		this->WriteContainer(stream, this->footer.offsets[i], this->base_containers[i], (uint64_t)stream.tellp() - start_pos);
 

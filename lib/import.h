@@ -23,8 +23,8 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "../lib/utility.h"
-#include "../lib/variant_importer.h"
+#include "utility.h"
+#include "variant_importer.h"
 
 void import_usage(void){
 	programMessage();
@@ -32,8 +32,8 @@ void import_usage(void){
 	"Brief:  Convert Vcf/Bcf records into a Yon archive.\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input> -o <output.yon>\n\n"
 	"Options:\n"
-	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required)\n"
-	"  -o FILE  output file prefix (required)\n"
+	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required, \"-\" for piping from stdin)\n"
+	"  -o FILE  output file prefix (required, \"-\" for piping to stdout)\n"
 	"  -c INT   Import checkpoint size in number of variants (default: 1000)\n"
 	"  -C FLOAT Import checkpoint size in bases (default: 5 Mb)\n"
 	"  -L INT   Compression level 1-20 (default: 6)\n"
