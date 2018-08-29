@@ -331,7 +331,7 @@ bool VariantImporter::BuildParallel(void){
 	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
 
 
-	std::cerr << "Field\tCompressed\tUncompressed\tFold\tBinaryVcf\tFold-Bcf" << std::endl;
+	std::cerr << "Field\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
 	for(int i = 0; i < write.stats_basic.size(); ++i)
 		std::cerr << YON_BLK_PRINT_NAMES[i] << "\t" << write.stats_basic.at(i) << std::endl;
 

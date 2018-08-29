@@ -43,8 +43,8 @@ struct VariantImporterStatsObject{
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed <<
 				'\t' << entry.cost_strides_compressed << "\t" << entry.cost_strides <<
-				'\t' << (entry.cost_compressed+entry.cost_strides ? (double)(entry.cost_uncompressed+entry.cost_strides)/(entry.cost_compressed+entry.cost_strides_compressed) : 0) <<
-				'\t' << entry.cost_bcf << '\t' << (entry.cost_uncompressed ? (double)entry.cost_bcf/(entry.cost_uncompressed) : 0);
+				'\t' << (entry.cost_compressed ? (double)(entry.cost_uncompressed)/(entry.cost_compressed) : 0) <<
+				'\t' << entry.cost_bcf << '\t' << (entry.cost_compressed ? (double)entry.cost_bcf/(entry.cost_compressed) : 0);
 		return(stream);
 	}
 

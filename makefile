@@ -47,7 +47,7 @@ DEBUG_FLAGS :=
 endif
 
 # Global build parameters
-INCLUDE_PATH = -I./lib/
+INCLUDE_PATH = -I./lib/ -I/home/mk21/Repos/FastPFor/headers/
 ZSTD_LIBRARY_PATH = 
 
 # Check if ZSTD is in the current directory
@@ -96,7 +96,7 @@ endif
 INCLUDE_PATH := $(sort $(INCLUDE_PATH))
 
 # Library paths
-LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) $(HSLIB_LIBRARY_PATH) -L/usr/local/lib/
+LIBRARY_PATHS := $(ZSTD_LIBRARY_PATH) $(OPENSSL_LIBRARY_PATH) $(HSLIB_LIBRARY_PATH) -L/usr/local/lib/ -L/home/mk21/Repos/FastPFor/
 
 OPTFLAGS := -O3 -msse4.2
 # Legacy flags used
@@ -121,7 +121,7 @@ CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
 BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
 
-LIBS := -lzstd -lcrypto -lhts
+LIBS := -lzstd -lcrypto -lhts -lFastPFor
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
 			 $(wildcard lib/algorithm/digest/*.cpp) \
 			 $(wildcard lib/algorithm/encryption/*.cpp) \
@@ -172,8 +172,8 @@ lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
 
 tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
-	$(MAKE) cleanmost
-	$(MAKE) library library=true
+	#$(MAKE) cleanmost
+	#$(MAKE) library library=true
 	#$(MAKE) examples
 
 library: $(OBJECTS)

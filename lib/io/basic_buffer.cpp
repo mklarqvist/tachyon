@@ -52,7 +52,7 @@ BasicBuffer::~BasicBuffer(){
 
 BasicBuffer& BasicBuffer::operator=(const self_type& other){
 	if(this->owns_data_) delete [] this->buffer_;
-	this->owns_data_ = other.owns_data_;
+	this->owns_data_  = other.owns_data_;
 	this->n_chars_    = other.n_chars_;
 	this->width_      = other.width_;
 	this->iterator_position_ = other.iterator_position_;
