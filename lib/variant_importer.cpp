@@ -331,15 +331,15 @@ bool VariantImporter::BuildParallel(void){
 	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
 
 
-	std::cerr << "Field\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
+	std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
 	for(int i = 0; i < write.stats_basic.size(); ++i)
-		std::cerr << YON_BLK_PRINT_NAMES[i] << "\t" << write.stats_basic.at(i) << std::endl;
+		std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
 
 	for(int i = 0; i < write.stats_info.size(); ++i)
-		std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << write.stats_info.at(i) << std::endl;
+		std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
 
 	for(int i = 0; i < write.stats_format.size(); ++i)
-		std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << write.stats_format.at(i) << std::endl;
+		std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
 
 
 	this->writer->index += consumers[0].importer.index;

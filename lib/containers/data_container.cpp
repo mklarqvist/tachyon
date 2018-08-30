@@ -427,7 +427,7 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 	if(this->header.data_header.controller.type != YON_TYPE_STRUCT){
 		this->CheckUniformity();
 		// Reformat stream to use as small word size as possible
-		//if(reformat_data) this->ReformatInteger();
+		if(reformat_data) this->ReformatInteger();
 	}
 
 	// Set uncompressed length
