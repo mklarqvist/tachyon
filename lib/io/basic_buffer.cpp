@@ -64,23 +64,31 @@ BasicBuffer& BasicBuffer::operator=(const self_type& other){
 BasicBuffer& BasicBuffer::operator=(self_type&& other) noexcept{
 	if(this->owns_data_) delete [] this->buffer_;
 	this->buffer_ = nullptr;
-	std::swap(this->buffer_, other.buffer_);
-	this->owns_data_ = other.owns_data_;
+	this->owns_data_  = other.owns_data_;
 	this->n_chars_    = other.n_chars_;
 	this->width_      = other.width_;
 	this->iterator_position_ = other.iterator_position_;
+	std::swap(this->buffer_, other.buffer_);
+	other.n_chars_ = 0;
+	other.width_   = 0;
+	other.iterator_position_ = 0;
 	return(*this);
 }
 
 void BasicBuffer::resize(const uint64_t new_size){
 	if(this->n_chars_ == 0 && new_size == 0) return;
+	if(new_size < this->capacity()){
+		if(this->n_chars_ > new_size)
+			this->n_chars_ = new_size;
+		return;
+	}
+
 	char* temp = new char[new_size];
-	//std::cerr << this->size() << "<" << new_size << std::endl;
 	assert(this->size() < new_size);
 	memcpy(temp, this->buffer_, this->size());
 	delete [] this->buffer_;
 	this->buffer_ = temp;
-	this->width_ = new_size;
+	this->width_  = new_size;
 }
 
 void BasicBuffer::resize(const self_type& other){

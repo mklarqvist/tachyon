@@ -25,22 +25,17 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 
 	io::BasicBuffer temp;
 	io::BasicBuffer backup;
-	io::BasicBuffer c1(65536), c2(65536), c3(65536), c4(65536);
+	io::BasicBuffer c1,c2,c3,c4;
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-		// We pick a CODEC
-		//maskedvbyte
-		//streamvbyte
-
 		if(block.base_containers[i].header.n_entries){
-			/*
 			if(block.base_containers[i].header.data_header.IsUniform() == false &&
 			   block.base_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
 			{
-				//c1.reset(), c2.reset(), c3.reset();
 				temp.reset();
+				assert(block.base_containers[i].data_uncompressed.size() % sizeof(int32_t) == 0);
 				temp.resize(block.base_containers[i].data_uncompressed.size() + 1000*sizeof(int32_t));
-				size_t compressedsize = temp.capacity()/sizeof(int32_t);
+				size_t compressedsize = temp.capacity() / sizeof(int32_t);
 
 				// Move uncompressed data into backup
 				backup = std::move(block.base_containers[i].data_uncompressed);
@@ -58,13 +53,12 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 
 				temp.n_chars_ = compressedsize*sizeof(int32_t);
 				// Set uncompressed data to temp
-
 				block.base_containers[i].data_uncompressed = temp;
 				// Compress
 				zstd_codec.Compress(block.base_containers[i]);
 				// Copy compressed data
 				c1 = std::move(block.base_containers[i].data);
-				block.base_containers[i].data.reset();
+				block.base_containers[i].data.resize(65536);
 				// Print
 				std::cerr << "preprocessor " << i << " simdoptpfor: " << backup.size() << "->" << compressedsize*sizeof(int32_t) << "->" << c1.size() << std::endl;
 
@@ -72,7 +66,6 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				// Codec2
 				temp.reset();
 				compressedsize = temp.capacity()/sizeof(int32_t);
-
 
 				// Compress data into temp buffer
 				codec2->encodeArray(
@@ -88,15 +81,13 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				zstd_codec.Compress(block.base_containers[i]);
 				// Copy compressed data
 				c2 = std::move(block.base_containers[i].data);
-				block.base_containers[i].data.reset();
+				block.base_containers[i].data.resize(65536);
 				// Print
 				std::cerr << "preprocessor " << i << " maskedvbyte: " << backup.size() << "->" << compressedsize*sizeof(int32_t) << "->" << c2.size() << std::endl;
-
 
 				// Codec3
 				temp.reset();
 				compressedsize = temp.capacity()/sizeof(int32_t);
-
 
 				// Compress data into temp buffer
 				codec3->encodeArray(
@@ -105,7 +96,6 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 						dst_data,
 						compressedsize);
 
-
 				temp.n_chars_ = compressedsize*sizeof(int32_t);
 				// Set uncompressed data to temp
 				block.base_containers[i].data_uncompressed = temp;
@@ -113,22 +103,20 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				zstd_codec.Compress(block.base_containers[i]);
 				// Copy compressed data
 				c3 = std::move(block.base_containers[i].data);
-				block.base_containers[i].data.reset();
+				block.base_containers[i].data.resize(65536);
 				// Print
 				std::cerr << "preprocessor " << i << " streamvbyte: " << backup.size() << "->" << compressedsize*sizeof(int32_t) << "->" << c3.size() << std::endl;
 
 				// Move back
 				block.base_containers[i].data_uncompressed = std::move(backup);
 			}
-			*/
 
 			zstd_codec.Compress(block.base_containers[i]);
 
-			/*
 			if(block.base_containers[i].header.data_header.IsUniform() == false &&
 			   block.base_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
 			{
-				std::cerr << "Compress: " << i << ": " << block.base_containers[i].data_uncompressed.size() << "->" << block.base_containers[i].data.size() << " for type " << block.base_containers[i].header.data_header.GetPrimitiveType() << std::endl;
+				std::cerr << "Base Compress: " << i << ": " << block.base_containers[i].data_uncompressed.size() << "->" << block.base_containers[i].data.size() << " for type " << block.base_containers[i].header.data_header.GetPrimitiveType() << std::endl;
 
 				uint32_t codec_min = block.base_containers[i].data.size();
 				uint8_t codec_chosen = 0;
@@ -136,12 +124,12 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				if(c2.size() < codec_min && c2.size() != 0){ codec_min = c2.size(); codec_chosen = 2; }
 				if(c3.size() < codec_min && c3.size() != 0){ codec_min = c3.size(); codec_chosen = 3; }
 
-				std::cerr << "Winner: " << (int)codec_chosen << " with " << codec_min << " difference " << (float)block.base_containers[i].data.size()/codec_min << std::endl;
+				std::cerr << "Base Winner: " << (int)codec_chosen << " with " << codec_min << " difference " << (float)block.base_containers[i].data.size()/codec_min << std::endl;
 				if(codec_chosen == 1)     { block.base_containers[i].header.data_header.cLength = c1.size(); block.base_containers[i].data = std::move(c1); }
 				else if(codec_chosen == 2){ block.base_containers[i].header.data_header.cLength = c2.size(); block.base_containers[i].data = std::move(c2); }
 				else if(codec_chosen == 3){ block.base_containers[i].header.data_header.cLength = c3.size(); block.base_containers[i].data = std::move(c3); }
 			}
-			*/
+
 		}
 	}
 
@@ -154,6 +142,7 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 		else {
 			zstd_codec.SetCompressionLevel(general_level);
 		}
+		block.info_containers[i].ReformatInteger();
 		zstd_codec.Compress(block.info_containers[i]);
 		//std::cerr << "Compress INFO: " << i << ": " << block.info_containers[i].buffer_data_uncompressed.size() << "->" << block.info_containers[i].buffer_data.size() << std::endl;
 	}
@@ -169,10 +158,10 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				zstd_codec.SetCompressionLevel(general_level);
 			}
 
+
 			if(block.format_containers[i].header.data_header.IsUniform() == false &&
 			   block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
 			{
-				//c1.reset(), c2.reset(), c3.reset();
 				temp.reset();
 				temp.resize(block.format_containers[i].data_uncompressed.size() + 1000*sizeof(int32_t));
 				size_t compressedsize = temp.capacity()/sizeof(int32_t);
@@ -203,11 +192,9 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				// Print
 				std::cerr << "preprocessor " << i << " simdoptpfor: " << backup.size() << "->" << compressedsize*sizeof(int32_t) << "->" << c1.size() << std::endl;
 
-
 				// Codec2
 				temp.reset();
 				compressedsize = temp.capacity()/sizeof(int32_t);
-
 
 				// Compress data into temp buffer
 				codec2->encodeArray(
@@ -227,11 +214,9 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				// Print
 				std::cerr << "preprocessor " << i << " maskedvbyte: " << backup.size() << "->" << compressedsize*sizeof(int32_t) << "->" << c2.size() << std::endl;
 
-
 				// Codec3
 				temp.reset();
 				compressedsize = temp.capacity()/sizeof(int32_t);
-
 
 				// Compress data into temp buffer
 				codec3->encodeArray(
@@ -239,7 +224,6 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 						backup.size()/sizeof(int32_t),
 						dst_data,
 						compressedsize);
-
 
 				temp.n_chars_ = compressedsize*sizeof(int32_t);
 				// Set uncompressed data to temp
@@ -279,7 +263,9 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				block.format_containers[i].data_uncompressed = std::move(backup);
 			}
 
+
 			zstd_codec.Compress(block.format_containers[i]);
+
 
 			if(block.format_containers[i].header.data_header.IsUniform() == false &&
 			   block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
@@ -299,6 +285,7 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				else if(codec_chosen == 3){ block.format_containers[i].header.data_header.cLength = c3.size(); block.format_containers[i].data = std::move(c3); }
 				else if(codec_chosen == 4){ block.format_containers[i].header.data_header.cLength = c4.size(); block.format_containers[i].data = std::move(c4); }
 			}
+
 		}
 	}
 
