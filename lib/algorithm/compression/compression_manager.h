@@ -14,7 +14,7 @@ namespace tachyon{
 namespace algorithm{
 
 struct yon_comp_memory_pair {
-	yon_comp_memory_pair() : codec(0), times_seen(0){}
+	yon_comp_memory_pair() : codec(0), times_seen(5){}
 
 	uint8_t codec;
 	uint32_t times_seen;
@@ -42,6 +42,7 @@ public:
 	int32_t CompressCodec3(container_type& container, const bool move = true);
 	int32_t CompressCodec4(container_type& container, const bool move = true);
 	int32_t CompressDelta(container_type& container, const bool move = true);
+	bool CompressEvaluate(container_type& container, yon_comp_memory_pair* memory, const uint32_t global_id);
 
 	/**<
 	 * Decompress an abstract data container

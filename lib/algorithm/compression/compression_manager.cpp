@@ -63,7 +63,94 @@ int32_t CompressionManager::CompressCodec3(container_type& container, const bool
 int32_t CompressionManager::CompressCodec4(container_type& container, const bool move){
 	return(this->CompressCodecWrapper(this->codec4, container, move));
 }
-int32_t CompressionManager::CompressDelta(container_type& container, const bool move){ return -1; }
+int32_t CompressionManager::CompressDelta(container_type& container, const bool move){
+	if(container.header.data_header.IsUniform() == true ||
+	   container.header.data_header.GetPrimitiveType() != YON_TYPE_32B)
+	{
+		return 0;
+	}
+
+	this->support_buffer.reset();
+	this->support_buffer.resize(container.data_uncompressed.size() + 65536);
+	const uint32_t* data = reinterpret_cast<const uint32_t*>(container.data_uncompressed.data());
+	uint32_t* dst_data   = reinterpret_cast<uint32_t*>(this->support_buffer.data());
+
+	// Compress data into temp buffer
+	const uint32_t n_entries = container.data_uncompressed.size() / sizeof(uint32_t);
+
+	// Compute deltas
+	compute_deltas(data, n_entries, dst_data, data[0]);
+
+	this->support_buffer.n_chars_ = n_entries * sizeof(uint32_t);
+	this->backup_buffer           = std::move(container.data_uncompressed);
+	container.data_uncompressed   = std::move(this->support_buffer);
+	zstd_codec.Compress(container);
+	container.data_uncompressed = this->backup_buffer;
+
+	return container.data.size();
+}
+
+bool CompressionManager::CompressEvaluate(container_type& container, yon_comp_memory_pair* memory, const uint32_t global_id){
+	if(container.header.n_entries == 0) return false;
+
+	uint32_t c_sz[6]; memset(c_sz, 0, sizeof(uint32_t)*6);
+
+	if(container.header.data_header.IsUniform() == true ||
+	   container.header.data_header.GetPrimitiveType() != YON_TYPE_32B)
+	{
+		return false;
+	}
+
+	c_sz[1] = this->CompressCodec1(container, false);
+	c_sz[2] = this->CompressCodec2(container, false);
+	c_sz[3] = this->CompressCodec3(container, false);
+	c_sz[4] = this->CompressCodec4(container, false);
+	c_sz[5] = this->CompressDelta(container, false);
+	zstd_codec.Compress(container);
+	c_sz[0] = container.data.size();
+
+
+	uint32_t codec_min = c_sz[0];
+	uint8_t codec_chosen = 0;
+	if(c_sz[1] < codec_min && c_sz[1] != 0){ codec_min = c_sz[1]; codec_chosen = 1; }
+	if(c_sz[2] < codec_min && c_sz[2] != 0){ codec_min = c_sz[2]; codec_chosen = 2; }
+	if(c_sz[3] < codec_min && c_sz[3] != 0){ codec_min = c_sz[3]; codec_chosen = 3; }
+	if(c_sz[4] < codec_min && c_sz[4] != 0){ codec_min = c_sz[4]; codec_chosen = 4; }
+	if(c_sz[5] < codec_min && c_sz[5] != 0){ codec_min = c_sz[5]; codec_chosen = 5; }
+
+	std::cerr << utility::timestamp("DEBUG") << c_sz[0] << "\t" << c_sz[1] << "\t" << c_sz[2] << "\t" << c_sz[3] << "\t" <<  c_sz[4] << "\t" << c_sz[5] << std::endl;
+	std::cerr << "Winner @ " << global_id << ": " << (int)codec_chosen << " with " << codec_min << " difference " << (float)container.data.size()/codec_min << std::endl;
+	if(codec_chosen == 1)     {
+		container.header.data_header.cLength = c_sz[1];
+		this->CompressCodec1(container, true);
+		memory[global_id].codec = 1;
+	}
+	else if(codec_chosen == 2){
+		container.header.data_header.cLength = c_sz[2];
+		this->CompressCodec2(container, true);
+		memory[global_id].codec = 2;
+	}
+	else if(codec_chosen == 3){
+		container.header.data_header.cLength = c_sz[3];
+		this->CompressCodec3(container, true);
+		memory[global_id].codec = 3;
+	}
+	else if(codec_chosen == 4){
+		container.header.data_header.cLength = c_sz[4];
+		this->CompressCodec4(container, true);
+		memory[global_id].codec = 4;
+	}
+	else if(codec_chosen == 5){
+		container.header.data_header.cLength = c_sz[5];
+		this->CompressDelta(container, true);
+		memory[global_id].codec = 5;
+	}
+	else {
+		memory[global_id].codec = 0;
+	}
+
+	return true;
+}
 
 
 bool CompressionManager::Compress(variant_block_type& block, const uint8_t general_level, const uint8_t float_level){
@@ -77,67 +164,30 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 
 	zstd_codec.SetCompressionLevel(general_level);
 
-	uint32_t c_sz[5]; memset(c_sz, 0, sizeof(uint32_t)*5);
-
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].header.n_entries){
-			memset(c_sz, 0, sizeof(uint32_t)*5);
-
 			if(block.base_containers[i].header.data_header.IsUniform() == false &&
 			   block.base_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
 			{
-				c_sz[1] = this->CompressCodec1(block.base_containers[i], false);
-				c_sz[2] = this->CompressCodec2(block.base_containers[i], false);
-				c_sz[3] = this->CompressCodec3(block.base_containers[i], false);
-				c_sz[4] = this->CompressCodec4(block.base_containers[i], false);
-			}
-
-
-			zstd_codec.Compress(block.base_containers[i]);
-			c_sz[0] = block.base_containers[i].data.size();
-
-			if(block.base_containers[i].header.data_header.IsUniform() == false &&
-			   block.base_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-			{
-				//std::cerr << "Base Compress: " << i << ": " << block.base_containers[i].data_uncompressed.size() << "->" << block.base_containers[i].data.size() << " for type " << block.base_containers[i].header.data_header.GetPrimitiveType() << std::endl;
-
-				uint32_t codec_min = c_sz[0];
-				uint8_t codec_chosen = 0;
-				if(c_sz[1] < codec_min && c_sz[1] != 0){ codec_min = c_sz[1]; codec_chosen = 1; }
-				if(c_sz[2] < codec_min && c_sz[2] != 0){ codec_min = c_sz[2]; codec_chosen = 2; }
-				if(c_sz[3] < codec_min && c_sz[3] != 0){ codec_min = c_sz[3]; codec_chosen = 3; }
-				//if(delta_regular.size() < codec_min && delta_regular.size() != 0){ codec_min = delta_regular.size(); codec_chosen = 5; }
-
-				std::cerr << utility::timestamp("DEBUG") << c_sz[0] << "\t" << c_sz[1] << "\t" << c_sz[2] << "\t" << c_sz[3] << "\t" <<  c_sz[4] << std::endl;
-				std::cerr << "Base Winner @ " << YON_BLK_PRINT_NAMES[i] << ": " << (int)codec_chosen << " with " << codec_min << " difference " << (float)block.base_containers[i].data.size()/codec_min << std::endl;
-				if(codec_chosen == 1)     {
-					block.base_containers[i].header.data_header.cLength = c_sz[1];
-					this->CompressCodec1(block.base_containers[i], true);
-					this->memory_basic[i].codec = 1;
-				}
-				else if(codec_chosen == 2){
-					block.base_containers[i].header.data_header.cLength = c_sz[2];
-					this->CompressCodec2(block.base_containers[i], true);
-					this->memory_basic[i].codec = 2;
-				}
-				else if(codec_chosen == 3){
-					block.base_containers[i].header.data_header.cLength = c_sz[3];
-					this->CompressCodec3(block.base_containers[i], true);
-					this->memory_basic[i].codec = 3;
-				}
-				else if(codec_chosen == 4){
-					block.base_containers[i].header.data_header.cLength = c_sz[4];
-					this->CompressCodec4(block.base_containers[i], true);
-					this->memory_basic[i].codec = 3;
+				if(this->memory_basic[i].times_seen == 5){
+					//std::cerr << "eval" << std::endl;
+					this->CompressEvaluate(block.base_containers[i], this->memory_basic, i);
+					this->memory_basic[i].times_seen = 0;
 				} else {
-					this->memory_basic[i].codec = 0;
+					//std::cerr << "reuse: " << (int)this->memory_basic[i].codec << std::endl;
+					switch(this->memory_basic[i].codec){
+						case(0): zstd_codec.Compress(block.base_containers[i]); break;
+						case(1): this->CompressCodec1(block.base_containers[i]); break;
+						case(2): this->CompressCodec2(block.base_containers[i]); break;
+						case(3): this->CompressCodec3(block.base_containers[i]); break;
+						case(4): this->CompressCodec4(block.base_containers[i]); break;
+						case(5): this->CompressDelta(block.base_containers[i]); break;
+					}
+					++this->memory_basic[i].times_seen;
 				}
-				++this->memory_basic[i].times_seen;
-				//else if(codec_chosen == 5){ block.base_containers[i].header.data_header.cLength = delta_regular.size(); block.base_containers[i].data = std::move(delta_regular); }
-
+			} else {
+				zstd_codec.Compress(block.base_containers[i]);
 			}
-
-
 		}
 	}
 
@@ -151,62 +201,30 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 			zstd_codec.SetCompressionLevel(general_level);
 		}
 
-		memset(c_sz, 0, sizeof(uint32_t)*5);
-		if(block.info_containers[i].header.data_header.IsUniform() == false &&
-		   block.info_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-		{
-			c_sz[1] = this->CompressCodec1(block.info_containers[i], false);
-			c_sz[2] = this->CompressCodec2(block.info_containers[i], false);
-			c_sz[3] = this->CompressCodec3(block.info_containers[i], false);
-			c_sz[4] = this->CompressCodec4(block.info_containers[i], false);
-		}
-
-		//block.info_containers[i].ReformatInteger();
-		zstd_codec.Compress(block.info_containers[i]);
-
-		c_sz[0] = block.info_containers[i].data.size();
-
-		if(block.info_containers[i].header.data_header.IsUniform() == false &&
-		   block.info_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-		{
-			//std::cerr << "Base Compress: " << i << ": " << block.base_containers[i].data_uncompressed.size() << "->" << block.base_containers[i].data.size() << " for type " << block.base_containers[i].header.data_header.GetPrimitiveType() << std::endl;
-
-			uint32_t codec_min = c_sz[0];
-			uint8_t codec_chosen = 0;
-			if(c_sz[1] < codec_min && c_sz[1] != 0){ codec_min = c_sz[1]; codec_chosen = 1; }
-			if(c_sz[2] < codec_min && c_sz[2] != 0){ codec_min = c_sz[2]; codec_chosen = 2; }
-			if(c_sz[3] < codec_min && c_sz[3] != 0){ codec_min = c_sz[3]; codec_chosen = 3; }
-			//if(delta_regular.size() < codec_min && delta_regular.size() != 0){ codec_min = delta_regular.size(); codec_chosen = 5; }
-
-			std::cerr << utility::timestamp("DEBUG") << c_sz[0] << "\t" << c_sz[1] << "\t" << c_sz[2] << "\t" << c_sz[3] << "\t" <<  c_sz[4] << std::endl;
-			std::cerr << "Info Winner @ " << i << ": " << (int)codec_chosen << " with " << codec_min << " difference " << (float)block.info_containers[i].data.size()/codec_min << std::endl;
-			if(codec_chosen == 1)     {
-				block.info_containers[i].header.data_header.cLength = c_sz[1];
-				this->CompressCodec1(block.info_containers[i], true);
-				this->memory_basic[i].codec = 1;
-			}
-			else if(codec_chosen == 2){
-				block.info_containers[i].header.data_header.cLength = c_sz[2];
-				this->CompressCodec2(block.info_containers[i], true);
-				this->memory_basic[i].codec = 2;
-			}
-			else if(codec_chosen == 3){
-				block.info_containers[i].header.data_header.cLength = c_sz[3];
-				this->CompressCodec3(block.info_containers[i], true);
-				this->memory_basic[i].codec = 3;
-			}
-			else if(codec_chosen == 4){
-				block.info_containers[i].header.data_header.cLength = c_sz[4];
-				this->CompressCodec4(block.info_containers[i], true);
-				this->memory_basic[i].codec = 3;
+		if(block.info_containers[i].header.n_entries){
+			if(block.info_containers[i].header.data_header.IsUniform() == false &&
+			   block.info_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
+			{
+				if(this->memory_info[i].times_seen == 5){
+					//std::cerr << "eval" << std::endl;
+					this->CompressEvaluate(block.info_containers[i], this->memory_info, i);
+					this->memory_info[i].times_seen = 0;
+				} else {
+					//std::cerr << "reuse: " << (int)this->memory_info[i].codec << std::endl;
+					switch(this->memory_info[i].codec){
+						case(0): zstd_codec.Compress(block.info_containers[i]); break;
+						case(1): this->CompressCodec1(block.info_containers[i]); break;
+						case(2): this->CompressCodec2(block.info_containers[i]); break;
+						case(3): this->CompressCodec3(block.info_containers[i]); break;
+						case(4): this->CompressCodec4(block.info_containers[i]); break;
+						case(5): this->CompressDelta(block.info_containers[i]); break;
+					}
+					++this->memory_info[i].times_seen;
+				}
 			} else {
-				this->memory_basic[i].codec = 0;
+				zstd_codec.Compress(block.info_containers[i]);
 			}
-			++this->memory_basic[i].times_seen;
-			//else if(codec_chosen == 5){ block.info_containers[i].header.data_header.cLength = delta_regular.size(); block.info_containers[i].data = std::move(delta_regular); }
-
 		}
-
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
@@ -220,60 +238,29 @@ bool CompressionManager::Compress(variant_block_type& block, const uint8_t gener
 				zstd_codec.SetCompressionLevel(general_level);
 			}
 
-			memset(c_sz, 0, sizeof(uint32_t)*5);
-
-			if(block.format_containers[i].header.data_header.IsUniform() == false &&
-			   block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-			{
-				c_sz[1] = this->CompressCodec1(block.format_containers[i], false);
-				c_sz[2] = this->CompressCodec2(block.format_containers[i], false);
-				c_sz[3] = this->CompressCodec3(block.format_containers[i], false);
-				c_sz[4] = this->CompressCodec4(block.format_containers[i], false);
-			}
-
-
-			zstd_codec.Compress(block.format_containers[i]);
-			c_sz[0] = block.format_containers[i].data.size();
-
-			if(block.format_containers[i].header.data_header.IsUniform() == false &&
-			   block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-			{
-				//std::cerr << "Base Compress: " << i << ": " << block.format_containers[i].data_uncompressed.size() << "->" << block.format_containers[i].data.size() << " for type " << block.format_containers[i].header.data_header.GetPrimitiveType() << std::endl;
-
-				uint32_t codec_min = c_sz[0];
-				uint8_t codec_chosen = 0;
-				if(c_sz[1] < codec_min && c_sz[1] != 0){ codec_min = c_sz[1]; codec_chosen = 1; }
-				if(c_sz[2] < codec_min && c_sz[2] != 0){ codec_min = c_sz[2]; codec_chosen = 2; }
-				if(c_sz[3] < codec_min && c_sz[3] != 0){ codec_min = c_sz[3]; codec_chosen = 3; }
-				//if(delta_regular.size() < codec_min && delta_regular.size() != 0){ codec_min = delta_regular.size(); codec_chosen = 5; }
-
-				std::cerr << utility::timestamp("DEBUG") << c_sz[0] << "\t" << c_sz[1] << "\t" << c_sz[2] << "\t" << c_sz[3] << "\t" <<  c_sz[4] << std::endl;
-				std::cerr << "Format Winner @ " << i << ": " << (int)codec_chosen << " with " << codec_min << " difference " << (float)block.format_containers[i].data.size()/codec_min << std::endl;
-				if(codec_chosen == 1)     {
-					block.format_containers[i].header.data_header.cLength = c_sz[1];
-					this->CompressCodec1(block.format_containers[i], true);
-					this->memory_basic[i].codec = 1;
-				}
-				else if(codec_chosen == 2){
-					block.format_containers[i].header.data_header.cLength = c_sz[2];
-					this->CompressCodec2(block.format_containers[i], true);
-					this->memory_basic[i].codec = 2;
-				}
-				else if(codec_chosen == 3){
-					block.format_containers[i].header.data_header.cLength = c_sz[3];
-					this->CompressCodec3(block.format_containers[i], true);
-					this->memory_basic[i].codec = 3;
-				}
-				else if(codec_chosen == 4){
-					block.format_containers[i].header.data_header.cLength = c_sz[4];
-					this->CompressCodec4(block.format_containers[i], true);
-					this->memory_basic[i].codec = 3;
+			if(block.format_containers[i].header.n_entries){
+				if(block.format_containers[i].header.data_header.IsUniform() == false &&
+				   block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
+				{
+					if(this->memory_format[i].times_seen == 5){
+						//std::cerr << "eval" << std::endl;
+						this->CompressEvaluate(block.format_containers[i], this->memory_format, i);
+						this->memory_format[i].times_seen = 0;
+					} else {
+						//std::cerr << "reuse: " << (int)this->memory_format[i].codec << std::endl;
+						switch(this->memory_format[i].codec){
+							case(0): zstd_codec.Compress(block.format_containers[i]); break;
+							case(1): this->CompressCodec1(block.format_containers[i]); break;
+							case(2): this->CompressCodec2(block.format_containers[i]); break;
+							case(3): this->CompressCodec3(block.format_containers[i]); break;
+							case(4): this->CompressCodec4(block.format_containers[i]); break;
+							case(5): this->CompressDelta(block.format_containers[i]); break;
+						}
+						++this->memory_format[i].times_seen;
+					}
 				} else {
-					this->memory_basic[i].codec = 0;
+					zstd_codec.Compress(block.format_containers[i]);
 				}
-				++this->memory_basic[i].times_seen;
-				//else if(codec_chosen == 5){ block.format_containers[i].header.data_header.cLength = delta_regular.size(); block.format_containers[i].data = std::move(delta_regular); }
-
 			}
 		}
 	}
