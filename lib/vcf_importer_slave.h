@@ -81,7 +81,7 @@ public:
 	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
 	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
 
-	inline void SetVcfHeader(vcf_header_type* header){
+	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){
 		this->vcf_header_ = header;
 		// Setup genotype permuter and genotype encoder.
 		this->permutator.SetSamples(header->GetNumberSamples());
@@ -91,9 +91,9 @@ public:
 public:
 	uint32_t n_blocks_processed; // number of blocks processed
 	uint32_t block_id; // local block id
-	index::Index index; // local index
-	vcf_header_type* vcf_header_; // global header
-	settings_type settings_; // internal settings
+	index::Index index; // local index for this thread
+	std::shared_ptr<vcf_header_type> vcf_header_; // global header
+	std::shared_ptr<settings_type> settings_; // internal settings
 	bool GT_available_; // genotypes available
 	index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter

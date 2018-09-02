@@ -2,37 +2,17 @@
 #define VARIANT_IMPORTER_H_
 
 #include <unordered_map>
-#include <thread> // required for std::thread::hardware_concurrency()
 
 #include "io/variant_import_writer.h"
 
 namespace tachyon {
 
-struct VariantImporterSettings{
+struct VariantImporterSettings {
 public:
-	VariantImporterSettings() :
-		permute_genotypes(true),
-		encrypt_data(false),
-		checkpoint_n_snps(1000),
-		checkpoint_bases(10e6),
-		n_threads(std::thread::hardware_concurrency()),
-		info_end_key(-1),
-		info_svlen_key(-1),
-		compression_level(6),
-		htslib_extra_threads(0)
-	{}
-
+	VariantImporterSettings();
 	~VariantImporterSettings() = default;
 
-	std::string GetInterpretedString(void) const{
-		return(std::string("{\"input_file\":\"" + this->input_file +
-		   "\",\"output_prefix\":\"" + this->output_prefix +
-		   "\",\"checkpoint_snps\":" + std::to_string(this->checkpoint_n_snps) +
-		   ",\"checkpoint_bases\":" + std::to_string(this->checkpoint_bases) +
-		   ",\"compression_level\":" + std::to_string(this->compression_level) +
-		   "}"
-		));
-	}
+	std::string GetInterpretedString(void) const;
 
 	inline void SetInputFile(const std::string& input_name){ this->input_file = input_name; }
 	inline void SetOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
@@ -52,9 +32,8 @@ public:
 	uint32_t compression_level; // compression level sent to ZSTD
 	std::string input_file;   // input file name
 	std::string output_prefix;// output file prefix
-	uint32_t htslib_extra_threads;
+	uint32_t htslib_extra_threads; // extra threads for compress/decompress htslib
 };
-
 
 class VariantImporter {
 public:

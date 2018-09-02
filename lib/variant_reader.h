@@ -62,7 +62,7 @@ private:
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
-	typedef algorithm::Interval<uint32_t, int64_t>          interval_type;
+	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
 	typedef io::BasicReader                        basic_reader_type;
 	typedef encryption::EncryptionDecorator        encryption_manager_type;
 
@@ -208,7 +208,7 @@ public:
 	 * @return
 	 */
 	bool SeekBlock(const uint32_t& blockID){
-		const uint64_t offset = this->GetIndex().linear_.at(blockID).byte_offset;
+		const uint64_t offset = this->GetIndex().GetLinearIndex().at(blockID).byte_offset;
 		std::cerr << "offset is " << offset << std::endl;
 		this->basic_reader.stream_.seekg(offset);
 		if(this->basic_reader.stream_.good() == false){
@@ -283,78 +283,6 @@ private:
 	keychain_type           keychain;
 	interval_container_type interval_container;
 	yon_occ                 occ_table;
-};
-
-struct yon_stats_worker{
-	yon_stats_worker() : block_from(0), block_to(0), reader(nullptr){}
-	~yon_stats_worker(){
-		delete this->reader;
-	}
-
-	std::thread* Start(void){
-		this->slave = std::thread(&yon_stats_worker::__Job, this);
-		return(&this->slave);
-	}
-
-	bool __Job(void){
-		assert(reader != nullptr);
-
-		if(reader->SeekBlock(block_from) == false){
-			std::cerr << "failed to seek" << std::endl;
-			return false;
-		}
-
-		this->tstv.n_s    = reader->GetGlobalHeader().GetNumberSamples();
-		this->tstv.sample = new yon_stats_sample[this->tstv.n_s];
-
-		reader->GetCurrentContainer().AllocateGenotypeMemory();
-
-		for(uint32_t i = block_from; i < block_to; ++i){
-			if(reader->NextBlock() == false){
-				std::cerr << "cannot get next block" << std::endl;
-				return false;
-			}
-
-			VariantReaderObjects* objects = reader->GetCurrentContainer().LoadObjects(reader->GetBlockSettings());
-			yon1_t* entries = reader->GetCurrentContainer().LazyEvaluate(*objects);
-
-			for(uint32_t j = 0; j < objects->meta_container->size(); ++j){
-				// Each entry evaluate occ if available.
-				//entries[i].occ = objects->occ;
-				//entries[i].EvaluateOcc();
-
-				const uint32_t n_format_avail = entries[j].format_ids->size();
-				if(n_format_avail > 0 && entries[j].is_loaded_gt){
-					entries[j].gt->ExpandExternal(reader->GetCurrentContainer().GetAllocatedGenotypeMemory());
-					this->tstv.Update(entries[j], reader->GetCurrentContainer().GetAllocatedGenotypeMemory());
-				}
-			}
-
-			delete [] entries;
-			//objects->occ = nullptr;
-			delete objects;
-		}
-		std::cerr << "done in thread" << std::endl;
-
-		return true;
-	}
-
-	uint32_t block_from;
-	uint32_t block_to;
-	yon_stats_tstv tstv;
-	std::thread slave;
-	VariantReader* reader;
-};
-
-struct yon_stats_thread_pool{
-	yon_stats_thread_pool(const uint32_t n_t) : n_threads(n_t), workers(new yon_stats_worker[n_t]){}
-	~yon_stats_thread_pool(void){ delete [] this->workers; }
-
-	inline yon_stats_worker& operator[](const uint32_t thread){ return(this->workers[thread]); }
-	inline const yon_stats_worker& operator[](const uint32_t thread) const{ return(this->workers[thread]); }
-
-	uint32_t n_threads;
-	yon_stats_worker* workers;
 };
 
 }

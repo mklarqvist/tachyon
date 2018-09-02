@@ -65,7 +65,7 @@ public:
 	}
 
 	// Accessors
-	inline variant_quad_tree_type& GetQuadInex(void){ return(this->index_); }
+	inline variant_quad_tree_type& GetQuadIndex(void){ return(this->index_); }
 	inline const variant_quad_tree_type& GetQuadIndex(void) const{ return(this->index_); }
 	inline variant_meta_type& GetMetaIndex(void){ return(this->index_meta_); }
 	inline const variant_meta_type& GetMetaIndex(void) const{ return(this->index_meta_); }
@@ -113,6 +113,14 @@ public:
 			this->index_meta_[i].contigID = contigs[i].idx;
 	}
 
+	inline int32_t AddSorted(const uint32_t contig_id,
+	                         const uint64_t fromPosition,
+	                         const uint64_t toPosition,
+	                         const uint32_t yon_block_id)
+	{
+		return(this->index_[contig_id].Add(fromPosition, toPosition, yon_block_id));
+	}
+
 	self_type& operator+=(const linear_entry_type& entry){
 		this->linear_ += entry;
 
@@ -148,7 +156,7 @@ private:
 		return(stream);
 	}
 
-public:
+private:
 	bool is_sorted;
 	variant_meta_type      index_meta_;
 	variant_quad_tree_type index_;

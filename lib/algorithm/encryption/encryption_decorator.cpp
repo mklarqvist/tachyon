@@ -134,7 +134,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	container.data.n_chars_ = this->buffer.size();
 	container.header.data_header.eLength = this->buffer.size();
 
-	const uint64_t hashID = keychain.getRandomHashIdentifier();
+	const uint64_t hashID = keychain.GetRandomHashIdentifier();
 	container.header.identifier = hashID;
 	entry.field_id = hashID;
 	keychain += entry; // add key to keychain
@@ -155,7 +155,7 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 	}
 
 	uint32_t* match = nullptr;
-	if(keychain.getHashIdentifier(container.header.identifier, match) == false){
+	if(keychain.GetHashIdentifier(container.header.identifier, match) == false){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Did not find ID in keychain..." << std::endl;
 		return false;
 	}

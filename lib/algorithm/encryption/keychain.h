@@ -4,16 +4,17 @@
 #include "containers/variant_block.h"
 #include "io/basic_buffer.h"
 #include "keychain_key.h"
+#include "containers/components/generic_iterator.h"
 
 namespace tachyon{
 namespace encryption{
 
 template < class KeyType = KeychainKeyGCM<> >
 class Keychain{
-private:
+public:
     typedef Keychain                  self_type;
 	typedef std::size_t               size_type;
-    typedef KeychainKeyGCM<>          value_type;
+    typedef KeyType                   value_type;
     typedef value_type&               reference;
     typedef const value_type&         const_reference;
     typedef value_type*               pointer;
@@ -22,47 +23,16 @@ private:
     typedef containers::VariantBlock  variant_block_type;
     typedef containers::DataContainer container_type;
 
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
     Keychain();
     Keychain(const uint32_t start_capacity);
     Keychain(const self_type& other);
     ~Keychain();
 
-    class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	// Element access
+   	// Element access
 	inline reference at(const size_type& position){ return(this->entries_[position]); }
 	inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
 	inline reference operator[](const size_type& position){ return(this->entries_[position]); }
@@ -92,17 +62,14 @@ public:
 	void resize(const size_type new_capacity);
 	void resize(void);
 
-	uint64_t getRandomHashIdentifier();
-	bool getHashIdentifier(const uint64_t& value, uint32_t*& match);
+	uint64_t GetRandomHashIdentifier();
+	bool GetHashIdentifier(const uint64_t& value, uint32_t*& match);
 
 private:
 	bool __buildHashTable(void);
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& keychain){
 		stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MAJOR),   sizeof(int32_t));
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_MINOR),   sizeof(int32_t));
-		stream.write(reinterpret_cast<const char*>(&constants::TACHYON_VERSION_PATCH),   sizeof(int32_t));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
 		for(uint32_t i = 0; i < keychain.size(); ++i) stream << keychain[i];
@@ -117,9 +84,6 @@ private:
 			return(stream);
 		}
 
-		stream.read(reinterpret_cast<char*>(&keychain.version_major_),   sizeof(int32_t));
-		stream.read(reinterpret_cast<char*>(&keychain.version_minor_),   sizeof(int32_t));
-		stream.read(reinterpret_cast<char*>(&keychain.version_release_), sizeof(int32_t));
 		stream.read(reinterpret_cast<char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&keychain.n_capacity_), sizeof(size_type));
 		delete [] keychain.entries_;
@@ -147,9 +111,6 @@ private:
 	}
 
 private:
-	int32_t version_major_;
-	int32_t version_minor_;
-	int32_t version_release_;
     size_type   n_entries_;
     size_type   n_capacity_;
     pointer     entries_;
@@ -159,9 +120,6 @@ private:
 
 template <class KeyType>
 Keychain<KeyType>::Keychain() :
-	version_major_(0),
-	version_minor_(0),
-	version_release_(0),
 	n_entries_(0),
 	n_capacity_(100000),
 	entries_(new value_type[this->n_capacity_]),
@@ -171,9 +129,6 @@ Keychain<KeyType>::Keychain() :
 
 template <class KeyType>
 Keychain<KeyType>::Keychain(const uint32_t start_capacity) :
-	version_major_(0),
-	version_minor_(0),
-	version_release_(0),
 	n_entries_(0),
 	n_capacity_(start_capacity),
 	entries_(new value_type[this->n_capacity_]),
@@ -182,9 +137,6 @@ Keychain<KeyType>::Keychain(const uint32_t start_capacity) :
 
 template <class KeyType>
 Keychain<KeyType>::Keychain(const self_type& other) :
-	version_major_(other.version_major_),
-	version_minor_(other.version_minor_),
-	version_release_(other.version_release_),
 	n_entries_(other.n_entries_),
 	n_capacity_(other.n_capacity_),
 	entries_(new value_type[this->n_capacity_]),
@@ -226,7 +178,7 @@ template <class KeyType>
 void Keychain<KeyType>::resize(void){ this->resize(this->capacity()*2); }
 
 template <class KeyType>
-uint64_t Keychain<KeyType>::getRandomHashIdentifier(){
+uint64_t Keychain<KeyType>::GetRandomHashIdentifier(){
 	if(this->htable_identifiers_ == nullptr) return false;
 	uint8_t RANDOM_BYTES[32];
 	uint64_t value = 0;
@@ -251,7 +203,7 @@ uint64_t Keychain<KeyType>::getRandomHashIdentifier(){
 }
 
 template <class KeyType>
-bool Keychain<KeyType>::getHashIdentifier(const uint64_t& value, uint32_t*& match){
+bool Keychain<KeyType>::GetHashIdentifier(const uint64_t& value, uint32_t*& match){
 	if(this->htable_identifiers_ == nullptr) return false;
 	if(this->htable_identifiers_->GetItem(&value, match, sizeof(uint64_t))){
 		return true;

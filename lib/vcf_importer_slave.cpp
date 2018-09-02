@@ -20,7 +20,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 							 this->vcf_header_->filter_fields_.size());
 
 		// Resize containers
-		const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
+		const uint32_t resize_to = this->settings_->checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
 		this->block.resize(resize_to);
 	}
 
@@ -29,7 +29,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 	// before finishing with this.
 	this->block.gt_ppa = &this->permutator.permutation_array;
 
-	if(this->GT_available_ && this->settings_.permute_genotypes){
+	if(this->GT_available_ && this->settings_->permute_genotypes){
 		// Only store the permutation array if the number of samples
 		// are greater then one (1).
 		if(this->vcf_header_->GetNumberSamples() > 1){
@@ -47,13 +47,13 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 	this->block.UpdateContainers();
 
 	// Perform compression using standard parameters.
-	if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
+	if(!this->compression_manager.Compress(this->block, this->settings_->compression_level, 6)){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 		return false;
 	}
 
 	// Encrypt the variant block if desired.
-	if(this->settings_.encrypt_data){
+	if(this->settings_->encrypt_data){
 		// Generate field-unique identifiers.
 		//this->GenerateIdentifiers();
 
@@ -329,12 +329,12 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 	// The Info field END is used as the end position of an internal if it is available. This field
 	// is usually only set for non-standard variants such as SVs or other special meaning records.
-	if(this->settings_.info_end_key != -1){
+	if(this->settings_->info_end_key != -1){
 		// Linear search for the END key: this is not optimal but is probably faster
 		// than first constructing a hash table for each record.
 		const int n_info_fields = record->n_info;
 		for(uint32_t i = 0; i < n_info_fields; ++i){
-			if(record->d.info[i].key == this->settings_.info_end_key){
+			if(record->d.info[i].key == this->settings_->info_end_key){
 				uint32_t end = 0;
 				switch(record->d.info[i].type){
 				case(BCF_BT_INT8):  end = *reinterpret_cast<int8_t*> (record->d.info[i].vptr); break;
@@ -345,7 +345,7 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 					return false;
 				}
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << record->pos + 1 << std::endl;
-				index_bin = this->index.index_[meta.contigID].Add(record->pos, end, this->block_id);
+				index_bin = this->index.AddSorted(meta.contigID,record->pos, end, this->block_id);
 				//index_bin = 0;
 				break;
 			}
@@ -367,9 +367,10 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 
 		// Update the variant index with the target bin(s) found.
 		if(longest > 1){
-			index_bin = this->index.index_[meta.contigID].Add(record->pos,
-			                                                  record->pos + longest,
-															  this->block_id);
+			index_bin = this->index.AddSorted(meta.contigID,
+			                                  record->pos,
+			                                  record->pos + longest,
+			                                  this->block_id);
 			//index_bin = 0;
 			end_position_used = record->pos + longest;
 		}
@@ -381,9 +382,10 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// query as the few special cases will dominate the many general cases. For
 		// this reason special-meaning alleles are not completely indexed.
 		else {
-			index_bin = this->index.index_[meta.contigID].Add(record->pos,
-			                                                  record->pos,
-			                                                  this->block_id);
+			index_bin = this->index.AddSorted(meta.contigID,
+			                                  record->pos,
+			                                  record->pos,
+			                                  this->block_id);
 			//index_bin = 0;
 			//std::cerr << "fallback: " << record->pos+1 << std::endl;
 		}

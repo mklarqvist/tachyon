@@ -428,11 +428,11 @@ public:
 	uint64_t n_rcds_processed;
 	uint32_t thread_id;
 	uint64_t b_shared, b_indiv;
-	std::atomic<bool>* data_available;
-	yon_pool_vcfc* data_pool;
+	std::shared_ptr<std::atomic<bool>> data_available;
+	std::shared_ptr<yon_pool_vcfc> data_pool;
 	std::thread thread_;
-	io::VcfHeader* global_header;
-	yon_writer_sync* poolw;
+	std::shared_ptr<io::VcfHeader> global_header;
+	std::shared_ptr<yon_writer_sync> poolw;
 	VcfImporterSlave importer;
 };
 

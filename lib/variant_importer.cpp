@@ -5,28 +5,76 @@
 #include "containers/checksum_container.h"
 #include "algorithm/parallel/vcf_slaves.h"
 #include "vcf_importer_slave.h"
-
 #include "algorithm/timer.h"
 
 namespace tachyon {
 
+VariantImporterSettings::VariantImporterSettings() :
+	permute_genotypes(true),
+	encrypt_data(false),
+	checkpoint_n_snps(1000),
+	checkpoint_bases(10e6),
+	n_threads(std::thread::hardware_concurrency()),
+	info_end_key(-1),
+	info_svlen_key(-1),
+	compression_level(6),
+	htslib_extra_threads(0)
+{}
+
+std::string VariantImporterSettings::GetInterpretedString(void) const{
+	return(std::string("{\"input_file\":\"" + this->input_file +
+	   "\",\"output_prefix\":\"" + this->output_prefix +
+	   "\",\"checkpoint_snps\":" + std::to_string(this->checkpoint_n_snps) +
+	   ",\"checkpoint_bases\":" + std::to_string(this->checkpoint_bases) +
+	   ",\"compression_level\":" + std::to_string(this->compression_level) +
+	   "}"
+	));
+}
+
+/**<
+ * Pimpl implementation of private functionality of VariantImporter
+ * class. Hides the private logic from the exposed public API and
+ * speeds up compilation.
+ */
 class VariantImporter::VariantImporterImpl {
 public:
 	typedef VariantImporterImpl self_type;
-	typedef io::VcfReader                   vcf_reader_type;
-	typedef algorithm::CompressionManager   compression_manager_type;
+	typedef io::VcfReader                 vcf_reader_type;
+	typedef algorithm::CompressionManager compression_manager_type;
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
 public:
-	bool BuildParallel(writer_interface_type* writer, settings_type& settings);
-	bool WriteFinal(writer_interface_type* writer, algorithm::VariantDigestManager& checksums);
+	bool Build(writer_interface_type* writer, settings_type& settings);
+
+private:
+	/**<
+	 * If data has been encrypted then write out the provided encryption keychain
+	 * using the destination writer.
+	 * @param writer   Destination writer.
+	 * @param keychain Source encryption keychain.
+	 * @return         Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool WriteKeychain(writer_interface_type* writer, const encryption::Keychain<>& keychain);
+
+	/**<
+	 * Write the appropriate yon archive header marker followed by the
+	 * transmutation of the internal htslib Vcf header into a valid tachyon
+	 * header and use the dst writer to write the output.
+	 * @param writer Destination writer.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool WriteYonHeader(writer_interface_type* writer);
+
+	/**<
+	 * Adds Extra fields to the global tachyon header describing when and how
+	 * the target file was imported in the tachyon archive.
+	 * @param header Global tachyon header.
+	 */
 	void UpdateHeaderImport(VariantHeader& header);
 
 public:
-	settings_type* settings;
+	std::shared_ptr<settings_type> settings;
 	compression_manager_type compression_manager;
 
 	// Map from BCF global FORMAT/INFO/FILTER IDX to local IDX such that
@@ -62,8 +110,21 @@ void VariantImporter::SetWriterTypeFile(void)  { this->writer = new writer_file_
 void VariantImporter::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 bool VariantImporter::Build(){
-	//if(!this->BuildVCF()){
-	if(!this->mImpl->BuildParallel(this->writer, this->settings_)){
+	// Allocate a new writer.
+	if(this->settings_.output_prefix.size() == 0 ||
+	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
+	{
+		writer = new writer_stream_type;
+	}
+	else writer = new writer_file_type;
+
+	// Open a file handle or standard out for writing.
+	if(!writer->open(this->settings_.output_prefix)){
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
+		return false;
+	}
+
+	if(!this->mImpl->Build(this->writer, this->settings_)){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
@@ -245,13 +306,17 @@ bool VariantImporter::BuildVCF(void){
 }
 */
 
-bool VariantImporter::VariantImporterImpl::BuildParallel(writer_interface_type* writer, settings_type& settings){
-	this->settings = &settings;
+bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, settings_type& settings){
+	if(writer == nullptr)
+		return false;
+
+	this->settings = std::shared_ptr<settings_type>(&settings);
+
 	// Retrieve a unique VcfReader.
 	this->vcf_reader_ = io::VcfReader::FromFile(this->settings->input_file, this->settings->htslib_extra_threads);
-	if(this->vcf_reader_ == nullptr){
+	if(this->vcf_reader_ == nullptr)
 		return false;
-	}
+
 
 	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
 		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
@@ -292,20 +357,6 @@ bool VariantImporter::VariantImporterImpl::BuildParallel(writer_interface_type* 
 	encryption::EncryptionDecorator encryption_manager;
 	encryption::Keychain<> keychain;
 
-	// Allocate a new writer.
-	if(this->settings->output_prefix.size() == 0 ||
-	   (this->settings->output_prefix.size() == 1 && this->settings->output_prefix == "-"))
-	{
-		writer = new writer_stream_type;
-	}
-	else writer = new writer_file_type;
-
-	// Open a file handle or standard out for writing.
-	if(!writer->open(this->settings->output_prefix)){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
-		return false;
-	}
-
 	// The index needs to know how many contigs that's described in the
 	// Vcf header and their lengths in base-pairs. This information is
 	// needed to construct the linear and quad-tree index most appropriate
@@ -327,17 +378,28 @@ bool VariantImporter::VariantImporterImpl::BuildParallel(writer_interface_type* 
 	write.stats_format.Allocate(this->vcf_reader_->vcf_header_.format_fields_.size());
 
 	// Start progress timer.
-	algorithm::Timer timer; timer.Start();
+	algorithm::Timer timer;
+	timer.Start();
+
+	// Start producer thread with multiple htslib threads.
 	producer.Start();
+	// Setup shared pointers for slaves.
+	std::shared_ptr<io::VcfHeader> s_vcf_hdr(&this->vcf_reader_->vcf_header_);
+	std::shared_ptr<VariantImporterSettings> s_settings(this->settings);
+	std::shared_ptr<std::atomic<bool>> s_data_avail(&producer.data_available);
+	std::shared_ptr<yon_pool_vcfc> s_data_pool(&producer.data_pool);
+	std::shared_ptr<yon_writer_sync> s_writer(&write);
+
+	// Setup and start slaves.
 	for(uint32_t i = 0; i < this->settings->n_threads; ++i){
 		consumers[i].thread_id = i;
-		consumers[i].data_available = &producer.data_available;
-		consumers[i].data_pool = &producer.data_pool;
-		consumers[i].global_header = &this->vcf_reader_->vcf_header_;
-		consumers[i].poolw = &write;
+		consumers[i].data_available = s_data_avail;
+		consumers[i].data_pool = s_data_pool;
+		consumers[i].global_header = s_vcf_hdr;
+		consumers[i].poolw = s_writer;
 		consumers[i].importer.GT_available_       = GT_available;
-		consumers[i].importer.SetVcfHeader(&this->vcf_reader_->vcf_header_);
-		consumers[i].importer.settings_           = *this->settings;
+		consumers[i].importer.SetVcfHeader(s_vcf_hdr);
+		consumers[i].importer.settings_           = s_settings;
 		consumers[i].importer.info_reorder_map_   = this->info_reorder_map_;
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
@@ -354,31 +416,28 @@ bool VariantImporter::VariantImporterImpl::BuildParallel(writer_interface_type* 
 		consumers[i].Start();
 	}
 
+	// Join consumer and producer threads.
 	for(uint32_t i = 0; i < this->settings->n_threads; ++i) consumers[i].thread_.join();
 	producer.all_finished = true;
 	producer.thread_.join();
+
+	// Reduce functions.
 	for(uint32_t i = 1; i < this->settings->n_threads; ++i) consumers[0] += consumers[i];
-	write.stats_basic += consumers[0].importer.stats_basic;
-	write.stats_info += consumers[0].importer.stats_info;
+	write.stats_basic  += consumers[0].importer.stats_basic;
+	write.stats_info   += consumers[0].importer.stats_info;
 	write.stats_format += consumers[0].importer.stats_format;
 
-	//std::cerr << "blocks processed: " << consumers[0].importer.n_blocks_processed << std::endl;
-	//std::cerr << producer.n_rcds_loaded << "==" << consumers[0].n_rcds_processed << std::endl;
-	//std::cerr << "processed: " << consumers[0].b_indiv << "b and " << consumers[0].b_shared << std::endl;
-	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records." << std::endl;
-	//std::cerr << "wrote: " << consumers[0].poolw->n_written_rcds << "rcds to " << consumers->poolw->writer->n_blocks_written << " writer says " << consumers->poolw->writer->n_variants_written << std::endl;
+	if(settings.output_prefix != "-"){
+		std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
+		for(int i = 0; i < write.stats_basic.size(); ++i)
+			std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
 
+		for(int i = 0; i < write.stats_info.size(); ++i)
+			std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
 
-	std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
-	for(int i = 0; i < write.stats_basic.size(); ++i)
-		std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
-
-	for(int i = 0; i < write.stats_info.size(); ++i)
-		std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
-
-	for(int i = 0; i < write.stats_format.size(); ++i)
-		std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
-
+		for(int i = 0; i < write.stats_format.size(); ++i)
+			std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
+	}
 
 	writer->index += consumers[0].importer.index;
 	//this->writer->index.Print(std::cerr);
@@ -387,7 +446,11 @@ bool VariantImporter::VariantImporterImpl::BuildParallel(writer_interface_type* 
 	write.WriteFinal(checksums);
 	//write.WriteKeychain(keychain);
 
+	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records." << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "All done (" << timer.ElapsedString() << ")" << std::endl;
+
+	delete [] consumers;
 
 	// All done
 	return(true);
@@ -418,6 +481,9 @@ bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* 
 }
 
 bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type* writer){
+	if(writer == nullptr)
+		return false;
+
 	// Write basic header prefix.
 	writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
 

@@ -6,9 +6,9 @@
 namespace tachyon{
 namespace support{
 
-struct VariantImporterStatsObject{
+struct VariantImporterStatsObject {
 	typedef VariantImporterStatsObject self_type;
-	typedef containers::DataContainer data_container_type;
+	typedef containers::DataContainer  data_container_type;
 
 	VariantImporterStatsObject(void) :
 		cost_uncompressed(0),
@@ -17,6 +17,7 @@ struct VariantImporterStatsObject{
 		cost_strides_compressed(0),
 		cost_bcf(0)
 	{}
+
 	~VariantImporterStatsObject(){}
 
 	self_type& operator+=(const self_type& other){
