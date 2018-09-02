@@ -96,81 +96,81 @@ inline uint32_t unpermuteIntBits(char* data,
 	return size;
 }
 
-inline uint32_t permuteuint8_tBits(const char* const  data,
-                           const uint32_t  size,
-                           char* destination)
+inline uint32_t permuteInt8Bits(const char* const data,
+                          const uint32_t  size,
+                          char* destination)
 {
 	if(size == 0) return 0;
-	uint32_t internal_size = size + (8 - size % 8); // Balance uint8_ts
+	// Balance the number of uint8_ts in the output
+	// uint8_t stream to be divisible by 32. Assert
+	// that this is true or the procedure fails.
+	const uint32_t internal_size = size + (8-size % 8); // Balance uint8_ts
 	assert(internal_size % 8 == 0);
 
+	// Interpret the dst target as unsigned char
+	// to prevent annoying signedness.
 	uint8_t* dest = reinterpret_cast<uint8_t*>(destination);
 	memset(dest, 0, internal_size); // Set all uint8_ts to 0
 	const uint8_t* const d = reinterpret_cast<const uint8_t* const>(data); // Recast as uchar
 	uint8_t* target[8]; // Bucket pointers
 	const uint32_t partition_size = internal_size / 8; // Partition size
-	assert(partition_size != 0);
 
 	// Assign a pointer to each bucket
 	for(uint32_t i = 0; i < 8; ++i)
 		target[7-i] = &dest[partition_size*i];
 
-	uint32_t k = 0; uint32_t p = 0;
-	// Foreach uint32_t
-	// Update position K for each element
-	// When K reaches position 7 then reset to 0
+	uint32_t k = 0, p = 0;
+	// Iterate over the data and  update position K for
+	// each element. When K reaches position 7 then reset
+	// to 0.
 	for(uint32_t i = 0; i < internal_size; ++i, ++k){
 		if(k == 8){ k = 0; ++p; }
 
-		// Foreach bit in uint32_t
-		// Update bucket B at uint8_t position P with bit J at position K
-		for(uint32_t bucket = 0; bucket < 8; ++bucket)
-			target[bucket][p] |= ((d[i] & (1 << bucket)) >> bucket) << k;
+		// Foreach bit in byte
+		// Update target T at uint8_t position P with bit J at position K
+		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
 	}
 
 	return internal_size;
 }
 
-inline uint32_t unpermuteuint8_tBits(char* data,
-                             const uint32_t  size,
-                             char* destination)
+inline uint32_t permuteInt16Bits(const char* const data,
+                          const uint32_t  size,
+                          char* destination)
 {
 	if(size == 0) return 0;
-	//uint32_t internal_size = size + (32-size%32); // Balance uint8_ts
-	//assert(internal_size % 32 == 0);
+	// Balance the number of uint8_ts in the output
+	// uint8_t stream to be divisible by 32. Assert
+	// that this is true or the procedure fails.
+	const uint32_t internal_size = size + (16-size % 16); // Balance uint8_ts
+	assert(internal_size % 16 == 0);
 
-	uint8_t* temp = reinterpret_cast<uint8_t*>(data); // Recast destination as uint32_t
-	uint8_t* dest = reinterpret_cast<uint8_t*>(destination); // Recast destination as uint32_t
-	memset(destination, 0, size); // Set all uint8_ts to 0
-	//const uint8_t* const d = reinterpret_cast<const uint8_t* const>(data); // Recast as uchar
-	uint8_t* target[8]; // Bucket pointers
-	const uint32_t partition_size = size / 8; // Partition size
+	// Interpret the dst target as unsigned char
+	// to prevent annoying signedness.
+	uint8_t* dest = reinterpret_cast<uint8_t*>(destination);
+	memset(dest, 0, internal_size); // Set all uint8_ts to 0
+	const uint8_t* const d = reinterpret_cast<const uint8_t* const>(data); // Recast as uchar
+	uint8_t* target[16]; // Bucket pointers
+	const uint32_t partition_size = internal_size / 16; // Partition size
 
 	// Assign a pointer to each bucket
-	for(uint32_t i = 0; i < 8; ++i)
-		target[7-i] = &temp[partition_size*i];
+	for(uint32_t i = 0; i < 16; ++i)
+		target[15-i] = &dest[partition_size*i];
 
-	/*
-	for(uint32_t i = 0; i < size; ++i){
-		std::cerr << (int)data[i] << ' ';
-	}
-	std::cerr << std::endl;
-	*/
-
-	uint32_t k = 0; uint32_t p = 0;
-	// Foreach uint32_t
-	// Update position K for each element
-	// When K reaches position 7 then reset to 0
-	for(uint32_t i = 0; i < size; ++i, ++k){
+	uint32_t k = 0, p = 0;
+	// Iterate over the data and  update position K for
+	// each element. When K reaches position 7 then reset
+	// to 0.
+	for(uint32_t i = 0; i + 2 < internal_size; i+=2, ++k){
 		if(k == 8){ k = 0; ++p; }
 
-		for(uint32_t j = 0; j < 8; ++j){
-			dest[i] |= ((target[j][p] & (1 << k)) >> k) << j;
-		}
+		// Foreach bit in uint32_t
+		// Update target T at uint8_t position P with bit J at position K
+		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
+		for(uint32_t j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
 	}
 
-	//std::cerr << "out: " << internal_size << "/" << size/sizeof(uint32_t) << std::endl;
-	return size;
+	return internal_size;
 }
 
 class CompressionContainer{

@@ -90,7 +90,7 @@ bool ZSTDCodec::Compress(container_type& container){
 							   container.data_uncompressed.size(),
 							   this->compression_level_data);
 
-	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << container.getSizeUncompressed() << " and output: " << ret << " -> " << (float)container.getSizeUncompressed()/ret << "-fold"  << std::endl;
+	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << container.GetSizeUncompressed() << " and output: " << ret << " -> " << (float)container.GetSizeUncompressed()/ret << "-fold"  << std::endl;
 
 
 	if(ZSTD_isError(ret)){

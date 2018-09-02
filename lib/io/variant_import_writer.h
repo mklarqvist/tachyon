@@ -12,9 +12,9 @@ namespace tachyon {
 
 class VariantWriterInterface {
 public:
-	typedef VariantWriterInterface  self_type;
-	typedef index::Index                  sorted_index_type;
-	typedef containers::DataContainer     container_type;
+	typedef VariantWriterInterface     self_type;
+	typedef index::Index               sorted_index_type;
+	typedef containers::DataContainer  container_type;
 
 public:
 	VariantWriterInterface();
@@ -60,9 +60,9 @@ private:
 
 public:
 	// Stream information
-	std::string   filename;
-	std::string   basePath;
-	std::string   baseName;
+	std::string filename;
+	std::string basePath;
+	std::string baseName;
 };
 
 class VariantWriterStream : public VariantWriterInterface{

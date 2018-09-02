@@ -10,11 +10,11 @@
 #include "containers/vcf_container.h"
 #include "io/variant_import_writer.h"
 #include "core/variant_importer_container_stats.h"
-#include "core/variant_import_settings.h"
 #include "index/variant_index_entry.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
 #include "support/helpers.h"
+#include "variant_importer.h"
 
 namespace tachyon{
 

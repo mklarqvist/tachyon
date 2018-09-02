@@ -12,17 +12,16 @@ namespace index{
 
 class Index{
 public:
-	typedef Index              self_type;
-    typedef std::size_t        size_type;
-	typedef VariantIndexQuadTree        variant_quad_tree_type;
-	typedef VariantIndexMeta variant_meta_type;
-	typedef VariantIndexEntry  entry_type;
-	typedef VariantIndexMetaEntry    entry_meta_type;
-	typedef VariantIndexBin    bin_type;
-	typedef YonContig          contig_type;
-
-	typedef VariantIndexLinear variant_linear_type;
-	typedef VariantIndexEntry  linear_entry_type;
+	typedef Index                 self_type;
+    typedef std::size_t           size_type;
+	typedef VariantIndexQuadTree  variant_quad_tree_type;
+	typedef VariantIndexMeta      variant_meta_type;
+	typedef VariantIndexEntry     entry_type;
+	typedef VariantIndexMetaEntry entry_meta_type;
+	typedef VariantIndexBin       bin_type;
+	typedef YonContig             contig_type;
+	typedef VariantIndexLinear    variant_linear_type;
+	typedef VariantIndexEntry     linear_entry_type;
 
 public:
 	Index() : is_sorted(true){}

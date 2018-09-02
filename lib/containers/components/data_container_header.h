@@ -88,9 +88,9 @@ public:
 	}
 
 	// Accessors
-	inline int32_t& getGlobalKey(void){ return(this->data_header.global_key); }
-	inline const int32_t& getGlobalKey(void) const{ return(this->data_header.global_key); }
-	inline bool hasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
+	inline int32_t& GetGlobalKey(void){ return(this->data_header.global_key); }
+	inline const int32_t& GetGlobalKey(void) const{ return(this->data_header.global_key); }
+	inline bool HasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry){

@@ -185,26 +185,26 @@ void VariantBlock::resize(const uint32_t s){
 }
 
 void VariantBlock::UpdateContainers(void){
-	this->base_containers[YON_BLK_CONTIG].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_POSITION].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_REFALT].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
+	this->base_containers[YON_BLK_POSITION].UpdateContainer();
+	this->base_containers[YON_BLK_REFALT].UpdateContainer();
 	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
 	this->base_containers[YON_BLK_NAMES].UpdateContainer();
 	this->base_containers[YON_BLK_ALLELES].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_ID_INFO].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer();
+	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
+	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
+	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
+	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer();
 	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false, true);
-	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT8].UpdateContainer();
+	this->base_containers[YON_BLK_GT_INT16].UpdateContainer();
+	this->base_containers[YON_BLK_GT_INT32].UpdateContainer();
+	this->base_containers[YON_BLK_GT_INT64].UpdateContainer();
+	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer();
+	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer();
+	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer();
+	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer();
 	this->base_containers[YON_BLK_GT_N_INT8].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_GT_N_INT16].UpdateContainer(false, false);
 	this->base_containers[YON_BLK_GT_N_INT32].UpdateContainer(false, false);
@@ -212,12 +212,12 @@ void VariantBlock::UpdateContainers(void){
 
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
 		assert(this->info_containers[i].header.data_header.stride != 0);
-		this->info_containers[i].UpdateContainer(false, true);
+		this->info_containers[i].UpdateContainer();
 	}
 
 	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
 		assert(this->format_containers[i].header.data_header.stride != 0);
-		this->format_containers[i].UpdateContainer(false, true);
+		this->format_containers[i].UpdateContainer();
 	}
 }
 
