@@ -552,8 +552,19 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 	// Open a htslib file handle for the target output
 	// destination.
 	char hts_stream_type[2];
-	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
-	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+	hts_stream_type[0] = 'w';
+	hts_stream_type[1] = this->settings.output_type;
+	htsFile* fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+
+	// Add extra htslib compression threads if desired.
+	int n_extra_threads = std::thread::hardware_concurrency();
+	if(n_extra_threads){
+		int ret = hts_set_threads(fp, n_extra_threads);
+		if(ret < 0){
+			std::cerr << "failed to open multiple handles" << std::endl;
+			return 0;
+		}
+	}
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
@@ -618,6 +629,16 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	char hts_stream_type[2];
 	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
 	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+
+	// Add extra htslib compression threads if desired.
+	int n_extra_threads = std::thread::hardware_concurrency();
+	if(n_extra_threads){
+		int ret = hts_set_threads(fp, n_extra_threads);
+		if(ret < 0){
+			std::cerr << "failed to open multiple handles" << std::endl;
+			return 0;
+		}
+	}
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
