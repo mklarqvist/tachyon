@@ -1,6 +1,7 @@
 #ifndef VCF_IMPORTER_SLAVE_H_
 #define VCF_IMPORTER_SLAVE_H_
 
+#include "support/helpers.h"
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
@@ -8,12 +9,11 @@
 #include "algorithm/encryption/encryption_decorator.h"
 #include "containers/variant_block.h"
 #include "containers/vcf_container.h"
-#include "io/variant_import_writer.h"
 #include "core/variant_importer_container_stats.h"
 #include "index/variant_index_entry.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
-#include "support/helpers.h"
+#include "io/variant_import_writer.h"
 #include "variant_importer.h"
 
 namespace tachyon{
@@ -43,43 +43,71 @@ public:
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
 public:
-	VcfImporterSlave() : n_blocks_processed(0), block_id(0), vcf_header_(nullptr), GT_available_(false){}
-	VcfImporterSlave(const settings_type& settings) : n_blocks_processed(0), block_id(0), vcf_header_(nullptr), GT_available_(false){}
+	VcfImporterSlave();
+	VcfImporterSlave(const settings_type& settings);
 	VcfImporterSlave(const self_type& other) = delete;
 	VcfImporterSlave(self_type&& other) noexcept = delete;
 	VcfImporterSlave& operator=(const self_type& other) = delete;
 	VcfImporterSlave& operator=(self_type&& other) = delete;
-	~VcfImporterSlave(){
-		// do not delete vcf_header, it is not owned by this class
-	}
-
-	VcfImporterSlave& operator+=(const VcfImporterSlave& other){
-		this->n_blocks_processed += other.n_blocks_processed;
-		this->index += other.index;
-		this->keychain += other.keychain;
-		this->stats_basic += other.stats_basic;
-		this->stats_format += other.stats_format;
-		this->stats_info += other.stats_info;
-		return(*this);
-	}
+	~VcfImporterSlave();
+	VcfImporterSlave& operator+=(const VcfImporterSlave& other);
 
 	/**<
 	 * Import the contents from a provided VcfContainer and target block id
 	 * into the local VariantBlock while preparing it for writing.
-	 * @param container
-	 * @param block_id
-	 * @return
+	 * @param container Source container.
+	 * @param block_id  Source block number.
+	 * @return          Return TRUE upon success or FALSE otherwise.
 	 */
 	bool Add(vcf_container_type& container, const uint32_t block_id);
+
+	/**<
+	 * Iteratively add meta information and htslib Info/Format/Filter fields
+	 * from the source container to the local VariantBlock container.
+	 * @param container Destination container.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool AddRecords(const vcf_container_type& container);
+
+	/**<
+	 * Wrapper function for adding a single variant site from the source
+	 * container.
+	 * @param container Source container.
+	 * @param position  Source relative offset of target variant site in container.
+	 * @param meta      Reference to the relevant MetaEntry object.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta);
+
+	/**<
+	 * Add all htslib Info/Format/Filter fields from the src record to the internal VariantBlock
+	 * container. Also updates the appropriate pattern id field in the dst MetaEntry.
+	 * @param record Source bcf1_t record pointer.
+	 * @param meta   Reference to destination MetaEntry.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
 	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
-	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
 	bool AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta);
 	bool AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta);
 	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
+
+	/**<
+	 * Attempts to add the target htslib bcf1_t target pointer to the sorted Tachyon index for
+	 * speeding up random-access lookups.
+	 * @param record Source bcf1_t record pointer.
+	 * @param meta   Source reference to MetaEntry.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
+
+	/**<
+	 * Adds the Format:GT field to the local VariantBlock container.
+	 * @param container    Source variant container.
+	 * @param meta_entries Destination MetaEntry records.
+	 * @return             Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
 
 	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){

@@ -70,6 +70,13 @@ public:
 	void resize(const size_type new_capacity);
 	void resize(void);
 
+	/**<
+	 * Generate a random 64-bit hash identifier from random bytes. If this
+	 * identifier has not been used previous then return it. Otherwise
+	 * keep trying until an unused one is found.
+	 * @param store Flag toggling whether the generated identifier should be stored or not.
+	 * @return      Returns the 64-bit hash identifier.
+	 */
 	uint64_t GetRandomHashIdentifier(const bool store = true);
 	bool GetHashIdentifier(const uint64_t& value, uint32_t& match);
 

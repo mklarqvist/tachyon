@@ -2,6 +2,34 @@
 
 namespace tachyon{
 
+VcfImporterSlave::VcfImporterSlave() :
+		n_blocks_processed(0),
+		block_id(0),
+		vcf_header_(nullptr),
+		GT_available_(false)
+{}
+
+VcfImporterSlave::VcfImporterSlave(const settings_type& settings) :
+	n_blocks_processed(0),
+	block_id(0),
+	vcf_header_(nullptr),
+	GT_available_(false)
+{}
+
+VcfImporterSlave::~VcfImporterSlave(){
+	// do not delete vcf_header, it is not owned by this class
+}
+
+VcfImporterSlave& VcfImporterSlave::operator+=(const VcfImporterSlave& other){
+	this->n_blocks_processed += other.n_blocks_processed;
+	this->index += other.index;
+	this->keychain += other.keychain;
+	this->stats_basic += other.stats_basic;
+	this->stats_format += other.stats_format;
+	this->stats_info += other.stats_info;
+	return(*this);
+}
+
 bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_id){
 	// Clear current data.
 	this->block.clear();

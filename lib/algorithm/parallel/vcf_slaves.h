@@ -15,7 +15,8 @@ namespace tachyon{
 
 /**<
  * Cyclic queue payload object used when importing htslib Vcf
- * entries. Used exclusively in the yon_pool_vcf struct.
+ * entries. Used exclusively in the yon_pool_vcf struct for
+ * shared resources.
  */
 struct yon_pool_vcfc_payload {
 	yon_pool_vcfc_payload() : block_id(0), c(nullptr){}
@@ -42,8 +43,10 @@ struct yon_pool_vcfc_payload {
 
 /**<
  * Cyclic pool of loaded VcfContainers. Uses conditional variables
- * and mutex locks to control flow to and from this object. Use
- * emplace() to add a payload and pop() to retrieve an object.
+ * and mutex locks to control flow both to and from this object. Use
+ * emplace() to add a payload and pop() to retrieve an object. The
+ * shared boolean alive is used to trigger an exit condition in all
+ * consumers when no more data is available.
  */
 struct yon_pool_vcfc {
 public:
@@ -123,8 +126,8 @@ public:
 	}
 
 	/**<
-	 * Retrieve payload from the cyclic queue. If the queue is empty
-	 * then wait until an item has been inserted.
+	 * Retrieve payload from the cyclic queue of shared resources.
+	 * If the queue is empty * then wait until an item has been inserted.
 	 * @return Returns a pointer to the retrieved payload or a nullpointer in the special case the producer operations has finished.
 	 */
 	yon_pool_vcfc_payload* pop(void){
@@ -196,6 +199,12 @@ public:
 	}
 
 private:
+	/**<
+	 * Internal function that continues to produce raw VcfContainer
+	 * payloads to be inserted into the shared resource pool for
+	 * consumers to retrieve. Continues until no more data is available.
+	 * @return Returns TRUE if successful or FALSE otherwise.
+	 */
 	bool Produce(void){
 		uint32_t n_blocks = 0;
 		this->data_available  = true;
@@ -211,14 +220,23 @@ private:
 			                               this->reader,
 			                               0) == false)
 			{
-
+				// No more data is available or an error was seen.
+				// Trigger shared resources flag alive to no longer
+				// evaluate as true. This triggers the exit condition
+				// in all consumers after the conditional variables
+				// for empty and full are triggered.
 				this->data_available  = false;
 				this->data_pool.alive = false;
+				// Keep flushing until the predicate for all_finished
+				// evaluates TRUE. This occurs after all consumer threads
+				// have been joined.
 				while(data_pool.n_c && all_finished == false){
 					data_pool.not_empty.notify_all();
 					data_pool.not_full.notify_all();
 				}
-
+				// All producer threads have been successfully joined.
+				// It is now safe to exit this function and return to
+				// the main thread that spawned this instance.
 				break;
 			}
 			this->n_rcds_loaded += this->container.sizeWithoutCarryOver();
@@ -245,6 +263,14 @@ struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
 
+	/**<
+	 * Push a Tachyon archive to the writer queue to be written. Only if the
+	 * next block number matches the provided block number will the block be
+	 * written to disk. This ascertains that the writing of blocks are in order.
+	 * @param block_id  Source block identifier.
+	 * @param container Source VcfContainer.
+	 * @param importer  Source reference to VcfImporterSlave instance that internally has a VariantBlock to be written.
+	 */
 	void emplace(uint32_t block_id, const containers::VcfContainer& container, VcfImporterSlave& importer){
 		std::unique_lock<std::mutex> l(lock);
 
@@ -273,6 +299,14 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
+	/**<
+	 * Wrapper function for writing a VariantBlock to the destination
+	 * stream.
+	 * @param block       Reference to src VariantBlock.
+	 * @param container   Reference to src VcfContainer.
+	 * @param index_entry Reference to src VariantIndexEntry.
+	 * @return            Returns TRUE upon sucess or FALSE otherwise.
+	 */
 	bool Write(containers::VariantBlock& block,
 	           const containers::VcfContainer& container,
 	           index::VariantIndexEntry& index_entry)
@@ -282,6 +316,13 @@ struct yon_writer_sync {
 		return(this->writer->stream->good());
 	}
 
+	/**<
+	 * Update the internal VariantIndex with the source VcfContainer
+	 * and source VariantIndexEntry structure.
+	 * @param container    Reference to source VcfContainer.
+	 * @param index_entry  Reference to source VariantIndexEntry.
+	 * @return             Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool UpdateIndex(const containers::VcfContainer& container, index::VariantIndexEntry& index_entry){
 		assert(this->writer != nullptr);
 		index_entry.blockID         = this->writer->n_blocks_written;
@@ -301,6 +342,14 @@ struct yon_writer_sync {
 		return true;
 	}
 
+	/**<
+	 * Wrapper function for writing a valid VariantBlock to a
+	 * Tachyon archive. Writes the block itself then the block footer
+	 * and end-of-block marker.
+	 * @param block       Source VariantBlock for writing.
+	 * @param index_entry Source VariantIndexEntry to update the variant index with.
+	 * @return            Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool WriteBlock(containers::VariantBlock& block, index::VariantIndexEntry& index_entry){
 		index_entry.byte_offset = this->writer->stream->tellp();
 		block.write(*this->writer->stream);
@@ -310,6 +359,12 @@ struct yon_writer_sync {
 		return(this->writer->stream->good());
 	}
 
+	/**<
+	 * Finalize the writing of a Tachyon archive. Writes the
+	 * footer, the index, and the checksums.
+	 * @param checksums Source checksum container for archive integrity checks.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool WriteFinal(algorithm::VariantDigestManager& checksums){
 		// Done importing
 		this->writer->stream->flush();
@@ -380,12 +435,31 @@ public:
 	}
 
 private:
+	/**<
+	 * Internal function for consuming VcfContainers from the shared
+	 * resource pool produced by the general producer(s). This function
+	 * continually pops a payload from the shared pool of payloads and
+	 * unpacks the htslib bcf1_t records and process that information
+	 * into a valid Tachyon block. When this process is finished
+	 * the resulting VariantBlock is pushed to the synchronized
+	 * writer to be written to a byte stream.
+	 * @return Returns TRUE upon success or FALSE oterhwise.
+	 */
 	bool Consume(void){
 		algorithm::GenotypeSorter sorter;
 		sorter.SetSamples(this->global_header->GetNumberSamples());
 
+		// Continue to consume data until there is no more
+		// or an exit condition has been triggered.
 		while(data_available){
+			// Pop a Vcf container payload from the shared
+			// resource pool.
 			yon_pool_vcfc_payload* d = data_pool->pop();
+
+			// If the payload is a nullpointer then an exit
+			// condition has been triggered. If this is the
+			// case we discontinue the consumption for this
+			// consumer.
 			if(d == nullptr){
 				//std::cerr << "is exit conditon: nullptr" << std::endl;
 				break;
@@ -402,7 +476,7 @@ private:
 			this->b_shared += b_l_shared;
 			this->b_indiv  += b_l_indiv;
 
-			// Unpack the htslib bcf1_t records.
+			// Unpack (lazy evaluate) the htslib bcf1_t records.
 			n_rcds_processed += d->c->sizeWithoutCarryOver();
 			for(int i = 0; i < d->c->sizeWithoutCarryOver(); ++i)
 				bcf_unpack(d->c->at(i), BCF_UN_ALL);
@@ -436,9 +510,6 @@ public:
 	VcfImporterSlave importer;
 };
 
-
 }
-
-
 
 #endif /* ALGORITHM_PARALLEL_VCF_SLAVES_H_ */
