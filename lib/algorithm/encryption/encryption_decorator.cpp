@@ -12,9 +12,14 @@ bool EncryptionDecorator::Encrypt(variant_block_type& block, keychain_type& keyc
 }
 
 bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keychain){
+	uint32_t temp_match = 0;
+
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
 		if(block.base_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
-			this->DecryptAES256(block.base_containers[i], keychain);
+			if(keychain.GetHashIdentifier(block.base_containers[i].header.identifier, temp_match)){
+				this->DecryptAES256(block.base_containers[i], keychain);
+			}
+
 		} else {
 			std::cerr << "not implemented yet" << std::endl;
 		}
@@ -22,7 +27,9 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(block.info_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
-			this->DecryptAES256(block.info_containers[i], keychain);
+			if(keychain.GetHashIdentifier(block.info_containers[i].header.identifier, temp_match)){
+				this->DecryptAES256(block.info_containers[i], keychain);
+			}
 		} else {
 			std::cerr << "not implemented yet" << std::endl;
 		}
@@ -30,7 +37,9 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(block.format_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
-			this->DecryptAES256(block.format_containers[i], keychain);
+			if(keychain.GetHashIdentifier(block.format_containers[i].header.identifier, temp_match)){
+				this->DecryptAES256(block.format_containers[i], keychain);
+			}
 		} else {
 			std::cerr << "not implemented yet" << std::endl;
 		}

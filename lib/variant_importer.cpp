@@ -458,7 +458,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	}
 
 	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::toPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
-	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << "(" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/((uint64_t)writer->stream->tellp()) << ")" << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "All done (" << timer.ElapsedString() << ")" << std::endl;
 
 	//delete [] consumers;

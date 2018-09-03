@@ -47,7 +47,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 	this->block.UpdateContainers();
 
 	// Perform compression using standard parameters.
-	if(!this->compression_manager.Compress(this->block, this->settings_->compression_level, 6)){
+	if(!this->compression_manager.Compress(this->block, this->settings_->compression_level)){
 		std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
 		return false;
 	}

@@ -47,12 +47,19 @@ public:
 	 */
 	inline void SetStrideSize(const int32_t value){ this->header.data_header.stride = value; }
 
+	// Accessors for the primitive types.
 	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
+	// Accessors for the global identifier
 	inline int32_t& GetIdx(void){ return(this->header.data_header.global_key); }
 	inline const int32_t& GetIdx(void) const{ return(this->header.data_header.global_key); }
 
+	/**<
+	 * Predicate for checking if the byte stream is encrypted or not.
+	 * @return Returns TRUE if the byte streams is encrypted or FALSE otherwise.
+	 */
+	inline bool IsEncrypted(void) const{ return(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE); }
 
 	/**<
 	 * Check if the stride size of this container matches the

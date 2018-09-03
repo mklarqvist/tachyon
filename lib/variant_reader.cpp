@@ -530,16 +530,9 @@ uint64_t VariantReader::OutputRecords(void){
 	this->UpdateHeaderView();
 	this->interval_container.Build(this->global_header);
 
-	if(this->settings.keychain_file.size()){
-		std::ifstream s_kchain;
-		s_kchain.open(this->settings.keychain_file, std::ios::in | std::ios::binary);
-		if(s_kchain.good() == false){
-			std::cerr << "failed to open keychain: " << this->settings.keychain_file << std::endl;
-			return 0;
-		}
-
-		s_kchain >> this->keychain;
-	}
+	// Load encryption keychain if available.
+	if(this->settings.keychain_file.size())
+		this->LoadKeychainFile();
 
 	if(this->settings.use_htslib){
 		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());

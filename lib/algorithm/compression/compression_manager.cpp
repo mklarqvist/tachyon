@@ -8,11 +8,10 @@ namespace algorithm {
 
 
 bool CompressionManager::Compress(variant_block_type& block,
-                                  const uint8_t general_level,
-                                  const uint8_t float_level)
+                                  const uint8_t general_level)
 {
 	zstd_codec.SetCompressionLevel(general_level);
-	zstd_codec.SetCompressionLevelData(float_level);
+	zstd_codec.SetCompressionLevelData(general_level);
 
 	if(block.header.controller.hasGTPermuted){
 		zstd_codec.SetCompressionLevel(22);
@@ -65,7 +64,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
 		if(block.info_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 		   block.info_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
-			zstd_codec.SetCompressionLevelData(float_level);
+			zstd_codec.SetCompressionLevelData(general_level);
 			zstd_codec.SetCompressionLevelStrides(general_level);
 		}
 		else {
@@ -117,7 +116,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 		if(block.format_containers[i].header.n_entries){
 			if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
 			   block.format_containers[i].header.data_header.controller.type == YON_TYPE_DOUBLE){
-				zstd_codec.SetCompressionLevelData(float_level);
+				zstd_codec.SetCompressionLevelData(general_level);
 				zstd_codec.SetCompressionLevelStrides(general_level);
 			}
 			else {
@@ -168,7 +167,9 @@ bool CompressionManager::Compress(variant_block_type& block,
 }
 
 bool CompressionManager::Decompress(variant_block_type& block){
-	if(block.base_containers[YON_BLK_PPA].GetSizeCompressed()){
+	if(block.base_containers[YON_BLK_PPA].GetSizeCompressed() &&
+	   block.base_containers[YON_BLK_PPA].header.data_header.controller.encryption == YON_ENCRYPTION_NONE)
+	{
 		if(!this->Decompress(block.base_containers[YON_BLK_PPA], *block.gt_ppa)){
 			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress GT permutation information!" << std::endl;
 			return false;
@@ -176,7 +177,9 @@ bool CompressionManager::Decompress(variant_block_type& block){
 	}
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-		if(block.base_containers[i].GetSizeCompressed()){
+		if(block.base_containers[i].GetSizeCompressed() &&
+		   block.base_containers[i].IsEncrypted() == false)
+		{
 			if(!this->Decompress(block.base_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress basic container!" << std::endl;
 				return false;
@@ -185,7 +188,9 @@ bool CompressionManager::Decompress(variant_block_type& block){
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
-		if(block.info_containers[i].GetSizeCompressed()){
+		if(block.info_containers[i].GetSizeCompressed() &&
+		   block.info_containers[i].IsEncrypted() == false)
+		{
 			if(!this->Decompress(block.info_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress INFO container " << i << "/" << block.footer.n_info_streams << "!" << std::endl;
 				return false;
@@ -194,7 +199,9 @@ bool CompressionManager::Decompress(variant_block_type& block){
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
-		if(block.format_containers[i].GetSizeCompressed()){
+		if(block.format_containers[i].GetSizeCompressed() &&
+		   block.format_containers[i].IsEncrypted() == false)
+		{
 			if(!this->Decompress(block.format_containers[i])){
 				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to decompress FORMAT container " << i << "/" << block.footer.n_format_streams << "!" << std::endl;
 				return false;

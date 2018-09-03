@@ -25,6 +25,8 @@ public:
 	~EncryptionDecorator() = default;
 	bool Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type);
 	bool Decrypt(variant_block_type& block, keychain_type& keychain);
+
+private:
 	bool EncryptAES256(variant_block_type& block, keychain_type& keychain);
 	bool EncryptAES256(stream_container& container, keychain_type& keychain);
 	bool DecryptAES256(stream_container& container, keychain_type& keychain);

@@ -14,6 +14,10 @@ public:
 	friend std::ostream& operator<<(std::ostream& stream, const KeychainKey& key);
 	friend std::istream& operator>>(std::istream& stream, KeychainKey& key);
 
+	inline TACHYON_ENCRYPTION GetType(void) const{ return(TACHYON_ENCRYPTION(this->encryption_type)); }
+	inline uint64_t& GetIdx(void){ return(this->field_id); }
+	inline const uint64_t& GetIdx(void) const{ return(this->field_id); }
+
 	virtual std::ostream& print(std::ostream& stream) =0;
 	virtual KeychainKey* Clone() const =0;
 	virtual io::BasicBuffer& AddToBuffer(io::BasicBuffer& buffer) const =0;

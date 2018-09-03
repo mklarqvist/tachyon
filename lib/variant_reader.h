@@ -267,6 +267,7 @@ public:
 	 */
 	void UpdateHeaderView(void);
 
+	// temp
 	bool Stats(void);
 
 private:
