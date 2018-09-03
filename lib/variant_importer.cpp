@@ -392,6 +392,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	std::shared_ptr<std::atomic<bool>> s_data_avail(&producer.data_available);
 	std::shared_ptr<yon_pool_vcfc> s_data_pool(&producer.data_pool);
 	std::shared_ptr<yon_writer_sync> s_writer(&write);
+	std::shared_ptr<Keychain> s_keychain(&this->keychain);
 
 	// Setup and start slaves.
 	for(uint32_t i = 0; i < this->settings->n_threads; ++i){
@@ -403,6 +404,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 		consumers[i].importer.GT_available_       = GT_available;
 		consumers[i].importer.SetVcfHeader(s_vcf_hdr);
 		consumers[i].importer.settings_           = s_settings;
+		consumers[i].importer.keychain            = s_keychain;
 		consumers[i].importer.info_reorder_map_   = this->info_reorder_map_;
 		consumers[i].importer.format_reorder_map_ = this->format_reorder_map_;
 		consumers[i].importer.filter_reorder_map_ = this->filter_reorder_map_;
@@ -430,7 +432,6 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	write.stats_info   += consumers[0].importer.stats_info;
 	write.stats_format += consumers[0].importer.stats_format;
 
-	this->keychain = consumers[0].importer.keychain;
 	writer->index += consumers[0].importer.index;
 	//this->writer->index.Print(std::cerr);
 

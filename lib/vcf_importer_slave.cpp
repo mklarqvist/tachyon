@@ -23,7 +23,6 @@ VcfImporterSlave::~VcfImporterSlave(){
 VcfImporterSlave& VcfImporterSlave::operator+=(const VcfImporterSlave& other){
 	this->n_blocks_processed += other.n_blocks_processed;
 	this->index += other.index;
-	this->keychain += other.keychain;
 	this->stats_basic += other.stats_basic;
 	this->stats_format += other.stats_format;
 	this->stats_info += other.stats_info;
@@ -87,7 +86,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 
 		// Start encryption.
 		this->block.header.controller.anyEncrypted = true;
-		if(!this->encryption_decorator.Encrypt(this->block, this->keychain, YON_ENCRYPTION_AES_256_GCM)){
+		if(!this->encryption_decorator.Encrypt(this->block, *this->keychain, YON_ENCRYPTION_AES_256_GCM)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt..." << std::endl;
 		}
 	}

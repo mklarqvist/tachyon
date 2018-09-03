@@ -69,10 +69,12 @@ Keychain& Keychain::operator+=(const self_type& other){
 }
 
 void Keychain::operator+=(KeychainKey& keychain){
+	this->spinlock_.lock();
 	if(this->size() + 1 == this->capacity())
 		this->resize();
 
 	this->entries_[this->n_entries_++] = keychain.Clone();
+	this->spinlock_.unlock();
 }
 
 void Keychain::resize(const size_type new_capacity){
@@ -93,6 +95,10 @@ void Keychain::resize(void){ this->resize(this->capacity()*2); }
 uint64_t Keychain::GetRandomHashIdentifier(const bool store){
 	uint8_t RANDOM_BYTES[32];
 	uint64_t value = 0;
+
+	// Spinlock for parallel execution without locking with
+	// a mutex lock.
+	this->spinlock_.lock();
 	while(true){
 		RAND_bytes(&RANDOM_BYTES[0], 32);
 		value = XXH64(&RANDOM_BYTES[0], 32, 1337);
@@ -106,6 +112,7 @@ uint64_t Keychain::GetRandomHashIdentifier(const bool store){
 			break;
 		}
 	}
+	this->spinlock_.unlock();
 
 	return value;
 }

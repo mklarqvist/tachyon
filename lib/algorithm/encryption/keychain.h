@@ -5,6 +5,7 @@
 #include "io/basic_buffer.h"
 #include "keychain_key.h"
 #include "containers/components/generic_iterator.h"
+#include "algorithm/spinlock.h"
 
 namespace tachyon{
 
@@ -97,6 +98,7 @@ private:
     size_type   n_capacity_;
     pointer     entries_;
     htable_type htable_;
+    algorithm::SpinLock spinlock_;
 };
 
 }
