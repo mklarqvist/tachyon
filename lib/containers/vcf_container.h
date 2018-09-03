@@ -75,9 +75,9 @@ public:
 
 	/**<
 	 * Calculate genotype summary statistics from a lazy evaluated bcf1_t struct.
-	 * Warning: this function does NOT check if the FORMAT field GT exists either
+	 * Warning: this function does NOT check if the Format:GT field exists either
 	 * in the header or in the structure itself. The assumption is that it does
-	 * exist and according to the Bcf specification has to be the first FORMAT
+	 * exist and according to the Bcf specification has to be the first Format
 	 * field set.
 	 * @param position  Array offset to src htslib bcf1_t entry in this container.
 	 * @param n_samples Number of samples as described in the Vcf header.

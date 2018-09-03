@@ -179,22 +179,36 @@ public:
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
 	// Todo:
-	bool AddInfo(const DataContainer& dc, container_type* dst_containers, int32_t(VariantBlock::*StreamFieldLookup)(int32_t)){
+	bool AddWrapper(const DataContainer& dc,
+	                container_type* dst_containers,
+					uint32_t(VariantBlockFooter::*AddWrapper)(const uint32_t),
+	                bool(VariantBlock::*StreamFieldLookup)(const uint32_t) const)
+	{
 		if(dc.GetIdx() == -1){
 			std::cerr << utility::timestamp("ERROR","IMPORT") << "DataContainer does not have not set the required field global idx." << std::endl;
 			return false;
 		}
 
 		// 1) Search for global idx
-		int32_t info_exists = (this->*StreamFieldLookup)(dc.GetIdx());
-		if(info_exists >= 0){
-			std::cerr << "field is already set. overwriting @ " << info_exists  << std::endl;
-			dst_containers[info_exists] = dc;
+		int32_t field_exists = (this->*StreamFieldLookup)((uint32_t)dc.GetIdx());
+		if(field_exists >= 0){
+			std::cerr << "field is already set. overwriting @ " << field_exists  << std::endl;
+			dst_containers[field_exists] = dc;
 		} else {
-			std::cerr << "field does not exist. adding. " << info_exists  << std::endl;
+			std::cerr << "field does not exist. adding. " << field_exists  << std::endl;
+			uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
+			dst_containers[offset] = dc;
 		}
 
 		return true;
+	}
+
+	inline bool AddInfo(const DataContainer& dc){
+		return(this->AddWrapper(dc, this->info_containers, &block_footer_type::AddInfo, &self_type::HasInfo));
+	}
+
+	inline bool AddFormat(const DataContainer& dc){
+		return(this->AddWrapper(dc, this->format_containers, &block_footer_type::AddFormat, &self_type::HasFormat));
 	}
 
 	/**<

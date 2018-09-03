@@ -105,11 +105,11 @@ private:
 
 public:
 	uint16_t signedness:  1, // Signed type
-		mixedStride: 1, // Different stride sizes
-		type:        6, // Base typing (extra bits saved for future use)
-		encoder:     5, // Encoder bits (see encoder for values)
-		uniform:     1, // Triggered if all values in the buffer are the same
-		encryption:  2; // Encryption type
+	         mixedStride: 1, // Different stride sizes
+	         type:        6, // Base typing (extra bits saved for future use)
+	         encoder:     5, // Encoder bits (see encoder for values)
+	         uniform:     1, // Triggered if all values in the buffer are the same
+	         encryption:  2; // Encryption type
 };
 
 }

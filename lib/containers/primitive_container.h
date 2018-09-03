@@ -202,11 +202,11 @@ public:
 		d.data_uncompressed.resize(this->size() + 128);
 		d.strides_uncompressed.resize(this->size() + 128);
 
-		for(uint32_t i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i)
 			d.Add(this->at(i));
-			d.AddStride(1);
-			++d;
-		}
+
+		d.AddStride(this->size());
+		++d;
 
 		return(d);
 	}
@@ -215,11 +215,11 @@ public:
 		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 
-		for(uint32_t i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i)
 			container.Add(this->at(i));
-			container.AddStride(1);
-			++container;
-		}
+
+		container.AddStride(this->size());
+		++container;
 
 		return(container);
 	}
