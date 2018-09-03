@@ -43,16 +43,16 @@ public:
 
 	~Footer() = default;
 
-	inline const uint64_t& getEODOffset(void) const{ return(this->offset_end_of_data); }
-	inline uint64_t& getEODOffset(void){ return(this->offset_end_of_data); }
-	inline const uint64_t& getNumberBlocks(void) const{ return(this->n_blocks); }
-	inline uint64_t& getNumberBlocks(void){ return(this->n_blocks); }
-	inline const uint64_t& getNumberVariants(void) const{ return(this->n_variants); }
-	inline uint64_t& getNumberVariants(void){ return(this->n_variants); }
-	inline const uint16_t& getController(void) const{ return(this->controller); }
-	inline uint16_t& getController(void){ return(this->controller); }
+	inline const uint64_t& GetEODOffset(void) const{ return(this->offset_end_of_data); }
+	inline uint64_t& GetEODOffset(void){ return(this->offset_end_of_data); }
+	inline const uint64_t& GetNumberBlocks(void) const{ return(this->n_blocks); }
+	inline uint64_t& GetNumberBlocks(void){ return(this->n_blocks); }
+	inline const uint64_t& GetNumberVariants(void) const{ return(this->n_variants); }
+	inline uint64_t& GetNumberVariants(void){ return(this->n_variants); }
+	inline const uint16_t& GetController(void) const{ return(this->controller); }
+	inline uint16_t& GetController(void){ return(this->controller); }
 
-	inline bool validate(void) const{
+	inline bool Validate(void) const{
 		if(this->offset_end_of_data == 0) return false;
 		if(this->n_blocks  == 0)          return false;
 		if(this->n_variants == 0)         return false;

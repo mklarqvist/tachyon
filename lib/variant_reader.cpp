@@ -59,8 +59,8 @@ bool VariantReader::open(void){
 	}
 	this->basic_reader.stream_ >> this->global_footer;
 
-	// Validate footer
-	if(this->global_footer.validate() == false){
+	// Validate the global footer.
+	if(this->global_footer.Validate() == false){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate footer!" << std::endl;
 		return false;
 	}

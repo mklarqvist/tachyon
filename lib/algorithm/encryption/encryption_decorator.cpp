@@ -3,7 +3,9 @@
 namespace tachyon{
 
 bool EncryptionDecorator::Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
-	if(encryption_type == YON_ENCRYPTION_AES_256_GCM){
+	if(encryption_type == YON_ENCRYPTION_NONE){
+		return true;
+	} else if(encryption_type == YON_ENCRYPTION_AES_256_GCM){
 		return(this->EncryptAES256(block, keychain));
 	} else {
 		std::cerr << "not implemented yet" << std::endl;
@@ -15,6 +17,7 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 	uint32_t temp_match = 0;
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
+		if(block.base_containers[i].IsEncrypted() == false) continue;
 		if(block.base_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
 			if(keychain.GetHashIdentifier(block.base_containers[i].header.identifier, temp_match)){
 				this->DecryptAES256(block.base_containers[i], keychain);
@@ -26,6 +29,7 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
+		if(block.info_containers[i].IsEncrypted() == false) continue;
 		if(block.info_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
 			if(keychain.GetHashIdentifier(block.info_containers[i].header.identifier, temp_match)){
 				this->DecryptAES256(block.info_containers[i], keychain);
@@ -36,6 +40,7 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
+		if(block.format_containers[i].IsEncrypted() == false) continue;
 		if(block.format_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
 			if(keychain.GetHashIdentifier(block.format_containers[i].header.identifier, temp_match)){
 				this->DecryptAES256(block.format_containers[i], keychain);
