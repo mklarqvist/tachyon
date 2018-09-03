@@ -25,18 +25,18 @@ MetaAllele::MetaAllele(const std::string& reference) :
 
 // Ctor from buffer
 MetaAllele::MetaAllele(const char* const in) :
-	l_allele(*reinterpret_cast<const U16* const>(in)),
+	l_allele(*reinterpret_cast<const uint16_t* const>(in)),
 	allele(new char[this->l_allele])
 {
-	memcpy(this->allele, &in[sizeof(U16)], this->l_allele);
+	memcpy(this->allele, &in[sizeof(uint16_t)], this->l_allele);
 }
 
 // Ctor directly from buffer object
-MetaAllele::MetaAllele(const buffer_type& buffer, const U32 position) :
-	l_allele(*reinterpret_cast<const U16* const>(&buffer[position])),
+MetaAllele::MetaAllele(const buffer_type& buffer, const uint32_t position) :
+	l_allele(*reinterpret_cast<const uint16_t* const>(&buffer[position])),
 	allele(new char[this->l_allele])
 {
-	memcpy(this->allele, &buffer[position + sizeof(U16)], this->l_allele);
+	memcpy(this->allele, &buffer[position + sizeof(uint16_t)], this->l_allele);
 }
 
 MetaAllele::~MetaAllele(void){
@@ -66,13 +66,13 @@ MetaAllele& MetaAllele::operator=(const self_type& other){
 }
 
 void MetaAllele::operator()(const char* const in){
-	this->l_allele = *reinterpret_cast<const U16* const>(in);
+	this->l_allele = *reinterpret_cast<const uint16_t* const>(in);
 	delete [] this->allele;
 	this->allele = new char[this->l_allele];
-	memcpy(this->allele, &in[sizeof(U16)], this->l_allele);
+	memcpy(this->allele, &in[sizeof(uint16_t)], this->l_allele);
 }
 
-void MetaAllele::operator()(const char* const in, const U32 length){
+void MetaAllele::operator()(const char* const in, const uint32_t length){
 	this->l_allele = length;
 	delete [] this->allele;
 	this->allele = new char[this->l_allele];

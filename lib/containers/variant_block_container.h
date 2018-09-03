@@ -12,6 +12,9 @@
 #include "core/variant_reader_objects.h"
 #include "core/variant_record.h"
 
+#include "algorithm/compression/compression_manager.h"
+#include "algorithm/encryption/encryption_decorator.h"
+
 namespace tachyon {
 namespace containers {
 
@@ -37,39 +40,27 @@ private:
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
 
+	typedef algorithm::CompressionManager        compression_manager_type;
+	typedef EncryptionDecorator      encryption_manager_type;
+
 	typedef std::unordered_map<int, int>    map_type;
 
 public:
-	VariantBlockContainer() :
-		loaded_genotypes(false),
-		header_(nullptr),
-		gt_exp(nullptr)
-	{
+	VariantBlockContainer(void);
+	VariantBlockContainer(const global_header_type& header);
+	VariantBlockContainer(const self_type& other);
+	VariantBlockContainer(self_type&& other) noexcept;
+	VariantBlockContainer& operator=(const self_type& other);
+	VariantBlockContainer& operator=(self_type&& other) noexcept;
+	~VariantBlockContainer(void);
 
-	}
-
-	VariantBlockContainer(const global_header_type& header) :
-		loaded_genotypes(false),
-		header_(&header),
-		gt_exp(nullptr)
-	{
-		delete [] this->gt_exp;
-	}
-
-	~VariantBlockContainer(void){
-	}
-
+	// Adds global header pointer to this object.
 	self_type& operator<<(const global_header_type& header){
 		this->header_ = &header;
 		return(*this);
 	}
 
-	void reset(void){
-		this->block_.clear();
-	}
-
-	bool ParseSettings(block_settings_type& settings);
-	bool ParseLoadedPatterns(block_settings_type& settings);
+	inline void reset(void){ this->block_.clear(); }
 
 	/**< @brief Reads one or more separate digital objects from disk
 	 * Primary function for reading partial data from disk. Data
@@ -127,7 +118,10 @@ public:
 	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
 	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
 
-	inline void AllocateGenotypeMemory(void){ this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()]; }
+	inline void AllocateGenotypeMemory(void){
+		delete [] this->gt_exp;
+		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
+	}
 	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
 	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
 
@@ -147,17 +141,10 @@ public:
 	yon1_t* LazyEvaluate(objects_type& objects);
 
 private:
-	bool loaded_genotypes;
 	block_type                block_;
+	compression_manager_type  compression_manager;
+	encryption_manager_type   encryption_manager;
 	const global_header_type* header_;
-	std::vector<int>          info_id_local_loaded;
-	std::vector<int>          format_id_local_loaded;
-	std::vector<int>          info_id_global_loaded;
-	std::vector<int>          format_id_global_loaded;
-	std::vector< std::vector<int> > info_patterns_local;
-	std::vector< std::vector<int> > format_patterns_local;
-	map_type info_map_global;
-	map_type format_map_global;
 	// External memory allocation for linear use of lazy-evaluated
 	// expansion of genotype records. This is critical when the sample
 	// numbers are becoming large as allocating/deallocating hundreds
@@ -200,8 +187,8 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 
 	const std::vector<bool> pattern_matches = this->block_.FormatPatternSetMembership(format_field_global_id);
 
-	U32 matches = 0;
-	for(U32 i = 0; i < pattern_matches.size(); ++i)
+	uint32_t matches = 0;
+	for(uint32_t i = 0; i < pattern_matches.size(); ++i)
 		matches += pattern_matches[i];
 
 	if(matches == 0) return new containers::FormatContainer<T>();
@@ -237,8 +224,8 @@ containers::InfoContainer<T>* VariantBlockContainer::get_balanced_info_container
 
 	const std::vector<bool> pattern_matches = this->block_.InfoPatternSetMembership(info_field_global_id);
 
-	U32 matches = 0;
-	for(U32 i = 0; i < pattern_matches.size(); ++i)
+	uint32_t matches = 0;
+	for(uint32_t i = 0; i < pattern_matches.size(); ++i)
 		matches += pattern_matches[i];
 
 	if(matches == 0) return new containers::InfoContainer<T>();

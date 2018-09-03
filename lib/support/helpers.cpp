@@ -4,7 +4,6 @@
 #include <regex>
 
 #include "magic_constants.h"
-#include "type_definitions.h"
 
 namespace tachyon{
 namespace utility{
@@ -83,7 +82,7 @@ std::string datetime(){
 			now->tm_hour,
 			now->tm_min,
 			now->tm_sec,
-			(U32)tv.tv_usec / 1000);
+			(uint32_t)tv.tv_usec / 1000);
 
 	return std::string(&buffer[0], 23);
 }
@@ -173,7 +172,7 @@ std::string NumberThousandsSeparator(std::string number){
 	return number;
 }
 
-S32 char2int(const char& input){
+int32_t char2int(const char& input){
 	if(input >= '0' && input <= '9') return input - '0';
 	else if(input >= 'A' && input <= 'F') return input - 'A' + 10;
 	else if(input >= 'a' && input <= 'f') return input - 'a' + 10;
@@ -186,8 +185,8 @@ bool HexToBytes(const std::string& hex, uint8_t* target){
 		return false;
 	}
 
-	U32 p = 0;
-	for (U32 i = 0; i < hex.length(); i += 2, ++p)
+	uint32_t p = 0;
+	for (uint32_t i = 0; i < hex.length(); i += 2, ++p)
 		target[p] = char2int(hex[i])*16 + char2int(hex[i+1]);
 
 	return true;

@@ -29,19 +29,19 @@ public:
 	MetaEntry();
 	MetaEntry(const self_type& other);
 	MetaEntry(const bcf1_t* record);
-	MetaEntry(const bcf1_t* record, const U64 position_offset);
+	MetaEntry(const bcf1_t* record, const uint64_t position_offset);
 	~MetaEntry();
 
 	// Check if a field is set
-	inline bool CheckInfoField(const datablock_footer_type& block, const U32 info_identifier) const{
+	inline bool CheckInfoField(const datablock_footer_type& block, const uint32_t info_identifier) const{
 		return(block.info_patterns[this->info_pattern_id][info_identifier]);
 	}
 
-	inline bool CheckFormatField(const datablock_footer_type& block, const U32 format_identifier) const{
+	inline bool CheckFormatField(const datablock_footer_type& block, const uint32_t format_identifier) const{
 		return(block.format_patterns[this->format_pattern_id][format_identifier]);
 	}
 
-	inline bool CheckFilterField(const datablock_footer_type& block, const U32 filter_identifier) const{
+	inline bool CheckFilterField(const datablock_footer_type& block, const uint32_t filter_identifier) const{
 		return(block.filter_patterns[this->filter_pattern_id][filter_identifier]);
 	}
 
@@ -62,43 +62,43 @@ public:
 
 	inline const float& GetQuality(void){ return(this->quality); }
 	inline const std::string& GetName(void){ return(this->name); }
-	inline const U16& GetNumberAlleles(void){ return(this->n_alleles); }
-	inline U32 GetContigID(void){ return(this->contigID); }
-	inline U64 GetPosition(void){ return(this->position); }
+	inline const uint16_t& GetNumberAlleles(void){ return(this->n_alleles); }
+	inline uint32_t GetContigID(void){ return(this->contigID); }
+	inline uint64_t GetPosition(void){ return(this->position); }
 
 	inline const float& GetQuality(void) const{ return(this->quality); }
 	inline const std::string& GetName(void) const{ return(this->name); }
-	inline const U16& GetNumberAlleles(void) const{ return(this->n_alleles); }
-	inline U32 GetContigID(void) const{ return(this->contigID); }
-	inline U64 GetPosition(void) const{ return(this->position); }
+	inline const uint16_t& GetNumberAlleles(void) const{ return(this->n_alleles); }
+	inline uint32_t GetContigID(void) const{ return(this->contigID); }
+	inline uint64_t GetPosition(void) const{ return(this->position); }
 
 	// Set and get for patterns
-	inline S32& GetInfoPatternId(void){ return(this->info_pattern_id); }
-	inline S32& GetFormatPatternId(void){ return(this->format_pattern_id); }
-	inline S32& GetFilterPatternId(void){ return(this->filter_pattern_id); }
-	inline const S32& GetInfoPatternId(void) const{ return(this->info_pattern_id); }
-	inline const S32& GetFormatPatternId(void) const{ return(this->format_pattern_id); }
-	inline const S32& GetFilterPatternId(void) const{ return(this->filter_pattern_id); }
+	inline int32_t& GetInfoPatternId(void){ return(this->info_pattern_id); }
+	inline int32_t& GetFormatPatternId(void){ return(this->format_pattern_id); }
+	inline int32_t& GetFilterPatternId(void){ return(this->filter_pattern_id); }
+	inline const int32_t& GetInfoPatternId(void) const{ return(this->info_pattern_id); }
+	inline const int32_t& GetFormatPatternId(void) const{ return(this->format_pattern_id); }
+	inline const int32_t& GetFilterPatternId(void) const{ return(this->filter_pattern_id); }
 
 	/**<
 	 * Check if it is possible to pack the REF and ALT allele strings into
-	 * a single BYTE. The input allelic data has to be diploid, biallelic and
+	 * a single uint8_t. The input allelic data has to be diploid, biallelic and
 	 * match the regular expression pattern "^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$"
 	 * @return Returns TRUE if it is possible to bitpack data or FALSE otherwise
 	 */
 	bool UsePackedRefAlt(void) const;
 
 	/**<
-	 * Bitpack biallelic, diploid REF and ALT data into a single BYTE. Failure
+	 * Bitpack biallelic, diploid REF and ALT data into a single uint8_t. Failure
 	 * to check for validity beforehand with `usePackedRefAlt` may result in
 	 * errors.
-	 * @return Returns a bitpacked BYTE
+	 * @return Returns a bitpacked uint8_t
 	 */
-	BYTE PackRefAltByte(void) const;
+	uint8_t PackRefAltByte(void) const;
 
 	std::string GetAlleleString(void) const{
 		std::string ret = this->alleles[0].toString();
-		for(U32 i = 1; i < this->n_alleles; ++i)
+		for(uint32_t i = 1; i < this->n_alleles; ++i)
 			ret += "," + this->alleles[i].toString();
 		return(ret);
 	}
@@ -123,17 +123,17 @@ public:
 public:
 	// Markup: populate from streams
 	controller_type controller;
-	BYTE  n_base_ploidy;
-	U16   n_alleles;
-	S32   info_pattern_id;   // Info pattern ID
-	S32   filter_pattern_id; // Filter pattern ID
-	S32   format_pattern_id; // Format pattern ID
+	uint8_t  n_base_ploidy;
+	uint16_t   n_alleles;
+	int32_t   info_pattern_id;   // Info pattern ID
+	int32_t   filter_pattern_id; // Filter pattern ID
+	int32_t   format_pattern_id; // Format pattern ID
 	float quality;
-	U64   contigID;
-	U64   position;
+	uint64_t   contigID;
+	uint64_t   position;
 	// Todo: Add end_position_longest. This would allow us to directly query
 	//       precomputed end positions.
-	// Todo: Axtend controller to U32 and add fields below or optionally add
+	// Todo: Axtend controller to uint32_t and add fields below or optionally add
 	//       another controller field with variant-identifying information.
 	//       This would support queries on type directly from precomputed
 	//       lookups.

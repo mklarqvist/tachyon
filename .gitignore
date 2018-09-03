@@ -36,3 +36,6 @@ bin/
 # Externals
 openssl/
 zstd/
+
+# Binary
+tachyon

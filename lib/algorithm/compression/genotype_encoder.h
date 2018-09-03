@@ -15,7 +15,7 @@
 namespace tachyon{
 namespace algorithm{
 
-const BYTE BCF_UNPACK_TACHYON[3] = {2, 0, 1};
+const uint8_t BCF_UNPACK_TACHYON[3] = {2, 0, 1};
 #define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TACHYON[((A) >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
 
@@ -43,25 +43,25 @@ struct yon_gt_assess {
 
 struct GenotypeEncoderStatistics{
 	GenotypeEncoderStatistics(){
-		memset(this->rle_counts,         0, sizeof(U64)*4);
-		memset(this->rle_simple_counts,  0, sizeof(U64)*4);
-		memset(this->diploid_bcf_counts, 0, sizeof(U64)*3);
-		memset(this->bcf_counts,         0, sizeof(U64)*3);
+		memset(this->rle_counts,         0, sizeof(uint64_t)*4);
+		memset(this->rle_simple_counts,  0, sizeof(uint64_t)*4);
+		memset(this->diploid_bcf_counts, 0, sizeof(uint64_t)*3);
+		memset(this->bcf_counts,         0, sizeof(uint64_t)*3);
 	}
 
-	U64 getTotal(void) const{
-		U64 total = 0;
-		for(U32 i = 0; i < 4; ++i) total += this->rle_counts[i];
-		for(U32 i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
-		for(U32 i = 0; i < 3; ++i) total += this->diploid_bcf_counts[i];
-		for(U32 i = 0; i < 3; ++i) total += this->bcf_counts[i];
+	uint64_t getTotal(void) const{
+		uint64_t total = 0;
+		for(uint32_t i = 0; i < 4; ++i) total += this->rle_counts[i];
+		for(uint32_t i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
+		for(uint32_t i = 0; i < 3; ++i) total += this->diploid_bcf_counts[i];
+		for(uint32_t i = 0; i < 3; ++i) total += this->bcf_counts[i];
 		return(total);
 	}
 
-	U64 rle_counts[4];
-	U64 rle_simple_counts[4];
-	U64 diploid_bcf_counts[3];
-	U64 bcf_counts[3];
+	uint64_t rle_counts[4];
+	uint64_t rle_simple_counts[4];
+	uint64_t diploid_bcf_counts[3];
+	uint64_t bcf_counts[3];
 };
 
 /**<
@@ -80,20 +80,20 @@ public:
 	{
 	}
 
-	GenotypeEncoderSlaveHelper(const U32 start_capacity) :
+	GenotypeEncoderSlaveHelper(const uint32_t start_capacity) :
 		encoding_type(YON_GT_RLE_DIPLOID_BIALLELIC),
 		gt_primitive(YON_GT_BYTE),
 		n_runs(0)
 	{
 		// We only use the uncompressed buffer
 		// no strides or compressed buffers
-		container.buffer_data_uncompressed.resize(start_capacity);
+		container.data_uncompressed.resize(start_capacity);
 	}
 	~GenotypeEncoderSlaveHelper(){}
 
 	// Overload operator += for block and RTYPE helper
 	friend block_type& operator+=(block_type& block, const self_type& helper){
-		block.base_containers[YON_BLK_GT_SUPPORT].Add((U32)helper.n_runs);
+		block.base_containers[YON_BLK_GT_SUPPORT].Add((uint32_t)helper.n_runs);
 		++block.base_containers[YON_BLK_GT_SUPPORT];
 
 		if(helper.encoding_type == YON_GT_RLE_DIPLOID_BIALLELIC){
@@ -154,7 +154,7 @@ public:
 public:
 	TACHYON_GT_ENCODING       encoding_type;
 	TACHYON_GT_PRIMITIVE_TYPE gt_primitive;
-	U32 n_runs;
+	uint32_t n_runs;
 	container_type container;
 };
 
@@ -172,24 +172,24 @@ public:
 				word_width(1),
 				n_runs(0)
 		{}
-		__RLEAssessHelper(const BYTE& word_width,
-				          const U64& n_runs) :
+		__RLEAssessHelper(const uint8_t& word_width,
+				          const uint64_t& n_runs) :
 			word_width(word_width),
 			n_runs(n_runs)
 		{}
 		~__RLEAssessHelper(){}
 
-		BYTE word_width;
-		U64 n_runs;
+		uint8_t word_width;
+		uint64_t n_runs;
 
 	} rle_helper_type;
 
 public:
 	GenotypeEncoder();
-	GenotypeEncoder(const U64 samples);
+	GenotypeEncoder(const uint64_t samples);
 	~GenotypeEncoder();
 
-	inline void SetSamples(const U64 samples){ this->n_samples = samples; }
+	inline void SetSamples(const uint64_t samples){ this->n_samples = samples; }
 	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
 
 	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const yon_gt_ppa& permutation_array) const;
@@ -229,7 +229,7 @@ private:
 	void updateStatistics(const GenotypeEncoderSlaveHelper& helper);
 
 private:
-	U64 n_samples; // number of samples
+	uint64_t n_samples; // number of samples
 	stats_type stats_;
 };
 
@@ -245,26 +245,26 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	uint64_t n_runs = 0; // Number of runs.
 	uint64_t l_runs = 1; // Current run length.
 
 	// 1 + hasMissing + hasMixedPhasing
-	const BYTE shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
-	const BYTE add    = gt_summary.mixed_phasing  ? 1 : 0;
+	const uint8_t shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
+	const uint8_t add    = gt_summary.mixed_phasing  ? 1 : 0;
 
 	// Run limits
 	const uint64_t limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (base_ploidy*shift + add)) - 1;
-	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
+	uint32_t rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
 												  gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
 												  shift, add);
 
 	// Iterate over all available samples.
-	for(U32 i = 1; i < this->n_samples; ++i){
+	for(uint32_t i = 1; i < this->n_samples; ++i){
 		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
-		U32 rle_ppa_current = YON_PACK_GT_DIPLOID(gt_ppa_target[0], gt_ppa_target[1], shift, add);
+		uint32_t rle_ppa_current = YON_PACK_GT_DIPLOID(gt_ppa_target[0], gt_ppa_target[1], shift, add);
 
 		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
 			YON_RLE_TYPE RLE = l_runs;
@@ -310,15 +310,15 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	int64_t n_runs = 0; // Number of runs.
 	int64_t l_runs = 1; // Current run length.
 
 	// Assess RLE cost
-	const BYTE shift = ceil(log2(entry->n_allele + 2 + 1));
-	const BYTE add   = gt_summary.mixed_phasing  ? 1 : 0;
+	const uint8_t shift = ceil(log2(entry->n_allele + 2 + 1));
+	const uint8_t add   = gt_summary.mixed_phasing  ? 1 : 0;
 
 	// Run limits
 	// Values set to signed integers as values can underflow if
@@ -330,7 +330,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
-	for(U32 i = 0; i <= entry->n_allele; ++i){
+	for(uint32_t i = 0; i <= entry->n_allele; ++i){
 		gt_remap[i << 1]       = ((i+1) << 1);
 		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
@@ -338,15 +338,15 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 	gt_remap[129] = 1;
 
 	// Initial reference entry.
-	U32 rle_ppa_current_ref = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy]] >> 1,
+	uint32_t rle_ppa_current_ref = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy]] >> 1,
 														   gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]] >> 1,
 														   shift, add,
 														   gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1]]);
 
 	// Iterate over all available samples.
-	for(U32 i = 1; i < this->n_samples; ++i){
+	for(uint32_t i = 1; i < this->n_samples; ++i){
 		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
-		U32 rle_ppa_current = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt_ppa_target[0]] >> 1,
+		uint32_t rle_ppa_current = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt_ppa_target[0]] >> 1,
 														   gt_remap[gt_ppa_target[1]] >> 1,
 														   shift, add,
 														   gt_remap[gt_ppa_target[1]]);
@@ -403,14 +403,14 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	const uint8_t*  gt   = entry->d.fmt[0].p;
 	const uint32_t  l_gt = entry->d.fmt[0].p_len;
 	const uint64_t limit = std::numeric_limits<YON_RLE_TYPE>::max();
-	assert(permutation_array.n_samples * base_ploidy == l_gt);
+	assert(permutation_array.n_s * base_ploidy == l_gt);
 	assert(base_ploidy * sizeof(uint8_t) * this->n_samples == l_gt);
 
 	// Remap genotype encoding such that 0 maps to missing and
 	// 1 maps to the sentinel node symbol (EOV).
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
-	for(U32 i = 0; i <= entry->n_allele; ++i){
+	for(uint32_t i = 0; i <= entry->n_allele; ++i){
 		gt_remap[i << 1]       = ((i+1) << 1);
 		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
@@ -424,32 +424,32 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	// Keep track of the current reference sequence as we
 	// iterate over the available genotypes.
 	uint8_t* reference = new uint8_t[base_ploidy];
-	for(U32 i = 0; i < base_ploidy; ++i)
+	for(uint32_t i = 0; i < base_ploidy; ++i)
 		reference[i] = gt_remap[gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + i]];
 
 	// Hash of current reference genotype sequence.
 	uint64_t hash_value_ppa_ref = XXH64(&gt[permutation_array[0] * sizeof(int8_t) * base_ploidy], sizeof(int8_t) * base_ploidy, 89231478);
 
 	// Iterate over all available samples.
-	for(U32 i = 1; i < this->n_samples; ++i){
+	for(uint32_t i = 1; i < this->n_samples; ++i){
 		const uint8_t* gt_ppa_target = &gt[permutation_array[i] * sizeof(int8_t) * base_ploidy];
 		uint64_t hash_value_ppa = XXH64(gt_ppa_target, sizeof(int8_t) * base_ploidy, 89231478);
 
 		if(hash_value_ppa != hash_value_ppa_ref){
 			dst.AddLiteral(l_run);
-			for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 			++dst.header.n_additions;
 
 			++n_runs;
 			l_run = 0;
 			hash_value_ppa_ref = hash_value_ppa;
-			for(U32 k = 0; k < base_ploidy; ++k) reference[k] = gt_remap[gt_ppa_target[k]];
+			for(uint32_t k = 0; k < base_ploidy; ++k) reference[k] = gt_remap[gt_ppa_target[k]];
 		}
 
 		// Overflow: trigger a break
 		if(l_run == limit){
 			dst.AddLiteral(l_run);
-			for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 			++dst.header.n_additions;
 
 			++n_runs;
@@ -458,12 +458,12 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 		++l_run;
 	}
 	dst.AddLiteral(l_run);
-	for(U32 k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+	for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 	++dst.header.n_additions;
 	++dst.header.n_entries;
 
-	//std::cerr << l_run << ":" << (U32)reference[0];
-	//for(U32 k = 1; k < base_ploidy; ++k) std::cerr << "," << (U32)reference[k];
+	//std::cerr << l_run << ":" << (uint32_t)reference[0];
+	//for(uint32_t k = 1; k < base_ploidy; ++k) std::cerr << "," << (uint32_t)reference[k];
 	//std::cerr << std::endl;
 	++n_runs;
 
@@ -498,11 +498,11 @@ struct CalcSlave{
 	~CalcSlave(){}
 
 	std::thread* Start(const GenotypeEncoder& encoder,
-		               const U32 thread_idx,
-		               const U32 n_threads,
+		               const uint32_t thread_idx,
+		               const uint32_t n_threads,
 		               //const bcf_reader_type& reader,
 		               meta_type* meta_entries,
-		               const U32* const ppa,
+		               const uint32_t* const ppa,
 		               helper_type* helpers)
 	{
 		this->encoder_      = &encoder;
@@ -520,18 +520,18 @@ struct CalcSlave{
 private:
 	void Run_(void){
 		exit(1);
-		for(U32 i = this->thread_idx_; i < 5; i += this->n_threads_){
+		for(uint32_t i = this->thread_idx_; i < 5; i += this->n_threads_){
 			//this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
 		}
 	}
 
 private:
-	U32 thread_idx_;
-	U32 n_threads_;
+	uint32_t thread_idx_;
+	uint32_t n_threads_;
 	const GenotypeEncoder* encoder_;
 	//const bcf_reader_type* reader_;
 	meta_type* meta_entries_;
-	const U32* ppa_;
+	const uint32_t* ppa_;
 	helper_type* helpers_;
 
 public:

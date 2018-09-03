@@ -15,7 +15,7 @@ GenotypeSorter::~GenotypeSorter(){
 	delete [] this->gt_pattern;
 }
 
-void GenotypeSorter::SetSamples(const U64 n_samples){
+void GenotypeSorter::SetSamples(const uint64_t n_samples){
 	this->n_samples = n_samples;
 	this->permutation_array.Allocate(n_samples);
 	this->gt_pattern = new yon_radix_gt[n_samples];
@@ -36,7 +36,7 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 	int32_t  largest_ploidy    = 0;
 	uint32_t largest_n_alleles = 0;
 	uint32_t n_valid_records   = 0;
-	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+	for(uint32_t i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
 		if(vcf_container[i]->n_fmt == 0) continue;
 
 		// Perform these actions if FORMAT:GT data is available.
@@ -68,13 +68,13 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 
 	// Ascertain that enough memory has been allocated.
 	if(largest_ploidy >= this->gt_pattern[0].n_allocated){
-		for(U32 i = 0; i < this->GetNumberSamples(); ++i)
+		for(uint32_t i = 0; i < this->GetNumberSamples(); ++i)
 			this->gt_pattern[i].resize(largest_ploidy + 3);
 	}
 
 	// Map a genotype such that missing and sentinel node symbol (EOV)
 	// is stored in the back of the order.
-	for(U32 i = 1; i <= largest_n_alleles; ++i) this->gt_remap[i] = i;
+	for(uint32_t i = 1; i <= largest_n_alleles; ++i) this->gt_remap[i] = i;
 	this->gt_remap[0]  = largest_n_alleles - 1; // Missing value.
 	this->gt_remap[64] = largest_n_alleles;     // Sentinel node symbol in unsigned space (129 >> 1 = 64).
 
@@ -99,7 +99,7 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 	std::unordered_map<uint64_t, uint32_t>::const_iterator end;
 
 	// Iterate over all available bcf1_t records in the container.
-	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+	for(uint32_t i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
 		if(vcf_container[i]->n_fmt == 0) continue;
 
 		// Perform these actions if FORMAT:GT data is available.
@@ -115,55 +115,58 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 		assert(bcf->d.fmt[0].p_len == sizeof(int8_t) * base_ploidy * this->GetNumberSamples());
 
 		// Keep track of buffer position.
-		U32 gt_offset = 0;
+		uint32_t gt_offset = 0;
 
 		// Iterate over all available samples.
-		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
-			this->gt_pattern[s].n_ploidy = base_ploidy;
-			this->gt_pattern[s].id = s;
-			assert(base_ploidy < gt_pattern[s].n_allocated);
+		for(uint32_t s = 0; s < this->GetNumberSamples(); ++s){
+			yon_radix_gt& target_pattern = this->gt_pattern[s];
+			target_pattern.n_ploidy = base_ploidy;
+			target_pattern.id = s;
+
 			// Iterate over the ploidy for this sample and update
 			// the allele for that chromosome in the pattern helper
 			// structure.
-			for(U32 a = 0; a < base_ploidy; ++a, ++gt_offset){
+			for(uint32_t a = 0; a < base_ploidy; ++a, ++gt_offset){
 				const uint8_t repacked = (this->gt_remap[gt[gt_offset] >> 1] << 1) | (gt[gt_offset] & 1);
 				assert((repacked >> 1) <= largest_n_alleles);
 				assert(repacked < largest_n_alleles_binary);
-				this->gt_pattern[s].alleles[a] = repacked;
+				target_pattern.alleles[a] = repacked;
 			}
 		}
 		assert(gt_offset == bcf->d.fmt[0].p_len);
 
 		// Iterate over all encoded genotypes and assign them
 		// to different bins according to their bitpacked values.
-		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
+		for(uint32_t s = 0; s < this->GetNumberSamples(); ++s){
 			// Hash the pattern of alleles
-			const U64 hash_pattern = XXH64(this->gt_pattern[this->permutation_array[s]].alleles,
-			                               sizeof(uint16_t) * this->gt_pattern[this->permutation_array[s]].n_ploidy,
+			yon_radix_gt& target_pattern = this->gt_pattern[this->permutation_array[s]];
+			const uint64_t hash_pattern = XXH64(target_pattern.alleles,
+			                               sizeof(uint16_t) * target_pattern.n_ploidy,
 			                               651232);
+
 			// Update const_iterators for the hash mapper.
 			it  = bin_used_map.find(hash_pattern);
 			end = bin_used_map.cend();
 			if(it == end){ // Case: does not exist in map.
 				bin_used_map[hash_pattern] = bin_used.size();
 				bin_used.push_back(std::vector<yon_radix_gt*>());
-				bin_used.back().push_back(&this->gt_pattern[this->permutation_array[s]]);
-				bin_used_packed_integer.push_back(this->gt_pattern[this->permutation_array[s]].GetPackedInteger(shift_size));
+				bin_used.back().push_back(&target_pattern);
+				bin_used_packed_integer.push_back(target_pattern.GetPackedInteger(shift_size));
 			} else { // Case: exist in map.
-				bin_used[it->second].push_back(&this->gt_pattern[this->permutation_array[s]]);
+				bin_used[it->second].push_back(&target_pattern);
 			}
 		}
 
 		// Sort by bin value.
-		for(U32 k = 0; k < bin_used.size(); ++k)
+		for(uint32_t k = 0; k < bin_used.size(); ++k)
 			sort_helper.push_back(std::pair<uint64_t,uint32_t>(bin_used_packed_integer[k], k));
 
 		std::sort(sort_helper.begin(), sort_helper.end());
 
-		U32 n_sample_c = 0;
-		for(U32 s = 0; s < sort_helper.size(); ++s){
-			for(U32 k = 0; k < bin_used[sort_helper[s].second].size(); ++k, ++n_sample_c){
-				permutation_array[n_sample_c] = bin_used[sort_helper[s].second][k]->id;
+		uint32_t n_sample_c = 0;
+		for(uint32_t s = 0; s < sort_helper.size(); ++s){
+			for(uint32_t k = 0; k < bin_used[sort_helper[s].second].size(); ++k, ++n_sample_c){
+				this->permutation_array[n_sample_c] = bin_used[sort_helper[s].second][k]->id;
 			}
 		}
 		assert(n_sample_c == this->GetNumberSamples());
@@ -180,26 +183,26 @@ bool GenotypeSorter::Build(const vcf_container_type& vcf_container, io::VcfHeade
 }
 
 void GenotypeSorter::Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa){
-	for(U32 i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
+	for(uint32_t i = 0; i < vcf_container.sizeWithoutCarryOver(); ++i){
 		const bcf1_t* bcf = vcf_container[i];
 		const uint8_t* gt = bcf->d.fmt[0].p;
 		const uint32_t base_ploidy = bcf->d.fmt[0].n;
 		assert(bcf->d.fmt[0].p_len == sizeof(int8_t) * base_ploidy * this->GetNumberSamples());
 
 		// Keep track of buffer position.
-		U32 gt_offset = 0;
+		uint32_t gt_offset = 0;
 
 		stream << bcf->pos + 1 << "\t";
 		// Iterate over all available samples.
-		for(U32 s = 0; s < this->GetNumberSamples(); ++s){
+		for(uint32_t s = 0; s < this->GetNumberSamples(); ++s){
 			const uint8_t* gt_target = &gt[ppa[s] * sizeof(int8_t) * base_ploidy];
 
-			stream << (U32)(gt_target[0] >> 1);
+			stream << (uint32_t)(gt_target[0] >> 1);
 			// Iterate over the ploidy for this sample and update
 			// the allele for that chromosome in the pattern helper
 			// structure.
-			for(U32 a = 1; a < base_ploidy; ++a){
-				stream << "|" << (U32)(gt_target[a] >> 1);
+			for(uint32_t a = 1; a < base_ploidy; ++a){
+				stream << "|" << (uint32_t)(gt_target[a] >> 1);
 			}
 			stream << "\t";
 		}

@@ -1,17 +1,13 @@
 #ifndef CONTAINERS_VARIANT_READER_SETTINGS_H_
 #define CONTAINERS_VARIANT_READER_SETTINGS_H_
 
-#include "third_party/intervalTree.h"
-#include "index/index_entry.h"
-
 namespace tachyon{
 
 struct VariantReaderSettings{
 public:
 	typedef VariantReaderSettings          self_type;
-	typedef index::IndexEntry              index_entry_type;
-	typedef algorithm::Interval<U32, S64>  interval_type;
-	typedef algorithm::IntervalTree<interval_type, S64> interval_tree_type;
+	typedef algorithm::Interval<uint32_t, int64_t>  interval_type;
+	typedef algorithm::IntervalTree<interval_type, int64_t> interval_tree_type;
 
 public:
 	VariantReaderSettings() :
@@ -32,7 +28,7 @@ public:
 	 */
 	inline std::string get_settings_string(void) const{
 		return(std::string(
-		"##tachyon_viewCommandSettings={"
+		"{"
 		"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
 		",\"output\":" + (this->output.length() ? "\"" + this->output + "\"" : "null") +
 		",\"keychain_file\":" + (this->keychain_file.length() ? "\"" + this->keychain_file + "\"" : "null") +

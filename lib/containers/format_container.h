@@ -29,16 +29,49 @@ public:
     typedef io::BasicBuffer                 buffer_type;
     typedef DataContainer                   data_container_type;
     typedef MetaContainer                   meta_container_type;
-    typedef StrideContainer<U32>            stride_container_type;
+    typedef StrideContainer<uint32_t>            stride_container_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
     FormatContainer();
-    FormatContainer(const data_container_type& container, const U64 n_samples);
-    FormatContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64 n_samples); // use when balancing
+    FormatContainer(const data_container_type& container, const uint64_t n_samples);
+    FormatContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t n_samples); // use when balancing
     ~FormatContainer(void);
+
+    DataContainer ToDataContainer(void){
+    	uint32_t n_entries = 0;
+    	for(uint32_t i = 0; i < this->size(); ++i){
+    		for(uint32_t j = 0; j < this->at(i).size(); ++j)
+    			n_entries += this->at(i).at(j).size();
+    	}
+
+    	DataContainer d;
+		d.data_uncompressed.resize(n_entries + 128);
+		d.strides_uncompressed.resize(n_entries + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(d);
+
+		return(d);
+    }
+
+    DataContainer& UpdateDataContainer(DataContainer& container){
+    	uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i){
+			for(uint32_t j = 0; j < this->at(i).size(); ++j)
+				n_entries += this->at(i).at(j).size();
+		}
+
+		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(container);
+
+		return(container);
+    }
 
     // Element access
     inline reference at(const size_type& position){ return(this->__containers[position]); }
@@ -65,35 +98,41 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	inline std::ostream& to_vcf_string(std::ostream& stream, const U32 position, const U64 sample) const{
+	inline std::ostream& ToVcfString(std::ostream& stream, const uint32_t position, const uint64_t sample) const{
 		//utility::to_vcf_string(stream, this->at(position).at(sample).data(), this->at(position).at(sample).size());
 		return(stream);
 	}
 
-	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{
-		utility::to_vcf_string(buffer, this->at(position).at(sample).data(), this->at(position).at(sample).size());
+	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
+		utility::ToVcfString(buffer, this->at(position).at(sample).data(), this->at(position).at(sample).size());
 		return(buffer);
 	}
 
-	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{
+	inline io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{
 		//utility::to_json_string(buffer, this->at(position).at(sample));
 		return(buffer);
 	}
 
 	bcf1_t* UpdateHtslibVcfRecord(const uint32_t position, bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag) const{
-		if(this->primitive_type == YON_TYPE_8B || this->primitive_type == YON_TYPE_16B || this->primitive_type == YON_TYPE_32B || this->primitive_type == YON_TYPE_64B){
+		if(this->primitive_type == YON_TYPE_8B  ||
+		   this->primitive_type == YON_TYPE_16B ||
+		   this->primitive_type == YON_TYPE_32B ||
+		   this->primitive_type == YON_TYPE_64B)
+		{
 			return(this->at(position).UpdateHtslibVcfRecordFormatInt32(rec, hdr, tag));
-		} else if(this->primitive_type == YON_TYPE_FLOAT || this->primitive_type == YON_TYPE_DOUBLE){
+		} else if(this->primitive_type == YON_TYPE_FLOAT ||
+		          this->primitive_type == YON_TYPE_DOUBLE)
+		{
 			return(this->at(position).UpdateHtslibVcfRecordFormatFloat(rec, hdr, tag));
 		} else {
-			std::cerr << "illegal type: " << (int)this->primitive_type << std::endl;
+			std::cerr << utility::timestamp("ERROR","FMT") << "Illegal type: " << (int)this->primitive_type << std::endl;
 			exit(1);
 		}
 		return rec;
 	}
 
-	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
-	inline bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+	inline bool emptyPosition(const uint32_t& position) const{ return(this->at(position).empty()); }
+	inline bool emptyPosition(const uint32_t& position, const uint64_t& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<
@@ -103,7 +142,7 @@ private:
      * @param n_samples Number of samples
      */
     template <class actual_primitive>
-    void __setup(const data_container_type& container, const U64& n_samples);
+    void __setup(const data_container_type& container, const uint64_t& n_samples);
 
    /**<
     * Setup this container such that it is balanced given the input
@@ -114,7 +153,7 @@ private:
     * @param n_samples       Number of samples
     */
     template <class actual_primitive>
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples);
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples);
 
     /**<
      * Setup this container such that it is balanced given the input
@@ -126,7 +165,7 @@ private:
      * @param stride_size     Fixed-width (uniform) data stride size
      */
     template <class actual_primitive>
-    	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples, const U32 stride_size);
+    	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples, const uint32_t stride_size);
 
     /**<
      * Setup this container such that the container only has knowledge
@@ -136,7 +175,7 @@ private:
      * @param stride_size Fixed-width (uniform) data stride size
      */
 	template <class actual_primitive>
-	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
+	void __setup(const data_container_type& container, const uint64_t& n_samples, const uint32_t stride_size);
 
 private:
     pointer __containers;
@@ -157,19 +196,19 @@ template <class return_type>
 FormatContainer<return_type>::FormatContainer(const data_container_type& data_container,
                                               const meta_container_type& meta_container,
                                                 const std::vector<bool>& pattern_matches,
-                                                              const U64  n_samples) :
+                                                              const uint64_t  n_samples) :
 	__containers(nullptr)
 {
-	if(data_container.buffer_data_uncompressed.size() == 0)
+	if(data_container.data_uncompressed.size() == 0)
 		return;
 
 	if(data_container.header.data_header.HasMixedStride()){
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<int8_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<int16_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<int32_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<int64_t>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_BOOLEAN):
@@ -180,10 +219,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			}
 		} else {
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches, n_samples));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<uint8_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<uint16_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<uint32_t>(data_container, meta_container, pattern_matches, n_samples));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<uint64_t>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples));  break;
 			case(YON_TYPE_BOOLEAN):
@@ -196,10 +235,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 	} else {
 		if(data_container.header.data_header.IsSigned()){
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<SBYTE>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<S16>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<S32>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<S64>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<int8_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<int16_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<int32_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<int64_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_BOOLEAN):
@@ -210,10 +249,10 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 			}
 		} else {
 			switch(data_container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setupBalanced<BYTE>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->__setupBalanced<U16>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_32B):    (this->__setupBalanced<U32>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
-			case(YON_TYPE_64B):    (this->__setupBalanced<U64>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_8B):     (this->__setupBalanced<uint8_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->__setupBalanced<uint16_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_32B):    (this->__setupBalanced<uint32_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
+			case(YON_TYPE_64B):    (this->__setupBalanced<uint64_t>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_FLOAT):  (this->__setupBalanced<float>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_DOUBLE): (this->__setupBalanced<double>(data_container, meta_container, pattern_matches, n_samples, data_container.header.data_header.stride));  break;
 			case(YON_TYPE_BOOLEAN):
@@ -228,29 +267,29 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& data_co
 
 template <class return_type>
 FormatContainer<return_type>::FormatContainer(const data_container_type& container,
-                                              const U64 n_samples) :
+                                              const uint64_t n_samples) :
 	__containers(nullptr)
 {
-	if(container.buffer_data_uncompressed.size() == 0)
+	if(container.data_uncompressed.size() == 0)
 		return;
 
 	if(container.header.data_header.controller.mixedStride){
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.controller.type){
-			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples));  break;
-			case(YON_TYPE_16B):    (this->__setup<S16>(container, n_samples));    break;
-			case(YON_TYPE_32B):    (this->__setup<S32>(container, n_samples));    break;
-			case(YON_TYPE_64B):    (this->__setup<S64>(container, n_samples));    break;
+			case(YON_TYPE_8B):     (this->__setup<int8_t>(container, n_samples));  break;
+			case(YON_TYPE_16B):    (this->__setup<int16_t>(container, n_samples));    break;
+			case(YON_TYPE_32B):    (this->__setup<int32_t>(container, n_samples));    break;
+			case(YON_TYPE_64B):    (this->__setup<int64_t>(container, n_samples));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples));   break;
-			case(YON_TYPE_16B):    (this->__setup<U16>(container, n_samples));    break;
-			case(YON_TYPE_32B):    (this->__setup<U32>(container, n_samples));    break;
-			case(YON_TYPE_64B):    (this->__setup<U64>(container, n_samples));    break;
+			case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, n_samples));   break;
+			case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, n_samples));    break;
+			case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, n_samples));    break;
+			case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, n_samples));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples)); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
@@ -259,20 +298,20 @@ FormatContainer<return_type>::FormatContainer(const data_container_type& contain
 	} else {
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.controller.type){
-			case(YON_TYPE_8B):     (this->__setup<SBYTE>(container, n_samples, container.header.data_header.GetStride()));  break;
-			case(YON_TYPE_16B):    (this->__setup<S16>(container, n_samples, container.header.data_header.GetStride()));    break;
-			case(YON_TYPE_32B):    (this->__setup<S32>(container, n_samples, container.header.data_header.GetStride()));    break;
-			case(YON_TYPE_64B):    (this->__setup<S64>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_8B):     (this->__setup<int8_t>(container, n_samples, container.header.data_header.GetStride()));  break;
+			case(YON_TYPE_16B):    (this->__setup<int16_t>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_32B):    (this->__setup<int32_t>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_64B):    (this->__setup<int64_t>(container, n_samples, container.header.data_header.GetStride()));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.data_header.GetStride()));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.data_header.GetStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->__setup<BYTE>(container, n_samples, container.header.data_header.GetStride()));   break;
-			case(YON_TYPE_16B):    (this->__setup<U16>(container, n_samples, container.header.data_header.GetStride()));    break;
-			case(YON_TYPE_32B):    (this->__setup<U32>(container, n_samples, container.header.data_header.GetStride()));    break;
-			case(YON_TYPE_64B):    (this->__setup<U64>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_8B):     (this->__setup<uint8_t>(container, n_samples, container.header.data_header.GetStride()));   break;
+			case(YON_TYPE_16B):    (this->__setup<uint16_t>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_32B):    (this->__setup<uint32_t>(container, n_samples, container.header.data_header.GetStride()));    break;
+			case(YON_TYPE_64B):    (this->__setup<uint64_t>(container, n_samples, container.header.data_header.GetStride()));    break;
 			case(YON_TYPE_FLOAT):  (this->__setup<float>(container, n_samples, container.header.data_header.GetStride()));  break;
 			case(YON_TYPE_DOUBLE): (this->__setup<double>(container, n_samples, container.header.data_header.GetStride())); break;
 			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return;
@@ -292,12 +331,12 @@ FormatContainer<return_type>::~FormatContainer(){
 template <class return_type>
 template <class actual_primitive>
 void FormatContainer<return_type>::__setup(const data_container_type& container,
-                                           const U64& n_samples)
+                                           const uint64_t& n_samples)
 {
-	if(container.buffer_strides_uncompressed.size() == 0)
+	if(container.strides_uncompressed.size() == 0)
 		return;
 
-	this->n_capacity = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
+	this->n_capacity = container.data_uncompressed.size() / sizeof(actual_primitive) / n_samples;
 	this->n_entries  = 0;
 
 	if(this->n_capacity == 0)
@@ -306,14 +345,14 @@ void FormatContainer<return_type>::__setup(const data_container_type& container,
 	this->__containers = static_cast<pointer>(::operator new[](this->n_capacity*sizeof(value_type)));
 	stride_container_type strides(container);
 
-	U32 current_offset = 0;
-	for(U32 i = 0; i < this->size(); ++i){
+	uint32_t current_offset = 0;
+	for(uint32_t i = 0; i < this->size(); ++i){
 		//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << (this->*func)(container.buffer_strides_uncompressed, i) << std::endl;
 		new( &this->__containers[i] ) value_type( container, current_offset, n_samples, strides[i] );
 		current_offset += strides[i] * sizeof(actual_primitive) * n_samples;
 		++this->n_entries;
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -321,7 +360,7 @@ template <class actual_primitive>
 void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container,
                                                    const meta_container_type& meta_container,
                                                    const std::vector<bool>& pattern_matches,
-                                                   const U64& n_samples)
+                                                   const uint64_t& n_samples)
 {
 	this->n_entries = meta_container.size();
 	if(this->n_entries == 0)
@@ -332,9 +371,9 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 	stride_container_type strides(data_container);
 
-	U32 current_offset = 0;
-	U32 strides_offset = 0;
-	for(U32 i = 0; i < this->size(); ++i){
+	uint32_t current_offset = 0;
+	uint32_t strides_offset = 0;
+	for(uint32_t i = 0; i < this->size(); ++i){
 		// There are no FORMAT fields set empty.
 		if(meta_container[i].GetFormatPatternId() == -1){
 			new( &this->__containers[i] ) value_type( );
@@ -350,7 +389,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 			new( &this->__containers[i] ) value_type( );
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 template <class return_type>
@@ -358,8 +397,8 @@ template <class actual_primitive>
 void FormatContainer<return_type>::__setupBalanced(const data_container_type& data_container,
                                                    const meta_container_type& meta_container,
                                                    const std::vector<bool>& pattern_matches,
-                                                   const U64& n_samples,
-                                                   const U32 stride_size)
+                                                   const uint64_t& n_samples,
+                                                   const uint32_t stride_size)
 {
 	this->n_entries = meta_container.size();
 	if(this->n_entries == 0)
@@ -369,10 +408,10 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries*sizeof(value_type)));
 
-	U32 current_offset = 0;
+	uint32_t current_offset = 0;
 	// Case 1: if data is uniform
 	if(data_container.header.data_header.IsUniform()){
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			// There are no FORMAT fields
 			if(meta_container[i].GetFormatPatternId() == -1){
 				new( &this->__containers[i] ) value_type( );
@@ -391,7 +430,7 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 	}
 	// Case 2: if data is not uniform
 	else {
-		for(U32 i = 0; i < this->size(); ++i){
+		for(uint32_t i = 0; i < this->size(); ++i){
 			// If pattern matches
 			if(pattern_matches[meta_container[i].GetFormatPatternId()]){
 				new( &this->__containers[i] ) value_type( data_container, current_offset, n_samples, stride_size );
@@ -403,38 +442,38 @@ void FormatContainer<return_type>::__setupBalanced(const data_container_type& da
 			}
 		}
 	}
-	assert(current_offset == data_container.buffer_data_uncompressed.size());
+	assert(current_offset == data_container.data_uncompressed.size());
 }
 
 template <class return_type>
 template <class actual_primitive>
 void FormatContainer<return_type>::__setup(const data_container_type& container,
-                                           const U64& n_samples,
-                                           const U32 stride_size)
+                                           const uint64_t& n_samples,
+                                           const uint32_t stride_size)
 {
-	this->n_entries = container.buffer_data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
+	this->n_entries = container.data_uncompressed.size() / sizeof(actual_primitive) / n_samples / stride_size;
 
 	if(this->n_entries == 0)
 		return;
 
 	this->__containers = static_cast<pointer>(::operator new[](this->n_entries * sizeof(value_type)));
 
-	U32 current_offset = 0;
+	uint32_t current_offset = 0;
 	// Case 1: data is uniform -> give all samples the same value
 	if(container.header.data_header.IsUniform()){
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 
 	}
 	// Case 2: data is not uniform -> interpret data
 	else {
-		for(U32 i = 0; i < this->n_entries; ++i){
+		for(uint32_t i = 0; i < this->n_entries; ++i){
 			//std::cerr << current_offset << '/' << container.buffer_data_uncompressed.size() << '\t' << "fixed: " << stride_size << std::endl;
 			new( &this->__containers[i] ) value_type( container, current_offset, n_samples, stride_size );
 			current_offset += stride_size * sizeof(actual_primitive) * n_samples;
 		}
 	}
-	assert(current_offset == container.buffer_data_uncompressed.size());
+	assert(current_offset == container.data_uncompressed.size());
 }
 
 }

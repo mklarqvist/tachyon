@@ -1,27 +1,38 @@
 #include "variant_reader.h"
 
+
 namespace tachyon{
 
-VariantReader::VariantReader()
+VariantReader::VariantReader() :
+	b_data_start(0)
 {}
 
 VariantReader::VariantReader(const std::string& filename) :
+	b_data_start(0),
 	basic_reader(filename)
 {}
 
 VariantReader::~VariantReader(){}
 
 VariantReader::VariantReader(const self_type& other) :
+	b_data_start(other.b_data_start),
 	basic_reader(other.basic_reader),
+	//variant_container(other.variant_container),
+
 	block_settings(other.block_settings),
 	settings(other.settings),
+	//variant_filters(other.variant_filters), // illeal to copy
+
 	global_header(other.global_header),
 	global_footer(other.global_footer),
 	index(other.index),
 	checksums(other.checksums),
-	keychain(other.keychain)
+	keychain(other.keychain),
+	interval_container(other.interval_container),
+	occ_table(other.occ_table)
 {
-	this->basic_reader.open();
+	this->basic_reader.stream_.seekg(this->b_data_start);
+	this->variant_container << this->global_header;
 }
 
 bool VariantReader::open(void){
@@ -41,15 +52,15 @@ bool VariantReader::open(void){
 	}
 
 	// Seek to start of footer
-	this->basic_reader.stream_.seekg((U64)this->basic_reader.filesize_ - YON_FOOTER_LENGTH);
+	this->basic_reader.stream_.seekg((uint64_t)this->basic_reader.filesize_ - YON_FOOTER_LENGTH);
 	if(!this->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to seek in file!" << std::endl;
 		return false;
 	}
 	this->basic_reader.stream_ >> this->global_footer;
 
-	// Validate footer
-	if(this->global_footer.validate() == false){
+	// Validate the global footer.
+	if(this->global_footer.Validate() == false){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate footer!" << std::endl;
 		return false;
 	}
@@ -81,7 +92,7 @@ bool VariantReader::open(void){
 	utility::DeserializePrimitive(l_c_data, this->basic_reader.stream_);
 
 	io::BasicBuffer header_uncompressed(l_data + 1024);
-	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars   = l_c_data;
+	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars_ = l_c_data;
 
 	this->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 
@@ -97,10 +108,16 @@ bool VariantReader::open(void){
 		return false;
 	}
 
+	// Keep track of start of data offset in the byte stream.
+	// We use this information if spawning copies of this
+	// reader object.
+	this->b_data_start = this->basic_reader.stream_.tellg();
+
+	// Add global header pointer to variant container.
 	this->variant_container << this->global_header;
 
 	// Keep track of start position
-	const U64 return_pos = this->basic_reader.stream_.tellg();
+	const uint64_t return_pos = this->basic_reader.stream_.tellg();
 	this->basic_reader.stream_.seekg(this->global_footer.offset_end_of_data);
 	this->basic_reader.stream_ >> this->index;
 	this->basic_reader.stream_ >> this->checksums;
@@ -110,16 +127,7 @@ bool VariantReader::open(void){
 }
 
 bool VariantReader::NextBlock(){
-	// If the stream is faulty then return
-	if(!this->basic_reader.stream_.good()){
-		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
-		return false;
-	}
-
-	// If the current position is the EOF then
-	// exit the function
-	if((U64)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
-		return false;
+	if(this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
 	this->variant_container.reset();
@@ -127,11 +135,11 @@ bool VariantReader::NextBlock(){
 	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-
 	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+		return false;
 	}
-	this->variant_container.GetBlock().footer_support.buffer_data_uncompressed >> this->variant_container.GetBlock().footer;
+	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
 
 	// Attempts to read a YON block with the settings provided
 	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
@@ -145,7 +153,7 @@ bool VariantReader::NextBlock(){
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.decryptAES256(this->variant_container.GetBlock(), this->keychain)){
+		if(!encryption_manager.Decrypt(this->variant_container.GetBlock(), this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
@@ -159,6 +167,48 @@ bool VariantReader::NextBlock(){
 
 	// All passed
 	return true;
+}
+
+containers::VariantBlockContainer VariantReader::ReturnBlock(void){
+	variant_container_type c;
+	c << this->GetGlobalHeader();
+
+	if(this->CheckNextValid() == false)
+		return c;
+
+	if(!c.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+		return(c);
+
+	if(!this->codec_manager.zstd_codec.Decompress(c.GetBlock().footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+	}
+	c.GetBlock().footer_support.data_uncompressed >> c.GetBlock().footer;
+
+	// Attempts to read a YON block with the settings provided
+	if(!c.ReadBlock(this->basic_reader.stream_, this->block_settings))
+		return(c);
+
+	// encryption manager ascertainment
+	if(c.AnyEncrypted()){
+		if(this->keychain.size() == 0){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
+			return(c);
+		}
+
+		encryption_manager_type encryption_manager;
+		if(!encryption_manager.Decrypt(c.GetBlock(), this->keychain)){
+			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
+			return(c);
+		}
+	}
+
+	// Internally decompress available data
+	if(!this->codec_manager.Decompress(c.GetBlock())){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
+		return(c);
+	}
+
+	return(c);
 }
 
 bool VariantReader::GetBlock(const index_entry_type& index_entry){
@@ -179,42 +229,77 @@ bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	return(this->NextBlock());
 }
 
-TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const U32& allele) const{
-	const S32 ref_size = meta.alleles[0].size();
-	const S32 diff = ref_size - meta.alleles[allele].size();
-	//std::cerr << diff << ",";
-	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<') return(YON_VARIANT_CLASS_SV);
-	else if(diff == 0){
+bool VariantReader::LoadKeychainFile(void){
+	std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
+	if(!keychain_reader.good()){
+		std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
+		return false;
+	}
+
+	keychain_reader >> this->keychain;
+	if(!keychain_reader.good()){
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
+		return false;
+	}
+	return true;
+}
+
+TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const uint32_t& allele) const{
+	const int32_t ref_size = meta.alleles[0].size();
+	const int32_t l_diff   = ref_size - meta.alleles[allele].size();
+
+	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<')
+		return(YON_VARIANT_CLASS_SV);
+	else if(l_diff == 0){
 		if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
-			if(meta.alleles[allele].allele[0] == 'A' || meta.alleles[allele].allele[0] == 'T' || meta.alleles[allele].allele[0] == 'G' || meta.alleles[allele].allele[0] == 'C')
+			if(meta.alleles[allele].allele[0] == 'A' ||
+			   meta.alleles[allele].allele[0] == 'T' ||
+			   meta.alleles[allele].allele[0] == 'G' ||
+			   meta.alleles[allele].allele[0] == 'C')
+			{
 				return(YON_VARIANT_CLASS_SNP);
+			}
 			else return(YON_VARIANT_CLASS_UNKNOWN);
 		}
 		else if(ref_size != 1){
-			U32 characters_identical = 0;
-			const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
+			uint32_t n_characters_identical = 0;
+			const uint32_t length_shortest = ref_size < meta.alleles[allele].size()
+					                    ? ref_size
+					                    : meta.alleles[allele].size();
 
-			for(U32 c = 0; c < length_shortest; ++c){
-				characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
-			}
+			for(uint32_t c = 0; c < length_shortest; ++c)
+				n_characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
 
-			if(characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
+			if(n_characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
 			else return(YON_VARIANT_CLASS_CLUMPED);
 		}
 	} else {
-		const U32 length_shortest = ref_size < meta.alleles[allele].size() ? ref_size : meta.alleles[allele].size();
-		U32 characters_non_standard = 0;
-		for(U32 c = 0; c < length_shortest; ++c){
-			characters_non_standard += (meta.alleles[allele].allele[c] != 'A' && meta.alleles[allele].allele[c] != 'T' && meta.alleles[allele].allele[c] != 'C' && meta.alleles[allele].allele[c] !='G');
+		const uint32_t length_shortest = ref_size < meta.alleles[allele].size()
+		                            ? ref_size
+		                            : meta.alleles[allele].size();
+
+		// Keep track of non-standard characters.
+		uint32_t n_characters_non_standard = 0;
+
+		// Iterate over available characters and check for non-standard
+		// genetic characters (ATGC).
+		for(uint32_t c = 0; c < length_shortest; ++c){
+			n_characters_non_standard += (meta.alleles[allele].allele[c] != 'A' &&
+			                              meta.alleles[allele].allele[c] != 'T' &&
+			                              meta.alleles[allele].allele[c] != 'C' &&
+			                              meta.alleles[allele].allele[c] != 'G');
 		}
-		if(characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
+
+		// If non-standard characters are found then return as unknown
+		// type. Otherwise, return classification as an indel.
+		if(n_characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
 		else return(YON_VARIANT_CLASS_INDEL);
 	}
 	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
 void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const{
-	utility::to_vcf_string(output_buffer, '\t', *entry.meta, this->global_header);
+	utility::ToVcfString(output_buffer, '\t', *entry.meta, this->global_header);
 	output_buffer += '\t';
 
 	// Print Filter, Info, and Format if available.
@@ -239,21 +324,22 @@ void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry)
 			} else {
 				output_buffer += entry.info_hdr[0]->id;
 				output_buffer += '=';
-				entry.info[0]->to_vcf_string(output_buffer);
+				entry.info[0]->ToVcfString(output_buffer);
 			}
 
-			for(U32 j = 1; j < n_info_avail; ++j){
+			for(uint32_t j = 1; j < n_info_avail; ++j){
 				output_buffer += ';';
 				if(entry.info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
 					output_buffer += entry.info_hdr[j]->id;
 				} else {
 					output_buffer += entry.info_hdr[j]->id;
 					output_buffer += '=';
-					entry.info[j]->to_vcf_string(output_buffer);
+					entry.info[j]->ToVcfString(output_buffer);
 				}
 			}
 
 			if(this->GetBlockSettings().annotate_extra){
+				output_buffer += ';';
 				entry.EvaluateSummary(true);
 				entry.gt_sum->d->PrintVcf(output_buffer);
 			}
@@ -274,7 +360,7 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 		const uint32_t n_format_avail = entry.format_ids->size();
 		if(n_format_avail){
 			output_buffer += entry.format_hdr[0]->id;
-			for(U32 j = 1; j < n_format_avail; ++j){
+			for(uint32_t j = 1; j < n_format_avail; ++j){
 				output_buffer += ':';
 				output_buffer += entry.format_hdr[j]->id;
 			}
@@ -303,7 +389,7 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 
 				// Iterate over samples and print FORMAT:GT value in Vcf format.
 				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
-				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
 					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
 				}
@@ -320,16 +406,16 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
 				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
-				for(U32 g = 1; g < n_format_avail; ++g){
+				for(uint32_t g = 1; g < n_format_avail; ++g){
 					output_buffer += ':';
-					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+					entry.fmt[g]->ToVcfString(output_buffer, 0);
 				}
-				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
 					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
-					for(U32 g = 1; g < n_format_avail; ++g){
+					for(uint32_t g = 1; g < n_format_avail; ++g){
 						output_buffer += ':';
-						entry.fmt[g]->to_vcf_string(output_buffer, s);
+						entry.fmt[g]->ToVcfString(output_buffer, s);
 					}
 				}
 
@@ -337,18 +423,18 @@ void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t
 			}
 			// All other cases.
 			else {
-				entry.fmt[0]->to_vcf_string(output_buffer, 0);
-				for(U32 g = 1; g < n_format_avail; ++g){
+				entry.fmt[0]->ToVcfString(output_buffer, 0);
+				for(uint32_t g = 1; g < n_format_avail; ++g){
 					output_buffer += ':';
-					entry.fmt[g]->to_vcf_string(output_buffer, 0);
+					entry.fmt[g]->ToVcfString(output_buffer, 0);
 				}
 
-				for(U32 s = 1; s < this->global_header.GetNumberSamples(); ++s){
+				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
 					output_buffer += '\t';
-					entry.fmt[0]->to_vcf_string(output_buffer, s);
-					for(U32 g = 1; g < n_format_avail; ++g){
+					entry.fmt[0]->ToVcfString(output_buffer, s);
+					for(uint32_t g = 1; g < n_format_avail; ++g){
 						output_buffer += ':';
-						entry.fmt[g]->to_vcf_string(output_buffer, s);
+						entry.fmt[g]->ToVcfString(output_buffer, s);
 					}
 				}
 			}
@@ -361,7 +447,7 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 		const uint32_t n_filter_avail = entry.filter_ids->size();
 		if(n_filter_avail){
 			output_buffer += entry.filter_hdr[0]->id;
-			for(U32 j = 1; j < n_filter_avail; ++j){
+			for(uint32_t j = 1; j < n_filter_avail; ++j){
 				output_buffer += ';';
 				output_buffer += entry.filter_hdr[j]->id;
 			}
@@ -372,7 +458,7 @@ void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t
 	output_buffer += '\t';
 }
 
-U64 VariantReader::OutputVcfLinear(void){
+uint64_t VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
@@ -387,8 +473,8 @@ U64 VariantReader::OutputVcfLinear(void){
 		//objects->occ = &occ;
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
 
-		for(U32 i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.filter(entries[i], i) == false)
+		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			// Each entry evaluate occ if available.
@@ -408,24 +494,24 @@ U64 VariantReader::OutputVcfLinear(void){
 	return 0;
 }
 
-U64 VariantReader::OutputVcfSearch(void){
+uint64_t VariantReader::OutputVcfSearch(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 
-	for(U32 i = 0; i < this->interval_container.GetBlockList().size(); ++i){
+	for(uint32_t i = 0; i < this->interval_container.GetBlockList().size(); ++i){
 		this->GetBlock(this->interval_container.GetBlockList()[i]);
 
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 		io::BasicBuffer output_buffer(100000);
 
-		for(U32 i = 0; i < objects->meta_container->size(); ++i){
+		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
 				continue;
 
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			this->OuputVcfWrapper(output_buffer, entries[i]);
@@ -440,8 +526,13 @@ U64 VariantReader::OutputVcfSearch(void){
 	return 0;
 }
 
-U64 VariantReader::OutputRecords(void){
+uint64_t VariantReader::OutputRecords(void){
+	this->UpdateHeaderView();
 	this->interval_container.Build(this->global_header);
+
+	// Load encryption keychain if available.
+	if(this->settings.keychain_file.size())
+		this->LoadKeychainFile();
 
 	if(this->settings.use_htslib){
 		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());
@@ -455,14 +546,25 @@ U64 VariantReader::OutputRecords(void){
 	else return(this->OutputVcfLinear());
 }
 
-U64 VariantReader::OutputHtslibVcfLinear(void){
+uint64_t VariantReader::OutputHtslibVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	// Open a htslib file handle for the target output
 	// destination.
 	char hts_stream_type[2];
-	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
-	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+	hts_stream_type[0] = 'w';
+	hts_stream_type[1] = this->settings.output_type;
+	htsFile* fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+
+	// Add extra htslib compression threads if desired.
+	int n_extra_threads = std::thread::hardware_concurrency();
+	if(n_extra_threads){
+		int ret = hts_set_threads(fp, n_extra_threads);
+		if(ret < 0){
+			std::cerr << "failed to open multiple handles" << std::endl;
+			return 0;
+		}
+	}
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
@@ -483,8 +585,8 @@ U64 VariantReader::OutputHtslibVcfLinear(void){
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 
 		// Iterate over available records in this block.
-		for(U32 i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.filter(entries[i], i) == false)
+		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
@@ -519,7 +621,7 @@ U64 VariantReader::OutputHtslibVcfLinear(void){
 	return 0;
 }
 
-U64 VariantReader::OutputHtslibVcfSearch(void){
+uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	// Open a htslib file handle for the target output
@@ -527,6 +629,16 @@ U64 VariantReader::OutputHtslibVcfSearch(void){
 	char hts_stream_type[2];
 	hts_stream_type[0] = 'w'; hts_stream_type[1] = this->settings.output_type;
 	htsFile *fp = hts_open(this->settings.output.c_str(), hts_stream_type);
+
+	// Add extra htslib compression threads if desired.
+	int n_extra_threads = std::thread::hardware_concurrency();
+	if(n_extra_threads){
+		int ret = hts_set_threads(fp, n_extra_threads);
+		if(ret < 0){
+			std::cerr << "failed to open multiple handles" << std::endl;
+			return 0;
+		}
+	}
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
@@ -550,11 +662,11 @@ U64 VariantReader::OutputHtslibVcfSearch(void){
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
 
 		// Iterate over available records in this block.
-		for(U32 i = 0; i < objects->meta_container->size(); ++i){
+		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
 			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
 				continue;
 
-			if(this->variant_filters.filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(entries[i], i) == false)
 				continue;
 
 			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
@@ -593,7 +705,7 @@ void VariantReader::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& ent
 	if(entry.n_info){
 		const uint32_t n_info_avail = entry.info_ids->size();
 		if(n_info_avail){
-			for(U32 j = 0; j < n_info_avail; ++j){
+			for(uint32_t j = 0; j < n_info_avail; ++j){
 				if(entry.info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
 					bcf_update_info_flag(hdr, rec, entry.info_hdr[j]->id.data(), NULL, 1);
 				} else {
@@ -638,14 +750,14 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
 				entry.gt->UpdateHtslibGenotypes(rec, hdr);
-				for(U32 g = 1; g < n_format_avail; ++g)
+				for(uint32_t g = 1; g < n_format_avail; ++g)
 					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
 
 				entry.gt->d_exp = nullptr;
 			}
 			// All other cases.
 			else {
-				for(U32 g = 0; g < n_format_avail; ++g)
+				for(uint32_t g = 0; g < n_format_avail; ++g)
 					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
 			}
 		}
@@ -654,11 +766,146 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 
 void VariantReader::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const{
 	if(entry.n_filter){
-		for(U32 k = 0; k < entry.filter_ids->size(); ++k){
+		for(uint32_t k = 0; k < entry.filter_ids->size(); ++k){
 			int32_t tmpi = bcf_hdr_id2int(hdr, BCF_DT_ID, entry.filter_hdr[k]->id.data());
 			bcf_update_filter(hdr, rec, &tmpi, 1);
 		}
 	}
+}
+
+void VariantReader::UpdateHeaderView(void){
+	io::VcfExtra e;
+	e.key = "tachyon_viewVersion";
+	e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
+	e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+			+   SSLeay_version(SSLEAY_VERSION) + ","
+			+  "ZSTD-" + ZSTD_versionString()
+			+  "; timestamp=" + tachyon::utility::datetime();
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
+	e.key = "tachyon_viewCommand";
+	e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
+	e.key = "tachyon_viewCommandSettings";
+	e.value = this->GetSettings().get_settings_string();
+	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetGlobalHeader().extra_fields_.push_back(e);
+}
+
+bool VariantReader::Stats(void){
+	this->variant_container.AllocateGenotypeMemory();
+	// temp
+	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
+	//	return(0);
+	//}
+
+	/*
+	uint32_t n_blocks = 0;
+	for(uint32_t i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
+		n_blocks += this->GetIndex().index_.linear_[i].size();
+	}
+	uint32_t n_threads = std::thread::hardware_concurrency();
+
+	std::cerr << "blocks: " << n_blocks << " and threads " << n_threads << std::endl;
+
+	std::vector<std::pair<uint32_t, uint32_t>> workload(n_threads);
+	uint32_t n_cumulative = 0;
+	assert(n_threads != 0);
+	uint32_t n_step_size = n_blocks / n_threads;
+	for(uint32_t i = 0; i < n_threads - 1; ++i){
+		workload[i] = std::pair<uint32_t, uint32_t>(n_cumulative, n_cumulative + n_step_size);
+		n_cumulative += n_step_size;
+	}
+	workload.back().first = n_cumulative;
+	workload.back().second = n_blocks;
+
+	for(uint32_t i = 0; i < n_threads; ++i){
+		std::cerr << i << ": " << workload[i].first << "-" << workload[i].second << std::endl;
+	}
+
+	// Final solution.
+	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+
+	//
+	yon_stats_thread_pool pool(n_threads);
+	std::vector<std::thread*> threads(n_threads);
+	for(uint32_t i = 0; i < n_threads; ++i){
+		pool[i].reader      = new VariantReader(*this);
+		pool[i].block_from  = workload[i].first;
+		pool[i].block_to    = workload[i].second;
+		threads[i] = pool[i].Start();
+	}
+
+	for(uint32_t i = 0; i < n_threads; ++i) threads[i]->join();
+	std::cerr << "done joining" << std::endl;
+
+	return true;
+	*/
+	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+
+	// stupid test
+	//VariantReader v(*this);
+
+	while(this->NextBlock()){
+		//variant_container_type c = v.ReturnBlock();
+		//variant_container_type& c = this->GetCurrentContainer();
+		//c.AllocateGenotypeMemory();
+
+		// Move all data to new instance.
+		//variant_container_type c(std::move(this->variant_container));
+		//variant_container_type c;
+		//c = std::move(this->variant_container);
+		//variant_container_type c(this->variant_container);
+
+		objects_type* objects = this->variant_container.LoadObjects(this->block_settings);
+		yon1_t* entries = this->variant_container.LazyEvaluate(*objects);
+
+		// Debug
+		//std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
+
+		// Debug
+		//containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
+		//std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
+
+
+
+		// If occ table is built.
+		//objects->occ = &occ;
+		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
+
+		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
+			// Each entry evaluate occ if available.
+			//entries[i].occ = objects->occ;
+			//entries[i].EvaluateOcc();
+
+			const uint32_t n_format_avail = entries[i].format_ids->size();
+			if(n_format_avail > 0 && entries[i].is_loaded_gt){
+				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
+				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
+				//s.Update(entries[i]);
+			}
+		}
+
+		delete [] entries;
+		//objects->occ = nullptr;
+		delete objects;
+	}
+
+	io::BasicBuffer json_buffer(250000);
+	json_buffer += "{\"PSI\":{\n";
+	for(uint32_t i = 0; i < this->GetGlobalHeader().GetNumberSamples(); ++i){
+		s[i].LazyEvalute();
+		if(i != 0) json_buffer += ",\n";
+		s[i].ToJsonString(json_buffer, this->GetGlobalHeader().samples_[i]);
+	}
+	json_buffer += "\n}\n}\n";
+
+	//std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
+	std::cout.write(json_buffer.data(), json_buffer.size());
+	std::cout.flush();
+
+	return true;
 }
 
 }

@@ -39,6 +39,7 @@ BasicReader::BasicReader(const self_type& other) :
 	buffer_(new type[this->capacity_])
 {
 	memcpy(this->buffer_, other.buffer_, other.end_);
+	this->open();
 }
 
 bool BasicReader::open(std::string filename){

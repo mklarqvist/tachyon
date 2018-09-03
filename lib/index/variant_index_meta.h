@@ -1,73 +1,44 @@
 #ifndef INDEX_INDEX_META_CONTAINER_H_
 #define INDEX_INDEX_META_CONTAINER_H_
 
-#include "index_index_entry.h"
+#include "variant_index_meta_entry.h"
+#include "containers/components/generic_iterator.h"
 
 namespace tachyon{
 namespace index{
 
-class IndexMetaContainer{
-private:
-	typedef IndexMetaContainer self_type;
+class VariantIndexMeta{
+public:
+	typedef VariantIndexMeta self_type;
     typedef std::size_t        size_type;
-    typedef IndexIndexEntry    value_type;
+    typedef VariantIndexMetaEntry    value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
 
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
+
 public:
-    IndexMetaContainer() :
+    VariantIndexMeta() :
 		n_entries(0),
 		n_capacity(1000),
 		__entries(new value_type[this->n_capacity])
 	{}
 
-    IndexMetaContainer(const self_type& other) :
+    VariantIndexMeta(const self_type& other) :
     	n_entries(other.n_entries),
 		n_capacity(other.n_capacity),
 		__entries(new value_type[this->n_capacity])
     {
-    	for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+    	for(uint32_t i = 0; i < this->size(); ++i)
+    		this->__entries[i] = other.__entries[i];
     }
 
-	~IndexMetaContainer(){
+	~VariantIndexMeta(){
 		delete [] this->__entries;
 	}
-
-	class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->__entries[position]); }
@@ -111,16 +82,34 @@ public:
 		this->__entries = new value_type[this->capacity()];
 
 		// Lift over values from old addresses
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			this->__entries[i] = temp[i];
 
 		delete [] temp;
 	}
 
+	void resize(const uint32_t new_size){
+		pointer temp = this->__entries;
+
+		this->n_capacity = new_size;
+		this->__entries = new value_type[this->capacity()];
+
+		// Lift over values from old addresses
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->__entries[i] = temp[i];
+
+		delete [] temp;
+	}
+
+	void reserve(const uint32_t new_size){
+		this->resize(new_size);
+		this->n_entries = new_size;
+	}
+
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
 		stream.write(reinterpret_cast<const char*>(&entry.n_entries), sizeof(size_type));
-		for(U32 i = 0; i < entry.size(); ++i) stream << entry[i];
+		for(uint32_t i = 0; i < entry.size(); ++i) stream << entry[i];
 
 		return(stream);
 	}
@@ -134,7 +123,7 @@ private:
 			entry.__entries = new value_type[entry.capacity()];
 		}
 
-		for(U32 i = 0; i < entry.size(); ++i)
+		for(uint32_t i = 0; i < entry.size(); ++i)
 			stream >> entry[i];
 
 		return(stream);

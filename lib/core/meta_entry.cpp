@@ -41,7 +41,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 		this->alleles[1].allele[0] = '.';
 		this->alleles[1].l_allele = 1;
 	} else {
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			new( &this->alleles[i] ) allele_type( );
 			this->alleles[i](std::string(record->d.allele[i]));
 		}
@@ -53,7 +53,7 @@ MetaEntry::MetaEntry(const bcf1_t* record) :
 		this->controller.simple_snv = true;
 }
 
-MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
+MetaEntry::MetaEntry(const bcf1_t* record, const uint64_t position_offset) :
 	n_base_ploidy(0),
 	n_alleles(record->n_allele),
 	//n_alleles(0),
@@ -79,7 +79,7 @@ MetaEntry::MetaEntry(const bcf1_t* record, const U64 position_offset) :
 		this->alleles[1].allele[0] = '.';
 		this->alleles[1].l_allele = 1;
 	} else {
-		for(U32 i = 0; i < this->n_alleles; ++i){
+		for(uint32_t i = 0; i < this->n_alleles; ++i){
 			new( &this->alleles[i] ) allele_type( );
 			this->alleles[i](std::string(record->d.allele[i]));
 		}
@@ -103,7 +103,7 @@ MetaEntry::MetaEntry(const self_type& other) :
 	position(other.position),
 	alleles(static_cast<allele_type*>(::operator new[](this->n_alleles*sizeof(allele_type))))
 {
-	for(U32 i = 0; i < this->n_alleles; ++i)
+	for(uint32_t i = 0; i < this->n_alleles; ++i)
 		new( &this->alleles[i] ) allele_type( other.alleles[i] );
 }
 
@@ -125,9 +125,9 @@ bool MetaEntry::UsePackedRefAlt(void) const{
 	return false;
 }
 
-BYTE MetaEntry::PackRefAltByte(void) const{
+uint8_t MetaEntry::PackRefAltByte(void) const{
 	assert(this->UsePackedRefAlt());
-	BYTE ref_alt = 0; // start out with empty
+	uint8_t ref_alt = 0; // start out with empty
 
 	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
 		ref_alt ^= constants::REF_ALT_NON_REF << 4;

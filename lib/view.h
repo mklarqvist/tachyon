@@ -29,8 +29,6 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 #include "variant_reader.h"
 
-#include "core/occ.h"
-
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<
@@ -148,75 +146,75 @@ int view(int argc, char** argv){
 			settings.keychain_file = std::string(optarg);
 			break;
 		case 'l':
-			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
+			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'L':
-			filters.add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'q':
-			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
+			filters.Add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
 			break;
 		case 'Q':
-			filters.add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.Add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'm':
-			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
+			filters.Add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_GREATER);
 			break;
 		case 'M':
-			filters.add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.Add(tachyon::YON_FILTER_NUMBER_ALT_ALLELES, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'a':
-			filters.add(tachyon::YON_FILTER_REFERENCE_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
+			filters.Add(tachyon::YON_FILTER_REFERENCE_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'A':
-			filters.add(tachyon::YON_FILTER_ALT_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
+			filters.Add(tachyon::YON_FILTER_ALT_ALLELE, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'n':
-			filters.add(tachyon::YON_FILTER_NAME, std::string(optarg), tachyon::YON_CMP_REGEX);
+			filters.Add(tachyon::YON_FILTER_NAME, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
 		case 'c':
-			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
+			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
 			filters.require_genotypes = true;
 			break;
 		case 'C':
-			filters.add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
+			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'p':
-			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'P':
-			filters.add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'j':
-			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_MIXED_PHASING, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'J':
-			filters.add(tachyon::YON_FILTER_MIXED_PHASING, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_MIXED_PHASING, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'w':
-			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'W':
-			filters.add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'u':
-			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
+			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
 			filters.require_genotypes = true;
 			break;
 		case 'U':
-			filters.add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'z':
-			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'Z':
-			filters.add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'f':
 			interpret_commands.push_back(std::string(optarg));
@@ -243,11 +241,11 @@ int view(int argc, char** argv){
 			settings.annotate_genotypes = true;
 			break;
 		case 'e':
-			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 		case 'E':
-			filters.add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
+			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
 			filters.require_genotypes = true;
 			break;
 
@@ -268,7 +266,8 @@ int view(int argc, char** argv){
 	}
 
 	if(settings.header_only){
-		reader.PrintHeaderVCF();
+		reader.UpdateHeaderView();
+		reader.GetGlobalHeader().PrintVcfHeader(std::cout);
 		return(0);
 	}
 
@@ -314,15 +313,12 @@ int view(int argc, char** argv){
 		reader.GetGlobalHeader().AddGenotypeAnnotationFields();
 	}
 
-	if(filters.doRequireGenotypes()){
+	if(filters.HasRequireGenotypes()){
 		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
 		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
 	}
 
 	reader.GetSettings() = settings;
-
-	tachyon::algorithm::Timer timer;
-	timer.Start();
 
 	if(settings.show_header) reader.GetBlockSettings().show_vcf_header = true;
 	else reader.GetBlockSettings().show_vcf_header = false;

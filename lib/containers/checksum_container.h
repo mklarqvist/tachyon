@@ -10,7 +10,7 @@ namespace tachyon{
 namespace containers{
 
 class ChecksumContainer {
-private:
+public:
 	typedef ChecksumContainer        self_type;
     typedef std::size_t              size_type;
     typedef algorithm::DigitalDigestPair  value_type;
@@ -28,21 +28,21 @@ private:
 public:
 	ChecksumContainer(void);
 	ChecksumContainer(const size_type capacity);
-	ChecksumContainer(const char* const data, const U32 l_data);
+	ChecksumContainer(const char* const data, const uint32_t l_data);
 	ChecksumContainer(const buffer_type& buffer);
 	~ChecksumContainer(void);
 
     // Element access
-    inline reference at(const size_type& position){ return(this->__entries[position]); }
-    inline const_reference at(const size_type& position) const{ return(this->__entries[position]); }
-    inline reference operator[](const size_type& position){ return(this->__entries[position]); }
-    inline const_reference operator[](const size_type& position) const{ return(this->__entries[position]); }
-    inline pointer data(void){ return(this->__entries); }
-    inline const_pointer data(void) const{ return(this->__entries); }
-    inline reference front(void){ return(this->__entries[0]); }
-    inline const_reference front(void) const{ return(this->__entries[0]); }
-    inline reference back(void){ return(this->__entries[this->n_entries - 1]); }
-    inline const_reference back(void) const{ return(this->__entries[this->n_entries - 1]); }
+    inline reference at(const size_type& position){ return(this->entries_[position]); }
+    inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
+    inline reference operator[](const size_type& position){ return(this->entries_[position]); }
+    inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
+    inline pointer data(void){ return(this->entries_); }
+    inline const_pointer data(void) const{ return(this->entries_); }
+    inline reference front(void){ return(this->entries_[0]); }
+    inline const_reference front(void) const{ return(this->entries_[0]); }
+    inline reference back(void){ return(this->entries_[this->n_entries - 1]); }
+    inline const_reference back(void) const{ return(this->entries_[this->n_entries - 1]); }
 
     // Capacity
     inline bool empty(void) const{ return(this->n_entries == 0); }
@@ -50,12 +50,12 @@ public:
     inline const size_type& capacity(void) const{ return(this->n_capacity); }
 
     // Iterator
-    inline iterator begin(){ return iterator(&this->__entries[0]); }
-    inline iterator end(){ return iterator(&this->__entries[this->n_entries]); }
-    inline const_iterator begin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator end() const{ return const_iterator(&this->__entries[this->n_entries]); }
-    inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
-    inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
+    inline iterator begin(){ return iterator(&this->entries_[0]); }
+    inline iterator end(){ return iterator(&this->entries_[this->n_entries]); }
+    inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
+    inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries]); }
+    inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
+    inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries]); }
 
     // Overload
     /**<
@@ -63,7 +63,7 @@ public:
      * @param n_entries Number of entries to allocate
      * @return          Returns TRUE if successful or FALSE otherwise
      */
-    bool allocate(const size_type n_entries);
+    bool Allocate(const size_type n_entries);
 
     /**<
      * Add an element to the container
@@ -75,7 +75,7 @@ public:
      * Finalize all digital digest controllers in the container.
      * This functions has to be called prior to reading/writing to disk
      */
-    void finalize(void);
+    void Finalize(void);
 
     /**<
      * Updates all target digital digest records in the container given
@@ -84,30 +84,15 @@ public:
      * @param header   Header
      * @return         Returns TRUE upon success or FALSE otherwise
      */
-	bool update(const block_type& block, const header_type& header);
+	bool Update(const block_type& block, const header_type& header);
 
-private:
-	friend std::ostream& operator<<(std::ostream& out, const self_type& container){
-		out.write((const char* const)reinterpret_cast<const size_type* const>(&container.n_entries), sizeof(size_type));
-		for(size_type i = 0; i < container.size(); ++i)
-			out << container[i];
-
-		return(out);
-	}
-
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& container){
-		stream.read((char*)reinterpret_cast<size_type*>(&container.n_entries), sizeof(size_type));
-		container.allocate(container.n_entries);
-		for(size_type i = 0; i < container.size(); ++i)
-			stream >> container[i];
-
-		return(stream);
-	}
+	friend std::ostream& operator<<(std::ostream& out, const self_type& container);
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& container);
 
 private:
     size_t  n_entries;
     size_t  n_capacity;
-    pointer __entries;
+    pointer entries_;
 };
 
 }

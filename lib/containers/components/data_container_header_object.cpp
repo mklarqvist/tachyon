@@ -82,27 +82,84 @@ bool DataContainerHeaderObject::operator==(const self_type& other) const{
 	if(this->eLength    != other.eLength)    return false;
 	if(this->global_key != other.global_key) return false;
 	if(this->controller != other.controller) return false;
-	for(U32 i = 0; i < MD5_DIGEST_LENGTH; ++i)
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i)
 		if(this->crc[i] != other.crc[i]) return false;
 
 	return true;
 }
 
-SBYTE DataContainerHeaderObject::GetPrimitiveWidth(void) const{
+int8_t DataContainerHeaderObject::GetPrimitiveWidth(void) const{
 	// We do not care about signedness here
 	switch(this->controller.type){
 	case(YON_TYPE_UNKNOWN):
 	case(YON_TYPE_STRUCT): return(-1);
 	case(YON_TYPE_BOOLEAN):
 	case(YON_TYPE_CHAR):   return(sizeof(char));
-	case(YON_TYPE_8B):     return(sizeof(BYTE));
-	case(YON_TYPE_16B):    return(sizeof(U16));
-	case(YON_TYPE_32B):    return(sizeof(U32));
-	case(YON_TYPE_64B):    return(sizeof(U64));
+	case(YON_TYPE_8B):     return(sizeof(uint8_t));
+	case(YON_TYPE_16B):    return(sizeof(uint16_t));
+	case(YON_TYPE_32B):    return(sizeof(uint32_t));
+	case(YON_TYPE_64B):    return(sizeof(uint64_t));
 	case(YON_TYPE_FLOAT):  return(sizeof(float));
 	case(YON_TYPE_DOUBLE): return(sizeof(double));
 	}
 	return 0;
+}
+
+bool DataContainerHeaderObject::CheckChecksum(const uint8_t* compare) const{
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i){
+		if(compare[i] != this->crc[i])
+			return false;
+	}
+	return true;
+}
+
+io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const DataContainerHeaderObject& entry){
+	buffer << entry.controller;
+	buffer += entry.stride;
+	buffer += entry.offset;
+	buffer += entry.cLength;
+	buffer += entry.uLength;
+	buffer += entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer += entry.crc[i];
+	buffer += entry.global_key;
+	return(buffer);
+}
+
+std::ostream& operator<<(std::ostream& stream, const DataContainerHeaderObject& entry){
+	stream << entry.controller;
+	stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(int32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.crc[0]),    sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(int32_t));
+	return(stream);
+}
+
+io::BasicBuffer& operator>>(io::BasicBuffer& buffer, DataContainerHeaderObject& entry){
+	buffer >> entry.controller;
+	buffer >> entry.stride;
+	buffer >> entry.offset;
+	buffer >> entry.cLength;
+	buffer >> entry.uLength;
+	buffer >> entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer >> entry.crc[i];
+	buffer >> entry.global_key;
+	return(buffer);
+}
+
+std::ifstream& operator>>(std::ifstream& stream, DataContainerHeaderObject& entry){
+	stream >> entry.controller;
+	stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(int32_t));
+	stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.crc[0]),     sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(int32_t));
+
+	return(stream);
 }
 
 }

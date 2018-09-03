@@ -3,29 +3,29 @@
 namespace tachyon{
 namespace utility{
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const BYTE* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	buffer.AddReadble((U32)data[0]);
-	for(U32 i = 1; i < n_data; ++i){
+	buffer.AddReadble((uint32_t)data[0]);
+	for(uint32_t i = 1; i < n_data; ++i){
 		buffer += ',';
-		buffer.AddReadble((U32)data[i]);
+		buffer.AddReadble((uint32_t)data[i]);
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U16* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
 	buffer.AddReadble(data[0]);
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		buffer += ',';
 		buffer.AddReadble(data[i]);
 	}
@@ -33,14 +33,14 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U16* data, const s
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
 	buffer.AddReadble(data[0]);
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		buffer += ',';
 		buffer.AddReadble(data[i]);
 	}
@@ -48,14 +48,14 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32* data, const s
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U64* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
 	buffer.AddReadble(data[0]);
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		buffer += ',';
 		buffer.AddReadble(data[i]);
 	}
@@ -63,13 +63,13 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U64* data, const s
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const SBYTE* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const BYTE* const ref = reinterpret_cast<const BYTE* const>(data);
+	const uint8_t* const ref = reinterpret_cast<const uint8_t* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_BYTE_EOV){
@@ -79,28 +79,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const SBYTE* data, const
 
 	// First value
 	if(ref[0] == YON_BYTE_MISSING) buffer += '.';
-	else buffer.AddReadble((S32)data[0]);
+	else buffer.AddReadble((int32_t)data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		if(ref[i] == YON_BYTE_MISSING) buffer += ",.";
 		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble((S32)data[i]);
+			buffer.AddReadble((int32_t)data[i]);
 		}
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S16* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U16* const ref = reinterpret_cast<const U16* const>(data);
+	const uint16_t* const ref = reinterpret_cast<const uint16_t* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_SHORT_EOV){
@@ -110,28 +110,28 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S16* data, const s
 
 	// First value
 	if(ref[0] == YON_SHORT_MISSING) buffer += '.';
-	else buffer.AddReadble((S32)data[0]);
+	else buffer.AddReadble((int32_t)data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		if(ref[i] == YON_SHORT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
 		else {
 			buffer += ',';
-			buffer.AddReadble((S32)data[i]);
+			buffer.AddReadble((int32_t)data[i]);
 		}
 	}
 
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S32* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(data);
+	const uint32_t* const ref = reinterpret_cast<const uint32_t* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_INT_EOV){
@@ -144,7 +144,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S32* data, const s
 	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		if(ref[i] == YON_INT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_INT_EOV){ return buffer; }
 		else {
@@ -157,14 +157,14 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const S32* data, const s
 }
 
 // Special case
-io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
+io::BasicBuffer& ToVcfString_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
 	buffer += data[0];
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		buffer += ',';
 		buffer += data[i];
 	}
@@ -172,13 +172,13 @@ io::BasicBuffer& to_vcf_string_char(io::BasicBuffer& buffer, const char* data, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const float* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(data);
+	const uint32_t* const ref = reinterpret_cast<const uint32_t* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_FLOAT_EOV){
@@ -191,7 +191,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const
 	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
 		else {
@@ -203,13 +203,13 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const float* data, const
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, const size_t n_data){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const double* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
 	}
 
-	const U32* const ref = reinterpret_cast<const U32* const>(data);
+	const uint32_t* const ref = reinterpret_cast<const uint32_t* const>(data);
 
 	// If the first value is end-of-vector then return
 	if(ref[0] == YON_FLOAT_EOV){
@@ -222,7 +222,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, cons
 	else buffer.AddReadble(data[0]);
 
 	// Remainder values
-	for(U32 i = 1; i < n_data; ++i){
+	for(uint32_t i = 1; i < n_data; ++i){
 		if(ref[i] == YON_FLOAT_MISSING) buffer += ",.";
 		else if(ref[i] == YON_FLOAT_EOV){ return buffer; }
 		else {
@@ -234,12 +234,12 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const double* data, cons
 	return(buffer);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const std::string& string){
+std::ostream& ToVcfString(std::ostream& stream, const std::string& string){
 	stream << string;
 	return(stream);
 }
 
-std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+std::ostream& ToVcfString(std::ostream& stream, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
 	stream.write(&header.GetContig(meta_entry.contigID)->name[0], header.GetContig(meta_entry.contigID)->name.size()) << '\t';
 	stream << meta_entry.position + 1 << delimiter;
 
@@ -251,7 +251,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const c
 		//stream << meta_entry.alleles[0].l_allele;
 		stream.put(delimiter);
 		stream.write(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
-		for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+		for(uint32_t i = 2; i < meta_entry.n_alleles; ++i){
 			stream.put(',');
 			stream.write(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
@@ -271,7 +271,7 @@ std::ostream& to_vcf_string(std::ostream& stream, const char& delimiter, const c
 	return(stream);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header){
 	buffer += header.GetContig(meta_entry.contigID)->name;
 	buffer += delimiter;
 	buffer.AddReadble(meta_entry.position + 1);
@@ -284,7 +284,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 		buffer.Add(meta_entry.alleles[0].allele, meta_entry.alleles[0].l_allele);
 		buffer += delimiter;
 		buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
-		for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+		for(uint32_t i = 2; i < meta_entry.n_alleles; ++i){
 			buffer += ',';
 			buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 		}
@@ -306,7 +306,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	return(buffer);
 }
 
-io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
+io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const char& delimiter, const core::MetaEntry& meta_entry, const VariantHeader& header, const DataBlockSettings& controller){
 	//if(controller.contig.display){
 		buffer += header.GetContig(meta_entry.contigID)->name;
 		buffer += delimiter;
@@ -332,7 +332,7 @@ io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const char& delimiter, c
 	if(controller.display_alt){
 		if(meta_entry.n_alleles){
 			buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
-			for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+			for(uint32_t i = 2; i < meta_entry.n_alleles; ++i){
 				buffer += ',';
 				buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
 			}
@@ -405,7 +405,7 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 			buffer += '"';
 			buffer.Add(meta_entry.alleles[1].allele, meta_entry.alleles[1].l_allele);
 			buffer += '"';
-			for(U32 i = 2; i < meta_entry.n_alleles; ++i){
+			for(uint32_t i = 2; i < meta_entry.n_alleles; ++i){
 				buffer += ',';
 				buffer += '"';
 				buffer.Add(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
@@ -429,28 +429,28 @@ io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const char& delimiter, 
 	return(buffer);
 }
 
-int32_t* FormatDataHtslib(const BYTE* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+int32_t* FormatDataHtslib(const uint8_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const U16* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+int32_t* FormatDataHtslib(const uint16_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const U32* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+int32_t* FormatDataHtslib(const uint32_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const U64* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+int32_t* FormatDataHtslib(const uint64_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const SBYTE* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i){
+int32_t* FormatDataHtslib(const int8_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i){
 		if(src[i] == INT8_MIN)  { dst[i] = bcf_int32_missing; }
 		else if(src[i] == INT8_MIN+1){ dst[i] = bcf_int32_vector_end; }
 		else dst[i] = src[i];
@@ -458,8 +458,8 @@ int32_t* FormatDataHtslib(const SBYTE* const src, int32_t* dst, const size_t n_e
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const S16* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i){
+int32_t* FormatDataHtslib(const int16_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i){
 		if(src[i] == INT16_MIN)  { dst[i] = bcf_int32_missing; }
 		else if(src[i] == INT16_MIN+1){ dst[i] = bcf_int32_vector_end; }
 		else dst[i] = src[i];
@@ -467,8 +467,8 @@ int32_t* FormatDataHtslib(const S16* const src, int32_t* dst, const size_t n_ent
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const S32* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i){
+int32_t* FormatDataHtslib(const int32_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i){
 		if(src[i] == INT32_MIN)  { dst[i] = bcf_int32_missing; }
 		else if(src[i] == INT32_MIN+1){ dst[i] = bcf_int32_vector_end; }
 		else dst[i] = src[i];
@@ -476,8 +476,8 @@ int32_t* FormatDataHtslib(const S32* const src, int32_t* dst, const size_t n_ent
 	return(dst);
 }
 
-int32_t* FormatDataHtslib(const S64* const src, int32_t* dst, const size_t n_entries){
-	for(U32 i = 0; i < n_entries; ++i) dst[i] = src[i];
+int32_t* FormatDataHtslib(const int64_t* const src, int32_t* dst, const size_t n_entries){
+	for(uint32_t i = 0; i < n_entries; ++i) dst[i] = src[i];
 	return(dst);
 }
 
@@ -494,7 +494,7 @@ int32_t* FormatDataHtslib(const double* const src, int32_t* dst, const size_t n_
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const BYTE* const data,
+                                  const uint8_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -507,7 +507,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const U16* const data,
+                                  const uint16_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -520,7 +520,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const U32* const data,
+                                  const uint32_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -533,7 +533,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const U64* const data,
+                                  const uint64_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -546,7 +546,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const SBYTE* const data,
+                                  const int8_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -559,7 +559,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const S16* const data,
+                                  const int16_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];
@@ -572,7 +572,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const S32* const data,
+                                  const int32_t* const data,
                                   const size_t n_entries)
 {
 	bcf_update_info_int32(hdr, rec, tag.data(), data, n_entries);
@@ -582,7 +582,7 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
                                   bcf_hdr_t* hdr,
                                   const std::string& tag,
-                                  const S64* const data,
+                                  const int64_t* const data,
                                   const size_t n_entries)
 {
 	int32_t* tmpi = new int32_t[n_entries];

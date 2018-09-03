@@ -4,8 +4,6 @@
 #include <cmath>
 #include <limits>
 
-#include "support/type_definitions.h"
-
 namespace tachyon{
 namespace math{
 

@@ -32,6 +32,61 @@ VcfContainer::~VcfContainer(){
 	}
 }
 
+VcfContainer::VcfContainer(self_type&& other) noexcept :
+	n_carry_over_(0),
+	n_entries_(other.n_entries_),
+	n_capacity_(other.n_capacity_),
+	entries_(other.entries_)
+{
+	other.entries_ = new pointer[other.n_capacity_];
+	for(size_type i = 0; i < other.capacity(); ++i)
+		other.entries_[i] = nullptr;
+
+	if(other.n_carry_over_){
+		other.entries_[0] = this->at(this->size()-1);
+		assert(this->at(this->size()-1) != nullptr);
+		this->entries_[this->size()-1] = nullptr;
+		other.n_carry_over_ = 0;
+		other.n_entries_    = 1;
+		--this->n_entries_;
+	} else {
+		other.n_entries_ = 0;
+		other.n_carry_over_ = 0;
+	}
+}
+
+VcfContainer& VcfContainer::operator=(self_type&& other) noexcept
+{
+	if(this->entries_ != nullptr){
+		for(std::size_t i = 0; i < this->n_entries_; ++i)
+			bcf_destroy(this->entries_[i]);
+
+		::operator delete[](static_cast<void*>(this->entries_));
+	}
+
+	this->n_carry_over_ = 0;
+	this->n_capacity_   = other.n_capacity_;
+	this->entries_      = other.entries_;
+	this->n_entries_    = other.n_entries_;
+
+	other.entries_ = new pointer[other.n_capacity_];
+	for(size_type i = 0; i < other.capacity(); ++i)
+		other.entries_[i] = nullptr;
+
+	if(other.n_carry_over_){
+		other.entries_[0] = this->at(this->size()-1);
+		assert(this->at(this->size()-1) != nullptr);
+		this->entries_[this->size()-1] = nullptr;
+		other.n_carry_over_ = 0;
+		other.n_entries_    = 1;
+		--this->n_entries_;
+	} else {
+		other.n_entries_ = 0;
+		other.n_carry_over_ = 0;
+	}
+	return(*this);
+}
+
 void VcfContainer::resize(const size_t new_size){
 	if(new_size < this->capacity()){
 		for(size_t i = new_size; i < this->n_entries_; ++i)
@@ -52,7 +107,8 @@ void VcfContainer::resize(const size_t new_size){
 
 bool VcfContainer::GetVariants(const int32_t n_variants,
                                const int64_t n_bases,
-                               std::unique_ptr<io::VcfReader>& reader)
+                               std::unique_ptr<io::VcfReader>& reader,
+							   const int unpack_level)
 {
 	// Make sure enough records are available for
 	// overloading. If this is not the case we
@@ -70,7 +126,7 @@ bool VcfContainer::GetVariants(const int32_t n_variants,
 	// the bcf1_t record.
 	VcfContainer::pointer bcf1_ = this->end();
 	if(bcf1_ == nullptr) bcf1_  = bcf_init();
-	if(reader->next(bcf1_) == false)
+	if(reader->next(bcf1_, unpack_level) == false)
 		return false;
 
 	// Push the overloaded bcf1_t structure to this
@@ -94,7 +150,7 @@ bool VcfContainer::GetVariants(const int32_t n_variants,
 		bcf1_ = this->end();
 		if(bcf1_ == nullptr) bcf1_  = bcf_init();
 
-		if(reader->next(bcf1_) == false)
+		if(reader->next(bcf1_, unpack_level) == false)
 			return(this->size());
 
 		*this += bcf1_;

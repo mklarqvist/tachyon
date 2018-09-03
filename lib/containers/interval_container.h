@@ -4,7 +4,6 @@
 #include <regex>
 
 #include "support/magic_constants.h"
-#include "support/type_definitions.h"
 #include "support/helpers.h"
 #include "third_party/intervalTree.h"
 #include "index/index.h"
@@ -19,14 +18,14 @@ class IntervalContainer {
 public:
 	typedef IntervalContainer      self_type;
     typedef std::size_t            size_type;
-    typedef algorithm::Interval<U32, S64> interval_type;
-    typedef algorithm::IntervalTree<U32, S64>  value_type;
+    typedef algorithm::Interval<uint32_t, int64_t> interval_type;
+    typedef algorithm::IntervalTree<uint32_t, int64_t>  value_type;
     typedef value_type&            reference;
     typedef const value_type&      const_reference;
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
     typedef index::Index           index_type;
-    typedef index::IndexEntry      index_entry_type;
+    typedef index::VariantIndexEntry      index_entry_type;
     typedef VariantHeader          header_type;
     typedef core::MetaEntry        meta_entry_type;
 
@@ -35,7 +34,11 @@ public:
 
 public:
     IntervalContainer();
+    IntervalContainer(const self_type& other);
+    IntervalContainer(self_type&& other) noexcept;
     ~IntervalContainer(void);
+    IntervalContainer& operator=(const self_type& other);
+    IntervalContainer& operator=(self_type&& other) noexcept;
 
     // Element access
     inline reference at(const size_type& position){ return(this->__entries[position]); }
@@ -75,11 +78,16 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	bool ParseIntervals(std::vector<std::string>& interval_strings, const header_type& header, const index_type& index);
+	bool ParseIntervals(std::vector<std::string>& interval_strings,
+	                    const header_type& header,
+	                    const index_type& index);
 
 	bool Build(const header_type& header);
 
-	inline std::vector<interval_type> FindOverlaps(const U32& contigID, const S64& start_position, const S64& end_position) const{
+	inline std::vector<interval_type> FindOverlaps(const uint32_t& contigID,
+	                                               const int64_t& start_position,
+	                                               const int64_t& end_position) const
+	{
 		if(contigID > this->size()) return(std::vector<interval_type>());
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
@@ -93,7 +101,7 @@ private:
 	void DedupeBlockList(void);
 
 private:
-	U32 n_intervals_;
+	uint32_t n_intervals_;
     std::vector<std::string>   interval_strings_;
     std::vector< std::vector<interval_type> > interval_list_;
     std::vector<index_entry_type> block_list_;

@@ -41,7 +41,7 @@ int main(int argc, char** argv){
 
 	// Literal string input line
 	tachyon::constants::LITERAL_COMMAND_LINE = tachyon::constants::PROGRAM_NAME;
-	for(U32 i = 1; i < argc; ++i)
+	for(uint32_t i = 1; i < argc; ++i)
 		tachyon::constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
 	const std::string subroutine(argv[1]);
@@ -51,7 +51,7 @@ int main(int argc, char** argv){
 	} else if(strncmp(subroutine.data(), "view", 4) == 0 && subroutine.size() == 4){
 		return(view(argc, argv));
 	} else if(strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5){
-		std::cerr << "Not implemented" << std::endl;
+		return(stats(argc, argv));
 		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << "Not implemented" << std::endl;

@@ -30,7 +30,7 @@ bool yon_occ::ReadTable(const std::string file_name,
 		}
 
 		// Iterate over tokens.
-		for(U32 i = 1; i < params.size(); ++i){
+		for(uint32_t i = 1; i < params.size(); ++i){
 			map_type::const_iterator it = this->map.find(params[i]);
 			if(it == this->map.end()){
 				// Not already set
@@ -58,9 +58,9 @@ bool yon_occ::BuildTable(void){
 	this->occ = std::vector< std::vector<uint32_t> >(this->table.size(), std::vector<uint32_t>( this->table[0].size(), 0));
 	this->cum_sums = std::vector< uint32_t >( this->occ.size() );
 
-	for(U32 i = 0; i < this->table.size(); ++i){
+	for(uint32_t i = 0; i < this->table.size(); ++i){
 		assert(this->table[i][0] == 0);
-		for(U32 j = 1; j < this->occ[i].size(); ++j)
+		for(uint32_t j = 1; j < this->occ[i].size(); ++j)
 			this->occ[i][j] += this->occ[i][j-1] + this->table[i][j];
 
 		this->cum_sums[i] = this->occ[i].back();
@@ -74,14 +74,14 @@ bool yon_occ::BuildTable(const yon_gt_ppa& ppa){
 		return false;
 	}
 
-	assert(ppa.n_samples + 1 == this->table[0].size());
+	assert(ppa.n_s + 1 == this->table[0].size());
 
 	this->occ = std::vector< std::vector<uint32_t> >(this->table.size(), std::vector<uint32_t>( this->table[0].size(), 0));
 	this->cum_sums = std::vector< uint32_t >( this->occ.size() );
 
-	for(U32 i = 0; i < this->table.size(); ++i){
+	for(uint32_t i = 0; i < this->table.size(); ++i){
 		assert(this->table[i][0] == 0);
-		for(U32 j = 1; j < this->occ[i].size(); ++j)
+		for(uint32_t j = 1; j < this->occ[i].size(); ++j)
 			this->occ[i][j] += this->occ[i][j - 1] + this->table[i][ppa[j - 1] + 1];
 
 		assert(this->occ[i][0] == 0);

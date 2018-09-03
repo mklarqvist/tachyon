@@ -6,30 +6,58 @@
 namespace tachyon{
 namespace support{
 
-struct VariantImporterStatsObject{
+struct VariantImporterStatsObject {
 	typedef VariantImporterStatsObject self_type;
-	typedef containers::DataContainer data_container_type;
+	typedef containers::DataContainer  data_container_type;
 
-	VariantImporterStatsObject(void) : cost_uncompressed(0), cost_compressed(0){}
+	VariantImporterStatsObject(void) :
+		cost_uncompressed(0),
+		cost_strides(0),
+		cost_compressed(0),
+		cost_strides_compressed(0),
+		cost_bcf(0)
+	{}
+
 	~VariantImporterStatsObject(){}
 
-	void operator+=(const data_container_type& container){
-		this->cost_uncompressed += container.GetObjectSizeUncompressed();
-		this->cost_compressed   += container.GetObjectSize();
+	self_type& operator+=(const self_type& other){
+		this->cost_compressed += other.cost_compressed;
+		this->cost_strides += other.cost_strides;
+		this->cost_strides_compressed += other.cost_strides_compressed;
+		this->cost_uncompressed += other.cost_uncompressed;
+		this->cost_bcf += other.cost_bcf;
+		return(*this);
+	}
+
+	self_type& operator+=(const data_container_type& container){
+		this->cost_uncompressed += container.data_uncompressed.size();
+		if(container.header.data_header.HasMixedStride())
+			this->cost_strides += container.strides_uncompressed.size();
+
+		this->cost_compressed   += container.data.size();
+		if(container.header.data_header.HasMixedStride())
+			this->cost_strides_compressed += container.strides.size();
+
+		return(*this);
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed << '\t' <<
-				(entry.cost_compressed ? (double)entry.cost_uncompressed/entry.cost_compressed : 0);
+		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed <<
+				'\t' << entry.cost_strides_compressed << "\t" << entry.cost_strides <<
+				'\t' << (entry.cost_compressed ? (double)(entry.cost_uncompressed)/(entry.cost_compressed) : 0) <<
+				'\t' << entry.cost_bcf << '\t' << (entry.cost_compressed ? (double)entry.cost_bcf/(entry.cost_compressed) : 0);
 		return(stream);
 	}
 
-	U64 cost_uncompressed;
-	U64 cost_compressed;
+	uint64_t cost_uncompressed;
+	uint64_t cost_strides;
+	uint64_t cost_compressed;
+	uint64_t cost_strides_compressed;
+	uint64_t cost_bcf;
 };
 
 class VariantImporterContainerStats{
-private:
+public:
 	typedef VariantImporterContainerStats self_type;
 	typedef VariantImporterStatsObject    value_type;
     typedef std::size_t                   size_type;
@@ -41,11 +69,9 @@ private:
 public:
     VariantImporterContainerStats() :
     	n_entries_(0),
-		n_capacity_(200),
-		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+		n_capacity_(0),
+		entries_(nullptr)
     {
-    	for(U32 i = 0; i < this->capacity(); ++i)
-    		new( &this->entries_[i] ) value_type( );
     }
 
     VariantImporterContainerStats(const size_type start_capacity) :
@@ -53,8 +79,7 @@ public:
 		n_capacity_(start_capacity),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-    	for(U32 i = 0; i < this->capacity(); ++i)
-			new( &this->entries_[i] ) value_type( );
+
     }
 
     ~VariantImporterContainerStats(){
@@ -64,39 +89,52 @@ public:
 		::operator delete[](static_cast<void*>(this->entries_));
     }
 
-    class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
+    VariantImporterContainerStats(const self_type& other) :
+    	n_entries_(other.n_entries_),
+		n_capacity_(other.n_capacity_),
+		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
+    {
+    	for(uint32_t i = 0; i < this->size(); ++i)
+    		new( &this->entries_[i] ) value_type( other.at(i) );
+    }
 
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
+    VariantImporterContainerStats(self_type&& other) noexcept :
+    	n_entries_(other.n_entries_),
+		n_capacity_(other.n_capacity_),
+		entries_(nullptr)
+    {
+    	std::swap(this->entries_, other.entries_);
+    }
 
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
+    VariantImporterContainerStats& operator=(self_type&& other) noexcept {
+    	this->n_entries_ = other.n_entries_;
+    	this->n_capacity_ = other.n_capacity_;
+    	// Clear local entries if any.
+    	for(std::size_t i = 0; i < this->size(); ++i)
+			(this->entries_ + i)->~VariantImporterStatsObject();
 
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
+		::operator delete[](static_cast<void*>(this->entries_));
+		this->entries_ = nullptr;
+
+    	std::swap(this->entries_, other.entries_);
+    	return(*this);
+	}
+
+    VariantImporterContainerStats& operator=(const self_type& other) {
+		this->n_entries_ = other.n_entries_;
+		this->n_capacity_ = other.n_capacity_;
+		// Clear local entries if any.
+		for(std::size_t i = 0; i < this->size(); ++i)
+			(this->entries_ + i)->~VariantImporterStatsObject();
+
+		::operator delete[](static_cast<void*>(this->entries_));
+		this->entries_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			new( &this->entries_[i] ) value_type( other.at(i) );
+
+		return(*this);
+	}
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->entries_[position]); }
@@ -115,13 +153,14 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
-	// Iterator
-	inline iterator begin(){ return iterator(&this->entries_[0]); }
-	inline iterator end(){ return iterator(&this->entries_[this->n_entries_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->entries_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->entries_[this->n_entries_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
+	self_type& operator+=(const self_type& other){
+		while(other.size() > this->size()) this->resize();
+
+		for(uint32_t i = 0; i < other.size(); ++i)
+			this->at(i) += other[i];
+
+		return(*this);
+	}
 
 	//
 	inline self_type& operator+=(const const_reference entry){
@@ -134,21 +173,51 @@ public:
 	}
 	inline self_type& add(const const_reference entry){ return(*this += entry); }
 
-	void resize(void){
+	void resize(const uint32_t new_size){
+		if(new_size == this->capacity()) return;
+		if(new_size < this->capacity()){
+			if(new_size < this->size()){
+				for(uint32_t i = new_size; i < this->size(); ++i)
+					(this->entries_ + i)->~VariantImporterStatsObject();
+				this->n_entries_ = new_size;
+			}
+			return;
+		}
+
 		pointer temp = this->entries_;
 
-		this->n_capacity_ *= 2;
-		this->entries_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
+		this->n_capacity_ = new_size;
+		this->entries_    = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 
 		// Lift over values from old addresses
-		for(U32 i = 0; i < this->size(); ++i)
+		for(uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( temp[i] );
 
+		if(temp != nullptr){
+			for(std::size_t i = 0; i < this->size(); ++i)
+				(temp + i)->~VariantImporterStatsObject();
 
-		for(std::size_t i = 0; i < this->size(); ++i)
-			(temp + i)->~VariantImporterStatsObject();
+			::operator delete[](static_cast<void*>(temp));
+		}
+	}
 
-		::operator delete[](static_cast<void*>(temp));
+	inline void resize(void){ return(this->resize(this->capacity()*2)); }
+
+	void Allocate(const uint32_t entries){
+		// Delete previous entries.
+		if(this->entries_ != nullptr){
+			for(std::size_t i = 0; i < this->size(); ++i)
+				(this->entries_ + i)->~VariantImporterStatsObject();
+			::operator delete[](static_cast<void*>(this->entries_));
+
+			this->entries_ = nullptr;
+		}
+
+		if(entries > this->capacity()) this->resize(entries);
+
+		this->n_entries_ = entries;
+		for(uint32_t i = 0; i < this->size(); ++i)
+			new( &this->entries_[i] ) value_type( );
 	}
 
 private:

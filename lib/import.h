@@ -23,8 +23,8 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "../lib/utility.h"
-#include "../lib/variant_importer.h"
+#include "utility.h"
+#include "variant_importer.h"
 
 void import_usage(void){
 	programMessage();
@@ -32,15 +32,16 @@ void import_usage(void){
 	"Brief:  Convert Vcf/Bcf records into a Yon archive.\n"
 	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input> -o <output.yon>\n\n"
 	"Options:\n"
-	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required)\n"
-	"  -o FILE  output file prefix (required)\n"
+	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required, \"-\" for piping from stdin)\n"
+	"  -o FILE  output file prefix (required, \"-\" for piping to stdout)\n"
 	"  -c INT   Import checkpoint size in number of variants (default: 1000)\n"
 	"  -C FLOAT Import checkpoint size in bases (default: 5 Mb)\n"
 	"  -L INT   Compression level 1-20 (default: 6)\n"
 	"  -t INT   Number of compression threads (default: all available)\n"
 	"  -p/-P    Permute/Do not permute diploid genotypes\n"
 	"  -e       Encrypt data with AES-256\n"
-	"  -d       Drop invariant sites (all REF or ALT)\n"
+	"  -t       Number of consumer threads for import\n"
+	"  -T       Number of (extra) htslib threads for decompression\n"
 	"  -s       Hide all program messages [null]\n";
 }
 
@@ -66,6 +67,8 @@ int import(int argc, char** argv){
 		{"permute",             no_argument,       0, 'p' },
 		{"encrypt",             no_argument,       0, 'e' },
 		{"no-permute",          no_argument,       0, 'P' },
+		{"threads",             optional_argument, 0, 't' },
+		{"hts-threads",         optional_argument, 0, 'T' },
 		{"silent",              no_argument,       0, 's' },
 		{0,0,0,0}
 	};
@@ -74,7 +77,7 @@ int import(int argc, char** argv){
 
 	tachyon::VariantImporterSettings settings;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:C:L:sepP?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:c:C:L:t:T:sepP?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -111,6 +114,8 @@ int import(int argc, char** argv){
 			break;
 		case 'p': settings.permute_genotypes = true;  break;
 		case 'P': settings.permute_genotypes = false; break;
+		case 't': settings.n_threads = atoi(optarg); break;
+		case 'T': settings.htslib_extra_threads = atoi(optarg); break;
 		case 's':
 			SILENT = 1;
 			break;

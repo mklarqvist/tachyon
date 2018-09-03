@@ -11,12 +11,30 @@
 #include "core/header/variant_header.h"
 #include "io/vcf_utils.h"
 
+#include "containers/components/generic_iterator.h"
+
 namespace tachyon{
 namespace index{
 
-class VariantIndex{
-private:
-	typedef VariantIndex       self_type;
+/*
+class VIndex {
+
+
+	// Does not required sorted data. Linear array of variant block
+	// offsets.
+	VariantIndexLinear* c;
+	// If data is sorted then the meta index is equivalent to
+	// a run of linear blocks.
+	VariantIndexMeta* m;
+	// If data is sorted then the quad-tree allows random access
+	// lookups of data.
+	VariantIndexQuad* q;
+};
+*/
+
+class VariantIndexQuadTree {
+public:
+	typedef VariantIndexQuadTree       self_type;
     typedef std::size_t        size_type;
     typedef VariantIndexContig value_type;
     typedef VariantIndexLinear linear_type;
@@ -24,47 +42,25 @@ private:
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
-    typedef IndexEntry         linear_entry_type;
-    typedef YonContig      contig_type;
+    typedef VariantIndexEntry  linear_entry_type;
+    typedef YonContig          contig_type;
+    typedef linear_type*       linear_pointer;
+
+    typedef yonRawIterator<value_type>       iterator;
+   	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-	VariantIndex();
-	VariantIndex(const self_type& other);
-	~VariantIndex();;
+   	VariantIndexQuadTree();
+   	VariantIndexQuadTree(const self_type& other);
+	~VariantIndexQuadTree();
 
-	class iterator{
-	private:
-		typedef iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
+	self_type& operator+=(const self_type& other){
+		assert(this->n_contigs_ == other.n_contigs_);
+		for(int i = 0; i < this->n_contigs_; ++i)
+			this->contigs_[i] += other.contigs_[i];
 
-	public:
-		iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		reference operator*() const{ return *ptr_; }
-		pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
-
-	class const_iterator{
-	private:
-		typedef const_iterator self_type;
-		typedef std::forward_iterator_tag iterator_category;
-
-	public:
-		const_iterator(pointer ptr) : ptr_(ptr) { }
-		void operator++() { ptr_++; }
-		void operator++(int junk) { ptr_++; }
-		const_reference operator*() const{ return *ptr_; }
-		const_pointer operator->() const{ return ptr_; }
-		bool operator==(const self_type& rhs) const{ return ptr_ == rhs.ptr_; }
-		bool operator!=(const self_type& rhs) const{ return ptr_ != rhs.ptr_; }
-	private:
-		pointer ptr_;
-	};
+		return(*this);
+	}
 
 	// Element access
 	inline reference at(const size_type& position){ return(this->contigs_[position]); }
@@ -77,9 +73,6 @@ public:
 	inline const_reference front(void) const{ return(this->contigs_[0]); }
 	inline reference back(void){ return(this->contigs_[this->n_contigs_ - 1]); }
 	inline const_reference back(void) const{ return(this->contigs_[this->n_contigs_ - 1]); }
-
-	inline linear_type& linear_at(const size_type& contig_id){ return(this->linear_[contig_id]); }
-	inline const linear_type& linear_at(const size_type& contig_id) const{ return(this->linear_[contig_id]); }
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_contigs_ == 0); }
@@ -98,14 +91,14 @@ public:
 		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
 			this->resize();
 
-		for(U32 i = 0; i < contigs.size(); ++i){
-			const U64 contig_length = contigs[i].n_bases;
-			BYTE n_levels = 7;
-			U64 bins_lowest = pow(4,n_levels);
+		for(uint32_t i = 0; i < contigs.size(); ++i){
+			const uint64_t contig_length = contigs[i].n_bases;
+			uint8_t n_levels = 7;
+			uint64_t bins_lowest = pow(4,n_levels);
 			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
 
 			if(used / bins_lowest < 2500){
-				for(S32 i = n_levels; i != 0; --i){
+				for(int32_t i = n_levels; i != 0; --i){
 					if(used/pow(4,i) > 2500){
 						n_levels = i;
 						break;
@@ -116,7 +109,7 @@ public:
 			this->Add(i, contig_length, n_levels);
 			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
 			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
-			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (U64)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (uint64_t)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
 		}
 		return(*this);
 	}
@@ -127,24 +120,12 @@ public:
 	 * @param n_levels Number of desired 4^N levels
 	 * @return         Returns a reference of self
 	 */
-	inline self_type& Add(const U32& contigID, const U64& l_contig, const BYTE& n_levels){
+	inline self_type& Add(const uint32_t& contigID, const uint64_t& l_contig, const uint8_t& n_levels){
 		if(this->size() + 1 >= this->n_capacity_)
 			this->resize();
 
 		new( &this->contigs_[this->n_contigs_] ) value_type( contigID, l_contig, n_levels );
-		new( &this->linear_[this->n_contigs_] ) linear_type( contigID );
 		++this->n_contigs_;
-		return(*this);
-	}
-
-	/**<
-	 * Add index entry to the linear index given a contig id
-	 * @param contigID Target linear index at position contigID
-	 * @param entry    Target index entry to push back onto the linear index vector
-	 * @return         Returns a reference of self
-	 */
-	inline self_type& Add(const U32& contigID, const linear_entry_type& entry){
-		this->linear_[contigID] += entry;
 		return(*this);
 	}
 
@@ -154,20 +135,16 @@ public:
 	 */
 	void resize(void);
 
-private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& index);
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 
 public:
-	size_type    n_contigs_; // number of contigs
-	size_type    n_capacity_;
-	pointer      contigs_;
-	linear_type* linear_;
+	size_type      n_contigs_; // number of contigs
+	size_type      n_capacity_;
+	pointer        contigs_;
 };
 
 }
 }
-
-
 
 #endif /* INDEX_VARIANT_INDEX_H_ */

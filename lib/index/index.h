@@ -3,65 +3,76 @@
 
 #include <algorithm>
 
-#include "index_meta_container.h"
-#include "variant_index.h"
+#include "variant_index_meta.h"
+#include "variant_index_quad_tree.h"
 #include "variant_index_linear.h"
 
 namespace tachyon{
 namespace index{
 
 class Index{
-private:
-	typedef Index              self_type;
-    typedef std::size_t        size_type;
-	typedef VariantIndex       container_type;
-	typedef IndexMetaContainer container_meta_type;
-	typedef IndexEntry         entry_type;
-	typedef IndexIndexEntry    entry_meta_type;
-	typedef VariantIndexBin    bin_type;
-	typedef YonContig          contig_type;
+public:
+	typedef Index                 self_type;
+    typedef std::size_t           size_type;
+	typedef VariantIndexQuadTree  variant_quad_tree_type;
+	typedef VariantIndexMeta      variant_meta_type;
+	typedef VariantIndexEntry     entry_type;
+	typedef VariantIndexMetaEntry entry_meta_type;
+	typedef VariantIndexBin       bin_type;
+	typedef YonContig             contig_type;
+	typedef VariantIndexLinear    variant_linear_type;
+	typedef VariantIndexEntry     linear_entry_type;
 
 public:
-	Index() : number_blocks(0){}
+	Index() : is_sorted(true){}
 	Index(const self_type& other) :
-		number_blocks(other.number_blocks),
+		is_sorted(other.is_sorted),
 		index_meta_(other.index_meta_),
 		index_(other.index_)
 	{}
 	~Index(){}
 
 	/**<
-	 * Builds the meta-index of index entries when
-	 * the input data is sorted. This index corresponds to
-	 * index entries all belonging to the same contig.
-	 * @return Returns TRUE upon success or FALSE otherwise
+	 * Reduce operator for the VariantIndex. Used during parallel
+	 * import from htslib Vcf files.
+	 * @param other Other Index object.
+	 * @return      Returns the reduced Index ojbect.
 	 */
-	bool buildMetaIndex(void);
+	Index& operator+=(const Index& other){
+		this->index_ += other.index_;
+		return(*this);
+	}
 
 	// Capacity
 	inline bool empty(void) const{ return(this->index_.empty()); }
 	inline size_t size(void) const{ return(this->index_.size()); }
 	inline size_t sizeMeta(void) const{ return(this->index_meta_.size()); }
 
-	uint64_t GetLinearSize(void) const{
-		uint64_t n_total = 0;
-		for(U32 i = 0; i < this->index_.size(); ++i){
-			n_total += this->index_.linear_[i].size();
+	inline uint64_t GetLinearSize(void) const{ return(this->linear_.size()); }
+
+	std::ostream& Print(std::ostream& stream) const{
+		for(int i = 0; i < this->index_meta_.size(); ++i){
+			stream << "contig " << i << ". blocks: ";
+			uint32_t n_blocks = 0;
+			for(int j = 0; j < this->index_[i].size(); ++j){
+				n_blocks += this->index_[i][j].size();
+			}
+			stream << n_blocks;
+			this->index_meta_[i].Print(stream);
+			stream << std::endl;
 		}
-		return(n_total);
+		return(stream);
 	}
 
-	//inline void operator+=(const entry_type& entry){ this->index_ += entry; }
-	//inline void operator+=(const entry_meta_type& entry){ this->index_meta_ += entry; }
-
 	// Accessors
-	inline container_type& getIndex(void){ return(this->index_); }
-	inline const container_type& getIndex(void) const{ return(this->index_); }
-	inline container_meta_type& getMetaIndex(void){ return(this->index_meta_); }
-	inline const container_meta_type& getMetaIndex(void) const{ return(this->index_meta_); }
+	inline variant_quad_tree_type& GetQuadIndex(void){ return(this->index_); }
+	inline const variant_quad_tree_type& GetQuadIndex(void) const{ return(this->index_); }
+	inline variant_meta_type& GetMetaIndex(void){ return(this->index_meta_); }
+	inline const variant_meta_type& GetMetaIndex(void) const{ return(this->index_meta_); }
+	inline variant_linear_type& GetLinearIndex(void){ return(this->linear_); }
+	inline const variant_linear_type& GetLinearIndex(void) const{ return(this->linear_); }
 
-	// Overlap
-	// Answer to the questions:
+	// Overlap functionality used to answer the questions:
 	// 1) Overlapping bins given a contig
 	// 2) Overlapping bins given a contig and a single position
 	// 3) Overlapping bins given a contig and a start and end position
@@ -70,7 +81,7 @@ public:
 	 * @param contig_id
 	 * @return
 	 */
-	std::vector<entry_type> findOverlap(const U32& contig_id) const;
+	std::vector<entry_type> FindOverlap(const uint32_t& contig_id) const;
 
 	/**<
 	 * Return interval of YON blocks overlapping target tuple (contigID, position, position)
@@ -78,8 +89,8 @@ public:
 	 * @param position
 	 * @return
 	 */
-	inline std::vector<entry_type> findOverlap(const U32& contig_id, const U64& position) const{
-		return(this->findOverlap(contig_id, position, position));
+	inline std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& position) const{
+		return(this->FindOverlap(contig_id, position, position));
 	}
 
 	/**<
@@ -89,34 +100,67 @@ public:
 	 * @param end_pos
 	 * @return
 	 */
-	std::vector<entry_type> findOverlap(const U32& contig_id, const U64& start_pos, const U64& end_pos) const;
-
-	inline const U64& current_block_number(void) const{ return(this->number_blocks); }
-	inline void operator++(void){ ++this->number_blocks; }
+	std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& start_pos, const uint64_t& end_pos) const;
 
 	/**<
 	 * Wrapper function for adding a list of contigs to the index
 	 * @param contigs
 	 */
-	inline void Add(const std::vector<io::VcfContig>& contigs){ this->index_.Add(contigs); }
+	void Setup(const std::vector<io::VcfContig>& contigs){
+		this->index_.Add(contigs);
+		this->index_meta_.reserve(contigs.size());
+		for(int i = 0; i < contigs.size(); ++i)
+			this->index_meta_[i].contigID = contigs[i].idx;
+	}
+
+	inline int32_t AddSorted(const uint32_t contig_id,
+	                         const uint64_t fromPosition,
+	                         const uint64_t toPosition,
+	                         const uint32_t yon_block_id)
+	{
+		return(this->index_[contig_id].Add(fromPosition, toPosition, yon_block_id));
+	}
+
+	self_type& operator+=(const linear_entry_type& entry){
+		this->linear_ += entry;
+
+		// Update the meta index if the input data is sorted.
+		if(this->is_sorted){
+			if(this->index_meta_[entry.contigID].n_variants == 0){
+				this->index_meta_[entry.contigID].byte_offset_begin = entry.byte_offset;
+				this->index_meta_[entry.contigID].minPosition = entry.minPosition;
+				this->index_meta_[entry.contigID].start_block = entry.blockID;
+			}
+
+			this->index_meta_[entry.contigID] += entry;
+		}
+		return(*this);
+	}
 
 private:
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+		utility::SerializePrimitive(entry.is_sorted, stream);
 		stream << entry.index_;
 		stream << entry.index_meta_;
+		stream << entry.linear_;
+
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& entry){
+		utility::DeserializePrimitive(entry.is_sorted, stream);
 		stream >> entry.index_;
 		stream >> entry.index_meta_;
+		stream >> entry.linear_;
+
 		return(stream);
 	}
 
-public:
-	U64 number_blocks;
-	container_meta_type index_meta_;
-	container_type      index_;
+private:
+	bool is_sorted;
+	variant_meta_type      index_meta_;
+	variant_quad_tree_type index_;
+	variant_linear_type    linear_;
 };
 
 }

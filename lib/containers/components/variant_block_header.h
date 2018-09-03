@@ -27,26 +27,26 @@ public:
 	{}
 	~VariantBlockHeaderController(){}
 
-	inline void clear(){ memset(this, 0, sizeof(U16)); }
+	inline void clear(){ memset(this, 0, sizeof(uint16_t)); }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller){
-		const U16 c = controller.hasGT |
+		const uint16_t c = controller.hasGT |
                       controller.hasGTPermuted << 1 |
                       controller.anyEncrypted  << 2 |
                       controller.unused        << 3;
 
-		stream.write(reinterpret_cast<const char*>(&c), sizeof(U16));
+		stream.write(reinterpret_cast<const char*>(&c), sizeof(uint16_t));
 		return(stream);
 	}
 
 	friend std::istream& operator>>(std::istream& stream, self_type& controller){
-		U16* c = reinterpret_cast<U16*>(&controller);
-		stream.read(reinterpret_cast<char*>(c), sizeof(U16));
+		uint16_t* c = reinterpret_cast<uint16_t*>(&controller);
+		stream.read(reinterpret_cast<char*>(c), sizeof(uint16_t));
 		return(stream);
 	}
 
 public:
-	U16 hasGT:         1,  // This block has GT FORMAT data
+	uint16_t hasGT:         1,  // This block has GT FORMAT data
 		hasGTPermuted: 1,  // have the GT fields been permuted
 		anyEncrypted:  1,  // any data encrypted
 		unused:        13; // reserved for future use
@@ -70,57 +70,28 @@ public:
 	VariantBlockHeader();
 	~VariantBlockHeader();
 
-	inline const U32& size(void) const{ return(this->n_variants); }
-	inline const S32& getContigID(void) const{ return(this->contigID); }
-	inline const S64& getMinPosition(void) const{ return(this->minPosition); }
-	inline const S64& getMaxPosition(void) const{ return(this->maxPosition); }
-	inline U64& getBlockID(void){ return(this->block_hash); }
-	inline const U64& getBlockID(void) const{ return(this->block_hash); }
+	inline const uint32_t& size(void) const{ return(this->n_variants); }
+	inline const int32_t& GetContigID(void) const{ return(this->contigID); }
+	inline const int64_t& GetMinPosition(void) const{ return(this->minPosition); }
+	inline const int64_t& GetMaxPosition(void) const{ return(this->maxPosition); }
+	inline uint64_t& GetBlockHash(void){ return(this->block_hash); }
+	inline const uint64_t& GetBlockHash(void) const{ return(this->block_hash); }
 
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer),   sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.block_hash),           sizeof(U64));
-		stream << entry.controller;
-		stream.write(reinterpret_cast<const char*>(&entry.contigID),          sizeof(U32));
-		stream.write(reinterpret_cast<const char*>(&entry.minPosition),       sizeof(S64));
-		stream.write(reinterpret_cast<const char*>(&entry.maxPosition),       sizeof(S64));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),        sizeof(U32));
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
 
-		return(stream);
-	}
-
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.l_offset_footer),   sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.block_hash),           sizeof(U64));
-		stream >> entry.controller;
-		stream.read(reinterpret_cast<char*>(&entry.contigID),          sizeof(U32));
-		stream.read(reinterpret_cast<char*>(&entry.minPosition),       sizeof(S64));
-		stream.read(reinterpret_cast<char*>(&entry.maxPosition),       sizeof(S64));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),        sizeof(U32));
-
-		return(stream);
-	}
-
-	void reset(void){
-		this->l_offset_footer    = 0;
-		this->block_hash         = 0;
-		this->controller.clear();
-		this->contigID           = -1;
-		this->minPosition        = 0;
-		this->maxPosition        = 0;
-		this->n_variants         = 0;
-	}
+	void reset(void);
 
 public:
 	// Allows jumping to the next block when streaming.
 	// EOF marker is at this position - sizeof(EOF marker)
-	U32 l_offset_footer;
-	U64 block_hash;     // block identifier in the form of a random hash
+	uint32_t l_offset_footer;
+	uint64_t block_hash;     // block identifier in the form of a random hash
 	controller_type controller;
-	S32 contigID;       // contig identifier
-	S64 minPosition;    // minimum coordinate in this block
-	S64 maxPosition;    // maximum coordinate in this block
-	U32 n_variants;     // number of variants in this block
+	int32_t contigID;       // contig identifier
+	int64_t minPosition;    // minimum coordinate in this block
+	int64_t maxPosition;    // maximum coordinate in this block
+	uint32_t n_variants;    // number of variants in this block
 };
 
 }

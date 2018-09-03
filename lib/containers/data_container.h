@@ -12,19 +12,24 @@ namespace tachyon{
 namespace containers{
 
 /**<
- * Primary data container in Tachyon. Stores the data itself
- * in compressed/uncompressed form and possibly the data stride
- * size in compressed/uncompressed form
+ * Primary data container in Tachyon. Store actual byte
+ * streams and its associated data required to restore
+ * the input object.
  */
-class DataContainer{
+class DataContainer {
+public:
 	typedef DataContainer       self_type;
 	typedef DataContainerHeader header_type;
 	typedef io::BasicBuffer     buffer_type;
 
 public:
 	DataContainer();
-	DataContainer(const U32 start_size);
+	DataContainer(const uint32_t start_size);
 	~DataContainer();
+	DataContainer(self_type&& other) noexcept;
+	DataContainer(const self_type& other);
+	DataContainer& operator=(const self_type& other);
+	DataContainer& operator=(self_type&& other) noexcept;
 
 	/**<
 	 * Set the primitive (or higher-order primitive) type for
@@ -40,11 +45,21 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void SetStrideSize(const S32 value){ this->header.data_header.stride = value; }
+	inline void SetStrideSize(const int32_t value){ this->header.data_header.stride = value; }
 
+	// Accessors for the primitive types.
 	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
 	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
+	// Accessors for the global identifier
+	inline int32_t& GetIdx(void){ return(this->header.data_header.global_key); }
+	inline const int32_t& GetIdx(void) const{ return(this->header.data_header.global_key); }
+
+	/**<
+	 * Predicate for checking if the byte stream is encrypted or not.
+	 * @return Returns TRUE if the byte streams is encrypted or FALSE otherwise.
+	 */
+	inline bool IsEncrypted(void) const{ return(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE); }
 
 	/**<
 	 * Check if the stride size of this container matches the
@@ -53,7 +68,7 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline bool CheckStrideSize(const S32 value) const{
+	inline bool CheckStrideSize(const int32_t value) const{
 		if(this->header.data_header.HasMixedStride() == false)
 			return false;
 
@@ -74,78 +89,85 @@ public:
 
 	self_type& operator+=(const self_type& other){
 		// Add buffers together
-		this->buffer_data                 += other.buffer_data;
-		this->buffer_data_uncompressed    += other.buffer_data_uncompressed;
-		this->buffer_strides              += other.buffer_strides;
-		this->buffer_strides_uncompressed += other.buffer_strides_uncompressed;
+		this->data                 += other.data;
+		this->data_uncompressed    += other.data_uncompressed;
+		this->strides              += other.strides;
+		this->strides_uncompressed += other.strides_uncompressed;
 		// Add header counters together
 		this->header += other.header;
 		return(*this);
 	}
 
-	// Supportive
-	inline const U64& GetSizeUncompressed(void) const{ return(this->buffer_data_uncompressed.size()); }
-	inline const U64& GetSizeCompressed(void) const{ return(this->buffer_data.size()); }
-	inline const U32& size(void) const{ return(this->header.n_entries); }
+	// Utility functions.
+	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->data_uncompressed.size()); }
+	inline const uint64_t& GetSizeCompressed(void) const{ return(this->data.size()); }
+	inline const uint32_t& size(void) const{ return(this->header.n_entries); }
 
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
-	 * point all stride values added must be of type U32. This
+	 * point all stride values added must be of type uint32_t. This
 	 * function internally checks if stride sizes is mixed or
 	 * not.
 	 * @param value Stride value to add
 	 */
-	void AddStride(const U32 value);
+	void AddStride(const uint32_t value);
 
-	bool Add(const BYTE& value);
-	bool Add(const U16& value);
-	bool Add(const U32& value);
-	bool Add(const SBYTE& value);
-	bool Add(const S16& value);
-	bool Add(const S32& value);
-	bool Add(const U64& value);
-	bool Add(const S64& value);
+	bool Add(const uint8_t& value);
+	bool Add(const uint16_t& value);
+	bool Add(const uint32_t& value);
+	bool Add(const int8_t& value);
+	bool Add(const int16_t& value);
+	bool Add(const int32_t& value);
+	bool Add(const uint64_t& value);
+	bool Add(const int64_t& value);
 	bool Add(const float& value);
 	bool Add(const double& value);
 	bool AddCharacter(const char& value);
-	bool AddCharacter(const char* const string, const U32 l_string);
+	bool AddCharacter(const char* const string, const uint32_t l_string);
 	// Aliases
-	bool AddString(const char* const string, const U32 l_string){ return(this->AddCharacter(string, l_string)); }
-	bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddString(const char* const string, const uint32_t l_string){ return(this->AddCharacter(string, l_string)); }
+	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 
 	/**<
-	 *
-	 * @param value
+	 * Add a literal primitive/string to the byte stream without conversion
+	 * and without performing any checks. This is function is only used
+	 * when storing explicit data structures into the byte stream and not
+	 * arrays of values. This function should generally not be called by
+	 * end users.
+	 * @param value Src primitive type.
 	 */
 	template <class T>
 	inline void AddLiteral(const T& value){
-		this->buffer_data_uncompressed += (T)value;
+		this->data_uncompressed += (T)value;
 		++this->header.n_additions;
 	}
 
-	/**<
-	 *
-	 * @param string
-	 * @param l_string
-	 */
-	inline void AddLiteral(const char* const string, const U32 l_string){
-		this->buffer_data_uncompressed.Add(string, l_string);
+	inline void AddLiteral(const char* const string, const uint32_t l_string){
+		this->data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
 	}
 
 	void reset(void);
-	void resize(const U32 size);
+	void resize(const uint32_t size);
 
 	/**<
-	 * Generates a CRC32 checksum of the uncompressed
+	 * Generates a MD5 checksum of the uncompressed
 	 * data and, if set, the uncompressed strides data.
-	 * CRC32 checksums are stored in the header
+	 * The MD5 checksums are stored in the header.
+	 *
+	 * Checksums for compressed buffers are computed
+	 * by the appropriate compression wrapper.
 	 */
 	void GenerateMd5(void);
 
 	/**<
+	 * Calculates the MD5 checksum from the target data
+	 * buffer and compares that value to the expected
+	 * value stored in the data header. MD5 checksums
+	 * for compressed buffers are always checked during
+	 * decompression to ascertain correctness.
 	 *
 	 * Targets:
 	 * 0: Uncompressed data
@@ -160,7 +182,7 @@ public:
 
 	/**<
 	 * Checks if the current data is uniform given the provided
-	 * stride size
+	 * stride size.
 	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
 	bool CheckUniformity(void);
@@ -169,7 +191,7 @@ public:
 	 * This function is called during import to shrink each
 	 * word-type to fit min(x) and max(x) in the worst case.
 	 * At this stage all integer values in the stream is of
-	 * type S32. No other values can be shrunk
+	 * type int32_t. No other values can be shrunk.
 	 */
 	void ReformatInteger(void);
 
@@ -181,31 +203,38 @@ public:
 	void ReformatStride(void);
 
 	/**<
-	 * Utility function that calculates the space this
-	 * object would take on disk if written out
-	 * @return Total size in bytes
+	 * Utility function that calculates the number of bytes this
+	 * object would occupy if written to a stream.
+	 * @return Total number of bytes.
 	 */
-	U32 GetObjectSize(void) const;
+	uint32_t GetObjectSize(void) const;
 
 	/**<
-	 *
-	 * @return
+	 * Utility function that calculates the number of actual bytes
+	 * this object occupies internally when uncompressed.
+	 * @return Number of uncompressed bytes.
 	 */
-	U64 GetObjectSizeUncompressed(void) const;
+	uint64_t GetObjectSizeUncompressed(void) const;
 
-	/**< @brief Update base container header data and evaluate output byte streams
-	 * Internal use only (import): Collectively updates base
-	 * container offsets and checks/builds
-	 * 1) If the byte stream is uniform
-	 * 2) Generates CRC checksums for both data and strides
-	 * 3) Reformat (change used word-size) for strides and data; if possible
+	/**<
+	 * Update base container header data and evaluate output byte streams.
+	 * Collectively updates base container offsets and checks/builds:
+	 * 1) If the byte stream is uniform;
+	 * 2) Generates CRC checksums for both data and strides;
+	 * 3) Reformat (change used word-size) for strides and data; if possible.
 	 *
-	 * @param container Data container
-	 * @param reormat   Reformat boolean
+	 * @param reformat_data   Flag for whether data should be reformatted.
+	 * @param reformat_stride Flag for whether strides should be reformatted.
 	 */
 	void UpdateContainer(bool reformat_data = true, bool reformat_stride = true);
 
 private:
+	/**<
+	 * Predicate for uniformity of primitive family type. If integers are
+	 * stored in a byte stream then only other integers and not for example
+	 * floats, doubles, or strings may be stored in the same stream.
+	 * @return Returns TRUE if acceptable addition or FALSE otherwise.
+	 */
 	inline bool CheckInteger(void){
 		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 			this->header.data_header.SetType(YON_TYPE_32B);
@@ -220,39 +249,15 @@ private:
 		return true;
 	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream << entry.buffer_data;
-		if(entry.header.data_header.HasMixedStride())
-			stream << entry.buffer_strides;
-
-		return(stream);
-	}
-
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		if(entry.header.data_header.controller.encryption == YON_ENCRYPTION_NONE){
-			entry.buffer_data.resize(entry.header.data_header.cLength);
-			stream.read(entry.buffer_data.buffer, entry.header.data_header.cLength);
-			entry.buffer_data.n_chars = entry.header.data_header.cLength;
-
-			if(entry.header.data_header.HasMixedStride()){
-				entry.buffer_strides.resize(entry.header.stride_header.cLength);
-				stream.read(entry.buffer_strides.buffer, entry.header.stride_header.cLength);
-				entry.buffer_strides.n_chars = entry.header.stride_header.cLength;
-			}
-		} else { // Data is encrypted
-			entry.buffer_data.resize(entry.header.data_header.eLength);
-			stream.read(entry.buffer_data.buffer, entry.header.data_header.eLength);
-			entry.buffer_data.n_chars = entry.header.data_header.eLength;
-		}
-		return(stream);
-	}
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::istream& operator>>(std::istream& stream, self_type& entry);
 
 public:
 	header_type header;
-	buffer_type buffer_data;
-	buffer_type buffer_strides;
-	buffer_type buffer_data_uncompressed;
-	buffer_type buffer_strides_uncompressed;
+	buffer_type data;
+	buffer_type strides;
+	buffer_type data_uncompressed;
+	buffer_type strides_uncompressed;
 };
 
 }

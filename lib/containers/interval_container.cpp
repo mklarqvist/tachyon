@@ -18,12 +18,54 @@ IntervalContainer::~IntervalContainer(void){
 	::operator delete[](static_cast<void*>(this->__entries));
 }
 
+IntervalContainer::IntervalContainer(const self_type& other) :
+	n_intervals_(other.n_intervals_),
+	n_entries_(other.n_entries_),
+    interval_strings_(other.interval_strings_),
+    interval_list_(other.interval_list_),
+    block_list_(other.block_list_),
+	__entries(static_cast<pointer>(::operator new[](this->n_entries_*sizeof(value_type))))
+{
+	for(uint32_t i = 0; i < this->size(); ++i)
+		new( &this->__entries[i] ) value_type( other.__entries[i] );
+}
+
+IntervalContainer::IntervalContainer(self_type&& other) noexcept :
+	n_intervals_(other.n_intervals_),
+	n_entries_(other.n_entries_),
+	interval_strings_(std::move(other.interval_strings_)),
+	interval_list_(std::move(other.interval_list_)),
+	block_list_(std::move(other.block_list_)),
+	__entries(nullptr)
+{
+	std::swap(this->__entries, other.__entries);
+}
+
+IntervalContainer& IntervalContainer::operator=(const self_type& other){
+	for(std::size_t i = 0; i < this->n_entries_; ++i)
+		(this->__entries + i)->~IntervalTree();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+	*this = IntervalContainer(other);
+	return(*this);
+}
+
+IntervalContainer& IntervalContainer::operator=(self_type&& other) noexcept{
+	for(std::size_t i = 0; i < this->n_entries_; ++i)
+		(this->__entries + i)->~IntervalTree();
+
+	::operator delete[](static_cast<void*>(this->__entries));
+	this->__entries = nullptr;
+	*this = IntervalContainer(std::move(other));
+	return(*this);
+}
+
 // Interpret
 bool IntervalContainer::ValidateIntervalStrings(std::vector<std::string>& interval_strings){
 	if(interval_strings.size() == 0)
 		return true;
 
-	for(U32 i = 0; i < interval_strings.size(); ++i){
+	for(uint32_t i = 0; i < interval_strings.size(); ++i){
 		// scrub whitespace
 		//interval_strings[i].erase(remove_if(interval_strings[i].begin(), interval_strings[i].end(), isspace), interval_strings[i].end());
 		interval_strings[i] = utility::remove_whitespace(interval_strings[i]);
@@ -61,7 +103,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 		this->interval_list_ = std::vector< std::vector< interval_type > >(header.GetNumberContigs());
 
 	// Parse each interval
-	for(U32 i = 0; i < interval_strings.size(); ++i){
+	for(uint32_t i = 0; i < interval_strings.size(); ++i){
 		interval_strings[i] = utility::remove_whitespace(interval_strings[i]);
 		const YonContig* contig = nullptr;
 
@@ -75,7 +117,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 			}
 
 			//std::cerr << "Parsed: " << interval_strings[i] << " -> " << contig->name << ":" << contig->idx << std::endl;
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(0, contig->n_bases, contig->idx));
 		}
@@ -94,10 +136,10 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 				return(false);
 			}
 
-			U64 position = atof(substrings[1].data());
+			uint64_t position = atof(substrings[1].data());
 			//std::cerr << "Parsed: " << substrings[0] << "," << position << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx, position);
 			//std::cerr << "overlaps: " << target_blocks.size() << std::endl;
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(position, position, contig->idx));
@@ -122,13 +164,13 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 				std::cerr << utility::timestamp("ERROR") << "Illegal form: " << std::endl;
 				return false;
 			}
-			U64 position_from = atof(position_strings[0].data());
-			U64 position_to   = atof(position_strings[1].data());
+			uint64_t position_from = atof(position_strings[0].data());
+			uint64_t position_to   = atof(position_strings[1].data());
 			if(position_from > position_to) std::swap(position_from, position_to);
 
 			//std::cerr << "Parsed: " << substrings[0] << "," << position_from << "," << position_to << std::endl;
 
-			std::vector<index_entry_type> target_blocks = index.findOverlap(contig->idx, position_from, position_to);
+			std::vector<index_entry_type> target_blocks = index.FindOverlap(contig->idx, position_from, position_to);
 			this->block_list_.insert( this->block_list_.end(), target_blocks.begin(), target_blocks.end() );
 			this->interval_list_[contig->idx].push_back(interval_type(position_from, position_to, contig->idx));
 
@@ -158,7 +200,7 @@ bool IntervalContainer::Build(const header_type& header){
 
 	this->n_entries_ = header.GetNumberContigs();
 	this->__entries  = static_cast<pointer>(::operator new[](this->n_entries_*sizeof(value_type)));
-	for(U32 i = 0; i < this->n_entries_; ++i){
+	for(uint32_t i = 0; i < this->n_entries_; ++i){
 		new( &this->__entries[i] ) value_type( std::move(this->interval_list_[i]) );
 	}
 	return true;
@@ -171,7 +213,7 @@ void IntervalContainer::DedupeBlockList(void){
 	std::sort(this->block_list_.begin(), this->block_list_.end());
 	std::vector<index_entry_type> block_list_deduped;
 	block_list_deduped.push_back(this->block_list_[0]);
-	for(U32 i = 1; i < this->block_list_.size(); ++i){
+	for(uint32_t i = 1; i < this->block_list_.size(); ++i){
 		if(block_list_deduped.back() != this->block_list_[i]){
 			block_list_deduped.push_back(this->block_list_[i]);
 		}
@@ -179,7 +221,7 @@ void IntervalContainer::DedupeBlockList(void){
 
 	// Debug
 	//std::cerr << "size: " << this->block_list__deduped.size() << std::endl;
-	//for(U32 i = 0; i < this->block_list__deduped.size(); ++i){
+	//for(uint32_t i = 0; i < this->block_list__deduped.size(); ++i){
 	//	std::cerr << i << "\t";
 	//	this->block_list__deduped[i].print(std::cerr);
 	//	std::cerr << std::endl;

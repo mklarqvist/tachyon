@@ -32,7 +32,7 @@ int main(int argc, char** argv){
 	std::string my_input_file(argv[1]);
 	tachyon::VariantReader reader;
 
-	reader.getBlockSettings().loadFORMAT("GQ");
+	reader.GetBlockSettings().LoadFormat("GQ");
 
 	if(!reader.open(my_input_file)){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to open file: " << my_input_file << "..." << std::endl;
@@ -43,18 +43,18 @@ int main(int argc, char** argv){
 	 *  The `FormatContainer` class stores the data for each variant
 	 *  for each individual as container[variant][sample][data]
 	 */
-	while(reader.nextBlock()){ // As long as there are YON blocks available
+	while(reader.NextBlock()){ // As long as there are YON blocks available
 		// Meta container
-		tachyon::containers::MetaContainer meta(reader.getCurrentBlock().getBlock());
+		tachyon::containers::MetaContainer meta(reader.GetCurrentContainer());
 
 	    // FORMAT container with U32 return type primitive
-	    tachyon::containers::FormatContainer<U32>* dp_container = reader.getCurrentBlock().get_balanced_format_container<U32>("GQ", meta);
+	    tachyon::containers::FormatContainer<uint32_t>* dp_container = reader.GetCurrentContainer().get_balanced_format_container<uint32_t>("GQ", meta);
 
 	    if(dp_container != nullptr){
-	        for(U32 variant = 0; variant < dp_container->size(); ++variant){
-	            for(U32 sample = 0; sample < dp_container->at(variant).size(); ++sample){
+	        for(int variant = 0; variant < dp_container->size(); ++variant){
+	            for(int sample = 0; sample < dp_container->at(variant).size(); ++sample){
 	                // Write the data to `cout` in `VCF` formatting
-	                tachyon::utility::to_vcf_string(std::cout, dp_container->at(variant).at(sample)) << ' ';
+	                tachyon::utility::ToVcfString(std::cout, dp_container->at(variant).at(sample)) << ' ';
 	            }
 	            std::cout << '\n';
 	        }

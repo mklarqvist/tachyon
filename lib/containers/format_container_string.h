@@ -29,16 +29,49 @@ public:
     typedef io::BasicBuffer       buffer_type;
     typedef DataContainer         data_container_type;
     typedef MetaContainer         meta_container_type;
-    typedef StrideContainer<U32>  stride_container_type;
+    typedef StrideContainer<uint32_t>  stride_container_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
     FormatContainer();
-    FormatContainer(const data_container_type& container, const U64 n_samples);
-    FormatContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64 n_samples); // use when balancing
+    FormatContainer(const data_container_type& container, const uint64_t n_samples);
+    FormatContainer(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t n_samples); // use when balancing
     ~FormatContainer(void);
+
+    DataContainer ToDataContainer(void){
+		uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i){
+			for(uint32_t j = 0; j < this->at(i).size(); ++j)
+				n_entries += this->at(i).at(j).size();
+		}
+
+		DataContainer d;
+		d.data_uncompressed.resize(n_entries + 128);
+		d.strides_uncompressed.resize(n_entries + 128);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(d);
+
+		return(d);
+    }
+
+    DataContainer& UpdateDataContainer(DataContainer& container){
+		uint32_t n_entries = 0;
+		for(uint32_t i = 0; i < this->size(); ++i){
+			for(uint32_t j = 0; j < this->at(i).size(); ++j)
+				n_entries += this->at(i).at(j).size();
+		}
+
+		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
+
+		for(uint32_t i = 0; i < this->size(); ++i)
+			this->at(i).UpdateDataContainer(container);
+
+		return(container);
+	}
 
     // Element access
     inline reference at(const size_type& position){ return(this->__containers[position]); }
@@ -65,9 +98,9 @@ public:
     inline const_iterator cend()   const{ return const_iterator(&this->__containers[this->n_entries]); }
 
     // Type-specific
-	inline std::ostream& to_vcf_string(std::ostream& stream,
-	                                   const U32 position,
-	                                   const U64 sample) const
+	inline std::ostream& ToVcfString(std::ostream& stream,
+	                                 const uint32_t position,
+	                                 const uint64_t sample) const
 	{
 		//utility::to_vcf_string(stream, this->at(position).at(sample).data_);
 		//this->at(position).at(sample).data_;
@@ -79,10 +112,10 @@ public:
 		return(this->at(position).UpdateHtslibVcfRecordFormatString(rec, hdr, tag));
 	}
 
-	inline io::BasicBuffer& to_vcf_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
-	inline io::BasicBuffer& to_json_string(io::BasicBuffer& buffer, const U32 position, const U64 sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
-	inline bool emptyPosition(const U32& position) const{ return(this->at(position).empty()); }
-	inline bool emptyPosition(const U32& position, const U64& sample) const{ return(this->at(position).at(sample).empty()); }
+	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const uint32_t position, const uint64_t sample) const{ buffer += this->at(position).at(sample).data_; return(buffer); }
+	inline bool emptyPosition(const uint32_t& position) const{ return(this->at(position).empty()); }
+	inline bool emptyPosition(const uint32_t& position, const uint64_t& sample) const{ return(this->at(position).at(sample).empty()); }
 
 private:
     /**<
@@ -90,7 +123,7 @@ private:
      * @param container
      * @param n_samples
      */
-    void __setup(const data_container_type& container, const U64& n_samples);
+    void __setup(const data_container_type& container, const uint64_t& n_samples);
 
     /**<
      *
@@ -99,7 +132,7 @@ private:
      * @param pattern_matches
      * @param n_samples
      */
-	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples);
+	void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples);
 
     /**<
      *
@@ -109,7 +142,7 @@ private:
      * @param n_samples
      * @param stride_size
      */
-    void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const U64& n_samples, const U32 stride_size);
+    void __setupBalanced(const data_container_type& data_container, const meta_container_type& meta_container, const std::vector<bool>& pattern_matches, const uint64_t& n_samples, const uint32_t stride_size);
 
     /**<
      *
@@ -117,7 +150,7 @@ private:
      * @param n_samples
      * @param stride_size
      */
-	void __setup(const data_container_type& container, const U64& n_samples, const U32 stride_size);
+	void __setup(const data_container_type& container, const uint64_t& n_samples, const uint32_t stride_size);
 
 private:
     pointer __containers;

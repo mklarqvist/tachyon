@@ -42,7 +42,7 @@ public:
 		n_capacity_(other.n_capacity_),
 		__entries(new value_type[this->n_capacity_])
 	{
-		for(U32 i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
+		for(uint32_t i = 0; i < this->size(); ++i) this->__entries[i] = other.__entries[i];
 	}
 
 	virtual ~DigestManager(){ delete [] this->__entries; }
@@ -107,7 +107,7 @@ public:
 	inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries_]); }
 
 	void finalize(void){
-		for(U32 i = 0; i < this->size(); ++i) this->at(i).finalize();
+		for(uint32_t i = 0; i < this->size(); ++i) this->at(i).finalize();
 	}
 
 private:

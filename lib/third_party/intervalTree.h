@@ -70,12 +70,12 @@ std::ostream& operator<<(std::ostream& out, const Interval<Scalar, Value>& i) {
 
 
 template <class T, typename K>
-static inline S64 intervalStart(const Interval<T,K>& i) {
+static inline int64_t intervalStart(const Interval<T,K>& i) {
     return i.start;
 }
 
 template <class T, typename K>
-static inline S64 intervalStop(const Interval<T,K>& i) {
+static inline int64_t intervalStop(const Interval<T,K>& i) {
     return i.stop;
 }
 

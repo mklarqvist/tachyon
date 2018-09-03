@@ -29,12 +29,12 @@ public:
 	self_type& LoadAllFilter(const bool set = true);
 	self_type& LoadAllInfo(const bool set = true);
 	self_type& LoadInfo(const std::string& field_name);
-	self_type& LoadInfo(const U32 field_id);
+	self_type& LoadInfo(const uint32_t field_id);
 	self_type& LoadGenotypes(const bool set);
 	self_type& LoadPermutationArray(const bool set);
 	self_type& LoadAllFormat(const bool set);
 	self_type& LoadFormat(const std::string& field_name);
-	self_type& LoadFormat(const U32 field_id);
+	self_type& LoadFormat(const uint32_t field_id);
 	self_type& LoadMinimumVcf(const bool set = true);
 
 	self_type& DisplayCore(const bool set = true);
@@ -58,8 +58,8 @@ public:
 	bool display_filter;
 
 	// Load/display pairs
-	U32 load_static;
-	U32 display_static;
+	uint32_t load_static;
+	uint32_t display_static;
 
 	bool construct_occ_table;
 
@@ -70,11 +70,11 @@ public:
 	std::vector<std::string> info_list;
 	std::vector<std::string> format_list;
 
-	std::vector<U32> info_id_global;
-	std::vector<U32> format_id_global;
+	std::vector<uint32_t> info_id_global;
+	std::vector<uint32_t> format_id_global;
 
 	// blocks to load
-	std::vector<U32> blocks_numbers;
+	std::vector<uint32_t> blocks_numbers;
 };
 
 }

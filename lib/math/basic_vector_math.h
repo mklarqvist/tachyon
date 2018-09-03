@@ -17,7 +17,7 @@ inline T min(const containers::PrimitiveContainer<T>& container){
 		return(container[0]);
 
 	T min_observed = container[0];
-	for(U32 i = 1; i < container.size(); ++i)
+	for(uint32_t i = 1; i < container.size(); ++i)
 		if(container[i] < min_observed) min_observed = container[i];
 
 	return(min_observed);
@@ -29,7 +29,7 @@ inline T max(const containers::PrimitiveContainer<T>& container){
 		return(container[0]);
 
 	T max_observed = container[0];
-	for(U32 i = 1; i < container.size(); ++i)
+	for(uint32_t i = 1; i < container.size(); ++i)
 		if(container[i] > max_observed) max_observed = container[i];
 
 	return(max_observed);
@@ -41,7 +41,7 @@ inline double mean(const containers::PrimitiveContainer<T>& container){
 		return(container[0]);
 
 	double total_observed = container[0];
-	for(U32 i = 1; i < container.size(); ++i)
+	for(uint32_t i = 1; i < container.size(); ++i)
 		total_observed += container[i];
 
 	return(total_observed / container.size());
@@ -62,7 +62,7 @@ inline T median(const containers::PrimitiveContainer<T>& container){
 template <class T>
 inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer<T>& container){
 	math::SummaryStatistics ss;
-	for(U32 i = 0; i < container.size(); ++i)
+	for(uint32_t i = 0; i < container.size(); ++i)
 		ss += container[i];
 
 	ss.calculate();
@@ -72,8 +72,8 @@ inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer
 template <class T>
 inline SummaryStatistics summary_statistics(const containers::InfoContainer<T>& info_container){
 	math::SummaryStatistics ss;
-	for(U32 i = 0; i < info_container.size(); ++i){
-		for(U32 j = 0; j < info_container[i].size(); ++j)
+	for(uint32_t i = 0; i < info_container.size(); ++i){
+		for(uint32_t j = 0; j < info_container[i].size(); ++j)
 			ss += info_container[i][j];
 	}
 
@@ -84,9 +84,9 @@ inline SummaryStatistics summary_statistics(const containers::InfoContainer<T>& 
 template <class T>
 inline SummaryStatistics summary_statistics(const containers::FormatContainer<T>& format_container){
 	math::SummaryStatistics ss;
-	for(U32 i = 0; i < format_container.size(); ++i){
-		for(U32 j = 0; j < format_container[i].size(); ++j){
-			for(U32 k = 0; k < format_container[i][j].size(); ++k){
+	for(uint32_t i = 0; i < format_container.size(); ++i){
+		for(uint32_t j = 0; j < format_container[i].size(); ++j){
+			for(uint32_t k = 0; k < format_container[i][j].size(); ++k){
 				ss += format_container[i][j][k];
 			}
 		}

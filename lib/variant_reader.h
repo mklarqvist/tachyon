@@ -3,6 +3,7 @@
 
 #include <regex>
 #include <cmath>
+#include <thread>
 
 #include "zstd.h"
 #include "zstd_errors.h"
@@ -34,10 +35,12 @@
 #include "utility/support_vcf.h"
 #include "io/basic_reader.h"
 
+#include "core/ts_tv_object.h"
+
 namespace tachyon{
 
 class VariantReader{
-private:
+public:
 	typedef VariantReader                          self_type;
 	typedef io::BasicBuffer                        buffer_type;
 	typedef VariantHeader                          header_type;
@@ -47,9 +50,9 @@ private:
 	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
 	typedef index::Index                           index_type;
-	typedef index::IndexEntry                      index_entry_type;
+	typedef index::VariantIndexEntry               index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
-	typedef encryption::Keychain<>                 keychain_type;
+	typedef Keychain                               keychain_type;
 	typedef VariantReaderObjects                   objects_type;
 	typedef containers::VariantBlock               block_entry_type;
 	typedef containers::MetaContainer              meta_container_type;
@@ -59,10 +62,11 @@ private:
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
-	typedef algorithm::Interval<U32, S64>          interval_type;
+	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
 	typedef io::BasicReader                        basic_reader_type;
-	typedef encryption::EncryptionDecorator        encryption_manager_type;
+	typedef EncryptionDecorator                    encryption_manager_type;
 
+private:
 	// Function pointer to interval slicing.
 	typedef bool (self_type::*filter_intervals_function)(const meta_entry_type& meta_entry) const;
 
@@ -141,14 +145,14 @@ public:
 	 * @param index Block index value in range [0..n_blocks)
 	 * @return      Returns TRUE if operation was successful or FALSE otherwise
 	 */
-	bool operator[](const U32 position);
+	bool operator[](const uint32_t position);
 
 	/**<
 	 * Not implemented
 	 * @param position
 	 * @return
 	 */
-	bool SeektoBlock(const U32 position);
+	bool SeektoBlock(const uint32_t position);
 
 	/**<
 	 * Not implemented
@@ -164,13 +168,30 @@ public:
 	 * @param to_bp_position
 	 * @return
 	 */
-	bool SeekToBlockChromosome(const std::string& chromosome_name, const U32 from_bp_position, const U32 to_bp_position);
+	bool SeekToBlockChromosome(const std::string& chromosome_name, const uint32_t from_bp_position, const uint32_t to_bp_position);
 
 	/**<
 	 * Get the next YON block in-order
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	bool NextBlock(void);
+
+	bool CheckNextValid(void){
+		// If the stream is faulty then return
+		if(!this->basic_reader.stream_.good()){
+			std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+			return false;
+		}
+
+		// If the current position is the EOF then
+		// exit the function
+		if((uint64_t)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+			return false;
+
+		return true;
+	}
+
+	containers::VariantBlockContainer ReturnBlock(void);
 
 	/**<
 	 * Get the target YON block
@@ -183,22 +204,39 @@ public:
 	 * Seeks to a specific YON block without loading anything.
 	 * This allows the user to seek to a specific block and
 	 * change the block_settings (i.e. what fields to load) and
-	 * then invoke nextBlock() for example.
+	 * then invoke NextBlock() for example.
 	 * @param blockID
 	 * @return
 	 */
-	bool SeekBlock(const U32& blockID);
+	bool SeekBlock(const uint32_t& blockID){
+		const uint64_t offset = this->GetIndex().GetLinearIndex().at(blockID).byte_offset;
+		std::cerr << "offset is " << offset << std::endl;
+		this->basic_reader.stream_.seekg(offset);
+		if(this->basic_reader.stream_.good() == false){
+			std::cerr << "failed to seek" << std::endl;
+			return false;
+		}
+		return true;
+	}
 
-	U64 OutputRecords(void);
-	U64 OutputVcfLinear(void);
-	U64 OutputVcfSearch(void);
+	/**<
+	 * Open a yon encryption keychain and store the loaded object
+	 * in this reader.
+	 * @param path File path to archive.
+	 * @return     Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool LoadKeychainFile(void);
+
+	uint64_t OutputRecords(void);
+	uint64_t OutputVcfLinear(void);
+	uint64_t OutputVcfSearch(void);
 	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;
 	void OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const;
 	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
-	U64 OutputHtslibVcfLinear(void);
-	U64 OutputHtslibVcfSearch(void);
+	uint64_t OutputHtslibVcfLinear(void);
+	uint64_t OutputHtslibVcfSearch(void);
 	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
 	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
 	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
@@ -208,7 +246,7 @@ public:
 	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.FindOverlaps(meta_entry).size()); }
 
 	// Calculations
-	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const U32& allele) const;
+	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const uint32_t& allele) const;
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression
@@ -220,65 +258,20 @@ public:
 		return(this->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
 	}
 
-
 	/**<
-	 *
-	 * @param path
-	 * @return
+	 * Adds provenance tracking information to the yon header. This data
+	 * corresponds to the version of tachyon, versions of the linked
+	 * libraries, the literal command line provided to the tachyon view
+	 * subroutine, and the internal interpreted setting used in JSON
+	 * format.
 	 */
-	bool LoadKeychainFile(void){
-		std::ifstream keychain_reader(settings.keychain_file, std::ios::binary | std::ios::in);
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") <<  "Failed to open keychain: " << settings.keychain_file << "..." << std::endl;
-			return false;
-		}
+	void UpdateHeaderView(void);
 
-		keychain_reader >> this->keychain;
-		if(!keychain_reader.good()){
-			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse keychain..." << std::endl;
-			return false;
-		}
-		return true;
-	}
-
-	/**<
-	 *
-	 * @param stream
-	 */
-	void PrintHeaderVCF(std::ostream& stream = std::cout){
-		this->global_header.literals_ += "##tachyon_viewVersion=" + tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-		this->global_header.literals_ += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
-		                             +   SSLeay_version(SSLEAY_VERSION) + ","
-		                             +  "ZSTD-" + ZSTD_versionString()
-		                             +  "; timestamp=" + tachyon::utility::datetime() + "\n";
-
-		this->global_header.literals_ += "##tachyon_viewCommand=" + tachyon::constants::LITERAL_COMMAND_LINE + "\n";
-		this->global_header.literals_ += this->GetSettings().get_settings_string();
-		this->global_header.literals_ += '\n';
-
-		this->global_header.PrintVcfHeader(stream);
-	}
-
-
-	//<----------------- EXAMPLE FUNCTIONS -------------------------->
-
-
-	/*
-			if(target_flag_set & 512){
-				// Classify
-				buffer += ";VT=";
-				buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), 1)];
-
-				for(U32 p = 2; p < objects.meta_container->at(position).n_alleles; ++p){
-					buffer += ',';
-					buffer += TACHYON_VARIANT_CLASSIFICATION_STRING[this->ClassifyVariant(objects.meta_container->at(position), p)];
-				}
-			}
-			*/
-
-
+	// temp
+	bool Stats(void);
 
 private:
+	uint64_t b_data_start;
 	basic_reader_type       basic_reader;
 	variant_container_type  variant_container;
 	block_settings_type     block_settings;

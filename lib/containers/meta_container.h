@@ -9,7 +9,7 @@ namespace tachyon{
 namespace containers{
 
 class MetaContainer {
-private:
+public:
 	typedef MetaContainer      self_type;
     typedef std::size_t        size_type;
     typedef core::MetaEntry    value_type;
@@ -25,6 +25,10 @@ private:
 
 public:
 	MetaContainer(const block_type& block);
+	MetaContainer(const self_type& other);
+	MetaContainer(self_type&& other) noexcept;
+	MetaContainer& operator=(const self_type& other);
+	MetaContainer& operator=(self_type&& other) noexcept;
 	~MetaContainer(void);
 
     // Element access
@@ -51,16 +55,17 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
-    // special
-    bool correctRelativePositions(const block_header_type& header){
-    	for(U32 i = 0; i < this->size(); ++i){
+    /**<
+     * Convert relative offsets into absolute offsets.
+     * @param header Reference block header providing the relative minimum position.
+     */
+    void CorrectRelativePositions(const block_header_type& header){
+    	for(uint32_t i = 0; i < this->size(); ++i)
     		this->at(i).position += header.minPosition;
-    	}
-    	return true;
     }
 
 private:
-    void __ctor_setup(const block_type& block);
+    void Setup(const block_type& block);
 
 private:
     size_t  n_entries;
