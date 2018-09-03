@@ -40,7 +40,7 @@
 namespace tachyon{
 
 class VariantReader{
-private:
+public:
 	typedef VariantReader                          self_type;
 	typedef io::BasicBuffer                        buffer_type;
 	typedef VariantHeader                          header_type;
@@ -52,7 +52,7 @@ private:
 	typedef index::Index                           index_type;
 	typedef index::VariantIndexEntry               index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
-	typedef encryption::Keychain<>                 keychain_type;
+	typedef Keychain                               keychain_type;
 	typedef VariantReaderObjects                   objects_type;
 	typedef containers::VariantBlock               block_entry_type;
 	typedef containers::MetaContainer              meta_container_type;
@@ -64,8 +64,9 @@ private:
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
 	typedef io::BasicReader                        basic_reader_type;
-	typedef encryption::EncryptionDecorator        encryption_manager_type;
+	typedef EncryptionDecorator                    encryption_manager_type;
 
+private:
 	// Function pointer to interval slicing.
 	typedef bool (self_type::*filter_intervals_function)(const meta_entry_type& meta_entry) const;
 

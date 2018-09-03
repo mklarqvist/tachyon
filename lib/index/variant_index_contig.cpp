@@ -100,8 +100,8 @@ int32_t VariantIndexContig::Add(const uint64_t fromPosition, const uint64_t toPo
 		if(binFrom == binTo){
 			//if(i != this->n_levels_) std::cerr << fromPosition << "->" << toPosition << ", adding to " << binFrom << " level " << i << " cum : " << this->bins_cumsum_[i-1]+binFrom << "/" << this->size() << std::endl;
 			++this->n_sites_;
-			this->bins_[this->bins_cumsum_[i - 1]+binFrom].Add(yon_block_id);
-			return(this->bins_cumsum_[i - 1]+binFrom);
+			this->bins_[this->bins_cumsum_[i - 1] + binFrom].Add(yon_block_id);
+			return(this->bins_cumsum_[i - 1] + binFrom);
 		}
 	}
 	this->bins_[0].Add(yon_block_id);

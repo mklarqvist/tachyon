@@ -58,10 +58,10 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 		//this->GenerateIdentifiers();
 
 		// Start encryption.
-		//this->block.header.controller.anyEncrypted = true;
-		//if(!encryption_manager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
-		//	std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
-		//}
+		this->block.header.controller.anyEncrypted = true;
+		if(!this->encryption_decorator.Encrypt(this->block, this->keychain, YON_ENCRYPTION_AES_256_GCM)){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt..." << std::endl;
+		}
 	}
 
 	this->block.Finalize();

@@ -30,8 +30,8 @@ public:
 	int32_t info_end_key; // key mapping to the INFO field END
 	int32_t info_svlen_key; // key mapping to the INFO field SVLEN
 	uint32_t compression_level; // compression level sent to ZSTD
-	std::string input_file;   // input file name
-	std::string output_prefix;// output file prefix
+	std::string input_file; // input file name
+	std::string output_prefix; // output file prefix
 	uint32_t htslib_extra_threads; // extra threads for compress/decompress htslib
 };
 
@@ -58,7 +58,7 @@ private:
 	settings_type settings_;
 	writer_interface_type* writer; // writer
 
-	// Pimpl Idiom
+	// Pimpl idiom
 	class VariantImporterImpl;
 	std::unique_ptr<VariantImporterImpl> mImpl;
 };

@@ -1,60 +1,77 @@
 #include "encryption_decorator.h"
 
 namespace tachyon{
-namespace encryption{
 
-bool EncryptionDecorator::encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
+bool EncryptionDecorator::Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
 	if(encryption_type == YON_ENCRYPTION_AES_256_GCM){
-		return(this->encryptAES256(block, keychain));
+		return(this->EncryptAES256(block, keychain));
+	} else {
+		std::cerr << "not implemented yet" << std::endl;
 	}
 	return(false);
 }
 
-bool EncryptionDecorator::decryptAES256(variant_block_type& block, keychain_type& keychain){
-
+bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keychain){
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-		if(!this->decryptAES256(block.base_containers[i], keychain)){
-			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl;
-			return false;
+		if(block.base_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
+			this->DecryptAES256(block.base_containers[i], keychain);
+		} else {
+			std::cerr << "not implemented yet" << std::endl;
 		}
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
-		if(!this->decryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(block.info_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
+			this->DecryptAES256(block.info_containers[i], keychain);
+		} else {
+			std::cerr << "not implemented yet" << std::endl;
+		}
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
-		if(!this->decryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to decrypt!" << std::endl; return false; }
+		if(block.format_containers[i].header.data_header.controller.encryption == YON_ENCRYPTION_AES_256_GCM){
+			this->DecryptAES256(block.format_containers[i], keychain);
+		} else {
+			std::cerr << "not implemented yet" << std::endl;
+		}
 	}
 
-	return(true);
+	return true;
 }
 
-bool EncryptionDecorator::encryptAES256(variant_block_type& block, keychain_type& keychain){
-	uint8_t RANDOM_BYTES[32];
-	RAND_bytes(&RANDOM_BYTES[0], 32);
-	block.header.block_hash = XXH64(&RANDOM_BYTES[0], 32, 1337);
+bool EncryptionDecorator::EncryptAES256(variant_block_type& block, keychain_type& keychain){
+	block.header.block_hash = keychain.GetRandomHashIdentifier(true);
 
+	// Iterate over available basic containers.
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-		if(!this->encryptAES256(block.base_containers[i], keychain)){
+		if(!this->EncryptAES256(block.base_containers[i], keychain)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl;
 			return false;
 		}
 	}
+
+	// Iterate over Info containers.
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
-		if(!this->encryptAES256(block.info_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->EncryptAES256(block.info_containers[i], keychain)){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl;
+			return false;
+		}
 	}
 
+	// Iterate over Format containers.
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
-		if(!this->encryptAES256(block.format_containers[i], keychain)){ std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl; return false; }
+		if(!this->EncryptAES256(block.format_containers[i], keychain)){
+			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt!" << std::endl;
+			return false;
+		}
 	}
 
 	return(true);
 }
 
-bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_type& keychain){
-	aes256gcm_type entry;
-	entry.initiateRandom();
+bool EncryptionDecorator::EncryptAES256(stream_container& container, keychain_type& keychain){
+	KeychainKeyGCM<> entry;
+	entry.InitiateRandom();
 	entry.encryption_type = YON_ENCRYPTION_AES_256_GCM;
 
 	EVP_CIPHER_CTX *ctx = NULL;
@@ -142,7 +159,7 @@ bool EncryptionDecorator::encryptAES256(stream_container& container, keychain_ty
 	return(true);
 }
 
-bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_type& keychain){
+bool EncryptionDecorator::DecryptAES256(stream_container& container, keychain_type& keychain){
 	if(container.data.size() == 0)
 		return true;
 
@@ -154,12 +171,12 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 		return false;
 	}
 
-	uint32_t* match = nullptr;
+	uint32_t match = 0;
 	if(keychain.GetHashIdentifier(container.header.identifier, match) == false){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Did not find ID in keychain..." << std::endl;
 		return false;
 	}
-	KeychainKeyGCM<>& entry = keychain[*match];
+	KeychainKeyGCM<>& entry = *reinterpret_cast<KeychainKeyGCM<>*>(keychain[match]);
 
 	EVP_CIPHER_CTX *ctx = NULL;
 	int32_t len = 0, plaintext_len = 0, ret;
@@ -230,5 +247,4 @@ bool EncryptionDecorator::decryptAES256(stream_container& container, keychain_ty
 	}
 }
 
-}
 }

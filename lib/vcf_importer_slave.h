@@ -56,6 +56,7 @@ public:
 	VcfImporterSlave& operator+=(const VcfImporterSlave& other){
 		this->n_blocks_processed += other.n_blocks_processed;
 		this->index += other.index;
+		this->keychain += other.keychain;
 		this->stats_basic += other.stats_basic;
 		this->stats_format += other.stats_format;
 		this->stats_info += other.stats_info;
@@ -92,6 +93,7 @@ public:
 	uint32_t n_blocks_processed; // number of blocks processed
 	uint32_t block_id; // local block id
 	index::Index index; // local index for this thread
+	Keychain keychain; // local keychain for this thread
 	std::shared_ptr<vcf_header_type> vcf_header_; // global header
 	std::shared_ptr<settings_type> settings_; // internal settings
 	bool GT_available_; // genotypes available
@@ -99,6 +101,7 @@ public:
 	radix_sorter_type permutator;  // GT permuter
 	gt_encoder_type   encoder;     // RLE packer
 	compression_manager_type compression_manager; // General compression manager
+	EncryptionDecorator encryption_decorator;
 	block_type block; // Local data container
 	// Maps from htslib vcf header to yon header.
 	reorder_map_type filter_reorder_map_;

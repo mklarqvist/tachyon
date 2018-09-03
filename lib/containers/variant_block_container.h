@@ -41,7 +41,7 @@ private:
 	typedef VariantReaderObjects                 objects_type;
 
 	typedef algorithm::CompressionManager        compression_manager_type;
-	typedef encryption::EncryptionDecorator      encryption_manager_type;
+	typedef EncryptionDecorator      encryption_manager_type;
 
 	typedef std::unordered_map<int, int>    map_type;
 

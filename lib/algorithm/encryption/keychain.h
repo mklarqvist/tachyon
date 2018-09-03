@@ -7,21 +7,25 @@
 #include "containers/components/generic_iterator.h"
 
 namespace tachyon{
-namespace encryption{
 
-template < class KeyType = KeychainKeyGCM<> >
-class Keychain{
+/**<
+ * Primary encryption/decryption keychain for a tachyon
+ * archive. The keychain does NOT contain any information
+ * to ascertain the relationship between the keychain and
+ * the correct archive.
+ */
+class Keychain {
 public:
     typedef Keychain                  self_type;
 	typedef std::size_t               size_type;
-    typedef KeyType                   value_type;
+    typedef KeychainKey*              value_type;
     typedef value_type&               reference;
     typedef const value_type&         const_reference;
     typedef value_type*               pointer;
     typedef const value_type*         const_pointer;
-    typedef hash::HashTable<uint64_t, uint32_t> hash_table;
     typedef containers::VariantBlock  variant_block_type;
     typedef containers::DataContainer container_type;
+    typedef std::unordered_map<uint64_t, uint32_t> htable_type;
 
     typedef yonRawIterator<value_type>       iterator;
 	typedef yonRawIterator<const value_type> const_iterator;
@@ -30,7 +34,43 @@ public:
     Keychain();
     Keychain(const uint32_t start_capacity);
     Keychain(const self_type& other);
+    Keychain(Keychain&& other) = delete;
+    Keychain& operator=(Keychain&& other) = delete;
+    Keychain& operator=(const self_type& other){
+     	for(int i = 0; i < this->size(); ++i)
+     		delete this->entries_[i];
+     	delete [] this->entries_;
+
+     	this->n_entries_ = other.n_entries_;
+     	this->n_capacity_ = other.n_capacity_;
+     	this->entries_ = new value_type[this->n_capacity_];
+
+     	// Clone data.
+     	for(uint32_t i = 0; i < this->size(); ++i)
+ 			this->entries_[i] = other.entries_[i]->Clone();
+
+     	// Construct hash table for hashed field-id lookups.
+     	this->BuildHashTable();
+     	return(*this);
+    }
     ~Keychain();
+
+    Keychain& operator+=(const self_type& other){
+    	if(this->size() + other.size() >= this->capacity()){
+    		this->resize(this->size() + other.size() + 1024);
+    	}
+
+    	uint32_t offset = 0;
+    	for(int i = this->size(); i < this->size() + other.size(); ++i, ++offset){
+    		this->entries_[i] = other.entries_[offset]->Clone();
+    	}
+    	this->n_entries_ += other.size();
+
+    	// Reconstruct the hash-table for hashed field-id lookups.
+    	this->BuildHashTable();
+
+    	return(*this);
+    }
 
    	// Element access
 	inline reference at(const size_type& position){ return(this->entries_[position]); }
@@ -57,22 +97,26 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
 
-	void operator+=(const value_type& keychain);
+	void operator+=(KeychainKey& keychain);
 
 	void resize(const size_type new_capacity);
 	void resize(void);
 
-	uint64_t GetRandomHashIdentifier();
-	bool GetHashIdentifier(const uint64_t& value, uint32_t*& match);
+	uint64_t GetRandomHashIdentifier(const bool store = true);
+	bool GetHashIdentifier(const uint64_t& value, uint32_t& match);
 
 private:
-	bool __buildHashTable(void);
+	bool BuildHashTable(void);
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& keychain){
 		stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
 		stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_type));
-		for(uint32_t i = 0; i < keychain.size(); ++i) stream << keychain[i];
+
+		// Iteratively write keychain keys.
+		for(uint32_t i = 0; i < keychain.size(); ++i)
+			stream << *keychain[i];
+
 		return(stream);
 	}
 
@@ -86,27 +130,46 @@ private:
 
 		stream.read(reinterpret_cast<char*>(&keychain.n_entries_),  sizeof(size_type));
 		stream.read(reinterpret_cast<char*>(&keychain.n_capacity_), sizeof(size_type));
+
+		for(int i = 0; i < keychain.size(); ++i)
+			delete keychain.entries_[i];
 		delete [] keychain.entries_;
+
 		keychain.entries_ = new value_type[keychain.n_capacity_];
-		for(uint32_t i = 0; i < keychain.size(); ++i) stream >> keychain[i];
-		keychain.__buildHashTable();
+		for(uint32_t i = 0; i < keychain.size(); ++i){
+			uint8_t type = 0;
+			stream.read(reinterpret_cast<char*>(&type), sizeof(uint8_t));
+			if(type == YON_ENCRYPTION_AES_256_GCM)
+				keychain[i] = new KeychainKeyGCM<>;
+			else {
+				std::cerr << "unknown encryption type" << std::endl;
+				exit(1);
+			}
+			stream >> *keychain[i];
+		}
+
+		keychain.BuildHashTable();
+
 		return(stream);
 	}
 
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& keychain){
 		buffer += keychain.n_entries_;
 		buffer += keychain.n_capacity_;
-		for(uint32_t i = 0; i < keychain.size(); ++i) buffer += keychain[i];
+		for(uint32_t i = 0; i < keychain.size(); ++i) buffer += *keychain[i];
 		return(buffer);
 	}
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& keychain){
+		// Todo
+		/*
 		buffer >> keychain.n_entries_;
 		buffer >> keychain.n_capacity_;
 		delete [] keychain.entries_;
 		keychain.entries_ = new value_type[keychain.n_capacity_];
-		for(uint32_t i = 0; i < keychain.size(); ++i) buffer >> keychain.entries_[i];
-		keychain.__buildHashTable();
+		for(uint32_t i = 0; i < keychain.size(); ++i) buffer >> *keychain.entries_[i];
+		keychain.BuildHashTable();
+		*/
 		return(buffer);
 	}
 
@@ -114,120 +177,10 @@ private:
     size_type   n_entries_;
     size_type   n_capacity_;
     pointer     entries_;
-    hash_table* htable_identifiers_;
+    htable_type htable_;
 };
 
 
-template <class KeyType>
-Keychain<KeyType>::Keychain() :
-	n_entries_(0),
-	n_capacity_(100000),
-	entries_(new value_type[this->n_capacity_]),
-	htable_identifiers_(new hash_table(500000))
-{
-}
-
-template <class KeyType>
-Keychain<KeyType>::Keychain(const uint32_t start_capacity) :
-	n_entries_(0),
-	n_capacity_(start_capacity),
-	entries_(new value_type[this->n_capacity_]),
-	htable_identifiers_(new hash_table(500000))
-{}
-
-template <class KeyType>
-Keychain<KeyType>::Keychain(const self_type& other) :
-	n_entries_(other.n_entries_),
-	n_capacity_(other.n_capacity_),
-	entries_(new value_type[this->n_capacity_]),
-	htable_identifiers_(new hash_table(500000))
-{
-	for(uint32_t i = 0; i < this->size(); ++i) this->entries_[i] = other.entries_[i];
-	this->__buildHashTable();
-}
-
-template <class KeyType>
-Keychain<KeyType>::~Keychain(){
-	delete [] this->entries_;
-	delete this->htable_identifiers_;
-}
-
-template <class KeyType>
-void Keychain<KeyType>::operator+=(const value_type& keychain){
-	if(this->size() + 1 == this->capacity())
-		this->resize();
-
-	this->entries_[this->n_entries_++] = keychain;
-}
-
-template <class KeyType>
-void Keychain<KeyType>::resize(const size_type new_capacity){
-	if(new_capacity < this->capacity()){
-		this->n_entries_ = new_capacity;
-		return;
-	}
-
-	pointer old = this->entries_;
-	this->entries_ = new value_type[new_capacity];
-	for(uint32_t i = 0; i < this->size(); ++i) this->entries_[i] = old[i];
-	delete [] old;
-	this->n_capacity_ =  new_capacity;
-}
-
-template <class KeyType>
-void Keychain<KeyType>::resize(void){ this->resize(this->capacity()*2); }
-
-template <class KeyType>
-uint64_t Keychain<KeyType>::GetRandomHashIdentifier(){
-	if(this->htable_identifiers_ == nullptr) return false;
-	uint8_t RANDOM_BYTES[32];
-	uint64_t value = 0;
-	uint32_t* match = nullptr;
-	while(true){
-		RAND_bytes(&RANDOM_BYTES[0], 32);
-		value = XXH64(&RANDOM_BYTES[0], 32, 1337);
-
-		if(value == 0) continue;
-
-		if(this->htable_identifiers_->GetItem(&value, match, sizeof(uint64_t)))
-			continue;
-
-		if(!this->htable_identifiers_->SetItem(&value, this->size(), sizeof(uint64_t))){
-			std::cerr << utility::timestamp("ERROR","HASH") << "Failed to add field identifier..." << std::endl;
-			return 0;
-		}
-		break;
-	}
-
-	return value;
-}
-
-template <class KeyType>
-bool Keychain<KeyType>::GetHashIdentifier(const uint64_t& value, uint32_t*& match){
-	if(this->htable_identifiers_ == nullptr) return false;
-	if(this->htable_identifiers_->GetItem(&value, match, sizeof(uint64_t))){
-		return true;
-	}
-	return false;
-}
-
-template <class KeyType>
-bool Keychain<KeyType>::__buildHashTable(void){
-	delete this->htable_identifiers_;
-
-	if(this->size()*2 < 50e3) this->htable_identifiers_ = new hash_table(50e3);
-	else this->htable_identifiers_ = new hash_table(this->size()*2);
-	for(uint32_t i = 0; i < this->size(); ++i){
-		if(!this->htable_identifiers_->SetItem(&this->at(i).field_id, i, sizeof(uint64_t))){
-			std::cerr << utility::timestamp("ERROR", "KEYCHAIN") << "Failed to generate ID..." << std::endl;
-			return false;
-		}
-	}
-	return true;
-}
-
-
-}
 }
 
 

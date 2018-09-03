@@ -55,7 +55,7 @@ private:
 	 * @param keychain Source encryption keychain.
 	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool WriteKeychain(writer_interface_type* writer, const encryption::Keychain<>& keychain);
+	bool WriteKeychain(writer_interface_type* writer);
 
 	/**<
 	 * Write the appropriate yon archive header marker followed by the
@@ -76,6 +76,9 @@ private:
 public:
 	std::shared_ptr<settings_type> settings;
 	compression_manager_type compression_manager;
+
+	// Encryption keychain.
+	Keychain keychain;
 
 	// Map from BCF global FORMAT/INFO/FILTER IDX to local IDX such that
 	// FORMAT maps to [0, f-1], and INFO maps to [0, i-1] and FILTER to
@@ -354,8 +357,8 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
 
 	// Setup the encryption container.
-	encryption::EncryptionDecorator encryption_manager;
-	encryption::Keychain<> keychain;
+	EncryptionDecorator encryption_manager;
+	Keychain keychain;
 
 	// The index needs to know how many contigs that's described in the
 	// Vcf header and their lengths in base-pairs. This information is
@@ -427,36 +430,44 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	write.stats_info   += consumers[0].importer.stats_info;
 	write.stats_format += consumers[0].importer.stats_format;
 
-	if(settings.output_prefix != "-"){
-		std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
-		for(int i = 0; i < write.stats_basic.size(); ++i)
-			std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
-
-		for(int i = 0; i < write.stats_info.size(); ++i)
-			std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
-
-		for(int i = 0; i < write.stats_format.size(); ++i)
-			std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
-	}
-
+	this->keychain = consumers[0].importer.keychain;
 	writer->index += consumers[0].importer.index;
 	//this->writer->index.Print(std::cerr);
 
 	// Finalize writing procedure.
 	write.WriteFinal(checksums);
-	//write.WriteKeychain(keychain);
+	this->WriteKeychain(writer);
 
-	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records." << std::endl;
+	uint64_t b_uncompressed = 0;
+	if(settings.output_prefix != "-"){
+		std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
+		for(int i = 0; i < write.stats_basic.size(); ++i){
+			std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
+			b_uncompressed += write.stats_basic[i].cost_uncompressed + write.stats_basic[i].cost_strides_compressed;
+		}
+
+		for(int i = 0; i < write.stats_info.size(); ++i){
+			std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
+			b_uncompressed += write.stats_info[i].cost_uncompressed + write.stats_info[i].cost_strides_compressed;
+		}
+
+		for(int i = 0; i < write.stats_format.size(); ++i){
+			std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
+			b_uncompressed += write.stats_format[i].cost_uncompressed + write.stats_format[i].cost_strides_compressed;
+		}
+	}
+
+	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::toPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "All done (" << timer.ElapsedString() << ")" << std::endl;
 
-	delete [] consumers;
+	//delete [] consumers;
 
 	// All done
 	return(true);
 }
 
-bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* writer, const encryption::Keychain<>& keychain){
+bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* writer){
 	// Write encryption keychain.
 	if(this->settings->encrypt_data){
 		if(this->settings->output_prefix.size()){

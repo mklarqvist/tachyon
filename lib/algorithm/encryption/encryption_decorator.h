@@ -11,7 +11,6 @@
 
 
 namespace tachyon{
-namespace encryption{
 
 class EncryptionDecorator{
 public:
@@ -19,23 +18,21 @@ public:
 	typedef containers::VariantBlock  variant_block_type;
 	typedef containers::DataContainer stream_container;
 	typedef io::BasicBuffer           buffer_type;
-	typedef KeychainKeyGCM<>          aes256gcm_type;
-	typedef Keychain<>                keychain_type;
+	typedef Keychain                  keychain_type;
 
 public:
 	EncryptionDecorator() = default;
 	~EncryptionDecorator() = default;
-	bool encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type);
-	bool decryptAES256(variant_block_type& block, keychain_type& keychain);
-	bool encryptAES256(variant_block_type& block, keychain_type& keychain);
-	bool encryptAES256(stream_container& container, keychain_type& keychain);
-	bool decryptAES256(stream_container& container, keychain_type& keychain);
+	bool Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type);
+	bool Decrypt(variant_block_type& block, keychain_type& keychain);
+	bool EncryptAES256(variant_block_type& block, keychain_type& keychain);
+	bool EncryptAES256(stream_container& container, keychain_type& keychain);
+	bool DecryptAES256(stream_container& container, keychain_type& keychain);
 
 public:
 	buffer_type buffer;
 };
 
-}
 }
 
 #endif /* ALGORITHM_ENCRYPTION_ENCRYPTION_DECORATOR_H_ */
