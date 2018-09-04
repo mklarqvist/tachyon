@@ -178,7 +178,14 @@ public:
 	bool operator+=(meta_entry_type& meta_entry);
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 
-	// Todo:
+	/**<
+	 * Wrapper to add a new DataContainer to this VariantBlock container.
+	 * @param dc
+	 * @param dst_containers
+	 * @param AddWrapper
+	 * @param StreamFieldLookup
+	 * @return
+	 */
 	bool AddWrapper(const DataContainer& dc,
 	                container_type* dst_containers,
 					uint32_t(VariantBlockFooter::*AddWrapper)(const uint32_t),
