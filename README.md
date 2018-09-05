@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
-[![Release](https://img.shields.io/badge/Release-beta_0.3.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Release](https://img.shields.io/badge/Release-beta_0.4.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <div align="center">
@@ -8,14 +8,19 @@
 
 Tachyon, or `YON` for short, is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
 
-## Highlights of Tachyon
-* **Self-indexing**: Tachyon always builds the best possible quad-tree, linear, and meta-index given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
-* **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. This approach guarantees file integrity when compressing/decompressing and encrypting/decrypting. These checksums are stored internally.
-* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl].
-* **Compression**: Tachyon files are generally many fold (in many cases many 10- to 100-folds) smaller than the current standard file-format.
-* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries. This memory layout enables extremely rapid field-specific queries.  
-* **Performance**: The file-format is designed as independent blocks of data into independent byte streams. This approach is inherently amenable to paralellization through scatter-gather approaches on multiple cores or multiple machines.
-* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF`, `VCF.GZ`, and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
+## Perfomance
+The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. We generated a yon archive for this dataset (left) and next retrieved the site-specific information only (no FORMAT fields; right).
+
+Compression Ratio | Compression Speed
+------------------|-------------------
+![Compression Ratio](docs/hrc_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_hrc_bcftools.jpg "Compression Ratio")
+
+Compression Ratio | Compression Speed
+------------------|-------------------
+![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | placeholder
+
+
+ubcf: uncompressed bcf; uyon: uncompressed yon; 1 GB = 1000 * 1000 * 1000 b
 
 ---  
 
