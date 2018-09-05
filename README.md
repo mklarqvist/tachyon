@@ -9,16 +9,19 @@
 Tachyon, or `YON` for short, is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
 
 ## Perfomance
-The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. We generated a yon archive for this dataset (left) and next retrieved the site-specific information only (no FORMAT fields; right).
+For reference, we compared yon to bcf on a server running Linux Ubuntu, with an Intel Xeon E5-2697 v3 processor and 64GB of DDR4-2133 RAM.
+
+The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. Left panel: Filesizes for chromosomes 1-22. Right panel: We generated a yon archive for this dataset (left) and compared file sizes for both uncompressed (ubcf and uyon) and compressed data (bcf and yon) and next retrieved the site-specific information only (dropping all FORMAT fields; right).
 
 Compression Ratio | Compression Speed
 ------------------|-------------------
 ![Compression Ratio](docs/hrc_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_hrc_bcftools.jpg "Compression Ratio")
 
+The following tests were run on the [1000 Genomes Phase 3](http://www.internationalgenome.org/) (1KGP3) data. There are ~84.4 million phased SNPs in 2,504 samples from 26 distinct populations.
+
 Compression Ratio | Compression Speed
 ------------------|-------------------
 ![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | placeholder
-
 
 ubcf: uncompressed bcf; uyon: uncompressed yon; 1 GB = 1000 * 1000 * 1000 b
 
@@ -29,14 +32,14 @@ For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
-sudo ./install.sh
+./install.sh
 ```
-Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
-If you do not have super-user privileges required to install new packages on your system then run
+Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on `apt-get`, so it is unlikely to run without extensive modifications on non-Debian-based systems.
+If you do not have super-user (administrator) privileges required to install new packages on your system then run the local installation:
 ```bash
 ./install.sh local
 ```
-In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
+When installing locally the required dependencies are downloaded and built in the root directory. This approach will require additional effort if you intend to move the compiled libraries to a different directory.
 
 ## Documentation
 
@@ -54,7 +57,7 @@ Interested in contributing? Fork and submit a pull request and it will be review
 We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version
-This is Tachyon 0.3.0. Tachyon follows [semantic versioning](https://semver.org/).
+This is Tachyon 0.4.0. Tachyon follows [semantic versioning](https://semver.org/).
 
 ### History
 Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.

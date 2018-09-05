@@ -795,6 +795,10 @@ void VariantReader::UpdateHeaderView(void){
 
 bool VariantReader::Stats(void){
 	this->variant_container.AllocateGenotypeMemory();
+
+	yon_producer_vblock pro(100);
+	pro.Start(&VariantReader::NextBlock, *this, this->variant_container.GetBlock());
+
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
 	//	return(0);

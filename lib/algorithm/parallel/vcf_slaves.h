@@ -13,6 +13,9 @@
 
 namespace tachyon{
 
+// Forward declaration for producer.
+class VariantReader;
+
 struct yon_pool_vblock_payload {
 	yon_pool_vblock_payload() : block_id(0), c(nullptr){}
 	yon_pool_vblock_payload(const uint32_t bid, containers::VariantBlock* vc) : block_id(bid), c(vc){}
@@ -160,11 +163,14 @@ public:
 };
 
 /**<
- * Single producer (albeit spawning many htslib decompressor threads)
- * reading htslib Vcf records from a stream into a VcfContainer and
- * inserts that object into the cyclic producer queue.
+ * Single producer for producing raw (uncompressed and
+ * encrypted) VcfContainer blocks. The producer push these
+ * containers into the shared data pool of payloads.
  */
 struct yon_producer_vblock {
+public:
+	typedef yon_producer_vblock self_type;
+
 public:
 	yon_producer_vblock(uint32_t pool_size) :
 		all_finished(false),
@@ -177,24 +183,36 @@ public:
 	 * Spawn worker reading data into the producer data pool.
 	 * @return Returns a reference to the spawned thread.
 	 */
-	std::thread& Start(void){
-		this->thread_ = std::thread(&yon_producer_vblock::Produce, this);
+	template <class T>
+	std::thread& Start(bool (T::*produce_function)(void),
+	                   T& vreader,
+	                   containers::VariantBlock& block)
+	{
+		this->thread_ = std::thread(&self_type::Produce<T>, std::function<bool(void)>(produce_function), vreader, block, this);
 		return(this->thread_);
 	}
 
 private:
 	/**<
-	 * Internal function that continues to produce raw vblockontainer
+	 * Internal function that continues to produce raw vblockcontainer
 	 * payloads to be inserted into the shared resource pool for
 	 * consumers to retrieve. Continues until no more data is available.
 	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
-	bool Produce(bool (*produce_function)(void)){
+	template <class T>
+	bool Produce(std::function<bool(void)>& f,
+	             T& vreader,
+	             containers::VariantBlock& block)
+	{
+		/*
+		// Todo: producer function has to match the function definitions above
+		//       and additionally require the overloading of a target VariantBlock
+		//       reference container.
 		uint32_t n_blocks = 0;
 		this->data_available  = true;
 		this->data_pool.alive = true;
 		while(true){
-			if((*produce_function)() == false){
+			if((vreader.*produce_function)() == false){
 				// No more data is available or an error was seen.
 				// Trigger shared resources flag alive to no longer
 				// evaluate as true. This triggers the exit condition
@@ -217,9 +235,9 @@ private:
 			this->n_rcds_loaded += 0;
 			// Peculiar syntax for adding a new payload to the cyclic queue. The
 			// move semantics is required for intended functionality!
-			containers::VariantBlock b;
-			this->data_pool.emplace(new yon_pool_vblock_payload(n_blocks++, new containers::VariantBlock(std::move(b))));
+			this->data_pool.emplace(new yon_pool_vblock_payload(n_blocks++, new containers::VariantBlock(std::move(block))));
 		}
+		*/
 		return true;
 	}
 

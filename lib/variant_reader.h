@@ -37,6 +37,9 @@
 
 #include "core/ts_tv_object.h"
 
+
+#include "algorithm/parallel/vcf_slaves.h"
+
 namespace tachyon{
 
 class VariantReader{
