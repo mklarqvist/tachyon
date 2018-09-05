@@ -8,7 +8,7 @@ DataBlockSettings::DataBlockSettings() :
 	display_ref(true),
 	display_alt(true),
 	display_filter(true),
-	load_static(std::numeric_limits<uint32_t>::max()),
+	load_static(0),
 	display_static(std::numeric_limits<uint32_t>::max()),
 	construct_occ_table(false),
 	annotate_extra(false)
@@ -130,13 +130,14 @@ DataBlockSettings& DataBlockSettings::LoadInfo(const uint32_t field_id){
 
 DataBlockSettings& DataBlockSettings::LoadGenotypes(const bool set){
 	this->LoadWrapper(set, YON_BLK_BV_GT);
+	this->LoadWrapper(set, YON_BLK_BV_GT_SUPPORT);
+	this->LoadWrapper(set, YON_BLK_BV_GT_PLOIDY);
 	this->LoadWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
 }
 
 DataBlockSettings& DataBlockSettings::DisplayGenotypes(const bool set){
 	this->DisplayWrapper(set, YON_BLK_BV_GT);
-	this->DisplayWrapper(set, YON_BLK_BV_PPA);
 	return(*this);
 }
 

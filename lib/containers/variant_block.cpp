@@ -179,8 +179,8 @@ void VariantBlock::clear(void){
 void VariantBlock::resize(const uint32_t s){
 	if(s == 0) return;
 
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].resize(s);
-	for(uint32_t i = 0; i < n_info_c_allocated; ++i) this->info_containers[i].resize(s);
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)     this->base_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_info_c_allocated; ++i)   this->info_containers[i].resize(s);
 	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
 }
 

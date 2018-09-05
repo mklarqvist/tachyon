@@ -1,7 +1,8 @@
 #include "variant_reader.h"
 #include "algorithm/parallel/variant_slaves.h"
+#include "algorithm/parallel/variant_base_slave.h"
 
-namespace tachyon{
+namespace tachyon {
 
 VariantReader::VariantReader() :
 	b_data_start(0)
@@ -488,10 +489,11 @@ uint64_t VariantReader::OutputVcfLinear(void){
 	//	return(0);
 	//}
 
+	io::BasicBuffer output_buffer(100000);
 	while(this->NextBlock()){
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
-		io::BasicBuffer output_buffer(100000);
+
 		// If occ table is built.
 		//objects->occ = &occ;
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
@@ -817,121 +819,42 @@ void VariantReader::UpdateHeaderView(void){
 }
 
 bool VariantReader::Stats(void){
-	//this->variant_container.AllocateGenotypeMemory();
+	const uint32_t n_threads = std::thread::hardware_concurrency();
+	yon_producer_vblock<VariantReader> prd(n_threads);
+	prd.Start(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
 
-	yon_producer_vblock<VariantReader> prd(std::thread::hardware_concurrency());
-	std::thread& t = prd.Start(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
-	t.join();
+	yon_consumer_vblock<VariantSlaveTsTv>* csm = new yon_consumer_vblock<VariantSlaveTsTv>[n_threads];
+	std::shared_ptr<std::atomic<bool>> s_data_avail(&prd.data_available);
+	std::shared_ptr<yon_pool_vblock>   s_data_pool(&prd.data_pool);
 
-	return(true);
+	VariantSlaveTsTv* slave_test = new VariantSlaveTsTv[n_threads];
 
-	// temp
-	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
-	//	return(0);
-	//}
+ 	for(int i = 0; i < n_threads; ++i){
+		csm[i].thread_id = i;
+		csm[i].data_available = s_data_avail;
+		csm[i].data_pool      = s_data_pool;
 
-	/*
-	uint32_t n_blocks = 0;
-	for(uint32_t i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
-		n_blocks += this->GetIndex().index_.linear_[i].size();
+		slave_test[i].settings = this->GetBlockSettings();
+		slave_test[i].s.SetSize(this->global_header.GetNumberSamples());
+		slave_test[i].vc << this->global_header;
+		slave_test[i].vc.AllocateGenotypeMemory();
+
+		csm[i].Start(&VariantSlaveTsTv::GatherGenotypeStatistics, slave_test[i]);
 	}
-	uint32_t n_threads = std::thread::hardware_concurrency();
+	// Join consumer and producer threads.
+	for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
 
-	std::cerr << "blocks: " << n_blocks << " and threads " << n_threads << std::endl;
+	prd.all_finished = true;
+	prd.thread_.join();
 
-	std::vector<std::pair<uint32_t, uint32_t>> workload(n_threads);
-	uint32_t n_cumulative = 0;
-	assert(n_threads != 0);
-	uint32_t n_step_size = n_blocks / n_threads;
-	for(uint32_t i = 0; i < n_threads - 1; ++i){
-		workload[i] = std::pair<uint32_t, uint32_t>(n_cumulative, n_cumulative + n_step_size);
-		n_cumulative += n_step_size;
-	}
-	workload.back().first = n_cumulative;
-	workload.back().second = n_blocks;
-
-	for(uint32_t i = 0; i < n_threads; ++i){
-		std::cerr << i << ": " << workload[i].first << "-" << workload[i].second << std::endl;
-	}
-
-	// Final solution.
 	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+	for(uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
 
-	//
-	yon_stats_thread_pool pool(n_threads);
-	std::vector<std::thread*> threads(n_threads);
-	for(uint32_t i = 0; i < n_threads; ++i){
-		pool[i].reader      = new VariantReader(*this);
-		pool[i].block_from  = workload[i].first;
-		pool[i].block_to    = workload[i].second;
-		threads[i] = pool[i].Start();
-	}
-
-	for(uint32_t i = 0; i < n_threads; ++i) threads[i]->join();
-	std::cerr << "done joining" << std::endl;
-
-	return true;
-	*/
-	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
-
-	// stupid test
-	//VariantReader v(*this);
-
-	while(this->NextBlock()){
-		//variant_container_type c = v.ReturnBlock();
-		//variant_container_type& c = this->GetCurrentContainer();
-		//c.AllocateGenotypeMemory();
-
-		// Move all data to new instance.
-		//variant_container_type c(std::move(this->variant_container));
-		//variant_container_type c;
-		//c = std::move(this->variant_container);
-		//variant_container_type c(this->variant_container);
-
-		objects_type* objects = this->variant_container.LoadObjects(this->block_settings);
-		yon1_t* entries = this->variant_container.LazyEvaluate(*objects);
-
-		// Debug
-		//std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
-
-		// Debug
-		//containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
-		//std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
-
-
-
-		// If occ table is built.
-		//objects->occ = &occ;
-		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
-
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			// Each entry evaluate occ if available.
-			//entries[i].occ = objects->occ;
-			//entries[i].EvaluateOcc();
-
-			const uint32_t n_format_avail = entries[i].format_ids->size();
-			if(n_format_avail > 0 && entries[i].is_loaded_gt){
-				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
-				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
-				//s.Update(entries[i]);
-			}
-		}
-
-		delete [] entries;
-		//objects->occ = nullptr;
-		delete objects;
-	}
+	delete [] slave_test;
 
 	io::BasicBuffer json_buffer(250000);
-	json_buffer += "{\"PSI\":{\n";
-	for(uint32_t i = 0; i < this->GetGlobalHeader().GetNumberSamples(); ++i){
-		s[i].LazyEvalute();
-		if(i != 0) json_buffer += ",\n";
-		s[i].ToJsonString(json_buffer, this->GetGlobalHeader().samples_[i]);
-	}
-	json_buffer += "\n}\n}\n";
+	s.ToJsonString(json_buffer, this->global_header.samples_);
 
-	//std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
 	std::cout.write(json_buffer.data(), json_buffer.size());
 	std::cout.flush();
 

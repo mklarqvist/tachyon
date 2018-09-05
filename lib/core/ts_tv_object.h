@@ -34,6 +34,21 @@ public:
 		}
 	}
 
+	yon_stats_sample& operator+=(const yon_stats_sample& other){
+		this->n_ins += other.n_ins;
+		this->n_del += other.n_del;
+		this->n_singleton += other.n_singleton;
+		this->n_ts += other.n_ts;
+		this->n_tv += other.n_tv;
+		for(int i = 0; i < 9; ++i){
+			for(uint32_t j = 0; j < 9; ++j){
+				this->base_conv[i][j] += other.base_conv[i][j];
+			}
+		}
+
+		return(*this);
+	}
+
 	inline double GetTiTVRatio(void) const{
 		// Prevent division by 0
 		if(this->n_ts == 0) return 0;
@@ -63,9 +78,8 @@ public:
 	}
 
 	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const {
-
 		buffer +=  "\"" + sample_name + "\":{";
-		buffer += " \"n_ins\":" + std::to_string(this->n_ins);
+		buffer +=  "\"n_ins\":" + std::to_string(this->n_ins);
 		buffer += ",\"n_del\":" + std::to_string(this->n_del);
 		buffer += ",\"n_singleton\":" + std::to_string(this->n_singleton);
 		buffer += ",\"n_ts\":"  + std::to_string(this->n_ts);
@@ -101,6 +115,44 @@ public:
 	yon_stats_tstv(const uint32_t n_samples) : n_s(n_samples), n_rcds(0), n_snp(0), n_mnp(0), n_ins(0), n_del(0), n_other(0), n_no_alts(0), n_singleton(0),
                                                n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(new yon_stats_sample[n_samples]){}
 	~yon_stats_tstv(void){ delete [] this->sample; }
+
+	yon_stats_tstv& operator+=(const yon_stats_tstv& other){
+		assert(other.n_s == this->n_s);
+		this->n_rcds += other.n_rcds;
+		this->n_snp += other.n_snp;
+		this->n_mnp += other.n_mnp;
+		this->n_ins += other.n_ins;
+		this->n_del += other.n_del;
+		this->n_other += other.n_other;
+		this->n_no_alts += other.n_no_alts;
+		this->n_singleton += other.n_singleton;
+		this->n_biallelic += other.n_biallelic;
+		this->n_multi_allele += other.n_multi_allele;
+		this->n_multi_allele_snp += other.n_multi_allele_snp;
+
+		for(int i = 0; i < this->n_s; ++i){
+			this->sample[i] += other.sample[i];
+		}
+
+		return(*this);
+	}
+
+	void SetSize(const uint32_t n_samples){
+		delete [] sample;
+		n_s = n_samples;
+		sample = new yon_stats_sample[n_samples];
+	}
+
+	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::vector<std::string>& sample_names) const {
+		buffer += "{\"PSI\":{\n";
+		for(uint32_t i = 0; i < this->n_s; ++i){
+			this->sample[i].LazyEvalute();
+			if(i != 0) buffer += ",\n";
+			this->sample[i].ToJsonString(buffer, sample_names[i]);
+		}
+		buffer += "\n}\n}\n";
+		return(buffer);
+	}
 
 	inline yon_stats_sample& operator[](const uint32_t pos){ return(this->sample[pos]); }
 	inline const yon_stats_sample& operator[](const uint32_t pos) const{ return(this->sample[pos]); }

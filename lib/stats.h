@@ -101,7 +101,6 @@ int stats(int argc, char** argv){
 	}
 
 	reader.GetBlockSettings().LoadMinimumVcf(true).LoadGenotypes(true);
-
 	reader.Stats();
 
 	return 0;

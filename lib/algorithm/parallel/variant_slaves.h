@@ -85,7 +85,6 @@ public:
 	 * @param data Input pointer to payload.
 	 */
 	void emplace(yon_pool_vblock_payload* data){
-		std::cerr << "adding data: " << this->n_c << "/" << this->n_capacity << std::endl;
 		std::unique_lock<std::mutex> l(lock);
 
 		this->not_full.wait(l, [this](){
@@ -134,6 +133,7 @@ public:
 			return nullptr;
 		}
 
+		//std::cerr << "popping" << std::endl;
 		yon_pool_vblock_payload* result = this->c[this->front];
 		this->c[this->front] = nullptr;
 		this->front = (this->front + 1) % this->n_capacity;
@@ -207,26 +207,7 @@ private:
 		this->data_available  = true;
 		this->data_pool.alive = true;
 		while(true){
-			// temp
-			if(this->data_pool.n_c == this->data_pool.n_capacity){
-				for(int i = 0; i < this->data_pool.n_c; ++i){
-					delete this->data_pool.c[i];
-					this->data_pool.c[i] = nullptr;
-				}
-				this->data_pool.n_c = 0;
-			}
-
 			if((*this->instance_.*this->func_)() == false){
-				// temp
-				for(int i = 0; i < this->data_pool.n_c; ++i){
-					delete this->data_pool.c[i];
-					this->data_pool.c[i] = nullptr;
-				}
-				this->data_pool.n_c = 0;
-				std::cerr << "returning" << std::endl;
-				// temp
-				return false;
-
 				// No more data is available or an error was seen.
 				// Trigger shared resources flag alive to no longer
 				// evaluate as true. This triggers the exit condition
@@ -249,7 +230,7 @@ private:
 			this->n_rcds_loaded += 0;
 			// Peculiar syntax for adding a new payload to the cyclic queue. The
 			// move semantics is required for intended functionality!
-			std::cerr << "emplacing: " << this->dst_block_->size() << " @ " <<  this->data_pool.n_c << std::endl;
+			//std::cerr << "emplacing: " << this->dst_block_->size() << " @ " <<  this->data_pool.n_c << std::endl;
 			this->data_pool.emplace(new yon_pool_vblock_payload(n_blocks++, new containers::VariantBlock(std::move(*this->dst_block_))));
 			*this->dst_block_ = containers::VariantBlock();
 		}
@@ -265,6 +246,89 @@ public:
 	F func_;
 	T* instance_;
 	containers::VariantBlock* dst_block_;
+};
+
+/**<
+ * Primary consumer instance for importing htslib bcf1_t records
+ * into a tachyon archive. Invoking the Start() function will invoke
+ * the spawning of a new thread that keeps popping yon_pool_vcfc_payload
+ * objects from the shared pooled of payloads until end-of-file has been
+ * reached in the production thread(s).
+ */
+template <class T, class F = bool(T::*)(containers::VariantBlock*&)>
+struct yon_consumer_vblock {
+public:
+	yon_consumer_vblock(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr), instance_(nullptr){}
+	yon_consumer_vblock(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vblock& data_pool) :
+		n_rcds_processed(0), thread_id(thread_id), data_available(&data_available), data_pool(&data_pool), instance_(nullptr)
+	{}
+
+	yon_consumer_vblock& operator+=(const yon_consumer_vblock& other){
+		this->n_rcds_processed += other.n_rcds_processed;
+		return(*this);
+	}
+
+	std::thread& Start(F produce_function, T& vreader)
+	{
+
+		this->instance_  = &vreader;
+		this->func_      = produce_function;
+
+		this->thread_ = std::thread(&yon_consumer_vblock::Consume, this);
+		return(this->thread_);
+	}
+
+private:
+	/**<
+	 * Internal function for consuming VcfContainers from the shared
+	 * resource pool produced by the general producer(s). This function
+	 * continually pops a payload from the shared pool of payloads and
+	 * unpacks the htslib bcf1_t records and process that information
+	 * into a valid Tachyon block. When this process is finished
+	 * the resulting VariantBlock is pushed to the synchronized
+	 * writer to be written to a byte stream.
+	 * @return Returns TRUE upon success or FALSE oterhwise.
+	 */
+	bool Consume(void){
+
+		// Continue to consume data until there is no more
+		// or an exit condition has been triggered.
+		while(data_available){
+			// Pop a Vcf container payload from the shared
+			// resource pool.
+			yon_pool_vblock_payload* d = data_pool->pop();
+
+			// If the payload is a nullpointer then an exit
+			// condition has been triggered. If this is the
+			// case we discontinue the consumption for this
+			// consumer.
+			if(d == nullptr){
+				std::cerr << "is exit conditon: nullptr" << std::endl;
+				break;
+			}
+			assert(d->c != nullptr);
+
+			// Invoke cosumer function of interest
+			if((*this->instance_.*this->func_)(d->c) == false){
+				std::cerr << "error occurred" << std::endl;
+			}
+
+			// Cleanup data popped from the producer queue.
+			delete d;
+		}
+
+		// Done.
+		return true;
+	}
+
+public:
+	uint64_t n_rcds_processed;
+	uint32_t thread_id;
+	std::shared_ptr<std::atomic<bool>> data_available;
+	std::shared_ptr<yon_pool_vblock> data_pool;
+	std::thread thread_;
+	F func_;
+	T* instance_;
 };
 
 }
