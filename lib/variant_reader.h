@@ -37,9 +37,6 @@
 
 #include "core/ts_tv_object.h"
 
-
-#include "algorithm/parallel/vcf_slaves.h"
-
 namespace tachyon{
 
 class VariantReader{
@@ -178,6 +175,7 @@ public:
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	bool NextBlock(void);
+	bool NextBlockRaw(void);
 
 	bool CheckNextValid(void){
 		// If the stream is faulty then return

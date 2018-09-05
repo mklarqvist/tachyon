@@ -1,5 +1,5 @@
 #include "variant_reader.h"
-
+#include "algorithm/parallel/variant_slaves.h"
 
 namespace tachyon{
 
@@ -164,6 +164,29 @@ bool VariantReader::NextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
+
+	// All passed
+	return true;
+}
+
+bool VariantReader::NextBlockRaw(void){
+	if(this->CheckNextValid() == false) return false;
+
+	// Reset and re-use
+	this->variant_container.reset();
+
+	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+		return false;
+
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+		return false;
+	}
+	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
+
+	// Attempts to read a YON block with the settings provided
+	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
+		return false;
 
 	// All passed
 	return true;
@@ -794,10 +817,13 @@ void VariantReader::UpdateHeaderView(void){
 }
 
 bool VariantReader::Stats(void){
-	this->variant_container.AllocateGenotypeMemory();
+	//this->variant_container.AllocateGenotypeMemory();
 
-	yon_producer_vblock pro(100);
-	pro.Start(&VariantReader::NextBlock, *this, this->variant_container.GetBlock());
+	yon_producer_vblock<VariantReader> prd(std::thread::hardware_concurrency());
+	std::thread& t = prd.Start(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+	t.join();
+
+	return(true);
 
 	// temp
 	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
