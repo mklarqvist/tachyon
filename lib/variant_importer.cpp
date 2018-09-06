@@ -134,181 +134,6 @@ bool VariantImporter::Build(){
 	return true;
 }
 
-/*
-bool VariantImporter::BuildVCF(void){
-	// Retrieve a unique VcfReader.
-	this->vcf_reader_ = io::VcfReader::FromFile(this->settings_.input_file);
-	if(this->vcf_reader_ == nullptr){
-		return false;
-	}
-
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
-		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
-			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig. Setting to INT32_MAX." << std::endl;
-			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<int32_t>::max();
-		}
-	}
-
-	// Remap the global IDX fields in Vcf to the appropriate incremental order.
-	// This is useful in the situations when fields have been removed or added
-	// to the Vcf header section without reformatting the file.
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
-		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
-
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
-		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
-
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
-		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
-
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
-		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
-
-	// Predicate of a search for "GT" FORMAT field in the Vcf header.
-	this->GT_available_ = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
-
-	// Predicate of a search for "END" INFO field in the Vcf header.
-	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
-	if(vcf_info_end != nullptr)
-		this->settings_.info_end_key = vcf_info_end->idx;
-
-	// Allocate a new writer.
-	if(this->settings_.output_prefix.size() == 0 ||
-	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
-	{
-		this->writer = new writer_stream_type;
-	}
-	else this->writer = new writer_file_type;
-
-	// Open a file handle or standard out for writing.
-	if(!this->writer->open(this->settings_.output_prefix)){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
-		return false;
-	}
-
-	// Setup the encryption container.
-	encryption::EncryptionDecorator encryption_manager;
-	encryption::Keychain<> keychain;
-
-	// Setup the checksums container.
-	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC   + 1, // Add one for global checksum.
-			this->vcf_reader_->vcf_header_.info_fields_.size()   + 1,
-			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
-
-	// The index needs to know how many contigs that's described in the
-	// Vcf header and their lenghts. This information is needed to construct
-	// the linear and quad-tree index most appropriate for the data.
-	this->writer->index.Add(this->vcf_reader_->vcf_header_.contigs_);
-
-	// Write out a fresh Tachyon header with the data from the Vcf header. As
-	// this data will not be modified during the import stage it is safe to
-	// write out now.
-	this->writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
-	this->WriteYonHeader();
-
-	// Setup genotype permuter and genotype encoder.
-	this->permutator.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
-	this->encoder.SetSamples(this->vcf_reader_->vcf_header_.GetNumberSamples());
-
-	// Allocate containers and offsets for this file.
-	// This is not strictly necessary but prevents nasty resize
-	// calls in most cases.
-	this->block.Allocate(this->vcf_reader_->vcf_header_.info_fields_.size(),
-	                     this->vcf_reader_->vcf_header_.format_fields_.size(),
-	                     this->vcf_reader_->vcf_header_.filter_fields_.size());
-
-	// Resize containers
-	const uint32_t resize_to = this->settings_.checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
-	this->block.resize(resize_to);
-
-	// Start porgress timer.
-	algorithm::Timer timer; timer.Start();
-
-	// Iterate over all available variants in the file or until encountering
-	// an error.
-	while(true){
-		// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
-		// after retrieving a set number of variants or if the interval between
-		// the smallest and largest variant exceeds some distance in base pairs.
-		if(this->vcf_container_.GetVariants(this->settings_.checkpoint_n_snps,
-		                                    this->settings_.checkpoint_bases,
-		                                    this->vcf_reader_) == false)
-		{
-			break;
-		}
-
-		// This pointer here is borrowed from the PPA manager
-		// during import stages. Do not destroy the target block
-		// before finishing with this.
-		this->block.gt_ppa = &this->permutator.permutation_array;
-
-		if(this->GT_available_ && this->settings_.permute_genotypes){
-			// Only store the permutation array if the number of samples
-			// are greater then one (1).
-			if(this->vcf_reader_->vcf_header_.GetNumberSamples() > 1){
-				if(this->permutator.Build(this->vcf_container_, this->vcf_reader_->vcf_header_) == false)
-					return false;
-
-				this->block.header.controller.hasGTPermuted = true;
-			}
-		}
-
-		if(this->AddRecords(this->vcf_container_) == false) return false;
-
-		this->block.header.controller.hasGT  = this->GT_available_;
-		this->block.header.n_variants        = this->vcf_container_.sizeWithoutCarryOver();
-		this->block.UpdateContainers();
-		this->block.Finalize();
-
-		// Perform compression using standard parameters.
-		if(!this->compression_manager.Compress(this->block, this->settings_.compression_level, 6)){
-			std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to compress..." << std::endl;
-			return false;
-		}
-
-		// Encrypt the variant block if desired.
-		if(this->settings_.encrypt_data){
-			// Generate field-unique identifiers.
-			this->GenerateIdentifiers();
-
-			// Start encryption.
-			this->block.header.controller.anyEncrypted = true;
-			if(!encryption_manager.encrypt(this->block, keychain, YON_ENCRYPTION_AES_256_GCM)){
-				std::cerr << utility::timestamp("ERROR","COMPRESSION") << "Failed to encrypt..." << std::endl;
-			}
-		}
-
-		// Write the current variant block.
-		this->WriteBlock();
-
-		// Update checksums container with the available data.
-		checksums += this->block;
-
-		if(!SILENT){
-			std::cerr << utility::timestamp("PROGRESS") <<
-			std::setfill(' ') << std::setw(10) << this->writer->n_variants_written << ' ' <<
-			std::setfill(' ') << std::setw(10) << utility::toPrettyDiskString(this->writer->stream->tellp()) << '\t' <<
-			timer.ElapsedString() << ' ' <<
-			this->vcf_reader_->vcf_header_.GetContig(this->vcf_container_.front()->rid)->name << ":" << this->vcf_container_.front()->pos + 1 << "->" << this->vcf_container_.back()->pos + 1 << std::endl;
-		}
-
-		// Clear current data.
-		this->clear();
-		this->block.clear();
-		this->index_entry.reset();
-	}
-	// Do not delete the borrowed pointer.
-	this->block.gt_ppa = nullptr;
-
-	// Finalize writing procedure.
-	this->WriteFinal(checksums);
-	this->WriteKeychain(keychain);
-
-	// All done
-	return(true);
-}
-*/
-
 bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, settings_type& settings){
 	if(writer == nullptr)
 		return false;
@@ -441,20 +266,20 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 
 	uint64_t b_uncompressed = 0;
 	if(settings.output_prefix != "-"){
-		std::cerr << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
+		std::cout << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
 		for(int i = 0; i < write.stats_basic.size(); ++i){
-			std::cerr << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
-			b_uncompressed += write.stats_basic[i].cost_uncompressed + write.stats_basic[i].cost_strides_compressed;
+			std::cout << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
+			b_uncompressed += write.stats_basic[i].cost_uncompressed + write.stats_basic[i].cost_strides;
 		}
 
 		for(int i = 0; i < write.stats_info.size(); ++i){
-			std::cerr << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
-			b_uncompressed += write.stats_info[i].cost_uncompressed + write.stats_info[i].cost_strides_compressed;
+			std::cout << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
+			b_uncompressed += write.stats_info[i].cost_uncompressed + write.stats_info[i].cost_strides;
 		}
 
 		for(int i = 0; i < write.stats_format.size(); ++i){
-			std::cerr << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
-			b_uncompressed += write.stats_format[i].cost_uncompressed + write.stats_format[i].cost_strides_compressed;
+			std::cout << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
+			b_uncompressed += write.stats_format[i].cost_uncompressed + write.stats_format[i].cost_strides;
 		}
 	}
 

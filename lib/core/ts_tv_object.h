@@ -6,7 +6,18 @@
 
 namespace tachyon{
 
+#define YON_GT_TSTV_A       0
+#define YON_GT_TSTV_T       1
+#define YON_GT_TSTV_G       2
+#define YON_GT_TSTV_C       3
+#define YON_GT_TSTV_UNKNOWN 4
+#define YON_GT_TSTV_MISS    5
+#define YON_GT_TSTV_EOV     6
+#define YON_GT_TSTV_INS     7
+#define YON_GT_TSTV_DEL     8
+
 // 0,1,2,3,4 -> A,T,G,C,X
+// Background is filled with YON_GT_TSTV_UNKNOWN
 const uint8_t YON_STATS_TSTV_LOOKUP[256] =
 {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,4,3,
@@ -163,7 +174,7 @@ public:
 		this->n_multi_allele_snp += other.n_multi_allele_snp;
 
 		for(int i = 0; i < this->n_s; ++i){
-			this->sample[i] += other.sample[ppa[i]];
+			this->sample[ppa[i]] += other.sample[i];
 		}
 
 		return(*this);
@@ -253,8 +264,8 @@ public:
 		if(rcd.meta->alleles[0].size() == 1){
 			// Encode alleles.
 			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
-			allele_encodings[0] = 5; non_ref_encodings[0] = 0;
-			allele_encodings[1] = 6; non_ref_encodings[1] = 0;
+			allele_encodings[0]  = YON_GT_TSTV_MISS; non_ref_encodings[0] = 0;
+			allele_encodings[1]  = YON_GT_TSTV_EOV;  non_ref_encodings[1] = 0;
 			non_ref_encodings[2] = 0;
 			for(uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i){
 				if(rcd.meta->alleles[i - 2].l_allele == 1){
@@ -264,12 +275,12 @@ public:
 					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
 					{
 						//std::cerr << "is insertion: " << rcd.meta->alleles[i - 2].toString() << std::endl;
-						allele_encodings[i] = 7;
-					} else allele_encodings[i] = 4;
+						allele_encodings[i] = YON_GT_TSTV_INS;
+					} else allele_encodings[i] = YON_GT_TSTV_UNKNOWN;
 				}
 			}
 
-			if(allele_encodings[2] > 3){
+			if(allele_encodings[YON_GT_RCD_REF] > 3){
 				std::cerr << "bad reference allele: " << rcd.meta->alleles[0].toString() << std::endl;
 				delete [] allele_encodings;
 				delete [] non_ref_encodings;
@@ -285,19 +296,19 @@ public:
 
 			// Encode alleles.
 			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
-			allele_encodings[0] = 5;
-			allele_encodings[1] = 6;
+			allele_encodings[0] = YON_GT_TSTV_MISS;
+			allele_encodings[1] = YON_GT_TSTV_EOV;
 			memset(non_ref_encodings, 0, sizeof(uint8_t)*3);
 
 			const uint16_t& ref_length = rcd.meta->alleles[0].l_allele;
-			allele_encodings[2] = 4;
+			allele_encodings[2] = YON_GT_TSTV_UNKNOWN;
 
 			// Iterate over available alleles.
 			for(uint32_t i = 3; i < rcd.gt->n_allele + 2; ++i){
 				// If the target allele is a simple SNV.
 				if(rcd.meta->alleles[i - 2].l_allele == 1){
 					//std::cerr << "target is deletion: " << i - 2 << "/" << rcd.meta->n_alleles << "; " << rcd.meta->alleles[i - 2].toString() << std::endl;
-					allele_encodings[i] = 8;
+					allele_encodings[i] = YON_GT_TSTV_DEL;
 				}
 				// If the target allele length is shorter than the reference
 				// allele length and is comprised of only canonical bases then
@@ -306,16 +317,16 @@ public:
 						std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
 				{
 					//std::cerr << "is canonical deletion " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-					allele_encodings[i] = 8;
+					allele_encodings[i] = YON_GT_TSTV_DEL;
 				} else {
 					if(rcd.meta->alleles[i - 2].l_allele > ref_length &&
 					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
 					{
 						//std::cerr << "is insertion: " << rcd.meta->alleles[i - 2].toString() << ": " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-						allele_encodings[i] = 7;
+						allele_encodings[i] = YON_GT_TSTV_INS;
 					} else {
 						//std::cerr << "is same: " << rcd.meta->alleles[i - 2].toString() << ": " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-						allele_encodings[i] = 4;
+						allele_encodings[i] = YON_GT_TSTV_UNKNOWN;
 					}
 				}
 			}
@@ -346,7 +357,7 @@ public:
 		uint32_t t_non_ref = 0;
 		for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
 			for(uint32_t j = 0; j < rcd.gt->m; ++j){
-				++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
+				++this->sample[i].base_conv[allele_encodings[YON_GT_RCD_REF]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
 				n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
 				t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
 			}
@@ -416,7 +427,7 @@ public:
 
 			for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
 				for(uint32_t j = 0; j < gt->m; ++j){
-					++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
+					++this->sample[sample_offset].base_conv[allele_encodings[YON_GT_RCD_REF]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
 					n_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1];
 					t_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1] * i;
 				}
@@ -435,7 +446,7 @@ public:
 		for(uint32_t i = 0; i < gt->n_i; ++i){
 			for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
 				for(uint32_t j = 0; j < gt->m; ++j){
-					++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
+					++this->sample[sample_offset].base_conv[allele_encodings[YON_GT_RCD_REF]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
 					n_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1];
 					t_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1] * i;
 				}
