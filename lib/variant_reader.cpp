@@ -1,6 +1,5 @@
 #include "variant_reader.h"
-#include "algorithm/parallel/variant_slaves.h"
-#include "algorithm/parallel/variant_base_slave.h"
+
 
 namespace tachyon {
 
@@ -818,24 +817,83 @@ void VariantReader::UpdateHeaderView(void){
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 }
 
+bool VariantReader::Benchmark(const uint32_t threads){
+	std::cerr << utility::timestamp("LOG") << "Starting benchmark with " << threads << " threads..." << std::endl;
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::LoadData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::UncompressData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateRecords);
+	this->basic_reader.stream_.close();
+	return(true);
+}
+
+bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&)){
+	if(!this->open(settings.input)){
+			std::cerr << "failed to open" << std::endl;
+			return 1;
+		}
+
+		this->GetBlockSettings().LoadAll(true);
+
+		// Begin
+		algorithm::Timer timer; timer.Start();
+		const uint32_t n_threads = threads;
+		yon_producer_vblock<VariantReader> prd(n_threads);
+		prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+		prd.Start();
+
+		yon_consumer_vblock<VariantSlavePerformance>* csm = new yon_consumer_vblock<VariantSlavePerformance>[n_threads];
+		VariantSlavePerformance* slave = new VariantSlavePerformance[n_threads];
+
+		for(int i = 0; i < n_threads; ++i){
+			csm[i].thread_id      = i;
+			csm[i].data_available = &prd.data_available;
+			csm[i].data_pool      = &prd.data_pool;
+
+			slave[i].settings = this->GetBlockSettings();
+			slave[i].vc << this->global_header;
+			slave[i].vc.AllocateGenotypeMemory();
+
+			csm[i].Start(func, slave[i]);
+		}
+		// Join consumer and producer threads.
+		for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+
+		prd.all_finished = true;
+		prd.thread_.join();
+
+		for(uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
+
+		delete [] slave;
+		delete [] csm;
+
+		const double time_elapsed = timer.Elapsed().count();
+		std::cerr << utility::timestamp("LOG") << time_elapsed << "\t" << slave[0].data_loaded << "\t" << (double)slave[0].data_loaded/time_elapsed/1e6 << "\t" << slave[0].data_uncompressed << "\t" << (double)slave[0].data_uncompressed/time_elapsed/1e6 << std::endl;
+		return true;
+}
+
 bool VariantReader::Stats(void){
+
 	const uint32_t n_threads = std::thread::hardware_concurrency();
 	yon_producer_vblock<VariantReader> prd(n_threads);
-	prd.Start(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+	prd.Start();
 
 	yon_consumer_vblock<VariantSlaveTsTv>* csm = new yon_consumer_vblock<VariantSlaveTsTv>[n_threads];
-	std::shared_ptr<std::atomic<bool>> s_data_avail(&prd.data_available);
-	std::shared_ptr<yon_pool_vblock>   s_data_pool(&prd.data_pool);
 
 	VariantSlaveTsTv* slave_test = new VariantSlaveTsTv[n_threads];
 
  	for(int i = 0; i < n_threads; ++i){
-		csm[i].thread_id = i;
-		csm[i].data_available = s_data_avail;
-		csm[i].data_pool      = s_data_pool;
+		csm[i].thread_id      = i;
+		csm[i].data_available = &prd.data_available;
+		csm[i].data_pool      = &prd.data_pool;
 
 		slave_test[i].settings = this->GetBlockSettings();
 		slave_test[i].s.SetSize(this->global_header.GetNumberSamples());
+		slave_test[i].s_local.SetSize(this->global_header.GetNumberSamples());
 		slave_test[i].vc << this->global_header;
 		slave_test[i].vc.AllocateGenotypeMemory();
 
@@ -851,6 +909,7 @@ bool VariantReader::Stats(void){
 	for(uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
 
 	delete [] slave_test;
+	delete [] csm;
 
 	io::BasicBuffer json_buffer(250000);
 	s.ToJsonString(json_buffer, this->global_header.samples_);

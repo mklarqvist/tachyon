@@ -101,6 +101,15 @@ public:
 		return(buffer);
 	}
 
+	void reset(void){
+		n_ins = 0, n_del = 0, n_singleton = 0;
+		n_ts = 0, n_tv = 0;
+		ts_tv_ratio = 0;
+		for(int i = 0; i < 9; ++i){
+			memset(&this->base_conv[i][0], 0, sizeof(uint64_t)*9);
+		}
+	}
+
 public:
 	uint64_t  n_ins, n_del, n_singleton;
 	uint64_t  n_ts, n_tv;
@@ -137,6 +146,29 @@ public:
 		return(*this);
 	}
 
+	yon_stats_tstv& Add(const yon_stats_tstv& other, const yon_gt_ppa& ppa){
+		assert(ppa.n_s == this->n_s);
+		assert(other.n_s == this->n_s);
+
+		this->n_rcds += other.n_rcds;
+		this->n_snp += other.n_snp;
+		this->n_mnp += other.n_mnp;
+		this->n_ins += other.n_ins;
+		this->n_del += other.n_del;
+		this->n_other += other.n_other;
+		this->n_no_alts += other.n_no_alts;
+		this->n_singleton += other.n_singleton;
+		this->n_biallelic += other.n_biallelic;
+		this->n_multi_allele += other.n_multi_allele;
+		this->n_multi_allele_snp += other.n_multi_allele_snp;
+
+		for(int i = 0; i < this->n_s; ++i){
+			this->sample[i] += other.sample[ppa[i]];
+		}
+
+		return(*this);
+	}
+
 	void SetSize(const uint32_t n_samples){
 		delete [] sample;
 		n_s = n_samples;
@@ -144,7 +176,34 @@ public:
 	}
 
 	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::vector<std::string>& sample_names) const {
-		buffer += "{\"PSI\":{\n";
+		buffer += '{';
+		buffer +=  "\"VI\":{";
+		buffer +=  "\"n_samples\":";
+		buffer.AddReadble(this->n_s);
+		buffer +=  ",\"n_records\":";
+		buffer.AddReadble(this->n_rcds);
+		buffer +=  ",\"n_biallelic\":";
+		buffer.AddReadble(this->n_biallelic);
+		buffer +=  ",\"n_del\":";
+		buffer.AddReadble(this->n_del);
+		buffer +=  ",\"n_ins\":";
+		buffer.AddReadble(this->n_ins);
+		buffer +=  ",\"n_snp\":";
+		buffer.AddReadble(this->n_snp);
+		buffer +=  ",\"n_mnp\":";
+		buffer.AddReadble(this->n_mnp);
+		buffer +=  ",\"n_other\":";
+		buffer.AddReadble(this->n_other);
+		buffer +=  ",\"n_no_alts\":";
+		buffer.AddReadble(this->n_no_alts);
+		buffer +=  ",\"n_multi_allele\":";
+		buffer.AddReadble(this->n_multi_allele);
+		buffer +=  ",\"n_multi_allele_snp\":";
+		buffer.AddReadble(this->n_multi_allele_snp);
+		buffer +=  ",\"n_singleton\":";
+		buffer.AddReadble(this->n_singleton);
+		buffer += "},\n";
+		buffer += "\"PSI\":{\n";
 		for(uint32_t i = 0; i < this->n_s; ++i){
 			this->sample[i].LazyEvalute();
 			if(i != 0) buffer += ",\n";
@@ -157,24 +216,15 @@ public:
 	inline yon_stats_sample& operator[](const uint32_t pos){ return(this->sample[pos]); }
 	inline const yon_stats_sample& operator[](const uint32_t pos) const{ return(this->sample[pos]); }
 
-	bool Update(const yon1_t& rcd, yon_gt_rcd** rcds) {
-		if(rcd.is_loaded_gt == false || rcd.is_loaded_meta == false)
-			return false;
-
-		if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
-			std::cerr << "eval because not done" << std::endl;
-			bool eval = rcd.gt->Evaluate();
-			if(eval == false){
-				std::cerr << "failed to evaluate" << std::endl;
-				return false;
-			}
-		}
-
-		assert(this->n_s == rcd.gt->n_s);
-
-		++this->n_rcds; // Update number of records.
+	bool GetEncodings(const yon1_t& rcd,
+	                  __restrict__ uint8_t*& allele_encodings,
+	                  __restrict__ uint8_t*& non_ref_encodings)
+	{
+		// Update number of records.
+		++this->n_rcds;
 
 		// Update count for target variant line type.
+		// Case: variant site is multi-allelic.
 		if(rcd.meta->n_alleles > 2){
 			bool is_snp = true;
 			for(uint32_t i = 0; i < rcd.gt->n_allele; ++i){
@@ -186,16 +236,22 @@ public:
 
 			if(is_snp) ++this->n_multi_allele_snp;
 			else ++this->n_multi_allele;
-		} else if(rcd.meta->n_alleles == 2){
+		}
+		// Case: variant site is biallelic.
+		else if(rcd.meta->n_alleles == 2){
 			++this->n_biallelic;
 		}
 
 		// For SNV to SNV or insertion. It is not possible to have a deletion
 		// if the reference value is represented as a SNV.
+		allele_encodings  = new uint8_t[rcd.gt->n_allele + 2];
+		non_ref_encodings = new uint8_t[rcd.gt->n_allele + 2];
+
+		// If the reference allele is of a single character wide then
+		// we assume the reference site is a single base. This implicitly
+		// means there cannot be any encodings for deletions.
 		if(rcd.meta->alleles[0].size() == 1){
 			// Encode alleles.
-			uint8_t* allele_encodings  = new uint8_t[rcd.gt->n_allele + 2];
-			uint8_t* non_ref_encodings = new uint8_t[rcd.gt->n_allele + 2];
 			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
 			allele_encodings[0] = 5; non_ref_encodings[0] = 0;
 			allele_encodings[1] = 6; non_ref_encodings[1] = 0;
@@ -213,7 +269,6 @@ public:
 				}
 			}
 
-
 			if(allele_encodings[2] > 3){
 				std::cerr << "bad reference allele: " << rcd.meta->alleles[0].toString() << std::endl;
 				delete [] allele_encodings;
@@ -221,38 +276,14 @@ public:
 				return false;
 			}
 
-			uint32_t n_non_ref = 0;
-			uint32_t t_non_ref = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
-				for(uint32_t j = 0; j < rcd.gt->m; ++j){
-					++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
-					n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
-					t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
-				}
-			}
-
 			//if(n_non_ref <= 1)
 			//	std::cerr << rcd.meta->position+1 << ": " << n_non_ref << std::endl;
-
-			if(n_non_ref == 0) ++this->n_no_alts;
-			else if(n_non_ref == 1){
-				++this->n_singleton;
-				++this->sample[t_non_ref].n_singleton;
-				assert(t_non_ref < this->n_s);
-				//std::cerr << "singleton@" << t_non_ref << std::endl;
-			}
-
-			delete [] allele_encodings;
-			delete [] non_ref_encodings;
-
 		}
 		// For insertion/deletion to SNV/insertion/deletion.
 		else {
 			//std::cerr << "ref allele is not 1: " << rcd.meta->alleles[0].toString() << std::endl;
 
 			// Encode alleles.
-			uint8_t* allele_encodings  = new uint8_t[rcd.gt->n_allele + 2];
-			uint8_t* non_ref_encodings = new uint8_t[rcd.gt->n_allele + 2];
 			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
 			allele_encodings[0] = 5;
 			allele_encodings[1] = 6;
@@ -272,7 +303,7 @@ public:
 				// allele length and is comprised of only canonical bases then
 				// classify this allele as a deletion.
 				else if(rcd.meta->alleles[i - 2].l_allele < ref_length &&
-				        std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
+						std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
 				{
 					//std::cerr << "is canonical deletion " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
 					allele_encodings[i] = 8;
@@ -288,34 +319,53 @@ public:
 					}
 				}
 			}
-
-			uint32_t n_non_ref = 0;
-			uint32_t t_non_ref = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
-				for(uint32_t j = 0; j < rcd.gt->m; ++j){
-					++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
-					n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
-					t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
-				}
-			}
-
-			if(n_non_ref == 0) ++this->n_no_alts;
-			else if(n_non_ref == 1){
-				//std::cerr << "indel singleton" << std::endl;
-				++this->n_singleton;
-				++this->sample[t_non_ref].n_singleton;
-				assert(t_non_ref < this->n_s);
-				//std::cerr << "singleton@" << t_non_ref << std::endl;
-			}
-
-			delete [] allele_encodings;
-			delete [] non_ref_encodings;
-
 		}
+
 		return true;
 	}
 
-	// todo update
+	bool Update(const yon1_t& rcd, yon_gt_rcd** rcds) {
+		if(rcd.is_loaded_gt == false || rcd.is_loaded_meta == false)
+			return false;
+
+		if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
+			bool eval = rcd.gt->Evaluate();
+			if(eval == false){
+				std::cerr << "failed to evaluate" << std::endl;
+				return false;
+			}
+		}
+
+		assert(this->n_s == rcd.gt->n_s);
+		uint8_t *allele_encodings, *non_ref_encodings;
+		if(this->GetEncodings(rcd, allele_encodings, non_ref_encodings) == false)
+			return false;
+
+		// Perform actual work.
+		uint32_t n_non_ref = 0;
+		uint32_t t_non_ref = 0;
+		for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
+			for(uint32_t j = 0; j < rcd.gt->m; ++j){
+				++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
+				n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
+				t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
+			}
+		}
+
+		if(n_non_ref == 0) ++this->n_no_alts;
+		else if(n_non_ref == 1){
+			++this->n_singleton;
+			++this->sample[t_non_ref].n_singleton;
+			assert(t_non_ref < this->n_s);
+		}
+
+		// Cleanup.
+		delete [] allele_encodings;
+		delete [] non_ref_encodings;
+
+		return true;
+	}
+
 	bool Update(const yon1_t& rcd){
 		if(rcd.is_loaded_gt == false || rcd.is_loaded_meta == false)
 			return false;
@@ -328,62 +378,79 @@ public:
 			}
 		}
 
-		++this->n_rcds;
-		if(rcd.meta->n_alleles > 2){
-			bool is_snp = true;
-			for(uint32_t i = 0; i < rcd.gt->n_allele; ++i){
-				if(rcd.meta->alleles[i].l_allele != 1){
-					is_snp = false;
-					break;
-				}
-			}
+		uint8_t *allele_encodings, *non_ref_encodings;
+		if(this->GetEncodings(rcd, allele_encodings, non_ref_encodings) == false)
+			return false;
 
-			if(is_snp) ++this->n_multi_allele_snp;
-			else ++this->n_multi_allele;
-		} else if(rcd.meta->n_alleles == 2){
-			++this->n_biallelic;
-		} else if(rcd.meta->n_alleles == 1){
-			++this->n_no_alts;
+		uint32_t n_non_ref = 0;
+		uint32_t t_non_ref = 0;
+		if(rcd.gt->m == 2) this->UpdateDiploid(rcd.gt, allele_encodings, non_ref_encodings, n_non_ref, t_non_ref);
+		else this->UpdateNPloidy(rcd.gt, allele_encodings, non_ref_encodings, n_non_ref, t_non_ref);
+
+		if(n_non_ref == 0) ++this->n_no_alts;
+		else if(n_non_ref == 1){
+			++this->n_singleton;
+			++this->sample[t_non_ref].n_singleton;
+			assert(t_non_ref < this->n_s);
 		}
 
-		assert(this->n_s == rcd.gt->n_s);
+		// Cleanup.
+		delete [] allele_encodings;
+		delete [] non_ref_encodings;
 
-		if(rcd.meta->alleles[0].size() == 1){
-			// Encode alleles.
-			uint8_t* allele_encodings = new uint8_t[rcd.gt->n_allele + 2];
-			allele_encodings[0] = 5;
-			allele_encodings[1] = 6;
-			for(uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i){
-				if(rcd.meta->alleles[i - 2].l_allele == 1){
-					allele_encodings[i] = YON_STATS_TSTV_LOOKUP[rcd.meta->alleles[i - 2].allele[0]];
-				} else {
-					if(rcd.meta->alleles[i - 2].l_allele > 1 &&
-					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
-					{
-						std::cerr << "is insertion" << std::endl;
-					}
-					allele_encodings[i] = 4;
-				}
-			}
-
-			if(allele_encodings[2] > 3){
-				std::cerr << "bad reference allele: " << rcd.meta->alleles[0].toString() << std::endl;
-				return false;
-			}
-
-			uint32_t sample_offset = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_i; ++i){
-				for(uint32_t r = 0; r < rcd.gt->rcds[i].run_length; ++r, ++sample_offset){
-					for(uint32_t j = 0; j < rcd.gt->m; ++j){
-						++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(rcd.gt->rcds[i].allele[j] >> 1)]];
-					}
-				}
-			}
-			assert(sample_offset == this->n_s);
-		} else {
-			//std::cerr << "ref allele is not 1: " << rcd.meta->alleles[0].toString() << std::endl;
-		}
 		return true;
+	}
+
+	void UpdateDiploid(const yon_gt* gt,
+	                   __restrict__ const uint8_t* allele_encodings,
+	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   uint32_t& n_non_ref,
+	                   uint32_t& t_non_ref)
+	{
+		uint32_t sample_offset = 0;
+		for(uint32_t i = 0; i < gt->n_i; ++i){
+			if(((gt->rcds[i].allele[0] >> 1) == YON_GT_RCD_REF) && ((gt->rcds[i].allele[1] >> 1) == YON_GT_RCD_REF)){
+				sample_offset += gt->rcds[i].run_length;
+				continue;
+			}
+
+			for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
+				for(uint32_t j = 0; j < gt->m; ++j){
+					++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
+					n_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1];
+					t_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1] * i;
+				}
+			}
+		}
+		assert(sample_offset == this->n_s);
+	}
+
+	void UpdateNPloidy(const yon_gt* gt,
+	                   __restrict__ const uint8_t* allele_encodings,
+	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   uint32_t& n_non_ref,
+	                   uint32_t& t_non_ref)
+	{
+		uint32_t sample_offset = 0;
+		for(uint32_t i = 0; i < gt->n_i; ++i){
+			for(uint32_t r = 0; r < gt->rcds[i].run_length; ++r, ++sample_offset){
+				for(uint32_t j = 0; j < gt->m; ++j){
+					++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(gt->rcds[i].allele[j] >> 1)]];
+					n_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1];
+					t_non_ref += non_ref_encodings[gt->rcds[i].allele[j] >> 1] * i;
+				}
+			}
+		}
+		assert(sample_offset == this->n_s);
+	}
+
+	void reset(void){
+		n_rcds = 0;
+		n_snp = 0;
+		n_snp = 0, n_mnp = 0, n_ins = 0, n_del = 0, n_other = 0;
+		n_no_alts = 0, n_biallelic = 0, n_multi_allele = 0, n_multi_allele_snp = 0, n_singleton = 0;
+		for(int i = 0; i < this->n_s; ++i)
+			this->sample[i].reset();
 	}
 
 public:

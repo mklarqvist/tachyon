@@ -37,6 +37,9 @@
 
 #include "core/ts_tv_object.h"
 
+#include "algorithm/parallel/variant_slaves.h"
+#include "algorithm/parallel/variant_base_slave.h"
+
 namespace tachyon{
 
 class VariantReader{
@@ -270,6 +273,9 @@ public:
 
 	// temp
 	bool Stats(void);
+	bool Benchmark(const uint32_t threads);
+
+	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&));
 
 private:
 	uint64_t b_data_start;

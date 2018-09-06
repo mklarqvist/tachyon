@@ -300,6 +300,8 @@ public:
 	 * @return Returns the total number of bytes that will be written.
 	 */
 	uint64_t GetCompressedSize(void) const;
+	uint64_t GetUncompressedSize(void) const;
+
 
 	inline void PackFooter(void){
 		this->footer_support.reset();

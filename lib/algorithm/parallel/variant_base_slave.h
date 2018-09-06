@@ -64,6 +64,80 @@ public:
 	algorithm::CompressionManager codec_manager;
 };
 
+class VariantSlavePerformance : public VariantBaseSlave {
+protected:
+	typedef VariantBaseSlave parent_type;
+
+public:
+	VariantSlavePerformance() : data_loaded(0), data_uncompressed(0){}
+
+	VariantSlavePerformance& operator+=(const VariantSlavePerformance& other){
+		this->data_loaded += other.data_loaded;
+		this->data_uncompressed += other.data_uncompressed;
+		return(*this);
+	}
+
+	bool LoadData(containers::VariantBlock*& dc){
+		// Move data over to local VariantBlockContainer.
+		vc.GetBlock() = std::move(*dc); // copy test
+		delete dc;
+		dc = nullptr;
+
+		// Update data read.
+		this->data_loaded += vc.GetBlock().GetCompressedSize();
+		return true;
+	}
+
+	bool UncompressData(containers::VariantBlock*& dc){
+		if(parent_type::Unpack(dc) == false){
+			std::cerr << "returning becuase of eerror" << std::endl;
+			return false;
+		}
+		// Update data read.
+		this->data_loaded += vc.GetBlock().GetCompressedSize();
+		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+
+		return true;
+	}
+
+	bool EvaluateData(containers::VariantBlock*& dc){
+		if(parent_type::Unpack(dc) == false){
+			std::cerr << "returning becuase of eerror" << std::endl;
+			return false;
+		}
+		// Update data read.
+		this->data_loaded += vc.GetBlock().GetCompressedSize();
+		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+
+		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
+
+		delete objects;
+		return true;
+	}
+
+	bool EvaluateRecords(containers::VariantBlock*& dc){
+		if(parent_type::Unpack(dc) == false){
+			std::cerr << "returning becuase of eerror" << std::endl;
+			return false;
+		}
+
+		// Update data read.
+		this->data_loaded += vc.GetBlock().GetCompressedSize();
+		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+
+		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
+		yon1_t* entries = this->vc.LazyEvaluate(*objects);
+
+		delete [] entries;
+		delete objects;
+		return true;
+	}
+
+public:
+	uint64_t data_loaded;
+	uint64_t data_uncompressed;
+};
+
 class VariantSlaveTsTv : public VariantBaseSlave {
 protected:
 	typedef VariantBaseSlave parent_type;
@@ -78,17 +152,29 @@ public:
 			return false;
 		}
 
+		if(this->vc.GetBlock().header.controller.hasGT == false)
+			return true;
+
 		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
 		yon1_t* entries = this->vc.LazyEvaluate(*objects);
 
+		s_local.reset();
 		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
 			if(entries[i].is_loaded_gt){
-				entries[i].gt->ExpandExternal(this->vc.GetAllocatedGenotypeMemory());
-				s.Update(entries[i], this->vc.GetAllocatedGenotypeMemory());
-				//s.Update(entries[i]);
+				//entries[i].gt->ExpandExternal(this->vc.GetAllocatedGenotypeMemory());
+				//s.Update(entries[i], this->vc.GetAllocatedGenotypeMemory());
+				s_local.Update(entries[i]);
 			}
 		}
+		assert(vc.GetBlock().gt_ppa != nullptr);
 
+		if(this->vc.GetBlock().header.controller.hasGTPermuted){
+			// Reduce function for adding together TsTv objects
+			// in the sample order as described in the local
+			// permutation array.
+			s.Add(s_local, *vc.GetBlock().gt_ppa);
+		} else
+			s += s_local;
 
 		delete [] entries;
 		delete objects;
@@ -97,6 +183,7 @@ public:
 
 public:
 	yon_stats_tstv s;
+	yon_stats_tstv s_local;
 };
 
 }

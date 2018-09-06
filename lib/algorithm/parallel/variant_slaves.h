@@ -157,42 +157,71 @@ public:
 	std::condition_variable not_empty;
 };
 
+struct yon_producer_vblock_interface {
+public:
+	yon_producer_vblock_interface(void) :
+		all_finished(false),
+		n_rcds_loaded(0),
+		data_available(false),
+		data_pool(0),
+		dst_block_(nullptr)
+	{}
+
+	yon_producer_vblock_interface(uint32_t pool_size) :
+		all_finished(false),
+		n_rcds_loaded(0),
+		data_available(false),
+		data_pool(pool_size),
+		dst_block_(nullptr)
+	{}
+
+	virtual ~yon_producer_vblock_interface(){}
+	virtual std::thread& Start(void) =0;
+
+public:
+	bool all_finished;
+	uint64_t n_rcds_loaded;
+	std::atomic<bool> data_available;
+	yon_pool_vblock data_pool;
+	std::thread thread_;
+	containers::VariantBlock* dst_block_;
+};
+
 /**<
  * Single producer for producing raw (uncompressed and
  * encrypted) VcfContainer blocks. The producer push these
  * containers into the shared data pool of payloads.
  */
 template <class T, class F = bool(T::*)(void)>
-struct yon_producer_vblock {
+struct yon_producer_vblock : public yon_producer_vblock_interface {
 public:
 	typedef yon_producer_vblock self_type;
+	typedef yon_producer_vblock_interface parent_type;
 
 public:
 	yon_producer_vblock(uint32_t pool_size) :
-		all_finished(false),
-		n_rcds_loaded(0),
-		data_available(false),
-		data_pool(pool_size),
-		dst_block_(nullptr),
+		parent_type(pool_size),
 		instance_(nullptr)
 	{}
 
 	~yon_producer_vblock(){}
 
+	std::thread& Start(void){
+		this->thread_ = std::thread(&yon_producer_vblock::Produce, this);
+		return(this->thread_);
+	}
+
 	/**<
 	 * Spawn worker reading data into the producer data pool.
 	 * @return Returns a reference to the spawned thread.
 	 */
-	std::thread& Start(F produce_function,
-	                   T& vreader,
-	                   containers::VariantBlock& block)
+	void Setup(F produce_function,
+	           T& vreader,
+	           containers::VariantBlock& block)
 	{
 		this->instance_  = &vreader;
 		this->func_      = produce_function;
 		this->dst_block_ = &block;
-
-		this->thread_ = std::thread(&yon_producer_vblock::Produce, this);
-		return(this->thread_);
 	}
 
 private:
@@ -238,14 +267,8 @@ private:
 	}
 
 public:
-	bool all_finished;
-	uint64_t n_rcds_loaded;
-	std::atomic<bool> data_available;
-	yon_pool_vblock data_pool;
-	std::thread thread_;
 	F func_;
 	T* instance_;
-	containers::VariantBlock* dst_block_;
 };
 
 /**<
@@ -262,6 +285,8 @@ public:
 	yon_consumer_vblock(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vblock& data_pool) :
 		n_rcds_processed(0), thread_id(thread_id), data_available(&data_available), data_pool(&data_pool), instance_(nullptr)
 	{}
+
+	~yon_consumer_vblock(){}
 
 	yon_consumer_vblock& operator+=(const yon_consumer_vblock& other){
 		this->n_rcds_processed += other.n_rcds_processed;
@@ -303,7 +328,6 @@ private:
 			// case we discontinue the consumption for this
 			// consumer.
 			if(d == nullptr){
-				std::cerr << "is exit conditon: nullptr" << std::endl;
 				break;
 			}
 			assert(d->c != nullptr);
@@ -324,8 +348,8 @@ private:
 public:
 	uint64_t n_rcds_processed;
 	uint32_t thread_id;
-	std::shared_ptr<std::atomic<bool>> data_available;
-	std::shared_ptr<yon_pool_vblock> data_pool;
+	std::atomic<bool>* data_available;
+	yon_pool_vblock* data_pool;
 	std::thread thread_;
 	F func_;
 	T* instance_;

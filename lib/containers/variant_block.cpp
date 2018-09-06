@@ -570,6 +570,18 @@ uint64_t VariantBlock::GetCompressedSize(void) const{
 	return(total);
 }
 
+uint64_t VariantBlock::GetUncompressedSize(void) const{
+	uint64_t total = 0;
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+		total += this->base_containers[YON_BLK_PPA].data_uncompressed.size();
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].data_uncompressed.size() + this->base_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].data_uncompressed.size() + this->info_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].data_uncompressed.size() + this->format_containers[i].strides_uncompressed.size();
+
+	return(total);
+}
+
 void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic,
                                           import_stats_type& stats_info,
                                           import_stats_type& stats_format)
