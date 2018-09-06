@@ -48,8 +48,6 @@ public:
 	std::string output;
 	std::string keychain_file;
 	char output_type;
-	std::string sample_names_file;
-	std::vector<std::string> sample_names;
 };
 
 }

@@ -4,8 +4,8 @@
 #include "data_container.h"
 #include "core/genotypes.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
 class GenotypeContainerInterface{
 public:

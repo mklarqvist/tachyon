@@ -165,5 +165,59 @@ uint8_t MetaEntry::PackRefAltByte(void) const{
 	return(ref_alt);
 }
 
+TACHYON_VARIANT_CLASSIFICATION_TYPE MetaEntry::ClassifyVariant(const uint32_t& allele) const {
+	const int32_t ref_size = this->alleles[0].size();
+	const int32_t l_diff   = ref_size - this->alleles[allele].size();
+
+	if(this->alleles[0].allele[0] == '<' || this->alleles[allele].allele[0] == '<')
+		return(YON_VARIANT_CLASS_SV);
+	else if(l_diff == 0){
+		if(ref_size == 1 && this->alleles[0].allele[0] != this->alleles[allele].allele[0]){
+			if(this->alleles[allele].allele[0] == 'A' ||
+			   this->alleles[allele].allele[0] == 'T' ||
+			   this->alleles[allele].allele[0] == 'G' ||
+			   this->alleles[allele].allele[0] == 'C')
+			{
+				return(YON_VARIANT_CLASS_SNP);
+			}
+			else return(YON_VARIANT_CLASS_UNKNOWN);
+		}
+		else if(ref_size != 1){
+			uint32_t n_characters_identical = 0;
+			const uint32_t length_shortest = ref_size < this->alleles[allele].size()
+					                       ? ref_size
+					                       : this->alleles[allele].size();
+
+			for(uint32_t c = 0; c < length_shortest; ++c)
+				n_characters_identical += (this->alleles[0].allele[c] == this->alleles[allele].allele[c]);
+
+			if(n_characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
+			else return(YON_VARIANT_CLASS_CLUMPED);
+		}
+	} else {
+		const uint32_t length_shortest = ref_size < this->alleles[allele].size()
+		                               ? ref_size
+		                               : this->alleles[allele].size();
+
+		// Keep track of non-standard characters.
+		uint32_t n_characters_non_standard = 0;
+
+		// Iterate over available characters and check for non-standard
+		// genetic characters (ATGC).
+		for(uint32_t c = 0; c < length_shortest; ++c){
+			n_characters_non_standard += (this->alleles[allele].allele[c] != 'A' &&
+			                              this->alleles[allele].allele[c] != 'T' &&
+			                              this->alleles[allele].allele[c] != 'C' &&
+			                              this->alleles[allele].allele[c] != 'G');
+		}
+
+		// If non-standard characters are found then return as unknown
+		// type. Otherwise, return classification as an indel.
+		if(n_characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
+		else return(YON_VARIANT_CLASS_INDEL);
+	}
+	return(YON_VARIANT_CLASS_UNKNOWN);
+}
+
 }
 }

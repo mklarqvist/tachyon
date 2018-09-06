@@ -152,13 +152,6 @@ public:
 
 	/**<
 	 * Not implemented
-	 * @param position
-	 * @return
-	 */
-	bool SeektoBlock(const uint32_t position);
-
-	/**<
-	 * Not implemented
 	 * @param chromosome_name
 	 * @return
 	 */
@@ -174,7 +167,9 @@ public:
 	bool SeekToBlockChromosome(const std::string& chromosome_name, const uint32_t from_bp_position, const uint32_t to_bp_position);
 
 	/**<
-	 * Get the next YON block in-order
+	 * Get the next YON block in-order. The NextBlockRaw() simply loads
+	 * the appropriate data into memory without decrypting and uncompressing.
+	 * The NextBlock() function performs these additional steps.
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	bool NextBlock(void);
@@ -198,7 +193,9 @@ public:
 	containers::VariantBlockContainer ReturnBlock(void);
 
 	/**<
-	 * Get the target YON block
+	 * Get the target YON block that matches the provided index
+	 * entry. Internally this function seeks to the offset
+	 * described in the index entry and then invokes NextBlock().
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
 	bool GetBlock(const index_entry_type& index_entry);
@@ -249,9 +246,6 @@ public:
 	inline bool FilterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
 	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.FindOverlaps(meta_entry).size()); }
 
-	// Calculations
-	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const meta_entry_type& meta, const uint32_t& allele) const;
-
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression
 	 * patterns
@@ -274,11 +268,10 @@ public:
 	// temp
 	bool Stats(void);
 	bool Benchmark(const uint32_t threads);
-
 	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&));
 
 private:
-	uint64_t b_data_start;
+	uint64_t                b_data_start;
 	basic_reader_type       basic_reader;
 	variant_container_type  variant_container;
 	block_settings_type     block_settings;

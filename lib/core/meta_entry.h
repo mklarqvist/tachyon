@@ -127,6 +127,10 @@ public:
 		return(rec);
 	}
 
+	// Calculations
+	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const uint32_t& allele) const;
+
+
 public:
 	// Markup: populate from streams
 	controller_type controller;
