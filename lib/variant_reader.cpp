@@ -876,7 +876,6 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 }
 
 bool VariantReader::Stats(void){
-
 	const uint32_t n_threads = std::thread::hardware_concurrency();
 	yon_producer_vblock<VariantReader> prd(n_threads);
 	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());

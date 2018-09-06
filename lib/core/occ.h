@@ -31,11 +31,11 @@ struct yon_occ {
 	// Total cumulative sums for each row.
 	std::vector<uint32_t> cum_sums;
 
-	// a matrix with proportions samples times groupings
+	// A matrix with proportions samples times groupings
 	// rows corresponds to the cumulative sum of a grouping
 	// over the samples. The table corresponds to the set
 	// membership (presence or absence) and the occ table
-	// corresponds to the cumsum.
+	// corresponds to the cumsum at any given sample offset.
 	std::vector< std::vector<uint32_t> > table;
 	std::vector< std::vector<uint32_t> > occ;
 };

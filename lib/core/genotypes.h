@@ -67,7 +67,16 @@ struct yon_gt_ppa {
 	uint32_t& at(const uint32_t& position){ return(this->ordering[position]); }
 	const uint32_t& at(const uint32_t& position) const{ return(this->ordering[position]); }
 
+	/**<
+	 * Allocate memory for a new number of samples. All previous
+	 * data is deleted without consideration.
+	 * @param n_samples Number of samples.
+	 */
 	void Allocate(const uint32_t n_samples);
+
+	/**<
+	 * Restores ordering to [0,..,n_s-1] without clearing data.
+	 */
 	void reset(void);
 
 	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa);
@@ -130,26 +139,6 @@ public:
 	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
 
 public:
-	uint16_t eval_cont;
-    uint8_t  add : 7,
-             global_phase : 1;
-    uint8_t  shift;
-    uint8_t  p, m, method; // bytes per entry, base ploidy, base method
-    uint32_t n_s, n_i, n_o;     // number samples, number of entries
-    uint8_t  n_allele;
-    yon_gt_ppa* ppa; // pointer to ppa
-    std::vector< std::vector<uint32_t> >* occ; // pointer to occ
-    uint8_t* data; // pointer to data
-    uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
-    uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
-    yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
-    yon_gt_rcd* rcds; // lazy interpreted internal records
-    uint32_t* n_occ;
-    yon_gt_rcd** d_occ; // lazy evaluation of occ table
-    algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
-    bool dirty;
-
-
     yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
                n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
 			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_occ(nullptr), d_occ(nullptr),
@@ -505,6 +494,14 @@ public:
 		return true;
 	}
 
+	/**<
+	 * Expand records into externally allocated yon_gt_rcd
+	 * array of pointers. This function does consider the
+	 * possible permutation of the genotypes relative the
+	 * global ordering.
+	 * @param d_expe Dst array of yon_gt_rcd*.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool ExpandRecordsPpaExternal(yon_gt_rcd** d_expe){
 		if((this->eval_cont & YON_GT_UN_RCDS) == false){
 			bool eval = this->Evaluate();
@@ -540,7 +537,13 @@ public:
 		else return(this->ExpandRecordsExternal(d_expe));
 	}
 
-
+	/**<
+	 * Expand records into internally into individual pointers
+	 * to the matched compressed object. This function does not
+	 * consider the possible permutation of the genotypes
+	 * relative the global ordering.
+	 * @return Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool ExpandRecords(void){
 		if((this->eval_cont & YON_GT_UN_RCDS) == false){
 			bool eval = this->Evaluate();
@@ -569,6 +572,14 @@ public:
 		return true;
 	}
 
+	/**<
+	 * Expand records into externally allocated yon_gt_rcd
+	 * array of pointers. This function does not consider the
+	 * possible permutation of the genotypes relative the
+	 * global ordering.
+	 * @param d_expe Dst array of yon_gt_rcd*.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool ExpandRecordsExternal(yon_gt_rcd** d_expe){
 		if((this->eval_cont & YON_GT_UN_RCDS) == false){
 			bool eval = this->Evaluate();
@@ -625,6 +636,26 @@ public:
 	   delete [] tmpi;
 	   return(rec);
    }
+
+public:
+	uint16_t eval_cont;
+    uint8_t  add : 7,
+             global_phase : 1;
+    uint8_t  shift;
+    uint8_t  p, m, method; // bytes per entry, base ploidy, base method
+    uint32_t n_s, n_i, n_o;     // number samples, number of entries
+    uint8_t  n_allele;
+    yon_gt_ppa* ppa; // pointer to ppa
+    std::vector< std::vector<uint32_t> >* occ; // pointer to occ
+    uint8_t* data; // pointer to data
+    uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
+    uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
+    yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
+    yon_gt_rcd* rcds; // lazy interpreted internal records
+    uint32_t* n_occ;
+    yon_gt_rcd** d_occ; // lazy evaluation of occ table
+    algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
+    bool dirty;
 };
 
 struct yon_gt_summary_obj{
@@ -795,10 +826,10 @@ public:
 	}
 
 	/**<
-	 * Recursively add layers to the full trie in order to represent
+	 * Iteratively add layers to the full trie in order to represent
 	 * a possible ploidy-dimensional matrix at the leafs. The memory
 	 * cost of the trie is O(n_alleles ^ ploidy) and allows the prefix
-	 * lookup of any genotype.
+	 * lookup of any partial genotype.
 	 *
 	 * @param target
 	 * @param depth
@@ -806,11 +837,6 @@ public:
 	 */
 	bool AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth);
 
-	/**<
-	 *
-	 * @param gt
-	 * @return
-	 */
 	yon_gt_summary& operator+=(const yon_gt& gt);
 
 	// Accessors to internal data.
