@@ -242,7 +242,7 @@ private:
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_32B, true)){
+		if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_32B, true)){
 			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type mismatch (integer)!" << std::endl;
 			return false;
 		}

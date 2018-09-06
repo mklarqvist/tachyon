@@ -602,7 +602,7 @@ bool DataContainer::Add(const uint64_t& value){
 	}
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, false)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_64B, false)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added uint64_t" << std::endl;
 		return false;
 	}
@@ -620,7 +620,7 @@ bool DataContainer::Add(const int64_t& value){
 
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_64B, true)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_64B, true)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added int64_t" << std::endl;
 		return false;
 	}
@@ -638,7 +638,7 @@ bool DataContainer::Add(const float& value){
 	}
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_FLOAT, true)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_FLOAT, true)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added FLOAT" << std::endl;
 		return false;
 	}
@@ -655,7 +655,7 @@ bool DataContainer::Add(const double& value){
 	}
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_DOUBLE, true)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_DOUBLE, true)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added DOUBLE" << std::endl;
 		return false;
 	}
@@ -672,7 +672,7 @@ bool DataContainer::AddCharacter(const char& value){
 	}
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_CHAR, true)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
 		return false;
 	}
@@ -690,7 +690,7 @@ bool DataContainer::AddCharacter(const char* const string, const uint32_t l_stri
 	}
 
 	// Make checks
-	if(!this->header.data_header.controller.compareTypeSign(YON_TYPE_CHAR, true)) {
+	if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_CHAR, true)) {
 		std::cerr << "Primitive type -> local: " << (int)this->header.data_header.controller.type << " added CHAR" << std::endl;
 		return false;
 	}

@@ -17,6 +17,15 @@ namespace containers {
 class VariantBlockContainer;
 }
 
+/**<
+ * Primary lazy-evaluated record of a variant. Construction is done
+ * outside of this definition. The struct is constructed from pointers
+ * to the appropriate location in other lazy-evaluated objects such as
+ * Info, Format, Genotype, and Meta containers. Evaluation into this object
+ * is relatively inexpensive in isolation but quiet expensive when considered
+ * across the an entire dataset as this structure needs be evaluated many
+ * millions of times over many different containers.
+ */
 struct yon1_t {
 public:
 	yon1_t(void);

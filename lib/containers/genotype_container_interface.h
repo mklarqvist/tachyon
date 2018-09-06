@@ -12,7 +12,6 @@ public:
     typedef GenotypeContainerInterface    self_type;
     typedef std::size_t                   size_type;
     typedef core::MetaEntry               meta_type;
-    typedef core::VariantController       hot_controller_type;
     typedef yon_gt_summary                gt_summary;
 
     // Function pointers
