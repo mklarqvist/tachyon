@@ -115,7 +115,8 @@ public:
 		rec->pos = this->position;
 		bcf_update_id(hdr, rec, this->name.data());
 		bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
-		rec->qual = this->quality;
+		if(std::isnan(this->quality)) bcf_float_set_missing(rec->qual);
+		else rec->qual = this->quality;
 
 		return(rec);
 	}
