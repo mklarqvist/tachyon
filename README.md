@@ -19,7 +19,7 @@ Compression Ratio / Chromosome | Compression ratio
 
 The following tests were run on the [1000 Genomes Phase 3](http://www.internationalgenome.org/) (1KGP3) data. There are ~84.4 million phased SNPs in 2,504 samples from 26 distinct populations.
 
-Compression Ratio / Chromosome | Compression Speed
+Compression Ratio / Chromosome | Compression Ratio
 ------------------|-------------------
 ![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_1kgp3_bcftools.jpg "Compression Ratio")
 
