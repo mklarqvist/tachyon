@@ -1,8 +1,6 @@
 #ifndef VARIANT_IMPORTER_H_
 #define VARIANT_IMPORTER_H_
 
-#include <unordered_map>
-
 #include "io/variant_import_writer.h"
 
 namespace tachyon {

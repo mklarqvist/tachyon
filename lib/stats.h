@@ -31,17 +31,23 @@ DEALINGS IN THE SOFTWARE.
 #include "variant_reader.h"
 
 void stats_usage(void){
-
+	programMessage(true);
+	std::cerr <<
+	"About:  Calculate comprehensive per-sample statistics. Data is written to\n"
+	"        stdout as a JSON object.\n"
+	"Usage:  " << tachyon::constants::PROGRAM_NAME << " stats [options] -i <in.yon>\n\n"
+	"Options:\n"
+	"  -i FILE   input YON file (required)\n" << std::endl;
 }
 
 int stats(int argc, char** argv){
-	if(argc <= 2){
+	if(argc < 2){
 		programHelp();
 		return(1);
 	}
 
 	int c;
-	if(argc < 2){
+	if(argc == 2){
 		stats_usage();
 		return(1);
 	}
@@ -49,8 +55,6 @@ int stats(int argc, char** argv){
 	int option_index = 0;
 	static struct option long_options[] = {
 		{"input",    required_argument, 0, 'i' },
-		{"output",   optional_argument, 0, 'o' },
-		{"keychain", optional_argument, 0, 'k' },
 		{"silent",   no_argument,       0, 's' },
 		{0,0,0,0}
 	};
@@ -58,7 +62,7 @@ int stats(int argc, char** argv){
 	tachyon::VariantReaderSettings settings;
 	SILENT = 0;
 
-	while ((c = getopt_long(argc, argv, "i:o:k:s?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:s?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;

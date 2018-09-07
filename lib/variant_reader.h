@@ -99,7 +99,6 @@ public:
 	inline settings_type& GetSettings(void){ return(this->settings); }
 	inline const settings_type& GetSettings(void) const{ return(this->settings); }
 
-
 	/**<
 	 * Retrieve the current filter settings for the variant reader. This
 	 * object controls the pointers to filter applied to each variant.
@@ -211,7 +210,6 @@ public:
 	 */
 	bool SeekBlock(const uint32_t& blockID){
 		const uint64_t offset = this->GetIndex().GetLinearIndex().at(blockID).byte_offset;
-		std::cerr << "offset is " << offset << std::endl;
 		this->basic_reader.stream_.seekg(offset);
 		if(this->basic_reader.stream_.good() == false){
 			std::cerr << "failed to seek" << std::endl;
@@ -228,7 +226,17 @@ public:
 	 */
 	bool LoadKeychainFile(void);
 
+	/**<
+	 * Wrapper function for iteratively constructing output data.
+	 * Internally selects the appropriate subroutine to execute:
+	 * 1) Using linear yon
+	 * 2) Using non-linear yon
+	 * 3) Using linear htslib
+	 * 4) Using non-linear htslib
+	 * @return Returns the number of variants processed.
+	 */
 	uint64_t OutputRecords(void);
+
 	uint64_t OutputVcfLinear(void);
 	uint64_t OutputVcfSearch(void);
 	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;

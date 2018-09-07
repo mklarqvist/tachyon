@@ -59,7 +59,8 @@ void programHelp(void){
     "\n\n"
     "Commands:\n"
 	"import    import VCF/BCF to YON\n"
-    "view      YON->VCF/BCF conversion, YON subset and filter\n" << std::endl;
+    "view      YON->VCF/BCF conversion, YON subset and filter\n"
+	"stats     calculate comprehensive per-sample statistics\n" << std::endl;
 }
 
 #endif /* TACHYON_UTILITY_H_ */

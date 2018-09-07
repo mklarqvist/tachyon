@@ -55,7 +55,7 @@ int main(int argc, char** argv){
 		return(stats(argc, argv));
 		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
-		std::cerr << "Not implemented" << std::endl;
+		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
 		return(0);
 	} else if(strncmp(subroutine.data(), "benchmark", 9) == 0 && subroutine.size() == 9){
 		return(benchmark(argc, argv));

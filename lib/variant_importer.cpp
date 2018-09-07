@@ -1,5 +1,6 @@
 #include <fstream>
 #include <regex>
+#include <thread>
 
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
@@ -18,7 +19,9 @@ VariantImporterSettings::VariantImporterSettings() :
 	info_end_key(-1),
 	info_svlen_key(-1),
 	compression_level(6),
-	htslib_extra_threads(0)
+	htslib_extra_threads(std::thread::hardware_concurrency() - 1 >= 0
+	                     ? std::thread::hardware_concurrency() - 1
+	                     : 0)
 {}
 
 std::string VariantImporterSettings::GetInterpretedString(void) const{
