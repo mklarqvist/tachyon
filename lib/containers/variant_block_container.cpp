@@ -264,9 +264,9 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 		// fields are.
 		if(this->block_.footer.n_filter_streams){
 			records[i].n_filter = this->block_.footer.n_filter_streams;
+			records[i].filter_ids = &this->block_.footer.filter_patterns[objects.meta_container->at(i).filter_pattern_id].pattern;
 
 			// Populate Filter.
-			records[i].filter_ids = &this->block_.footer.filter_patterns[objects.meta_container->at(i).filter_pattern_id].pattern;
 			for(uint32_t j = 0; j < records[i].filter_ids->size(); ++j){
 				records[i].filter_hdr.push_back(&this->header_->filter_fields_[records[i].filter_ids->at(j)]);
 			}

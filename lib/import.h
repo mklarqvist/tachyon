@@ -40,8 +40,8 @@ void import_usage(void){
 	"  -t INT   Number of compression threads (default: all available)\n"
 	"  -p/-P    Permute/Do not permute diploid genotypes\n"
 	"  -e       Encrypt data with AES-256\n"
-	"  -t       Number of consumer threads for import\n"
-	"  -T       Number of (extra) htslib threads for decompression\n"
+	"  -t       Number of consumer threads for import (default: max available)\n"
+	"  -T       Number of (extra) htslib threads for decompression (default: max available)\n"
 	"  -s       Hide all program messages [null]\n";
 }
 

@@ -8,8 +8,8 @@
 #include "io/basic_buffer.h"
 #include "data_container_header_controller.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
 /** @brief Controller flags for an IndexBlockEntry
  * This structure is for internal use only and describes
@@ -46,7 +46,8 @@ public:
 	}
 
 public:
-	uint16_t hasGT:         1,  // This block has GT FORMAT data
+	uint16_t
+		hasGT:         1,  // This block has GT FORMAT data
 		hasGTPermuted: 1,  // have the GT fields been permuted
 		anyEncrypted:  1,  // any data encrypted
 		unused:        13; // reserved for future use
@@ -88,9 +89,9 @@ public:
 	uint32_t l_offset_footer;
 	uint64_t block_hash;     // block identifier in the form of a random hash
 	controller_type controller;
-	int32_t contigID;       // contig identifier
-	int64_t minPosition;    // minimum coordinate in this block
-	int64_t maxPosition;    // maximum coordinate in this block
+	int32_t  contigID;       // contig identifier
+	int64_t  minPosition;    // minimum coordinate in this block
+	int64_t  maxPosition;    // maximum coordinate in this block
 	uint32_t n_variants;    // number of variants in this block
 };
 

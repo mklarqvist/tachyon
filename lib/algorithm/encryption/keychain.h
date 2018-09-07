@@ -79,6 +79,16 @@ public:
 	 * @return      Returns the 64-bit hash identifier.
 	 */
 	uint64_t GetRandomHashIdentifier(const bool store = true);
+
+	/**<
+	 * Accessor for checking if a target value is found in the hash table
+	 * of hashed identifier. If the target is found it updates the match
+	 * reference in-place and returns TRUE. Otherwise return FALSE and
+	 * perform no update.
+	 * @param value Src value of interest.
+	 * @param match Dst value reference of match if found.
+	 * @return      Returns TRUE if found or FALSE otherwise.
+	 */
 	bool GetHashIdentifier(const uint64_t& value, uint32_t& match);
 
 private:

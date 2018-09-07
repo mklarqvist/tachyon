@@ -40,8 +40,8 @@ private:
 	typedef DataBlockSettings                    block_settings_type;
 	typedef VariantReaderObjects                 objects_type;
 
-	typedef algorithm::CompressionManager        compression_manager_type;
-	typedef EncryptionDecorator      encryption_manager_type;
+	typedef algorithm::CompressionManager  compression_manager_type;
+	typedef EncryptionDecorator            encryption_manager_type;
 
 	typedef std::unordered_map<int, int>    map_type;
 
@@ -154,7 +154,6 @@ private:
 
 
 // IMPLEMENTATION -------------------------------------------------------------
-
 
 
 template <class T>

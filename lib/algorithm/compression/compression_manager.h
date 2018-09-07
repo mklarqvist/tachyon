@@ -9,7 +9,7 @@ namespace tachyon{
 namespace algorithm{
 
 class CompressionManager{
-private:
+public:
 	typedef CompressionManager        self_type;
 	typedef UncompressedCodec         no_codec_type;
 	typedef ZSTDCodec                 zstd_codec_type;
@@ -27,9 +27,9 @@ public:
 
 
 	/**<
-	 * Decompress an abstract data container
-	 * @param container Target container
-	 * @return          Returns TRUE upon success or FALSE otherwise
+	 * Decompress a data container.
+	 * @param container Src and dst target container.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool Decompress(container_type& container);
 

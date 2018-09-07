@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
-[![Release](https://img.shields.io/badge/Release-beta_0.3.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Release](https://img.shields.io/badge/Release-beta_0.5.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <div align="center">
@@ -8,14 +8,42 @@
 
 Tachyon, or `YON` for short, is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
 
-## Highlights of Tachyon
-* **Self-indexing**: Tachyon always builds the best possible quad-tree, linear, and meta-index given the input data (irrespective of sorting). There are no external indices as data are stored in the file itself.
-* **Integrity checking**: The `YON` specification enforces validity checks for each data field and across all fields through checksum validation. This approach guarantees file integrity when compressing/decompressing and encrypting/decrypting. These checksums are stored internally.
-* **Encryption**: Natively supports block-wise, field-wise, and entry-wise encryption with all commonly used encryption models and paradigms through [openssl][openssl].
-* **Compression**: Tachyon files are generally many fold (in many cases many 10- to 100-folds) smaller than the current standard file-format.
-* **Field-specific layout**: In principle, Tachyon is implemented as a standard column-oriented management system with several layers of domain-specific heuristics providing fast and flexible data queries. This memory layout enables extremely rapid field-specific queries.  
-* **Performance**: The file-format is designed as independent blocks of data into independent byte streams. This approach is inherently amenable to paralellization through scatter-gather approaches on multiple cores or multiple machines.
-* **Comaptibility**: We strive to provide API calls to return YON data streams to any of the current standard file-formats (`VCF`, `VCF.GZ`, and `BCF`). This allows for immediate use of Tachyon without disrupting the existing ecosystem of tools.
+## Perfomance
+For reference, we compared yon to bcf on a server running Linux Ubuntu, with an Intel Xeon E5-2697 v3 processor, 64GB of DDR4-2133 RAM, and a pair of Intel SSE 750 NVMe drives running in RAID-0.
+
+The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. Left panel: Filesizes for chromosomes 1-22. Right panel: We generated a yon archive for this dataset (left) and compared file sizes for both uncompressed (ubcf and uyon) and compressed data (bcf and yon) and next retrieved the site-specific information only (dropping all FORMAT fields; right).
+
+Compression Ratio / Chromosome | Compression Ratio
+------------------|-------------------
+![Compression Ratio](docs/hrc_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_hrc_bcftools.jpg "Compression Ratio")
+
+The following tests were run on the [1000 Genomes Phase 3](http://www.internationalgenome.org/) (1KGP3) data. There are ~84.4 million phased SNPs in 2,504 samples from 26 distinct populations.
+
+Compression Ratio / Chromosome | Compression Ratio
+------------------|-------------------
+![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_1kgp3_bcftools.jpg "Compression Ratio")
+
+ubcf: uncompressed bcf; uyon: uncompressed yon; 1 GB = 1000 * 1000 * 1000 b
+
+### Evaluation performance
+The following tests were run to benchmark the processing time of various `yon` archives. For these tests we use three distinct datasets: 1) [1000 Genomes Phase 3](http://www.internationalgenome.org/) (1KGP3) chromosome 11; 2) [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) chromosome 11; and 3) [Human Genome Diversity Project](http://www.hagsc.org/hgdp/) (HGDP) chromosome 10. 
+
+| Dataset     | Variants | #INFO | #FORMAT | ubcf      | bcf       | uyon      | yon       |
+|-------------|----------|-------|---------|-----------|-----------|-----------|-----------|
+| 1kgp3-chr11 | 4045628  | 24    | 1       | 20.60 GB  | 633.70 MB | 670.29 MB | 157.28 MB |
+| HRC-chr11   | 1936990  | 6     | 1       | 125.90 GB | 3.48 GB   | 1.47 GB   | 461.96 MB |
+| HGDP-chr10  | 3766673  | 24    | 9       | 73.93 GB  | 19.07 GB  | 67.76 GB  | 14.40 GB  |
+
+Throughput is measure in megabytes per second. The test involves: 1) reading raw data (`read`); 2) decrypting and uncompressing raw data (`decompress`); 3) copying and constructing data containers from byte streams (`container eval`); 4) constructing lazy-evaluated `yon1_t` records from data containers (`lazy eval`). Which level of evaluation you would use in your application depends on the use-case&mdash;but most applications should be able to operate directly from the byte-streams (`decompress`).
+
+| Dataset     | Threads | Read (MB/s) | Decompress (MB/s) | Container Eval (MB/s) | Lazy Eval (MB/s) |
+|-------------|---------|-------------|-------------------|-----------------------|------------------|
+| 1kgp3-chr11 | 1       | 799.7     | 231.6           | 63.3               | 14.5          |
+|             | 28      | 847.34     | 2242.9           | 614.5               | 135.9          |
+| HRC-chr11   | 1       | 1717.4     | 192.7           | 131.1               | 14.9          |
+|             | 28      | 1702.2     | 2613.0           | 1940.1               | 157.7          |
+| HGDP-chr10  | 1       | 1756.8     | 321.2           | 50.2               | 48.8          |
+|             | 28      | 1733.3     | 5451.9            | 442.5               | 449.5          |
 
 ---  
 
@@ -24,14 +52,14 @@ For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
-sudo ./install.sh
+./install.sh
 ```
-Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
-If you do not have super-user privileges required to install new packages on your system then run
+Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on `apt-get`, so it is unlikely to run without extensive modifications on non-Debian-based systems.
+If you do not have super-user (administrator) privileges required to install new packages on your system then run the local installation:
 ```bash
 ./install.sh local
 ```
-In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
+When installing locally the required dependencies are downloaded and built in the root directory. This approach will require additional effort if you intend to move the compiled libraries to a different directory.
 
 ## Documentation
 
@@ -49,7 +77,7 @@ Interested in contributing? Fork and submit a pull request and it will be review
 We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version
-This is Tachyon 0.3.0. Tachyon follows [semantic versioning](https://semver.org/).
+This is Tachyon 0.5.0. Tachyon follows [semantic versioning](https://semver.org/).
 
 ### History
 Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.

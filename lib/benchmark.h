@@ -21,8 +21,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
 
-#ifndef STATS_H_
-#define STATS_H_
+#ifndef BENCHMARK_H_
+#define BENCHMARK_H_
 
 #include <iostream>
 #include <getopt.h>
@@ -30,39 +30,36 @@ DEALINGS IN THE SOFTWARE.
 #include "utility.h"
 #include "variant_reader.h"
 
-void stats_usage(void){
-	programMessage(true);
-	std::cerr <<
-	"About:  Calculate comprehensive per-sample statistics. Data is written to\n"
-	"        stdout as a JSON object.\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " stats [options] -i <in.yon>\n\n"
-	"Options:\n"
-	"  -i FILE   input YON file (required)\n" << std::endl;
+void benchmark_usage(void){
+
 }
 
-int stats(int argc, char** argv){
-	if(argc < 2){
+int benchmark(int argc, char** argv){
+	if(argc <= 2){
 		programHelp();
 		return(1);
 	}
 
 	int c;
-	if(argc == 2){
-		stats_usage();
+	if(argc < 2){
+		benchmark_usage();
 		return(1);
 	}
 
 	int option_index = 0;
 	static struct option long_options[] = {
 		{"input",    required_argument, 0, 'i' },
+		{"output",   optional_argument, 0, 'o' },
+		{"threads",  optional_argument, 0, 't' },
 		{"silent",   no_argument,       0, 's' },
 		{0,0,0,0}
 	};
 
 	tachyon::VariantReaderSettings settings;
 	SILENT = 0;
+	int n_threads = 1;
 
-	while ((c = getopt_long(argc, argv, "i:s?", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:t:s?", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -73,8 +70,9 @@ int stats(int argc, char** argv){
 		case 'o':
 			settings.output = std::string(optarg);
 			break;
-		case 'k':
-			settings.keychain_file = std::string(optarg);
+		case 't':
+			n_threads = atoi(optarg);
+			if(n_threads <= 0) return 1;
 			break;
 		case 's':
 			SILENT = 1;
@@ -99,15 +97,11 @@ int stats(int argc, char** argv){
 	tachyon::VariantReader reader;
 	reader.GetSettings() = settings;
 
-	if(!reader.open(settings.input)){
-		std::cerr << "failed to open" << std::endl;
-		return 1;
-	}
-
-	reader.GetBlockSettings().LoadMinimumVcf(true).LoadGenotypes(true);
-	reader.Stats();
+	reader.Benchmark(n_threads);
 
 	return 0;
 }
 
-#endif /* STATS_H_ */
+
+
+#endif /* BENCHMARK_H_ */

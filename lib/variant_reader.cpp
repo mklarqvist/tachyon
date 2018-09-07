@@ -1,7 +1,7 @@
 #include "variant_reader.h"
 
 
-namespace tachyon{
+namespace tachyon {
 
 VariantReader::VariantReader() :
 	b_data_start(0)
@@ -169,6 +169,29 @@ bool VariantReader::NextBlock(){
 	return true;
 }
 
+bool VariantReader::NextBlockRaw(void){
+	if(this->CheckNextValid() == false) return false;
+
+	// Reset and re-use
+	this->variant_container.reset();
+
+	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+		return false;
+
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
+		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
+		return false;
+	}
+	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
+
+	// Attempts to read a YON block with the settings provided
+	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
+		return false;
+
+	// All passed
+	return true;
+}
+
 containers::VariantBlockContainer VariantReader::ReturnBlock(void){
 	variant_container_type c;
 	c << this->GetGlobalHeader();
@@ -242,60 +265,6 @@ bool VariantReader::LoadKeychainFile(void){
 		return false;
 	}
 	return true;
-}
-
-TACHYON_VARIANT_CLASSIFICATION_TYPE VariantReader::ClassifyVariant(const meta_entry_type& meta, const uint32_t& allele) const{
-	const int32_t ref_size = meta.alleles[0].size();
-	const int32_t l_diff   = ref_size - meta.alleles[allele].size();
-
-	if(meta.alleles[0].allele[0] == '<' || meta.alleles[allele].allele[0] == '<')
-		return(YON_VARIANT_CLASS_SV);
-	else if(l_diff == 0){
-		if(ref_size == 1 && meta.alleles[0].allele[0] != meta.alleles[allele].allele[0]){
-			if(meta.alleles[allele].allele[0] == 'A' ||
-			   meta.alleles[allele].allele[0] == 'T' ||
-			   meta.alleles[allele].allele[0] == 'G' ||
-			   meta.alleles[allele].allele[0] == 'C')
-			{
-				return(YON_VARIANT_CLASS_SNP);
-			}
-			else return(YON_VARIANT_CLASS_UNKNOWN);
-		}
-		else if(ref_size != 1){
-			uint32_t n_characters_identical = 0;
-			const uint32_t length_shortest = ref_size < meta.alleles[allele].size()
-					                    ? ref_size
-					                    : meta.alleles[allele].size();
-
-			for(uint32_t c = 0; c < length_shortest; ++c)
-				n_characters_identical += (meta.alleles[0].allele[c] == meta.alleles[allele].allele[c]);
-
-			if(n_characters_identical == 0) return(YON_VARIANT_CLASS_MNP);
-			else return(YON_VARIANT_CLASS_CLUMPED);
-		}
-	} else {
-		const uint32_t length_shortest = ref_size < meta.alleles[allele].size()
-		                            ? ref_size
-		                            : meta.alleles[allele].size();
-
-		// Keep track of non-standard characters.
-		uint32_t n_characters_non_standard = 0;
-
-		// Iterate over available characters and check for non-standard
-		// genetic characters (ATGC).
-		for(uint32_t c = 0; c < length_shortest; ++c){
-			n_characters_non_standard += (meta.alleles[allele].allele[c] != 'A' &&
-			                              meta.alleles[allele].allele[c] != 'T' &&
-			                              meta.alleles[allele].allele[c] != 'C' &&
-			                              meta.alleles[allele].allele[c] != 'G');
-		}
-
-		// If non-standard characters are found then return as unknown
-		// type. Otherwise, return classification as an indel.
-		if(n_characters_non_standard) return(YON_VARIANT_CLASS_UNKNOWN);
-		else return(YON_VARIANT_CLASS_INDEL);
-	}
-	return(YON_VARIANT_CLASS_UNKNOWN);
 }
 
 void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const{
@@ -465,10 +434,11 @@ uint64_t VariantReader::OutputVcfLinear(void){
 	//	return(0);
 	//}
 
+	io::BasicBuffer output_buffer(100000);
 	while(this->NextBlock()){
 		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
 		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
-		io::BasicBuffer output_buffer(100000);
+
 		// If occ table is built.
 		//objects->occ = &occ;
 		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
@@ -793,115 +763,102 @@ void VariantReader::UpdateHeaderView(void){
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 }
 
-bool VariantReader::Stats(void){
-	this->variant_container.AllocateGenotypeMemory();
-	// temp
-	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
-	//	return(0);
-	//}
+bool VariantReader::Benchmark(const uint32_t threads){
+	std::cerr << utility::timestamp("LOG") << "Starting benchmark with " << threads << " threads..." << std::endl;
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::LoadData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::UncompressData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateData);
+	this->basic_reader.stream_.close();
+	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateRecords);
+	this->basic_reader.stream_.close();
+	return(true);
+}
 
-	/*
-	uint32_t n_blocks = 0;
-	for(uint32_t i = 0; i < this->GetIndex().index_.n_contigs_; ++i){
-		n_blocks += this->GetIndex().index_.linear_[i].size();
-	}
-	uint32_t n_threads = std::thread::hardware_concurrency();
-
-	std::cerr << "blocks: " << n_blocks << " and threads " << n_threads << std::endl;
-
-	std::vector<std::pair<uint32_t, uint32_t>> workload(n_threads);
-	uint32_t n_cumulative = 0;
-	assert(n_threads != 0);
-	uint32_t n_step_size = n_blocks / n_threads;
-	for(uint32_t i = 0; i < n_threads - 1; ++i){
-		workload[i] = std::pair<uint32_t, uint32_t>(n_cumulative, n_cumulative + n_step_size);
-		n_cumulative += n_step_size;
-	}
-	workload.back().first = n_cumulative;
-	workload.back().second = n_blocks;
-
-	for(uint32_t i = 0; i < n_threads; ++i){
-		std::cerr << i << ": " << workload[i].first << "-" << workload[i].second << std::endl;
-	}
-
-	// Final solution.
-	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
-
-	//
-	yon_stats_thread_pool pool(n_threads);
-	std::vector<std::thread*> threads(n_threads);
-	for(uint32_t i = 0; i < n_threads; ++i){
-		pool[i].reader      = new VariantReader(*this);
-		pool[i].block_from  = workload[i].first;
-		pool[i].block_to    = workload[i].second;
-		threads[i] = pool[i].Start();
-	}
-
-	for(uint32_t i = 0; i < n_threads; ++i) threads[i]->join();
-	std::cerr << "done joining" << std::endl;
-
-	return true;
-	*/
-	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
-
-	// stupid test
-	//VariantReader v(*this);
-
-	while(this->NextBlock()){
-		//variant_container_type c = v.ReturnBlock();
-		//variant_container_type& c = this->GetCurrentContainer();
-		//c.AllocateGenotypeMemory();
-
-		// Move all data to new instance.
-		//variant_container_type c(std::move(this->variant_container));
-		//variant_container_type c;
-		//c = std::move(this->variant_container);
-		//variant_container_type c(this->variant_container);
-
-		objects_type* objects = this->variant_container.LoadObjects(this->block_settings);
-		yon1_t* entries = this->variant_container.LazyEvaluate(*objects);
-
-		// Debug
-		//std::cerr << objects->meta_container->front().position << "->" << objects->meta_container->back().position << std::endl;
-
-		// Debug
-		//containers::DataContainer dc2 = objects->format_containers[1]->ToDataContainer();
-		//std::cerr << "fmt1\t" << dc2.header.n_additions << "," << dc2.header.n_strides << "," << dc2.GetSizeUncompressed() << std::endl;
-
-
-
-		// If occ table is built.
-		//objects->occ = &occ;
-		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
-
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			// Each entry evaluate occ if available.
-			//entries[i].occ = objects->occ;
-			//entries[i].EvaluateOcc();
-
-			const uint32_t n_format_avail = entries[i].format_ids->size();
-			if(n_format_avail > 0 && entries[i].is_loaded_gt){
-				entries[i].gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
-				s.Update(entries[i], this->variant_container.GetAllocatedGenotypeMemory());
-				//s.Update(entries[i]);
-			}
+bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&)){
+	if(!this->open(settings.input)){
+			std::cerr << "failed to open" << std::endl;
+			return 1;
 		}
 
-		delete [] entries;
-		//objects->occ = nullptr;
-		delete objects;
+		this->GetBlockSettings().LoadAll(true);
+
+		// Begin
+		algorithm::Timer timer; timer.Start();
+		const uint32_t n_threads = threads;
+		yon_producer_vblock<VariantReader> prd(n_threads);
+		prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+		prd.Start();
+
+		yon_consumer_vblock<VariantSlavePerformance>* csm = new yon_consumer_vblock<VariantSlavePerformance>[n_threads];
+		VariantSlavePerformance* slave = new VariantSlavePerformance[n_threads];
+
+		for(int i = 0; i < n_threads; ++i){
+			csm[i].thread_id      = i;
+			csm[i].data_available = &prd.data_available;
+			csm[i].data_pool      = &prd.data_pool;
+
+			slave[i].settings = this->GetBlockSettings();
+			slave[i].vc << this->global_header;
+			slave[i].vc.AllocateGenotypeMemory();
+
+			csm[i].Start(func, slave[i]);
+		}
+		// Join consumer and producer threads.
+		for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+
+		prd.all_finished = true;
+		prd.thread_.join();
+
+		for(uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
+
+		delete [] slave;
+		delete [] csm;
+
+		const double time_elapsed = timer.Elapsed().count();
+		std::cerr << utility::timestamp("LOG") << time_elapsed << "\t" << slave[0].data_loaded << "\t" << (double)slave[0].data_loaded/time_elapsed/1e6 << "\t" << slave[0].data_uncompressed << "\t" << (double)slave[0].data_uncompressed/time_elapsed/1e6 << std::endl;
+		return true;
+}
+
+bool VariantReader::Stats(void){
+	const uint32_t n_threads = std::thread::hardware_concurrency();
+	yon_producer_vblock<VariantReader> prd(n_threads);
+	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+	prd.Start();
+
+	yon_consumer_vblock<VariantSlaveTsTv>* csm = new yon_consumer_vblock<VariantSlaveTsTv>[n_threads];
+
+	VariantSlaveTsTv* slave_test = new VariantSlaveTsTv[n_threads];
+
+ 	for(int i = 0; i < n_threads; ++i){
+		csm[i].thread_id      = i;
+		csm[i].data_available = &prd.data_available;
+		csm[i].data_pool      = &prd.data_pool;
+
+		slave_test[i].settings = this->GetBlockSettings();
+		slave_test[i].s.SetSize(this->global_header.GetNumberSamples());
+		slave_test[i].s_local.SetSize(this->global_header.GetNumberSamples());
+		slave_test[i].vc << this->global_header;
+		slave_test[i].vc.AllocateGenotypeMemory();
+
+		csm[i].Start(&VariantSlaveTsTv::GatherGenotypeStatistics, slave_test[i]);
 	}
+	// Join consumer and producer threads.
+	for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+
+	prd.all_finished = true;
+	prd.thread_.join();
+
+	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+	for(uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
+
+	delete [] slave_test;
+	delete [] csm;
 
 	io::BasicBuffer json_buffer(250000);
-	json_buffer += "{\"PSI\":{\n";
-	for(uint32_t i = 0; i < this->GetGlobalHeader().GetNumberSamples(); ++i){
-		s[i].LazyEvalute();
-		if(i != 0) json_buffer += ",\n";
-		s[i].ToJsonString(json_buffer, this->GetGlobalHeader().samples_[i]);
-	}
-	json_buffer += "\n}\n}\n";
+	s.ToJsonString(json_buffer, this->global_header.samples_);
 
-	//std::cout << s.n_no_alts << "," << s.n_multi_allele << "," << s.n_multi_allele_snp << "," << s.n_biallelic << "," << s.n_singleton << std::endl;
 	std::cout.write(json_buffer.data(), json_buffer.size());
 	std::cout.flush();
 

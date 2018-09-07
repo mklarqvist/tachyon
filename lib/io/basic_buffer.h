@@ -1,9 +1,11 @@
 #ifndef BASICBUFFER__H_
 #define BASICBUFFER__H_
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
+
 #include <cstddef>
 #include <iostream>
-#include <inttypes.h>
 #include <stdint.h>
 #include <cassert>
 

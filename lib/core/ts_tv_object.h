@@ -6,11 +6,22 @@
 
 namespace tachyon{
 
-// 0,1,2,3,4 -> A,T,G,C,X
+#define YON_GT_TSTV_A       0
+#define YON_GT_TSTV_T       1
+#define YON_GT_TSTV_G       2
+#define YON_GT_TSTV_C       3
+#define YON_GT_TSTV_UNKNOWN 4
+#define YON_GT_TSTV_MISS    5
+#define YON_GT_TSTV_EOV     6
+#define YON_GT_TSTV_INS     7
+#define YON_GT_TSTV_DEL     8
+
+// ASCII positions for A,T,G,C are filled with their respective
+// encodings and the background is filled with YON_GT_TSTV_UNKNOWN.
 const uint8_t YON_STATS_TSTV_LOOKUP[256] =
 {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
- 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,4,3,
- 4,4,4,2,4,4,4,4,4,4,4,4,4,4,4,4,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+ 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,YON_GT_TSTV_A,4,YON_GT_TSTV_C,
+ 4,4,4,YON_GT_TSTV_G,4,4,4,4,4,4,4,4,4,4,4,4,YON_GT_TSTV_T,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -19,73 +30,34 @@ const uint8_t YON_STATS_TSTV_LOOKUP[256] =
 
 struct yon_stats_sample {
 public:
-	yon_stats_sample(void) :
-		n_ins(0), n_del(0), n_singleton(0), n_ts(0), n_tv(0), ts_tv_ratio(0)
-	{
-		for(uint32_t i = 0; i < 9; ++i){
-			this->base_conv[i] = new uint64_t[9];
-			memset(&this->base_conv[i][0], 0, sizeof(uint64_t)*9);
-		}
-	}
+	yon_stats_sample(void);
+	~yon_stats_sample(void);
 
-	~yon_stats_sample(void){
-		for(uint32_t i = 0; i < 9; ++i){
-			delete [] this->base_conv[i];
-		}
-	}
+	yon_stats_sample& operator+=(const yon_stats_sample& other);
 
-	inline double GetTiTVRatio(void) const{
-		// Prevent division by 0
-		if(this->n_ts == 0) return 0;
-		return((double)this->n_ts / this->n_tv);
-	}
+	/**<
+	 * Compute the number of transitions and transversions and then use
+	 * those numbers to calculate the transition/transversion ratio. These
+	 * values are stored internally in the struct.
+	 * @return Returns TRUE.
+	 */
+	bool LazyEvalute(void);
 
-	bool LazyEvalute(void){
-		// Transversions: A->C, C->A, T->G, G->T, A->T, T->A, C->G, G->C
-		// Transitions:   A->G, G->A, C->T, T->C
-		// Maps:          A->0, T->1, G->2, C->3
-		this->n_tv = this->base_conv[0][3] + this->base_conv[3][0] +
-		             this->base_conv[1][2] + this->base_conv[2][1] +
-		             this->base_conv[0][1] + this->base_conv[1][0] +
-		             this->base_conv[3][2] + this->base_conv[2][3];
-		this->n_ts = this->base_conv[0][2] + this->base_conv[2][0] +
-		             this->base_conv[1][3] + this->base_conv[3][1];
+	/**<
+	 * Converts this struct into a partial (albeit valid) JSON string.
+	 * Takes as argument an input buffer reference and a reference to
+	 * the target sample name as described in the global header.
+	 * @param buffer      Dst buffer.
+	 * @param sample_name Src sample name.
+	 * @return            Returns TRUE.
+	 */
+	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const;
 
-		if(this->n_ts == 0) this->ts_tv_ratio = 0;
-		else this->ts_tv_ratio = ((double)this->n_ts / this->n_tv);
-
-		this->n_ins = this->base_conv[0][7] + this->base_conv[1][7] +
-		              this->base_conv[2][7] + this->base_conv[3][7] +
-		              this->base_conv[4][7];
-		this->n_del = this->base_conv[4][8];
-
-		return true;
-	}
-
-	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const {
-
-		buffer +=  "\"" + sample_name + "\":{";
-		buffer += " \"n_ins\":" + std::to_string(this->n_ins);
-		buffer += ",\"n_del\":" + std::to_string(this->n_del);
-		buffer += ",\"n_singleton\":" + std::to_string(this->n_singleton);
-		buffer += ",\"n_ts\":"  + std::to_string(this->n_ts);
-		buffer += ",\"n_tv\":"  + std::to_string(this->n_tv);
-		buffer += ",\"ts_tv\":" + std::to_string(this->ts_tv_ratio);
-		buffer += ",\"conv\":[";
-		for(uint32_t i = 0; i < 9; ++i){
-			if(i != 0) buffer += ',';
-			buffer += '[';
-			buffer.AddReadble((uint64_t)this->base_conv[i][0]);
-			for(uint32_t j = 1; j < 9; ++j){
-				buffer += ',';
-				buffer.AddReadble((uint64_t)this->base_conv[i][j]);
-			}
-			buffer += ']';
-		}
-		buffer += ']';
-		buffer += '}';
-		return(buffer);
-	}
+	/**<
+	 * Resets all internal counters. Useful when reusing
+	 * objects without releasing memory.
+	 */
+	void reset(void);
 
 public:
 	uint64_t  n_ins, n_del, n_singleton;
@@ -96,243 +68,105 @@ public:
 
 struct yon_stats_tstv {
 public:
-	yon_stats_tstv() : n_s(0), n_rcds(0), n_snp(0), n_mnp(0), n_ins(0), n_del(0), n_other(0), n_no_alts(0), n_singleton(0),
-	                   n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(nullptr){}
-	yon_stats_tstv(const uint32_t n_samples) : n_s(n_samples), n_rcds(0), n_snp(0), n_mnp(0), n_ins(0), n_del(0), n_other(0), n_no_alts(0), n_singleton(0),
-                                               n_biallelic(0), n_multi_allele(0), n_multi_allele_snp(0), sample(new yon_stats_sample[n_samples]){}
-	~yon_stats_tstv(void){ delete [] this->sample; }
+	yon_stats_tstv();
+	yon_stats_tstv(const uint32_t n_samples);
+	~yon_stats_tstv(void);
 
+	yon_stats_tstv& operator+=(const yon_stats_tstv& other);
+
+	// Accessors
 	inline yon_stats_sample& operator[](const uint32_t pos){ return(this->sample[pos]); }
 	inline const yon_stats_sample& operator[](const uint32_t pos) const{ return(this->sample[pos]); }
 
-	bool Update(const yon1_t& rcd, yon_gt_rcd** rcds) {
-		if(rcd.is_loaded_gt == false || rcd.is_loaded_meta == false)
-			return false;
+	/**<
+	 * Addition operator in the situation where the sample order
+	 * in the other object is permuted according to a provided
+	 * permutation array.
+	 * @param other Src object to read data from.
+	 * @param ppa   Src permutation array describing the relationship between the current object and the provided one
+	 * @return      Returns an reference to the dst object.
+	 */
+	yon_stats_tstv& Add(const yon_stats_tstv& other, const yon_gt_ppa& ppa);
 
-		if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
-			std::cerr << "eval because not done" << std::endl;
-			bool eval = rcd.gt->Evaluate();
-			if(eval == false){
-				std::cerr << "failed to evaluate" << std::endl;
-				return false;
-			}
-		}
+	/**<
+	 * Allocates memory for a number of samples. All previous data
+	 * will be deleted without consideration.
+	 * @param n_samples
+	 */
+	void SetSize(const uint32_t n_samples);
 
-		assert(this->n_s == rcd.gt->n_s);
+	/**<
+	 * Construct a valid JSON string from the internal structures. Requires
+	 * as input a reference to the global header sample list.
+	 * @param buffer       Dst data buffer.
+	 * @param sample_names Src vector of sample names.
+	 * @return             Returns a reference to the dst data buffer.
+	 */
+	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::vector<std::string>& sample_names) const;
 
-		++this->n_rcds; // Update number of records.
+	/**<
+	 * Construct mappings for the alleles into relative offset. Function
+	 * will allocate new memory for allele_encodings and non_ref_encodings.
+	 * It is not legal to pass the same pointer to allele_encodings and
+	 * non_ref_encodings.
+	 * @param rcd               Src yon1_t structure that must have genotype data available.
+	 * @param allele_encodings  Pointer to empty integer array.
+	 * @param non_ref_encodings Pointer to empty integer array.
+	 * @return                  Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool GetEncodings(const yon1_t& rcd,
+	                  __restrict__ uint8_t*& allele_encodings,
+	                  __restrict__ uint8_t*& non_ref_encodings);
 
-		// Update count for target variant line type.
-		if(rcd.meta->n_alleles > 2){
-			bool is_snp = true;
-			for(uint32_t i = 0; i < rcd.gt->n_allele; ++i){
-				if(rcd.meta->alleles[i].l_allele != 1){
-					is_snp = false;
-					break;
-				}
-			}
+	/**<
+	 * Update the current structure with the genotype data from the
+	 * provided yon1_t record and a preallocated array of pointers
+	 * to yon_gt_rcds. This function requires that the yon1_t record
+	 * has genotype data available and that the yon_gt_rcds have been
+	 * preprocessed. If genotype data not available or there and/or
+	 * there are no meta data available then the function does not
+	 * continue. This function is considerably slower than the
+	 * Update(const yon1_t&) function that operates directly on the
+	 * run-length encoded objects.
+	 * @param rcd  Src yon1_t record.
+	 * @param rcds Src yon_gt_rcd pointers.
+	 * @return     Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool Update(const yon1_t& rcd, yon_gt_rcd** rcds);
 
-			if(is_snp) ++this->n_multi_allele_snp;
-			else ++this->n_multi_allele;
-		} else if(rcd.meta->n_alleles == 2){
-			++this->n_biallelic;
-		}
+	/**<
+	 * Update the current structure with the genotype data from the
+	 * provided yon1_t record. This function requires that the yon1_t record
+	 * has genotype data available. If genotype data not available or there and/or
+	 * there are no meta data available then the function does not
+	 * continue. This function does not guarantee that the ordering of the
+	 * updates are correct in terms of global ordering. The updates will
+	 * be completed according to the (possibly) local permutation array.
+	 * Restoring global order is up to the user.
+	 * @param rcd  Src yon1_t record.
+	 * @param rcds Src yon_gt_rcd pointers.
+	 * @return     Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool Update(const yon1_t& rcd);
 
-		// For SNV to SNV or insertion. It is not possible to have a deletion
-		// if the reference value is represented as a SNV.
-		if(rcd.meta->alleles[0].size() == 1){
-			// Encode alleles.
-			uint8_t* allele_encodings  = new uint8_t[rcd.gt->n_allele + 2];
-			uint8_t* non_ref_encodings = new uint8_t[rcd.gt->n_allele + 2];
-			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
-			allele_encodings[0] = 5; non_ref_encodings[0] = 0;
-			allele_encodings[1] = 6; non_ref_encodings[1] = 0;
-			non_ref_encodings[2] = 0;
-			for(uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i){
-				if(rcd.meta->alleles[i - 2].l_allele == 1){
-					allele_encodings[i] = YON_STATS_TSTV_LOOKUP[rcd.meta->alleles[i - 2].allele[0]];
-				} else {
-					if(rcd.meta->alleles[i - 2].l_allele > 1 &&
-					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
-					{
-						//std::cerr << "is insertion: " << rcd.meta->alleles[i - 2].toString() << std::endl;
-						allele_encodings[i] = 7;
-					} else allele_encodings[i] = 4;
-				}
-			}
+	void UpdateDiploid(const yon_gt* gt,
+	                   __restrict__ const uint8_t* allele_encodings,
+	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   uint32_t& n_non_ref,
+	                   uint32_t& t_non_ref);
 
+	void UpdateNPloidy(const yon_gt* gt,
+	                   __restrict__ const uint8_t* allele_encodings,
+	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   uint32_t& n_non_ref,
+	                   uint32_t& t_non_ref);
 
-			if(allele_encodings[2] > 3){
-				std::cerr << "bad reference allele: " << rcd.meta->alleles[0].toString() << std::endl;
-				delete [] allele_encodings;
-				delete [] non_ref_encodings;
-				return false;
-			}
-
-			uint32_t n_non_ref = 0;
-			uint32_t t_non_ref = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
-				for(uint32_t j = 0; j < rcd.gt->m; ++j){
-					++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
-					n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
-					t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
-				}
-			}
-
-			//if(n_non_ref <= 1)
-			//	std::cerr << rcd.meta->position+1 << ": " << n_non_ref << std::endl;
-
-			if(n_non_ref == 0) ++this->n_no_alts;
-			else if(n_non_ref == 1){
-				++this->n_singleton;
-				++this->sample[t_non_ref].n_singleton;
-				assert(t_non_ref < this->n_s);
-				//std::cerr << "singleton@" << t_non_ref << std::endl;
-			}
-
-			delete [] allele_encodings;
-			delete [] non_ref_encodings;
-
-		}
-		// For insertion/deletion to SNV/insertion/deletion.
-		else {
-			//std::cerr << "ref allele is not 1: " << rcd.meta->alleles[0].toString() << std::endl;
-
-			// Encode alleles.
-			uint8_t* allele_encodings  = new uint8_t[rcd.gt->n_allele + 2];
-			uint8_t* non_ref_encodings = new uint8_t[rcd.gt->n_allele + 2];
-			memset(non_ref_encodings, 1, sizeof(uint8_t)*(rcd.gt->n_allele + 2));
-			allele_encodings[0] = 5;
-			allele_encodings[1] = 6;
-			memset(non_ref_encodings, 0, sizeof(uint8_t)*3);
-
-			const uint16_t& ref_length = rcd.meta->alleles[0].l_allele;
-			allele_encodings[2] = 4;
-
-			// Iterate over available alleles.
-			for(uint32_t i = 3; i < rcd.gt->n_allele + 2; ++i){
-				// If the target allele is a simple SNV.
-				if(rcd.meta->alleles[i - 2].l_allele == 1){
-					//std::cerr << "target is deletion: " << i - 2 << "/" << rcd.meta->n_alleles << "; " << rcd.meta->alleles[i - 2].toString() << std::endl;
-					allele_encodings[i] = 8;
-				}
-				// If the target allele length is shorter than the reference
-				// allele length and is comprised of only canonical bases then
-				// classify this allele as a deletion.
-				else if(rcd.meta->alleles[i - 2].l_allele < ref_length &&
-				        std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
-				{
-					//std::cerr << "is canonical deletion " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-					allele_encodings[i] = 8;
-				} else {
-					if(rcd.meta->alleles[i - 2].l_allele > ref_length &&
-					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
-					{
-						//std::cerr << "is insertion: " << rcd.meta->alleles[i - 2].toString() << ": " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-						allele_encodings[i] = 7;
-					} else {
-						//std::cerr << "is same: " << rcd.meta->alleles[i - 2].toString() << ": " << i - 2 << "/" << rcd.meta->n_alleles << std::endl;
-						allele_encodings[i] = 4;
-					}
-				}
-			}
-
-			uint32_t n_non_ref = 0;
-			uint32_t t_non_ref = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_s; ++i){
-				for(uint32_t j = 0; j < rcd.gt->m; ++j){
-					++this->sample[i].base_conv[allele_encodings[2]][allele_encodings[(rcds[i]->allele[j] >> 1)]];
-					n_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1];
-					t_non_ref += non_ref_encodings[rcds[i]->allele[j] >> 1] * i;
-				}
-			}
-
-			if(n_non_ref == 0) ++this->n_no_alts;
-			else if(n_non_ref == 1){
-				//std::cerr << "indel singleton" << std::endl;
-				++this->n_singleton;
-				++this->sample[t_non_ref].n_singleton;
-				assert(t_non_ref < this->n_s);
-				//std::cerr << "singleton@" << t_non_ref << std::endl;
-			}
-
-			delete [] allele_encodings;
-			delete [] non_ref_encodings;
-
-		}
-		return true;
-	}
-
-	// todo update
-	bool Update(const yon1_t& rcd){
-		if(rcd.is_loaded_gt == false || rcd.is_loaded_meta == false)
-			return false;
-
-		if((rcd.gt->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = rcd.gt->Evaluate();
-			if(eval == false){
-				std::cerr << "failed to evaluate" << std::endl;
-				return false;
-			}
-		}
-
-		++this->n_rcds;
-		if(rcd.meta->n_alleles > 2){
-			bool is_snp = true;
-			for(uint32_t i = 0; i < rcd.gt->n_allele; ++i){
-				if(rcd.meta->alleles[i].l_allele != 1){
-					is_snp = false;
-					break;
-				}
-			}
-
-			if(is_snp) ++this->n_multi_allele_snp;
-			else ++this->n_multi_allele;
-		} else if(rcd.meta->n_alleles == 2){
-			++this->n_biallelic;
-		} else if(rcd.meta->n_alleles == 1){
-			++this->n_no_alts;
-		}
-
-		assert(this->n_s == rcd.gt->n_s);
-
-		if(rcd.meta->alleles[0].size() == 1){
-			// Encode alleles.
-			uint8_t* allele_encodings = new uint8_t[rcd.gt->n_allele + 2];
-			allele_encodings[0] = 5;
-			allele_encodings[1] = 6;
-			for(uint32_t i = 2; i < rcd.gt->n_allele + 2; ++i){
-				if(rcd.meta->alleles[i - 2].l_allele == 1){
-					allele_encodings[i] = YON_STATS_TSTV_LOOKUP[rcd.meta->alleles[i - 2].allele[0]];
-				} else {
-					if(rcd.meta->alleles[i - 2].l_allele > 1 &&
-					   std::regex_match(rcd.meta->alleles[i - 2].toString(), constants::YON_REGEX_CANONICAL_BASES))
-					{
-						std::cerr << "is insertion" << std::endl;
-					}
-					allele_encodings[i] = 4;
-				}
-			}
-
-			if(allele_encodings[2] > 3){
-				std::cerr << "bad reference allele: " << rcd.meta->alleles[0].toString() << std::endl;
-				return false;
-			}
-
-			uint32_t sample_offset = 0;
-			for(uint32_t i = 0; i < rcd.gt->n_i; ++i){
-				for(uint32_t r = 0; r < rcd.gt->rcds[i].run_length; ++r, ++sample_offset){
-					for(uint32_t j = 0; j < rcd.gt->m; ++j){
-						++this->sample[sample_offset].base_conv[allele_encodings[2]][allele_encodings[(rcd.gt->rcds[i].allele[j] >> 1)]];
-					}
-				}
-			}
-			assert(sample_offset == this->n_s);
-		} else {
-			//std::cerr << "ref allele is not 1: " << rcd.meta->alleles[0].toString() << std::endl;
-		}
-		return true;
-	}
+	/**<
+	 * Resets all internal counters. Useful when reusing
+	 * objects without releasing memory. Iteratively calls
+	 * reset on the child objects.
+	 */
+	void reset(void);
 
 public:
 	uint32_t n_s;

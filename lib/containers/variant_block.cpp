@@ -9,8 +9,8 @@ VariantBlock::VariantBlock() :
 	n_info_c_allocated(0),
 	n_format_c_allocated(0),
 	base_containers(new container_type[YON_BLK_N_STATIC]),
-	info_containers(new container_type[0]),
-	format_containers(new container_type[0]),
+	info_containers(nullptr),
+	format_containers(nullptr),
 	gt_ppa(nullptr),
 	load_settings(nullptr),
 	end_block_(0),
@@ -179,8 +179,8 @@ void VariantBlock::clear(void){
 void VariantBlock::resize(const uint32_t s){
 	if(s == 0) return;
 
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].resize(s);
-	for(uint32_t i = 0; i < n_info_c_allocated; ++i) this->info_containers[i].resize(s);
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)     this->base_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_info_c_allocated; ++i)   this->info_containers[i].resize(s);
 	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
 }
 
@@ -566,6 +566,18 @@ uint64_t VariantBlock::GetCompressedSize(void) const{
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
 	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
+
+	return(total);
+}
+
+uint64_t VariantBlock::GetUncompressedSize(void) const{
+	uint64_t total = 0;
+	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+		total += this->base_containers[YON_BLK_PPA].data_uncompressed.size();
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].data_uncompressed.size() + this->base_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].data_uncompressed.size() + this->info_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].data_uncompressed.size() + this->format_containers[i].strides_uncompressed.size();
 
 	return(total);
 }

@@ -1,7 +1,6 @@
 #ifndef CORE_BASE_META_HOT_H_
 #define CORE_BASE_META_HOT_H_
 
-/*======  Dependencies  ======*/
 #include "io/basic_buffer.h"
 #include "support/enums.h"
 #include "support/magic_constants.h"
@@ -9,11 +8,11 @@
 namespace tachyon{
 namespace core{
 
-struct VariantController{
-	typedef VariantController self_type;
+struct MetaEntryController {
+	typedef MetaEntryController self_type;
 
 	// Ctor
-	VariantController(void) :
+	MetaEntryController(void) :
 		gt_available(0),
 		gt_anyMissing(0),
 		gt_phase(0),
@@ -31,7 +30,7 @@ struct VariantController{
 
 	}
 
-	VariantController(const self_type& other) :
+	MetaEntryController(const self_type& other) :
 		gt_available(other.gt_available),
 		gt_anyMissing(other.gt_anyMissing),
 		gt_phase(other.gt_phase),
@@ -64,7 +63,7 @@ struct VariantController{
 	}
 
 	// Dtor
-	~VariantController(){}
+	~MetaEntryController(){}
 
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const self_type& entry){
 		buffer += (uint16_t)*reinterpret_cast<const uint16_t* const>(&entry);
@@ -93,7 +92,7 @@ struct VariantController{
 
 	/**< Controller field. The first seven fields describes
 	 * genotype-specific information. The remainder bit-fields
-	 * describes variant-specific information
+	 * describes variant-specific information.
 	 * 1) If genotype data is available
 	 * 2) If there is are any missing genotypes
 	 * 3) The phase of all genotypes if diploid and no mixed phase
@@ -107,7 +106,8 @@ struct VariantController{
 	 * 11) If allele data is bit-packed
 	 * 12) If all alleles are SNVs
 	 */
-	uint16_t gt_available:        1, // if there is any GT data
+	uint16_t
+	    gt_available:        1, // if there is any GT data
         gt_anyMissing:       1, // any missing
         gt_phase:            1, // all phased/unphased
 		gt_anyNA:            1, // any NA

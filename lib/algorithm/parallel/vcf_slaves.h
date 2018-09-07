@@ -82,9 +82,9 @@ public:
 		delete [] this->c;
 		this->c = nullptr;
 		this->n_capacity = other.n_capacity;
-		this->n_c = other.n_c;
+		this->n_c   = other.n_c;
 		this->front = other.front;
-		this->rear = other.rear;
+		this->rear  = other.rear;
 		this->alive = other.alive.load();
 		std::swap(this->c, other.c);
 		return(*this);

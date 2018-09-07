@@ -7,7 +7,7 @@
 #include "containers/components/variant_block_header.h"
 #include "core/header/variant_header.h"
 #include "meta_allele.h"
-#include "variant_controller.h"
+#include "meta_entry_controller.h"
 #include "containers/data_container.h"
 
 #include "htslib/vcf.h"
@@ -23,7 +23,7 @@ public:
 	typedef VariantHeader               header_type;
 	typedef io::BasicBuffer             buffer_type;
 	typedef MetaAllele                  allele_type;
-	typedef VariantController           controller_type;
+	typedef MetaEntryController         controller_type;
 
 public:
 	MetaEntry();
@@ -96,6 +96,12 @@ public:
 	 */
 	uint8_t PackRefAltByte(void) const;
 
+	/**<
+	 * Returns the alleles as a concatenated string. For example the alleles
+	 * A and T is returned as "A,T". This function is used primarily in the
+	 * UpdateHtslibVcfRecord() function for exporting into a htslib bcf1_t record.
+	 * @return Returns a concatenated string of alleles.
+	 */
 	std::string GetAlleleString(void) const{
 		std::string ret = this->alleles[0].toString();
 		for(uint32_t i = 1; i < this->n_alleles; ++i)
@@ -115,10 +121,15 @@ public:
 		rec->pos = this->position;
 		bcf_update_id(hdr, rec, this->name.data());
 		bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
-		rec->qual = this->quality;
+		if(std::isnan(this->quality)) bcf_float_set_missing(rec->qual);
+		else rec->qual = this->quality;
 
 		return(rec);
 	}
+
+	// Calculations
+	TACHYON_VARIANT_CLASSIFICATION_TYPE ClassifyVariant(const uint32_t& allele) const;
+
 
 public:
 	// Markup: populate from streams

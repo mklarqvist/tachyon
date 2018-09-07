@@ -7,7 +7,6 @@
 #include <thread>
 
 #include "containers/variant_block.h"
-#include "core/variant_controller.h"
 #include "core/genotypes.h"
 #include "io/vcf_utils.h"
 #include "containers/vcf_container.h"
@@ -19,8 +18,7 @@ const uint8_t BCF_UNPACK_TACHYON[3] = {2, 0, 1};
 #define BCF_UNPACK_GENOTYPE(A) BCF_UNPACK_TACHYON[((A) >> 1)]
 const char BCF_TYPE_SIZE[8] = {0,1,2,4,0,4,0,1};
 
-#define ENCODER_GT_DEBUG 0
-#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD)                 (BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
+#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
 #define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
 
 struct yon_gt_assess {
@@ -64,100 +62,6 @@ struct GenotypeEncoderStatistics{
 	uint64_t bcf_counts[3];
 };
 
-/**<
- * Supportive structure for the parallel import of genotypes
- */
-struct GenotypeEncoderSlaveHelper{
-	typedef GenotypeEncoderSlaveHelper self_type;
-	typedef containers::DataContainer  container_type;
-	typedef containers::VariantBlock   block_type;
-
-public:
-	GenotypeEncoderSlaveHelper() :
-		encoding_type(YON_GT_RLE_DIPLOID_BIALLELIC),
-		gt_primitive(YON_GT_BYTE),
-		n_runs(0)
-	{
-	}
-
-	GenotypeEncoderSlaveHelper(const uint32_t start_capacity) :
-		encoding_type(YON_GT_RLE_DIPLOID_BIALLELIC),
-		gt_primitive(YON_GT_BYTE),
-		n_runs(0)
-	{
-		// We only use the uncompressed buffer
-		// no strides or compressed buffers
-		container.data_uncompressed.resize(start_capacity);
-	}
-	~GenotypeEncoderSlaveHelper(){}
-
-	// Overload operator += for block and RTYPE helper
-	friend block_type& operator+=(block_type& block, const self_type& helper){
-		block.base_containers[YON_BLK_GT_SUPPORT].Add((uint32_t)helper.n_runs);
-		++block.base_containers[YON_BLK_GT_SUPPORT];
-
-		if(helper.encoding_type == YON_GT_RLE_DIPLOID_BIALLELIC){
-			if(helper.gt_primitive == YON_GT_BYTE){
-				block.base_containers[YON_BLK_GT_INT8] += helper.container;
-				++block.base_containers[YON_BLK_GT_INT8];
-			} else if(helper.gt_primitive == YON_GT_U16){
-				block.base_containers[YON_BLK_GT_INT16] += helper.container;
-				++block.base_containers[YON_BLK_GT_INT16];
-			} else if(helper.gt_primitive == YON_GT_U32){
-				block.base_containers[YON_BLK_GT_INT32] += helper.container;
-				++block.base_containers[YON_BLK_GT_INT32];
-			} else if(helper.gt_primitive == YON_GT_U64){
-				block.base_containers[YON_BLK_GT_INT64] += helper.container;
-				++block.base_containers[YON_BLK_GT_INT64];
-			}
-		} else if(helper.encoding_type == YON_GT_RLE_DIPLOID_NALLELIC){
-			if(helper.gt_primitive == YON_GT_BYTE){
-				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT8];
-			} else if(helper.gt_primitive == YON_GT_U16){
-				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT16];
-			} else if(helper.gt_primitive == YON_GT_U32){
-				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT32];
-			} else if(helper.gt_primitive == YON_GT_U64){
-				block.base_containers[YON_BLK_GT_S_INT64] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT64];
-			}
-		} else if(helper.encoding_type == YON_GT_BCF_DIPLOID){
-			if(helper.gt_primitive == YON_GT_BYTE){
-				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT8];
-			} else if(helper.gt_primitive == YON_GT_U16){
-				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT16];
-			} else if(helper.gt_primitive == YON_GT_U32){
-				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT32];
-			}
-		} else if(helper.encoding_type == YON_GT_BCF_STYLE){
-			if(helper.gt_primitive == YON_GT_BYTE){
-				block.base_containers[YON_BLK_GT_S_INT8] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT8];
-			} else if(helper.gt_primitive == YON_GT_U16){
-				block.base_containers[YON_BLK_GT_S_INT16] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT16];
-			} else if(helper.gt_primitive == YON_GT_U32){
-				block.base_containers[YON_BLK_GT_S_INT32] += helper.container;
-				++block.base_containers[YON_BLK_GT_S_INT32];
-			}
-		}
-
-		return(block);
-	}
-
-public:
-	TACHYON_GT_ENCODING       encoding_type;
-	TACHYON_GT_PRIMITIVE_TYPE gt_primitive;
-	uint32_t n_runs;
-	container_type container;
-};
-
 class GenotypeEncoder {
 public:
 	typedef GenotypeEncoder              self_type;
@@ -166,23 +70,6 @@ public:
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;
 	typedef GenotypeEncoderStatistics    stats_type;
-
-	typedef struct __RLEAssessHelper{
-		explicit __RLEAssessHelper(void) :
-				word_width(1),
-				n_runs(0)
-		{}
-		__RLEAssessHelper(const uint8_t& word_width,
-				          const uint64_t& n_runs) :
-			word_width(word_width),
-			n_runs(n_runs)
-		{}
-		~__RLEAssessHelper(){}
-
-		uint8_t word_width;
-		uint64_t n_runs;
-
-	} rle_helper_type;
 
 public:
 	GenotypeEncoder();
@@ -193,7 +80,6 @@ public:
 	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
 
 	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const yon_gt_ppa& permutation_array) const;
-	bool EncodeParallel(const containers::VcfContainer& container, meta_type* meta_entries, GenotypeEncoderSlaveHelper& slave_helper, const yon_gt_ppa& permutation_array) const;
 
 	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
 	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
@@ -217,16 +103,6 @@ public:
 	                          const io::VcfGenotypeSummary& gt_summary,
 	                          const yon_gt_ppa& permutation_array,
 	                          container_type& dst) const;
-
-private:
-	/**<
-	 * Supportive reduce function for updating local import statistics
-	 * following parallel execution of `EncodeParallel`. Iteratively
-	 * call this function with all subproblems to calculate the total
-	 * import statistics of genotypes.
-	 * @param helper Input helper structure
-	 */
-	void updateStatistics(const GenotypeEncoderSlaveHelper& helper);
 
 private:
 	uint64_t n_samples; // number of samples
@@ -473,70 +349,6 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 
 	return n_runs;
 }
-
-
-/**<
- * Parallel support structure: this object encapsulates
- * a thread that runs the `EncodeParallel` function with
- * a stride size of N_THREADS
- */
-struct CalcSlave{
-	typedef CalcSlave       self_type;
-	typedef core::MetaEntry meta_type;
-	typedef GenotypeEncoderSlaveHelper helper_type;
-
-	CalcSlave() :
-		thread_idx_(0),
-		n_threads_(0),
-		encoder_(nullptr),
-		//reader_(nullptr),
-		meta_entries_(nullptr),
-		ppa_(nullptr),
-		helpers_(nullptr)
-	{}
-
-	~CalcSlave(){}
-
-	std::thread* Start(const GenotypeEncoder& encoder,
-		               const uint32_t thread_idx,
-		               const uint32_t n_threads,
-		               //const bcf_reader_type& reader,
-		               meta_type* meta_entries,
-		               const uint32_t* const ppa,
-		               helper_type* helpers)
-	{
-		this->encoder_      = &encoder;
-		this->thread_idx_   = thread_idx;
-		this->n_threads_    = n_threads;
-		//this->reader_       = &reader;
-		this->meta_entries_ = meta_entries;
-		this->ppa_          = ppa;
-		this->helpers_      = helpers;
-
-		this->thread = std::thread(&self_type::Run_, this);
-		return(&this->thread);
-	}
-
-private:
-	void Run_(void){
-		exit(1);
-		for(uint32_t i = this->thread_idx_; i < 5; i += this->n_threads_){
-			//this->encoder_->EncodeParallel((*this->reader_)[i], this->meta_entries_[i], this->ppa_, this->helpers_[i]);
-		}
-	}
-
-private:
-	uint32_t thread_idx_;
-	uint32_t n_threads_;
-	const GenotypeEncoder* encoder_;
-	//const bcf_reader_type* reader_;
-	meta_type* meta_entries_;
-	const uint32_t* ppa_;
-	helper_type* helpers_;
-
-public:
-	std::thread thread;
-};
 
 }
 }
