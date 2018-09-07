@@ -25,6 +25,26 @@ Compression Ratio | Compression Speed
 
 ubcf: uncompressed bcf; uyon: uncompressed yon; 1 GB = 1000 * 1000 * 1000 b
 
+### Evaluation performance
+The following tests were run to benchmark the processing time of various `yon` archives. For these tests we use three distinct datasets: 1) 1000 Genomes Phase 3 chromosome 11; 2) HRC chromosome 11; and 3) HGDP chromosome 10. 
+
+| Dataset     | Variants | #INFO | #FORMAT | ubcf      | bcf       | uyon      | yon       |
+|-------------|----------|-------|---------|-----------|-----------|-----------|-----------|
+| 1kgp3-chr11 | 4045628  | 24    | 1       | 20.60 GB  | 633.70 MB | 670.29 MB | 157.28 MB |
+| HRC-chr11   | 1936990  | 6     | 1       | 125.90 GB | 3.48 GB   | 1.47 GB   | 461.96 MB |
+| HGDP-chr10  | 3766673  | 24    | 9       | 73.93 GB  | 19.07 GB  | 67.76 GB  | 14.40 GB  |
+
+Throughput is measure in megabytes per second. The test involves: 1) reading raw data (`read`); 2) decrypting and uncompressing raw data (`decompress`); 3) copying and constructing data containers from byte streams (`container eval`); 4) constructing lazy-evaluated `yon1_t` records from data containers (`lazy eval`). Which level of evaluation you would use in your application depends on the use-case&mdash;but most applications should be able to operate directly from the byte-streams (`decompress`).
+
+| Dataset     | Threads | Read (MB/s) | Decompress (MB/s) | Container Eval (MB/s) | Lazy Eval (MB/s) |
+|-------------|---------|-------------|-------------------|-----------------------|------------------|
+| 1kgp3-chr11 | 1       | 799.7     | 231.6           | 63.3               | 14.5          |
+|             | 28      | 847.34     | 2242.9           | 614.5               | 135.9          |
+| HRC-chr11   | 1       | 1717.4     | 192.7           | 131.1               | 14.9          |
+|             | 28      | 1702.2     | 2613.0           | 1940.1               | 157.7          |
+| HGDP-chr10  | 1       | 1756.8     | 321.2           | 50.2               | 48.8          |
+|             | 28      | 1733.3     | 5451.9            | 442.5               | 449.5          |
+
 ---  
 
 ## Installation

@@ -454,45 +454,5 @@ yon_gt_assess GenotypeEncoder::AssessMultiploid(const bcf1_t* entry,
 	return sum;
 }
 
-void GenotypeEncoder::updateStatistics(const GenotypeEncoderSlaveHelper& helper){
-	if(helper.encoding_type == YON_GT_RLE_DIPLOID_BIALLELIC){
-		if(helper.gt_primitive == YON_GT_BYTE){
-			++this->stats_.rle_counts[0];
-		} else if(helper.gt_primitive == YON_GT_U16){
-			++this->stats_.rle_counts[1];
-		} else if(helper.gt_primitive == YON_GT_U32){
-			++this->stats_.rle_counts[2];
-		} else if(helper.gt_primitive == YON_GT_U64){
-			++this->stats_.rle_counts[3];
-		}
-	} else if(helper.encoding_type == YON_GT_RLE_DIPLOID_NALLELIC){
-		if(helper.gt_primitive == YON_GT_BYTE){
-			++this->stats_.rle_simple_counts[0];
-		} else if(helper.gt_primitive == YON_GT_U16){
-			++this->stats_.rle_simple_counts[1];
-		} else if(helper.gt_primitive == YON_GT_U32){
-			++this->stats_.rle_simple_counts[2];
-		} else if(helper.gt_primitive == YON_GT_U64){
-			++this->stats_.rle_simple_counts[3];
-		}
-	} else if(helper.encoding_type == YON_GT_BCF_DIPLOID){
-		if(helper.gt_primitive == YON_GT_BYTE){
-			++this->stats_.diploid_bcf_counts[0];
-		} else if(helper.gt_primitive == YON_GT_U16){
-			++this->stats_.diploid_bcf_counts[1];
-		} else if(helper.gt_primitive == YON_GT_U32){
-			++this->stats_.diploid_bcf_counts[2];
-		}
-	} else if(helper.encoding_type == YON_GT_BCF_STYLE){
-		if(helper.gt_primitive == YON_GT_BYTE){
-			++this->stats_.bcf_counts[0];
-		} else if(helper.gt_primitive == YON_GT_U16){
-			++this->stats_.bcf_counts[1];
-		} else if(helper.gt_primitive == YON_GT_U32){
-			++this->stats_.bcf_counts[2];
-		}
-	}
-}
-
 }
 }

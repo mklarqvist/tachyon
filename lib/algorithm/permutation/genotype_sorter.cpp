@@ -16,6 +16,7 @@ GenotypeSorter::~GenotypeSorter(){
 }
 
 void GenotypeSorter::SetSamples(const uint64_t n_samples){
+	delete [] this->gt_pattern;
 	this->n_samples = n_samples;
 	this->permutation_array.Allocate(n_samples);
 	this->gt_pattern = new yon_radix_gt[n_samples];

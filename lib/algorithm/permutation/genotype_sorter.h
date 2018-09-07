@@ -22,16 +22,34 @@ public:
 	GenotypeSorter(const uint64_t n_samples);
 	~GenotypeSorter();
 
-	// Reset does NOT need to cast after each
-	// iteration as values are overwritten
-	// each cycle
+	/**<
+	 * Restore the initial state without releasing memory. This function
+	 * does not need to be called every iteration as data is overwritten.
+	 */
 	void reset(void);
+
+	// Accessor
+	inline const uint64_t& GetNumberSamples(void) const{ return(this->n_samples); }
+
+	/**<
+	 * Allocates memory to allocate for a set number of samples.
+	 * Deletes existing data without consideration.
+	 * @param n_samples Number of samples to allocate memory for.
+	 */
 	void SetSamples(const uint64_t n_samples);
 
+	/**<
+	 * Permutes the genotypes in the provided VcfContainer. This
+	 * functions needs to have knowledge of the global Vcf header
+	 * to locate the Format:GT field identifier. Genotypes will be
+	 * permuted according to their genotypes. This function respects
+	 * the base ploidy.
+	 * @param vcf_container Src VcfContainer harbouring the Format:GT entries.
+	 * @param vcf_header    Src global Vcf header.
+	 * @return              Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool Build(const vcf_container_type& vcf_container, io::VcfHeader& vcf_header);
 	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
-
-	inline const uint64_t& GetNumberSamples(void) const{ return(this->n_samples); }
 
 public:
 	uint64_t      n_samples; // total number of entries in file
