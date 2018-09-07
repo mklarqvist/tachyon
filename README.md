@@ -13,15 +13,15 @@ For reference, we compared yon to bcf on a server running Linux Ubuntu, with an 
 
 The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. Left panel: Filesizes for chromosomes 1-22. Right panel: We generated a yon archive for this dataset (left) and compared file sizes for both uncompressed (ubcf and uyon) and compressed data (bcf and yon) and next retrieved the site-specific information only (dropping all FORMAT fields; right).
 
-Compression Ratio | Compression Speed
+Compression Ratio / Chromosome | Compression ratio
 ------------------|-------------------
 ![Compression Ratio](docs/hrc_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_hrc_bcftools.jpg "Compression Ratio")
 
 The following tests were run on the [1000 Genomes Phase 3](http://www.internationalgenome.org/) (1KGP3) data. There are ~84.4 million phased SNPs in 2,504 samples from 26 distinct populations.
 
-Compression Ratio | Compression Speed
+Compression Ratio / Chromosome | Compression Speed
 ------------------|-------------------
-![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | placeholder
+![Compression Ratio](docs/1kgp3_yon_bcf.jpg "Compression Ratio") | ![Compression Ratio](docs/yon_1kgp3_bcftools.jpg "Compression Ratio")
 
 ubcf: uncompressed bcf; uyon: uncompressed yon; 1 GB = 1000 * 1000 * 1000 b
 
