@@ -252,8 +252,8 @@ public:
 	}
 
 	bool AddInfoWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
-		if(container.data_uncompressed.size() == 0 &&
-		   header.info_fields_[container.header.GetGlobalKey()].yon_type == YON_VCF_HEADER_FLAG)
+		if((container.data_uncompressed.size() == 0 &&
+		   header.info_fields_[container.header.GetGlobalKey()].yon_type == YON_VCF_HEADER_FLAG) || container.header.data_header.GetPrimitiveType() == YON_TYPE_BOOLEAN)
 		{
 			for(int i = 0; i < this->n_variants_; ++i){
 				if(this->variants_[i].info_pid == -1){
@@ -309,8 +309,8 @@ public:
 				//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
 				case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
 				case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+				case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
 				case(YON_TYPE_BOOLEAN):
-				case(YON_TYPE_CHAR):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
 				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
@@ -323,8 +323,8 @@ public:
 				//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
 				case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
 				case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+				case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
 				case(YON_TYPE_BOOLEAN):
-				case(YON_TYPE_CHAR):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
 				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
@@ -350,10 +350,9 @@ public:
 		assert(it != nullptr);
 
 		uint32_t current_offset = 0;
-		uint32_t i = 0;
 		uint32_t stride_offset = 0;
 
-		while(true){
+		for(int i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -361,16 +360,9 @@ public:
 				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
 				current_offset += it->GetInt32(stride_offset) * sizeof(return_ptype);
 				++stride_offset;
-
-				// Break condition
-				if(current_offset == container.data_uncompressed.size())
-					break;
-
-				// Assertion of critical error
-				assert(current_offset < container.data_uncompressed.size());
 			}
-			++i;
 		}
+
 		assert(current_offset == container.data_uncompressed.size());
 		delete it;
 		return true;
@@ -378,30 +370,29 @@ public:
 
 	template <class return_ptype>
 	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
-		if(container.strides_uncompressed.size() == 0)
-			return false;
-
 		uint32_t current_offset = 0;
-		uint32_t i = 0;
 
-		while(true){
-			if(this->variants_[i].info_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].info_pid]){
-				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
-				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size;
-
-				// Break condition
-				if(current_offset == container.data_uncompressed.size())
-					break;
-
-				// Assertion of critical error
-				assert(current_offset < container.data_uncompressed.size());
+		if(container.header.data_header.IsUniform()){
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].info_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].info_pid]){
+					this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, 0, stride_size);
+					this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+				}
 			}
-			++i;
+		} else {
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].info_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].info_pid]){
+					this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
+					this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+					current_offset += stride_size * sizeof(return_ptype);
+				}
+			}
+			assert(current_offset == container.data_uncompressed.size());
 		}
-		assert(current_offset == container.data_uncompressed.size());
 		return true;
 	}
 
@@ -419,10 +410,9 @@ public:
 		assert(it != nullptr);
 
 		uint32_t current_offset = 0;
-		uint32_t i = 0;
 		uint32_t stride_offset = 0;
 
-		while(true){
+		for(int i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -430,18 +420,36 @@ public:
 				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
 				current_offset += it->GetInt32(stride_offset) * sizeof(char);
 				++stride_offset;
-
-				// Break condition
-				if(current_offset == container.data_uncompressed.size())
-					break;
-
-				// Assertion of critical error
-				assert(current_offset < container.data_uncompressed.size());
 			}
-			++i;
 		}
 		assert(current_offset == container.data_uncompressed.size());
 		delete it;
+		return true;
+	}
+
+	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride){
+		if(container.header.data_header.IsUniform()){
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].info_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].info_pid]){
+					this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<std::string>(&container.data_uncompressed[0], stride);
+					this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+				}
+			}
+		} else {
+			uint32_t current_offset = 0;
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].info_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].info_pid]){
+					this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<std::string>(&container.data_uncompressed[current_offset], stride);
+					this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+					current_offset += stride;
+				}
+			}
+			assert(current_offset == container.data_uncompressed.size());
+		}
 		return true;
 	}
 
@@ -463,7 +471,7 @@ public:
 				case(YON_TYPE_BOOLEAN):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
-				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+				default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
 				}
 			} else {
 				switch(container.header.data_header.GetPrimitiveType()){
@@ -477,7 +485,7 @@ public:
 				case(YON_TYPE_BOOLEAN):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
-				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+				default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
 				}
 			}
 		} else {
@@ -489,11 +497,11 @@ public:
 				//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
 				case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
 				case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+				case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
 				case(YON_TYPE_BOOLEAN):
-				case(YON_TYPE_CHAR):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
-				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+				default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
 				}
 			} else {
 				switch(container.header.data_header.GetPrimitiveType()){
@@ -503,11 +511,11 @@ public:
 				//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
 				case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
 				case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+				case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
 				case(YON_TYPE_BOOLEAN):
-				case(YON_TYPE_CHAR):
 				case(YON_TYPE_STRUCT):
 				case(YON_TYPE_UNKNOWN):
-				default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+				default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
 
 				}
 			}
@@ -530,10 +538,9 @@ public:
 		assert(it != nullptr);
 
 		uint32_t current_offset = 0;
-		uint32_t i = 0;
 		uint32_t stride_offset = 0;
 
-		while(true){
+		for(int i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].fmt_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].fmt_pid]){
@@ -541,15 +548,7 @@ public:
 				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
 				current_offset += it->GetInt32(stride_offset) * sizeof(return_ptype) * header.GetNumberSamples();
 				++stride_offset;
-
-				// Break condition
-				if(current_offset == container.data_uncompressed.size())
-					break;
-
-				// Assertion of critical error
-				assert(current_offset < container.data_uncompressed.size());
 			}
-			++i;
 		}
 		assert(current_offset == container.data_uncompressed.size());
 		delete it;
@@ -558,30 +557,29 @@ public:
 
 	template <class return_ptype>
 	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
-		if(container.strides_uncompressed.size() == 0)
-			return false;
-
 		uint32_t current_offset = 0;
-		uint32_t i = 0;
 
-		while(true){
-			if(this->variants_[i].fmt_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].fmt_pid]){
-				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
-				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size * header.GetNumberSamples();
-
-				// Break condition
-				if(current_offset == container.data_uncompressed.size())
-					break;
-
-				// Assertion of critical error
-				assert(current_offset < container.data_uncompressed.size());
+		if(container.header.data_header.IsUniform()){
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].fmt_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].fmt_pid]){
+					this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, 0, header.GetNumberSamples(), stride_size);
+					this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
+				}
 			}
-			++i;
+		} else {
+			for(int i = 0; i < this->n_variants_; ++i){
+				if(this->variants_[i].fmt_pid == -1){
+					continue;
+				} else if(matches[this->variants_[i].fmt_pid]){
+					this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
+					this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
+					current_offset += stride_size * header.GetNumberSamples();
+				}
+			}
+			assert(current_offset == container.data_uncompressed.size());
 		}
-		assert(current_offset == container.data_uncompressed.size());
 		return true;
 	}
 

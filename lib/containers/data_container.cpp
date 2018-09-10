@@ -120,6 +120,9 @@ bool DataContainer::CheckUniformity(void){
 	if(this->header.n_entries == 0)
 		return false;
 
+	if(this->header.data_header.controller.type == YON_TYPE_CHAR)
+		return false;
+
 	// We know the stride cannot be uniform if
 	// the stride size is uneven
 	const int16_t& stride_size = this->header.data_header.stride;
@@ -149,6 +152,7 @@ bool DataContainer::CheckUniformity(void){
 		}
 		cumulative_position += stride_update;
 	}
+	std::cerr << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;
@@ -413,7 +417,7 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 		this->header.data_header.controller.mixedStride = false;
 		this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
 		this->header.data_header.controller.signedness  = 0;
-		this->header.data_header.stride  = 0;
+		this->header.data_header.stride  = 1;
 		this->header.data_header.uLength = 0;
 		this->header.data_header.cLength = 0;
 		this->header.n_strides           = 0;
@@ -444,14 +448,18 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 void DataContainer::AddStride(const uint32_t value){
 	// If this is the first stride set
 	if(this->header.n_strides == 0){
+		std::cerr << "nstrides = 0: " << value << std::endl;
 		this->header.stride_header.controller.type = YON_TYPE_32B;
 		this->header.stride_header.controller.signedness = false;
-		this->SetStrideSize(value);
+		this->header.data_header.stride = value;
 	}
 
 	// Check if there are different strides
-	if(!this->CheckStrideSize(value)){
-		this->TriggerMixedStride();
+	if(this->header.data_header.HasMixedStride() == false){
+		if(this->header.data_header.stride != value){
+			std::cerr << "triggeirng mixed: " << this->header.data_header.stride << " because " << value << std::endl;
+			this->header.data_header.controller.mixedStride = true;
+		}
 	}
 
 	// Add value

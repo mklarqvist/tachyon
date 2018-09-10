@@ -2,6 +2,7 @@
 #include <regex>
 #include <thread>
 
+#include "io/variant_import_writer.h"
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 #include "algorithm/parallel/vcf_slaves.h"
@@ -35,7 +36,7 @@ std::string VariantImporterSettings::GetInterpretedString(void) const{
 }
 
 /**<
- * Pimpl implementation of private functionality of VariantImporter
+ * PImpl implementation of private functionality of VariantImporter
  * class. Hides the private logic from the exposed public API and
  * speeds up compilation.
  */
@@ -47,8 +48,16 @@ public:
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
+	typedef VariantWriterInterface    writer_interface_type;
+	typedef VariantWriterFile         writer_file_type;
+	typedef VariantWriterStream       writer_stream_type;
+
 public:
+	~VariantImporterImpl(){ delete this->writer; }
 	bool Build(writer_interface_type* writer, settings_type& settings);
+
+	void SetWriterTypeFile(void);
+	void SetWriterTypeStream(void);
 
 private:
 	/**<
@@ -77,6 +86,8 @@ private:
 	void UpdateHeaderImport(VariantHeader& header);
 
 public:
+	writer_interface_type* writer; // writer
+
 	std::shared_ptr<settings_type> settings;
 	compression_manager_type compression_manager;
 
@@ -102,35 +113,33 @@ public:
 
 VariantImporter::VariantImporter(const settings_type& settings) :
 		settings_(settings),
-		writer(nullptr),
 		mImpl(new VariantImporter::VariantImporterImpl)
 {
 
 }
 
 VariantImporter::~VariantImporter(){
-	delete this->writer;
 }
 
-void VariantImporter::SetWriterTypeFile(void)  { this->writer = new writer_file_type;   }
-void VariantImporter::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+void VariantImporter::VariantImporterImpl::SetWriterTypeFile(void)  { this->writer = new writer_file_type;   }
+void VariantImporter::VariantImporterImpl::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 bool VariantImporter::Build(){
 	// Allocate a new writer.
 	if(this->settings_.output_prefix.size() == 0 ||
 	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
 	{
-		writer = new writer_stream_type;
+		this->mImpl->writer = new VariantImporterImpl::writer_stream_type;
 	}
-	else writer = new writer_file_type;
+	else this->mImpl->writer = new VariantImporterImpl::writer_file_type;
 
 	// Open a file handle or standard out for writing.
-	if(!writer->open(this->settings_.output_prefix)){
+	if(!this->mImpl->writer->open(this->settings_.output_prefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
-	if(!this->mImpl->Build(this->writer, this->settings_)){
+	if(!this->mImpl->Build(this->mImpl->writer, this->settings_)){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}

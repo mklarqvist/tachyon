@@ -1,7 +1,9 @@
 #ifndef VARIANT_IMPORTER_H_
 #define VARIANT_IMPORTER_H_
 
-#include "io/variant_import_writer.h"
+#include <string>
+#include <cstdint>
+#include <memory>
 
 namespace tachyon {
 
@@ -36,9 +38,6 @@ public:
 class VariantImporter {
 public:
 	typedef VariantImporter           self_type;
-	typedef VariantWriterInterface    writer_interface_type;
-	typedef VariantWriterFile         writer_file_type;
-	typedef VariantWriterStream       writer_stream_type;
 	typedef VariantImporterSettings   settings_type;
 
 public:
@@ -49,12 +48,9 @@ public:
 	~VariantImporter();
 
 	bool Build();
-	void SetWriterTypeFile(void);
-	void SetWriterTypeStream(void);
 
 private:
 	settings_type settings_;
-	writer_interface_type* writer; // writer
 
 	// Pimpl idiom
 	class VariantImporterImpl;

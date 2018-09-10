@@ -8,7 +8,6 @@
 namespace tachyon {
 namespace algorithm {
 
-
 bool CompressionManager::Compress(variant_block_type& block,
                                   const uint8_t general_level)
 {
@@ -110,6 +109,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 				zstd_codec.Compress(block.info_containers[i]);
 			}
 			*/
+			std::cerr << "Info mixed stride: " << block.info_containers[i].header.data_header.HasMixedStride() << std::endl;
 			zstd_codec.Compress(block.info_containers[i]);
 		}
 	}

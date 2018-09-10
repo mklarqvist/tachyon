@@ -234,6 +234,7 @@ bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, yon1_vnt_t& rcd){
 			destination_container.AddCharacter(data_local, data_length);
 		} else if(info_primitive_type == BCF_BT_NULL){
 			element_stride_size = 0;
+			destination_container.SetType(YON_TYPE_BOOLEAN);
 			assert(data_length == 0 && stride_size == 0);
 		} else {
 			std::cerr << utility::timestamp("ERROR","VCF") << "Unknown case: " << (int)info_primitive_type << std::endl;

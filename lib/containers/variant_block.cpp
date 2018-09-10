@@ -211,11 +211,12 @@ void VariantBlock::UpdateContainers(void){
 	this->base_containers[YON_BLK_GT_N_INT64].UpdateContainer(false, false);
 
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
-		assert(this->info_containers[i].header.data_header.stride != 0);
 		this->info_containers[i].UpdateContainer();
 	}
 
 	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
+		// Illegal to have BOOLEAN fields in the Vcf:Format column.
+		// Therefore we assert that this is never the case.
 		assert(this->format_containers[i].header.data_header.stride != 0);
 		this->format_containers[i].UpdateContainer();
 	}

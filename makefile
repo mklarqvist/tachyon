@@ -22,9 +22,9 @@
 # ################################################################
 
 # Version numbers slices from the source header
-LIBVER_MAJOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
-LIBVER_MINOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
-LIBVER_PATCH_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_PATCH = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
+LIBVER_MAJOR_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
+LIBVER_MINOR_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
+LIBVER_PATCH_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_PATCH = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_MAJOR := $(shell echo $(LIBVER_MAJOR_SCRIPT))
@@ -172,8 +172,8 @@ lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
 
 tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
-	#$(MAKE) cleanmost
-	#$(MAKE) library library=true
+	$(MAKE) cleanmost
+	$(MAKE) library library=true
 	#$(MAKE) examples
 
 library: $(OBJECTS)
