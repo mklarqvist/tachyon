@@ -881,7 +881,6 @@ bool VariantReader::TempWrite(void){
 
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
-
 		for(int i = 0; i < vc.n_variants_; ++i){
 			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 		}

@@ -130,7 +130,6 @@ public:
 		this->AddNames(variant_block.base_containers[YON_BLK_NAMES]);
 		this->AddRefAlt(variant_block.base_containers[YON_BLK_REFALT]);
 
-
 		// Map local in block to local in variant.
 		// Data is added to variants in the order they appear in the raw data block.
 		// This is not necessarily corect as data may have been intended to be read in
@@ -200,9 +199,11 @@ public:
 
 	bool AddFilter(containers::VariantBlock& variant_block, const VariantHeader& header){
 		for(int i = 0; i < this->n_variants_; ++i){
-			const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
-			for(int j = 0; j < filter_patterns.pattern.size(); ++j){
-				this->variants_[i].flt_hdr.push_back(&header.filter_fields_[filter_patterns.pattern[j]]);
+			if(this->variants_[i].flt_pid >= 0){
+				const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
+				for(int j = 0; j < filter_patterns.pattern.size(); ++j){
+					this->variants_[i].flt_hdr.push_back(&header.filter_fields_[filter_patterns.pattern[j]]);
+				}
 			}
 		}
 		return true;

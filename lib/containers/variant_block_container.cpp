@@ -197,15 +197,15 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			//records[i].gt->Expand();
 		}
 
-		if(objects.n_loaded_info){
+		if(objects.n_loaded_info && objects.meta_container->at(i).info_pattern_id >= 0){
 			records[i].n_info   = objects.n_loaded_info;
 			records[i].info_ids = &this->block_.load_settings->info_patterns_local[objects.meta_container->at(i).info_pattern_id];
 			records[i].info     = new PrimitiveContainerInterface*[this->block_.footer.n_info_streams];
 			records[i].info_containers = new InfoContainerInterface*[this->block_.footer.n_info_streams];
 
 			// Populate Info data.
+			assert(records[i].info_ids != nullptr);
 			for(uint32_t j = 0; j < records[i].info_ids->size(); ++j){
-				std::cerr << "adding: " << i << "/" << records[i].info_ids->size() << "/" << objects.n_loaded_info << std::endl;
 				InfoContainerInterface* info_cnt = objects.info_container_map[this->header_->info_fields_[records[i].info_ids->at(j)].id];
 				records[i].info_containers[j] = info_cnt;
 				records[i].info_hdr.push_back(&this->header_->info_fields_[records[i].info_ids->at(j)]);
@@ -230,14 +230,16 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 			}
 		}
 
-		if(objects.n_loaded_format){
+		if(objects.n_loaded_format && objects.meta_container->at(i).format_pattern_id >= 0){
 			records[i].n_format   = objects.n_loaded_format;
 			records[i].format_ids = &this->block_.load_settings->format_patterns_local[objects.meta_container->at(i).format_pattern_id];
 			records[i].fmt        = new PrimitiveGroupContainerInterface*[this->block_.footer.n_format_streams];
 			records[i].format_containers = new FormatContainerInterface*[this->block_.footer.n_format_streams];
 
 			// Populate Format data.
+			assert(records[i].format_ids != nullptr);
 			for(uint32_t j = 0; j < records[i].format_ids->size(); ++j){
+
 				FormatContainerInterface* fmt_cnt = objects.format_container_map[this->header_->format_fields_[records[i].format_ids->at(j)].id];
 				records[i].format_containers[j] = fmt_cnt;
 				records[i].format_hdr.push_back(&this->header_->format_fields_[records[i].format_ids->at(j)]);
