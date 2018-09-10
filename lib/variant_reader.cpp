@@ -1,5 +1,6 @@
 #include "variant_reader.h"
 
+#include "containers/variant_container.h"
 
 namespace tachyon {
 
@@ -863,6 +864,35 @@ bool VariantReader::Stats(void){
 	std::cout.flush();
 
 	return true;
+}
+
+bool VariantReader::TempWrite(void){
+	io::BasicBuffer buf(256000);
+	this->variant_container.AllocateGenotypeMemory();
+
+	while(this->NextBlock()){
+		VariantContainer vc;
+
+		//objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
+
+		uint32_t n_v = this->GetCurrentContainer().GetBlock().header.n_variants;
+		vc.resize(n_v);
+		vc.n_variants_ = vc.n_capacity_;
+
+		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+
+
+		for(int i = 0; i < vc.n_variants_; ++i){
+			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+		}
+
+		std::cout.write(buf.data(), buf.size());
+		buf.reset();
+
+		//delete objects;
+	}
+
+	return 0;
 }
 
 }

@@ -15,6 +15,7 @@
 #include "io/vcf_utils.h"
 #include "io/variant_import_writer.h"
 #include "variant_importer.h"
+#include "core/variant_record.h"
 
 namespace tachyon{
 
@@ -77,7 +78,7 @@ public:
 	 * @param meta      Reference to the relevant MetaEntry object.
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta);
+	bool AddRecord(const vcf_container_type& container, const uint32_t position, yon1_vnt_t& rcd);
 
 	/**<
 	 * Add all htslib Info/Format/Filter fields from the src record to the internal VariantBlock
@@ -86,12 +87,12 @@ public:
 	 * @param meta   Reference to destination MetaEntry.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta);
-	bool AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta);
-	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfFormatInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfFilterInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfInfoPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
+	bool AddVcfFormatPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
+	bool AddVcfFilterPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
 
 	/**<
 	 * Attempts to add the target htslib bcf1_t target pointer to the sorted Tachyon index for
@@ -100,7 +101,7 @@ public:
 	 * @param meta   Source reference to MetaEntry.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
+	bool IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd);
 
 	/**<
 	 * Adds the Format:GT field to the local VariantBlock container.
@@ -108,7 +109,7 @@ public:
 	 * @param meta_entries Destination MetaEntry records.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
+	bool AddGenotypes(const vcf_container_type& container, yon1_vnt_t* rcds);
 
 	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){
 		this->vcf_header_ = header;

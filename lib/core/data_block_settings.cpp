@@ -149,7 +149,7 @@ DataBlockSettings& DataBlockSettings::LoadPermutationArray(const bool set){
 DataBlockSettings& DataBlockSettings::LoadAllFormat(const bool set){
 	this->LoadGenotypes(set);
 	this->LoadWrapper(set, YON_BLK_BV_FORMAT); // all format
-	this->LoadCore(set);
+	if(set) this->LoadCore(set);
 	return(*this);
 }
 

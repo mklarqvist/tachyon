@@ -69,22 +69,20 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int8_t* data, const 
 		return(buffer);
 	}
 
-	const uint8_t* const ref = reinterpret_cast<const uint8_t* const>(data);
-
 	// If the first value is end-of-vector then return
-	if(ref[0] == YON_BYTE_EOV){
+	if(data[0] == YON_BYTE_EOV){
 		buffer += '.';
 		return(buffer);
 	}
 
 	// First value
-	if(ref[0] == YON_BYTE_MISSING) buffer += '.';
+	if(data[0] == YON_BYTE_MISSING) buffer += '.';
 	else buffer.AddReadble((int32_t)data[0]);
 
 	// Remainder values
 	for(uint32_t i = 1; i < n_data; ++i){
-		if(ref[i] == YON_BYTE_MISSING) buffer += ",.";
-		else if(ref[i] == YON_BYTE_EOV){ return buffer; }
+		if(data[i] == YON_BYTE_MISSING) buffer += ",.";
+		else if(data[i] == YON_BYTE_EOV){ return buffer; }
 		else {
 			buffer += ',';
 			buffer.AddReadble((int32_t)data[i]);
@@ -99,23 +97,20 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int16_t* data, const
 		buffer += '.';
 		return(buffer);
 	}
-
-	const uint16_t* const ref = reinterpret_cast<const uint16_t* const>(data);
-
 	// If the first value is end-of-vector then return
-	if(ref[0] == YON_SHORT_EOV){
+	if(data[0] == YON_SHORT_EOV){
 		buffer += '.';
 		return(buffer);
 	}
 
 	// First value
-	if(ref[0] == YON_SHORT_MISSING) buffer += '.';
+	if(data[0] == YON_SHORT_MISSING) buffer += '.';
 	else buffer.AddReadble((int32_t)data[0]);
 
 	// Remainder values
 	for(uint32_t i = 1; i < n_data; ++i){
-		if(ref[i] == YON_SHORT_MISSING) buffer += ",.";
-		else if(ref[i] == YON_SHORT_EOV){ return buffer; }
+		if(data[i] == YON_SHORT_MISSING) buffer += ",.";
+		else if(data[i] == YON_SHORT_EOV){ return buffer; }
 		else {
 			buffer += ',';
 			buffer.AddReadble((int32_t)data[i]);
@@ -131,22 +126,20 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int32_t* data, const
 		return(buffer);
 	}
 
-	const uint32_t* const ref = reinterpret_cast<const uint32_t* const>(data);
-
 	// If the first value is end-of-vector then return
-	if(ref[0] == YON_INT_EOV){
+	if(data[0] == YON_INT_EOV){
 		buffer += '.';
 		return(buffer);
 	}
 
 	// First value
-	if(ref[0] == YON_INT_MISSING) buffer += '.';
+	if(data[0] == YON_INT_MISSING) buffer += '.';
 	else buffer.AddReadble(data[0]);
 
 	// Remainder values
 	for(uint32_t i = 1; i < n_data; ++i){
-		if(ref[i] == YON_INT_MISSING) buffer += ",.";
-		else if(ref[i] == YON_INT_EOV){ return buffer; }
+		if(data[i] == YON_INT_MISSING) buffer += ",.";
+		else if(data[i] == YON_INT_EOV){ return buffer; }
 		else {
 			buffer += ',';
 			buffer.AddReadble(data[i]);

@@ -1,5 +1,5 @@
-#ifndef CORE_BLOCKENTRY_H_
-#define CORE_BLOCKENTRY_H_
+#ifndef CORE_VARIANTBLOCK_H_
+#define CORE_VARIANTBLOCK_H_
 
 #include <unordered_map>
 
@@ -12,6 +12,7 @@
 #include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
 #include "core/genotypes.h"
+#include "core/variant_record.h"
 
 namespace tachyon{
 namespace containers{
@@ -177,6 +178,7 @@ public:
 	 */
 	bool operator+=(meta_entry_type& meta_entry);
 	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
+	bool operator+=(yon1_vnt_t& rcd);
 
 	/**<
 	 * Wrapper to add a new DataContainer to this VariantBlock container.
@@ -197,13 +199,13 @@ public:
 		}
 
 		// 1) Search for global idx
-		int32_t field_exists = (this->*StreamFieldLookup)((uint32_t)dc.GetIdx());
-		if(field_exists >= 0){
+		bool field_exists = (this->*StreamFieldLookup)((uint32_t)dc.GetIdx());
+		if(field_exists){
 			std::cerr << "field is already set. overwriting @ " << field_exists  << std::endl;
 			dst_containers[field_exists] = dc;
 		} else {
-			std::cerr << "field does not exist. adding. " << field_exists  << std::endl;
 			uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
+			std::cerr << "field does not exist. adding. " << offset  << std::endl;
 			dst_containers[offset] = dc;
 		}
 
@@ -211,11 +213,17 @@ public:
 	}
 
 	inline bool AddInfo(const DataContainer& dc){
-		return(this->AddWrapper(dc, this->info_containers, &block_footer_type::AddInfo, &self_type::HasInfo));
+		return(this->AddWrapper(dc,
+		       this->info_containers,
+		       &block_footer_type::AddInfo,
+		       &self_type::HasInfo));
 	}
 
 	inline bool AddFormat(const DataContainer& dc){
-		return(this->AddWrapper(dc, this->format_containers, &block_footer_type::AddFormat, &self_type::HasFormat));
+		return(this->AddWrapper(dc,
+		                        this->format_containers,
+		                        &block_footer_type::AddFormat,
+		                        &self_type::HasFormat));
 	}
 
 	/**<
@@ -330,7 +338,7 @@ public:
 		// want to the writer slave to spend time compressing or doing any
 		// other compute instead of simply writing at I/O saturated speeds.
 		uint64_t b_offset = 0;
-		if(this->header.controller.hasGT && this->header.controller.hasGTPermuted){
+		if(this->header.controller.has_gt && this->header.controller.has_gt_permuted){
 			this->UpdateHeader(this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], 0);
 			b_offset += this->base_containers[YON_BLK_PPA].GetObjectSize();
 		}
@@ -486,4 +494,4 @@ public:
 }
 }
 
-#endif /* CORE_BLOCKENTRY_H_ */
+#endif /* CORE_VARIANTBLOCK_H_ */

@@ -20,9 +20,9 @@ struct VariantBlockHeaderController{
 
 public:
 	VariantBlockHeaderController():
-		hasGT(0),
-		hasGTPermuted(0),
-		anyEncrypted(0),
+		has_gt(0),
+		has_gt_permuted(0),
+		any_encrypted(0),
 		unused(0)
 	{}
 	~VariantBlockHeaderController(){}
@@ -30,10 +30,10 @@ public:
 	inline void clear(){ memset(this, 0, sizeof(uint16_t)); }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller){
-		const uint16_t c = controller.hasGT |
-                      controller.hasGTPermuted << 1 |
-                      controller.anyEncrypted  << 2 |
-                      controller.unused        << 3;
+		const uint16_t c = controller.has_gt |
+                      controller.has_gt_permuted << 1 |
+                      controller.any_encrypted   << 2 |
+                      controller.unused          << 3;
 
 		stream.write(reinterpret_cast<const char*>(&c), sizeof(uint16_t));
 		return(stream);
@@ -47,10 +47,10 @@ public:
 
 public:
 	uint16_t
-		hasGT:         1,  // This block has GT FORMAT data
-		hasGTPermuted: 1,  // have the GT fields been permuted
-		anyEncrypted:  1,  // any data encrypted
-		unused:        13; // reserved for future use
+		has_gt:           1,  // This block has GT FORMAT data
+		has_gt_permuted:  1,  // have the GT fields been permuted
+		any_encrypted:    1,  // any data encrypted
+		unused:          13; // reserved for future use
 };
 
 /** @brief Fixed-sized components of an IndexBlockEntry

@@ -144,7 +144,7 @@ public:
 	uint64_t   position;
 	// Todo: Add end_position_longest. This would allow us to directly query
 	//       precomputed end positions.
-	// Todo: Axtend controller to uint32_t and add fields below or optionally add
+	// Todo: Extend controller to uint32_t and add fields below or optionally add
 	//       another controller field with variant-identifying information.
 	//       This would support queries on type directly from precomputed
 	//       lookups.

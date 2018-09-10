@@ -32,8 +32,6 @@ const std::regex YON_REGEX_CONTIG_POSITION = std::regex("^[A-Za-z0-9\\-_]+\\:[0-
 const std::regex YON_REGEX_CONTIG_RANGE    = std::regex("^[A-Za-z0-9\\-_]+\\:[0-9]+([\\.]{1}[0-9]+){0,1}([eE]{1}[0-9]{1})?\\-[0-9]+([\\.]{1}[0-9]+){0,1}([eE]{1}[0-9]{1})?$");
 const std::regex YON_REGEX_PACKED_ALLELES  = std::regex("^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$");
 
-/*------   Hot meta biallelic packing   ------*/
-// Encoding for bases
 const char* const REF_ALT_LOOKUP = "ATGC.XN";
 const uint8_t REF_ALT_A = 0;
 const uint8_t REF_ALT_T = 1;

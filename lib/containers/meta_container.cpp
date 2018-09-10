@@ -218,7 +218,6 @@ void MetaContainer::Setup(const block_type& block){
 			assert(ploidy.size() == this->size());
 			for(uint32_t i = 0; i < this->size(); ++i){
 				this->at(i).n_base_ploidy = ploidy[i];
-				std::cerr << (int)ploidy[i] << std::endl;
 			}
 		}
 	}

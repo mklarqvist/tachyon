@@ -19,8 +19,7 @@ yon1_t::yon1_t(void) :
 	gt_i(nullptr),
 	info_ids(nullptr),
 	format_ids(nullptr),
-	filter_ids(nullptr),
-	parent_container(nullptr)
+	filter_ids(nullptr)
 {
 }
 
@@ -88,6 +87,57 @@ bool yon1_t::EvaluateOcc(){
 		this->gt->n_occ[i] = n_offset;
 	}
 	return(true);
+}
+
+bool yon1_vnt_t::UsePackedRefAlt(void) const{
+	if(this->controller.biallelic == false || this->controller.diploid == false)
+		return false;
+
+	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), constants::YON_REGEX_PACKED_ALLELES) &&
+	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), constants::YON_REGEX_PACKED_ALLELES)){
+		return true;
+	}
+	return false;
+}
+
+uint8_t yon1_vnt_t::PackRefAltByte(void) const{
+	assert(this->UsePackedRefAlt());
+	uint8_t ref_alt = 0; // start out with empty
+
+	if(this->alleles[0].l_allele == 9 && strncmp(this->alleles[0].allele, "<NON_REF>", 9) == 0){
+		ref_alt ^= YON_ALLELE_NON_REF << 4;
+	} else {
+		switch(this->alleles[0].allele[0]){
+		case 'A': ref_alt ^= YON_ALLELE_A << 4; break;
+		case 'T': ref_alt ^= YON_ALLELE_T << 4; break;
+		case 'G': ref_alt ^= YON_ALLELE_G << 4; break;
+		case 'C': ref_alt ^= YON_ALLELE_C << 4; break;
+		case 'N': ref_alt ^= YON_ALLELE_N << 4; break;
+		case '.': ref_alt ^= YON_ALLELE_MISS << 4; break;
+		default:
+			std::cerr << utility::timestamp("ERROR") << "Illegal SNV reference..." << std::endl;
+			std::cerr << std::string(this->alleles[0].allele , this->alleles[0].l_allele) << std::endl;
+			std::cerr << std::string(this->alleles[1].allele , this->alleles[1].l_allele) << std::endl;
+			exit(1);
+		}
+	}
+
+	if(this->alleles[1].l_allele == 9 && strncmp(this->alleles[1].allele, "<NON_REF>", 9) == 0){
+		ref_alt ^= YON_ALLELE_NON_REF << 0;
+	} else {
+		switch(this->alleles[1].allele[0]){
+		case 'A': ref_alt ^= YON_ALLELE_A << 0; break;
+		case 'T': ref_alt ^= YON_ALLELE_T << 0; break;
+		case 'G': ref_alt ^= YON_ALLELE_G << 0; break;
+		case 'C': ref_alt ^= YON_ALLELE_C << 0; break;
+		case 'N': ref_alt ^= YON_ALLELE_N << 0; break;
+		case '.': ref_alt ^= YON_ALLELE_MISS << 0; break;
+		default:
+			std::cerr << utility::timestamp("ERROR") << "Illegal SNV alt..." << std::endl;
+			exit(1);
+		}
+	}
+	return(ref_alt);
 }
 
 }

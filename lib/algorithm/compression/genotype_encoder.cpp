@@ -16,12 +16,12 @@ GenotypeEncoder::GenotypeEncoder(const uint64_t samples) :
 GenotypeEncoder::~GenotypeEncoder(){}
 
 bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
-                             meta_type* meta_entries,
+                             yon1_vnt_t* rcds,
                              block_type& block,
                              const yon_gt_ppa& permutation_array) const
 {
 	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i){
-		if(meta_entries[i].controller.gt_available == false)
+		if(rcds[i].controller.gt_available == false)
 			continue;
 
 		io::VcfGenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
@@ -29,15 +29,15 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 		yon_gt_assess assessed = this->Assess(container[i], gt_summary, permutation_array);
 		const uint8_t primitive = assessed.GetCheapestPrimitive();
 
-		meta_entries[i].controller.biallelic        = (container[i]->n_allele == 2);
-		meta_entries[i].controller.diploid          = (gt_summary.base_ploidy == 2);
-		meta_entries[i].controller.gt_mixed_phasing = gt_summary.mixed_phasing;
-		meta_entries[i].controller.gt_anyMissing    = (gt_summary.n_missing != 0);
-		meta_entries[i].controller.gt_anyNA         = (gt_summary.n_vector_end != 0);
-		meta_entries[i].controller.gt_phase         = gt_summary.phase_if_uniform;
-		meta_entries[i].controller.mixed_ploidy     = (gt_summary.n_vector_end != 0);
-		meta_entries[i].controller.gt_available     = true;
-		meta_entries[i].n_base_ploidy               = gt_summary.base_ploidy;
+		rcds[i].controller.biallelic         = (container[i]->n_allele == 2);
+		rcds[i].controller.diploid           = (gt_summary.base_ploidy == 2);
+		rcds[i].controller.gt_has_mixed_phasing = gt_summary.mixed_phasing;
+		rcds[i].controller.gt_has_missing    = (gt_summary.n_missing != 0);
+		rcds[i].controller.gt_has_na         = (gt_summary.n_vector_end != 0);
+		rcds[i].controller.gt_phase_uniform  = gt_summary.phase_if_uniform;
+		rcds[i].controller.gt_mixed_ploidy   = (gt_summary.n_vector_end != 0);
+		rcds[i].controller.gt_available      = true;
+		rcds[i].n_base_ploidy                = gt_summary.base_ploidy;
 
 		if(container[i]->d.fmt[0].n == 2){
 			if(container[i]->n_allele == 2 && gt_summary.n_vector_end == 0){
@@ -52,8 +52,8 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 					return false;
 				}
 
-				meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
-				meta_entries[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_BIALLELIC;
+				rcds[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
+				rcds[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_BIALLELIC;
 				block.base_containers[YON_BLK_GT_SUPPORT].Add((uint32_t)n_runs);
 				++block.base_containers[YON_BLK_GT_SUPPORT];
 
@@ -69,8 +69,8 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 					return false;
 				}
 
-				meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
-				meta_entries[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_NALLELIC;
+				rcds[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
+				rcds[i].controller.gt_compression_type = YON_GT_RLE_DIPLOID_NALLELIC;
 				block.base_containers[YON_BLK_GT_SUPPORT].Add((uint32_t)n_runs);
 				++block.base_containers[YON_BLK_GT_SUPPORT];
 			}
@@ -87,8 +87,8 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 				return false;
 			}
 
-			meta_entries[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
-			meta_entries[i].controller.gt_compression_type = YON_GT_RLE_NPLOID;
+			rcds[i].controller.gt_primtive_type    = TACHYON_GT_PRIMITIVE_TYPE(primitive);
+			rcds[i].controller.gt_compression_type = YON_GT_RLE_NPLOID;
 			block.base_containers[YON_BLK_GT_SUPPORT].Add((uint32_t)n_runs);
 			++block.base_containers[YON_BLK_GT_SUPPORT];
 		}

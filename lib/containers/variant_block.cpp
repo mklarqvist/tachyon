@@ -261,7 +261,7 @@ bool VariantBlock::ReadHeaderFooter(std::ifstream& stream){
 }
 
 bool VariantBlock::read(std::ifstream& stream){
-	if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
+	if(this->header.controller.has_gt_permuted && this->header.controller.has_gt){
 		stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
 		stream >> this->base_containers[YON_BLK_PPA];
 	}
@@ -478,7 +478,7 @@ bool VariantBlock::read(std::ifstream& stream,
 		// If there is FORMAT:GT field data available AND that data has
 		// been permuted then create a new yon_gt_ppa object to store
 		// this data.
-		if(this->header.controller.hasGTPermuted && this->header.controller.hasGT){
+		if(this->header.controller.has_gt_permuted && this->header.controller.has_gt){
 			stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
 			this->LoadContainerSeek(stream,
 									this->footer.offsets[YON_BLK_PPA],
@@ -560,7 +560,7 @@ bool VariantBlock::read(std::ifstream& stream,
 
 uint64_t VariantBlock::GetCompressedSize(void) const{
 	uint64_t total = 0;
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
 		total += this->base_containers[YON_BLK_PPA].GetObjectSize();
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
@@ -572,7 +572,7 @@ uint64_t VariantBlock::GetCompressedSize(void) const{
 
 uint64_t VariantBlock::GetUncompressedSize(void) const{
 	uint64_t total = 0;
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
 		total += this->base_containers[YON_BLK_PPA].data_uncompressed.size();
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].data_uncompressed.size() + this->base_containers[i].strides_uncompressed.size();
@@ -586,7 +586,7 @@ void VariantBlock::UpdateOutputStatistics(import_stats_type& stats_basic,
                                           import_stats_type& stats_info,
                                           import_stats_type& stats_format)
 {
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
 		stats_basic[0] += this->base_containers[YON_BLK_PPA];
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
@@ -614,7 +614,7 @@ bool VariantBlock::write(std::ostream& stream)
 	stream << this->header;
 	const uint64_t start_pos = stream.tellp();
 
-	if(this->header.controller.hasGT && this->header.controller.hasGTPermuted)
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
 		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (uint64_t)stream.tellp() - start_pos);
 
 	// Start at offset 1 because offset 0 (YON_BLK_PPA) is encoding for the
@@ -692,6 +692,69 @@ bool VariantBlock::operator+=(meta_entry_type& meta_entry){
 
 	// Ploidy
 	this->base_containers[YON_BLK_GT_PLOIDY].Add(meta_entry.n_base_ploidy);
+	++this->base_containers[YON_BLK_GT_PLOIDY];
+
+	return true;
+}
+
+bool VariantBlock::operator+=(yon1_vnt_t& rcd){
+	// Meta positions
+	this->base_containers[YON_BLK_POSITION].Add((int32_t)rcd.pos);
+	++this->base_containers[YON_BLK_POSITION];
+
+	// Contig ID
+	this->base_containers[YON_BLK_CONTIG].Add((int32_t)rcd.rid);
+	++this->base_containers[YON_BLK_CONTIG];
+
+	// Ref-alt data
+	if(rcd.UsePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+		rcd.controller.alleles_packed = true;
+		const uint8_t ref_alt = rcd.PackRefAltByte();
+		this->base_containers[YON_BLK_REFALT].AddLiteral(ref_alt);
+		++this->base_containers[YON_BLK_REFALT];
+	}
+	// add complex
+	else {
+		// Special encoding
+		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+			// Write out allele
+			this->base_containers[YON_BLK_ALLELES].AddLiteral((uint16_t)rcd.alleles[i].l_allele);
+			this->base_containers[YON_BLK_ALLELES].AddCharacter(rcd.alleles[i].allele, rcd.alleles[i].l_allele);
+		}
+		++this->base_containers[YON_BLK_ALLELES]; // update before to not trigger
+		this->base_containers[YON_BLK_ALLELES].AddStride(rcd.n_alleles);
+	}
+
+	// Quality
+	this->base_containers[YON_BLK_QUALITY].Add(rcd.qual);
+	++this->base_containers[YON_BLK_QUALITY];
+
+	// Variant name
+	this->base_containers[YON_BLK_NAMES].AddStride(rcd.name.size());
+	this->base_containers[YON_BLK_NAMES].AddCharacter(rcd.name);
+	++this->base_containers[YON_BLK_NAMES];
+
+	// Tachyon pattern identifiers
+	this->base_containers[YON_BLK_ID_INFO].Add(rcd.info_pid);
+	this->base_containers[YON_BLK_ID_FORMAT].Add(rcd.fmt_pid);
+	this->base_containers[YON_BLK_ID_FILTER].Add(rcd.flt_pid);
+	++this->base_containers[YON_BLK_ID_INFO];
+	++this->base_containers[YON_BLK_ID_FORMAT];
+	++this->base_containers[YON_BLK_ID_FILTER];
+
+	// Check if all variants are of length 1 (as in all alleles are SNVs)
+	bool all_snv = true;
+	for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+		if(rcd.alleles[i].size() != 1) all_snv = false;
+	}
+	rcd.controller.all_snv = all_snv;
+
+	// Controller
+	this->base_containers[YON_BLK_CONTROLLER].AddLiteral((uint16_t)rcd.controller.ToValue()); // has been overloaded
+	++this->base_containers[YON_BLK_CONTROLLER];
+
+	// Ploidy
+	this->base_containers[YON_BLK_GT_PLOIDY].Add(rcd.n_base_ploidy);
 	++this->base_containers[YON_BLK_GT_PLOIDY];
 
 	return true;

@@ -12,7 +12,7 @@ namespace core{
  *  as a typed string. This data structure is always cast
  *  directly from pre-loaded byte streams.
  */
-struct MetaAllele{
+struct MetaAllele {
 private:
 	typedef MetaAllele      self_type;
 	typedef io::BasicBuffer buffer_type;

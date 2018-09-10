@@ -40,9 +40,15 @@ public:
     ~InfoContainer(void);
 
     DataContainer ToDataContainer(void){
+    	if(this->size() == 0)
+    		return(DataContainer());
+
 		uint32_t n_entries = 0;
 		for(uint32_t i = 0; i < this->size(); ++i)
 			n_entries += this->at(i).size();
+
+		if(n_entries == 0)
+			return(DataContainer());
 
 		DataContainer d;
 		d.data_uncompressed.resize(n_entries + 128);
@@ -55,9 +61,15 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
+		if(this->size() == 0)
+			return(container);
+
 		uint32_t n_entries = 0;
 		for(uint32_t i = 0; i < this->size(); ++i)
 			n_entries += this->at(i).size();
+
+		if(n_entries == 0)
+			return(container);
 
 		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);

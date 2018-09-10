@@ -152,7 +152,7 @@ public:
 			return false;
 		}
 
-		if(this->vc.GetBlock().header.controller.hasGT == false)
+		if(this->vc.GetBlock().header.controller.has_gt == false)
 			return true;
 
 		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
@@ -168,7 +168,7 @@ public:
 		}
 		assert(vc.GetBlock().gt_ppa != nullptr);
 
-		if(this->vc.GetBlock().header.controller.hasGTPermuted){
+		if(this->vc.GetBlock().header.controller.has_gt_permuted){
 			// Reduce function for adding together TsTv objects
 			// in the sample order as described in the local
 			// permutation array.

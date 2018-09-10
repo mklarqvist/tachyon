@@ -9,6 +9,7 @@
 #include "containers/variant_block.h"
 #include "core/genotypes.h"
 #include "io/vcf_utils.h"
+#include "core/variant_record.h"
 #include "containers/vcf_container.h"
 
 namespace tachyon{
@@ -79,7 +80,7 @@ public:
 	inline void SetSamples(const uint64_t samples){ this->n_samples = samples; }
 	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
 
-	bool Encode(const containers::VcfContainer& container, meta_type* meta_entries, block_type& block, const yon_gt_ppa& permutation_array) const;
+	bool Encode(const containers::VcfContainer& container, yon1_vnt_t* rcds, block_type& block, const yon_gt_ppa& permutation_array) const;
 
 	yon_gt_assess Assess(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;
 	yon_gt_assess AssessDiploidBiallelic(const bcf1_t* entry, const io::VcfGenotypeSummary& gt_summary, const yon_gt_ppa& permutation_array) const;

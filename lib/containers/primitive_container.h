@@ -4,7 +4,6 @@
 #include <typeinfo>
 
 #include "components/generic_iterator.h"
-#include "variant_block.h"
 #include "math/summary_statistics.h"
 #include "utility/support_vcf.h"
 
@@ -198,6 +197,9 @@ public:
 	void operator+=(const std::string& entry);
 
 	DataContainer ToDataContainer(void){
+		if(this->size() == 0)
+			return(DataContainer());
+
 		DataContainer d;
 		d.data_uncompressed.resize(this->size() + 128);
 		d.strides_uncompressed.resize(this->size() + 128);
@@ -212,6 +214,9 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
+		if(this->size() == 0)
+			return(container);
+
 		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 

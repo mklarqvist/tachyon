@@ -22,6 +22,15 @@ public:
 public:
     GenotypeContainerDiploidSimple();
     GenotypeContainerDiploidSimple(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
+    GenotypeContainerDiploidSimple(const char* const data,
+		const size_type& n_entries,
+		const uint16_t n_als,
+		const uint8_t  n_ploidy,
+		const uint16_t controller) :
+			parent_type(data,n_entries,n_entries*sizeof(value_type),n_als,n_ploidy,controller)
+	{
+
+	}
     ~GenotypeContainerDiploidSimple();
 
     void operator()(const char* const data, const uint32_t n_entries, const meta_type& meta_entry){
@@ -45,10 +54,10 @@ public:
 
     yon_gt* GetObjects(const uint32_t n_samples){
 		yon_gt* x = new yon_gt;
-		x->n_allele = this->__meta.n_alleles;
+		x->n_allele = this->n_alleles;
 		x->shift = ceil(log2(x->n_allele + 2 + 1));
-		x->add   =  this->__meta.IsGTMixedPhasing() ? 1 : 0;
-		x->global_phase = this->__meta.GetControllerPhase();
+		x->add   =  this->gt_mixed_phase ? 1 : 0;
+		x->global_phase = this->gt_global_phase;
 		x->data = this->__data;
 		x->n_i = this->n_entries;
 		x->method = 2;
@@ -57,17 +66,17 @@ public:
 		x->n_s = n_samples;
 		x->ppa = nullptr;
 
-		assert(this->__meta.n_base_ploidy == 2);
+		assert(n_base_ploidy == 2);
 
 		return(x);
 	}
 
 	yon_gt* GetObjects(yon_gt_ppa& ppa){
 		yon_gt* x = new yon_gt;
-		x->n_allele = this->__meta.n_alleles;
+		x->n_allele = this->n_alleles;
 		x->shift = ceil(log2(x->n_allele + 2 + 1));
-		x->add   =  this->__meta.IsGTMixedPhasing() ? 1 : 0;
-		x->global_phase = this->__meta.GetControllerPhase();
+		x->add   =  this->gt_mixed_phase ? 1 : 0;
+		x->global_phase = this->gt_global_phase;
 		x->data = this->__data;
 		x->m = 2;
 		x->p = sizeof(T);
@@ -76,7 +85,7 @@ public:
 		x->n_s = ppa.n_s;
 		x->ppa = &ppa;
 
-		assert(this->__meta.n_base_ploidy == 2);
+		assert(this->n_base_ploidy == 2);
 
 		return(x);
 	}

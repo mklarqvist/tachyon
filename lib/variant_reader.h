@@ -278,6 +278,8 @@ public:
 	bool Benchmark(const uint32_t threads);
 	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&));
 
+	bool TempWrite(void);
+
 private:
 	uint64_t                b_data_start;
 	basic_reader_type       basic_reader;

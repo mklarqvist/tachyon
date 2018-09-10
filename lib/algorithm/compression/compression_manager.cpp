@@ -3,6 +3,8 @@
 
 #include "algorithm/compression/fastdelta.h"
 
+#include "containers/stride_container.h"
+
 namespace tachyon {
 namespace algorithm {
 
@@ -13,7 +15,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 	zstd_codec.SetCompressionLevel(general_level);
 	zstd_codec.SetCompressionLevelData(general_level);
 
-	if(block.header.controller.hasGTPermuted){
+	if(block.header.controller.has_gt_permuted){
 		zstd_codec.SetCompressionLevel(22);
 		zstd_codec.Compress(block.base_containers[YON_BLK_PPA], *block.gt_ppa);
 		//this->CompressEvaluate(block.base_containers[YON_BLK_PPA], block.gt_ppa);
@@ -112,6 +114,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 		}
 	}
 
+	//io::BasicBuffer temp;
 	for(uint32_t i = 0; i < block.footer.n_format_streams; ++i){
 		if(block.format_containers[i].header.n_entries){
 			if(block.format_containers[i].header.data_header.controller.type == YON_TYPE_FLOAT ||
@@ -157,6 +160,20 @@ bool CompressionManager::Compress(variant_block_type& block,
 					}
 				} else {
 					zstd_codec.Compress(block.format_containers[i]);
+				}
+				*/
+				/*
+				if(block.format_containers[i].header.data_header.IsUniform() == false &&
+				   (block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B || block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_16B || block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_8B))
+				{
+					temp.resize(block.format_containers[i].data_uncompressed.size() + 65536);
+					containers::StrideContainer s(block.format_containers[i]);
+
+					uint8_t byte_size =
+
+					for(int k = 0; k < s.size(); ++s){
+						block.format_containers[i].data_uncompressed
+					}
 				}
 				*/
 				zstd_codec.Compress(block.format_containers[i]);

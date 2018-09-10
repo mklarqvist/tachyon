@@ -114,9 +114,9 @@ public:
 	inline const block_type& GetBlock(void) const{ return(this->block_); }
 
 	// Checkers
-	inline bool AnyEncrypted(void) const{ return(this->block_.header.controller.anyEncrypted); }
-	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.hasGT); }
-	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.hasGTPermuted); }
+	inline bool AnyEncrypted(void) const{ return(this->block_.header.controller.any_encrypted); }
+	inline bool HasGenotypes(void) const{ return(this->block_.header.controller.has_gt); }
+	inline bool HasPermutedGenotypes(void) const{ return(this->block_.header.controller.has_gt_permuted); }
 
 	inline void AllocateGenotypeMemory(void){
 		delete [] this->gt_exp;
@@ -193,7 +193,6 @@ containers::FormatContainer<T>* VariantBlockContainer::get_balanced_format_conta
 	if(matches == 0) return new containers::FormatContainer<T>();
 
 	return(new containers::FormatContainer<T>(*container, meta_container, pattern_matches, this->header_->GetNumberSamples()));
-
 }
 
 template <class T>

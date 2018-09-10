@@ -63,13 +63,13 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 			if(this->permutator.Build(container, *this->vcf_header_) == false)
 				return false;
 
-			this->block.header.controller.hasGTPermuted = true;
+			this->block.header.controller.has_gt_permuted = true;
 		}
 	}
 
 	if(this->AddRecords(container) == false) return false;
 
-	this->block.header.controller.hasGT  = this->GT_available_;
+	this->block.header.controller.has_gt = this->GT_available_;
 	this->block.header.n_variants        = container.sizeWithoutCarryOver();
 	this->block.UpdateContainers();
 
@@ -85,7 +85,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 		//this->GenerateIdentifiers();
 
 		// Start encryption.
-		this->block.header.controller.anyEncrypted = true;
+		this->block.header.controller.any_encrypted = true;
 		if(!this->encryption_decorator.Encrypt(this->block, *this->keychain, YON_ENCRYPTION_AES_256_GCM)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt..." << std::endl;
 		}
@@ -101,38 +101,36 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 }
 
 bool VcfImporterSlave::AddRecords(const vcf_container_type& container){
-	// Allocate memory for the meta entries.
-	meta_type* meta_entries = static_cast<meta_type*>(::operator new[](container.sizeWithoutCarryOver() * sizeof(meta_type)));
+	// Allocate memory for the entries.
+	yon1_vnt_t* variants = new yon1_vnt_t[container.sizeWithoutCarryOver()];
 
 	// Iterate over the Vcf container and invoke the meta entry
 	// ctor with the target htslib bcf1_t entry provided. Internally
 	// converts the bcf1_t data members into the allelic structure
 	// that tachyon uses.
 	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i){
-		// Transmute a bcf record into a meta structure
-		new( meta_entries + i ) meta_type( container[i], this->block.header.minPosition );
+		// Transmute a bcf record into a yon1_vnt_t structure.
+		variants[i].UpdateBase(container[i]);
 
 		// Add the record data from the target bcf1_t entry to the
 		// block byte streams.
-		if(this->AddRecord(container, i, meta_entries[i]) == false)
+		if(this->AddRecord(container, i, variants[i]) == false)
 			return false;
 	}
 
 	// Add FORMAT:GT field data.
-	this->encoder.Encode(container, meta_entries, this->block, this->permutator.permutation_array);
+	this->encoder.Encode(container, variants, this->block, this->permutator.permutation_array);
 
 	// Interleave meta records out to the destination block byte
 	// streams.
-	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += meta_entries[i];
+	for(uint32_t i = 0; i < container.sizeWithoutCarryOver(); ++i) this->block += variants[i];
 
-	// Invoke destructor for meta entries.
-	for(std::size_t i = 0; i < container.sizeWithoutCarryOver(); ++i) (meta_entries + i)->~MetaEntry();
-	::operator delete[](static_cast<void*>(meta_entries));
+	delete [] variants;
 
 	return true;
 }
 
-bool VcfImporterSlave::AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta){
+bool VcfImporterSlave::AddRecord(const vcf_container_type& container, const uint32_t position, yon1_vnt_t& rcd){
 	// Ascertain that the provided position does not exceed the maximum
 	// reported length of the target contig.
 	if(container.at(position)->pos > this->vcf_header_->GetContig(container.at(position)->rid)->n_bases){
@@ -143,27 +141,27 @@ bool VcfImporterSlave::AddRecord(const vcf_container_type& container, const uint
 	}
 
 	// Add Filter and Info data.
-	if(this->AddVcfFilterInfo(container.at(position), meta) == false) return false;
-	if(this->AddVcfInfo(container.at(position), meta) == false) return false;
+	if(this->AddVcfFilterInfo(container.at(position), rcd) == false) return false;
+	if(this->AddVcfInfo(container.at(position), rcd) == false) return false;
 
 	// Add Format data.
 	if(container.at(position)->n_fmt){
-		if(this->AddVcfFormatInfo(container.at(position), meta) == false) return false;
+		if(this->AddVcfFormatInfo(container.at(position), rcd) == false) return false;
 
 		// Perform these actions if FORMAT:GT data is available.
 		const int& hts_format_key = container.at(position)->d.fmt[0].id; // htslib IDX value
 		if(this->vcf_header_->GetFormat(hts_format_key)->id != "GT"){
-			meta.controller.gt_available = false;
+			rcd.controller.gt_available = false;
 		} else
-			meta.controller.gt_available = true;
+			rcd.controller.gt_available = true;
 	}
 
 	// Update the tachyon index.
-	if(this->IndexRecord(container.at(position), meta) == false) return false;
+	if(this->IndexRecord(container.at(position), rcd) == false) return false;
 	return true;
 }
 
-bool VcfImporterSlave::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfFilterInfo(const bcf1_t* record, yon1_vnt_t& rcd){
 	// Add FILTER id list to the block. Filter information is unique in that the
 	// data is not stored as (key,value)-tuples but as a key id. Because no data
 	// is stored in the block, only the unique vectors of ids and their unique
@@ -181,10 +179,10 @@ bool VcfImporterSlave::AddVcfFilterInfo(const bcf1_t* record, meta_type& meta){
 		filter_ids.push_back(global_key);
 	}
 
-	return(this->AddVcfFilterPattern(filter_ids, meta));
+	return(this->AddVcfFilterPattern(filter_ids, rcd));
 }
 
-bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, yon1_vnt_t& rcd){
 	// Add INFO fields to the block
 	std::vector<int> info_ids;
 	const int n_info_fields = record->n_info;
@@ -246,10 +244,10 @@ bool VcfImporterSlave::AddVcfInfo(const bcf1_t* record, meta_type& meta){
 		destination_container.AddStride(stride_size);
 	}
 
-	return(this->AddVcfInfoPattern(info_ids, meta));
+	return(this->AddVcfInfoPattern(info_ids, rcd));
 }
 
-bool VcfImporterSlave::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
+bool VcfImporterSlave::AddVcfFormatInfo(const bcf1_t* record, yon1_vnt_t& rcd){
 	std::vector<int> format_ids;
 	const int n_format_fields = record->n_fmt;
 
@@ -318,36 +316,36 @@ bool VcfImporterSlave::AddVcfFormatInfo(const bcf1_t* record, meta_type& meta){
 		destination_container.AddStride(stride_size);
 	}
 
-	return(this->AddVcfFormatPattern(format_ids, meta));
+	return(this->AddVcfFormatPattern(format_ids, rcd));
 }
 
-bool VcfImporterSlave::AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfInfoPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd){
 	if(pattern.size())
-		meta.info_pattern_id = this->block.AddInfoPattern(pattern);
+		rcd.info_pid = this->block.AddInfoPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporterSlave::AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfFormatPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd){
 	if(pattern.size())
-		meta.format_pattern_id = this->block.AddFormatPattern(pattern);
+		rcd.fmt_pid = this->block.AddFormatPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporterSlave::AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta){
+bool VcfImporterSlave::AddVcfFilterPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd){
 	if(pattern.size())
-		meta.filter_pattern_id = this->block.AddFilterPattern(pattern);
+		rcd.flt_pid = this->block.AddFilterPattern(pattern);
 
 	return true;
 }
 
-bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
+bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd){
 	int32_t index_bin = -1;
 
 	// Ascertain that the meta entry has been evaluated
 	// prior to executing this function.
-	if(meta.n_alleles == 0){
+	if(rcd.n_alleles == 0){
 		std::cerr << utility::timestamp("ERROR","IMPORT") << "The target meta record must be parsed prior to executing indexing functions..." << std::endl;
 		return false;
 	}
@@ -372,7 +370,7 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 					return false;
 				}
 				//std::cerr << "Found END at " << i << ".  END=" << end << " POS=" << record->pos + 1 << std::endl;
-				index_bin = this->index.AddSorted(meta.contigID,record->pos, end, this->block_id);
+				index_bin = this->index.AddSorted(rcd.rid, record->pos, end, this->block_id);
 				//index_bin = 0;
 				break;
 			}
@@ -385,16 +383,16 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// Iterate over available allele information and find the longest
 		// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
 		// simple SNV/indels.
-		for(uint32_t i = 0; i < meta.n_alleles; ++i){
-			if(std::regex_match(meta.alleles[i].allele, utility::YON_VARIANT_STANDARD)){
-				if(meta.alleles[i].l_allele > longest)
-					longest = meta.alleles[i].l_allele;
+		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+			if(std::regex_match(rcd.alleles[i].allele, utility::YON_VARIANT_STANDARD)){
+				if(rcd.alleles[i].l_allele > longest)
+					longest = rcd.alleles[i].l_allele;
 			}
 		}
 
 		// Update the variant index with the target bin(s) found.
 		if(longest > 1){
-			index_bin = this->index.AddSorted(meta.contigID,
+			index_bin = this->index.AddSorted(rcd.rid,
 			                                  record->pos,
 			                                  record->pos + longest,
 			                                  this->block_id);
@@ -409,7 +407,7 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const meta_type& meta){
 		// query as the few special cases will dominate the many general cases. For
 		// this reason special-meaning alleles are not completely indexed.
 		else {
-			index_bin = this->index.AddSorted(meta.contigID,
+			index_bin = this->index.AddSorted(rcd.rid,
 			                                  record->pos,
 			                                  record->pos,
 			                                  this->block_id);

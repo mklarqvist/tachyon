@@ -22,6 +22,15 @@ public:
 public:
     GenotypeContainerDiploidBCF();
     GenotypeContainerDiploidBCF(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
+    GenotypeContainerDiploidBCF(const char* const data,
+		const size_type& n_entries,
+		const uint16_t n_als,
+		const uint8_t  n_ploidy,
+		const uint16_t controller) :
+			parent_type(data,n_entries,n_entries*sizeof(value_type),n_als,n_ploidy,controller)
+	{
+
+	}
     ~GenotypeContainerDiploidBCF();
 
     // Element access

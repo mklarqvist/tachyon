@@ -22,6 +22,15 @@ public:
 public:
     GenotypeContainerNploid();
     GenotypeContainerNploid(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
+    GenotypeContainerNploid(const char* const data,
+		const size_type& n_entries,
+		const uint16_t n_als,
+		const uint8_t  n_ploidy,
+		const uint16_t controller) :
+			parent_type(data,n_entries,n_entries*sizeof(value_type),n_als,n_ploidy,controller)
+	{
+
+	}
     ~GenotypeContainerNploid();
 
     // Element access
@@ -37,15 +46,15 @@ public:
     yon_gt* GetObjects(const uint32_t n_samples){
     	yon_gt* x = new yon_gt;
     	x->shift = 0;
-    	x->add   = this->__meta.IsGTMixedPhasing();
-		x->global_phase = this->__meta.GetControllerPhase();
+    	x->add   = this->gt_mixed_phase;
+		x->global_phase = this->gt_global_phase;
 		x->data = this->__data;
 		x->n_i = this->n_entries;
 		x->method = 4;
-		x->m = this->__meta.n_base_ploidy;
+		x->m = this->n_base_ploidy;
 		x->p = sizeof(T);
 		x->n_s = n_samples;
-		x->n_allele = this->__meta.n_alleles;
+		x->n_allele = this->n_alleles;
 		x->ppa = nullptr;
 
 		return(x);
@@ -54,16 +63,16 @@ public:
     yon_gt* GetObjects(yon_gt_ppa& ppa){
     	yon_gt* x = new yon_gt;
 		x->shift = 0;
-		x->add   = this->__meta.IsGTMixedPhasing();
-		x->global_phase = this->__meta.GetControllerPhase();
+		x->add   = this->gt_mixed_phase;
+		x->global_phase = this->gt_global_phase;
 		x->data = this->__data;
-		x->m = this->__meta.n_base_ploidy;
+		x->m = this->n_base_ploidy;
 		x->p = sizeof(T);
 		x->n_i = this->n_entries;
 		x->method = 4;
 		x->n_s = ppa.n_s;
 		x->ppa = &ppa;
-		x->n_allele = this->__meta.n_alleles;
+		x->n_allele = this->n_alleles;
 
 		return(x);
     }

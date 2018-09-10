@@ -102,6 +102,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			const uint32_t global_key = this->block_.load_settings->format_id_global_loaded[i];
 			const uint32_t local_key  = this->block_.load_settings->format_id_local_loaded[i];
 			objects->format_id_loaded.push_back(local_key);
+			objects->format_id_loaded_global.push_back(global_key);
 
 			// Evaluate the set-membership of a given global key in the available Format patterns
 			// described in the data container footer.
@@ -146,6 +147,7 @@ VariantReaderObjects* VariantBlockContainer::LoadObjects(objects_type* objects, 
 			const uint32_t global_key = this->block_.load_settings->info_id_global_loaded[i];
 			const uint32_t local_key  = this->block_.load_settings->info_id_local_loaded[i];
 			objects->info_id_loaded.push_back(local_key);
+			objects->info_id_loaded_global.push_back(global_key);
 
 			// Evaluate the set-membership of a given global key in the available Info patterns
 			// described in the data container footer.
@@ -186,7 +188,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 		if(records[i].is_loaded_gt && records[i].meta->HasGT()){
 			records[i].gt_i = &objects.genotype_container->at(i);
 
-			if(this->block_.header.controller.hasGTPermuted)
+			if(this->block_.header.controller.has_gt_permuted)
 				records[i].gt = records[i].gt_i->GetObjects(*this->block_.gt_ppa);
 			else
 				records[i].gt = records[i].gt_i->GetObjects(this->header_->GetNumberSamples());
@@ -203,6 +205,7 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 
 			// Populate Info data.
 			for(uint32_t j = 0; j < records[i].info_ids->size(); ++j){
+				std::cerr << "adding: " << i << "/" << records[i].info_ids->size() << "/" << objects.n_loaded_info << std::endl;
 				InfoContainerInterface* info_cnt = objects.info_container_map[this->header_->info_fields_[records[i].info_ids->at(j)].id];
 				records[i].info_containers[j] = info_cnt;
 				records[i].info_hdr.push_back(&this->header_->info_fields_[records[i].info_ids->at(j)]);
@@ -271,9 +274,6 @@ yon1_t* VariantBlockContainer::LazyEvaluate(objects_type& objects){
 				records[i].filter_hdr.push_back(&this->header_->filter_fields_[records[i].filter_ids->at(j)]);
 			}
 		}
-
-		// Pointer to this variant block container.
-		records[i].parent_container = this;
 	}
 	return(records);
 }

@@ -73,7 +73,9 @@ public:
 	size_t n_loaded_info;
 	size_t n_loaded_format;
 	std::vector<int> info_id_loaded;
+	std::vector<int> info_id_loaded_global; // for convenience
 	std::vector<int> format_id_loaded;
+	std::vector<int> format_id_loaded_global; // for convenience
 
 	std::unordered_map<std::string, info_interface_type*>   info_container_map;
 	std::unordered_map<std::string, format_interface_type*> format_container_map;

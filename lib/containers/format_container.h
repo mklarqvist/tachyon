@@ -41,11 +41,16 @@ public:
     ~FormatContainer(void);
 
     DataContainer ToDataContainer(void){
+    	if(this->size() == 0)
+    		return(DataContainer());
+
     	uint32_t n_entries = 0;
     	for(uint32_t i = 0; i < this->size(); ++i){
     		for(uint32_t j = 0; j < this->at(i).size(); ++j)
     			n_entries += this->at(i).at(j).size();
     	}
+    	std::cerr << "counted: " << n_entries << std::endl;
+    	if(n_entries == 0) return(DataContainer());
 
     	DataContainer d;
 		d.data_uncompressed.resize(n_entries + 128);
@@ -58,11 +63,17 @@ public:
     }
 
     DataContainer& UpdateDataContainer(DataContainer& container){
+    	if(this->size() == 0)
+    		return(container);
+
     	uint32_t n_entries = 0;
 		for(uint32_t i = 0; i < this->size(); ++i){
 			for(uint32_t j = 0; j < this->at(i).size(); ++j)
 				n_entries += this->at(i).at(j).size();
 		}
+
+		if(n_entries == 0)
+			if(this->size() == 0);
 
 		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);

@@ -7,7 +7,7 @@
 namespace tachyon {
 namespace containers {
 
-class GenotypeContainerInterface{
+class GenotypeContainerInterface {
 public:
     typedef GenotypeContainerInterface    self_type;
     typedef std::size_t                   size_type;
@@ -20,16 +20,43 @@ public:
 public:
     GenotypeContainerInterface(void) :
     	n_entries(0),
-		__data(nullptr)
+		__data(nullptr),
+		gt_missing(false),
+		gt_mixed_phase(false),
+		gt_global_phase(false),
+		n_base_ploidy(0),
+		n_alleles(0)
 	{}
 
-    GenotypeContainerInterface(const char* const data, const size_type& n_entries, const uint32_t& n_bytes, const meta_type& meta) :
+    GenotypeContainerInterface(const char* const data, const size_type n_entries, const uint32_t& n_bytes, const meta_type& meta) :
     	n_entries(n_entries),
 		__data(new uint8_t[n_bytes]),
-		__meta(meta)
+		gt_missing(meta.controller.gt_anyMissing),
+		gt_mixed_phase(meta.controller.gt_mixed_phasing),
+		gt_global_phase(meta.controller.gt_phase),
+		n_base_ploidy(meta.n_base_ploidy),
+		n_alleles(meta.n_alleles)
     {
     	memcpy(this->__data, data, n_bytes);
     }
+
+    GenotypeContainerInterface(const char* const data,
+    		const size_type& n_entries,
+			const uint32_t& n_bytes,
+			const uint16_t n_als,
+			const uint8_t  n_ploidy,
+			const uint16_t controller) :
+		n_entries(n_entries),
+		__data(new uint8_t[n_bytes])
+	{
+    	const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+		gt_missing = cont->gt_has_missing;
+		gt_mixed_phase = cont->gt_has_mixed_phasing;
+		gt_global_phase = cont->gt_phase_uniform;
+		n_base_ploidy = n_ploidy;
+		n_alleles = n_als;
+		memcpy(this->__data, data, n_bytes);
+	}
 
     virtual ~GenotypeContainerInterface(){ delete [] this->__data; }
 
@@ -39,12 +66,16 @@ public:
     // Capacity
     inline bool empty(void) const{ return(this->n_entries == 0); }
     inline const size_type& size(void) const{ return(this->n_entries); }
-    inline const meta_type& GetMeta(void) const{ return(this->__meta); }
 
 protected:
     size_type        n_entries;
     uint8_t*         __data;
-    const meta_type  __meta;
+
+    bool gt_missing;
+    bool gt_mixed_phase;
+    bool gt_global_phase;
+    uint8_t n_base_ploidy;
+    uint16_t n_alleles;
 };
 
 }
