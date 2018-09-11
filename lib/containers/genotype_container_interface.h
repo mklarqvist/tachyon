@@ -11,7 +11,6 @@ class GenotypeContainerInterface {
 public:
     typedef GenotypeContainerInterface    self_type;
     typedef std::size_t                   size_type;
-    typedef core::MetaEntry               meta_type;
     typedef yon_gt_summary                gt_summary;
 
     // Function pointers
@@ -27,18 +26,6 @@ public:
 		n_base_ploidy(0),
 		n_alleles(0)
 	{}
-
-    GenotypeContainerInterface(const char* const data, const size_type n_entries, const uint32_t& n_bytes, const meta_type& meta) :
-    	n_entries(n_entries),
-		__data(new uint8_t[n_bytes]),
-		gt_missing(meta.controller.gt_anyMissing),
-		gt_mixed_phase(meta.controller.gt_mixed_phasing),
-		gt_global_phase(meta.controller.gt_phase),
-		n_base_ploidy(meta.n_base_ploidy),
-		n_alleles(meta.n_alleles)
-    {
-    	memcpy(this->__data, data, n_bytes);
-    }
 
     GenotypeContainerInterface(const char* const data,
     		const size_type& n_entries,

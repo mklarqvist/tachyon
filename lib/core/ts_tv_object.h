@@ -1,7 +1,6 @@
 #ifndef CORE_TS_TV_OBJECT_H_
 #define CORE_TS_TV_OBJECT_H_
 
-#include "meta_entry.h"
 #include "variant_record.h"
 
 namespace tachyon{
@@ -114,7 +113,7 @@ public:
 	 * @param non_ref_encodings Pointer to empty integer array.
 	 * @return                  Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool GetEncodings(const yon1_t& rcd,
+	bool GetEncodings(const yon1_vnt_t& rcd,
 	                  __restrict__ uint8_t*& allele_encodings,
 	                  __restrict__ uint8_t*& non_ref_encodings);
 
@@ -132,7 +131,7 @@ public:
 	 * @param rcds Src yon_gt_rcd pointers.
 	 * @return     Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool Update(const yon1_t& rcd, yon_gt_rcd** rcds);
+	bool Update(const yon1_vnt_t& rcd, yon_gt_rcd** rcds);
 
 	/**<
 	 * Update the current structure with the genotype data from the
@@ -147,7 +146,7 @@ public:
 	 * @param rcds Src yon_gt_rcd pointers.
 	 * @return     Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool Update(const yon1_t& rcd);
+	bool Update(const yon1_vnt_t& rcd);
 
 	void UpdateDiploid(const yon_gt* gt,
 	                   __restrict__ const uint8_t* allele_encodings,

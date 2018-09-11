@@ -1,5 +1,6 @@
 #include <openssl/rand.h>
 
+#include "support/magic_constants.h"
 #include "keychain.h"
 
 namespace tachyon{

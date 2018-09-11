@@ -5,14 +5,13 @@
 
 #include "third_party/xxhash/xxhash.h"
 
+#include "core/variant_record.h"
+#include "core/genotypes.h"
 #include "components/variant_block_footer.h"
 #include "components/variant_block_header.h"
 #include "core/data_block_settings.h"
-#include "data_container.h"
-#include "core/meta_entry.h"
 #include "core/variant_importer_container_stats.h"
-#include "core/genotypes.h"
-#include "core/variant_record.h"
+#include "data_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -105,7 +104,6 @@ public:
 	typedef io::BasicBuffer                 buffer_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
 	typedef DataContainerHeader             offset_type;
-	typedef tachyon::core::MetaEntry        meta_entry_type;
 	typedef DataBlockSettings               block_settings_type;
 
 public:
@@ -176,8 +174,6 @@ public:
 	 * @param meta_entry Input MetaEntry object to be stored.
 	 * @return           Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool operator+=(meta_entry_type& meta_entry);
-	inline bool operator<<(meta_entry_type& meta_entry){ return(*this += meta_entry); }
 	bool operator+=(yon1_vnt_t& rcd);
 
 	/**<
@@ -300,7 +296,7 @@ public:
 	 * 2) Generates CRC checksums for both data and strides
 	 * 3) Reformat (change used primitive type) for strides and data; if possible
 	 */
-	void UpdateContainers();
+	void UpdateContainers(const uint32_t n_sampless);
 
 	/**<
 	 * Determine compressed block-size. Execute this function prior to writing a

@@ -268,166 +268,6 @@ bool VariantReader::LoadKeychainFile(void){
 	return true;
 }
 
-void VariantReader::OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const{
-	utility::ToVcfString(output_buffer, '\t', *entry.meta, this->global_header);
-	output_buffer += '\t';
-
-	// Print Filter, Info, and Format if available.
-	this->OutputFilterVcf(output_buffer, entry);
-	this->OutputInfoVcf(output_buffer, entry);
-	this->OutputFormatVcf(output_buffer, entry);
-	output_buffer += '\n';
-
-	if(output_buffer.size() > 65536){
-		std::cout.write(output_buffer.data(), output_buffer.size());
-		output_buffer.reset();
-	}
-}
-
-void VariantReader::OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const{
-	// Print Info.
-	if(entry.n_info){
-		const uint32_t n_info_avail = entry.info_ids->size();
-		if(n_info_avail){
-			if(entry.info_hdr[0]->yon_type == YON_VCF_HEADER_FLAG){
-				output_buffer += entry.info_hdr[0]->id;
-			} else {
-				output_buffer += entry.info_hdr[0]->id;
-				output_buffer += '=';
-				entry.info[0]->ToVcfString(output_buffer);
-			}
-
-			for(uint32_t j = 1; j < n_info_avail; ++j){
-				output_buffer += ';';
-				if(entry.info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
-					output_buffer += entry.info_hdr[j]->id;
-				} else {
-					output_buffer += entry.info_hdr[j]->id;
-					output_buffer += '=';
-					entry.info[j]->ToVcfString(output_buffer);
-				}
-			}
-
-			if(this->GetBlockSettings().annotate_extra){
-				output_buffer += ';';
-				entry.EvaluateSummary(true);
-				entry.gt_sum->d->PrintVcf(output_buffer);
-			}
-		}
-	} else {
-		if(this->GetBlockSettings().annotate_extra){
-			entry.EvaluateSummary(true);
-			entry.gt_sum->d->PrintVcf(output_buffer);
-		} else
-			output_buffer += '.';
-	}
-}
-
-void VariantReader::OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
-	if(entry.n_format){
-		output_buffer += '\t';
-
-		const uint32_t n_format_avail = entry.format_ids->size();
-		if(n_format_avail){
-			output_buffer += entry.format_hdr[0]->id;
-			for(uint32_t j = 1; j < n_format_avail; ++j){
-				output_buffer += ':';
-				output_buffer += entry.format_hdr[j]->id;
-			}
-			output_buffer += '\t';
-
-			// Vcf FORMAT values are interleaved such that values are
-			// presented in a columnar representation with data for
-			// each sample is concatenated together such as the pattern
-			// GT:AF:AS is display for three samples as:
-			//
-			// Sample 1    Sample 2    Sample 3
-			// 0|0:0.5|ABC 0|0:0.5|ABC 0|0:0.5|ABC
-			//
-			// This memory layout requires the interleaving of the
-			// internally separated data streams resulting in slower
-			// Vcf printing speeds compared to the naive Bcf file format.
-			//
-			// First calculate the FORMAT:GT field for this variant site.
-			// Case when the only available FORMAT field is the GT field.
-			if(n_format_avail == 1 && entry.is_loaded_gt &&
-			   entry.meta->controller.gt_available &&
-			   (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
-			{
-				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
-				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
-
-				// Iterate over samples and print FORMAT:GT value in Vcf format.
-				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
-				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
-					output_buffer += '\t';
-					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
-				}
-
-				entry.gt->d_exp = nullptr;
-			}
-			// Case when there are > 1 Vcf Format fields and the GT field
-			// is available.
-			else if(n_format_avail > 1 && entry.is_loaded_gt &&
-			        entry.meta->controller.gt_available &&
-			        (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
-			{
-				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
-				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
-
-				entry.gt->d_exp[0]->PrintVcf(output_buffer, entry.gt->m);
-				for(uint32_t g = 1; g < n_format_avail; ++g){
-					output_buffer += ':';
-					entry.fmt[g]->ToVcfString(output_buffer, 0);
-				}
-				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
-					output_buffer += '\t';
-					entry.gt->d_exp[s]->PrintVcf(output_buffer, entry.gt->m);
-					for(uint32_t g = 1; g < n_format_avail; ++g){
-						output_buffer += ':';
-						entry.fmt[g]->ToVcfString(output_buffer, s);
-					}
-				}
-
-				entry.gt->d_exp = nullptr;
-			}
-			// All other cases.
-			else {
-				entry.fmt[0]->ToVcfString(output_buffer, 0);
-				for(uint32_t g = 1; g < n_format_avail; ++g){
-					output_buffer += ':';
-					entry.fmt[g]->ToVcfString(output_buffer, 0);
-				}
-
-				for(uint32_t s = 1; s < this->global_header.GetNumberSamples(); ++s){
-					output_buffer += '\t';
-					entry.fmt[0]->ToVcfString(output_buffer, s);
-					for(uint32_t g = 1; g < n_format_avail; ++g){
-						output_buffer += ':';
-						entry.fmt[g]->ToVcfString(output_buffer, s);
-					}
-				}
-			}
-		}
-	}
-}
-
-void VariantReader::OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const{
-	if(entry.n_filter){
-		const uint32_t n_filter_avail = entry.filter_ids->size();
-		if(n_filter_avail){
-			output_buffer += entry.filter_hdr[0]->id;
-			for(uint32_t j = 1; j < n_filter_avail; ++j){
-				output_buffer += ';';
-				output_buffer += entry.filter_hdr[j]->id;
-			}
-		} else {
-			output_buffer += '.';
-		}
-	} else output_buffer += '.';
-	output_buffer += '\t';
-}
-
 uint64_t VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
 	// temp
@@ -435,31 +275,21 @@ uint64_t VariantReader::OutputVcfLinear(void){
 	//	return(0);
 	//}
 
-	io::BasicBuffer output_buffer(100000);
+	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
-		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
+		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
-		// If occ table is built.
-		//objects->occ = &occ;
-		//objects->EvaluateOcc(this->GetCurrentContainer().GetBlock().gt_ppa);
-
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.Filter(entries[i], i) == false)
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			// Each entry evaluate occ if available.
-			//entries[i].occ = objects->occ;
-			//entries[i].EvaluateOcc();
-
-			this->OuputVcfWrapper(output_buffer, entries[i]);
+			for(int i = 0; i < vc.n_variants_; ++i){
+				vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+				std::cout.write(buf.data(), buf.size());
+				buf.reset();
+			}
 		}
-
-		std::cout.write(output_buffer.data(), output_buffer.size());
-		output_buffer.reset();
-		delete [] entries;
-		//objects->occ = nullptr;
-		delete objects;
 	}
 
 	return 0;
@@ -470,28 +300,28 @@ uint64_t VariantReader::OutputVcfSearch(void){
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
+	io::BasicBuffer buf(100000);
 
 	for(uint32_t i = 0; i < this->interval_container.GetBlockList().size(); ++i){
 		this->GetBlock(this->interval_container.GetBlockList()[i]);
 
-		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
-		io::BasicBuffer output_buffer(100000);
+		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
+		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
+
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if((this->*filter_intervals)(vc[i]) == false)
 				continue;
 
-			if(this->variant_filters.Filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			this->OuputVcfWrapper(output_buffer, entries[i]);
+			for(int i = 0; i < vc.n_variants_; ++i){
+				vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+				std::cout.write(buf.data(), buf.size());
+				buf.reset();
+			}
 		}
-
-		std::cout.write(output_buffer.data(), output_buffer.size());
-		output_buffer.reset();
-		delete [] entries;
-		delete objects;
 	}
 
 	return 0;
@@ -551,19 +381,18 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		// Lazy evaluate yon records.
-		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
+		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
 		// Iterate over available records in this block.
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if(this->variant_filters.Filter(entries[i], i) == false)
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
-			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
-			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
-			this->OutputHtslibVcfFilter(rec, hdr, entries[i]);
+			vc[i].UpdateHtslibVcfRecord(rec, hdr);
+			this->OutputHtslibVcfInfo(rec, hdr, vc[i]);
+			this->OutputHtslibVcfFormat(rec, hdr, vc[i]);
+			this->OutputHtslibVcfFilter(rec, hdr, vc[i]);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
 				std::cerr << "Failed to write record to " << this->settings.output;
@@ -572,10 +401,6 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 			bcf_clear1(rec);
 		}
-
-		// Cleanup lazy evaluation of yon records.
-		delete [] entries;
-		delete objects;
 	}
 
 	// Cleanup htslib bcf1_t and bcf_hdr_t structures.
@@ -628,22 +453,21 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		// Lazy evaluate yon records.
-		objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-		yon1_t* entries = this->GetCurrentContainer().LazyEvaluate(*objects);
+		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
+		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
 		// Iterate over available records in this block.
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if((this->*filter_intervals)(objects->meta_container->at(i)) == false)
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if((this->*filter_intervals)(vc[i]) == false)
 				continue;
 
-			if(this->variant_filters.Filter(entries[i], i) == false)
+			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			entries[i].meta->UpdateHtslibVcfRecord(rec, hdr);
-			this->OutputHtslibVcfInfo(rec, hdr, entries[i]);
-			this->OutputHtslibVcfFormat(rec, hdr, entries[i]);
-			this->OutputHtslibVcfFilter(rec, hdr, entries[i]);
+			vc[i].UpdateHtslibVcfRecord(rec, hdr);
+			this->OutputHtslibVcfInfo(rec, hdr, vc[i]);
+			this->OutputHtslibVcfFormat(rec, hdr, vc[i]);
+			this->OutputHtslibVcfFilter(rec, hdr, vc[i]);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
 				std::cerr << "Failed to write record to " << this->settings.output;
@@ -652,10 +476,6 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 			bcf_clear1(rec);
 		}
-
-		// Cleanup lazy evaluation of yon records.
-		delete [] entries;
-		delete objects;
 	}
 
 	// Cleanup htslib bcf1_t and bcf_hdr_t structures.
@@ -672,7 +492,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	return 0;
 }
 
-void VariantReader::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const{
+void VariantReader::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_vnt_t& entry) const{
 	if(entry.n_info){
 		const uint32_t n_info_avail = entry.info_ids->size();
 		if(n_info_avail){
@@ -697,13 +517,13 @@ void VariantReader::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& ent
 	}
 }
 
-void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const{
-	if(entry.n_format){
-		const uint32_t n_format_avail = entry.format_ids->size();
+void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const{
+	if(entry.n_fmt){
+		const uint32_t n_format_avail = entry.fmt_ids->size();
 		if(n_format_avail){
 			// Case when the only available FORMAT field is the GT field.
 			if(n_format_avail == 1 && entry.is_loaded_gt &&
-			   entry.meta->controller.gt_available &&
+			   entry.controller.gt_available &&
 			   (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
 			{
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
@@ -714,31 +534,42 @@ void VariantReader::OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon
 			// Case when there are > 1 Vcf Format fields and the GT field
 			// is available.
 			else if(n_format_avail > 1 && entry.is_loaded_gt &&
-			        entry.meta->controller.gt_available &&
+			        entry.controller.gt_available &&
 			        (this->GetBlockSettings().display_static & YON_BLK_BV_GT))
 			{
 				entry.gt->ExpandExternal(this->variant_container.GetAllocatedGenotypeMemory());
 				entry.gt->d_exp = this->variant_container.GetAllocatedGenotypeMemory();
 
 				entry.gt->UpdateHtslibGenotypes(rec, hdr);
-				for(uint32_t g = 1; g < n_format_avail; ++g)
-					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
-
+				for(uint32_t g = 1; g < n_format_avail; ++g){
+					if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatFloat(rec, hdr, entry.fmt_hdr[g]->id);
+					else if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatInt32(rec, hdr, entry.fmt_hdr[g]->id);
+					else if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatString(rec, hdr, entry.fmt_hdr[g]->id);
+				}
 				entry.gt->d_exp = nullptr;
 			}
 			// All other cases.
 			else {
-				for(uint32_t g = 0; g < n_format_avail; ++g)
-					entry.format_containers[g]->UpdateHtslibVcfRecord(entry.id_block, rec, hdr, entry.format_hdr[g]->id);
+				for(uint32_t g = 0; g < n_format_avail; ++g){
+					if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_FLOAT)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatFloat(rec, hdr, entry.fmt_hdr[g]->id);
+					else if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_INTEGER)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatInt32(rec, hdr, entry.fmt_hdr[g]->id);
+					else if(entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_STRING || entry.fmt_hdr[g]->yon_type == YON_VCF_HEADER_CHARACTER)
+						entry.fmt[g]->UpdateHtslibVcfRecordFormatString(rec, hdr, entry.fmt_hdr[g]->id);
+				}
 			}
 		}
 	}
 }
 
-void VariantReader::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const{
-	if(entry.n_filter){
-		for(uint32_t k = 0; k < entry.filter_ids->size(); ++k){
-			int32_t tmpi = bcf_hdr_id2int(hdr, BCF_DT_ID, entry.filter_hdr[k]->id.data());
+void VariantReader::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const{
+	if(entry.n_flt){
+		for(uint32_t k = 0; k < entry.flt_ids->size(); ++k){
+			int32_t tmpi = bcf_hdr_id2int(hdr, BCF_DT_ID, entry.flt_hdr[k]->id.data());
 			bcf_update_filter(hdr, rec, &tmpi, 1);
 		}
 	}
@@ -871,22 +702,14 @@ bool VariantReader::TempWrite(void){
 	this->variant_container.AllocateGenotypeMemory();
 
 	while(this->NextBlock()){
-		VariantContainer vc;
-
-		//objects_type* objects = this->GetCurrentContainer().LoadObjects(this->block_settings);
-
-		uint32_t n_v = this->GetCurrentContainer().GetBlock().header.n_variants;
-		vc.resize(n_v);
-		vc.n_variants_ = vc.n_capacity_;
-
+		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
 		for(int i = 0; i < vc.n_variants_; ++i){
 			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			std::cout.write(buf.data(), buf.size());
+			buf.reset();
 		}
-
-		std::cout.write(buf.data(), buf.size());
-		buf.reset();
 
 		//delete objects;
 	}

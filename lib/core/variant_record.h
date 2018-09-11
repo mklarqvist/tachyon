@@ -1,10 +1,8 @@
 #ifndef CORE_VARIANT_RECORD_H_
 #define CORE_VARIANT_RECORD_H_
 
-#include "core/meta_entry.h"
+#include "containers/components/variant_block_footer.h"
 #include "containers/genotype_container_interface.h"
-#include "containers/info_container_interface.h"
-#include "containers/format_container_interface.h"
 #include "containers/primitive_group_container.h"
 #include "occ.h"
 #include "genotypes.h"
@@ -20,45 +18,6 @@ const char* const REFALT_LOOKUP = "ATGC.XN";
 #define YON_ALLELE_NON_REF 5
 #define YON_ALLELE_N       6
 
-
-/**<
- * Primary lazy-evaluated record of a variant. Construction is done
- * outside of this definition. The struct is constructed from pointers
- * to the appropriate location in other lazy-evaluated objects such as
- * Info, Format, Genotype, and Meta containers. Evaluation into this object
- * is relatively inexpensive in isolation but quiet expensive when considered
- * across the an entire dataset as this structure needs be evaluated many
- * millions of times over many different containers.
- */
-struct yon1_t {
-public:
-	yon1_t(void);
-	~yon1_t(void);
-	bool EvaluateSummary(bool lazy_evaluate = true);
-	bool EvaluateOcc();
-
-public:
-	bool is_dirty; // if data has been modified in the raw buffer but not the containers
-	bool is_loaded_meta;
-	bool is_loaded_gt;
-	uint16_t n_format, n_info, n_filter;
-	uint32_t id_block; // incremental id in the block container
-	core::MetaEntry* meta;
-	yon_gt* gt;
-	yon_gt_summary* gt_sum;
-	yon_occ* occ;
-	containers::PrimitiveContainerInterface** info;
-	containers::PrimitiveGroupContainerInterface** fmt;
-	containers::InfoContainerInterface** info_containers;
-	containers::FormatContainerInterface** format_containers;
-	containers::GenotypeContainerInterface* gt_i;
-	std::vector<const YonInfo*> info_hdr;
-	std::vector<const YonFormat*> format_hdr;
-	std::vector<const io::VcfFilter*> filter_hdr;
-	std::vector<int>* info_ids;
-	std::vector<int>* format_ids;
-	std::vector<int>* filter_ids;
-};
 
 struct yon_allele {
 public:
@@ -89,6 +48,15 @@ public:
 	char*    allele;
 };
 
+/**<
+ * Primary lazy-evaluated record of a variant. Construction is done
+ * outside of this definition. The struct is constructed from pointers
+ * to the appropriate location in other lazy-evaluated objects such as
+ * Info, Format, Genotype, and Meta containers. Evaluation into this object
+ * is relatively inexpensive in isolation but quiet expensive when considered
+ * across the an entire dataset as this structure needs be evaluated many
+ * millions of times over many different containers.
+ */
 struct yon1_vnt_t {
 public:
 	yon1_vnt_t() :
@@ -97,7 +65,7 @@ public:
 		m_fmt(0), m_info(0), m_allele(0),
 		qual(NAN), rid(0), pos(0),
 		alleles(nullptr), gt(nullptr), gt_sum(nullptr), occ(nullptr),
-		info(nullptr), fmt(nullptr), gt_raw(nullptr),
+		info(nullptr), fmt(nullptr), //gt_raw(nullptr),
 		info_ids(nullptr), fmt_ids(nullptr), flt_ids(nullptr)
 	{}
 
@@ -106,9 +74,12 @@ public:
 		delete gt, gt_sum, occ;
 		for(int i = 0; i < n_info; ++i) delete info[i];
 		for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
-		delete [] info; delete [] fmt; delete gt_raw;
+		delete [] info; delete [] fmt; //delete gt_raw;
 		delete info_ids, fmt_ids, flt_ids;
 	}
+
+	bool EvaluateSummary(bool lazy_evaluate = true);
+	bool EvaluateOcc();
 
 	bool UpdateBase(const bcf1_t* record){
 		n_alleles = record->n_allele;
@@ -180,6 +151,24 @@ public:
 	void SetChromosome(const uint32_t value){ this->rid = value; }
 	void SetName(const std::string& value);
 
+	/**<
+	 * Updates a htslib bcf1_t record with data available in this meta record.
+	 * This function is used when converting yon1_t records to bcf1_t records.
+	 * @param rec Input bcf1_t record that has been allocated.
+	 * @param hdr Input bcf hdr structure converted from tachyon header.
+	 * @return Returns the input bcf1_t record pointer.
+	 */
+	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const{
+		rec->rid = this->rid;
+		rec->pos = this->pos;
+		bcf_update_id(hdr, rec, this->name.data());
+		bcf_update_alleles_str(hdr, rec, this->GetAlleleString().data());
+		if(std::isnan(this->qual)) bcf_float_set_missing(rec->qual);
+		else rec->qual = this->qual;
+
+		return(rec);
+	}
+
 	void Print(const VariantHeader& header, io::BasicBuffer& buffer, uint32_t display, yon_gt_rcd** external_rcd = nullptr) const{
 		buffer.Add(header.contigs_[rid].name.data(), header.contigs_[rid].name.size());
 		buffer += '\t';
@@ -219,6 +208,7 @@ public:
 			}
 		}
 
+
 		buffer += '\t';
 
 		buffer += fmt_hdr[fmt_ids->at(0)]->id;
@@ -227,7 +217,6 @@ public:
 			buffer += fmt_hdr[fmt_ids->at(j)]->id;
 		}
 		buffer += '\t';
-
 
 		if(n_fmt == 1 && is_loaded_gt &&
 		   controller.gt_available &&
@@ -315,7 +304,7 @@ public:
 	yon_occ* occ;
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
-	containers::GenotypeContainerInterface* gt_raw;
+	//containers::GenotypeContainerInterface* gt_raw;
 
 	std::vector<int>* info_ids;
 	std::vector<int>* fmt_ids;

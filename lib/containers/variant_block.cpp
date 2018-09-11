@@ -1,6 +1,7 @@
+#include "support/magic_constants.h"
+#include "support/helpers.h"
 #include "variant_block.h"
 #include "algorithm/compression/compression_container.h"
-#include "support/helpers.h"
 
 namespace tachyon{
 namespace containers{
@@ -184,31 +185,31 @@ void VariantBlock::resize(const uint32_t s){
 	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
 }
 
-void VariantBlock::UpdateContainers(void){
+void VariantBlock::UpdateContainers(const uint32_t n_samples){
 	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
 	this->base_containers[YON_BLK_POSITION].UpdateContainer();
-	this->base_containers[YON_BLK_REFALT].UpdateContainer();
+	this->base_containers[YON_BLK_REFALT].UpdateContainer(false, true);
 	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
-	this->base_containers[YON_BLK_NAMES].UpdateContainer();
-	this->base_containers[YON_BLK_ALLELES].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_NAMES].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_ALLELES].UpdateContainer(false, true);
 	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer();
 	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
 	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
 	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
 	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer();
-	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_GT_INT8].UpdateContainer();
-	this->base_containers[YON_BLK_GT_INT16].UpdateContainer();
-	this->base_containers[YON_BLK_GT_INT32].UpdateContainer();
-	this->base_containers[YON_BLK_GT_INT64].UpdateContainer();
-	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer();
-	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer();
-	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer();
-	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer();
-	this->base_containers[YON_BLK_GT_N_INT8].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_GT_N_INT16].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_GT_N_INT32].UpdateContainer(false, false);
-	this->base_containers[YON_BLK_GT_N_INT64].UpdateContainer(false, false);
+	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT64].UpdateContainer(false, true);
 
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
 		this->info_containers[i].UpdateContainer();
@@ -218,7 +219,7 @@ void VariantBlock::UpdateContainers(void){
 		// Illegal to have BOOLEAN fields in the Vcf:Format column.
 		// Therefore we assert that this is never the case.
 		assert(this->format_containers[i].header.data_header.stride != 0);
-		this->format_containers[i].UpdateContainer();
+		this->format_containers[i].UpdateContainerFormat(true, true, n_samples);
 	}
 }
 
@@ -633,69 +634,6 @@ bool VariantBlock::write(std::ostream& stream)
 	assert(this->header.l_offset_footer == (uint64_t)stream.tellp() - start_pos);
 
 	return(stream.good());
-}
-
-bool VariantBlock::operator+=(meta_entry_type& meta_entry){
-	// Meta positions
-	this->base_containers[YON_BLK_POSITION].Add((int32_t)meta_entry.position);
-	++this->base_containers[YON_BLK_POSITION];
-
-	// Contig ID
-	this->base_containers[YON_BLK_CONTIG].Add((int32_t)meta_entry.contigID);
-	++this->base_containers[YON_BLK_CONTIG];
-
-	// Ref-alt data
-	if(meta_entry.UsePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
-		meta_entry.controller.alleles_packed = true;
-		const uint8_t ref_alt = meta_entry.PackRefAltByte();
-		this->base_containers[YON_BLK_REFALT].AddLiteral(ref_alt);
-		++this->base_containers[YON_BLK_REFALT];
-	}
-	// add complex
-	else {
-		// Special encoding
-		for(uint32_t i = 0; i < meta_entry.n_alleles; ++i){
-			// Write out allele
-			this->base_containers[YON_BLK_ALLELES].AddLiteral((uint16_t)meta_entry.alleles[i].l_allele);
-			this->base_containers[YON_BLK_ALLELES].AddCharacter(meta_entry.alleles[i].allele, meta_entry.alleles[i].l_allele);
-		}
-		++this->base_containers[YON_BLK_ALLELES]; // update before to not trigger
-		this->base_containers[YON_BLK_ALLELES].AddStride(meta_entry.n_alleles);
-	}
-
-	// Quality
-	this->base_containers[YON_BLK_QUALITY].Add(meta_entry.quality);
-	++this->base_containers[YON_BLK_QUALITY];
-
-	// Variant name
-	this->base_containers[YON_BLK_NAMES].AddStride(meta_entry.name.size());
-	this->base_containers[YON_BLK_NAMES].AddCharacter(meta_entry.name);
-	++this->base_containers[YON_BLK_NAMES];
-
-	// Tachyon pattern identifiers
-	this->base_containers[YON_BLK_ID_INFO].Add(meta_entry.info_pattern_id);
-	this->base_containers[YON_BLK_ID_FORMAT].Add(meta_entry.format_pattern_id);
-	this->base_containers[YON_BLK_ID_FILTER].Add(meta_entry.filter_pattern_id);
-	++this->base_containers[YON_BLK_ID_INFO];
-	++this->base_containers[YON_BLK_ID_FORMAT];
-	++this->base_containers[YON_BLK_ID_FILTER];
-
-	// Check if all variants are of length 1 (as in all alleles are SNVs)
-	bool all_snv = true;
-	for(uint32_t i = 0; i < meta_entry.n_alleles; ++i){
-		if(meta_entry.alleles[i].size() != 1) all_snv = false;
-	}
-	meta_entry.controller.all_snv = all_snv;
-
-	// Controller
-	this->base_containers[YON_BLK_CONTROLLER].AddLiteral((uint16_t)meta_entry.controller.toValue()); // has been overloaded
-	++this->base_containers[YON_BLK_CONTROLLER];
-
-	// Ploidy
-	this->base_containers[YON_BLK_GT_PLOIDY].Add(meta_entry.n_base_ploidy);
-	++this->base_containers[YON_BLK_GT_PLOIDY];
-
-	return true;
 }
 
 bool VariantBlock::operator+=(yon1_vnt_t& rcd){

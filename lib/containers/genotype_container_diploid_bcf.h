@@ -21,7 +21,6 @@ public:
 
 public:
     GenotypeContainerDiploidBCF();
-    GenotypeContainerDiploidBCF(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     GenotypeContainerDiploidBCF(const char* const data,
 		const size_type& n_entries,
 		const uint16_t n_als,
@@ -58,15 +57,6 @@ public:
 
 template <class T>
 GenotypeContainerDiploidBCF<T>::GenotypeContainerDiploidBCF(){
-
-}
-
-template <class T>
-GenotypeContainerDiploidBCF<T>::GenotypeContainerDiploidBCF(const char* const  data,
-                                                                    const uint32_t  n_entries,
-                                                              const meta_type& meta_entry) :
-	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
-{
 
 }
 

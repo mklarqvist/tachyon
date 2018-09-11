@@ -12,20 +12,14 @@
 #include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption_decorator.h"
 #include "algorithm/timer.h"
-#include "containers/format_container.h"
-#include "containers/format_container_string.h"
 #include "containers/genotype_container.h"
-#include "containers/info_container.h"
-#include "containers/info_container_string.h"
 #include "containers/interval_container.h"
-#include "containers/meta_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/variant_block.h"
 #include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
-#include "core/variant_reader_objects.h"
 #include "core/variant_reader_settings.h"
 #include "core/data_block_settings.h"
 #include "index/index.h"
@@ -48,7 +42,6 @@ public:
 	typedef io::BasicBuffer                        buffer_type;
 	typedef VariantHeader                          header_type;
 	typedef core::Footer                           footer_type;
-	typedef core::MetaEntry                        meta_entry_type;
 	typedef algorithm::CompressionManager          codec_manager_type;
 	typedef DataBlockSettings                      block_settings_type;
 	typedef VariantReaderSettings                  settings_type;
@@ -56,12 +49,8 @@ public:
 	typedef index::VariantIndexEntry               index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef Keychain                               keychain_type;
-	typedef VariantReaderObjects                   objects_type;
 	typedef containers::VariantBlock               block_entry_type;
-	typedef containers::MetaContainer              meta_container_type;
 	typedef containers::GenotypeContainer          gt_container_type;
-	typedef containers::InfoContainerInterface     info_interface_type;
-	typedef containers::FormatContainerInterface   format_interface_type;
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
@@ -71,7 +60,7 @@ public:
 
 private:
 	// Function pointer to interval slicing.
-	typedef bool (self_type::*filter_intervals_function)(const meta_entry_type& meta_entry) const;
+	typedef bool (self_type::*filter_intervals_function)(const yon1_vnt_t& rcd) const;
 
 public:
 	VariantReader();
@@ -239,20 +228,16 @@ public:
 
 	uint64_t OutputVcfLinear(void);
 	uint64_t OutputVcfSearch(void);
-	void OuputVcfWrapper(io::BasicBuffer& output_buffer, yon1_t& entry) const;
-	void OutputInfoVcf(io::BasicBuffer& output_buffer, yon1_t& entry) const;
-	void OutputFormatVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
-	void OutputFilterVcf(io::BasicBuffer& output_buffer, const yon1_t& entry) const;
 
 	uint64_t OutputHtslibVcfLinear(void);
 	uint64_t OutputHtslibVcfSearch(void);
-	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_t& entry) const;
-	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
-	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_t& entry) const;
+	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_vnt_t& entry) const;
+	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const;
+	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const;
 
 	// Filter interval intersection and dummy version
-	inline bool FilterIntervalsDummy(const meta_entry_type& meta_entry) const{ return true; }
-	inline bool FilterIntervals(const meta_entry_type& meta_entry) const{ return(this->interval_container.FindOverlaps(meta_entry).size()); }
+	inline bool FilterIntervalsDummy(const yon1_vnt_t& entry) const{ return true; }
+	inline bool FilterIntervals(const yon1_vnt_t& entry) const{ return(this->interval_container.FindOverlaps(entry).size()); }
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression

@@ -21,7 +21,6 @@ public:
 
 public:
     GenotypeContainerDiploidRLE();
-    GenotypeContainerDiploidRLE(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     GenotypeContainerDiploidRLE(
     	const char* const data,
 		const size_type& n_entries,
@@ -43,6 +42,32 @@ public:
     inline const_reference front(void) const{ return(*reinterpret_cast<const T* const>(&this->__data[0])); }
     inline reference back(void){ return(*reinterpret_cast<const T* const>(&this->__data[(this->n_entries - 1) * sizeof(value_type)])); }
     inline const_reference back(void) const{ return(*reinterpret_cast<const T* const>(&this->__data[(this->n_entries - 1) * sizeof(value_type)])); }
+
+	static yon_gt* GetObjects(
+			const char* data,
+			const uint32_t n_entries,
+			const uint32_t n_samples,
+			const uint16_t n_als,
+			const uint8_t  n_ploidy,
+			const uint16_t controller,
+			yon_gt_ppa* ppa)
+	{
+		yon_gt* x = new yon_gt;
+		const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+		x->shift = cont->gt_has_missing     ? 2 : 1;
+		x->add   = cont->gt_has_mixed_phasing ? 1 : 0;
+		x->global_phase = cont->gt_phase_uniform;
+		x->data = reinterpret_cast<const uint8_t*>(data);
+		x->n_i = n_entries;
+		x->method = 1;
+		x->p = sizeof(T);
+		x->m = 2;
+		x->n_s = n_samples;
+		x->n_allele = n_als;
+		x->ppa = ppa;
+
+		return(x);
+	}
 
     yon_gt* GetObjects(const uint32_t n_samples){
     	yon_gt* x = new yon_gt;
@@ -89,13 +114,6 @@ public:
 
 template <class T>
 GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(){
-
-}
-
-template <class T>
-GenotypeContainerDiploidRLE<T>::GenotypeContainerDiploidRLE(const char* const data, const uint32_t n_entries, const meta_type& meta_entry) :
-	parent_type(data, n_entries, n_entries*sizeof(value_type), meta_entry)
-{
 
 }
 

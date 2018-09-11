@@ -3,6 +3,7 @@
 
 #include <typeinfo>
 
+#include "containers/data_container.h"
 #include "components/generic_iterator.h"
 #include "math/summary_statistics.h"
 #include "utility/support_vcf.h"

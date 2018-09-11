@@ -21,7 +21,6 @@ public:
 
 public:
     GenotypeContainerNploid();
-    GenotypeContainerNploid(const char* const data, const uint32_t n_entries, const meta_type& meta_entry);
     GenotypeContainerNploid(const char* const data,
 		const size_type& n_entries,
 		const uint16_t n_als,
@@ -42,6 +41,32 @@ public:
     inline const_reference front(void) const{ return(*reinterpret_cast<const T* const>(&this->__data[0])); }
     inline reference back(void){ return(*reinterpret_cast<const T* const>(&this->__data[(this->n_entries - 1) * sizeof(value_type)])); }
     inline const_reference back(void) const{ return(*reinterpret_cast<const T* const>(&this->__data[(this->n_entries - 1) * sizeof(value_type)])); }
+
+	static yon_gt* GetObjects(
+		const char* data,
+		const uint32_t n_entries,
+		const uint32_t n_samples,
+		const uint16_t n_als,
+		const uint8_t  n_ploidy,
+		const uint16_t controller,
+		yon_gt_ppa* ppa)
+	{
+		yon_gt* x = new yon_gt;
+		const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+		x->shift = 0;
+		x->add   = cont->gt_has_mixed_phasing;
+		x->global_phase = cont->gt_phase_uniform;
+		x->data = reinterpret_cast<const uint8_t*>(data);
+		x->n_i = n_entries;
+		x->method = 4;
+		x->m = n_ploidy;
+		x->p = sizeof(T);
+		x->n_s = n_samples;
+		x->n_allele = n_als;
+		x->ppa = ppa;
+
+		return(x);
+	}
 
     yon_gt* GetObjects(const uint32_t n_samples){
     	yon_gt* x = new yon_gt;
@@ -84,13 +109,6 @@ public:
 
 template <class T>
 GenotypeContainerNploid<T>::GenotypeContainerNploid(){
-
-}
-
-template <class T>
-GenotypeContainerNploid<T>::GenotypeContainerNploid(const char* const data, const uint32_t n_entries, const meta_type& meta_entry) :
-	parent_type(data, n_entries, n_entries*(sizeof(value_type) + meta_entry.n_base_ploidy*sizeof(uint8_t)), meta_entry)
-{
 
 }
 

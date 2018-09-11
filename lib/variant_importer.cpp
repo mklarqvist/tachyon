@@ -12,18 +12,20 @@
 namespace tachyon {
 
 VariantImporterSettings::VariantImporterSettings() :
+	verbose(true),
 	permute_genotypes(true),
 	encrypt_data(false),
 	checkpoint_n_snps(1000),
 	checkpoint_bases(10e6),
 	n_threads(std::thread::hardware_concurrency()),
-	info_end_key(-1),
-	info_svlen_key(-1),
 	compression_level(6),
 	htslib_extra_threads(std::thread::hardware_concurrency() - 1 >= 0
 	                     ? std::thread::hardware_concurrency() - 1
-	                     : 0)
-{}
+	                     : 0),
+	info_end_key(-1),
+	info_svlen_key(-1)
+{
+}
 
 std::string VariantImporterSettings::GetInterpretedString(void) const{
 	return(std::string("{\"input_file\":\"" + this->input_file +
@@ -111,9 +113,16 @@ public:
 	hash_map_type block_hash_map;
 };
 
+
+VariantImporter::VariantImporter(void) :
+	mImpl(new VariantImporter::VariantImporterImpl)
+{
+
+}
+
 VariantImporter::VariantImporter(const settings_type& settings) :
-		settings_(settings),
-		mImpl(new VariantImporter::VariantImporterImpl)
+	settings_(settings),
+	mImpl(new VariantImporter::VariantImporterImpl)
 {
 
 }

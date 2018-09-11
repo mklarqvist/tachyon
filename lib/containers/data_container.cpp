@@ -143,6 +143,65 @@ bool DataContainer::CheckUniformity(void){
 	default: return false; break;
 	}
 
+
+	assert(data_uncompressed.size() % word_width == 0);
+	assert((data_uncompressed.size() / word_width) % header.n_additions == 0);
+	const uint32_t n_e = data_uncompressed.size() / word_width;
+
+	const uint64_t first_hash = XXH64(this->data_uncompressed.data(), stride_update, 2147483647);
+
+	uint64_t cumulative_position = stride_update;
+	for(uint32_t i = 1; i < n_e; ++i){
+		if(XXH64(&this->data_uncompressed.buffer_[cumulative_position], stride_update, 2147483647) != first_hash){
+			return(false);
+		}
+		cumulative_position += stride_update;
+	}
+	std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	assert(cumulative_position == this->data_uncompressed.size());
+
+	this->header.n_entries   = 1;
+	this->header.n_strides   = 0;
+	this->data_uncompressed.n_chars_                = stride_size * word_width;
+	this->header.data_header.uLength                = stride_size * word_width;
+	this->header.data_header.cLength                = stride_size * word_width;
+	this->header.data_header.controller.uniform     = true;
+	this->header.data_header.controller.mixedStride = false;
+	this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
+	return(true);
+}
+
+bool DataContainer::CheckUniformity(const uint32_t n_samples){
+	if(data_uncompressed.size() == 0)
+		return false;
+
+	if(this->header.n_entries == 0)
+		return false;
+
+	if(this->header.data_header.controller.type == YON_TYPE_CHAR)
+		return false;
+
+	// We know the stride cannot be uniform if
+	// the stride size is uneven
+	const int16_t& stride_size = this->header.data_header.stride;
+	if(stride_size == -1)
+		return false;
+
+	uint32_t stride_update = stride_size;
+
+	uint8_t word_width = sizeof(char);
+	switch(this->header.data_header.controller.type){
+	case YON_TYPE_DOUBLE: stride_update *= sizeof(double);   word_width = sizeof(double);  break;
+	case YON_TYPE_FLOAT:  stride_update *= sizeof(float);    word_width = sizeof(float);   break;
+	case YON_TYPE_8B:     stride_update *= sizeof(uint8_t);  word_width = sizeof(uint8_t); break;
+	case YON_TYPE_16B:    stride_update *= sizeof(uint16_t); word_width = sizeof(uint16_t);break;
+	case YON_TYPE_32B:    stride_update *= sizeof(int32_t);  word_width = sizeof(int32_t); break;
+	case YON_TYPE_64B:    stride_update *= sizeof(uint64_t); word_width = sizeof(uint64_t);break;
+	case YON_TYPE_CHAR:   stride_update *= sizeof(char);     word_width = sizeof(char);    break;
+	default: return false; break;
+	}
+	stride_update *= n_samples;
+
 	const uint64_t first_hash = XXH64(this->data_uncompressed.data(), stride_update, 2147483647);
 
 	uint64_t cumulative_position = stride_update;
@@ -445,10 +504,29 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 	}
 }
 
+void DataContainer::UpdateContainerFormat(bool reformat_data, bool reformat_stride, const uint32_t n_samples){
+	if(this->data_uncompressed.size() == 0)
+		return;
+
+	// Check if stream is uniform in content
+	this->CheckUniformity();
+	// Reformat stream to use as small word size as possible
+	if(reformat_data) this->ReformatInteger();
+
+	// Set uncompressed length
+	this->header.data_header.uLength = this->data_uncompressed.size();
+
+	// If we have mixed striding
+	if(this->header.data_header.HasMixedStride()){
+		// Reformat stream to use as small word size as possible
+		if(reformat_stride) this->ReformatStride();
+		this->header.stride_header.uLength = this->strides_uncompressed.size();
+	}
+}
+
 void DataContainer::AddStride(const uint32_t value){
 	// If this is the first stride set
 	if(this->header.n_strides == 0){
-		std::cerr << "nstrides = 0: " << value << std::endl;
 		this->header.stride_header.controller.type = YON_TYPE_32B;
 		this->header.stride_header.controller.signedness = false;
 		this->header.data_header.stride = value;
@@ -457,7 +535,6 @@ void DataContainer::AddStride(const uint32_t value){
 	// Check if there are different strides
 	if(this->header.data_header.HasMixedStride() == false){
 		if(this->header.data_header.stride != value){
-			std::cerr << "triggeirng mixed: " << this->header.data_header.stride << " because " << value << std::endl;
 			this->header.data_header.controller.mixedStride = true;
 		}
 	}

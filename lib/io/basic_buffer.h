@@ -86,6 +86,7 @@ public:
 	void AddReadble(const int8_t& value);
 	void AddReadble(const int16_t& value);
 	void AddReadble(const int32_t& value);
+	void AddReadble(const int64_t& value);
 	void AddReadble(const uint8_t& value);
 	void AddReadble(const uint16_t& value);
 	void AddReadble(const uint32_t& value);

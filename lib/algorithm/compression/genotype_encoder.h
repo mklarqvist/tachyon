@@ -67,7 +67,6 @@ class GenotypeEncoder {
 public:
 	typedef GenotypeEncoder              self_type;
 	typedef io::BasicBuffer              buffer_type;
-	typedef core::MetaEntry              meta_type;
 	typedef containers::DataContainer    container_type;
 	typedef containers::VariantBlock     block_type;
 	typedef GenotypeEncoderStatistics    stats_type;

@@ -186,6 +186,7 @@ public:
 	 * @return Returns TRUE if the data is uniform or FALSE otherwise
 	 */
 	bool CheckUniformity(void);
+	bool CheckUniformity(const uint32_t n_samples);
 
 	/**<
 	 * This function is called during import to shrink each
@@ -194,6 +195,7 @@ public:
 	 * type int32_t. No other values can be shrunk.
 	 */
 	void ReformatInteger(void);
+
 
 	/**<
 	 * This function is caled during import to shrink each
@@ -227,6 +229,7 @@ public:
 	 * @param reformat_stride Flag for whether strides should be reformatted.
 	 */
 	void UpdateContainer(bool reformat_data = true, bool reformat_stride = true);
+	void UpdateContainerFormat(bool reformat_data, bool reformat_stride, const uint32_t n_samples);
 
 private:
 	/**<

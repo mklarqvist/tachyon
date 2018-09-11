@@ -69,33 +69,6 @@ inline SummaryStatistics summary_statistics(const containers::PrimitiveContainer
 	return(ss);
 }
 
-template <class T>
-inline SummaryStatistics summary_statistics(const containers::InfoContainer<T>& info_container){
-	math::SummaryStatistics ss;
-	for(uint32_t i = 0; i < info_container.size(); ++i){
-		for(uint32_t j = 0; j < info_container[i].size(); ++j)
-			ss += info_container[i][j];
-	}
-
-	ss.calculate();
-	return(ss);
-}
-
-template <class T>
-inline SummaryStatistics summary_statistics(const containers::FormatContainer<T>& format_container){
-	math::SummaryStatistics ss;
-	for(uint32_t i = 0; i < format_container.size(); ++i){
-		for(uint32_t j = 0; j < format_container[i].size(); ++j){
-			for(uint32_t k = 0; k < format_container[i][j].size(); ++k){
-				ss += format_container[i][j][k];
-			}
-		}
-	}
-
-	ss.calculate();
-	return(ss);
-}
-
 }
 }
 

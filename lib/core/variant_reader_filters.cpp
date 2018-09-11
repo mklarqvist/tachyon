@@ -21,7 +21,7 @@ VariantReaderFilters::~VariantReaderFilters(){
 	}
 }
 
-bool VariantReaderFilters::FilterAlleleFrequency(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+bool VariantReaderFilters::FilterAlleleFrequency(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
 	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
 		if(pair->applyFilter(objects.gt_sum->d->af[i]))
 			return true;
@@ -30,7 +30,7 @@ bool VariantReaderFilters::FilterAlleleFrequency(const_pointer pair, const yon1_
 }
 
 
-bool VariantReaderFilters::FilterUnseenAlternativeAlleles(const_pointer pair, const yon1_t& objects, const uint32_t& position) const{
+bool VariantReaderFilters::FilterUnseenAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
 	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
 		if(pair->applyFilter(objects.gt_sum->d->ac[i] + objects.gt_sum->d->ac[i] == 0))
 			return true;
@@ -38,7 +38,7 @@ bool VariantReaderFilters::FilterUnseenAlternativeAlleles(const_pointer pair, co
 	return false;
 }
 
-bool VariantReaderFilters::Filter(yon1_t& objects, const uint32_t position) const{
+bool VariantReaderFilters::Filter(yon1_vnt_t& objects, const uint32_t position) const{
 	if(this->require_genotypes)
 		objects.EvaluateSummary(true);
 

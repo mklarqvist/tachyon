@@ -1,39 +1,9 @@
+#include "support/magic_constants.h"
 #include "variant_record.h"
 
 namespace tachyon{
 
-yon1_t::yon1_t(void) :
-	is_dirty(false),
-	is_loaded_meta(false),
-	is_loaded_gt(false),
-	n_format(0), n_info(0), n_filter(0),
-	id_block(0),
-	meta(nullptr),
-	gt(nullptr),
-	gt_sum(nullptr),
-	occ(nullptr),
-	info(nullptr),
-	fmt(nullptr),
-	info_containers(nullptr),
-	format_containers(nullptr),
-	gt_i(nullptr),
-	info_ids(nullptr),
-	format_ids(nullptr),
-	filter_ids(nullptr)
-{
-}
-
-yon1_t::~yon1_t(void){
-	delete [] this->info;
-	delete [] this->fmt;
-	delete [] this->info_containers;
-	delete [] this->format_containers;
-	delete this->gt;
-	delete this->gt_sum;
-	// Do not delete occ. It is always borrowed!
-}
-
-bool yon1_t::EvaluateSummary(bool lazy_evaluate){
+bool yon1_vnt_t::EvaluateSummary(bool lazy_evaluate){
 	assert(this->gt != nullptr);
 	assert(this->gt->rcds != nullptr);
 
@@ -46,7 +16,7 @@ bool yon1_t::EvaluateSummary(bool lazy_evaluate){
 	return true;
 }
 
-bool yon1_t::EvaluateOcc(){
+bool yon1_vnt_t::EvaluateOcc(){
 	assert(this->gt != nullptr);
 	assert(occ != nullptr);
 

@@ -5,7 +5,6 @@
 #include "genotype_container_diploid_rle.h"
 #include "genotype_container_diploid_simple.h"
 #include "genotype_container_nploid.h"
-#include "meta_container.h"
 #include "variant_block.h"
 
 namespace tachyon{
@@ -26,8 +25,6 @@ public:
     typedef const value_type*          const_pointer;
     typedef std::ptrdiff_t             difference_type;
     typedef std::size_t                size_type;
-    typedef MetaContainer              meta_container_type;
-    typedef tachyon::core::MetaEntry   meta_type;
     typedef io::BasicBuffer            buffer_type;
     typedef yon_gt_summary             gt_summary_type;
     typedef VariantBlock               block_type;
@@ -36,7 +33,7 @@ public:
    	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-    GenotypeContainer(const block_type& block, const meta_container_type& meta);
+    GenotypeContainer();
     ~GenotypeContainer();
 
     // Capacity
@@ -59,7 +56,6 @@ private:
 
 private:
     size_type           n_entries;
-    meta_container_type __meta_container;
     pointer             __iterators;
 };
 

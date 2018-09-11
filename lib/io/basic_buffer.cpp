@@ -126,6 +126,13 @@ void BasicBuffer::AddReadble(const int32_t& value){
 	this->n_chars_ += ret;
 }
 
+void BasicBuffer::AddReadble(const int64_t& value){
+	if(this->n_chars_ + 100 >= this->width_)
+		this->resize(std::max(this->width_ + 100, this->width_*2));
+	const int ret = sprintf(&this->buffer_[this->n_chars_], "%" PRId64, value);
+	this->n_chars_ += ret;
+}
+
 void BasicBuffer::AddReadble(const uint8_t& value){
 	if(this->n_chars_ + 100 >= this->width_)
 		this->resize(std::max(this->width_ + 100, this->width_*2));

@@ -109,7 +109,6 @@ bool CompressionManager::Compress(variant_block_type& block,
 				zstd_codec.Compress(block.info_containers[i]);
 			}
 			*/
-			std::cerr << "Info mixed stride: " << block.info_containers[i].header.data_header.HasMixedStride() << std::endl;
 			zstd_codec.Compress(block.info_containers[i]);
 		}
 	}
@@ -176,6 +175,8 @@ bool CompressionManager::Compress(variant_block_type& block,
 					}
 				}
 				*/
+				std::cerr << "Format mixed stride: " << block.format_containers[i].header.data_header.HasMixedStride() << std::endl;
+
 				zstd_codec.Compress(block.format_containers[i]);
 			}
 		}

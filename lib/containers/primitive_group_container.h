@@ -2,6 +2,7 @@
 #define CONTAINERS_PRIMITIVE_GROUP_CONTAINER_H_
 
 #include "components/generic_iterator.h"
+#include "containers/data_container.h"
 #include "primitive_container.h"
 
 namespace tachyon{

@@ -334,7 +334,7 @@ public:
 		// Iterate over the internal run-length encoded genotypes
 		// and populate the rcds structure.
 		for(uint32_t i = 0; i < this->n_i; ++i){
-			T* run_length = reinterpret_cast<T*>(&this->data[b_offset]);
+			const T* run_length = reinterpret_cast<const T*>(&this->data[b_offset]);
 			b_offset += sizeof(T);
 
 			this->rcds[i].run_length = *run_length;
@@ -647,7 +647,7 @@ public:
     uint8_t  n_allele;
     yon_gt_ppa* ppa; // pointer to ppa
     std::vector< std::vector<uint32_t> >* occ; // pointer to occ
-    uint8_t* data; // pointer to data
+    const uint8_t* data; // pointer to data
     uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
     uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
     yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.

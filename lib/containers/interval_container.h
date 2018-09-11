@@ -8,7 +8,7 @@
 #include "third_party/intervalTree.h"
 #include "index/index.h"
 #include "core/header/variant_header.h"
-#include "core/meta_entry.h"
+#include "core/variant_record.h"
 #include "components/generic_iterator.h"
 
 namespace tachyon{
@@ -27,7 +27,6 @@ public:
     typedef index::Index           index_type;
     typedef index::VariantIndexEntry      index_entry_type;
     typedef VariantHeader          header_type;
-    typedef core::MetaEntry        meta_entry_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
@@ -92,9 +91,9 @@ public:
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
 
-	inline std::vector<interval_type> FindOverlaps(const meta_entry_type& meta_entry) const{
-		if(meta_entry.contigID > this->size()) return(std::vector<interval_type>());
-		return(this->at(meta_entry.contigID).findOverlapping(meta_entry.position, meta_entry.position + 1));
+	inline std::vector<interval_type> FindOverlaps(const yon1_vnt_t& rcd) const{
+		if(rcd.rid > this->size()) return(std::vector<interval_type>());
+		return(this->at(rcd.rid).findOverlapping(rcd.pos, rcd.pos + 1));
 	}
 
 private:

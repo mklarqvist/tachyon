@@ -71,7 +71,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 
 	this->block.header.controller.has_gt = this->GT_available_;
 	this->block.header.n_variants        = container.sizeWithoutCarryOver();
-	this->block.UpdateContainers();
+	this->block.UpdateContainers(this->vcf_header_->GetNumberSamples());
 
 	// Perform compression using standard parameters.
 	if(!this->compression_manager.Compress(this->block, this->settings_->compression_level)){

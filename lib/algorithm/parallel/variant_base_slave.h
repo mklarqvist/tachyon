@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_PARALLEL_VARIANT_BASE_SLAVE_H_
 #define ALGORITHM_PARALLEL_VARIANT_BASE_SLAVE_H_
 
-#include "containers/variant_block_container.h"
+#include "containers/variant_container.h"
 #include "core/ts_tv_object.h"
 
 namespace tachyon {
@@ -19,7 +19,7 @@ public:
 
 class VariantBaseSlave : public VariantBaseSlaveInterface {
 public:
-	VariantBaseSlave(void){}
+	VariantBaseSlave(void) : global_header(nullptr){}
 	virtual ~VariantBaseSlave(){}
 
 	/**<
@@ -59,6 +59,7 @@ public:
 	}
 
 public:
+	VariantHeader* global_header;
 	containers::VariantBlockContainer vc;
 	DataBlockSettings settings;
 	algorithm::CompressionManager codec_manager;
@@ -109,9 +110,7 @@ public:
 		this->data_loaded += vc.GetBlock().GetCompressedSize();
 		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
 
-		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
 
-		delete objects;
 		return true;
 	}
 
@@ -125,11 +124,7 @@ public:
 		this->data_loaded += vc.GetBlock().GetCompressedSize();
 		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
 
-		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
-		yon1_t* entries = this->vc.LazyEvaluate(*objects);
 
-		delete [] entries;
-		delete objects;
 		return true;
 	}
 
@@ -155,15 +150,15 @@ public:
 		if(this->vc.GetBlock().header.controller.has_gt == false)
 			return true;
 
-		VariantReaderObjects* objects = this->vc.LoadObjects(this->settings);
-		yon1_t* entries = this->vc.LazyEvaluate(*objects);
+		VariantContainer ivc(vc.GetBlock().header.n_variants);
+		ivc.Build(vc.GetBlock(), *this->global_header);
 
 		s_local.reset();
-		for(uint32_t i = 0; i < objects->meta_container->size(); ++i){
-			if(entries[i].is_loaded_gt){
+		for(uint32_t i = 0; i < ivc.size(); ++i){
+			if(ivc[i].is_loaded_gt){
 				//entries[i].gt->ExpandExternal(this->vc.GetAllocatedGenotypeMemory());
 				//s.Update(entries[i], this->vc.GetAllocatedGenotypeMemory());
-				s_local.Update(entries[i]);
+				s_local.Update(ivc[i]);
 			}
 		}
 		assert(vc.GetBlock().gt_ppa != nullptr);
@@ -176,8 +171,6 @@ public:
 		} else
 			s += s_local;
 
-		delete [] entries;
-		delete objects;
 		return true;
 	}
 

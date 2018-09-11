@@ -38,7 +38,6 @@ public:
 	typedef containers::DataContainer       stream_container;
 	typedef containers::VariantBlock        block_type;
 	typedef support::VariantImporterContainerStats import_stats_type;
-	typedef core::MetaEntry                 meta_type;
 	typedef VariantImporterSettings         settings_type;
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
