@@ -769,17 +769,17 @@ public:
 	uint8_t n_ploidy;
 	uint32_t n_ac_af;
 	uint32_t n_fs;
-	uint64_t* ac; // allele counts
-	double* af; // allele frequency
-	uint64_t nm; // number of non-sentinel, non-missing symbols
-	uint64_t npm;// number of missing symbols
-	uint64_t an; // number of non-sentinel symbols
+	uint32_t* ac; // allele counts
+	float* af; // allele frequency
+	uint32_t nm; // number of non-sentinel, non-missing symbols
+	uint32_t npm;// number of missing symbols
+	uint32_t an; // number of non-sentinel symbols
 	// ac_p is borrowed from summary
-	uint64_t** ac_p;
-	double* fs_a;// fisher strand test p
-	double hwe_p;// hardy-weinberg p
-	double f_pic;
-	double heterozygosity;
+	uint32_t** ac_p;
+	float* fs_a;// fisher strand test p
+	float hwe_p;// hardy-weinberg p
+	float f_pic;
+	float heterozygosity;
 };
 
 struct yon_gt_summary {
@@ -798,15 +798,15 @@ public:
 	yon_gt_summary(const uint8_t base_ploidy, const uint8_t n_alleles) :
 		n_ploidy(base_ploidy),
 		n_alleles(n_alleles + 2),
-		alleles(new uint64_t[this->n_alleles]),
-		alleles_strand(new uint64_t*[this->n_ploidy]),
+		alleles(new uint32_t[this->n_alleles]),
+		alleles_strand(new uint32_t*[this->n_ploidy]),
 		gt(new yon_gt_summary_obj[this->n_alleles]),
 		d(nullptr)
 	{
-		memset(this->alleles, 0, sizeof(uint64_t)*this->n_alleles);
+		memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
 		for(uint32_t i = 0; i < this->n_ploidy; ++i){
-			this->alleles_strand[i] = new uint64_t[this->n_alleles];
-			memset(this->alleles_strand[i], 0, sizeof(uint64_t)*this->n_alleles);
+			this->alleles_strand[i] = new uint32_t[this->n_alleles];
+			memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
 		}
 
 		// Add layers to the root node.
@@ -840,8 +840,8 @@ public:
 	yon_gt_summary& operator+=(const yon_gt& gt);
 
 	// Accessors to internal data.
-	inline uint64_t* GetAlleleCountsRaw(void){ return(this->alleles); }
-	inline const uint64_t* GetAlleleCountsRaw(void) const{ return(this->alleles); }
+	inline uint32_t* GetAlleleCountsRaw(void){ return(this->alleles); }
+	inline const uint32_t* GetAlleleCountsRaw(void) const{ return(this->alleles); }
 
 	std::vector<uint64_t> GetAlleleCounts(void) const;
 	std::vector< std::pair<uint64_t,double> > GetAlleleCountFrequency(void) const;
@@ -863,8 +863,8 @@ public:
 
 	uint8_t    n_ploidy; // base ploidy at site
 	uint8_t    n_alleles; // number of alleles
-	uint64_t*  alleles; // allele counts
-	uint64_t** alleles_strand; // allelic counts per chromosome
+	uint32_t*  alleles; // allele counts
+	uint32_t** alleles_strand; // allelic counts per chromosome
 	yon_gt_summary_obj* gt; // full genotypic trie with branch-size n_alleles
 	yon_gt_summary_rcd* d; // lazy evaluated record
 };

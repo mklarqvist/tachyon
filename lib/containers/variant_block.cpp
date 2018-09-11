@@ -308,6 +308,7 @@ bool VariantBlock::ParseSettings(DataBlockSettings& settings, const VariantHeade
 	// or displayed as they are being re-calculated internally and
 	// emitted. If a blacklisted field is available in this block then
 	// add that tag to the map.
+	/*
 	std::unordered_map<uint32_t, std::string> blocked_list;
 	if(settings.annotate_extra){
 		for(uint32_t i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
@@ -317,6 +318,7 @@ bool VariantBlock::ParseSettings(DataBlockSettings& settings, const VariantHeade
 			}
 		}
 	}
+	*/
 
 	// Parse Info. If all Info containers are loaded then we simply copy
 	// the order in which they occur. If we are provided with a vector
@@ -324,15 +326,15 @@ bool VariantBlock::ParseSettings(DataBlockSettings& settings, const VariantHeade
 	// (possible) local identifiers.
 	if(settings.load_static & YON_BLK_BV_INFO){
 		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
-			const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
-			if(it == blocked_list.end()){
+			//const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
+			//if(it == blocked_list.end()){
 				//std::cerr << "adding not blocked" << std::endl;
 				this->load_settings->info_id_local_loaded.push_back(i);
 				this->load_settings->info_id_global_loaded.push_back(this->footer.info_offsets[i].data_header.global_key);
 				this->load_settings->info_map_global[this->load_settings->info_id_global_loaded[i]] = i;
-			} else {
+			//} else {
 				//std::cerr << "skipping blocked" << std::endl;
-			}
+			//}
 		}
 		//std::cerr << this->info_id_local_loaded.size() << "," << this->info_id_global_loaded.size() << std::endl;
 	} else {
@@ -342,14 +344,14 @@ bool VariantBlock::ParseSettings(DataBlockSettings& settings, const VariantHeade
 			// Searches for the global Vcf:INFO idx value in the block. If
 			// it is found then return that local idx otherwise -1. If the
 			// idx is found store it in the loaded idx vector.
-			const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
-			if(it == blocked_list.end()){
+			//const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
+			//if(it == blocked_list.end()){
 				const int local = this->GetInfoPosition(settings.info_id_global[i]);
 				if(local >= 0){
 					local_ids.push_back(local);
 					global_ids.push_back(settings.info_id_global[i]);
 				}
-			}
+			//}
 		}
 
 		if(local_ids.size()){

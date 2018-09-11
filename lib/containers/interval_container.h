@@ -91,7 +91,7 @@ public:
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
 
-	inline std::vector<interval_type> FindOverlaps(const yon1_vnt_t& rcd) const{
+	inline std::vector<interval_type> FindOverlaps(const yon1_vnt_t& rcd) const {
 		if(rcd.rid > this->size()) return(std::vector<interval_type>());
 		return(this->at(rcd.rid).findOverlapping(rcd.pos, rcd.pos + 1));
 	}

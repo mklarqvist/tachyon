@@ -231,9 +231,6 @@ public:
 
 	uint64_t OutputHtslibVcfLinear(void);
 	uint64_t OutputHtslibVcfSearch(void);
-	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, yon1_vnt_t& entry) const;
-	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const;
-	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr, const yon1_vnt_t& entry) const;
 
 	// Filter interval intersection and dummy version
 	inline bool FilterIntervalsDummy(const yon1_vnt_t& entry) const{ return true; }
@@ -264,6 +261,12 @@ public:
 	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&));
 
 	bool TempWrite(void);
+
+private:
+	// Todo:
+	// Pimpl idiom
+	//class VariantReaderImpl;
+	//std::unique_ptr<VariantReaderImpl> mImpl;
 
 private:
 	uint64_t                b_data_start;

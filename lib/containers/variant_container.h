@@ -80,7 +80,9 @@ public:
 	const yon1_vnt_t& operator[](const uint32_t p) const{ return(this->variants_[p]); }
 
 	void resize(const uint32_t new_size);
+
 	bool Build(containers::VariantBlock& variant_block, const VariantHeader& header);
+	bool PermuteOrder(const containers::VariantBlock& variant_block);
 
 	bool AddInfo(containers::VariantBlock& variant_block, const VariantHeader& header);
 	bool AddFilter(containers::VariantBlock& variant_block, const VariantHeader& header);
@@ -119,7 +121,6 @@ public:
 		case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
 		case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
 		}
-		std::cerr << "In: " << __FUNCTION__ << std::endl;
 		assert(it != nullptr);
 
 		// If data is uniform.
@@ -194,7 +195,6 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
 	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
 	}
-	std::cerr << "In: " << __FUNCTION__ << std::endl;
 	assert(it != nullptr);
 
 	uint32_t current_offset = 0;
@@ -256,7 +256,6 @@ bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& head
 	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
 	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
 	}
-	std::cerr << "In: " << __FUNCTION__ << std::endl;
 	assert(it != nullptr);
 
 	uint32_t current_offset = 0;

@@ -110,6 +110,8 @@ public:
 		this->data_loaded += vc.GetBlock().GetCompressedSize();
 		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
 
+		VariantContainer ivc(vc.GetBlock().header.n_variants);
+		ivc.Build(vc.GetBlock(), *this->global_header);
 
 		return true;
 	}
@@ -124,6 +126,8 @@ public:
 		this->data_loaded += vc.GetBlock().GetCompressedSize();
 		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
 
+		VariantContainer ivc(vc.GetBlock().header.n_variants);
+		ivc.Build(vc.GetBlock(), *this->global_header);
 
 		return true;
 	}

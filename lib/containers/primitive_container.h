@@ -166,6 +166,7 @@ public:
                        const uint32_t n_entries);
     ~PrimitiveContainer(void);
     PrimitiveContainer(const self_type& other);
+    PrimitiveContainer(return_type* values, const uint32_t n_entries);
     PrimitiveContainer(self_type&& other) noexcept;
     PrimitiveContainer& operator=(const self_type& other);
     PrimitiveContainer& operator=(self_type&& other) noexcept;
@@ -491,6 +492,15 @@ PrimitiveContainer<return_type>::PrimitiveContainer(const container_type& contai
 		default: std::cerr << "Disallowed" << std::endl; return;
 		}
 	}
+}
+
+template <class return_type>
+PrimitiveContainer<return_type>::PrimitiveContainer(return_type* values, const uint32_t n_entries) :
+    PrimitiveContainerInterface(false, n_entries),
+	entries_(new value_type[n_entries])
+{
+	for(int i = 0; i < n_entries; ++i)
+		this->entries_[i] = values[i];
 }
 
 template <class return_type>

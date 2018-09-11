@@ -460,8 +460,8 @@ bool yon_gt_summary::LazyEvaluate(void){
 	// Allele count and frequency
 	this->d->n_ploidy = this->n_ploidy;
 	this->d->n_ac_af  = this->n_alleles;
-	this->d->ac       = new uint64_t[this->n_alleles];
-	this->d->af       = new double[this->n_alleles];
+	this->d->ac       = new uint32_t[this->n_alleles];
+	this->d->af       = new float[this->n_alleles];
 
 	uint64_t n_total = 0;
 	for(uint32_t i = 0; i < 2; ++i) this->d->ac[i] = this->alleles[i];
@@ -492,7 +492,7 @@ bool yon_gt_summary::LazyEvaluate(void){
 
 		uint8_t n_fs_used = (this->n_alleles - 2 == 2 ? 1 : this->n_alleles - 2);
 		this->d->n_fs = n_fs_used;
-		this->d->fs_a = new double[n_fs_used];
+		this->d->fs_a = new float[n_fs_used];
 		double fisher_left_p, fisher_right_p, fisher_twosided_p;
 		uint64_t n_cnt_fwd = 0;
 		uint64_t n_cnt_rev = 0;

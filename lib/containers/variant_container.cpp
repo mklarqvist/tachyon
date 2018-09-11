@@ -35,6 +35,25 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 	this->AddNames(variant_block.base_containers[YON_BLK_NAMES]);
 	this->AddRefAlt(variant_block.base_containers[YON_BLK_REFALT]);
 
+	// Allocate memory to support upcoming data to overload into the
+	// containers. After memory allocation we provide the list of local
+	// offsets that provide data.
+	for(int i = 0; i < this->n_variants_; ++i){
+		this->variants_[i].info   = new containers::PrimitiveContainerInterface*[variant_block.footer.n_info_streams];
+		this->variants_[i].m_info = variant_block.footer.n_info_streams;
+		this->variants_[i].fmt    = new containers::PrimitiveGroupContainerInterface*[variant_block.footer.n_format_streams];
+		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
+	}
+
+	this->AddFilter(variant_block, header);
+	this->AddInfo(variant_block, header);
+	this->AddFormat(variant_block, header);
+	this->PermuteOrder(variant_block);
+
+	return true;
+}
+
+bool VariantContainer::PermuteOrder(const containers::VariantBlock& variant_block){
 	// Map local in block to local in variant.
 	// Data is added to variants in the order they appear in the raw data block.
 	// This is not necessarily corect as data may have been intended to be read in
@@ -68,25 +87,98 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 		}
 	}
 
-	// Allocate memory to support upcoming data to overload into the
-	// containers. After memory allocation we provide the list of local
-	// offsets that provide data.
-	for(int i = 0; i < this->n_variants_; ++i){
-		this->variants_[i].info   = new containers::PrimitiveContainerInterface*[variant_block.footer.n_info_streams];
-		this->variants_[i].m_info = variant_block.footer.n_info_streams;
-		this->variants_[i].fmt    = new containers::PrimitiveGroupContainerInterface*[variant_block.footer.n_format_streams];
-		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
+	// Map local in block to local in variant.
+	// Data is added to variants in the order they appear in the raw data block.
+	// This is not necessarily corect as data may have been intended to be read in
+	// a different order. We have to map from these global identifiers to the per-variant
+	// local offsets by permuting the global to local order.
+	std::vector< std::vector<int> > local_info_patterns(variant_block.load_settings->info_patterns_local.size());
+	for(int i = 0; i < local_info_patterns.size(); ++i){
+		std::vector<std::pair<int,int>> internal(variant_block.load_settings->info_patterns_local[i].size());
+		for(int j = 0 ; j < internal.size(); ++j){
+			internal[j] = std::pair<int,int>((*variant_block.footer.info_map)[variant_block.load_settings->info_patterns_local[i][j]], j);
+		}
+		std::sort(internal.begin(), internal.end());
 
-		if(this->variants_[i].info_pid >= 0)
-			this->variants_[i].info_ids = new std::vector<int>(local_info_patterns[this->variants_[i].info_pid]);
-
-		if(this->variants_[i].fmt_pid >= 0)
-			this->variants_[i].fmt_ids = new std::vector<int>(local_format_patterns[this->variants_[i].fmt_pid]);
+		local_info_patterns[i].resize(internal.size());
+		for(int j = 0; j < internal.size(); ++j){
+			local_info_patterns[i][internal[j].second] = j;
+		}
 	}
 
-	this->AddFilter(variant_block, header);
-	this->AddInfo(variant_block, header);
-	this->AddFormat(variant_block, header);
+	std::vector< std::vector<int> > local_format_patterns(variant_block.load_settings->format_patterns_local.size());
+	for(int i = 0; i < local_format_patterns.size(); ++i){
+		std::vector<std::pair<int,int>> internal(variant_block.load_settings->format_patterns_local[i].size());
+		for(int j = 0 ; j < internal.size(); ++j){
+			internal[j] = std::pair<int,int>((*variant_block.footer.format_map)[variant_block.load_settings->format_patterns_local[i][j]], j);
+		}
+		std::sort(internal.begin(), internal.end());
+
+		local_format_patterns[i].resize(internal.size());
+		for(int j = 0; j < internal.size(); ++j){
+			local_format_patterns[i][internal[j].second] = j;
+		}
+	}
+
+	// Permute Info and Format fields back into original ordering
+	// NOT the order they were loaded in (FILO-stack order).
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].info_pid >= 0){
+			containers::PrimitiveContainerInterface** old = this->variants_[i].info;
+			std::vector<const YonInfo*> old_hdr = std::move(this->variants_[i].info_hdr);
+			this->variants_[i].info_hdr.resize(old_hdr.size());
+
+			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].n_info];
+			for(int k = 0; k < this->variants_[i].n_info; ++k){
+				this->variants_[i].info[k] = old[local_info_patterns[this->variants_[i].info_pid][k]];
+				this->variants_[i].info_hdr[k] = old_hdr[local_info_patterns[this->variants_[i].info_pid][k]];
+			}
+			delete [] old;
+		}
+
+		if(this->variants_[i].fmt_pid >= 0){
+			containers::PrimitiveGroupContainerInterface** old = this->variants_[i].fmt;
+			std::vector<const YonFormat*> old_hdr = std::move(this->variants_[i].fmt_hdr);
+			this->variants_[i].fmt_hdr.resize(old_hdr.size());
+
+			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].n_fmt];
+			for(int k = 0; k < this->variants_[i].n_fmt; ++k){
+				this->variants_[i].fmt[k] = old[local_format_patterns[this->variants_[i].fmt_pid][k]];
+				this->variants_[i].fmt_hdr[k] = old_hdr[local_format_patterns[this->variants_[i].fmt_pid][k]];
+			}
+			delete [] old;
+		}
+	}
+	// Permute Info and Format fields back into original ordering
+	// NOT the order they were loaded in (FILO-stack order).
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].info_pid >= 0){
+			containers::PrimitiveContainerInterface** old = this->variants_[i].info;
+			std::vector<const YonInfo*> old_hdr = std::move(this->variants_[i].info_hdr);
+			this->variants_[i].info_hdr.resize(old_hdr.size());
+
+			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].n_info];
+			for(int k = 0; k < this->variants_[i].n_info; ++k){
+				this->variants_[i].info[k] = old[local_info_patterns[this->variants_[i].info_pid][k]];
+				this->variants_[i].info_hdr[k] = old_hdr[local_info_patterns[this->variants_[i].info_pid][k]];
+			}
+			//std::cerr << std::endl;
+			delete [] old;
+		}
+
+		if(this->variants_[i].fmt_pid >= 0){
+			containers::PrimitiveGroupContainerInterface** old = this->variants_[i].fmt;
+			std::vector<const YonFormat*> old_hdr = std::move(this->variants_[i].fmt_hdr);
+			this->variants_[i].fmt_hdr.resize(old_hdr.size());
+
+			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].n_fmt];
+			for(int k = 0; k < this->variants_[i].n_fmt; ++k){
+				this->variants_[i].fmt[k] = old[local_format_patterns[this->variants_[i].fmt_pid][k]];
+				this->variants_[i].fmt_hdr[k] = old_hdr[local_format_patterns[this->variants_[i].fmt_pid][k]];
+			}
+			delete [] old;
+		}
+	}
 
 	return true;
 }
@@ -108,6 +200,7 @@ bool VariantContainer::AddFilter(containers::VariantBlock& variant_block, const 
 			const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
 			for(int j = 0; j < filter_patterns.pattern.size(); ++j){
 				this->variants_[i].flt_hdr.push_back(&header.filter_fields_[filter_patterns.pattern[j]]);
+				++this->variants_[i].n_flt;
 			}
 		}
 	}
@@ -115,6 +208,25 @@ bool VariantContainer::AddFilter(containers::VariantBlock& variant_block, const 
 }
 
 bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const VariantHeader& header){
+	if(variant_block.load_settings->format_id_local_loaded.size() == 0 && variant_block.load_settings->loaded_genotypes){
+		// Add genotypes.
+		this->AddGenotypes(variant_block, header);
+
+		for(int j = 0; j < this->n_variants_; ++j){
+			if(this->variants_[j].controller.gt_available){
+				// Format:Gt field has to appear first in order. This is
+				// a restriction imposed by htslib bcf.
+				assert(this->variants_[j].fmt_hdr.size() == 0);
+				this->variants_[j].is_loaded_gt = true;
+				// Do not store header pointer and allocate a new format container
+				// because this data is hidden.
+
+				this->variants_[j].gt->Evaluate();
+				//records[i].gt->Expand();
+			}
+		}
+	}
+
 	for(int i = 0; i < variant_block.load_settings->format_id_local_loaded.size(); ++i){
 		// If genotype data has been loaded.
 		if(header.format_fields_[variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]].header.GetGlobalKey()].id == "GT"){
@@ -135,15 +247,7 @@ bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const 
 					this->variants_[j].fmt[this->variants_[j].n_fmt++] = new containers::PrimitiveGroupContainer<int32_t>();
 					this->variants_[j].fmt_hdr.push_back(&header.format_fields_[variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]].header.GetGlobalKey()]);
 
-					// Check if genotype data has been loaded then checks
-					// if this variant site has any genotypes set.
-					/*
-					if(variant_block.header.controller.has_gt_permuted)
-						this->variants_[j].gt = this->variants_[j].gt_raw->GetObjects(*variant_block.gt_ppa);
-					else
-						this->variants_[j].gt = this->variants_[j].gt_raw->GetObjects(header.GetNumberSamples());
-					*/
-
+					// Lazy-evaluate minimum genotypes.
 					this->variants_[j].gt->Evaluate();
 					//records[i].gt->Expand();
 				}
@@ -155,7 +259,6 @@ bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const 
 		// described in the data container footer.
 		std::vector<bool> matches = variant_block.FormatPatternSetMembership(variant_block.format_containers[i].header.GetGlobalKey());
 		// Add Format data.
-		std::cerr << "Fmt: " << header.format_fields_[variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]].GetIdx()].id << " -> " << variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]].header.HasMixedStride() << "," << variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]].header.data_header.IsUniform() << std::endl;
 		this->AddFormatWrapper(variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]], header, matches);
 	}
 	return true;
