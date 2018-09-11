@@ -87,94 +87,31 @@ bool VariantContainer::PermuteOrder(const containers::VariantBlock& variant_bloc
 		}
 	}
 
-	// Map local in block to local in variant.
-	// Data is added to variants in the order they appear in the raw data block.
-	// This is not necessarily corect as data may have been intended to be read in
-	// a different order. We have to map from these global identifiers to the per-variant
-	// local offsets by permuting the global to local order.
-	std::vector< std::vector<int> > local_info_patterns(variant_block.load_settings->info_patterns_local.size());
-	for(int i = 0; i < local_info_patterns.size(); ++i){
-		std::vector<std::pair<int,int>> internal(variant_block.load_settings->info_patterns_local[i].size());
-		for(int j = 0 ; j < internal.size(); ++j){
-			internal[j] = std::pair<int,int>((*variant_block.footer.info_map)[variant_block.load_settings->info_patterns_local[i][j]], j);
-		}
-		std::sort(internal.begin(), internal.end());
-
-		local_info_patterns[i].resize(internal.size());
-		for(int j = 0; j < internal.size(); ++j){
-			local_info_patterns[i][internal[j].second] = j;
-		}
-	}
-
-	std::vector< std::vector<int> > local_format_patterns(variant_block.load_settings->format_patterns_local.size());
-	for(int i = 0; i < local_format_patterns.size(); ++i){
-		std::vector<std::pair<int,int>> internal(variant_block.load_settings->format_patterns_local[i].size());
-		for(int j = 0 ; j < internal.size(); ++j){
-			internal[j] = std::pair<int,int>((*variant_block.footer.format_map)[variant_block.load_settings->format_patterns_local[i][j]], j);
-		}
-		std::sort(internal.begin(), internal.end());
-
-		local_format_patterns[i].resize(internal.size());
-		for(int j = 0; j < internal.size(); ++j){
-			local_format_patterns[i][internal[j].second] = j;
-		}
-	}
-
 	// Permute Info and Format fields back into original ordering
 	// NOT the order they were loaded in (FILO-stack order).
 	for(int i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].info_pid >= 0){
 			containers::PrimitiveContainerInterface** old = this->variants_[i].info;
-			std::vector<const YonInfo*> old_hdr = std::move(this->variants_[i].info_hdr);
-			this->variants_[i].info_hdr.resize(old_hdr.size());
+			std::vector<const YonInfo*> old_hdr = this->variants_[i].info_hdr;
 
-			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].n_info];
+			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].m_info];
 			for(int k = 0; k < this->variants_[i].n_info; ++k){
 				this->variants_[i].info[k] = old[local_info_patterns[this->variants_[i].info_pid][k]];
 				this->variants_[i].info_hdr[k] = old_hdr[local_info_patterns[this->variants_[i].info_pid][k]];
+				this->variants_[i].info_map[this->variants_[i].info_hdr[k]->id] = k;
 			}
 			delete [] old;
 		}
 
 		if(this->variants_[i].fmt_pid >= 0){
 			containers::PrimitiveGroupContainerInterface** old = this->variants_[i].fmt;
-			std::vector<const YonFormat*> old_hdr = std::move(this->variants_[i].fmt_hdr);
-			this->variants_[i].fmt_hdr.resize(old_hdr.size());
+			std::vector<const YonFormat*> old_hdr = this->variants_[i].fmt_hdr;
 
-			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].n_fmt];
+			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].m_fmt];
 			for(int k = 0; k < this->variants_[i].n_fmt; ++k){
 				this->variants_[i].fmt[k] = old[local_format_patterns[this->variants_[i].fmt_pid][k]];
 				this->variants_[i].fmt_hdr[k] = old_hdr[local_format_patterns[this->variants_[i].fmt_pid][k]];
-			}
-			delete [] old;
-		}
-	}
-	// Permute Info and Format fields back into original ordering
-	// NOT the order they were loaded in (FILO-stack order).
-	for(int i = 0; i < this->n_variants_; ++i){
-		if(this->variants_[i].info_pid >= 0){
-			containers::PrimitiveContainerInterface** old = this->variants_[i].info;
-			std::vector<const YonInfo*> old_hdr = std::move(this->variants_[i].info_hdr);
-			this->variants_[i].info_hdr.resize(old_hdr.size());
-
-			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].n_info];
-			for(int k = 0; k < this->variants_[i].n_info; ++k){
-				this->variants_[i].info[k] = old[local_info_patterns[this->variants_[i].info_pid][k]];
-				this->variants_[i].info_hdr[k] = old_hdr[local_info_patterns[this->variants_[i].info_pid][k]];
-			}
-			//std::cerr << std::endl;
-			delete [] old;
-		}
-
-		if(this->variants_[i].fmt_pid >= 0){
-			containers::PrimitiveGroupContainerInterface** old = this->variants_[i].fmt;
-			std::vector<const YonFormat*> old_hdr = std::move(this->variants_[i].fmt_hdr);
-			this->variants_[i].fmt_hdr.resize(old_hdr.size());
-
-			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].n_fmt];
-			for(int k = 0; k < this->variants_[i].n_fmt; ++k){
-				this->variants_[i].fmt[k] = old[local_format_patterns[this->variants_[i].fmt_pid][k]];
-				this->variants_[i].fmt_hdr[k] = old_hdr[local_format_patterns[this->variants_[i].fmt_pid][k]];
+				this->variants_[i].fmt_map[this->variants_[i].fmt_hdr[k]->id] = k;
 			}
 			delete [] old;
 		}

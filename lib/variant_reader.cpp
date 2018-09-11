@@ -288,7 +288,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 				vc[i].EvaluateSummary(true);
 				vc[i].UpdateYonRecord(this->global_header);
 			}
-			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 			std::cout.write(buf.data(), buf.size());
 			buf.reset();
 		}
@@ -317,7 +317,12 @@ uint64_t VariantReader::OutputVcfSearch(void){
 			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
-			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateSummary(true);
+				vc[i].UpdateYonRecord(this->global_header);
+			}
+
+			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 			std::cout.write(buf.data(), buf.size());
 			buf.reset();
 		}
@@ -387,6 +392,11 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
+
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateSummary(true);
+				vc[i].UpdateYonRecord(this->global_header);
+			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
@@ -463,6 +473,11 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
+
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateSummary(true);
+				vc[i].UpdateYonRecord(this->global_header);
+			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
@@ -624,7 +639,7 @@ bool VariantReader::TempWrite(void){
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
 		for(int i = 0; i < vc.n_variants_; ++i){
-			vc[i].Print(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 			std::cout.write(buf.data(), buf.size());
 			buf.reset();
 		}

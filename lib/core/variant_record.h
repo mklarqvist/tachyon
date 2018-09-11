@@ -171,28 +171,20 @@ public:
 	}
 
 	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, DataBlockSettings& settings){
-		if(n_info){
-			for(uint32_t j = 0; j < n_info; ++j){
-				if(info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
-					bcf_update_info_flag(hdr, rec, info_hdr[j]->id.data(), NULL, 1);
-				} else {
-					info[j]->UpdateHtslibVcfRecordInfo(rec, hdr, info_hdr[j]->id);
-				}
-			}
-
-			if(settings.annotate_extra){
-				this->EvaluateSummary(true);
-				gt_sum->d->UpdateHtslibVcfRecord(rec, hdr);
-			}
-		} else {
-			if(settings.annotate_extra){
-				this->EvaluateSummary(true);
-				gt_sum->d->UpdateHtslibVcfRecord(rec, hdr);
+		for(uint32_t j = 0; j < n_info; ++j){
+			if(info_hdr[j]->yon_type == YON_VCF_HEADER_FLAG){
+				bcf_update_info_flag(hdr, rec, info_hdr[j]->id.data(), NULL, 1);
+			} else {
+				info[j]->UpdateHtslibVcfRecordInfo(rec, hdr, info_hdr[j]->id);
 			}
 		}
 	}
 
-	void OutputHtslibVcfFormat(bcf1_t* rec, bcf_hdr_t* hdr, DataBlockSettings& settings, yon_gt_rcd** external_exp) const{
+	void OutputHtslibVcfFormat(bcf1_t* rec,
+	                           bcf_hdr_t* hdr,
+	                           DataBlockSettings& settings,
+	                           yon_gt_rcd** external_exp) const
+	{
 		if(n_fmt){
 			// Case when the only available FORMAT field is the GT field.
 			if(n_fmt == 1 && is_loaded_gt &&
@@ -248,7 +240,7 @@ public:
 		}
 	}
 
-	void Print(const VariantHeader& header,
+	void ToVcfString(const VariantHeader& header,
 	           io::BasicBuffer& buffer,
 	           uint32_t display,
 	           yon_gt_rcd** external_rcd = nullptr) const
@@ -257,7 +249,8 @@ public:
 		buffer += '\t';
 		buffer.AddReadble(pos+1);
 		buffer += '\t';
-		buffer += name;
+		if(name.size()) buffer += name;
+		else buffer += '.';
 		buffer += '\t';
 		buffer.Add(alleles[0].allele, alleles[0].l_allele);
 		buffer += '\t';
@@ -295,8 +288,8 @@ public:
 			buffer += '.';
 		}
 
-		buffer += '\t';
 		if(n_fmt){
+			buffer += '\t';
 			buffer += fmt_hdr[0]->id;
 			for(int j = 1; j < n_fmt; ++j){
 				buffer += ':';
@@ -362,35 +355,152 @@ public:
 					}
 				}
 			}
-		} else {
-			buffer += '.';
 		}
 
 		buffer += '\n';
 	}
 
-	bool UpdateYonRecord(VariantHeader& header){
-		std::cerr << "NM=" << header.info_fields_[header.info_fields_map_["NM"]].id << std::endl;
-		info[n_info++] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->nm, 1);
-		info_hdr.push_back(&header.info_fields_[header.info_fields_map_["NM"]]);
-		std::cerr << "NPM=" << header.info_fields_[header.info_fields_map_["NPM"]].id << std::endl;
-		info[n_info++] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->npm, 1);
-		info_hdr.push_back(&header.info_fields_[header.info_fields_map_["NPM"]]);
-		std::cerr << "AN=" << header.info_fields_[header.info_fields_map_["AN"]].id << std::endl;
-		info[n_info++] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->an, 1);
-		info_hdr.push_back(&header.info_fields_[header.info_fields_map_["AN"]]);
-		std::cerr << "HWE_P=" << header.info_fields_[header.info_fields_map_["HWE_P"]].id << std::endl;
-		info[n_info++] = new containers::PrimitiveContainer<float>(&gt_sum->d->hwe_p, 1);
-		info_hdr.push_back(&header.info_fields_[header.info_fields_map_["HWE_P"]]);
-		if(gt_sum->d->n_ac_af > 2){
-			std::cerr << "AC=" << header.info_fields_[header.info_fields_map_["AC"]].id << std::endl;
-			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->ac, gt_sum->d->n_ac_af - 2);
-			info_hdr.push_back(&header.info_fields_[header.info_fields_map_["AC"]]);
-			std::cerr << "AF=" << header.info_fields_[header.info_fields_map_["AF"]].id << std::endl;
-			info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->af, gt_sum->d->n_ac_af - 2);
-			info_hdr.push_back(&header.info_fields_[header.info_fields_map_["AF"]]);
+	bool UpdateYonRecord(VariantHeader& header, const bool replace_existing = true){
+		if(n_info + 10 > m_info){
+			//std::cerr << "resize from " << m_info << "->" << std::max(n_info + 10, m_info + 10) << std::endl;
+			m_info = std::max(n_info + 10, m_info + 10);
+			containers::PrimitiveContainerInterface** old = info;
+			info = new containers::PrimitiveContainerInterface*[m_info];
+			for(int i = 0; i < n_info; ++i) info[i] = old[i];
+			delete [] old;
 		}
+
+		int32_t offset = GetInfoOffset("NM");
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->nm);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->nm);
+			info_hdr.push_back(header.GetInfo("NM"));
+		}
+
+		offset = GetInfoOffset("NPM");
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->npm);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->npm);
+			info_hdr.push_back(header.GetInfo("NPM"));
+		}
+
+		offset = GetInfoOffset("AN");
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->an);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->an);
+			info_hdr.push_back(header.GetInfo("AN"));
+		}
+
+		offset = GetInfoOffset("HWE_P");
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->hwe_p);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->hwe_p);
+			info_hdr.push_back(header.GetInfo("HWE_P"));
+		}
+
+		if(gt_sum->d->n_ac_af > 2){
+			offset = GetInfoOffset("AC");
+			if(offset >= 0){
+				delete info[offset];
+				info[offset] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
+			} else {
+				info[n_info++] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
+				info_hdr.push_back(header.GetInfo("AC"));
+			}
+
+			offset = GetInfoOffset("AF");
+			if(offset >= 0){
+				delete info[offset];
+				info[offset] = new containers::PrimitiveContainer<float>(&gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
+			} else {
+				info[n_info++] = new containers::PrimitiveContainer<float>(&gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
+				info_hdr.push_back(header.GetInfo("AF"));
+			}
+		}
+
+		offset = GetInfoOffset("AC_P");
+		if(offset >= 0){
+			delete info[offset];
+			containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+			info[offset] = ac_p;
+			ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
+
+			int j = 0;
+			for(uint32_t p = 0; p < n_base_ploidy; ++p){
+				for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
+					ac_p->at(j) = gt_sum->d->ac_p[p][i];
+					++(*ac_p);
+				}
+			}
+		} else {
+			containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+			info[n_info++] = ac_p;
+			info_hdr.push_back(header.GetInfo("AC_P"));
+			ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
+
+			int j = 0;
+			for(uint32_t p = 0; p < n_base_ploidy; ++p){
+				for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
+					ac_p->at(j) = gt_sum->d->ac_p[p][i];
+					++(*ac_p);
+				}
+			}
+		}
+
+		if(n_base_ploidy == 2){
+			offset = GetInfoOffset("F_PIC");
+			if(offset >= 0){
+				delete info[offset];
+				info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->f_pic);
+			} else {
+				info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->f_pic);
+				info_hdr.push_back(header.GetInfo("F_PIC"));
+			}
+
+			offset = GetInfoOffset("HET");
+			if(offset >= 0){
+				delete info[offset];
+				info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->heterozygosity);
+			} else {
+				info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->heterozygosity);
+				info_hdr.push_back(header.GetInfo("HET"));
+			}
+		}
+
+		assert(n_info == info_hdr.size());
 		return true;
+	}
+
+	containers::PrimitiveContainerInterface* GetInfo(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
+		if(it != info_map.end()) return(info[it->second]);
+		return(nullptr);
+	}
+
+	containers::PrimitiveGroupContainerInterface* GetFmt(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
+		if(it != info_map.end()) return(fmt[it->second]);
+		return(nullptr);
+	}
+
+	int32_t GetInfoOffset(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
+		if(it != info_map.end()) return(it->second);
+		return(-1);
+	}
+
+	int32_t GetFormatOffset(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
+		if(it != info_map.end()) return(it->second);
+		return(-1);
 	}
 
 public:
@@ -411,17 +521,15 @@ public:
 	std::vector<const YonFormat*> fmt_hdr;
 	std::vector<const io::VcfFilter*> flt_hdr;
 
+	std::unordered_map<std::string, uint32_t> info_map;
+	std::unordered_map<std::string, uint32_t> fmt_map;
+
 	yon_allele* alleles;
 	yon_gt* gt;
 	yon_gt_summary* gt_sum;
 	yon_occ* occ;
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
-	//containers::GenotypeContainerInterface* gt_raw;
-
-	//std::vector<int>* info_ids;
-	//std::vector<int>* fmt_ids;
-	//std::vector<int>* flt_ids;
 };
 
 }

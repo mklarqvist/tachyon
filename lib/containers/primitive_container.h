@@ -64,6 +64,9 @@ public:
 	virtual void resize(void) =0;
 	virtual void resize(const size_t new_size) =0;
 
+	inline void operator++(void){ ++this->n_entries_; }
+	void operator--(void){ if(this->n_entries_ != 0) --this->n_entries_; }
+
 	/**<
 	 * Overloaded += functions for adding new data to a
 	 * destination PrimitiveContainer. These functions have
@@ -390,6 +393,7 @@ public:
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer() :
+	PrimitiveContainerInterface(false, 0),
 	entries_(nullptr)
 {
 
@@ -398,9 +402,9 @@ PrimitiveContainer<return_type>::PrimitiveContainer() :
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const return_type value) :
+	PrimitiveContainerInterface(false, 1),
 	entries_(new return_type[1])
 {
-	this->n_entries_ = 1;
 	this->entries_[0] = value;
 }
 
