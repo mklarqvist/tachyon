@@ -197,8 +197,8 @@ public:
 	 * @param blockID
 	 * @return
 	 */
-	bool SeekBlock(const uint32_t& blockID){
-		const uint64_t offset = this->GetIndex().GetLinearIndex().at(blockID).byte_offset;
+	bool SeekBlock(const uint32_t& block_id){
+		const uint64_t offset = this->GetIndex().GetLinearIndex().at(block_id).byte_offset;
 		this->basic_reader.stream_.seekg(offset);
 		if(this->basic_reader.stream_.good() == false){
 			std::cerr << "failed to seek" << std::endl;
@@ -265,8 +265,8 @@ public:
 private:
 	// Todo:
 	// Pimpl idiom
-	//class VariantReaderImpl;
-	//std::unique_ptr<VariantReaderImpl> mImpl;
+	class VariantReaderImpl;
+	std::unique_ptr<VariantReaderImpl> mImpl;
 
 private:
 	uint64_t                b_data_start;
@@ -283,6 +283,12 @@ private:
 	keychain_type           keychain;
 	interval_container_type interval_container;
 	yon_occ                 occ_table;
+};
+
+class VariantReader::VariantReaderImpl {
+public:
+
+
 };
 
 }

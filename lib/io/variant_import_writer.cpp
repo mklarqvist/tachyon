@@ -51,7 +51,7 @@ bool VariantWriterFile::open(const std::string output){
 }
 
 void VariantWriterFile::CheckOutputNames(const std::string& input){
-	std::vector<std::string> paths = utility::filePathBaseExtension(input);
+	std::vector<std::string> paths = utility::FilePathBaseExtension(input);
 	this->basePath = paths[0];
 	if(this->basePath.size() > 0)
 		this->basePath += '/';

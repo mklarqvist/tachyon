@@ -304,8 +304,8 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 		}
 	}
 
-	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::toPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
-	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << "(" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/((uint64_t)writer->stream->tellp()) << ")" << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::ToPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::ToPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::ToPrettyDiskString((uint64_t)writer->stream->tellp()) << "(" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/((uint64_t)writer->stream->tellp()) << ")" << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "All done (" << timer.ElapsedString() << ")" << std::endl;
 
 	//delete [] consumers;
@@ -332,7 +332,7 @@ bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* 
 			const uint32_t keychain_size = writer_keychain.tellp();
 			writer_keychain.close();
 			if(!SILENT)
-				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::toPrettyDiskString(keychain_size) << "..." << std::endl;
+				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::ToPrettyDiskString(keychain_size) << "..." << std::endl;
 		}
 	}
 	return true;

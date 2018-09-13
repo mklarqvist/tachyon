@@ -8,6 +8,8 @@
 #include "occ.h"
 #include "genotypes.h"
 
+#include <cmath>
+
 namespace tachyon{
 
 const char* const REFALT_LOOKUP = "ATGC.XN";
@@ -260,7 +262,8 @@ public:
 			buffer.Add(alleles[i].allele, alleles[i].l_allele);
 		}
 		buffer += '\t';
-		buffer.AddReadble(qual);
+		if(std::isnan(qual)) buffer += '.';
+		else buffer.AddReadble(qual);
 		buffer += '\t';
 
 		if(flt_hdr.size() == 0) buffer += '.';
@@ -360,9 +363,95 @@ public:
 		buffer += '\n';
 	}
 
-	bool UpdateYonRecord(VariantHeader& header, const bool replace_existing = true){
+	bool AddInfoFlag(const std::string& tag, VariantHeader& header){
+		const YonInfo* info_tag = header.GetInfo(tag);
+		assert(info_tag != nullptr);
+
+		int32_t offset = GetInfoOffset(tag);
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<int8_t>();
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<int8_t>();
+			info_hdr.push_back(info_tag);
+		}
+		return true;
+	}
+
+	template <class int_t>
+	bool AddInfo(const std::string& tag, VariantHeader& header, int_t& data_point){
+		const YonInfo* info_tag = header.GetInfo(tag);
+		assert(info_tag != nullptr);
+
+		int32_t offset = GetInfoOffset(tag);
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<int_t>(data_point);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<int_t>(data_point);
+			info_hdr.push_back(info_tag);
+		}
+		return true;
+	}
+
+	template <class int_t>
+	bool AddInfo(const std::string& tag, VariantHeader& header, int_t* data_point, const size_t n_points){
+		const YonInfo* info_tag = header.GetInfo(tag);
+		assert(info_tag != nullptr);
+
+		int32_t offset = GetInfoOffset(tag);
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = new containers::PrimitiveContainer<int_t>(data_point, n_points);
+		} else {
+			info[n_info++] = new containers::PrimitiveContainer<int_t>(data_point, n_points);
+			info_hdr.push_back(info_tag);
+		}
+		return true;
+	}
+
+	template <class int_t>
+	bool AddInfo(const std::string& tag, VariantHeader& header, containers::PrimitiveContainer<int_t>*& container){
+		const YonInfo* info_tag = header.GetInfo(tag);
+		assert(info_tag != nullptr);
+
+		int32_t offset = GetInfoOffset(tag);
+		if(offset >= 0){
+			delete info[offset];
+			info[offset] = container;
+		} else {
+			info[n_info++] = container;
+			info_hdr.push_back(info_tag);
+		}
+		container = nullptr;
+		return true;
+	}
+
+	bool AddFilter(const std::string& tag, VariantHeader& header){
+		const io::VcfFilter* filter_tag = header.GetFilter(tag);
+		assert(filter_tag != nullptr);
+
+		int32_t offset = GetFilterOffset(tag);
+		if(offset >= 0) return true;
+		else {
+			++n_flt;
+			flt_hdr.push_back(filter_tag);
+		}
+		return true;
+	}
+
+	bool AddGenotypeStatistics(VariantHeader& header, const bool replace_existing = true){
+		if(gt_sum == nullptr){
+			std::cerr << utility::timestamp("LOG") << "Failed to update record. Genotype statistics have not been processed!" << std::endl;
+			return false;
+		}
+
+		if(gt_sum->d == nullptr){
+			std::cerr << utility::timestamp("LOG") << "Failed to update record. Genotype statistics have not been lazy evaluated!" << std::endl;
+			return false;
+		}
+
 		if(n_info + 10 > m_info){
-			//std::cerr << "resize from " << m_info << "->" << std::max(n_info + 10, m_info + 10) << std::endl;
 			m_info = std::max(n_info + 10, m_info + 10);
 			containers::PrimitiveContainerInterface** old = info;
 			info = new containers::PrimitiveContainerInterface*[m_info];
@@ -370,109 +459,34 @@ public:
 			delete [] old;
 		}
 
-		int32_t offset = GetInfoOffset("NM");
-		if(offset >= 0){
-			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->nm);
-		} else {
-			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->nm);
-			info_hdr.push_back(header.GetInfo("NM"));
-		}
-
-		offset = GetInfoOffset("NPM");
-		if(offset >= 0){
-			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->npm);
-		} else {
-			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->npm);
-			info_hdr.push_back(header.GetInfo("NPM"));
-		}
-
-		offset = GetInfoOffset("AN");
-		if(offset >= 0){
-			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->an);
-		} else {
-			info[n_info++] = new containers::PrimitiveContainer<uint32_t>(gt_sum->d->an);
-			info_hdr.push_back(header.GetInfo("AN"));
-		}
-
-		offset = GetInfoOffset("HWE_P");
-		if(offset >= 0){
-			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->hwe_p);
-		} else {
-			info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->hwe_p);
-			info_hdr.push_back(header.GetInfo("HWE_P"));
-		}
+		this->AddInfo("NM", header, gt_sum->d->nm);
+		this->AddInfo("NPM", header, gt_sum->d->npm);
+		this->AddInfo("AN", header, gt_sum->d->an);
+		this->AddInfo("HWE_P", header, gt_sum->d->hwe_p);
 
 		if(gt_sum->d->n_ac_af > 2){
-			offset = GetInfoOffset("AC");
-			if(offset >= 0){
-				delete info[offset];
-				info[offset] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
-			} else {
-				info[n_info++] = new containers::PrimitiveContainer<uint32_t>(&gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
-				info_hdr.push_back(header.GetInfo("AC"));
-			}
-
-			offset = GetInfoOffset("AF");
-			if(offset >= 0){
-				delete info[offset];
-				info[offset] = new containers::PrimitiveContainer<float>(&gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
-			} else {
-				info[n_info++] = new containers::PrimitiveContainer<float>(&gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
-				info_hdr.push_back(header.GetInfo("AF"));
-			}
+			this->AddInfo("AC", header, &gt_sum->d->ac[2], gt_sum->d->n_ac_af - 2);
+			this->AddInfo("AF", header, &gt_sum->d->af[2], gt_sum->d->n_ac_af - 2);
 		}
 
-		offset = GetInfoOffset("AC_P");
-		if(offset >= 0){
-			delete info[offset];
-			containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
-			info[offset] = ac_p;
-			ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
+		if(this->n_alleles > 2) this->AddInfoFlag("MULTI_ALLELIC", header);
 
-			int j = 0;
-			for(uint32_t p = 0; p < n_base_ploidy; ++p){
-				for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
-					ac_p->at(j) = gt_sum->d->ac_p[p][i];
-					++(*ac_p);
-				}
-			}
-		} else {
-			containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
-			info[n_info++] = ac_p;
-			info_hdr.push_back(header.GetInfo("AC_P"));
-			ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
+		// Special case for AC_P
+		containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+		ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
 
-			int j = 0;
-			for(uint32_t p = 0; p < n_base_ploidy; ++p){
-				for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
-					ac_p->at(j) = gt_sum->d->ac_p[p][i];
-					++(*ac_p);
-				}
+		int j = 0;
+		for(uint32_t p = 0; p < n_base_ploidy; ++p){
+			for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
+				ac_p->at(j) = gt_sum->d->ac_p[p][i];
+				++(*ac_p);
 			}
 		}
+		this->AddInfo("AC_P", header, ac_p);
 
 		if(n_base_ploidy == 2){
-			offset = GetInfoOffset("F_PIC");
-			if(offset >= 0){
-				delete info[offset];
-				info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->f_pic);
-			} else {
-				info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->f_pic);
-				info_hdr.push_back(header.GetInfo("F_PIC"));
-			}
-
-			offset = GetInfoOffset("HET");
-			if(offset >= 0){
-				delete info[offset];
-				info[offset] = new containers::PrimitiveContainer<float>(gt_sum->d->heterozygosity);
-			} else {
-				info[n_info++] = new containers::PrimitiveContainer<float>(gt_sum->d->heterozygosity);
-				info_hdr.push_back(header.GetInfo("HET"));
-			}
+			this->AddInfo("F_PIC", header, gt_sum->d->f_pic);
+			this->AddInfo("HET", header, gt_sum->d->heterozygosity);
 		}
 
 		assert(n_info == info_hdr.size());
@@ -491,6 +505,12 @@ public:
 		return(nullptr);
 	}
 
+	const io::VcfFilter* GetFlt(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = flt_map.find(name);
+		if(it != flt_map.end()) return(flt_hdr[it->second]);
+		return(nullptr);
+	}
+
 	int32_t GetInfoOffset(const std::string& name) const {
 		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
 		if(it != info_map.end()) return(it->second);
@@ -500,6 +520,12 @@ public:
 	int32_t GetFormatOffset(const std::string& name) const {
 		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
 		if(it != info_map.end()) return(it->second);
+		return(-1);
+	}
+
+	int32_t GetFilterOffset(const std::string& name) const {
+		std::unordered_map<std::string, uint32_t>::const_iterator it = flt_map.find(name);
+		if(it != flt_map.end()) return(it->second);
 		return(-1);
 	}
 
@@ -523,6 +549,7 @@ public:
 
 	std::unordered_map<std::string, uint32_t> info_map;
 	std::unordered_map<std::string, uint32_t> fmt_map;
+	std::unordered_map<std::string, uint32_t> flt_map;
 
 	yon_allele* alleles;
 	yon_gt* gt;

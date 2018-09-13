@@ -134,8 +134,8 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
 	// Run limits
 	const uint64_t limit = pow(2, 8*sizeof(YON_RLE_TYPE) - (base_ploidy*shift + add)) - 1;
 	uint32_t rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
-												  gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
-												  shift, add);
+	                                                   gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
+	                                                   shift, add);
 
 	// Iterate over all available samples.
 	for(uint32_t i = 1; i < this->n_samples; ++i){

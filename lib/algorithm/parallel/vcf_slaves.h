@@ -378,14 +378,14 @@ struct yon_writer_sync {
 
 		uint64_t last_pos = this->writer->stream->tellp();
 		this->writer->WriteIndex(); // Write index.
-		std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 		last_pos = this->writer->stream->tellp();
 		checksums.finalize();       // Finalize SHA-512 digests.
 		*this->writer->stream << checksums;
-		std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 		last_pos = this->writer->stream->tellp();
 		*this->writer->stream << footer; // Write global footer and EOF marker.
-		std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
+		std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
 
 		this->writer->stream->flush();
 		return(this->writer->stream->good());

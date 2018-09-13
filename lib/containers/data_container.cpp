@@ -157,7 +157,7 @@ bool DataContainer::CheckUniformity(void){
 		}
 		cumulative_position += stride_update;
 	}
-	std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	//std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;
@@ -211,14 +211,14 @@ bool DataContainer::CheckUniformity(const uint32_t n_samples){
 		}
 		cumulative_position += stride_update;
 	}
-	std::cerr << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	//std::cerr << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;
 	this->header.n_strides   = 0;
-	this->data_uncompressed.n_chars_                = stride_size * word_width;
-	this->header.data_header.uLength                = stride_size * word_width;
-	this->header.data_header.cLength                = stride_size * word_width;
+	this->data_uncompressed.n_chars_                = stride_size * word_width * n_samples;
+	this->header.data_header.uLength                = stride_size * word_width * n_samples;
+	this->header.data_header.cLength                = stride_size * word_width * n_samples;
 	this->header.data_header.controller.uniform     = true;
 	this->header.data_header.controller.mixedStride = false;
 	this->header.data_header.controller.encoder     = YON_ENCODE_NONE;

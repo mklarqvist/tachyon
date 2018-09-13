@@ -33,7 +33,6 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 		rcds[i].controller.diploid           = (gt_summary.base_ploidy == 2);
 		rcds[i].controller.gt_has_mixed_phasing = gt_summary.mixed_phasing;
 		rcds[i].controller.gt_has_missing    = (gt_summary.n_missing != 0);
-		rcds[i].controller.gt_has_na         = (gt_summary.n_vector_end != 0);
 		rcds[i].controller.gt_phase_uniform  = gt_summary.phase_if_uniform;
 		rcds[i].controller.gt_mixed_ploidy   = (gt_summary.n_vector_end != 0);
 		rcds[i].controller.gt_available      = true;

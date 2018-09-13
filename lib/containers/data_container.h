@@ -54,6 +54,8 @@ public:
 	// Accessors for the global identifier
 	inline int32_t& GetIdx(void){ return(this->header.data_header.global_key); }
 	inline const int32_t& GetIdx(void) const{ return(this->header.data_header.global_key); }
+	inline int32_t& GetGlobalKey(void){ return(this->header.data_header.global_key); }
+	inline const int32_t& GetGlobalKey(void) const{ return(this->header.data_header.global_key); }
 
 	/**<
 	 * Predicate for checking if the byte stream is encrypted or not.

@@ -286,7 +286,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 
 			if(this->GetBlockSettings().annotate_extra){
 				vc[i].EvaluateSummary(true);
-				vc[i].UpdateYonRecord(this->global_header);
+				vc[i].AddGenotypeStatistics(this->global_header);
 			}
 			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 			std::cout.write(buf.data(), buf.size());
@@ -319,7 +319,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 
 			if(this->GetBlockSettings().annotate_extra){
 				vc[i].EvaluateSummary(true);
-				vc[i].UpdateYonRecord(this->global_header);
+				vc[i].AddGenotypeStatistics(this->global_header);
 			}
 
 			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
@@ -395,7 +395,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 			if(this->GetBlockSettings().annotate_extra){
 				vc[i].EvaluateSummary(true);
-				vc[i].UpdateYonRecord(this->global_header);
+				vc[i].AddGenotypeStatistics(this->global_header);
 			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
@@ -476,7 +476,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 			if(this->GetBlockSettings().annotate_extra){
 				vc[i].EvaluateSummary(true);
-				vc[i].UpdateYonRecord(this->global_header);
+				vc[i].AddGenotypeStatistics(this->global_header);
 			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);

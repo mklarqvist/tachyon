@@ -1,15 +1,14 @@
 #include "core/genotypes.h"
 #include "compression_manager.h"
 
-#include "algorithm/compression/fastdelta.h"
-
 #include "containers/stride_container.h"
 
 namespace tachyon {
 namespace algorithm {
 
 bool CompressionManager::Compress(variant_block_type& block,
-                                  const uint8_t general_level)
+                                  const uint8_t general_level,
+                                  const uint32_t n_samples)
 {
 	zstd_codec.SetCompressionLevel(general_level);
 	zstd_codec.SetCompressionLevelData(general_level);
@@ -23,43 +22,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 	zstd_codec.SetCompressionLevel(general_level);
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-		/*
-		if(block.base_containers[i].data_uncompressed.size()){
-			if(block.base_containers[i].header.data_header.IsUniform() == false &&
-			   block.base_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B)
-			{
-				if(this->memory_basic[i].permanent_codec >= 0){
-					//std::cerr << "using permanent base" << std::endl;
-					switch(this->memory_basic[i].codec){
-						case(0): zstd_codec.Compress(block.base_containers[i]); break;
-						case(1): this->CompressCodec1(block.base_containers[i]); break;
-						case(2): this->CompressCodec2(block.base_containers[i]); break;
-						case(3): this->CompressCodec3(block.base_containers[i]); break;
-						case(4): this->CompressCodec4(block.base_containers[i]); break;
-						case(5): this->CompressDelta(block.base_containers[i]); break;
-					}
-				} else if(this->memory_basic[i].times_seen == 10){
-					//std::cerr << utility::timestamp("DEBUG") << "eval base " << YON_BLK_PRINT_NAMES[i] << std::endl;
-					this->CompressEvaluate(block.base_containers[i], this->memory_basic, i);
-					this->memory_basic[i].times_seen = 0;
-				} else {
-					//std::cerr << "reuse: " << (int)this->memory_basic[i].codec << std::endl;
-					switch(this->memory_basic[i].codec){
-						case(0): zstd_codec.Compress(block.base_containers[i]); break;
-						case(1): this->CompressCodec1(block.base_containers[i]); break;
-						case(2): this->CompressCodec2(block.base_containers[i]); break;
-						case(3): this->CompressCodec3(block.base_containers[i]); break;
-						case(4): this->CompressCodec4(block.base_containers[i]); break;
-						case(5): this->CompressDelta(block.base_containers[i]); break;
-					}
-					++this->memory_basic[i].times_seen;
-				}
-			}  else {
-				zstd_codec.Compress(block.base_containers[i]);
-			}
-		}
-		*/
-			zstd_codec.Compress(block.base_containers[i]);
+		zstd_codec.Compress(block.base_containers[i]);
 	}
 
 	for(uint32_t i = 0; i < block.footer.n_info_streams; ++i){
@@ -175,9 +138,43 @@ bool CompressionManager::Compress(variant_block_type& block,
 					}
 				}
 				*/
-				std::cerr << "Format mixed stride: " << block.format_containers[i].header.data_header.HasMixedStride() << std::endl;
 
-				zstd_codec.Compress(block.format_containers[i]);
+				/*
+				if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_16B && block.format_containers[i].header.data_header.IsSigned() == false){
+					if(this->FormatStripedDelta<uint16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
+						this->EncodeUnsignedVariableInt<uint16_t>(block.format_containers[i]);
+
+
+				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B && block.format_containers[i].header.data_header.IsSigned() == false){
+					if(this->FormatStripedDelta<uint16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
+						this->EncodeUnsignedVariableInt<uint32_t>(block.format_containers[i]);
+
+				}
+
+				else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_8B && block.format_containers[i].header.data_header.IsSigned() == false){
+					if(this->FormatStripedDelta<uint8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
+						zstd_codec.Compress(block.format_containers[i]);
+				}
+
+
+				else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B && block.format_containers[i].header.data_header.IsSigned() == true){
+					this->EncodeZigZagVariableInt32(block.format_containers[i]);
+
+				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_16B && block.format_containers[i].header.data_header.IsSigned() == true){
+					if(this->FormatStripedDelta<int16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
+					//this->EncodeZigZagVariableInt16(block.format_containers[i]);
+						this->EncodeZigZag<int16_t, uint16_t>(block.format_containers[i]);
+
+				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_8B && block.format_containers[i].header.data_header.IsSigned() == true){
+					//
+					if(this->FormatStripedDelta<int8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
+						this->EncodeZigZag<int8_t, uint8_t>(block.format_containers[i]);
+
+				}
+				else
+				*/
+					zstd_codec.Compress(block.format_containers[i]);
+
 			}
 		}
 	}

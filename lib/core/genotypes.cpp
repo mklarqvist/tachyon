@@ -1,4 +1,5 @@
 #include "genotypes.h"
+#include "math/fisher_math.h"
 
 namespace tachyon{
 
@@ -206,7 +207,6 @@ yon_gt::~yon_gt(){
 	}
 	delete [] n_occ;
 	delete [] d_occ;
-	delete itree;
 }
 
 bool yon_gt_summary::AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth){

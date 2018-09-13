@@ -30,23 +30,14 @@ std::string remove_excess_whitespace(const std::string& string);
 
 std::string timestamp(const std::string type);
 std::string timestamp(const std::string type, const std::string type2);
-inline void flushErrPointer(std::ostream& stream){ stream << "\33[2K\r\033[0m"; }
+inline void FlushErrPointer(std::ostream& stream){ stream << "\33[2K\r\033[0m"; }
 std::string datetime();
 std::string NumberThousandsSeparator(std::string number);
 
-std::string basePath(const std::string& input);
-std::string baseName(const std::string& input);
-std::string extensionName(const std::string& input);
-std::vector<std::string> filePathBaseExtension(const std::string& input);
-
-template <class T>
-T roundUp(T numToRound, int multiple){
-	if(multiple == 0) return numToRound;
-
-	int remainder = numToRound % multiple;
-	if (remainder == 0) return numToRound;
-	return numToRound + multiple - remainder;
-}
+std::string BasePath(const std::string& input);
+std::string BaseName(const std::string& input);
+std::string ExtensionName(const std::string& input);
+std::vector<std::string> FilePathBaseExtension(const std::string& input);
 
 template <class T>
 std::string ToPrettyString(const T& data){
@@ -64,7 +55,7 @@ std::string ToPrettyString(const std::vector<T>& data){
 	return ret;
 }
 
-inline std::string secondsToTimestring(const double& value){
+inline std::string SecondsToTimestring(const double& value){
 	uint32_t internalVal = value;
 	std::string retVal;
 	const uint32_t hours = internalVal / 3600;
@@ -83,7 +74,7 @@ int32_t char2int(const char& input);
 bool HexToBytes(const std::string& hex, uint8_t* target);
 
 template <class T>
-std::string toPrettyDiskString(const T value){
+std::string ToPrettyDiskString(const T value){
 	if(value > 1E9){
 		return(std::to_string((double)value/1e9) + " GB");
 	} else if(value > 1E6){

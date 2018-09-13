@@ -96,82 +96,116 @@ inline uint32_t unpermuteIntBits(char* data,
 	return size;
 }
 
-inline uint32_t permuteInt8Bits(const char* const data,
-                          const uint32_t  size,
-                          char* destination)
-{
-	if(size == 0) return 0;
-	// Balance the number of uint8_ts in the output
-	// uint8_t stream to be divisible by 32. Assert
-	// that this is true or the procedure fails.
-	const uint32_t internal_size = size + (8-size % 8); // Balance uint8_ts
-	assert(internal_size % 8 == 0);
-
-	// Interpret the dst target as unsigned char
-	// to prevent annoying signedness.
-	uint8_t* dest = reinterpret_cast<uint8_t*>(destination);
-	memset(dest, 0, internal_size); // Set all uint8_ts to 0
-	const uint8_t* const d = reinterpret_cast<const uint8_t* const>(data); // Recast as uchar
-	uint8_t* target[8]; // Bucket pointers
-	const uint32_t partition_size = internal_size / 8; // Partition size
-
-	// Assign a pointer to each bucket
-	for(uint32_t i = 0; i < 8; ++i)
-		target[7-i] = &dest[partition_size*i];
-
-	uint32_t k = 0, p = 0;
-	// Iterate over the data and  update position K for
-	// each element. When K reaches position 7 then reset
-	// to 0.
-	for(uint32_t i = 0; i < internal_size; ++i, ++k){
-		if(k == 8){ k = 0; ++p; }
-
-		// Foreach bit in byte
-		// Update target T at uint8_t position P with bit J at position K
-		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
-	}
-
-	return internal_size;
+/**
+ * Encodes an unsigned variable-length integer using the MSB algorithm.
+ * This function assumes that the value is stored as little endian.
+ * @param value The input value. Any standard integer type is allowed.
+ * @param output A pointer to a piece of reserved memory. Must have a minimum size dependent on the input size (32 bit = 5 bytes, 64 bit = 10 bytes).
+ * @return The number of bytes used in the output memory.
+ */
+template<typename int_t = uint64_t>
+size_t EncodeVarint(int_t value, uint8_t* output) {
+    size_t outputSize = 0;
+    //While more than 7 bits of data are left, occupy the last output byte
+    // and set the next byte flag
+    while (value > 127) {
+        //|128: Set the next byte flag
+        output[outputSize] = ((uint8_t)(value & 127)) | 128;
+        //Remove the seven bits we just wrote
+        value >>= 7;
+        outputSize++;
+    }
+    output[outputSize++] = ((uint8_t)value) & 127;
+    return outputSize;
+}
+/**
+ * Decodes an unsigned variable-length integer using the MSB algorithm.
+ * @param value A variable-length encoded integer of arbitrary size.
+ * @param offset Virtual stream offset in bytes.
+ */
+template<typename int_t = uint64_t>
+int_t DecodeVarint(uint8_t* input, size_t& offset) {
+    int_t ret = 0; uint8_t its = 0;
+    while(true) {
+        ret |= (input[offset] & 127) << (7 * its);
+        //If the next-byte flag is set
+        if(!(input[offset] & 128)) {
+        	++offset;
+        	break;
+        }
+        ++offset; ++its;
+    }
+    return ret;
 }
 
-inline uint32_t permuteInt16Bits(const char* const data,
-                          const uint32_t  size,
-                          char* destination)
+
+static uint64_t
+EncodeZigzag64(int64_t input)
 {
-	if(size == 0) return 0;
-	// Balance the number of uint8_ts in the output
-	// uint8_t stream to be divisible by 32. Assert
-	// that this is true or the procedure fails.
-	const uint32_t internal_size = size + (16-size % 16); // Balance uint8_ts
-	assert(internal_size % 16 == 0);
-
-	// Interpret the dst target as unsigned char
-	// to prevent annoying signedness.
-	uint8_t* dest = reinterpret_cast<uint8_t*>(destination);
-	memset(dest, 0, internal_size); // Set all uint8_ts to 0
-	const uint8_t* const d = reinterpret_cast<const uint8_t* const>(data); // Recast as uchar
-	uint8_t* target[16]; // Bucket pointers
-	const uint32_t partition_size = internal_size / 16; // Partition size
-
-	// Assign a pointer to each bucket
-	for(uint32_t i = 0; i < 16; ++i)
-		target[15-i] = &dest[partition_size*i];
-
-	uint32_t k = 0, p = 0;
-	// Iterate over the data and  update position K for
-	// each element. When K reaches position 7 then reset
-	// to 0.
-	for(uint32_t i = 0; i + 2 < internal_size; i+=2, ++k){
-		if(k == 8){ k = 0; ++p; }
-
-		// Foreach bit in uint32_t
-		// Update target T at uint8_t position P with bit J at position K
-		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
-		for(uint32_t j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
-	}
-
-	return internal_size;
+    return ((input << 1) ^ (input >> 63));
 }
+
+static int64_t
+DecodeZigzag64(uint64_t input)
+{
+    return ((input >> 1) ^ -(input & 1));
+}
+
+static uint32_t
+EncodeZigzag32(int32_t input)
+{
+    return ((input << 1) ^ (input >> 31));
+}
+
+static int32_t
+DecodeZigzag32(uint32_t input)
+{
+    return ((input >> 1) ^ -(input & 1));
+}
+
+static uint16_t
+EncodeZigzag16(int16_t input)
+{
+    return ((input << 1) ^ (input >> 15));
+}
+
+static int16_t
+DecodeZigzag16(uint16_t input)
+{
+    return ((input >> 1) ^ -(input & 1));
+}
+
+static uint8_t
+EncodeZigzag8(int8_t input)
+{
+    return ((input << 1) ^ (input >> 7));
+}
+
+static int8_t
+DecodeZigzag8(uint8_t input)
+{
+    return ((input >> 1) ^ -(input & 1));
+}
+
+static size_t
+EncodeInt64(int64_t input, uint8_t* output)
+{
+	return(EncodeVarint(EncodeZigzag64(input), output));
+}
+
+static size_t
+EncodeInt32(int32_t input, uint8_t* output)
+{
+	return(EncodeVarint(EncodeZigzag32(input), output));
+}
+
+static size_t
+EncodeInt16(int16_t input, uint8_t* output)
+{
+    return(EncodeVarint(EncodeZigzag16(input), output));
+}
+
+
 
 class CompressionContainer{
 public:

@@ -6,12 +6,9 @@
 #include "htslib/vcf.h"
 
 #include "io/basic_buffer.h"
-#include "containers/components/generic_iterator.h"
-#include "third_party/intervalTree.h"
-#include "math/fisher_math.h"
 #include "utility/support_vcf.h"
 
-namespace tachyon{
+namespace tachyon {
 
 #define YON_GT_RCD_MISS 0
 #define YON_GT_RCD_EOV  1
@@ -32,14 +29,13 @@ namespace tachyon{
 // 4:  d_bcf_ppa
 // 8:  d_exp
 // 16: d_occ
-#define YON_GT_UN_NONE       0       // nothing
-#define YON_GT_UN_RCDS       1       // rcds
-#define YON_GT_UN_BCF        (2|YON_GT_UN_RCDS) // bcf
-#define YON_GT_UN_BCF_PPA    (4|YON_GT_UN_BCF)  // bcf unpermuted
-#define YON_GT_UN_EXPAND     (8|YON_GT_UN_RCDS) // bcf unpermuted
-#define YON_GT_UN_OCC       (16|YON_GT_UN_RCDS) // bcf unpermuted
-#define YON_GT_UN_TREE      (32|YON_GT_UN_RCDS) // bcf unpermuted
-#define YON_GT_UN_ALL       (YON_GT_UN_RCDS|YON_GT_UN_EXPAND) // everything
+#define YON_GT_UN_NONE        0 // nothing
+#define YON_GT_UN_RCDS        1 // basic rcds
+#define YON_GT_UN_BCF        (2|YON_GT_UN_RCDS) // convert into bcf-style
+#define YON_GT_UN_BCF_PPA    (4|YON_GT_UN_BCF)  // convert into bcf-style in-order
+#define YON_GT_UN_EXPAND     (8|YON_GT_UN_RCDS) // expand rcds into entries
+#define YON_GT_UN_OCC       (16|YON_GT_UN_RCDS) // calculate rcds for each factor
+#define YON_GT_UN_ALL       (YON_GT_UN_EXPAND|YON_GT_UN_OCC) // everything
 
 // 0 for missing and 1 for sentinel node. Note that the
 // sentinel node never occurs in this encoding type.
@@ -142,7 +138,7 @@ public:
     yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
                n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
 			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_occ(nullptr), d_occ(nullptr),
-			   itree(nullptr), dirty(false)
+			   dirty(false)
     {}
 
     ~yon_gt();
@@ -424,35 +420,6 @@ public:
 		return true;
 	}
 
-	bool EvaluateIntervalTree(void){
-		if((this->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = this->Evaluate();
-			if(eval == false) return false;
-		}
-
-		if(this->eval_cont & YON_GT_UN_TREE)
-			return true;
-
-		assert(this->rcds != nullptr);
-		if(this->itree != nullptr) delete this->itree;
-
-		std::vector< algorithm::Interval<uint32_t, yon_gt_rcd*> > intervals;
-		uint64_t cum_pos = 0;
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			intervals.push_back(algorithm::Interval<uint32_t, yon_gt_rcd*>(
-					cum_pos,
-					cum_pos + this->rcds[i].run_length,
-					&this->rcds[i])
-				);
-			cum_pos += this->rcds[i].run_length;
-		}
-		this->itree = new algorithm::IntervalTree<uint32_t, yon_gt_rcd*>(std::move(intervals));
-
-		assert(cum_pos == this->n_s);
-		this->eval_cont |= YON_GT_UN_TREE;
-		return true;
-	}
-
 	/**<
 	 * Lazy evaluated (expands) (possibly) run-length encoded rcds structures
 	 * into a vector of pointers corresponding to distinct samples in the order
@@ -654,7 +621,6 @@ public:
     yon_gt_rcd* rcds; // lazy interpreted internal records
     uint32_t* n_occ;
     yon_gt_rcd** d_occ; // lazy evaluation of occ table
-    algorithm::IntervalTree<uint32_t, yon_gt_rcd*>* itree; // interval tree for consecutive ranges
     bool dirty;
 };
 
@@ -775,8 +741,9 @@ public:
 	double CalculateHardyWeinberg(void) const;
 
 	/**<
-	 *
-	 * @return
+	 * Lazy evaluates the current data in this object into easy-to-use
+	 * elements of the yon_gt_summary_rcd structure.
+	 * @return Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool LazyEvaluate(void);
 
@@ -788,20 +755,23 @@ public:
 	yon_gt_summary_rcd* d; // lazy evaluated record
 };
 
-
+/**<
+ * Primary bit-packed controller for a yon1_vnt_t record. Keeps track
+ * of a variety of essential boolean fields required for the proper
+ * functioning of tachyon.
+ */
 struct yon_vnt_cnt {
 	yon_vnt_cnt(void) :
 		gt_available(0),
 		gt_has_missing(0),
 		gt_phase_uniform(0),
-		gt_has_na(0),
 		gt_has_mixed_phasing(0),
 		gt_compression_type(0),
 		gt_primtive_type(0),
+		gt_mixed_ploidy(0),
 		biallelic(0),
 		simple_snv(0),
 		diploid(0),
-		gt_mixed_ploidy(0),
 		alleles_packed(0),
 		all_snv(0)
 	{
@@ -819,17 +789,16 @@ struct yon_vnt_cnt {
 
 	void operator=(const uint16_t& value){
 		const yon_vnt_cnt* const other = reinterpret_cast<const yon_vnt_cnt* const>(&value);
-		this->gt_available     = other->gt_available;
+		this->gt_available      = other->gt_available;
 		this->gt_has_missing    = other->gt_has_missing;
-		this->gt_phase_uniform         = other->gt_phase_uniform;
-		this->gt_has_na         = other->gt_has_na;
+		this->gt_phase_uniform  = other->gt_phase_uniform;
 		this->gt_has_mixed_phasing = other->gt_has_mixed_phasing;
-		this->gt_compression_type = other->gt_compression_type;
+		this->gt_compression_type  = other->gt_compression_type;
 		this->gt_primtive_type = other->gt_primtive_type;
+		this->gt_mixed_ploidy  = other->gt_mixed_ploidy;
 		this->biallelic        = other->biallelic;
 		this->simple_snv       = other->simple_snv;
 		this->diploid          = other->diploid;
-		this->gt_mixed_ploidy     = other->gt_mixed_ploidy;
 		this->alleles_packed   = other->alleles_packed;
 		this->all_snv          = other->all_snv;
 	}
@@ -857,16 +826,16 @@ struct yon_vnt_cnt {
 		gt_available:        1, // if there is any GT data
 		gt_has_missing:      1, // any missing
 		gt_phase_uniform:    1, // all phased/unphased
-		gt_has_na:           1, // any NA
 		gt_has_mixed_phasing:1, // has mixed phasing
-		gt_compression_type: 3, // GT compression algorithm
+		gt_compression_type: 4, // GT compression algorithm
 		gt_primtive_type:    2, // type of compression primitive (unsinged integer types)
+		gt_mixed_ploidy:     1, // has mixed ploidy (have a sentinel node symbol)
 		biallelic:           1, // is biallelic
 		simple_snv:          1, // is simple SNV->SNV
 		diploid:             1, // is diploid
-		gt_mixed_ploidy:     1, // has mixed ploidy (have a sentinel node symbol)
 		alleles_packed:      1, // are the alleles packed in a BYTE
 		all_snv:             1; // are all ref/alt simple SNVs
+
 };
 
 }

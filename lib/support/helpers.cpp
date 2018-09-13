@@ -106,14 +106,14 @@ std::string timestamp(const std::string type, const std::string type2){
 	return(ret.str());
 }
 
-std::string basePath(const std::string& input){
+std::string BasePath(const std::string& input){
 	size_t found = input.find_last_of("/\\");
 	if(found != std::string::npos)
 		return(input.substr(0, found));
 	else return std::string();
 }
 
-std::string baseName(const std::string& input){
+std::string BaseName(const std::string& input){
 	size_t found = input.find_last_of("/\\");
 	if(found == std::string::npos)
 		found = -1;
@@ -121,8 +121,8 @@ std::string baseName(const std::string& input){
 	return(input.substr(found+1, input.size()));
 }
 
-std::string extensionName(const std::string& input){
-	std::string base = baseName(input);
+std::string ExtensionName(const std::string& input){
+	std::string base = BaseName(input);
 	size_t foundDot = base.rfind('.');
 	if(foundDot == std::string::npos)
 		foundDot = base.size() - 1;
@@ -131,11 +131,11 @@ std::string extensionName(const std::string& input){
 }
 
 
-std::vector<std::string> filePathBaseExtension(const std::string& input){
+std::vector<std::string> FilePathBaseExtension(const std::string& input){
 	std::vector<std::string> ret;
 
-	const std::string base = baseName(input);
-	ret.push_back(basePath(input));
+	const std::string base = BaseName(input);
+	ret.push_back(BasePath(input));
 	ret.push_back(base);
 
 	size_t foundDot = base.rfind('.');
@@ -147,7 +147,7 @@ std::vector<std::string> filePathBaseExtension(const std::string& input){
 		ret.push_back(base.substr(foundDot+1, base.size()));
 	}
 
-	ret.push_back(extensionName(input));
+	ret.push_back(ExtensionName(input));
 	return(ret);
 }
 
