@@ -25,7 +25,7 @@ bool yon_occ::ReadTable(const std::string file_name,
 		// Assert that the first column is an existing sample name.
 		const int32_t sample_id = header.GetSampleId(params[0]);
 		if(sample_id < 0){
-			std::cerr << utility::timestamp("LOG") << "Cannot find sample \"" << params[0] << "\" in groupings file..." << std::endl;
+			std::cerr << utility::timestamp("WARNING") << "Cannot find sample \"" << params[0] << "\" in groupings file..." << std::endl;
 			continue;
 		}
 
@@ -65,6 +65,7 @@ bool yon_occ::BuildTable(void){
 
 		this->cum_sums[i] = this->occ[i].back();
 	}
+
 	return true;
 }
 
@@ -87,6 +88,7 @@ bool yon_occ::BuildTable(const yon_gt_ppa& ppa){
 		assert(this->occ[i][0] == 0);
 		this->cum_sums[i] = this->occ[i].back();
 	}
+
 	return true;
 }
 

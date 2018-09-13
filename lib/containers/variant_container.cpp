@@ -45,15 +45,10 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
 	}
 
-	std::cerr << "before filter" << std::endl;
 	this->AddFilter(variant_block, header);
-	std::cerr << "before infor" << std::endl;
 	this->AddInfo(variant_block, header);
-	std::cerr << "before format" << std::endl;
 	this->AddFormat(variant_block, header);
-	std::cerr << "before permute order" << std::endl;
 	this->PermuteOrder(variant_block);
-	std::cerr << "all done" << std::endl;
 
 	return true;
 }
@@ -75,7 +70,7 @@ bool VariantContainer::PermuteOrder(const containers::VariantBlock& variant_bloc
 		local_info_patterns[i].resize(internal.size());
 		for(int j = 0; j < internal.size(); ++j){
 			local_info_patterns[i][internal[j].second] = j;
-			std::cerr << "local info now: " << internal[j].second << "=" << j << std::endl;
+			//std::cerr << "local info now: " << internal[j].second << "=" << j << std::endl;
 		}
 	}
 
@@ -90,7 +85,7 @@ bool VariantContainer::PermuteOrder(const containers::VariantBlock& variant_bloc
 		local_format_patterns[i].resize(internal.size());
 		for(int j = 0; j < internal.size(); ++j){
 			local_format_patterns[i][internal[j].second] = j;
-			std::cerr << "local format now: " << internal[j].second << "=" << j << std::endl;
+			//std::cerr << "local format now: " << internal[j].second << "=" << j << std::endl;
 		}
 	}
 
@@ -135,7 +130,7 @@ bool VariantContainer::AddInfo(containers::VariantBlock& variant_block, const Va
 		// described in the data container footer.
 		std::vector<bool> matches = variant_block.InfoPatternSetMembership(variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].header.GetGlobalKey());
 		// Add Info data.
-		std::cerr << "Adding info: " << variant_block.load_settings->info_id_local_loaded[i] << "->" << variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx() << "->" << header.info_fields_[variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx()].id << std::endl;
+		//std::cerr << "Adding info: " << variant_block.load_settings->info_id_local_loaded[i] << "->" << variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx() << "->" << header.info_fields_[variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx()].id << std::endl;
 		this->AddInfoWrapper(variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]], header, matches);
 	}
 	return true;
@@ -156,7 +151,7 @@ bool VariantContainer::AddFilter(containers::VariantBlock& variant_block, const 
 
 bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const VariantHeader& header){
 	if(variant_block.load_settings->format_id_local_loaded.size() == 0 && variant_block.load_settings->loaded_genotypes){
-		std::cerr << "adding genotypes when no other fmt is loaded" << std::endl;
+		//std::cerr << "adding genotypes when no other fmt is loaded" << std::endl;
 		// Add genotypes.
 		this->AddGenotypes(variant_block, header);
 
@@ -179,7 +174,7 @@ bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const 
 		// If genotype data has been loaded.
 		containers::DataContainer& dc = variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]];
 		if(header.format_fields_[dc.GetGlobalKey()].id == "GT"){
-			std::cerr << "adding format" << std::endl;
+			//std::cerr << "adding format" << std::endl;
 			assert(variant_block.load_settings->loaded_genotypes);
 			std::vector<bool> matches = variant_block.FormatPatternSetMembership(dc.GetGlobalKey());
 
@@ -209,7 +204,7 @@ bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const 
 		// described in the data container footer.
 		std::vector<bool> matches = variant_block.FormatPatternSetMembership(dc.GetGlobalKey());
 		// Add Format data.
-		std::cerr << "Adding format: " << variant_block.load_settings->format_id_local_loaded[i] << "->" << dc.GetIdx() << "->" << header.format_fields_[dc.GetIdx()].id << std::endl;
+		//std::cerr << "Adding format: " << variant_block.load_settings->format_id_local_loaded[i] << "->" << dc.GetIdx() << "->" << header.format_fields_[dc.GetIdx()].id << std::endl;
 		this->AddFormatWrapper(dc, header, matches);
 	}
 	return true;
@@ -231,7 +226,7 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 	}
 
 	if(container.data_uncompressed.size() == 0){
-		std::cerr << "info no data return" << std::endl;
+		//std::cerr << "info no data return" << std::endl;
 		return false;
 	}
 

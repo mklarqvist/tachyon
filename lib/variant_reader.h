@@ -50,7 +50,6 @@ public:
 	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef Keychain                               keychain_type;
 	typedef containers::VariantBlock               block_entry_type;
-	typedef containers::GenotypeContainer          gt_container_type;
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;

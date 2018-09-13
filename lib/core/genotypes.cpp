@@ -205,7 +205,7 @@ yon_gt::~yon_gt(){
 		for(uint32_t i = 0; i < this->n_o; ++i)
 			delete [] d_occ[i];
 	}
-	delete [] n_occ;
+	delete [] n_i_occ;
 	delete [] d_occ;
 }
 
@@ -243,6 +243,35 @@ yon_gt_summary& yon_gt_summary::operator+=(const yon_gt& gt){
 		for(uint32_t j = 1; j < gt.m; ++j){
 			target = &target->children[gt.rcds[i].allele[j] >> 1];
 			target->n_cnt += gt.rcds[i].run_length;
+		}
+	}
+	return(*this);
+}
+
+yon_gt_summary& yon_gt_summary::Add(const yon_gt& gt, const uint32_t n_items, const yon_gt_rcd* rcds){
+	assert(rcds != nullptr);
+
+	// Iterate over available genotype records.
+	uint32_t n_total_rle = 0;
+	for(uint32_t i = 0; i < n_items; ++i){
+		// Target root node.
+		yon_gt_summary_obj* target = &this->gt[rcds[i].allele[0] >> 1];
+		target->n_cnt += rcds[i].run_length;
+
+		// Iterate over alleles given the base ploidy.
+		for(uint32_t j = 0; j < gt.m; ++j){
+			assert((rcds[i].allele[j] >> 1) < this->n_alleles);
+			// Add allelic counts.
+			this->alleles[rcds[i].allele[j] >> 1] += rcds[i].run_length;
+			// Add strand-specific (ploidy-aware) alleleic counts.
+			this->alleles_strand[j][rcds[i].allele[j] >> 1] += rcds[i].run_length;
+			n_total_rle += rcds[i].run_length;
+		}
+
+		// Update remainder.
+		for(uint32_t j = 1; j < gt.m; ++j){
+			target = &target->children[rcds[i].allele[j] >> 1];
+			target->n_cnt += rcds[i].run_length;
 		}
 	}
 	return(*this);
@@ -483,7 +512,7 @@ bool yon_gt_summary::LazyEvaluate(void){
 	this->d->nm  = n_total;
 	this->d->an  = n_total + this->d->ac[0];
 	this->d->hwe_p = this->CalculateHardyWeinberg();
-	this->d->ac_p = this->alleles_strand;
+	this->d->ac_p  = this->alleles_strand;
 
 	// Strand-specific bias and inbreeding coefficient (F-statistic)
 	if(this->n_ploidy == 2){

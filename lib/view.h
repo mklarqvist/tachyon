@@ -310,7 +310,6 @@ int view(int argc, char** argv){
 		reader.GetBlockSettings().annotate_extra = true;
 		reader.GetBlockSettings().LoadGenotypes(true).LoadMinimumVcf(true);
 		if(settings.drop_format) reader.GetBlockSettings().DisplayWrapper(false, YON_BLK_BV_GT);
-		reader.GetGlobalHeader().AddGenotypeAnnotationFields();
 	}
 
 	if(filters.HasRequireGenotypes()){

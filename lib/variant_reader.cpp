@@ -270,23 +270,26 @@ bool VariantReader::LoadKeychainFile(void){
 
 uint64_t VariantReader::OutputVcfLinear(void){
 	this->variant_container.AllocateGenotypeMemory();
-	// temp
-	//if(this->occ_table.ReadTable("/media/mdrk/NVMe/1kgp3/populations/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
-	//	return(0);
-	//}
 
 	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
+		if(this->GetBlockSettings().annotate_extra)
+			this->occ_table.BuildTable(*this->variant_container.GetBlock().gt_ppa);
+
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
 			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
 				vc[i].EvaluateSummary(true);
 				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
 			std::cout.write(buf.data(), buf.size());
@@ -339,13 +342,24 @@ uint64_t VariantReader::OutputRecords(void){
 	if(this->settings.keychain_file.size())
 		this->LoadKeychainFile();
 
+	// temp
+	if(this->occ_table.ReadTable("/home/mk21/Downloads/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
+		return(0);
+	}
+
+	if(this->settings.annotate_genotypes)
+		this->GetGlobalHeader().AddGenotypeAnnotationFields();
+
+	// temp
+	this->global_header.AddGenotypeAnnotationFields(this->occ_table.row_names);
+
+	if(this->GetBlockSettings().show_vcf_header)
+		this->global_header.PrintVcfHeader(std::cout);
+
 	if(this->settings.use_htslib){
 		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());
 		else return(this->OutputHtslibVcfLinear());
 	}
-
-	if(this->GetBlockSettings().show_vcf_header)
-		this->global_header.PrintVcfHeader(std::cout);
 
 	if(this->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
@@ -388,14 +402,21 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
+		if(this->GetBlockSettings().annotate_extra)
+			this->occ_table.BuildTable(*this->variant_container.GetBlock().gt_ppa);
+
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(this->variant_filters.Filter(vc[i], i) == false)
 				continue;
 
 			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
 				vc[i].EvaluateSummary(true);
 				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);

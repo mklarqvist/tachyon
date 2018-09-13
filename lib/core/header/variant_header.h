@@ -393,6 +393,7 @@ public:
 	hts_vcf_header* ConvertVcfHeader(const bool add_format = true);
 
 	void AddGenotypeAnnotationFields(void);
+	void AddGenotypeAnnotationFields(const std::vector<std::string>& group_names);
 
 	// Append a string to the literal string
 	inline void AppendLiteralString(const std::string& literal_addition){ this->literals_ += literal_addition; }

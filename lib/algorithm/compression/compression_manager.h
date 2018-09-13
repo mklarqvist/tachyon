@@ -28,6 +28,93 @@ public:
 	bool Decompress(container_type& container, yon_gt_ppa& gt_ppa);
 
 	template <class in_int_t, class out_int_t, class out_uint_t>
+	bool FormatHorizontalDelta(container_type& container, const uint32_t n_samples){
+		containers::StrideContainer<> s(container);
+		const in_int_t* src = reinterpret_cast<const in_int_t*>(container.data_uncompressed.data());
+		const uint32_t n_entries = container.data_uncompressed.size() / sizeof(in_int_t);
+		assert(container.data_uncompressed.size() % sizeof(in_int_t) == 0);
+
+		io::BasicBuffer dst_buffer(n_entries*sizeof(out_uint_t) + 65536);
+		out_uint_t* dst = reinterpret_cast<out_uint_t*>(dst_buffer.data());
+
+		uint32_t offset = 0;
+		const uint8_t shift = sizeof(out_int_t)*8 - 1;
+
+		// Iterate over available entries.
+		uint32_t last_stride = s[0];
+		uint32_t skips = 0;
+		const uint32_t ref_stride = s[0];
+		for(int i = 0; i < s.size(); ++i){
+			bool perform_check = false;
+			if(s[i] == ref_stride){
+				perform_check = true;
+			} else {
+				skips += n_samples*s[i];
+			}
+
+			const uint32_t n_width  = n_samples*s[i]; // n_entries in row
+			const in_int_t* l_src = &src[offset]; // current src data
+			out_uint_t* l_dst = &dst[offset]; // current src data
+
+			if(perform_check && i != 0){
+				//std::cerr << "perfomring check" << std::endl;
+				// Iterate over stride
+				uint32_t l_offset = 0;
+				for(int j = 0; j < n_samples; ++j){
+					// Iterate over current stride.
+					for(int bucket = 0; bucket < s[i]; ++bucket){
+						// Compute prefix sum by looking at n_samples*s[i] into the past.
+						//std::cerr << "check: " << (int)src[offset + l_offset] << " and " << (int)src[((int)offset + l_offset) - n_width] << "=" << (int)(out_int_t)src[offset + l_offset] - (out_int_t)src[(offset + l_offset) - n_width] << std::endl;
+						out_int_t delta = (out_int_t)src[offset + l_offset] - (out_int_t)src[(offset + l_offset) - (n_width + skips)];
+						l_dst[l_offset] = out_uint_t((delta << 1) ^ (delta >> shift));
+						++l_offset;
+					}
+				}
+				assert(l_offset == n_width);
+				skips = 0;
+
+			} else {
+				//std::cerr << "no checks done copying data: " << s[i] << "/" << last_stride << "@" << i << std::endl;
+				for(int j = 0; j < n_width; ++j)
+					l_dst[j] = l_src[j];
+			}
+			last_stride = s[i];
+			offset += n_width;
+		}
+
+		assert(offset == n_entries);
+		const uint32_t b_original = container.data_uncompressed.size();
+		dst_buffer.n_chars_ = n_entries*sizeof(out_int_t);
+		assert(dst_buffer.n_chars_ > container.data_uncompressed.size());
+
+		/*
+		std::cout << "original:" << std::endl;
+		for(int i = 0; i < n_entries; ++i){
+			std::cout << "," << (int)src[i];
+		}
+		std::cout << std::endl;
+		std::cout << "delta:" << std::endl;
+		for(int i = 0; i < n_entries; ++i){
+			std::cout << "," << (int)dst[i];
+		}
+		std::cout << std::endl;
+		exit(1);
+		*/
+
+		zstd_codec.Compress(container);
+		std::cerr << utility::timestamp("DEBUG") << "zstd-fDdelta-" << sizeof(in_int_t)*8 << "-default: " <<  container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
+		const uint32_t std_size = container.data.size();
+
+		io::BasicBuffer ubackup; ubackup = std::move(container.data_uncompressed);
+		//io::BasicBuffer cbackup; cbackup = std::move(container.data);
+
+		container.data_uncompressed = std::move(dst_buffer);
+		zstd_codec.Compress(container);
+		std::cerr << utility::timestamp("DEBUG") << "zstd-fDdelta-" << sizeof(in_int_t)*8 << ": " << b_original << "->" << container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
+		return true;
+	}
+
+	template <class in_int_t, class out_int_t, class out_uint_t>
 	bool FormatStripedDelta(container_type& container, const uint32_t n_samples){
 		containers::StrideContainer<> s(container);
 		const in_int_t* src = reinterpret_cast<const in_int_t*>(container.data_uncompressed.data());
@@ -48,8 +135,7 @@ public:
 			// First
 			uint32_t l_offset = 0;
 			for(int stride = 0; stride < s[i]; ++stride){
-				// Transpose data.
-				dst[l_offset] = l_src[l_offset];
+				l_dst[l_offset] = l_src[l_offset];
 				++l_offset;
 			}
 
@@ -58,18 +144,19 @@ public:
 				// Iterate over current stride.
 				for(int bucket = 0; bucket < s[i]; ++bucket){
 					// Compute prefix sum.
-					out_int_t a = (out_int_t)l_src[l_offset] - (out_int_t)l_src[l_offset - s[i]];
-					dst[l_offset] = out_uint_t((a << 1) ^ (a >> shift));
+					out_int_t delta = (out_int_t)l_src[l_offset] - (out_int_t)l_src[l_offset - s[i]];
+					l_dst[l_offset] = out_uint_t((delta << 1) ^ (delta >> shift));
 					++l_offset;
 				}
 			}
+
 			assert(l_offset == n_width);
 			offset += n_width;
 		}
 		assert(offset == n_entries);
 		const uint32_t b_original = container.data_uncompressed.size();
 		dst_buffer.n_chars_ = n_entries*sizeof(out_int_t);
-		assert(dst_buffer.n_chars_ > container.data_uncompressed.size());
+		//assert(dst_buffer.n_chars_ > container.data_uncompressed.size());
 
 		zstd_codec.Compress(container);
 		std::cerr << utility::timestamp("DEBUG") << "zstd-fdelta-" << sizeof(in_int_t)*8 << "-default: " <<  container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
@@ -82,7 +169,7 @@ public:
 		zstd_codec.Compress(container);
 		std::cerr << utility::timestamp("DEBUG") << "zstd-fdelta-" << sizeof(in_int_t)*8 << ": " << b_original << "->" << container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
 
-		if((float)b_original/container.data.size() < 10){
+		if((float)b_original/container.data.size() < 5){
 			if(sizeof(in_int_t) == 1){
 				if(container.data.size() < std_size)
 					return true;
@@ -90,6 +177,8 @@ public:
 			std::cerr << utility::timestamp("DEBUG") << "Attempt backup..." << std::endl;
 			container.data_uncompressed = std::move(ubackup);
 			return false;
+		} else {
+			std::cerr << utility::timestamp("LOG","COMPRESSION") << "Delta: " << (float)b_original/container.data.size() << std::endl;
 		}
 
 
@@ -204,8 +293,18 @@ public:
 			uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
 
 			const uint8_t shift = sizeof(int_t)*8 - 1;
-			for(int i = 0; i < n_entries; ++i)
+			for(int i = 0; i < n_entries; ++i){
+				// If debugging:
+				/*
+				uint_t a = ((data[i] << 1) ^ (data[i] >> shift));
+				int_t  b = (a >> 1) ^ -(a & 1);
+				if(data[i] != b){
+					std::cerr << i << " Error: input=" << (int)data[i] << "!=" << (int)b << std::endl;
+					exit(1);
+				}
+				*/
 				buf += (uint_t)((data[i] << 1) ^ (data[i] >> shift));
+			}
 
 			buf.n_chars_ = container.data_uncompressed.size();
 

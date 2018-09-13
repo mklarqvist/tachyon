@@ -16,25 +16,41 @@ bool yon1_vnt_t::EvaluateSummary(bool lazy_evaluate){
 	return true;
 }
 
-bool yon1_vnt_t::EvaluateOcc(){
+bool yon1_vnt_t::EvaluateOccSummary(bool lazy_evaluate){
 	assert(this->gt != nullptr);
-	assert(occ != nullptr);
+	assert(this->gt->rcds != nullptr);
 
-	this->gt->n_o   = occ->occ.size();
-	this->gt->n_occ = new uint32_t[this->gt->n_o];
-	this->gt->d_occ = new yon_gt_rcd*[this->gt->n_o];
+	if(this->gt_sum_occ != nullptr)
+		return true;
+
+	this->gt_sum_occ = new yon_gt_summary[this->gt->n_o];
+	for(int i = 0; i < this->gt->n_o; ++i){
+		this->gt_sum_occ[i].Setup(this->gt->m, this->gt->n_allele);
+		this->gt_sum_occ[i].Add(*this->gt, this->gt->n_i_occ[i], this->gt->d_occ[i]);
+		if(lazy_evaluate) this->gt_sum_occ[i].LazyEvaluate();
+	}
+
+	return true;
+}
+
+bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
+	assert(this->gt != nullptr);
+
+	this->gt->n_o     = occ.occ.size();
+	this->gt->n_i_occ = new uint32_t[this->gt->n_o];
+	this->gt->d_occ   = new yon_gt_rcd*[this->gt->n_o];
 
 	for(uint32_t i = 0; i < this->gt->n_o; ++i){
 		this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
 
-		uint32_t cum_sum  = 0; // Total cumulative genotypes observed.
+		uint32_t cum_sum     = 0; // Total cumulative genotypes observed.
 		uint32_t cum_sum_hit = 0; // Number of non-zero runs observed.
-		uint32_t n_offset = 0; // Virtual offset in destination array.
+		uint32_t n_offset    = 0; // Virtual offset in destination array.
 
 		// Iterate over available gt rcds.
 		for(uint32_t j = 0; j < this->gt->n_i; ++j){
-			const uint32_t to   = this->occ->occ[i][cum_sum + this->gt->rcds[j].run_length];
-			const uint32_t from = this->occ->occ[i][cum_sum];
+			const uint32_t to   = occ.occ[i][cum_sum + this->gt->rcds[j].run_length];
+			const uint32_t from = occ.occ[i][cum_sum];
 			if(to - from != 0){
 				// Allocate memory for alleles.
 				this->gt->d_occ[i][n_offset].allele = new uint8_t[this->gt->m];
@@ -53,8 +69,8 @@ bool yon1_vnt_t::EvaluateOcc(){
 			cum_sum += this->gt->rcds[j].run_length;
 		}
 		assert(cum_sum == this->gt->n_s);
-		assert(cum_sum_hit == this->occ->cum_sums[i]);
-		this->gt->n_occ[i] = n_offset;
+		assert(cum_sum_hit == occ.cum_sums[i]);
+		this->gt->n_i_occ[i] = n_offset;
 	}
 	return(true);
 }

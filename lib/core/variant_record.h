@@ -67,14 +67,15 @@ public:
 		n_flt(0), n_fmt(0), n_info(0), info_pid(-1), flt_pid(-1), fmt_pid(-1),
 		m_fmt(0), m_info(0), m_allele(0),
 		qual(NAN), rid(0), pos(0),
-		alleles(nullptr), gt(nullptr), gt_sum(nullptr), occ(nullptr),
+		alleles(nullptr), gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
 		info(nullptr), fmt(nullptr) //gt_raw(nullptr),
 		//info_ids(nullptr), fmt_ids(nullptr), flt_ids(nullptr)
 	{}
 
 	~yon1_vnt_t(){
 		delete [] alleles;
-		delete gt, gt_sum, occ;
+		delete gt, gt_sum;
+		delete [] gt_sum_occ;
 		for(int i = 0; i < n_info; ++i) delete info[i];
 		for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
 		delete [] info; delete [] fmt; //delete gt_raw;
@@ -82,7 +83,8 @@ public:
 	}
 
 	bool EvaluateSummary(bool lazy_evaluate = true);
-	bool EvaluateOcc();
+	bool EvaluateOcc(yon_occ& occ);
+	bool EvaluateOccSummary(bool lazy_evaluate = true);
 
 	bool UpdateBase(const bcf1_t* record){
 		n_alleles = record->n_allele;
@@ -493,6 +495,123 @@ public:
 		return true;
 	}
 
+	bool AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names){
+		if(n_info + names.size()*10 > m_info){
+			m_info += names.size()*10;
+			containers::PrimitiveContainerInterface** old = info;
+			info = new containers::PrimitiveContainerInterface*[m_info];
+			for(int i = 0; i < n_info; ++i) info[i] = old[i];
+			delete [] old;
+		}
+
+		//EvaluatePopGenOcc();
+
+		for(int i = 0; i < names.size(); ++i){
+			this->AddInfo(names[i]+"_NM", header, gt_sum_occ[i].d->nm);
+			this->AddInfo(names[i]+"_NPM", header, gt_sum_occ[i].d->npm);
+			this->AddInfo(names[i]+"_AN", header, gt_sum_occ[i].d->an);
+			this->AddInfo(names[i]+"_HWE_P", header, gt_sum_occ[i].d->hwe_p);
+
+			if(gt_sum_occ[i].d->n_ac_af > 2){
+				this->AddInfo(names[i]+"_AC", header, &gt_sum_occ[i].d->ac[2], gt_sum_occ[i].d->n_ac_af - 2);
+				this->AddInfo(names[i]+"_AF", header, &gt_sum_occ[i].d->af[2], gt_sum_occ[i].d->n_ac_af - 2);
+			}
+
+			if(this->n_alleles > 2) this->AddInfoFlag(names[i]+"_MULTI_ALLELIC", header);
+
+			// Special case for AC_P
+			containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+			ac_p->resize(n_base_ploidy * (gt_sum_occ[i].d->n_ac_af - 2));
+
+			int j = 0;
+			for(uint32_t p = 0; p < n_base_ploidy; ++p){
+				for(uint32_t k = 2; k < gt_sum_occ[i].d->n_ac_af; ++k, ++j){
+					ac_p->at(j) = gt_sum_occ[i].d->ac_p[p][k];
+					++(*ac_p);
+				}
+			}
+			this->AddInfo(names[i]+"_AC_P", header, ac_p);
+
+			if(n_base_ploidy == 2){
+				this->AddInfo(names[i]+"_F_PIC", header, gt_sum_occ[i].d->f_pic);
+				this->AddInfo(names[i]+"_HET", header, gt_sum_occ[i].d->heterozygosity);
+			}
+		}
+
+		assert(n_info == info_hdr.size());
+		return true;
+	}
+
+	// Todo: incorrect result
+	bool EvaluatePopGenOcc(void){
+		if(this->gt == nullptr) return false;
+		if(this->gt->n_o == 0) return false;
+
+		const uint32_t n_gt_all = this->gt_sum->gt[2][2].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt + this->gt_sum->gt[3][3].n_cnt;
+
+		float* obs = new float[this->gt->n_o];
+		float* exp = new float[this->gt->n_o];
+		uint32_t* n_s = new uint32_t[this->gt->n_o];
+
+		for(int i = 0; i < this->gt->n_o; ++i){
+			const uint32_t het  = this->gt_sum_occ[i].gt[2][3].n_cnt + this->gt_sum_occ[i].gt[3][2].n_cnt;
+			const uint32_t n_gt = het + this->gt_sum_occ[i].gt[2][2].n_cnt + this->gt_sum_occ[i].gt[3][3].n_cnt;
+
+			const float p   = (2*(float)this->gt_sum_occ[i].gt[2][2].n_cnt + het) / (2*n_gt);
+			const float pq2 = 2*p*(1-p);
+
+			// F = (Hexp - Hobs) / Hexp
+			const float Hobs = (float)het/n_gt; // observed heterozygosities in populations
+			const float Hexp = (float)pq2;      // expected heterozygosities in populations
+
+			std::cerr << "occ" << i << "\t" <<
+			this->gt_sum_occ[i].gt[2][2].n_cnt << "\t" <<
+			this->gt_sum_occ[i].gt[2][3].n_cnt << "\t" <<
+			this->gt_sum_occ[i].gt[3][2].n_cnt << "\t" <<
+			this->gt_sum_occ[i].gt[3][3].n_cnt << "\t" <<
+			p << "\t" << (1-p) << "\t" <<
+			Hexp << "\t" << Hobs << "\t" <<
+			(Hexp - Hobs) / Hexp << "\t" << Hobs*n_gt << "/" << Hexp*n_gt << "/" << n_gt << std::endl;
+
+			obs[i] = Hobs;
+			exp[i] = Hexp;
+			n_s[i] = n_gt;
+		}
+
+		float exp_sum = 0, obs_sum = 0;
+		for(int i = 0; i < this->gt->n_o; ++i){
+			exp_sum += exp[i] * n_s[i];
+			obs_sum += obs[i] * n_s[i];
+		}
+
+		const float h_i = obs_sum / n_gt_all;
+		const float h_s = exp_sum / n_gt_all;
+		// p-bar (frequency of allele A) over all populations
+		// q-bar
+		const float p_bar = (2*(float)this->gt_sum->gt[2][2].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt) / (2*n_gt_all);
+		const float q_bar = (2*(float)this->gt_sum->gt[3][3].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt) / (2*n_gt_all);
+		const float h_t   = 2*p_bar*q_bar;
+
+		std::cerr << "pbar=" << p_bar << " qbar=" << q_bar << " with " << n_gt_all << std::endl;
+
+
+		std::cerr << "sums: " << exp_sum << ", " << obs_sum << std::endl;
+		std::cerr << "hi=" << h_i << ", hs=" << h_s << ", ht=" << h_t << std::endl;
+
+		// Fstatistics
+		// FIS [= (HS - HI)/HS]
+		std::cerr << "FIS=" << (h_s - h_i) / h_s << std::endl;
+		// FST [= (HT - HS)/HT]
+		std::cerr << "FST=" << (h_t - h_s) / h_t << std::endl;
+		// FIT [= (HT - HI)/HT]
+		std::cerr << "FIT=" << (h_t - h_i) / h_t << std::endl;
+
+
+		delete [] exp; delete [] obs; delete [] n_s;
+
+		return true;
+	}
+
 	containers::PrimitiveContainerInterface* GetInfo(const std::string& name) const {
 		std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
 		if(it != info_map.end()) return(info[it->second]);
@@ -554,7 +673,7 @@ public:
 	yon_allele* alleles;
 	yon_gt* gt;
 	yon_gt_summary* gt_sum;
-	yon_occ* occ;
+	yon_gt_summary* gt_sum_occ; // summary if occ has been invoked
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
 };

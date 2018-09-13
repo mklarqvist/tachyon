@@ -96,7 +96,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Integer";
 		nm.yon_type = YON_VCF_HEADER_INTEGER;
-		nm.description = "NM";
+		nm.description = "\"NM\"";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -109,7 +109,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "1";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "NPM";
+		npm.description = "\"NPM\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -122,7 +122,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "1";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "Total number of alleles in called genotypes";
+		npm.description = "\"Total number of alleles in called genotypes\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -135,7 +135,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "1";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
-		npm.description = "Hardy-Weinberg equilibrium P-value";
+		npm.description = "\"Hardy-Weinberg equilibrium P-value\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -148,7 +148,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "A";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "Allele count in genotypes, for each REF and ALT allele, in the same order as listed with REF first";
+		npm.description = "\"Allele count in genotypes, for each REF and ALT allele, in the same order as listed with REF first\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -161,7 +161,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "A";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
-		npm.description = "Allele Frequency, for each REF and ALT allele, in the same order as listed with REF first. In the range [0, 1]";
+		npm.description = "\"Allele Frequency, for each REF and ALT allele, in the same order as listed with REF first. In the range [0, 1]\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -174,7 +174,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "A";
 		npm.type = "Integer";
 		npm.yon_type = YON_VCF_HEADER_INTEGER;
-		npm.description = "AC_P";
+		npm.description = "\"AC_P\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -187,7 +187,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		npm.number = "A";
 		npm.type = "Float";
 		npm.yon_type = YON_VCF_HEADER_FLOAT;
-		npm.description = "FS_A";
+		npm.description = "\"FS_A\"";
 		npm.idx = this->info_fields_.size();
 		this->literals_ += npm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(npm);
@@ -200,7 +200,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Float";
 		nm.yon_type = YON_VCF_HEADER_FLOAT;
-		nm.description = "F_PIC";
+		nm.description = "\"F_PIC\"";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -213,7 +213,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Float";
 		nm.yon_type = YON_VCF_HEADER_FLOAT;
-		nm.description = "Heterozygosity at this locus calculated as number of 0/1 or 1/0 genotypes divided by all non-missing genotypes";
+		nm.description = "\"Heterozygosity at this locus calculated as number of 0/1 or 1/0 genotypes divided by all non-missing genotypes\"";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -226,7 +226,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		nm.number = "1";
 		nm.type = "Flag";
 		nm.yon_type = YON_VCF_HEADER_FLAG;
-		nm.description = "Flag indicating if a site is multi-allelic (>1 ALT alleles)";
+		nm.description = "\"Flag indicating if a site is multi-allelic (>1 ALT alleles)\"";
 		nm.idx = this->info_fields_.size();
 		this->literals_ += nm.ToVcfString(false) + "\n";
 		this->info_fields_.push_back(nm);
@@ -234,6 +234,157 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 
 	this->BuildMaps();
 	this->BuildReverseMaps();
+}
+
+
+void VariantHeader::AddGenotypeAnnotationFields(const std::vector<std::string>& group_names){
+	for(int i = 0; i < group_names.size(); ++i){
+		const YonInfo* info = this->GetInfo(group_names[i] + "_NM");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = group_names[i] + "_NM";
+			nm.number = "1";
+			nm.type = "Integer";
+			nm.yon_type = YON_VCF_HEADER_INTEGER;
+			nm.description = "\"NM\"";
+			nm.idx = this->info_fields_.size();
+			this->literals_ += nm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_NPM");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_NPM";
+			npm.number = "1";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "\"NPM\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_AN");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_AN";
+			npm.number = "1";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "\"Total number of alleles in called genotypes\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_HWE_P");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_HWE_P";
+			npm.number = "1";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "\"Hardy-Weinberg equilibrium P-value\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_AC");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_AC";
+			npm.number = "A";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "\"Allele count in genotypes, for each REF and ALT allele, in the same order as listed with REF first\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_AF");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_AF";
+			npm.number = "A";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "\"Allele Frequency, for each REF and ALT allele, in the same order as listed with REF first. In the range [0, 1]\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_AC_P");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_AC_P";
+			npm.number = "A";
+			npm.type = "Integer";
+			npm.yon_type = YON_VCF_HEADER_INTEGER;
+			npm.description = "\"AC_P\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_FS_A");
+		if(info == nullptr){
+			YonInfo npm;
+			npm.id = group_names[i] + "_FS_A";
+			npm.number = "A";
+			npm.type = "Float";
+			npm.yon_type = YON_VCF_HEADER_FLOAT;
+			npm.description = "\"FS_A\"";
+			npm.idx = this->info_fields_.size();
+			this->literals_ += npm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(npm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_F_PIC");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = group_names[i] + "_F_PIC";
+			nm.number = "1";
+			nm.type = "Float";
+			nm.yon_type = YON_VCF_HEADER_FLOAT;
+			nm.description = "\"F_PIC\"";
+			nm.idx = this->info_fields_.size();
+			this->literals_ += nm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_HET");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = group_names[i] + "_HET";
+			nm.number = "1";
+			nm.type = "Float";
+			nm.yon_type = YON_VCF_HEADER_FLOAT;
+			nm.description = "\"Heterozygosity at this locus calculated as number of 0/1 or 1/0 genotypes divided by all non-missing genotypes\"";
+			nm.idx = this->info_fields_.size();
+			this->literals_ += nm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(nm);
+		}
+
+		info = this->GetInfo(group_names[i] + "_MULTI_ALLELIC");
+		if(info == nullptr){
+			YonInfo nm;
+			nm.id = group_names[i] + "_MULTI_ALLELIC";
+			nm.number = "1";
+			nm.type = "Flag";
+			nm.yon_type = YON_VCF_HEADER_FLAG;
+			nm.description = "\"Flag indicating if a site is multi-allelic (>1 ALT alleles)\"";
+			nm.idx = this->info_fields_.size();
+			this->literals_ += nm.ToVcfString(false) + "\n";
+			this->info_fields_.push_back(nm);
+		}
+
+		this->BuildMaps();
+		this->BuildReverseMaps();
+	}
 }
 
 std::ostream& VariantHeader::PrintVcfHeader(std::ostream& stream) const{

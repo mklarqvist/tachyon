@@ -137,7 +137,7 @@ public:
 public:
     yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
                n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
-			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_occ(nullptr), d_occ(nullptr),
+			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
 			   dirty(false)
     {}
 
@@ -619,7 +619,7 @@ public:
     uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
     yon_gt_rcd** d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
     yon_gt_rcd* rcds; // lazy interpreted internal records
-    uint32_t* n_occ;
+    uint32_t* n_i_occ;
     yon_gt_rcd** d_occ; // lazy evaluation of occ table
     bool dirty;
 };
@@ -644,6 +644,7 @@ public:
 		nm(0), npm(0), an(0), ac_p(nullptr), fs_a(nullptr), hwe_p(0),
 		f_pic(0), heterozygosity(0)
 	{}
+
 	~yon_gt_summary_rcd(){
 		delete [] this->ac; delete [] this->af;
 		delete [] this->fs_a;
@@ -699,6 +700,34 @@ public:
 			this->AddGenotypeLayer(&this->gt[i], 1);
 	}
 
+	void Setup(const uint8_t base_ploidy, const uint8_t n_als){
+		n_ploidy = base_ploidy;
+		n_alleles = n_als + 2;
+		delete [] this->alleles;
+		delete [] this->gt;
+		if(this->alleles_strand != nullptr){
+			for(uint32_t i = 0; i < this->n_ploidy; ++i)
+				delete this->alleles_strand[i];
+			delete [] this->alleles_strand;
+		}
+		delete this->d;
+
+		alleles = new uint32_t[n_alleles];
+		alleles_strand = new uint32_t*[this->n_ploidy];
+		gt = new yon_gt_summary_obj[this->n_alleles];
+		d = nullptr;
+
+		memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
+		for(uint32_t i = 0; i < this->n_ploidy; ++i){
+			this->alleles_strand[i] = new uint32_t[this->n_alleles];
+			memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
+		}
+
+		// Add layers to the root node.
+		for(uint32_t i = 0; i < this->n_alleles; ++i)
+			this->AddGenotypeLayer(&this->gt[i], 1);
+	}
+
 	~yon_gt_summary(){
 		delete [] this->alleles;
 		delete [] this->gt;
@@ -723,6 +752,7 @@ public:
 	bool AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth);
 
 	yon_gt_summary& operator+=(const yon_gt& gt);
+	yon_gt_summary& Add(const yon_gt& gt, const uint32_t n_i, const yon_gt_rcd* rcds);
 
 	// Accessors to internal data.
 	inline uint32_t* GetAlleleCountsRaw(void){ return(this->alleles); }
