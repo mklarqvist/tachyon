@@ -35,6 +35,7 @@ bool CompressionManager::Compress(variant_block_type& block,
 			zstd_codec.SetCompressionLevel(general_level);
 		}
 
+		//std::cerr << "in info-" << i << "/" << block.footer.n_info_streams << " -> " << block.info_containers[i].GetIdx() << "," << block.info_containers[i].GetSizeUncompressed() << ", n=" << block.info_containers[i].header.n_entries << ",ns=" << block.info_containers[i].header.stride_header.stride << std::endl;
 		if(block.info_containers[i].header.n_entries){
 			/*
 			if(block.info_containers[i].header.data_header.IsUniform() == false &&

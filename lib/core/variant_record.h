@@ -5,7 +5,6 @@
 #include "containers/genotype_container_interface.h"
 #include "containers/primitive_container.h"
 #include "containers/primitive_group_container.h"
-#include "occ.h"
 #include "genotypes.h"
 
 #include <cmath>

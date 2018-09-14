@@ -184,42 +184,127 @@ public:
 	 * @param StreamFieldLookup
 	 * @return
 	 */
-	bool AddWrapper(const DataContainer& dc,
+	bool AddWrapper(DataContainer& dc,
+					const int32_t idx,
 	                container_type* dst_containers,
 					uint32_t(VariantBlockFooter::*AddWrapper)(const uint32_t),
-	                bool(VariantBlock::*StreamFieldLookup)(const uint32_t) const)
+	                int32_t(VariantBlock::*StreamFieldLookup)(const uint32_t) const)
 	{
-		if(dc.GetIdx() == -1){
-			std::cerr << utility::timestamp("ERROR","IMPORT") << "DataContainer does not have not set the required field global idx." << std::endl;
+		if(idx < 0){
+			std::cerr << "illegal idx" << std::endl;
 			return false;
 		}
+		dc.header.data_header.global_key = idx;
 
 		// 1) Search for global idx
-		bool field_exists = (this->*StreamFieldLookup)((uint32_t)dc.GetIdx());
-		if(field_exists){
-			std::cerr << "field is already set. overwriting @ " << field_exists  << std::endl;
-			dst_containers[field_exists] = dc;
+		int field_exists = (this->*StreamFieldLookup)(dc.GetIdx());
+		if(field_exists >= 0){
+			assert(dst_containers[field_exists].GetDataPrimitiveType() == dc.GetDataPrimitiveType());
+			dst_containers[field_exists] += dc;
+			//std::cerr << "field exists at " << field_exists << " for id " << (uint32_t)dc.GetIdx() << ": adding now " << dst_containers[field_exists].GetSizeUncompressed() << std::endl;
 		} else {
 			uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
-			std::cerr << "field does not exist. adding. " << offset  << std::endl;
+			//std::cerr << "field does not exist. adding. " << offset  << std::endl;
 			dst_containers[offset] = dc;
 		}
 
 		return true;
 	}
 
-	inline bool AddInfo(const DataContainer& dc){
+	inline bool AddInfo(DataContainer& dc, const YonInfo* info){
 		return(this->AddWrapper(dc,
+		       info->idx,
 		       this->info_containers,
 		       &block_footer_type::AddInfo,
-		       &self_type::HasInfo));
+		       &self_type::GetInfoPosition));
 	}
 
-	inline bool AddFormat(const DataContainer& dc){
+	inline bool AddFormat(DataContainer& dc, const YonFormat* fmt){
 		return(this->AddWrapper(dc,
+		                        fmt->idx,
 		                        this->format_containers,
 		                        &block_footer_type::AddFormat,
-		                        &self_type::HasFormat));
+		                        &self_type::GetFormatPosition));
+	}
+
+	self_type& AddMore(yon1_vnt_t& rec){
+		if(this->header.n_variants == 0){
+			this->header.contigID = rec.rid;
+			this->header.minPosition = rec.pos;
+			this->header.maxPosition = rec.pos;
+		}
+
+		++this->header.n_variants;
+		this->header.maxPosition = rec.pos;
+
+		// TODO: MAJOR WARNING: NO GUARANTEE THAT DATA ADDED TO THE BYTE STREAMS
+		//       HAVE THE SAME PRIMITIVE TYPE AS IS __REQUIRED__ IN TACHYON.
+		std::vector<int> id_list(rec.n_info);
+		if(rec.n_info){
+			for(int i = 0; i < rec.n_info; ++i){
+				id_list[i] = rec.info_hdr[i]->idx;
+				// 1 add info, format, and filter
+				DataContainer dc = rec.info[i]->ToDataContainer();
+
+				if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
+					dc.header.data_header.controller.type = YON_TYPE_32B;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
+					dc.header.data_header.controller.type = YON_TYPE_FLOAT;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.info_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
+					dc.header.data_header.controller.type = YON_TYPE_CHAR;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
+					dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
+					dc.header.data_header.controller.signedness = false;
+				} else {
+					std::cerr << "unknwon type" << std::endl;
+					exit(1);
+				}
+
+				if(this->AddInfo(dc, rec.info_hdr[i]) == false){
+					std::cerr << "failed to add info: " << rec.info_hdr[i]->id << std::endl;
+				}
+			}
+
+			rec.info_pid = this->AddInfoPattern(id_list);
+			//std::cerr << "info_pid=" << rec.info_pid << std::endl;
+		} else rec.info_pid = -1;
+
+		if(rec.n_fmt){
+			id_list.resize(rec.n_fmt);
+			for(int i = 0; i < rec.n_fmt; ++i){
+				id_list[i] = rec.fmt_hdr[i]->idx;
+				DataContainer dc = rec.fmt[i]->ToDataContainer();
+
+				if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
+					dc.header.data_header.controller.type = YON_TYPE_32B;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
+					dc.header.data_header.controller.type = YON_TYPE_FLOAT;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
+					dc.header.data_header.controller.type = YON_TYPE_CHAR;
+					dc.header.data_header.controller.signedness = true;
+				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
+					dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
+					dc.header.data_header.controller.signedness = false;
+				} else {
+					std::cerr << "unknwon type" << std::endl;
+					exit(1);
+				}
+
+				if(this->AddFormat(dc, rec.fmt_hdr[i]) == false){
+					std::cerr << "failed to add format: " << rec.fmt_hdr[i]->id << std::endl;
+				}
+			}
+
+			rec.fmt_pid = this->AddFormatPattern(id_list);
+			//std::cerr << "fmt_pid=" << rec.fmt_pid << std::endl;
+		} else rec.fmt_pid = -1;
+
+		return(*this);
 	}
 
 	/**<

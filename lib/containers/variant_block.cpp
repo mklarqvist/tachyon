@@ -814,21 +814,21 @@ std::vector<uint32_t> VariantBlock::GetFilterKeys(void) const{
 }
 
 int32_t VariantBlock::GetInfoPosition(const uint32_t global_id) const{
-	if(this->footer.info_map == nullptr) return false;
+	if(this->footer.info_map == nullptr) return -1;
 	VariantBlockFooter::map_type::const_iterator it = this->footer.info_map->find(global_id);
 	if(it == this->footer.info_map->end()) return -1;
 	return(it->second);
 }
 
 int32_t VariantBlock::GetFormatPosition(const uint32_t global_id) const{
-	if(this->footer.format_map == nullptr) return false;
+	if(this->footer.format_map == nullptr) return -1;
 	VariantBlockFooter::map_type::const_iterator it = this->footer.format_map->find(global_id);
 	if(it == this->footer.format_map->end()) return -1;
 	return(it->second);
 }
 
 int32_t VariantBlock::GetFilterPosition(const uint32_t global_id) const{
-	if(this->footer.filter_map == nullptr) return false;
+	if(this->footer.filter_map == nullptr) return -1;
 	VariantBlockFooter::map_type::const_iterator it = this->footer.filter_map->find(global_id);
 	if(it == this->footer.filter_map->end()) return -1;
 	return(it->second);

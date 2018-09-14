@@ -136,7 +136,7 @@ public:
 
 public:
     yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
-               n_allele(0), ppa(nullptr), occ(nullptr), data(nullptr), d_bcf(nullptr),
+               n_allele(0), ppa(nullptr), data(nullptr), d_bcf(nullptr),
 			   d_bcf_ppa(nullptr), d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
 			   dirty(false)
     {}
@@ -613,7 +613,6 @@ public:
     uint32_t n_s, n_i, n_o;     // number samples, number of entries
     uint8_t  n_allele;
     yon_gt_ppa* ppa; // pointer to ppa
-    std::vector< std::vector<uint32_t> >* occ; // pointer to occ
     const uint8_t* data; // pointer to data
     uint8_t* d_bcf; // lazy evaluated as Bcf entries (length = base_ploidy * n_samples * sizeof(uint8_t))
     uint8_t* d_bcf_ppa; // lazy evaluation of unpermuted bcf records
@@ -777,12 +776,43 @@ public:
 	 */
 	bool LazyEvaluate(void);
 
+public:
 	uint8_t    n_ploidy; // base ploidy at site
 	uint8_t    n_alleles; // number of alleles
 	uint32_t*  alleles; // allele counts
 	uint32_t** alleles_strand; // allelic counts per chromosome
 	yon_gt_summary_obj* gt; // full genotypic trie with branch-size n_alleles
 	yon_gt_summary_rcd* d; // lazy evaluated record
+};
+
+struct yon_occ {
+public:
+	typedef std::unordered_map<std::string, uint32_t> map_type;
+
+	yon_occ() = default;
+	~yon_occ() = default;
+
+	bool ReadTable(const std::string file_name, const VariantHeader& header, const char delimiter = '\t');
+	bool BuildTable(void);
+	bool BuildTable(const yon_gt_ppa* ppa_p);
+
+	// Map from group name to row offset in the table.
+	map_type map;
+	// Unique names of grouping factors.
+	std::vector<std::string> row_names;
+	// Total cumulative sums for each row.
+	std::vector<uint32_t> cum_sums;
+
+	// A matrix with proportions samples times groupings
+	// rows corresponds to the cumulative sum of a grouping
+	// over the samples. The table corresponds to the set
+	// membership (presence or absence) and the occ table
+	// corresponds to the cumsum at any given sample offset.
+	std::vector< std::vector<uint32_t> > table;
+	std::vector< std::vector<uint32_t> > occ;
+	// Transpose of occ table for data locality lookups when
+	// using constrained run-length encoded objects.
+	std::vector< std::vector<uint32_t> > vocc;
 };
 
 /**<

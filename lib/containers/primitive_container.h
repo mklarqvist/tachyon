@@ -18,6 +18,7 @@ public:
 
 public:
 	PrimitiveContainerInterface(void) :
+		data_type_(YON_TYPE_UNKNOWN),
 		is_uniform_(false),
 		n_entries_(0),
 		n_capacity_(0)
@@ -26,6 +27,7 @@ public:
 	}
 
 	PrimitiveContainerInterface(const bool uniform, const size_t size) :
+		data_type_(YON_TYPE_UNKNOWN),
 		is_uniform_(uniform),
 		n_entries_(size),
 		n_capacity_(size)
@@ -78,6 +80,13 @@ public:
 	 * checked for missing and sentinel node symbols and
 	 * converted to the equivalent symbol in the return
 	 * primitive type space.
+	 *
+	 * Conversions have to take place when the dst container
+	 * is signed and the primitive types are different. For
+	 * example, this container is int32_t and adding a
+	 * int8_t. In this case, the special values for EOV and
+	 * missing have to be expanded to the new, larger, bit
+	 * space.
 	 * @param entry Input (src) primitive type or string.
 	 */
 	virtual void operator+=(const int8_t entry)   =0;
@@ -139,6 +148,7 @@ public:
 	                                          const std::string& tag) const =0;
 
 protected:
+	TACHYON_CORE_TYPE data_type_;
 	bool    is_uniform_;
     size_t  n_entries_;
     size_t  n_capacity_;
@@ -167,16 +177,16 @@ public:
     PrimitiveContainer(const container_type& container,
                        const uint32_t& offset,
                        const uint32_t n_entries);
-    ~PrimitiveContainer(void);
     PrimitiveContainer(const self_type& other);
     PrimitiveContainer(return_type* values, const uint32_t n_entries);
     PrimitiveContainer(self_type&& other) noexcept;
     PrimitiveContainer& operator=(const self_type& other);
     PrimitiveContainer& operator=(self_type&& other) noexcept;
+    ~PrimitiveContainer(void);
 
     inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
     PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
-    	self_type* o   = reinterpret_cast<self_type*>(&src);
+    	self_type* o      = reinterpret_cast<self_type*>(&src);
     	this->is_uniform_ = o->is_uniform_;
     	this->n_capacity_ = o->n_capacity_;
     	this->n_entries_  = o->n_entries_;
@@ -188,6 +198,7 @@ public:
     void resize(void);
 	void resize(const size_t new_size);
 
+	// Add data to this object.
 	void operator+=(const int8_t entry);
 	void operator+=(const int16_t entry);
 	void operator+=(const int32_t entry);
@@ -617,8 +628,12 @@ void PrimitiveContainer<return_type>::resize(const size_t new_size){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const int8_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry < std::numeric_limits<return_type>::min()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
+	}
 
 	if(entry == INT8_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
 	else if(entry == INT8_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
@@ -627,8 +642,12 @@ void PrimitiveContainer<return_type>::operator+=(const int8_t entry){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const int16_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry < std::numeric_limits<return_type>::min()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
+	}
 
 	if(entry == INT16_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
 	else if(entry == INT16_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
@@ -637,8 +656,12 @@ void PrimitiveContainer<return_type>::operator+=(const int16_t entry){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const int32_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry < std::numeric_limits<return_type>::min()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int)entry << "->" << (int)return_type(entry) << std::endl;
+	}
 
 	if(entry == INT32_MIN) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min();
 	else if(entry == INT32_MIN+1) this->entries_[this->n_entries_++] = std::numeric_limits<return_type>::min()+1;
@@ -647,47 +670,68 @@ void PrimitiveContainer<return_type>::operator+=(const int32_t entry){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const int64_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry < std::numeric_limits<return_type>::min()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (int64_t)entry << "->" << (int64_t)return_type(entry) << std::endl;
+	}
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const uint8_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry > std::numeric_limits<return_type>::max()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
+	}
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const uint16_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry > std::numeric_limits<return_type>::max()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
+	}
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const uint32_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry > std::numeric_limits<return_type>::max()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint32_t)entry << "->" << (uint32_t)return_type(entry) << std::endl;
+	}
+
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const uint64_t entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
+
+	if(entry > std::numeric_limits<return_type>::max()){
+		std::cerr << utility::timestamp("WARNING") << "Truncating value: " << (uint64_t)entry << "->" << (uint64_t)return_type(entry) << std::endl;
+	}
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const char entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
@@ -695,7 +739,7 @@ void PrimitiveContainer<return_type>::operator+=(const char entry){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const float entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
@@ -703,14 +747,16 @@ void PrimitiveContainer<return_type>::operator+=(const float entry){
 
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const double entry){
-	if(this->n_entries_ + 1 == this->n_capacity_)
+	if(this->n_entries_ == this->n_capacity_)
 		this->resize();
 
 	this->entries_[this->n_entries_++] = entry;
 }
 
 template <class return_type>
-void PrimitiveContainer<return_type>::operator+=(const std::string& entry){}
+void PrimitiveContainer<return_type>::operator+=(const std::string& entry){
+	std::cerr << utility::timestamp("WARNING") << "Cannot add a string to this container" << std::endl;
+}
 
 }
 }

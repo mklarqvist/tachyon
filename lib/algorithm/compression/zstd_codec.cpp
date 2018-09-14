@@ -62,15 +62,16 @@ bool ZSTDCodec::Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst){
 bool ZSTDCodec::Compress(container_type& container){
 	if(container.header.n_entries == 0){
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
-		container.data.n_chars_                  = 0;
+		container.data.n_chars_                         = 0;
 		container.header.data_header.cLength            = 0;
 		container.header.data_header.uLength            = 0;
 	}
 
 	if(container.header.data_header.controller.uniform || container.data_uncompressed.size() < 100){
+		container.data.resize(container.data_uncompressed.size() + 100);
 		memcpy(container.data.data(), container.data_uncompressed.data(), container.data_uncompressed.size());
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
-		container.data.n_chars_                  = container.data_uncompressed.size();
+		container.data.n_chars_                         = container.data_uncompressed.size();
 		container.header.data_header.cLength            = container.data_uncompressed.size();
 		container.header.data_header.uLength            = container.data_uncompressed.size();
 
@@ -92,7 +93,6 @@ bool ZSTDCodec::Compress(container_type& container){
 
 	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "Input: " << container.GetSizeUncompressed() << " and output: " << ret << " -> " << (float)container.GetSizeUncompressed()/ret << "-fold"  << std::endl;
 
-
 	if(ZSTD_isError(ret)){
 		std::cerr << utility::timestamp("ERROR","ZSTD") << ZSTD_getErrorString(ZSTD_getErrorCode(ret)) << std::endl;
 		return(false);
@@ -100,6 +100,7 @@ bool ZSTDCodec::Compress(container_type& container){
 
 	const float fold = (float)container.data_uncompressed.size() / ret;
 	if(fold < MIN_COMPRESSION_FOLD){
+		container.data.resize(container.data_uncompressed.size() + 100);
 		memcpy(container.data.data(), container.data_uncompressed.data(), container.data_uncompressed.size());
 		container.header.data_header.controller.encoder = YON_ENCODE_NONE;
 		container.data.n_chars_                  = container.data_uncompressed.size();
@@ -129,9 +130,10 @@ bool ZSTDCodec::Compress(container_type& container){
 
 bool ZSTDCodec::CompressStrides(container_type& container){
 	if(container.header.stride_header.controller.uniform || container.strides_uncompressed.size() < 100){
+		container.strides.resize(container.strides_uncompressed.size() + 100);
 		memcpy(container.strides.data(), container.strides_uncompressed.data(), container.strides_uncompressed.size());
 		container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
-		container.strides.n_chars_                 = container.strides_uncompressed.size();
+		container.strides.n_chars_                        = container.strides_uncompressed.size();
 		container.header.stride_header.cLength            = container.strides_uncompressed.size();
 		container.header.stride_header.uLength            = container.strides_uncompressed.size();
 
@@ -154,6 +156,7 @@ bool ZSTDCodec::CompressStrides(container_type& container){
 
 	const float fold = (float)container.strides_uncompressed.size()/ret;
 	if(fold < MIN_COMPRESSION_FOLD){
+		container.strides.resize(container.strides_uncompressed.size() + 100);
 		memcpy(container.strides.data(), container.strides_uncompressed.data(), container.strides_uncompressed.size());
 		container.header.stride_header.controller.encoder = YON_ENCODE_NONE;
 		container.strides.n_chars_                 = container.strides_uncompressed.size();
@@ -228,7 +231,7 @@ bool ZSTDCodec::Compress(container_type& container, permutation_type& manager){
 
 	//std::cerr << utility::timestamp("LOG","COMPRESSION") << "PPA in: " << this->buffer.n_chars << " and out: " << ret << std::endl;
 
-	container.data.n_chars_                  = ret;
+	container.data.n_chars_                         = ret;
 	container.header.data_header.cLength            = container.data.size();
 	container.header.data_header.uLength            = container.data_uncompressed.size();
 	container.header.data_header.controller.encoder = YON_ENCODE_ZSTD;

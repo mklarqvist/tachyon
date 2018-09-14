@@ -233,12 +233,12 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 	if(container.header.data_header.HasMixedStride()){
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->InfoSetup<int8_t>(container, header,  matches));  break;
-			case(YON_TYPE_16B):    (this->InfoSetup<int16_t>(container, header,  matches));    break;
-			case(YON_TYPE_32B):    (this->InfoSetup<int32_t>(container, header,  matches));    break;
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, int8_t>(container, header,  matches));  break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, int16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, int32_t>(container, header,  matches));    break;
 			//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches));    break;
-			case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches));  break;
-			case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches)); break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches)); break;
 			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -247,12 +247,12 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->InfoSetup<uint8_t>(container, header,  matches));   break;
-			case(YON_TYPE_16B):    (this->InfoSetup<uint16_t>(container, header,  matches));    break;
-			case(YON_TYPE_32B):    (this->InfoSetup<uint32_t>(container, header,  matches));    break;
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, uint8_t>(container, header,  matches));   break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, uint16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, uint32_t>(container, header,  matches));    break;
 			//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches));    break;
-			case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches));  break;
-			case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches)); break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches)); break;
 			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -263,12 +263,12 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 	} else {
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->InfoSetup<int8_t>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->InfoSetup<int16_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->InfoSetup<int32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, int8_t>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, int16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, int32_t>(container, header,  matches, container.header.data_header.stride));    break;
 			//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -277,12 +277,12 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->InfoSetup<uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
-			case(YON_TYPE_16B):    (this->InfoSetup<uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->InfoSetup<uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
 			//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->InfoSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->InfoSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -360,12 +360,12 @@ bool VariantContainer::AddFormatWrapper(dc_type& container, const VariantHeader&
 	if(container.header.data_header.HasMixedStride()){
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->FormatSetup<int8_t>(container, header,  matches));  break;
-			case(YON_TYPE_16B):    (this->FormatSetup<int16_t>(container, header,  matches));    break;
-			case(YON_TYPE_32B):    (this->FormatSetup<int32_t>(container, header,  matches));    break;
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, int8_t>(container, header,  matches));  break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, int16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, int32_t>(container, header,  matches));    break;
 			//case(YON_TYPE_64B):    (this->FormatSetup<int64_t>(container, header,  matches));    break;
-			case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches));  break;
-			case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches)); break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches)); break;
 			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -374,12 +374,12 @@ bool VariantContainer::AddFormatWrapper(dc_type& container, const VariantHeader&
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->FormatSetup<uint8_t>(container, header,  matches));   break;
-			case(YON_TYPE_16B):    (this->FormatSetup<uint16_t>(container, header,  matches));    break;
-			case(YON_TYPE_32B):    (this->FormatSetup<uint32_t>(container, header,  matches));    break;
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, uint8_t>(container, header,  matches));   break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, uint16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, uint32_t>(container, header,  matches));    break;
 			//case(YON_TYPE_64B):    (this->FormatSetup<uint64_t>(container, header,  matches));    break;
-			case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches));  break;
-			case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches)); break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches)); break;
 			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -390,12 +390,12 @@ bool VariantContainer::AddFormatWrapper(dc_type& container, const VariantHeader&
 	} else {
 		if(container.header.data_header.IsSigned()){
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->FormatSetup<int8_t>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_16B):    (this->FormatSetup<int16_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->FormatSetup<int32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, int8_t>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, int16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, int32_t>(container, header,  matches, container.header.data_header.stride));    break;
 			//case(YON_TYPE_64B):    (this->FormatSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):
@@ -404,12 +404,12 @@ bool VariantContainer::AddFormatWrapper(dc_type& container, const VariantHeader&
 			}
 		} else {
 			switch(container.header.data_header.GetPrimitiveType()){
-			case(YON_TYPE_8B):     (this->FormatSetup<uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
-			case(YON_TYPE_16B):    (this->FormatSetup<uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_32B):    (this->FormatSetup<uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
 			//case(YON_TYPE_64B):    (this->FormatSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
-			case(YON_TYPE_FLOAT):  (this->FormatSetup<float>(container, header,  matches, container.header.data_header.stride));  break;
-			case(YON_TYPE_DOUBLE): (this->FormatSetup<double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches, container.header.data_header.stride)); break;
 			case(YON_TYPE_BOOLEAN):
 			case(YON_TYPE_STRUCT):

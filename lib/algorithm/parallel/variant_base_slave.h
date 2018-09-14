@@ -155,6 +155,7 @@ public:
 			return true;
 
 		VariantContainer ivc(vc.GetBlock().header.n_variants);
+		assert(this->global_header != nullptr);
 		ivc.Build(vc.GetBlock(), *this->global_header);
 
 		s_local.reset();
@@ -165,6 +166,8 @@ public:
 				s_local.Update(ivc[i]);
 			}
 		}
+
+
 		assert(vc.GetBlock().gt_ppa != nullptr);
 
 		if(this->vc.GetBlock().header.controller.has_gt_permuted){

@@ -276,8 +276,8 @@ uint64_t VariantReader::OutputVcfLinear(void){
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
-		if(this->GetBlockSettings().annotate_extra)
-			this->occ_table.BuildTable(*this->variant_container.GetBlock().gt_ppa);
+		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(this->variant_filters.Filter(vc[i], i) == false)
@@ -342,16 +342,18 @@ uint64_t VariantReader::OutputRecords(void){
 	if(this->settings.keychain_file.size())
 		this->LoadKeychainFile();
 
-	// temp
-	if(this->occ_table.ReadTable("/home/mk21/Downloads/integrated_call_samples_v3.20130502.ALL.panel", this->GetGlobalHeader(), '\t') == false){
-		return(0);
-	}
-
 	if(this->settings.annotate_genotypes)
 		this->GetGlobalHeader().AddGenotypeAnnotationFields();
 
 	// temp
-	this->global_header.AddGenotypeAnnotationFields(this->occ_table.row_names);
+	if(this->settings.group_file.size()){
+		if(this->occ_table.ReadTable(this->settings.group_file, this->GetGlobalHeader(), '\t') == false){
+			return(0);
+		}
+
+		this->global_header.AddGenotypeAnnotationFields(this->occ_table.row_names);
+	}
+
 
 	if(this->GetBlockSettings().show_vcf_header)
 		this->global_header.PrintVcfHeader(std::cout);
@@ -403,7 +405,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
 		if(this->GetBlockSettings().annotate_extra)
-			this->occ_table.BuildTable(*this->variant_container.GetBlock().gt_ppa);
+			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
 
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < vc.size(); ++i){
@@ -627,6 +629,7 @@ bool VariantReader::Stats(void){
 		slave_test[i].s_local.SetSize(this->global_header.GetNumberSamples());
 		slave_test[i].vc << this->global_header;
 		slave_test[i].vc.AllocateGenotypeMemory();
+		slave_test[i].global_header = &this->global_header;
 
 		csm[i].Start(&VariantSlaveTsTv::GatherGenotypeStatistics, slave_test[i]);
 	}
@@ -652,20 +655,62 @@ bool VariantReader::Stats(void){
 }
 
 bool VariantReader::TempWrite(void){
-	io::BasicBuffer buf(256000);
 	this->variant_container.AllocateGenotypeMemory();
 
+	//io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
-		for(int i = 0; i < vc.n_variants_; ++i){
-			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
-			std::cout.write(buf.data(), buf.size());
-			buf.reset();
+		containers::VariantBlock vblock;
+		vblock.Allocate(100,100,100);
+		vblock.resize(128000);
+
+		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
+
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if(this->variant_filters.Filter(vc[i], i) == false)
+				continue;
+
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
+				vc[i].EvaluateSummary(true);
+				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
+			}
+
+			vblock.AddMore(vc[i]);
+			vblock += vc[i];
+			//return 0;
 		}
 
-		//delete objects;
+		vblock.header.controller.has_gt = false;
+		vblock.header.controller.has_gt_permuted = false;
+
+		std::cerr << vblock.size() << ": " << vblock.header.minPosition << "-" << vblock.header.maxPosition << std::endl;
+		vblock.UpdateContainers(this->global_header.GetNumberSamples());
+		this->codec_manager.Compress(vblock,20,this->global_header.GetNumberSamples());
+
+		std::cerr << "base: ";
+		for(int i = 0; i < YON_BLK_N_STATIC; ++i){
+			std::cerr << "," << YON_BLK_PRINT_NAMES[i] << ":" << vblock.base_containers[i].GetSizeUncompressed() << ":" << vblock.base_containers[i].header.HasMixedStride();
+		}
+		std::cerr << std::endl;
+
+		std::cerr << "info: ";
+		for(int i = 0; i < vblock.footer.n_info_streams; ++i){
+			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ":" << vblock.info_containers[i].GetSizeUncompressed();
+		}
+		std::cerr << std::endl;
+
+		vblock.Finalize();
+		// After all compression and writing is finished the header
+		// offsets are themselves compressed and stored in the block.
+		vblock.PackFooter(); // Pack footer into buffer.
+		this->codec_manager.zstd_codec.Compress(vblock.footer_support);
 	}
 
 	return 0;

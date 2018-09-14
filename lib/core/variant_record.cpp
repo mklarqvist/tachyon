@@ -21,7 +21,10 @@ bool yon1_vnt_t::EvaluateOccSummary(bool lazy_evaluate){
 	assert(this->gt->rcds != nullptr);
 
 	if(this->gt_sum_occ != nullptr)
-		return true;
+		return false;
+
+	if(this->gt->n_o == 0)
+		return false;
 
 	this->gt_sum_occ = new yon_gt_summary[this->gt->n_o];
 	for(int i = 0; i < this->gt->n_o; ++i){
@@ -33,45 +36,61 @@ bool yon1_vnt_t::EvaluateOccSummary(bool lazy_evaluate){
 	return true;
 }
 
+
 bool yon1_vnt_t::EvaluateOcc(yon_occ& occ){
-	assert(this->gt != nullptr);
+	if(occ.row_names.size() == 0)
+		return false;
+
+	if(this->gt == nullptr)
+		return false;
 
 	this->gt->n_o     = occ.occ.size();
 	this->gt->n_i_occ = new uint32_t[this->gt->n_o];
 	this->gt->d_occ   = new yon_gt_rcd*[this->gt->n_o];
 
+	uint32_t* cum_sums = new uint32_t[this->gt->n_o]; // Total cumulative genotypes observed.
+	uint32_t* cum_sums_hit = new uint32_t[this->gt->n_o]; // Number of non-zero runs observed.
+	memset(cum_sums, 0, sizeof(uint32_t)*this->gt->n_o);
+	memset(cum_sums_hit, 0, sizeof(uint32_t)*this->gt->n_o);
+
 	for(uint32_t i = 0; i < this->gt->n_o; ++i){
-		this->gt->d_occ[i] = new yon_gt_rcd[this->gt->n_i];
+		this->gt->d_occ[i]   = new yon_gt_rcd[std::min(this->gt->n_i, occ.cum_sums[i])];
+		this->gt->n_i_occ[i] = 0;
+	}
 
-		uint32_t cum_sum     = 0; // Total cumulative genotypes observed.
-		uint32_t cum_sum_hit = 0; // Number of non-zero runs observed.
-		uint32_t n_offset    = 0; // Virtual offset in destination array.
-
-		// Iterate over available gt rcds.
-		for(uint32_t j = 0; j < this->gt->n_i; ++j){
-			const uint32_t to   = occ.occ[i][cum_sum + this->gt->rcds[j].run_length];
-			const uint32_t from = occ.occ[i][cum_sum];
+	// Iterate over available gt rcds.
+	for(uint32_t j = 0; j < this->gt->n_i; ++j){
+		// Iterate over available groupings in transposed occ.
+		for(uint32_t i = 0; i < this->gt->n_o; ++i){
+			const uint32_t to   = occ.vocc[cum_sums[i] + this->gt->rcds[j].run_length][i];
+			const uint32_t from = occ.vocc[cum_sums[i]][i];
 			if(to - from != 0){
 				// Allocate memory for alleles.
-				this->gt->d_occ[i][n_offset].allele = new uint8_t[this->gt->m];
+				this->gt->d_occ[i][this->gt->n_i_occ[i]].allele = new uint8_t[this->gt->m];
 
 				// Copy allelic data from recerence gt rcd.
 				for(uint32_t k = 0; k < this->gt->m; ++k){
-					this->gt->d_occ[i][n_offset].allele[k] = this->gt->rcds[j].allele[k];
+					this->gt->d_occ[i][this->gt->n_i_occ[i]].allele[k] = this->gt->rcds[j].allele[k];
 				}
 
 				// Set run-length representation.
-				this->gt->d_occ[i][n_offset].run_length = to - from;
-				assert(n_offset < this->gt->n_i);
-				++n_offset;
-				cum_sum_hit += to - from;
+				this->gt->d_occ[i][this->gt->n_i_occ[i]].run_length = to - from;
+				assert(this->gt->n_i_occ[i] < this->gt->n_i);
+				++this->gt->n_i_occ[i];
+				cum_sums_hit[i] += to - from;
 			}
-			cum_sum += this->gt->rcds[j].run_length;
+			cum_sums[i] += this->gt->rcds[j].run_length;
 		}
-		assert(cum_sum == this->gt->n_s);
-		assert(cum_sum_hit == occ.cum_sums[i]);
-		this->gt->n_i_occ[i] = n_offset;
 	}
+	// Debug assertions.
+	for(int i = 0; i < this->gt->n_o; ++i){
+		assert(cum_sums[i] == this->gt->n_s);
+		assert(cum_sums_hit[i] == occ.cum_sums[i]);
+	}
+
+	delete [] cum_sums;
+	delete [] cum_sums_hit;
+
 	return(true);
 }
 

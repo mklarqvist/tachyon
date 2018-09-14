@@ -90,19 +90,19 @@ public:
 	bool AddInfoWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
 	bool AddFormatWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
 
-	template <class return_ptype>
+	template <class return_ptype, class intrinsic_ptype = return_ptype>
 	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
 
-	template <class return_ptype>
+	template <class return_ptype, class intrinsic_ptype = return_ptype>
 	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
 
 	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
 	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride);
 
-	template <class return_ptype>
+	template <class return_ptype, class intrinsic_ptype = return_ptype>
 	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
 
-	template <class return_ptype>
+	template <class return_ptype, class intrinsic_ptype = return_ptype>
 	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
 
 	bool AddGenotypes(containers::VariantBlock& block, const VariantHeader& header);
@@ -183,7 +183,7 @@ public:
 	yon1_vnt_t* variants_;
 };
 
-template <class return_ptype>
+template <class return_ptype, class intrinsic_ptype>
 bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
 	if(container.strides_uncompressed.size() == 0)
 		return false;
@@ -206,7 +206,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 		} else if(matches[this->variants_[i].info_pid]){
 			this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, it->GetInt32(stride_offset));
 			this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-			current_offset += it->GetInt32(stride_offset) * sizeof(return_ptype);
+			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype);
 			++stride_offset;
 		}
 	}
@@ -216,7 +216,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 	return true;
 }
 
-template <class return_ptype>
+template <class return_ptype, class intrinsic_ptype>
 bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
 	uint32_t current_offset = 0;
 
@@ -236,7 +236,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 			} else if(matches[this->variants_[i].info_pid]){
 				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
 				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size * sizeof(return_ptype);
+				current_offset += stride_size * sizeof(intrinsic_ptype);
 			}
 		}
 		assert(current_offset == container.data_uncompressed.size());
@@ -244,7 +244,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 	return true;
 }
 
-template <class return_ptype>
+template <class return_ptype, class intrinsic_ptype>
 bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
 	if(container.strides_uncompressed.size() == 0)
 		return false;
@@ -267,7 +267,7 @@ bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& head
 		} else if(matches[this->variants_[i].fmt_pid]){
 			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
 			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-			current_offset += it->GetInt32(stride_offset) * sizeof(return_ptype) * header.GetNumberSamples();
+			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype) * header.GetNumberSamples();
 			++stride_offset;
 		}
 	}
@@ -276,7 +276,7 @@ bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& head
 	return true;
 }
 
-template <class return_ptype>
+template <class return_ptype, class intrinsic_ptype>
 bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
 	uint32_t current_offset = 0;
 
@@ -296,7 +296,7 @@ bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& head
 			} else if(matches[this->variants_[i].fmt_pid]){
 				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
 				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size * sizeof(return_ptype) * header.GetNumberSamples();
+				current_offset += stride_size * sizeof(intrinsic_ptype) * header.GetNumberSamples();
 			}
 		}
 		assert(current_offset == container.data_uncompressed.size());

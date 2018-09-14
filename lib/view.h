@@ -42,6 +42,7 @@ void view_usage(void){
 	"                 z: compressed VCF,  v: uncompressed VCF [v]\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
 	"  -r STRING interval string\n"
+	"  -b STRING groupings file\n"
 	//"  -R STRING path to file with interval strings\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -X        annotate FORMAT:GT data and add these statistics to the INFO column\n"
@@ -86,6 +87,7 @@ int view(int argc, char** argv){
 	static struct option long_options[] = {
 		{"input",             required_argument, 0,  'i' },
 		{"output",            optional_argument, 0,  'o' },
+		{"occ",               optional_argument, 0,  'b' },
 		{"keychain",          optional_argument, 0,  'k' },
 		{"filter",            optional_argument, 0,  'f' },
 		{"output-type",       optional_argument, 0,  'O' },
@@ -131,7 +133,7 @@ int view(int argc, char** argv){
 	tachyon::VariantReader reader;
 	tachyon::VariantReaderFilters& filters = reader.GetFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:GshHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:GshHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:b:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
@@ -141,6 +143,9 @@ int view(int argc, char** argv){
 			break;
 		case 'o':
 			settings.output = std::string(optarg);
+			break;
+		case 'b':
+			settings.group_file = std::string(optarg);
 			break;
 		case 'k':
 			settings.keychain_file = std::string(optarg);

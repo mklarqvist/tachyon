@@ -46,6 +46,7 @@ public:
 	bool use_htslib;
 	std::string input;
 	std::string output;
+	std::string group_file;
 	std::string keychain_file;
 	char output_type;
 };
