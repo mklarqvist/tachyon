@@ -66,7 +66,7 @@ public:
 	/**<
 	 * Check if the stride size of this container matches the
 	 * supplied stride size. Always returns FALSE if the container
-	 * has mixed stride sizes
+	 * has mixed stride sizes.
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
@@ -79,7 +79,7 @@ public:
 
 	/**<
 	 * Triggers the necessary switches to set this container
-	 * as having mixed strides
+	 * as having mixed strides.
 	 */
 	inline void TriggerMixedStride(void){
 		this->header.data_header.stride = -1;
@@ -114,6 +114,13 @@ public:
 	 */
 	void AddStride(const uint32_t value);
 
+	/**<
+	 * Adds a value to the data buffer. Integers are always added as int32_t
+	 * types. This means that EOV sentinel node symbols and missing values
+	 * have to be expanded into int32_t space.
+	 * @param value Src value.
+	 * @return      Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool Add(const uint8_t& value);
 	bool Add(const uint16_t& value);
 	bool Add(const uint32_t& value);
@@ -126,7 +133,7 @@ public:
 	bool Add(const double& value);
 	bool AddCharacter(const char& value);
 	bool AddCharacter(const char* const string, const uint32_t l_string);
-	// Aliases
+	// Aliases for adding a string.
 	inline bool AddString(const char* const string, const uint32_t l_string){ return(this->AddCharacter(string, l_string)); }
 	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
 	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }

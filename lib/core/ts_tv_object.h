@@ -63,20 +63,22 @@ public:
 	uint64_t  n_ts, n_tv;
 	double    ts_tv_ratio;
 	uint64_t* base_conv[9]; // {A,T,G,C,unknown,'.',EOV,ins,del}
-	uint64_t* ins_del_dist;
+	uint64_t* ins_del_dist; // indel distribution. values are zigzagged.
 };
 
 struct yon_stats_tstv {
 public:
 	struct yon_stats_tstv_obj {
-		yon_stats_tstv_obj(): n_allele(0), allele_encodings(nullptr),non_ref_encodings(nullptr),b_size(nullptr){}
-		yon_stats_tstv_obj(const uint32_t n_allele): n_allele(n_allele), allele_encodings(new uint8_t[n_allele]),non_ref_encodings(new uint8_t[n_allele]),b_size(new int32_t[n_allele]){}
+		yon_stats_tstv_obj(): n_allele(0), n_non_ref(0), t_non_ref(0), allele_encodings(nullptr), non_ref_encodings(nullptr), b_size(nullptr){}
+		yon_stats_tstv_obj(const uint32_t n_allele): n_allele(n_allele), n_non_ref(0), t_non_ref(0), allele_encodings(new uint8_t[n_allele]), non_ref_encodings(new uint8_t[n_allele]), b_size(new int32_t[n_allele]){ }
 		~yon_stats_tstv_obj(){
 			delete [] allele_encodings;
 			delete [] non_ref_encodings;
 			delete [] b_size;
 		}
 		uint32_t  n_allele;
+		uint32_t  n_non_ref; // Number of alleles with non-ref alleles.
+		uint32_t  t_non_ref; // Target id for non-ref allele.
 		uint8_t*  allele_encodings;
 		uint8_t*  non_ref_encodings;
 		int32_t*  b_size;
@@ -161,16 +163,8 @@ public:
 	 * @return     Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool Update(const yon1_vnt_t& rcd);
-
-	void UpdateDiploid(const yon_gt* gt,
-	                   yon_stats_tstv_obj& helper,
-	                   uint32_t& n_non_ref,
-	                   uint32_t& t_non_ref);
-
-	void UpdateNPloidy(const yon_gt* gt,
-	                   yon_stats_tstv_obj& helper,
-	                   uint32_t& n_non_ref,
-	                   uint32_t& t_non_ref);
+	void UpdateDiploid(const yon_gt* gt, yon_stats_tstv_obj& helper);
+	void UpdateNPloidy(const yon_gt* gt, yon_stats_tstv_obj& helper);
 
 	// Todo
 	void Evaluate(void){
@@ -195,6 +189,7 @@ public:
 	uint64_t n_snp, n_mnp, n_ins, n_del, n_other; // determined during lazy evaluation
 	uint64_t n_no_alts, n_biallelic, n_multi_allele, n_multi_allele_snp, n_singleton;
 	yon_stats_sample* sample;
+	uint64_t* alt_count; // number of alt distribution
 };
 
 }

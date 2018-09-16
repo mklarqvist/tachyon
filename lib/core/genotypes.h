@@ -21,7 +21,8 @@ namespace tachyon {
 #define YON_GT_DIPLOID_BCF_A(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> ((SHIFT) + 1)) & (((uint64_t)1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_B(PRIMITIVE, SHIFT)       (((PRIMITIVE) >> 1) & (((uint64_t)1 << (SHIFT)) - 1))
 #define YON_GT_DIPLOID_BCF_PHASE(PRIMITIVE)          ((PRIMITIVE) & 1)
-#define YON_GT_BCF1(ALLELE) ((( (ALLELE) >> 1) - 1) << 1) | (ALLELE & 1)
+#define YON_GT_BCF1(ALLELE) (((((ALLELE) >> 1) - 1) << 1) | (ALLELE & 1))
+#define YON_GT_ALLELE_UNPACK(ALLELE) (ALLELE >> 1)
 
 // 0:  Nothing evaluated
 // 1:  rcds

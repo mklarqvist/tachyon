@@ -143,10 +143,9 @@ bool DataContainer::CheckUniformity(void){
 	default: return false; break;
 	}
 
-
 	assert(data_uncompressed.size() % word_width == 0);
 	assert((data_uncompressed.size() / word_width) % header.n_additions == 0);
-	const uint32_t n_e = data_uncompressed.size() / word_width;
+	const uint32_t n_e = data_uncompressed.size() / stride_update;
 
 	const uint64_t first_hash = XXH64(this->data_uncompressed.data(), stride_update, 2147483647);
 
@@ -157,7 +156,7 @@ bool DataContainer::CheckUniformity(void){
 		}
 		cumulative_position += stride_update;
 	}
-	//std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;
