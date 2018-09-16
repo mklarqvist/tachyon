@@ -611,6 +611,7 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 
 bool VariantReader::Stats(void){
 	const uint32_t n_threads = std::thread::hardware_concurrency();
+	//const uint32_t n_threads = 1;
 	yon_producer_vblock<VariantReader> prd(n_threads);
 	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
 	prd.Start();
@@ -646,6 +647,7 @@ bool VariantReader::Stats(void){
 	delete [] csm;
 
 	io::BasicBuffer json_buffer(250000);
+	s.Evaluate();
 	s.ToJsonString(json_buffer, this->global_header.samples_);
 
 	std::cout.write(json_buffer.data(), json_buffer.size());

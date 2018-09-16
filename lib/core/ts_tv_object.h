@@ -63,9 +63,25 @@ public:
 	uint64_t  n_ts, n_tv;
 	double    ts_tv_ratio;
 	uint64_t* base_conv[9]; // {A,T,G,C,unknown,'.',EOV,ins,del}
+	uint64_t* ins_del_dist;
 };
 
 struct yon_stats_tstv {
+public:
+	struct yon_stats_tstv_obj {
+		yon_stats_tstv_obj(): n_allele(0), allele_encodings(nullptr),non_ref_encodings(nullptr),b_size(nullptr){}
+		yon_stats_tstv_obj(const uint32_t n_allele): n_allele(n_allele), allele_encodings(new uint8_t[n_allele]),non_ref_encodings(new uint8_t[n_allele]),b_size(new int32_t[n_allele]){}
+		~yon_stats_tstv_obj(){
+			delete [] allele_encodings;
+			delete [] non_ref_encodings;
+			delete [] b_size;
+		}
+		uint32_t  n_allele;
+		uint8_t*  allele_encodings;
+		uint8_t*  non_ref_encodings;
+		int32_t*  b_size;
+	};
+
 public:
 	yon_stats_tstv();
 	yon_stats_tstv(const uint32_t n_samples);
@@ -113,9 +129,7 @@ public:
 	 * @param non_ref_encodings Pointer to empty integer array.
 	 * @return                  Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool GetEncodings(const yon1_vnt_t& rcd,
-	                  __restrict__ uint8_t*& allele_encodings,
-	                  __restrict__ uint8_t*& non_ref_encodings);
+	bool GetEncodings(const yon1_vnt_t& rcd, yon_stats_tstv_obj& helper);
 
 	/**<
 	 * Update the current structure with the genotype data from the
@@ -149,16 +163,24 @@ public:
 	bool Update(const yon1_vnt_t& rcd);
 
 	void UpdateDiploid(const yon_gt* gt,
-	                   __restrict__ const uint8_t* allele_encodings,
-	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   yon_stats_tstv_obj& helper,
 	                   uint32_t& n_non_ref,
 	                   uint32_t& t_non_ref);
 
 	void UpdateNPloidy(const yon_gt* gt,
-	                   __restrict__ const uint8_t* allele_encodings,
-	                   __restrict__ const uint8_t* non_ref_encodings,
+	                   yon_stats_tstv_obj& helper,
 	                   uint32_t& n_non_ref,
 	                   uint32_t& t_non_ref);
+
+	// Todo
+	void Evaluate(void){
+		for(uint32_t i = 0; i < this->n_s; ++i){
+			this->sample[i].LazyEvalute();
+			this->n_del += this->sample[i].n_del;
+			this->n_ins += this->sample[i].n_ins;
+			this->n_singleton += this->sample[i].n_singleton;
+		}
+	}
 
 	/**<
 	 * Resets all internal counters. Useful when reusing

@@ -660,7 +660,11 @@ bool VariantContainer::AddRefAlt(dc_type& container){
 	if(container.data_uncompressed.size() == 0)
 		return false;
 
+	uint32_t stride_add = 1;
 	yon_cont_ref<uint8_t> it(container.data_uncompressed.data(), container.data_uncompressed.size());
+	if(container.header.data_header.IsUniform()){
+		stride_add = 0;
+	}
 
 	uint32_t refalt_position = 0;
 	for(uint32_t i = 0; i < this->n_variants_; ++i){
@@ -692,7 +696,7 @@ bool VariantContainer::AddRefAlt(dc_type& container){
 				this->variants_[i].alleles[1] = s;
 			}
 			// Do not increment in case this data is uniform
-			if(it.is_uniform_ == false) ++refalt_position;
+			if(it.is_uniform_ == false) refalt_position += stride_add;
 		}
 		// otherwise load from literal cold
 		else {
