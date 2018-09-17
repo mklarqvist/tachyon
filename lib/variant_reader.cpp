@@ -688,6 +688,8 @@ bool VariantReader::TempWrite(void){
 				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 
+			vc[i].gt->Expand();
+			std::cerr << (vc[i].gt == nullptr) << "," << (vc[i].gt->d_exp == nullptr) << std::endl;
 			vblock.AddMore(vc[i]);
 			// Todo: Update controller (ref alt checks etc)
 			vblock += vc[i];
