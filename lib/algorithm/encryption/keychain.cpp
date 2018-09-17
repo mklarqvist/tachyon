@@ -138,7 +138,7 @@ bool Keychain::BuildHashTable(void){
 }
 
 std::ostream& operator<<(std::ostream& stream, const Keychain& keychain){
-	stream.write(constants::FILE_HEADER.data(), constants::FILE_HEADER_LENGTH);
+	stream.write(TACHYON_MAGIC_HEADER.data(), TACHYON_MAGIC_HEADER_LENGTH);
 	stream.write(reinterpret_cast<const char*>(&keychain.n_entries_),  sizeof(size_t));
 	stream.write(reinterpret_cast<const char*>(&keychain.n_capacity_), sizeof(size_t));
 
@@ -150,9 +150,9 @@ std::ostream& operator<<(std::ostream& stream, const Keychain& keychain){
 }
 
 std::istream& operator>>(std::istream& stream, Keychain& keychain){
-	char header[constants::FILE_HEADER_LENGTH];
-	stream.read(&header[0], constants::FILE_HEADER_LENGTH);
-	if(strncmp(&header[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
+	char header[TACHYON_MAGIC_HEADER_LENGTH];
+	stream.read(&header[0], TACHYON_MAGIC_HEADER_LENGTH);
+	if(strncmp(&header[0], &TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH) != 0){
 		std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Illegal keychain..." << std::endl;
 		return(stream);
 	}

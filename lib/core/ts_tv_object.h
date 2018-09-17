@@ -76,6 +76,7 @@ public:
 			delete [] non_ref_encodings;
 			delete [] b_size;
 		}
+
 		uint32_t  n_allele;
 		uint32_t  n_non_ref; // Number of alleles with non-ref alleles.
 		uint32_t  t_non_ref; // Target id for non-ref allele.
@@ -103,7 +104,7 @@ public:
 	 * @param ppa   Src permutation array describing the relationship between the current object and the provided one
 	 * @return      Returns an reference to the dst object.
 	 */
-	yon_stats_tstv& Add(const yon_stats_tstv& other, const yon_gt_ppa& ppa);
+	yon_stats_tstv& Add(const yon_stats_tstv& other, const yon_gt_ppa* ppa);
 
 	/**<
 	 * Allocates memory for a number of samples. All previous data
@@ -168,12 +169,8 @@ public:
 
 	// Todo
 	void Evaluate(void){
-		for(uint32_t i = 0; i < this->n_s; ++i){
+		for(uint32_t i = 0; i < this->n_s; ++i)
 			this->sample[i].LazyEvalute();
-			this->n_del += this->sample[i].n_del;
-			this->n_ins += this->sample[i].n_ins;
-			this->n_singleton += this->sample[i].n_singleton;
-		}
 	}
 
 	/**<

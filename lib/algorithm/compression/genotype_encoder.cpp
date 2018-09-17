@@ -24,10 +24,23 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 		if(rcds[i].controller.gt_available == false)
 			continue;
 
-		io::VcfGenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
+		GenotypeSummary gt_summary = container.GetGenotypeSummary(i, this->n_samples);
 
 		yon_gt_assess assessed = this->Assess(container[i], gt_summary, permutation_array);
 		const uint8_t primitive = assessed.GetCheapestPrimitive();
+		//const uint8_t rprimitive = assessed.GetCheapestRawPrimitive();
+
+		// Debug
+		/*
+		std::cout << rcds[i].rid << "\t" << rcds[i].pos+1 << "\t" << (int)assessed.method << "\t" << (int)primitive << "\t" << assessed.n_cost[primitive] << "\t" << (int)rprimitive-4 << "\t" << assessed.n_cost[rprimitive];
+		for(int i = 0; i < 8; ++i){
+			std::cout << "\t" << assessed.n_cost[i];
+		}
+		for(int i = 0; i < 8; ++i){
+			std::cout << "\t" << assessed.n_runs[i];
+		}
+		std::cout << std::endl;
+		*/
 
 		rcds[i].controller.biallelic         = (container[i]->n_allele == 2);
 		rcds[i].controller.diploid           = (gt_summary.base_ploidy == 2);
@@ -96,7 +109,7 @@ bool GenotypeEncoder::Encode(const containers::VcfContainer& container,
 }
 
 yon_gt_assess GenotypeEncoder::Assess(const bcf1_t* entry,
-                                      const io::VcfGenotypeSummary& gt_summary,
+                                      const GenotypeSummary& gt_summary,
                                       const yon_gt_ppa& permutation_array) const
 {
 	// Special case of diploid record.
@@ -114,8 +127,31 @@ yon_gt_assess GenotypeEncoder::Assess(const bcf1_t* entry,
 	return assessed;
 }
 
+yon_gt_assess GenotypeEncoder::Assess(const yon1_vnt_t& entry, const yon_gt_ppa& permutation_array) const{
+	if(entry.controller.gt_available == false)
+		return yon_gt_assess();
+
+	GenotypeSummary gt_summary;
+	gt_summary.Evaluate(entry, this->n_samples);
+
+	/*
+	// Special case of diploid record.
+	yon_gt_assess assessed;
+	if(entry.gt->m == 2){
+		if(entry.n_alleles == 2)
+			assessed = this->AssessDiploidBiallelic(entry, permutation_array);
+		else
+			assessed = this->AssessDiploidMultiAllelic(entry, permutation_array);
+	}
+	else {
+		assessed = this->AssessMultiploid(entry,permutation_array);
+	}
+	*/
+	return yon_gt_assess();
+}
+
 yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry,
-                                                      const io::VcfGenotypeSummary& gt_summary,
+                                                      const GenotypeSummary& gt_summary,
                                                       const yon_gt_ppa& permutation_array) const
 {
 	assert(entry->d.fmt[0].n == 2);
@@ -185,7 +221,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry,
 			rle_ppa_current_ref = rle_ppa_current;
 		}
 
-		// Overflow: trigger a break
+		// Overflow: trigger a breakAssessDiploidBiallelic
 		for(uint32_t k = 0; k < 4; ++k){
 			if(l_runs[k] == limits[k]){ ++n_runs[k]; l_runs[k] = 0; }
 			++l_runs[k];
@@ -218,8 +254,62 @@ yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const bcf1_t* entry,
 	return sum;
 }
 
+yon_gt_assess GenotypeEncoder::AssessDiploidBiallelic(const yon1_vnt_t& entry,
+                                                      const GenotypeSummary& gt_summary,
+                                                      const yon_gt_ppa& permutation_array) const
+{
+	assert(entry.gt->m == 2);
+	assert(entry.n_alleles == 2);
+	const uint8_t   base_ploidy = entry.gt->m;
+
+	// Track all possible outcomes.
+	// 1: uint8_t + Permuted
+	// 2: uint16_t  + Permuted
+	// 3: uint32_t  + Permuted
+	// 4: uint64_t  + Permuted
+	// 5: uint8_t + No permutation
+	// 6: uint16_t  + No permutation
+	// 7: uint32_t  + No permutation
+	// 8: uint64_t  + No permutation
+	uint64_t n_runs[8]; // Number of runs.
+	uint64_t l_runs[8]; // Current run length.
+	for(uint32_t i = 0; i < 8; ++i) l_runs[i] = 1;
+	for(uint32_t i = 0; i < 8; ++i) n_runs[i] = 0;
+
+	// 1 + hasMissing + hasMixedPhasing
+	const uint8_t shift  = gt_summary.n_missing      ? 2 : 1; // 1-bits enough when no data missing {0,1}, 2-bits required when missing is available {0,1,2}
+	const uint8_t add    = gt_summary.mixed_phasing  ? 1 : 0;
+
+	// Run limits
+	uint64_t limits[4];
+	limits[0] = pow(2, 8*sizeof(uint8_t)  - (base_ploidy*shift + add)) - 1;
+	limits[1] = pow(2, 8*sizeof(uint16_t) - (base_ploidy*shift + add)) - 1;
+	limits[2] = pow(2, 8*sizeof(uint32_t) - (base_ploidy*shift + add)) - 1;
+	limits[3] = pow(2, 8*sizeof(uint64_t) - (base_ploidy*shift + add)) - 1;
+
+	// Todo: convert YON_GT_RCD to YON_PACK_GT_DIPLOID
+//#define YON_PACK_GT_DIPLOID(A, B, SHIFT, ADD) (BCF_UNPACK_GENOTYPE(A) << ((SHIFT) + (ADD))) | (BCF_UNPACK_GENOTYPE(B) << (ADD)) | ((A) & (ADD))
+//#define YON_PACK_GT_DIPLOID_NALLELIC(A, B, SHIFT, ADD, PHASE) ((A) << ((SHIFT) + (ADD))) | ((B) << (ADD)) | ((PHASE) & (ADD))
+
+	/*
+#define YON_PACK_GT_RCD_DIPLOID(A, B, SHIFT, ADD) (YON_GT_RCD_ALLELE_UNPACK(A) << ((SHIFT) + (ADD))) | (YON_GT_RCD_ALLELE_UNPACK(B) << (ADD)) | ((A) & (ADD))
+
+	YON_GT_RCD_ALLELE_UNPACK(entry.gt->rcds[0].allele[0]) << (shift + add);
+	YON_GT_RCD_ALLELE_UNPACK(entry.gt->rcds[0].allele[1]) << (add);
+	YON_GT_RCD_PHASE(entry.gt->rcds[0].allele[1]);
+
+	uint32_t rle_current_ref     = YON_PACK_GT_RCD_DIPLOID(entry.gt->rcds[0].allele[0], entry.gt->rcds[0].allele[1], shift, add);
+	uint32_t rle_ppa_current_ref = YON_PACK_GT_DIPLOID(gt[permutation_array[0] * sizeof(int8_t) * base_ploidy],
+												  gt[permutation_array[0] * sizeof(int8_t) * base_ploidy + 1],
+												  shift, add);
+
+  */
+
+	return yon_gt_assess();
+}
+
 yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
-                                                         const io::VcfGenotypeSummary& gt_summary,
+                                                         const GenotypeSummary& gt_summary,
                                                          const yon_gt_ppa& permutation_array) const
 {
 	assert(entry->d.fmt[0].n == 2);
@@ -258,6 +348,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	limits[2] = pow(2, 8*sizeof(uint32_t)  - (base_ploidy*shift + add)) - 1;
 	limits[3] = pow(2, 8*sizeof(uint64_t)  - (base_ploidy*shift + add)) - 1;
 	bool banned_limit[4];
+	memset(banned_limit, 0, 4*sizeof(bool));
 	if(limits[0] <= 0){ limits[0] = std::numeric_limits<int64_t>::max(); banned_limit[0] = true; }
 	if(limits[1] <= 0){ limits[1] = std::numeric_limits<int64_t>::max(); banned_limit[1] = true; }
 	if(limits[2] <= 0){ limits[2] = std::numeric_limits<int64_t>::max(); banned_limit[2] = true; }
@@ -339,6 +430,10 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	assert(l_gt_offset == l_gt);
 	for(uint32_t k = 0; k < 8; ++k) ++n_runs[k];
 
+	uint8_t banned_sum = 0;
+	for(int i = 0; i < 4; ++i) banned_sum += banned_limit[i];
+	assert(banned_sum != 4);
+
 	yon_gt_assess sum;
 	for(uint32_t k = 0; k < 4; ++k){
 		if(banned_limit[k]){
@@ -360,7 +455,6 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 	}
 	sum.method = 1;
 
-
 	/*
 	std::cout << entry->pos + 1 << "\tM";
 	for(uint32_t i = 0; i < 8; ++i)
@@ -372,7 +466,7 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const bcf1_t* entry,
 }
 
 yon_gt_assess GenotypeEncoder::AssessMultiploid(const bcf1_t* entry,
-                                                const io::VcfGenotypeSummary& gt_summary,
+                                                const GenotypeSummary& gt_summary,
                                                 const yon_gt_ppa& permutation_array) const
 {
 	const uint8_t   base_ploidy = entry->d.fmt[0].n;

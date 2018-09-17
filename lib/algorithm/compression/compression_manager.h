@@ -27,6 +27,100 @@ public:
 	bool Decompress(variant_block_type& block);
 	bool Decompress(container_type& container, yon_gt_ppa& gt_ppa);
 
+	template <class int_t>
+	bool FormatStrideShift(container_type& container, const uint32_t n_samples){
+		containers::StrideContainer<> s(container);
+		const int_t* src = reinterpret_cast<const int_t*>(container.data_uncompressed.data());
+		const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int_t);
+		assert(container.data_uncompressed.size() % sizeof(int_t) == 0);
+
+		io::BasicBuffer dst_buffer(n_entries*sizeof(int_t) + 65536);
+		int_t* dst = reinterpret_cast<int_t*>(dst_buffer.data());
+
+		uint32_t offset = 0;
+
+		int_t** buckets = new int_t*[100];
+
+		// Iterate over available entries.
+		for(int i = 0; i < s.size(); ++i){
+			const uint32_t n_width  = n_samples*s[i]; // n_entries in row
+			const int_t* l_src = &src[offset]; // current src data
+			int_t* l_dst = &dst[offset]; // current src data
+
+			// Setup buckets
+			for(int b = 0; b < s[i]; ++b){
+				buckets[b] = &l_dst[n_samples*b];
+			}
+
+			/*
+			if(s[i] == 3){
+				std::cerr << "stride: " << s[i] << std::endl;
+				for(int k = 0; k < n_width; ++k){
+					std::cerr << "," << (int)l_src[k];
+				}
+				std::cerr << std::endl;
+			}
+			*/
+
+			// First
+			uint32_t l_offset = 0;
+
+			// Iterate over stride
+			for(int j = 0; j < n_samples; ++j){
+				// Iterate over current stride.
+				for(int b = 0; b < s[i]; ++b){
+					*buckets[b] = l_src[l_offset++];
+					++buckets[b];
+				}
+			}
+
+			/*
+			if(s[i] == 3){
+				for(int k = 0; k < n_width; ++k){
+					std::cerr << "," << (int)l_dst[k];
+				}
+				std::cerr << std::endl;
+				exit(1);
+			}
+			*/
+
+			assert(l_offset == n_width);
+			offset += n_width;
+		}
+
+		assert(offset == n_entries);
+		const uint32_t b_original = container.data_uncompressed.size();
+		dst_buffer.n_chars_ = container.data_uncompressed.size();
+
+		delete [] buckets;
+
+		/*
+		std::cout << "original:" << std::endl;
+		for(int i = 0; i < n_entries; ++i){
+			std::cout << "," << (int)src[i];
+		}
+		std::cout << std::endl;
+		std::cout << "delta:" << std::endl;
+		for(int i = 0; i < n_entries; ++i){
+			std::cout << "," << (int)dst[i];
+		}
+		std::cout << std::endl;
+		exit(1);
+		*/
+
+		zstd_codec.Compress(container);
+		std::cerr << utility::timestamp("DEBUG") << "zstd-pack-" << sizeof(int_t)*8 << "-default: " <<  container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
+		const uint32_t std_size = container.data.size();
+
+		io::BasicBuffer ubackup; ubackup = std::move(container.data_uncompressed);
+		//io::BasicBuffer cbackup; cbackup = std::move(container.data);
+
+		container.data_uncompressed = std::move(dst_buffer);
+		zstd_codec.Compress(container);
+		std::cerr << utility::timestamp("DEBUG") << "zstd-pack-" << sizeof(int_t)*8 << ": " << b_original << "->" << container.data_uncompressed.size() << "->" << container.data.size() << " -> " << (float)b_original/container.data.size() << std::endl;
+		return true;
+	}
+
 	template <class in_int_t, class out_int_t, class out_uint_t>
 	bool FormatHorizontalDelta(container_type& container, const uint32_t n_samples){
 		containers::StrideContainer<> s(container);

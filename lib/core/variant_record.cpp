@@ -98,8 +98,8 @@ bool yon1_vnt_t::UsePackedRefAlt(void) const{
 	if(this->controller.biallelic == false || this->controller.diploid == false)
 		return false;
 
-	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), constants::YON_REGEX_PACKED_ALLELES) &&
-	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), constants::YON_REGEX_PACKED_ALLELES)){
+	if(std::regex_match(std::string(this->alleles[0].allele, this->alleles[0].l_allele), YON_REGEX_PACKED_ALLELES) &&
+	   std::regex_match(std::string(this->alleles[1].allele, this->alleles[1].l_allele), YON_REGEX_PACKED_ALLELES)){
 		return true;
 	}
 	return false;

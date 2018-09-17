@@ -18,8 +18,8 @@
 // The INTERPRETED_COMMAND string is the internal dump of the
 // settings used for a subroutine. This is very useful for
 // debugging and legacy purposes.
-std::string tachyon::constants::LITERAL_COMMAND_LINE;
-std::string tachyon::constants::INTERPRETED_COMMAND;
+std::string tachyon::LITERAL_COMMAND_LINE;
+std::string tachyon::INTERPRETED_COMMAND;
 
 /**<
  * Print a standard program message to standard out. This message
@@ -37,8 +37,8 @@ void programMessage(const bool separator = true){
 	if(match != std::string::npos) openssl_version_string = openssl_version_string.substr(0, match);
 
 	// General message for program version, git version, and linked library versions.
-	std::cerr << "Program:   " << tachyon::constants::PROGRAM_NAME << "-" << VERSION << " (Tools for querying and manipulating variant call data)" << std::endl;
-	std::cerr << "Libraries: " << tachyon::constants::PROGRAM_NAME << '-' << tachyon::constants::TACHYON_LIB_VERSION
+	std::cerr << "Program:   " << tachyon::TACHYON_PROGRAM_NAME << "-" << VERSION << " (Tools for querying and manipulating variant call data)" << std::endl;
+	std::cerr << "Libraries: " << tachyon::TACHYON_PROGRAM_NAME << '-' << tachyon::TACHYON_LIB_VERSION
               << "; " << openssl_version_string
               << "; ZSTD-" << ZSTD_versionString()
 			  << "; htslib " << std::string(hts_version()) << std::endl;
@@ -55,7 +55,7 @@ void programMessage(const bool separator = true){
  */
 void programHelp(void){
 	programMessage(false);
-	std::cerr << "\nUsage: " << tachyon::constants::PROGRAM_NAME << " [--version] [--help] <commands> <argument>"
+	std::cerr << "\nUsage: " << tachyon::TACHYON_PROGRAM_NAME << " [--version] [--help] <commands> <argument>"
     "\n\n"
     "Commands:\n"
 	"import    import VCF/BCF to YON\n"

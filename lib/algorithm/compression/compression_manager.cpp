@@ -147,18 +147,18 @@ bool CompressionManager::Compress(variant_block_type& block,
 
 				/*
 				if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_16B && block.format_containers[i].header.data_header.IsSigned() == false){
-					//if(this->FormatHorizontalDelta<uint16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
+					if(this->FormatStripedDelta<uint16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
 						this->EncodeUnsignedVariableInt<uint16_t>(block.format_containers[i]);
 
 
 				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_32B && block.format_containers[i].header.data_header.IsSigned() == false){
-					//if(this->FormatHorizontalDelta<uint32_t, int64_t, uint64_t>(block.format_containers[i], n_samples) == false)
+					if(this->FormatStripedDelta<uint32_t, int64_t, uint64_t>(block.format_containers[i], n_samples) == false)
 						this->EncodeUnsignedVariableInt<uint32_t>(block.format_containers[i]);
 
 				}
 
 				else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_8B && block.format_containers[i].header.data_header.IsSigned() == false){
-					//if(this->FormatHorizontalDelta<uint8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
+					if(this->FormatStripedDelta<uint8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
 						zstd_codec.Compress(block.format_containers[i]);
 				}
 
@@ -167,13 +167,13 @@ bool CompressionManager::Compress(variant_block_type& block,
 					this->EncodeZigZagVariableInt32(block.format_containers[i]);
 
 				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_16B && block.format_containers[i].header.data_header.IsSigned() == true){
-					//if(this->FormatHorizontalDelta<int16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
+					if(this->FormatStripedDelta<int16_t, int32_t, uint32_t>(block.format_containers[i], n_samples) == false)
 						this->EncodeZigZagVariableInt16(block.format_containers[i]);
 					//	this->EncodeZigZag<int16_t, uint16_t>(block.format_containers[i]);
 
 				} else if(block.format_containers[i].header.data_header.GetPrimitiveType() == YON_TYPE_8B && block.format_containers[i].header.data_header.IsSigned() == true){
 					//
-					//if(this->FormatHorizontalDelta<int8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
+					if(this->FormatStripedDelta<int8_t, int16_t, uint16_t>(block.format_containers[i], n_samples) == false)
 						this->EncodeZigZag<int8_t, uint8_t>(block.format_containers[i]);
 
 				}

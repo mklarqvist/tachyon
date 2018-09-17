@@ -11,7 +11,7 @@
 
 namespace tachyon{
 
-const char* const REFALT_LOOKUP = "ATGC.XN";
+const char* const YON_REFALT_LOOKUP = "ATGC.XN";
 #define YON_ALLELE_A       0
 #define YON_ALLELE_T       1
 #define YON_ALLELE_G       2
@@ -495,15 +495,15 @@ public:
 	}
 
 	bool AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names){
-		if(n_info + names.size()*10 > m_info){
-			m_info += names.size()*10;
+		if(n_info + names.size()*10 + 3 > m_info){
+			m_info += names.size()*10 + 3;
 			containers::PrimitiveContainerInterface** old = info;
 			info = new containers::PrimitiveContainerInterface*[m_info];
 			for(int i = 0; i < n_info; ++i) info[i] = old[i];
 			delete [] old;
 		}
 
-		//EvaluatePopGenOcc();
+		EvaluatePopGenOcc(header);
 
 		for(int i = 0; i < names.size(); ++i){
 			this->AddInfo(names[i]+"_NM", header, gt_sum_occ[i].d->nm);
@@ -541,12 +541,17 @@ public:
 		return true;
 	}
 
-	// Todo: incorrect result
-	bool EvaluatePopGenOcc(void){
+	// Todo: incorrect result when sample groupings are overlapping
+	bool EvaluatePopGenOcc(VariantHeader& header){
 		if(this->gt == nullptr) return false;
 		if(this->gt->n_o == 0) return false;
+		if(gt->n_allele != 2 || gt->m != 2) return false;
 
-		const uint32_t n_gt_all = this->gt_sum->gt[2][2].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt + this->gt_sum->gt[3][3].n_cnt;
+		// Number of genotypes across populations.
+		const uint32_t n_gt_all = this->gt_sum->gt[2][2].n_cnt +
+				this->gt_sum->gt[2][3].n_cnt +
+				this->gt_sum->gt[3][2].n_cnt +
+				this->gt_sum->gt[3][3].n_cnt;
 
 		float* obs = new float[this->gt->n_o];
 		float* exp = new float[this->gt->n_o];
@@ -557,20 +562,23 @@ public:
 			const uint32_t n_gt = het + this->gt_sum_occ[i].gt[2][2].n_cnt + this->gt_sum_occ[i].gt[3][3].n_cnt;
 
 			const float p   = (2*(float)this->gt_sum_occ[i].gt[2][2].n_cnt + het) / (2*n_gt);
-			const float pq2 = 2*p*(1-p);
+			const float q   = (2*(float)this->gt_sum_occ[i].gt[3][3].n_cnt + het) / (2*n_gt);;
+			const float pq2 = 2*p*q;
 
 			// F = (Hexp - Hobs) / Hexp
 			const float Hobs = (float)het/n_gt; // observed heterozygosities in populations
 			const float Hexp = (float)pq2;      // expected heterozygosities in populations
 
+			/*
 			std::cerr << "occ" << i << "\t" <<
 			this->gt_sum_occ[i].gt[2][2].n_cnt << "\t" <<
 			this->gt_sum_occ[i].gt[2][3].n_cnt << "\t" <<
 			this->gt_sum_occ[i].gt[3][2].n_cnt << "\t" <<
 			this->gt_sum_occ[i].gt[3][3].n_cnt << "\t" <<
 			p << "\t" << (1-p) << "\t" <<
-			Hexp << "\t" << Hobs << "\t" <<
+			Hexp << "\t" << Hobs << "\t" << "F=" <<
 			(Hexp - Hobs) / Hexp << "\t" << Hobs*n_gt << "/" << Hexp*n_gt << "/" << n_gt << std::endl;
+			*/
 
 			obs[i] = Hobs;
 			exp[i] = Hexp;
@@ -591,19 +599,27 @@ public:
 		const float q_bar = (2*(float)this->gt_sum->gt[3][3].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt) / (2*n_gt_all);
 		const float h_t   = 2*p_bar*q_bar;
 
+		/*
 		std::cerr << "pbar=" << p_bar << " qbar=" << q_bar << " with " << n_gt_all << std::endl;
-
-
 		std::cerr << "sums: " << exp_sum << ", " << obs_sum << std::endl;
 		std::cerr << "hi=" << h_i << ", hs=" << h_s << ", ht=" << h_t << std::endl;
+		*/
 
 		// Fstatistics
 		// FIS [= (HS - HI)/HS]
-		std::cerr << "FIS=" << (h_s - h_i) / h_s << std::endl;
+		//std::cerr << "FIS=" << (h_s - h_i) / h_s << std::endl;
 		// FST [= (HT - HS)/HT]
-		std::cerr << "FST=" << (h_t - h_s) / h_t << std::endl;
+		//std::cerr << "FST=" << (h_t - h_s) / h_t << std::endl;
 		// FIT [= (HT - HI)/HT]
-		std::cerr << "FIT=" << (h_t - h_i) / h_t << std::endl;
+		//std::cerr << "FIT=" << (h_t - h_i) / h_t << std::endl;
+		float fis = (h_s - h_i) / h_s;
+		float fst = (h_t - h_s) / h_t;
+		float fit = (h_t - h_i) / h_t;
+
+		this->AddInfo("FIS", header, fis);
+		this->AddInfo("FST", header, fst);
+		this->AddInfo("FIT", header, fit);
+
 
 
 		delete [] exp; delete [] obs; delete [] n_s;
@@ -675,6 +691,153 @@ public:
 	yon_gt_summary* gt_sum_occ; // summary if occ has been invoked
 	containers::PrimitiveContainerInterface** info;
 	containers::PrimitiveGroupContainerInterface** fmt;
+};
+
+// Genotype helper
+struct GenotypeSummary {
+public:
+	GenotypeSummary(void) :
+		base_ploidy(0),
+		phase_if_uniform(0),
+		mixed_phasing(false),
+		invariant(false),
+		n_missing(0),
+		n_vector_end(0)
+	{}
+
+	~GenotypeSummary() = default;
+
+	/**<
+	 * Gathers summary statistics for a vector of genotypes
+	 * at a given site. Collects information regarding the
+	 * number of missing genotypes and count of sentinel
+	 * nodes, checks if the phasing is uniform and whether
+	 * all the genotypes are identical.
+	 * Todo: Use hashes to check for uniformity of genotypes.
+	 * @param n_samples Total number of samples in the input vector.
+	 *                  This is equivalent to the samples in the file.
+	 * @param fmt       The target htslib format structure.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
+	template<class T>
+	bool Evaluate(const size_t& n_samples, const bcf_fmt_t& fmt){
+		if(fmt.p_len == 0) return true;
+		assert(fmt.size/fmt.n == sizeof(T));
+
+		// Set the base ploidy. This corresponds to the LARGEST
+		// ploidy observed of ANY individual sample at the given
+		// locus. If a genotype has a ploidy < base ploidy then
+		// it is trailed with the sentinel node symbol to signal
+		// that the remainder of the vector is NULL.
+		this->base_ploidy = fmt.n;
+
+		// Find first phase
+		this->phase_if_uniform = 0;
+		// Iterate over genotypes to find the first valid phase
+		// continuing the search if the current value is the
+		// sentinel node symbol.
+		int j = fmt.n - 1;
+		for(uint32_t i = 0; i < n_samples; ++i){
+			if(io::VcfGenotype<T>::IsMissing(fmt.p[j]) == true
+			   || io::VcfType<T>::IsVectorEnd(fmt.p[j]) == true)
+				j += fmt.n;
+			else {
+				this->phase_if_uniform = fmt.p[j] & 1;
+				break;
+			}
+		}
+
+		// Iterate over genotypes to compute summary statistics
+		// regarding missingness, number of special sentinel
+		// symbols and assess uniformity of phasing.
+		j = fmt.n - 1;
+		for(uint32_t i = 0; i < n_samples; ++i){
+			if(io::VcfGenotype<T>::IsMissing(fmt.p[j]) == false
+			   && io::VcfType<int8_t>::IsVectorEnd(fmt.p[j]) == false
+			   && (fmt.p[j] & 1) != this->phase_if_uniform)
+			{
+				this->mixed_phasing = true;
+			}
+
+			// Iterate over the number of chromosomes / individual
+			for(int k = 0; k < fmt.n; ++k, ++j){
+				this->n_missing    += io::VcfGenotype<T>::IsMissing(fmt.p[j]);
+				this->n_vector_end += io::VcfType<T>::IsVectorEnd(fmt.p[j]);
+			}
+		}
+
+		return true;
+	}
+
+	/**<
+	 * Gathers summary statistics for a vector of genotypes
+	 * at a given site. Collects information regarding the
+	 * number of missing genotypes and count of sentinel
+	 * nodes, checks if the phasing is uniform and whether
+	 * all the genotypes are identical.
+	 * Todo: Use hashes to check for uniformity of genotypes.
+	 * @param rec       The src yon1_vnt_t record.
+	 * @param n_samples Total number of samples in the input vector.
+	 *                  This is equivalent to the samples in the file.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool Evaluate(const yon1_vnt_t& rec, const size_t& n_samples){
+		if(rec.gt == nullptr)
+			return false;
+
+		if(rec.gt->rcds == nullptr)
+			return false;
+
+		// Set the base ploidy. This corresponds to the LARGEST
+		// ploidy observed of ANY individual sample at the given
+		// locus. If a genotype has a ploidy < base ploidy then
+		// it is trailed with the sentinel node symbol to signal
+		// that the remainder of the vector is NULL.
+		this->base_ploidy = rec.gt->m;
+
+		// Find first phase
+		this->phase_if_uniform = 0;
+		const uint8_t p_offset = std::max(0, (int)rec.gt->m - 1);
+		// Iterate over genotypes to find the first valid phase
+		// continuing the search if the current value is the
+		// sentinel node symbol.
+		for(uint32_t i = 0; i < rec.gt->n_i; ++i){
+			if(YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1){
+				this->phase_if_uniform = (YON_GT_RCD_PHASE(rec.gt->rcds[i].allele[p_offset]));
+				break;
+			}
+		}
+
+		// Iterate over genotypes to compute summary statistics
+		// regarding missingness, number of special sentinel
+		for(uint32_t i = 0; i < rec.gt->n_i; ++i){
+			if(YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1
+			   && (YON_GT_RCD_PHASE(rec.gt->rcds[i].allele[p_offset])) != this->phase_if_uniform)
+			{
+				this->mixed_phasing = true;
+			}
+
+			// Iterate over the number of chromosomes / individual
+			for(int k = 0; k < rec.gt->m; ++k){
+				this->n_missing    += YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[k]) == YON_GT_RCD_MISS ? rec.gt->rcds[i].run_length : 0;
+				this->n_vector_end += YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[k]) == YON_GT_RCD_EOV ? rec.gt->rcds[i].run_length : 0;
+			}
+		}
+
+		//std::cerr << utility::timestamp("DEBUG") << n_missing << "," << n_vector_end << "," << (int)base_ploidy << "," << phase_if_uniform << ":" << mixed_phasing << ":" << invariant << std::endl;
+
+		return true;
+	}
+
+	inline bool isBaseDiploid(void) const{ return(this->base_ploidy == 2); }
+
+public:
+	uint8_t  base_ploidy;
+	bool     phase_if_uniform;
+	bool     mixed_phasing;
+	bool     invariant;
+	uint64_t n_missing;
+	uint64_t n_vector_end;
 };
 
 }

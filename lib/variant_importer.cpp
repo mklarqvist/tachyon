@@ -343,7 +343,7 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 		return false;
 
 	// Write basic header prefix.
-	writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
+	writer->stream->write(&TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH); // Todo: fix
 
 	// Transmute a htslib-styled vcf header into a tachyon
 	// header.
@@ -368,15 +368,15 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& header){
 	io::VcfExtra e;
 	e.key = "tachyon_importVersion";
-	e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-	e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
+	e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","
 			+   SSLeay_version(SSLEAY_VERSION) + ","
 			+  "ZSTD-" + ZSTD_versionString()
 			+  "; timestamp=" + tachyon::utility::datetime();
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
 	e.key = "tachyon_importCommand";
-	e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+	e.value = tachyon::LITERAL_COMMAND_LINE;
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
 	e.key = "tachyon_importSettings";

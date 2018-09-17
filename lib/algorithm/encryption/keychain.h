@@ -93,7 +93,7 @@ public:
 
 private:
 	/**<
-	 * Construct a hash-table mapping from a 64-bit field identifier
+	 * Construct a hash-taFILE_HEADERble mapping from a 64-bit field identifier
 	 * to the local offset of that entry in the keychain. Used to map
 	 * from block->field->keychain entry.
 	 * @return Returns TRUE if successful or FALSE otherwise.

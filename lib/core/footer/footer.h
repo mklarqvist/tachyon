@@ -7,7 +7,7 @@
 namespace tachyon{
 namespace core{
 
-#define YON_FOOTER_LENGTH ((constants::TACHYON_FILE_EOF_LENGTH) + sizeof(uint64_t)*3 + sizeof(uint16_t))
+#define YON_FOOTER_LENGTH ((TACHYON_FILE_EOF_LENGTH) + sizeof(uint64_t)*3 + sizeof(uint16_t))
 
 struct Footer{
 public:
@@ -20,7 +20,7 @@ public:
 		n_variants(0),
 		controller(0)
 	{
-		utility::HexToBytes(constants::TACHYON_FILE_EOF, &this->EOF_marker[0]);
+		utility::HexToBytes(TACHYON_FILE_EOF, &this->EOF_marker[0]);
 	}
 
 	Footer(const char* const data) :
@@ -29,7 +29,7 @@ public:
 		n_variants(*reinterpret_cast<const uint64_t* const>(&data[sizeof(uint64_t)*2])),
 		controller(*reinterpret_cast<const uint16_t* const>(&data[sizeof(uint64_t)*3]))
 	{
-		memcpy(&this->EOF_marker[0], &data[sizeof(uint64_t)*3+sizeof(uint16_t)], constants::TACHYON_FILE_EOF_LENGTH);
+		memcpy(&this->EOF_marker[0], &data[sizeof(uint64_t)*3+sizeof(uint16_t)], TACHYON_FILE_EOF_LENGTH);
 	}
 
 	Footer(const self_type& other) :
@@ -38,7 +38,7 @@ public:
 		n_variants(other.n_variants),
 		controller(other.controller)
 	{
-		memcpy(&this->EOF_marker[0], &other.EOF_marker[0], constants::TACHYON_FILE_EOF_LENGTH);
+		memcpy(&this->EOF_marker[0], &other.EOF_marker[0], TACHYON_FILE_EOF_LENGTH);
 	}
 
 	~Footer() = default;
@@ -58,10 +58,10 @@ public:
 		if(this->n_variants == 0)         return false;
 
 		// Check EOF marker
-		uint8_t reference[constants::TACHYON_FILE_EOF_LENGTH];
-		utility::HexToBytes(constants::TACHYON_FILE_EOF, &reference[0]);
+		uint8_t reference[TACHYON_FILE_EOF_LENGTH];
+		utility::HexToBytes(TACHYON_FILE_EOF, &reference[0]);
 
-		if(strncmp(reinterpret_cast<const char* const>(&this->EOF_marker[0]), reinterpret_cast<const char* const>(&reference[0]), constants::TACHYON_FILE_EOF_LENGTH) != 0) return false;
+		if(strncmp(reinterpret_cast<const char* const>(&this->EOF_marker[0]), reinterpret_cast<const char* const>(&reference[0]), TACHYON_FILE_EOF_LENGTH) != 0) return false;
 		return true;
 	}
 
@@ -70,7 +70,7 @@ public:
 		stream.write(reinterpret_cast<const char*>(&footer.n_blocks),           sizeof(uint64_t));
 		stream.write(reinterpret_cast<const char*>(&footer.n_variants),         sizeof(uint64_t));
 		stream.write(reinterpret_cast<const char*>(&footer.controller),         sizeof(uint16_t));
-		stream.write(reinterpret_cast<const char*>(&footer.EOF_marker[0]), constants::TACHYON_FILE_EOF_LENGTH);
+		stream.write(reinterpret_cast<const char*>(&footer.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
 		return(stream);
 	}
 
@@ -79,7 +79,7 @@ public:
 		stream.read(reinterpret_cast<char*>(&footer.n_blocks),           sizeof(uint64_t));
 		stream.read(reinterpret_cast<char*>(&footer.n_variants),         sizeof(uint64_t));
 		stream.read(reinterpret_cast<char*>(&footer.controller),         sizeof(uint16_t));
-		stream.read(reinterpret_cast<char*>(&footer.EOF_marker[0]), constants::TACHYON_FILE_EOF_LENGTH);
+		stream.read(reinterpret_cast<char*>(&footer.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
 		return(stream);
 	}
 
@@ -88,7 +88,7 @@ public:
 	uint64_t  n_blocks;
 	uint64_t  n_variants;
 	uint16_t  controller;
-    uint8_t   EOF_marker[constants::TACHYON_FILE_EOF_LENGTH];
+    uint8_t   EOF_marker[TACHYON_FILE_EOF_LENGTH];
 };
 
 }

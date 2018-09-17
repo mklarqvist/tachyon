@@ -332,7 +332,7 @@ private:
 			}
 			assert(d->c != nullptr);
 
-			// Invoke cosumer function of interest
+			// Invoke consumer function of interest
 			if((*this->instance_.*this->func_)(d->c) == false){
 				std::cerr << "error occurred" << std::endl;
 			}

@@ -156,7 +156,7 @@ bool DataContainer::CheckUniformity(void){
 		}
 		cumulative_position += stride_update;
 	}
-	std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	//std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;

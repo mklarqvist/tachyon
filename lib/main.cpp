@@ -42,9 +42,9 @@ int main(int argc, char** argv){
 	}
 
 	// Literal string input line
-	tachyon::constants::LITERAL_COMMAND_LINE = tachyon::constants::PROGRAM_NAME;
+	tachyon::LITERAL_COMMAND_LINE = tachyon::TACHYON_PROGRAM_NAME;
 	for(uint32_t i = 1; i < argc; ++i)
-		tachyon::constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
+		tachyon::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
 	const std::string subroutine(argv[1]);
 

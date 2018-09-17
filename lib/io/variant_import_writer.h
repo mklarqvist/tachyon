@@ -35,7 +35,7 @@ public:
 
 	bool WriteEndOfBlock(void){
 		if(this->stream == nullptr) return false;
-		utility::SerializePrimitive(constants::TACHYON_BLOCK_EOF, *this->stream);
+		utility::SerializePrimitive(TACHYON_BLOCK_EOF, *this->stream);
 		return(this->stream->good());
 	}
 

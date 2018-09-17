@@ -232,6 +232,46 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 		this->info_fields_.push_back(nm);
 	}
 
+	// temp
+	info = this->GetInfo("FIS");
+	if(info == nullptr){
+		YonInfo nm;
+		nm.id = "FIS";
+		nm.number = "1";
+		nm.type = "Float";
+		nm.yon_type = YON_VCF_HEADER_FLOAT;
+		nm.description = "\"FIS\"";
+		nm.idx = this->info_fields_.size();
+		this->literals_ += nm.ToVcfString(false) + "\n";
+		this->info_fields_.push_back(nm);
+	}
+
+	info = this->GetInfo("FST");
+	if(info == nullptr){
+		YonInfo nm;
+		nm.id = "FST";
+		nm.number = "1";
+		nm.type = "Float";
+		nm.yon_type = YON_VCF_HEADER_FLOAT;
+		nm.description = "\"FST\"";
+		nm.idx = this->info_fields_.size();
+		this->literals_ += nm.ToVcfString(false) + "\n";
+		this->info_fields_.push_back(nm);
+	}
+
+	info = this->GetInfo("FIT");
+	if(info == nullptr){
+		YonInfo nm;
+		nm.id = "FIT";
+		nm.number = "1";
+		nm.type = "Float";
+		nm.yon_type = YON_VCF_HEADER_FLOAT;
+		nm.description = "\"FIT\"";
+		nm.idx = this->info_fields_.size();
+		this->literals_ += nm.ToVcfString(false) + "\n";
+		this->info_fields_.push_back(nm);
+	}
+
 	this->BuildMaps();
 	this->BuildReverseMaps();
 }

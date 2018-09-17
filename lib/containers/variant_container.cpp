@@ -678,7 +678,7 @@ bool VariantContainer::AddRefAlt(dc_type& container){
 			// If data is <non_ref> or not
 			if((it[refalt_position] & 15) != 5){
 				//assert((refalt[refalt_position] & 15) < 5);
-				const char ref = constants::REF_ALT_LOOKUP[it[refalt_position] & 15];
+				const char ref = YON_REFALT_LOOKUP[it[refalt_position] & 15];
 				this->variants_[i].alleles[1] = ref;
 
 			} else {
@@ -689,7 +689,7 @@ bool VariantContainer::AddRefAlt(dc_type& container){
 			// If data is <non_ref> or not
 			if(((it[refalt_position] >> 4) & 15) != 5){
 				//assert(((refalt[refalt_position] >> 4) & 15) < 5);
-				const char alt = constants::REF_ALT_LOOKUP[(it[refalt_position] >> 4) & 15];
+				const char alt = YON_REFALT_LOOKUP[(it[refalt_position] >> 4) & 15];
 				this->variants_[i].alleles[0] = alt;
 			} else {
 				const std::string s = "<NON_REF>";

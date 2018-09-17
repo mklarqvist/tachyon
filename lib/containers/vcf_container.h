@@ -3,6 +3,7 @@
 
 #include "components/generic_iterator.h"
 #include "io/vcf_utils.h"
+#include "core/variant_record.h"
 
 namespace tachyon{
 namespace containers{
@@ -83,7 +84,7 @@ public:
 	 * @param n_samples Number of samples as described in the Vcf header.
 	 * @return          Returns a VcfGenotypeSummary object.
 	 */
-	io::VcfGenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const;
+	GenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const;
 
 	/**<
 	 * Clear data without releasing allocated memory.

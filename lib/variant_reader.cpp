@@ -2,6 +2,8 @@
 
 #include "containers/variant_container.h"
 
+#include "algorithm/compression/genotype_encoder.h"
+
 namespace tachyon {
 
 VariantReader::VariantReader() :
@@ -80,9 +82,9 @@ bool VariantReader::open(void){
 
 	// Load header
 	//this->stream >> this->global_header;
-	char magic_string[tachyon::constants::FILE_HEADER_LENGTH];
-	this->basic_reader.stream_.read(&magic_string[0], tachyon::constants::FILE_HEADER_LENGTH);
-	if(strncmp(&magic_string[0], &tachyon::constants::FILE_HEADER[0], tachyon::constants::FILE_HEADER_LENGTH) != 0){
+	char magic_string[TACHYON_MAGIC_HEADER_LENGTH];
+	this->basic_reader.stream_.read(&magic_string[0], TACHYON_MAGIC_HEADER_LENGTH);
+	if(strncmp(&magic_string[0], &TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH) != 0){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate Tachyon magic string!" << std::endl;
 		return false;
 	}
@@ -533,15 +535,15 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 void VariantReader::UpdateHeaderView(void){
 	io::VcfExtra e;
 	e.key = "tachyon_viewVersion";
-	e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-	e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+	e.value = TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
+	e.value += "libraries=" +  TACHYON_PROGRAM_NAME + '-' + TACHYON_LIB_VERSION + ","
 			+   SSLeay_version(SSLEAY_VERSION) + ","
 			+  "ZSTD-" + ZSTD_versionString()
 			+  "; timestamp=" + tachyon::utility::datetime();
 	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 	e.key = "tachyon_viewCommand";
-	e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+	e.value = LITERAL_COMMAND_LINE;
 	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 	e.key = "tachyon_viewCommandSettings";
@@ -659,6 +661,8 @@ bool VariantReader::Stats(void){
 bool VariantReader::TempWrite(void){
 	this->variant_container.AllocateGenotypeMemory();
 
+	algorithm::GenotypeEncoder gte(this->GetGlobalHeader().GetNumberSamples());
+
 	//io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
@@ -685,7 +689,9 @@ bool VariantReader::TempWrite(void){
 			}
 
 			vblock.AddMore(vc[i]);
+			// Todo: Update controller (ref alt checks etc)
 			vblock += vc[i];
+			gte.Assess(vc[i], *this->GetCurrentContainer().GetBlock().gt_ppa);
 			//return 0;
 		}
 
@@ -704,7 +710,13 @@ bool VariantReader::TempWrite(void){
 
 		std::cerr << "info: ";
 		for(int i = 0; i < vblock.footer.n_info_streams; ++i){
-			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ":" << vblock.info_containers[i].GetSizeUncompressed();
+			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ":" << vblock.info_containers[i].GetSizeUncompressed() << "->" << vblock.info_containers[i].GetSizeCompressed();
+		}
+		std::cerr << std::endl;
+
+		std::cerr << "format: ";
+		for(int i = 0; i < vblock.footer.n_format_streams; ++i){
+			std::cerr << "," << i << ":" << vblock.format_containers[i].GetDataPrimitiveType() << ":" << vblock.format_containers[i].GetSizeUncompressed() << "->" << vblock.format_containers[i].GetSizeCompressed();
 		}
 		std::cerr << std::endl;
 

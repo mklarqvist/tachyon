@@ -35,16 +35,16 @@ bool VariantWriterFile::open(const std::string output){
 
 	this->filename = output;
 	this->CheckOutputNames(output);
-	ostream->open(this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
+	ostream->open(this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
 	if(!this->stream->good()){
-		std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "!" << std::endl;
+		std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
 
 	if(!SILENT){
-		std::cerr << utility::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + constants::OUTPUT_SUFFIX << "..." << std::endl;
+		std::cerr << utility::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX << "..." << std::endl;
 	}
 
 	return true;
@@ -56,7 +56,7 @@ void VariantWriterFile::CheckOutputNames(const std::string& input){
 	if(this->basePath.size() > 0)
 		this->basePath += '/';
 
-	if(paths[3].size() == constants::OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &constants::OUTPUT_SUFFIX[0], constants::OUTPUT_SUFFIX.size()) == 0)
+	if(paths[3].size() == TACHYON_OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &TACHYON_OUTPUT_SUFFIX[0], TACHYON_OUTPUT_SUFFIX.size()) == 0)
 		this->baseName = paths[2];
 	else this->baseName = paths[1];
 }

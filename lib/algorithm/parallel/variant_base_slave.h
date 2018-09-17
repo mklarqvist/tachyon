@@ -155,7 +155,6 @@ public:
 			return true;
 
 		VariantContainer ivc(vc.GetBlock().header.n_variants);
-		assert(this->global_header != nullptr);
 		ivc.Build(vc.GetBlock(), *this->global_header);
 
 		s_local.reset();
@@ -174,7 +173,7 @@ public:
 			// Reduce function for adding together TsTv objects
 			// in the sample order as described in the local
 			// permutation array.
-			s.Add(s_local, *vc.GetBlock().gt_ppa);
+			s.Add(s_local, vc.GetBlock().gt_ppa);
 		} else
 			s += s_local;
 
