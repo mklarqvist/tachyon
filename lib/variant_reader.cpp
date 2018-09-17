@@ -706,7 +706,7 @@ bool VariantReader::TempWrite(void){
 			return false;
 		}
 
-		if(gte.Encode(vc.variants_, vc.n_variants_, vc.block_, gts.permutation_array) == false){
+		if(gte.Encode(vc.variants_, vc.n_variants_, vblock, gts.permutation_array) == false){
 			std::cerr << "failed to encode genotypes" << std::endl;
 			return false;
 		}
