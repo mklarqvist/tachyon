@@ -3,6 +3,7 @@
 #include "containers/variant_container.h"
 
 #include "algorithm/compression/genotype_encoder.h"
+#include "algorithm/permutation/genotype_sorter.h"
 
 namespace tachyon {
 
@@ -661,10 +662,13 @@ bool VariantReader::Stats(void){
 bool VariantReader::TempWrite(void){
 	this->variant_container.AllocateGenotypeMemory();
 
+	algorithm::GenotypeSorter  gts;
+	gts.SetSamples(this->GetGlobalHeader().GetNumberSamples());
 	algorithm::GenotypeEncoder gte(this->GetGlobalHeader().GetNumberSamples());
 
 	//io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
+		gts.reset();
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
 
@@ -688,17 +692,30 @@ bool VariantReader::TempWrite(void){
 				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 
-			vc[i].gt->Expand();
-			std::cerr << (vc[i].gt == nullptr) << "," << (vc[i].gt->d_exp == nullptr) << std::endl;
+			//vc[i].gt->Expand();
 			vblock.AddMore(vc[i]);
 			// Todo: Update controller (ref alt checks etc)
 			vblock += vc[i];
-			gte.Assess(vc[i], *this->GetCurrentContainer().GetBlock().gt_ppa);
-			//return 0;
 		}
 
 		vblock.header.controller.has_gt = false;
 		vblock.header.controller.has_gt_permuted = false;
+
+		if(gts.Build(vc.variants_, vc.n_variants_) == false){
+			std::cerr << "failed to permute" << std::endl;
+			return false;
+		}
+
+		if(gte.Encode(vc.variants_, vc.n_variants_, vc.block_, gts.permutation_array) == false){
+			std::cerr << "failed to encode genotypes" << std::endl;
+			return false;
+		}
+
+
+		//for(int i = 0; i < gts.permutation_array.n_s; ++i){
+		//	std::cerr << "," << gts.permutation_array[i] << "=" << (*this->GetCurrentContainer().GetBlock().gt_ppa)[i];
+		//}
+		//std::cerr << std::endl;
 
 		std::cerr << vblock.size() << ": " << vblock.header.minPosition << "-" << vblock.header.maxPosition << std::endl;
 		vblock.UpdateContainers(this->global_header.GetNumberSamples());

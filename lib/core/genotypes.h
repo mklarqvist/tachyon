@@ -31,12 +31,12 @@ namespace tachyon {
 // 4:  d_bcf_ppa
 // 8:  d_exp
 // 16: d_occ
-#define YON_GT_UN_NONE        0 // nothing
-#define YON_GT_UN_RCDS        1 // basic rcds
-#define YON_GT_UN_BCF        (2|YON_GT_UN_RCDS) // convert into bcf-style
-#define YON_GT_UN_BCF_PPA    (4|YON_GT_UN_BCF)  // convert into bcf-style in-order
-#define YON_GT_UN_EXPAND     (8|YON_GT_UN_RCDS) // expand rcds into entries
-#define YON_GT_UN_OCC       (16|YON_GT_UN_RCDS) // calculate rcds for each factor
+#define YON_GT_UN_NONE       0 // nothing
+#define YON_GT_UN_RCDS       1 // basic rcds
+#define YON_GT_UN_BCF        2 // convert into bcf-style
+#define YON_GT_UN_BCF_PPA    4  // convert into bcf-style in-order
+#define YON_GT_UN_EXPAND     8 // expand rcds into entries
+#define YON_GT_UN_OCC       16 // calculate rcds for each factor
 #define YON_GT_UN_ALL       (YON_GT_UN_EXPAND|YON_GT_UN_OCC) // everything
 
 // 0 for missing and 1 for sentinel node. Note that the
