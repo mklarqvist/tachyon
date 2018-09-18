@@ -151,7 +151,7 @@ public:
 	void SetFormatPId(const int32_t value){ this->fmt_pid = value; }
 	void SetFilterPId(const int32_t value){ this->flt_pid = value; }
 	void SetQuality(const float value){ this->qual = value; }
-	void SetPosition(const uint64_t value){ this->pos = value; }
+	void SetPosition(const int64_t value){ this->pos = value; }
 	void SetChromosome(const uint32_t value){ this->rid = value; }
 	void SetName(const std::string& value);
 
@@ -674,7 +674,7 @@ public:
 	int32_t   m_fmt, m_info, m_allele; // allocated sizes
 	float     qual;
 	uint32_t  rid;
-	uint64_t  pos;
+	int64_t   pos;
 	std::string name;
 
 	std::vector<const YonInfo*> info_hdr;

@@ -709,7 +709,7 @@ bool DataContainer::Add(const int64_t& value){
 		return false;
 	}
 
-	this->data_uncompressed += (uint64_t)value;
+	this->data_uncompressed += (int64_t)value;
 	++this->header.n_additions;
 	//++this->n_entries;
 	return(true);

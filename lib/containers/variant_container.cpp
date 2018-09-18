@@ -35,6 +35,8 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 	this->AddNames(variant_block.base_containers[YON_BLK_NAMES]);
 	this->AddRefAlt(variant_block.base_containers[YON_BLK_REFALT]);
 
+	std::cerr << "after basics" << std::endl;
+
 	// Allocate memory to support upcoming data to overload into the
 	// containers. After memory allocation we provide the list of local
 	// offsets that provide data.
@@ -45,9 +47,13 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
 	}
 
+	std::cerr << "before filter" << std::endl;
 	this->AddFilter(variant_block, header);
+	std::cerr << "before info" << std::endl;
 	this->AddInfo(variant_block, header);
+	std::cerr << "before format" << std::endl;
 	this->AddFormat(variant_block, header);
+	std::cerr << "before permute" << std::endl;
 	this->PermuteOrder(variant_block);
 
 	return true;

@@ -5,6 +5,8 @@
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
 
+#include "algorithm/parallel/vcf_slaves.h"
+
 namespace tachyon {
 
 VariantReader::VariantReader() :
@@ -666,6 +668,21 @@ bool VariantReader::TempWrite(void){
 	gts.SetSamples(this->GetGlobalHeader().GetNumberSamples());
 	algorithm::GenotypeEncoder gte(this->GetGlobalHeader().GetNumberSamples());
 
+	VariantWriterInterface* writer = new VariantWriterStream();
+	yon_writer_sync swriter; swriter.writer = writer;
+	// The index needs to know how many contigs that's described in the
+	// Vcf header and their lengths in base-pairs. This information is
+	// needed to construct the linear and quad-tree index most appropriate
+	// for the data lengths.
+	writer->index.Setup(this->GetGlobalHeader().contigs_);
+	// Write out a fresh Tachyon header with the data from the Vcf header. As
+	// this data will not be modified during the import stage it is safe to
+	// write out now.
+	swriter.WriteYonHeader(this->global_header);
+
+	index::VariantIndexEntry index_entry;
+	uint32_t block_id = 0;
+
 	//io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
 		gts.reset();
@@ -676,30 +693,10 @@ bool VariantReader::TempWrite(void){
 		vblock.Allocate(100,100,100);
 		vblock.resize(128000);
 
-		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
-			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
-
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if(this->variant_filters.Filter(vc[i], i) == false)
-				continue;
-
-			if(this->GetBlockSettings().annotate_extra){
-				vc[i].EvaluateOcc(this->occ_table);
-				vc[i].EvaluateOccSummary(true);
-
-				vc[i].EvaluateSummary(true);
-				vc[i].AddGenotypeStatistics(this->global_header);
-				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
-			}
-
-			//vc[i].gt->Expand();
-			vblock.AddMore(vc[i]);
-			// Todo: Update controller (ref alt checks etc)
-			vblock += vc[i];
-		}
-
-		vblock.header.controller.has_gt = false;
-		vblock.header.controller.has_gt_permuted = false;
+		vblock.header.controller.has_gt = true;
+		vblock.header.controller.has_gt_permuted = true;
+		//vblock.header.n_variants = vc.n_variants_;
+		//std::cerr << "setting nvariants to " << vc.n_variants_ << std::endl;
 
 		if(gts.Build(vc.variants_, vc.n_variants_) == false){
 			std::cerr << "failed to permute" << std::endl;
@@ -711,15 +708,17 @@ bool VariantReader::TempWrite(void){
 			return false;
 		}
 
+		vblock.gt_ppa = &gts.permutation_array;
 
-		//for(int i = 0; i < gts.permutation_array.n_s; ++i){
-		//	std::cerr << "," << gts.permutation_array[i] << "=" << (*this->GetCurrentContainer().GetBlock().gt_ppa)[i];
-		//}
-		//std::cerr << std::endl;
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			vblock.AddMore(vc[i]);
+			// Todo: Update controller (ref alt checks etc)
+			vblock += vc[i];
+		}
 
 		std::cerr << vblock.size() << ": " << vblock.header.minPosition << "-" << vblock.header.maxPosition << std::endl;
 		vblock.UpdateContainers(this->global_header.GetNumberSamples());
-		this->codec_manager.Compress(vblock,20,this->global_header.GetNumberSamples());
+		this->codec_manager.Compress(vblock, 20 ,this->global_header.GetNumberSamples());
 
 		std::cerr << "base: ";
 		for(int i = 0; i < YON_BLK_N_STATIC; ++i){
@@ -727,11 +726,10 @@ bool VariantReader::TempWrite(void){
 		}
 		std::cerr << std::endl;
 
-		std::cerr << "info: ";
+		std::cerr << "info: " << std::endl;
 		for(int i = 0; i < vblock.footer.n_info_streams; ++i){
-			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ":" << vblock.info_containers[i].GetSizeUncompressed() << "->" << vblock.info_containers[i].GetSizeCompressed();
+			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ", mixeds=" << vblock.info_containers[i].header.HasMixedStride() << ": " << vblock.info_containers[i].GetSizeUncompressed() << "->" << vblock.info_containers[i].GetSizeCompressed() << "\t" << vblock.info_containers[i].header.n_entries << "," << vblock.info_containers[i].header.n_additions << " stride: " << vblock.base_containers[i].header.data_header.stride << std::endl;
 		}
-		std::cerr << std::endl;
 
 		std::cerr << "format: ";
 		for(int i = 0; i < vblock.footer.n_format_streams; ++i){
@@ -744,7 +742,21 @@ bool VariantReader::TempWrite(void){
 		// offsets are themselves compressed and stored in the block.
 		vblock.PackFooter(); // Pack footer into buffer.
 		this->codec_manager.zstd_codec.Compress(vblock.footer_support);
+
+		index_entry.blockID = block_id;
+		index_entry.contigID = vblock.header.contigID;
+		index_entry.minPosition = vblock.header.minPosition;
+		index_entry.maxPosition = vblock.header.maxPosition;
+		index_entry.n_variants = vblock.header.n_variants;
+		swriter.emplace(block_id, vblock, index_entry);
+		vblock.gt_ppa = nullptr;
+		++block_id;
+		index_entry.reset();
 	}
+
+	swriter.WriteFinal(checksums);
+
+	delete writer;
 
 	return 0;
 }

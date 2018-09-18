@@ -717,12 +717,12 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const yon1_vnt_t& entry
 	}
 	sum.method = 1;
 
-
+	/*
 	std::cout << entry.rid << ":" << entry.pos + 1;
 	for(uint32_t i = 0; i < 8; ++i)
 		std::cout << "\t" << sum.n_runs[i] << "\t" << sum.n_cost[i];
 	std::cout << std::endl;
-
+	*/
 
 	return sum;
 }

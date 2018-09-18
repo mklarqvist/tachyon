@@ -11,6 +11,8 @@
 #include "core/variant_importer_container_stats.h"
 #include "core/footer/footer.h"
 
+#include "containers/variant_container.h"
+
 namespace tachyon{
 
 /**<
@@ -263,6 +265,53 @@ struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
 
+	bool WriteYonHeader(VariantHeader& header){
+		if(writer == nullptr)
+			return false;
+
+		// Write basic header prefix.
+		writer->stream->write(&TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH);
+
+		// Update the extra provenance fields in the new header.
+		//this->UpdateHeaderImport(this->yon_header_);
+
+		// Pack header into a byte-stream, compress it, and write
+		// it out.
+		io::BasicBuffer temp(500000);
+		io::BasicBuffer temp_cmp(temp);
+		temp << header;
+		algorithm::CompressionManager manager;
+		manager.zstd_codec.Compress(temp, temp_cmp, 20);
+		uint32_t l_data   = temp.size();
+		uint32_t l_c_data = temp_cmp.size();
+		utility::SerializePrimitive(l_data,   *writer->stream);
+		utility::SerializePrimitive(l_c_data, *writer->stream);
+		writer->stream->write(temp_cmp.data(), l_c_data);
+		return(writer->stream->good());
+	}
+
+	VariantHeader& UpdateHeaderImport(VariantHeader& header, VariantImporterSettings& settings){
+		io::VcfExtra e;
+		e.key = "tachyon_importVersion";
+		e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
+		e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","
+				+   SSLeay_version(SSLEAY_VERSION) + ","
+				+  "ZSTD-" + ZSTD_versionString()
+				+  "; timestamp=" + tachyon::utility::datetime();
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+		e.key = "tachyon_importCommand";
+		e.value = tachyon::LITERAL_COMMAND_LINE;
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+		e.key = "tachyon_importSettings";
+		e.value = settings.GetInterpretedString();
+		header.literals_ += "##" + e.key + "=" + e.value + '\n';
+		header.extra_fields_.push_back(e);
+
+		return(header);
+	}
+
 	/**<
 	 * Push a Tachyon archive to the writer queue to be written. Only if the
 	 * next block number matches the provided block number will the block be
@@ -299,6 +348,34 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
+	void emplace(uint32_t block_id, containers::VariantBlock& container, index::VariantIndexEntry& index_entry){
+		std::unique_lock<std::mutex> l(lock);
+
+		cv_next_checkpoint.wait(l, [this, block_id](){
+			if(this->alive == false) return true;
+			return this->next_block_id == block_id;
+		});
+
+		if(this->alive == false){
+			//std::cerr << "is exit condition in wblock" << std::endl;
+			l.unlock();
+			cv_next_checkpoint.notify_all();
+			return;
+		}
+
+		// Write data container.
+		this->Write(container, index_entry);
+		// Update compression/storage statistics.
+		//container.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
+		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;
+
+		++this->next_block_id;
+		this->n_written_rcds += index_entry.n_variants;
+
+		l.unlock();
+		cv_next_checkpoint.notify_all();
+	}
+
 	/**<
 	 * Wrapper function for writing a VariantBlock to the destination
 	 * stream.
@@ -313,6 +390,14 @@ struct yon_writer_sync {
 	{
 		this->WriteBlock(block, index_entry); // write block
 		this->UpdateIndex(container, index_entry); // Update index.
+		return(this->writer->stream->good());
+	}
+
+	bool Write(containers::VariantBlock& container,
+			   index::VariantIndexEntry& index_entry)
+	{
+		this->WriteBlock(container, index_entry); // write block
+		this->UpdateIndex(index_entry); // Update index.
 		return(this->writer->stream->good());
 	}
 
@@ -338,6 +423,22 @@ struct yon_writer_sync {
 		index_entry.reset();
 		++this->writer->n_blocks_written;
 		this->writer->n_variants_written += container.sizeWithoutCarryOver();
+
+		return true;
+	}
+
+	bool UpdateIndex(index::VariantIndexEntry& index_entry){
+		assert(this->writer != nullptr);
+		index_entry.blockID         = this->writer->n_blocks_written;
+		index_entry.byte_offset_end = this->writer->stream->tellp();
+		this->writer->index        += index_entry;
+
+		index_entry.print(std::cerr);
+		std::cerr << std::endl;
+
+		++this->writer->n_blocks_written;
+		this->writer->n_variants_written += index_entry.n_variants;
+		index_entry.reset();
 
 		return true;
 	}

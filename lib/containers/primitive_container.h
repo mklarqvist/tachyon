@@ -217,12 +217,11 @@ public:
 			return(DataContainer());
 
 		DataContainer d;
-		d.data_uncompressed.resize(this->size() + 128);
-		d.strides_uncompressed.resize(this->size() + 128);
+		d.data_uncompressed.resize(this->size()*sizeof(return_type) + 128);
+		d.strides_uncompressed.resize(this->size()*sizeof(return_type) + 128);
+		d.header.data_header.stride = this->size();
 
-		for(uint32_t i = 0; i < this->size(); ++i)
-			d.Add(this->at(i));
-
+		for(uint32_t i = 0; i < this->size(); ++i) d.Add(this->at(i));
 		d.AddStride(this->size());
 		++d;
 
@@ -233,8 +232,8 @@ public:
 		if(this->size() == 0)
 			return(container);
 
-		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
-			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
+		if(container.data_uncompressed.size() + this->size()*sizeof(return_type) > container.data_uncompressed.capacity())
+			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size()*sizeof(return_type))*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
 			container.Add(this->at(i));
@@ -339,6 +338,9 @@ public:
 	inline void operator+=(const std::string& entry){ this->data_ += entry; }
 
 	DataContainer ToDataContainer(void){
+		if(this->size() == 0)
+			return DataContainer();
+
 		DataContainer d;
 		d.data_uncompressed.resize(this->size() + 128);
 		d.strides_uncompressed.resize(this->size() + 128);
@@ -353,6 +355,9 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
+		if(this->size() == 0)
+			return container;
+
 		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 

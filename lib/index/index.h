@@ -113,6 +113,13 @@ public:
 			this->index_meta_[i].contigID = contigs[i].idx;
 	}
 
+	void Setup(const std::vector<YonContig>& contigs){
+		this->index_.Add(contigs);
+		this->index_meta_.reserve(contigs.size());
+		for(int i = 0; i < contigs.size(); ++i)
+			this->index_meta_[i].contigID = contigs[i].idx;
+	}
+
 	inline int32_t AddSorted(const uint32_t contig_id,
 	                         const uint64_t fromPosition,
 	                         const uint64_t toPosition,

@@ -65,7 +65,6 @@ VariantBlock::VariantBlock(const self_type& other) :
 	end_compressed_data_(other.end_compressed_data_),
 	footer_support(other.footer_support)
 {
-
 	if(other.gt_ppa != nullptr){
 		// Copy ppa data to new object.
 		this->gt_ppa = new yon_gt_ppa(*other.gt_ppa);
@@ -640,7 +639,7 @@ bool VariantBlock::write(std::ostream& stream)
 
 bool VariantBlock::operator+=(yon1_vnt_t& rcd){
 	// Meta positions
-	this->base_containers[YON_BLK_POSITION].Add((int32_t)rcd.pos);
+	this->base_containers[YON_BLK_POSITION].Add((int64_t)rcd.pos);
 	++this->base_containers[YON_BLK_POSITION];
 
 	// Contig ID

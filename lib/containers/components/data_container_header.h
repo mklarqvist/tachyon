@@ -32,7 +32,9 @@ public:
 		identifier(other.identifier),
 		n_entries(other.n_entries),
 		n_additions(other.n_additions),
-		n_strides(other.n_strides)
+		n_strides(other.n_strides),
+		data_header(other.data_header),
+		stride_header(other.stride_header)
 	{
 
 	}
@@ -85,8 +87,8 @@ public:
 		this->n_additions   += other.n_additions;
 		this->n_strides     += other.n_strides;
 		if(data_header.stride != other.data_header.stride || other.data_header.controller.mixedStride){
-			if(data_header.HasMixedStride() == false)
-				std::cerr << "triggering mixed stride: " << data_header.stride << "!=" << other.data_header.stride << std::endl;
+			//if(data_header.HasMixedStride() == false)
+			//	std::cerr << "triggering mixed stride: " << data_header.stride << "!=" << other.data_header.stride << std::endl;
 			this->data_header.SetMixedStride(true);
 		}
 		return(*this);

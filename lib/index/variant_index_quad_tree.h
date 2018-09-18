@@ -114,6 +114,33 @@ public:
 		return(*this);
 	}
 
+	self_type& Add(const std::vector<YonContig>& contigs){
+		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
+			this->resize();
+
+		for(uint32_t i = 0; i < contigs.size(); ++i){
+			const uint64_t contig_length = contigs[i].n_bases;
+			uint8_t n_levels = 7;
+			uint64_t bins_lowest = pow(4,n_levels);
+			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
+
+			if(used / bins_lowest < 2500){
+				for(int32_t i = n_levels; i != 0; --i){
+					if(used/pow(4,i) > 2500){
+						n_levels = i;
+						break;
+					}
+				}
+			}
+
+			this->Add(i, contig_length, n_levels);
+			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
+			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
+			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (uint64_t)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
+		}
+		return(*this);
+	}
+
 	/**<
 	 * Add a contig with n_levels to the chain
 	 * @param l_contig Length of contig

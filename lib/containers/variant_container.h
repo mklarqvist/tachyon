@@ -210,7 +210,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 			++stride_offset;
 		}
 	}
-
+	std::cerr << current_offset << "/" << container.data_uncompressed.size() << std::endl;
 	assert(current_offset == container.data_uncompressed.size());
 	delete it;
 	return true;
@@ -239,6 +239,7 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 				current_offset += stride_size * sizeof(intrinsic_ptype);
 			}
 		}
+		std::cerr << current_offset << "/" << container.data_uncompressed.size() << std::endl;
 		assert(current_offset == container.data_uncompressed.size());
 	}
 	return true;

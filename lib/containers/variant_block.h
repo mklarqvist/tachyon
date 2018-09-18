@@ -199,8 +199,10 @@ public:
 		// 1) Search for global idx
 		int field_exists = (this->*StreamFieldLookup)(dc.GetIdx());
 		if(field_exists >= 0){
-			assert(dst_containers[field_exists].GetDataPrimitiveType() == dc.GetDataPrimitiveType());
+			//assert(dst_containers[field_exists].GetDataPrimitiveType() == dc.GetDataPrimitiveType());
 			dst_containers[field_exists] += dc;
+			//assert(dst_containers[field_exists].header.data_header.stride == dc.header.data_header.stride);
+			//std::cerr << "merging: " << dst_containers[field_exists].header.data_header.stride << " and " << dc.header.data_header.stride << std::endl;
 			//std::cerr << "field exists at " << field_exists << " for id " << (uint32_t)dc.GetIdx() << ": adding now " << dst_containers[field_exists].GetSizeUncompressed() << std::endl;
 		} else {
 			uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
@@ -229,7 +231,7 @@ public:
 
 	self_type& AddMore(yon1_vnt_t& rec){
 		if(this->header.n_variants == 0){
-			this->header.contigID = rec.rid;
+			this->header.contigID    = rec.rid;
 			this->header.minPosition = rec.pos;
 			this->header.maxPosition = rec.pos;
 		}
@@ -244,7 +246,7 @@ public:
 			for(int i = 0; i < rec.n_info; ++i){
 				id_list[i] = rec.info_hdr[i]->idx;
 				// 1 add info, format, and filter
-				DataContainer dc = rec.info[i]->ToDataContainer();
+				DataContainer dc(std::move(rec.info[i]->ToDataContainer()));
 
 				if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
 					dc.header.data_header.controller.type = YON_TYPE_32B;
@@ -276,7 +278,7 @@ public:
 			id_list.resize(rec.n_fmt);
 			for(int i = 0; i < rec.n_fmt; ++i){
 				id_list[i] = rec.fmt_hdr[i]->idx;
-				DataContainer dc = rec.fmt[i]->ToDataContainer();
+				DataContainer dc(std::move(rec.fmt[i]->ToDataContainer()));
 
 				if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
 					dc.header.data_header.controller.type = YON_TYPE_32B;
@@ -302,6 +304,15 @@ public:
 
 			rec.fmt_pid = this->AddFormatPattern(id_list);
 			//std::cerr << "fmt_pid=" << rec.fmt_pid << std::endl;
+		} else rec.fmt_pid = -1;
+
+		if(rec.n_flt){
+			id_list.resize(rec.n_flt);
+			for(int i = 0; i < rec.n_flt; ++i){
+				id_list[i] = rec.flt_hdr[i]->idx;
+				this->AddFilter(id_list[i]);
+			}
+			rec.flt_pid = this->AddFilterPattern(id_list);
 		} else rec.fmt_pid = -1;
 
 		return(*this);
