@@ -17,7 +17,7 @@ PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_contain
 		// check length
 		size_type j = 0;
 		for(; j < strides_each; ++j){
-			// Find premature end-of-string marker
+			// Find premature end-of-string marker and stop.
 			if(container.data_uncompressed[current_offset + j] == '\0'){
 				break;
 			}

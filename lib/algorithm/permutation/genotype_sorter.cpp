@@ -275,7 +275,7 @@ bool GenotypeSorter::Build(const yon1_vnt_t* rec, const uint32_t n_rec){
 			// the allele for that chromosome in the pattern helper
 			// structure.
 			for(uint32_t a = 0; a < base_ploidy; ++a){
-				const uint8_t repacked = (this->gt_remap[YON_GT_RCD_ALLELE_UNPACK(rec[i].gt->d_exp[s]->allele[a])] << 1) | YON_GT_RCD_PHASE(rec[i].gt->d_exp[s]->allele[a]);
+				const uint8_t repacked = (this->gt_remap[YON_GT_RCD_ALLELE_UNPACK(rec[i].gt->d_exp[s].allele[a])] << 1) | YON_GT_RCD_PHASE(rec[i].gt->d_exp[s].allele[a]);
 				assert((repacked >> 1) <= largest_n_alleles);
 				assert(repacked < largest_n_alleles_binary);
 				target_pattern.alleles[a] = repacked;

@@ -14,7 +14,7 @@ yon_gt_ppa::yon_gt_ppa(const yon_gt_ppa& other) :
 	memcpy(this->ordering, other.ordering, sizeof(uint32_t)*this->n_s);
 }
 
-yon_gt_ppa::yon_gt_ppa(yon_gt_ppa&& other) :
+yon_gt_ppa::yon_gt_ppa(yon_gt_ppa&& other) noexcept :
 	n_s(other.n_s),
 	ordering(other.ordering)
 {
@@ -172,10 +172,9 @@ yon_gt_rcd::yon_gt_rcd(yon_gt_rcd&& other) :
 
 yon_gt_rcd& yon_gt_rcd::operator=(yon_gt_rcd&& other){
 	if(this == &other) return(*this);
-	delete this->allele;
-	this->allele = other.allele;
-	other.allele = nullptr;
-	this->run_length = other.run_length;
+	delete allele; allele = nullptr;
+	std::swap(allele, other.allele);
+	run_length = other.run_length;
 	return(*this);
 }
 
@@ -197,8 +196,6 @@ io::BasicBuffer& yon_gt_rcd::PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_
 }
 
 yon_gt::~yon_gt(){
-	delete [] d_bcf;
-	delete [] d_bcf_ppa,
 	delete [] rcds;
 	delete [] d_exp;
 	if(d_occ != nullptr){
@@ -483,6 +480,7 @@ double yon_gt_summary::CalculateHardyWeinberg(void) const{
 }
 
 bool yon_gt_summary::LazyEvaluate(void){
+	// Delete previous data without consideration.
 	delete this->d;
 	this->d = new yon_gt_summary_rcd;
 
@@ -512,7 +510,6 @@ bool yon_gt_summary::LazyEvaluate(void){
 	this->d->nm  = n_total;
 	this->d->an  = n_total + this->d->ac[0];
 	this->d->hwe_p = this->CalculateHardyWeinberg();
-	this->d->ac_p  = this->alleles_strand;
 
 	// Strand-specific bias and inbreeding coefficient (F-statistic)
 	if(this->n_ploidy == 2){

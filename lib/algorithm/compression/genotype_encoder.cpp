@@ -650,20 +650,20 @@ yon_gt_assess GenotypeEncoder::AssessDiploidMultiAllelic(const yon1_vnt_t& entry
 	uint32_t rle_current_ref = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[0], shift, add);
 	uint32_t rle_ppa_current_ref = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[ppa[0]], shift, add);
 
-	assert(ceil(log2(entry.gt->d_exp[0]->allele[0] >> 1)) <= shift);
-	assert(ceil(log2(entry.gt->d_exp[0]->allele[1] >> 1)) <= shift);
-	assert(ceil(log2(entry.gt->d_exp[ppa[0]]->allele[0] >> 1)) <= shift);
-	assert(ceil(log2(entry.gt->d_exp[ppa[0]]->allele[0] >> 1)) <= shift);
+	assert(ceil(log2(entry.gt->d_exp[0].allele[0] >> 1)) <= shift);
+	assert(ceil(log2(entry.gt->d_exp[0].allele[1] >> 1)) <= shift);
+	assert(ceil(log2(entry.gt->d_exp[ppa[0]].allele[0] >> 1)) <= shift);
+	assert(ceil(log2(entry.gt->d_exp[ppa[0]].allele[0] >> 1)) <= shift);
 
 	// Iterate over all available samples.
 	for(uint32_t i = 1; i < this->n_samples; ++i){
 		uint32_t rle_current     = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[i], shift, add);
 		uint32_t rle_ppa_current = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[ppa[i]], shift, add);
 
-		assert(ceil(log2(entry.gt->d_exp[i]->allele[0] >> 1)) <= shift);
-		assert(ceil(log2(entry.gt->d_exp[i]->allele[1] >> 1)) <= shift);
-		assert(ceil(log2(entry.gt->d_exp[ppa[i]]->allele[0] >> 1)) <= shift);
-		assert(ceil(log2(entry.gt->d_exp[ppa[i]]->allele[1] >> 1)) <= shift);
+		assert(ceil(log2(entry.gt->d_exp[i].allele[0] >> 1)) <= shift);
+		assert(ceil(log2(entry.gt->d_exp[i].allele[1] >> 1)) <= shift);
+		assert(ceil(log2(entry.gt->d_exp[ppa[i]].allele[0] >> 1)) <= shift);
+		assert(ceil(log2(entry.gt->d_exp[ppa[i]].allele[1] >> 1)) <= shift);
 
 		if(rle_current != rle_current_ref){
 			for(uint32_t k = 4; k < 8; ++k) ++n_runs[k];

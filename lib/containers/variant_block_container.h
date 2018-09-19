@@ -72,10 +72,10 @@ public:
 
 	inline void AllocateGenotypeMemory(void){
 		delete [] this->gt_exp;
-		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
+		this->gt_exp = new yon_gt_rcd[this->header_->GetNumberSamples()];
 	}
-	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
-	inline yon_gt_rcd** GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
+	inline yon_gt_rcd* GetAllocatedGenotypeMemory(void){ return(this->gt_exp); }
+	inline yon_gt_rcd* GetAllocatedGenotypeMemory(void) const{ return(this->gt_exp); }
 
 private:
 	block_type                block_;
@@ -86,7 +86,7 @@ private:
 	// expansion of genotype records. This is critical when the sample
 	// numbers are becoming large as allocating/deallocating hundreds
 	// of thousands of pointers for every variant is very time consuming.
-	yon_gt_rcd** gt_exp;
+	yon_gt_rcd* gt_exp;
 };
 
 }

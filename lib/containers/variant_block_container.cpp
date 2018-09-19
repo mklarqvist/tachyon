@@ -25,9 +25,9 @@ VariantBlockContainer::VariantBlockContainer(const self_type& other) :
 	gt_exp(nullptr)
 {
 	if(other.gt_exp != nullptr){
-		this->gt_exp = new yon_gt_rcd*[this->header_->GetNumberSamples()];
-		for(uint32_t i = 0; i < this->header_->GetNumberSamples(); ++i)
-			this->gt_exp[i] = other.gt_exp[i];
+		this->gt_exp = new yon_gt_rcd[this->header_->GetNumberSamples()];
+		//for(uint32_t i = 0; i < this->header_->GetNumberSamples(); ++i)
+		//	this->gt_exp[i] = other.gt_exp[i];
 	}
 }
 

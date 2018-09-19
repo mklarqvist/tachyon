@@ -265,7 +265,7 @@ struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
 
-	bool WriteYonHeader(VariantHeader& header){
+	bool WriteFileHeader(VariantHeader& header){
 		if(writer == nullptr)
 			return false;
 

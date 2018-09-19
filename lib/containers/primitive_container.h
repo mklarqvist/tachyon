@@ -116,7 +116,7 @@ public:
 	 * @param container Destination DataContainer.
 	 * @return          Returns a reference to the input DataContainer with the contextual representation of the data in this container added to it.
 	 */
-	virtual DataContainer& UpdateDataContainer(DataContainer& container) =0;
+	virtual DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride) =0;
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_entries_ == 0); }
@@ -228,7 +228,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container){
+	DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride = true){
 		if(this->size() == 0)
 			return(container);
 
@@ -238,7 +238,7 @@ public:
 		for(uint32_t i = 0; i < this->size(); ++i)
 			container.Add(this->at(i));
 
-		container.AddStride(this->size());
+		if(update_stride) container.AddStride(this->size());
 		++container;
 
 		return(container);
@@ -302,13 +302,26 @@ public:
 	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-    PrimitiveContainer(){ this->n_capacity_ = 1; }
+    PrimitiveContainer(){ this->n_capacity_ = 1; this->n_entries_ = 0; }
 	PrimitiveContainer(const char* data, const size_t l_data) :
 		PrimitiveContainerInterface(false, 1),
 		data_(data, l_data)
     {
 
     }
+	PrimitiveContainer(const PrimitiveContainer& other) :
+		PrimitiveContainerInterface(other.is_uniform_, 1),
+		data_(other.data_.data(), other.data_.size())
+	{
+	}
+
+	PrimitiveContainer& operator=(const PrimitiveContainer& other){
+		this->is_uniform_ = other.is_uniform_;
+		this->n_entries_ = other.n_entries_;
+		data_ = other.data_;
+		return(*this);
+	}
+
 	~PrimitiveContainer(void){}
 
 	inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
@@ -344,9 +357,10 @@ public:
 		DataContainer d;
 		d.data_uncompressed.resize(this->size() + 128);
 		d.strides_uncompressed.resize(this->size() + 128);
+		d.header.data_header.stride = this->size();
 
 		for(uint32_t i = 0; i < this->size(); ++i){
-			d.AddString(this->data_);
+			d.AddString(this->data_.c_str(), this->data_.size());
 			d.AddStride(this->data_.size());
 			++d;
 		}
@@ -354,7 +368,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container){
+	DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride = true){
 		if(this->size() == 0)
 			return container;
 
@@ -362,8 +376,9 @@ public:
 			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i){
-			container.AddString(this->data_);
-			container.AddStride(this->data_.size());
+			// Add C-style strings to buffer.
+			container.AddString(this->data_.c_str(), this->data_.size());
+			if(update_stride) container.AddStride(this->data_.size());
 			++container;
 		}
 

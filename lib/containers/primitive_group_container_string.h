@@ -46,31 +46,64 @@ public:
 		return(*this);
 	}
 
+	uint32_t BalanceVector(){
+		if(this->size() == 0) return 0;
+
+		uint32_t max_stride = 0;
+		for(int i = 0; i < this->size(); ++i){
+			if(this->at(i).data_.size() > max_stride)
+				max_stride = this->at(i).data_.size();
+		}
+
+		return max_stride;
+	}
+
 	DataContainer ToDataContainer(void){
-		uint32_t n_entries = 0;
-		for(uint32_t i = 0; i < this->size(); ++i)
-			n_entries += this->at(i).size();
+		if(this->size() == 0)
+			return DataContainer();
+
+		// Find the longest string in this Format record.
+		const uint32_t stride    = this->BalanceVector();
+		const uint32_t l_entries = this->size() * l_entries;
 
 		DataContainer d;
-		d.data_uncompressed.resize(n_entries + 128);
-		d.strides_uncompressed.resize(n_entries + 128);
+		d.data_uncompressed.resize(l_entries + 128);
+		d.strides_uncompressed.resize(l_entries + 128);
+		d.header.data_header.stride = stride;
 
-		for(uint32_t i = 0; i < this->size(); ++i)
-			this->at(i).UpdateDataContainer(d);
+		for(uint32_t i = 0; i < this->size(); ++i){
+			uint32_t delta = stride - this->at(i).data_.size();
+			this->at(i).UpdateDataContainer(d, false);
+			// If the target string is short then the largest string
+			// available we pad the data added with null-terminations.
+			// This will force the importing algorithm to skip premature
+			// terminations while still maintaining the required matrix
+			// properties of a Format record.
+			for(int j = 0; j < delta; ++j)
+				d.data_uncompressed += (char)'\0';
+
+		}
+
+		d.AddStride(stride);
 
 		return(d);
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
-		uint32_t n_entries = 0;
-		for(uint32_t i = 0; i < this->size(); ++i)
-			n_entries += this->at(i).size();
+		if(this->size() == 0)
+			return container;
 
-		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
-			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
+		uint32_t l_entries = 0;
+		uint32_t ref_size = this->at(0).data_.size();
+		for(uint32_t i = 0; i < this->size(); ++i){
+			assert(this->at(i).data_.size() == ref_size);
+			l_entries += this->at(i).data_.size();
+		}
 
 		for(uint32_t i = 0; i < this->size(); ++i)
-			this->at(i).UpdateDataContainer(container);
+			this->at(i).UpdateDataContainer(container, false);
+
+		container.AddStride(ref_size);
 
 		return(container);
 	}

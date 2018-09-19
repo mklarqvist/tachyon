@@ -35,8 +35,6 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 	this->AddNames(variant_block.base_containers[YON_BLK_NAMES]);
 	this->AddRefAlt(variant_block.base_containers[YON_BLK_REFALT]);
 
-	std::cerr << "after basics" << std::endl;
-
 	// Allocate memory to support upcoming data to overload into the
 	// containers. After memory allocation we provide the list of local
 	// offsets that provide data.
@@ -47,13 +45,9 @@ bool VariantContainer::Build(containers::VariantBlock& variant_block, const Vari
 		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
 	}
 
-	std::cerr << "before filter" << std::endl;
 	this->AddFilter(variant_block, header);
-	std::cerr << "before info" << std::endl;
 	this->AddInfo(variant_block, header);
-	std::cerr << "before format" << std::endl;
 	this->AddFormat(variant_block, header);
-	std::cerr << "before permute" << std::endl;
 	this->PermuteOrder(variant_block);
 
 	return true;
@@ -216,7 +210,10 @@ bool VariantContainer::AddFormat(containers::VariantBlock& variant_block, const 
 	return true;
 }
 
-bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool VariantContainer::AddInfoWrapper(dc_type& container,
+                                      const VariantHeader& header,
+                                      const std::vector<bool>& matches)
+{
 	if((container.data_uncompressed.size() == 0 &&
 	   header.info_fields_[container.header.GetGlobalKey()].yon_type == YON_VCF_HEADER_FLAG) || container.header.data_header.GetPrimitiveType() == YON_TYPE_BOOLEAN)
 	{
@@ -301,7 +298,10 @@ bool VariantContainer::AddInfoWrapper(dc_type& container, const VariantHeader& h
 	return true;
 }
 
-bool VariantContainer::InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool VariantContainer::InfoSetupString(dc_type& container,
+                                       const VariantHeader& header,
+                                       const std::vector<bool>& matches)
+{
 	if(container.strides_uncompressed.size() == 0)
 		return false;
 
@@ -332,7 +332,11 @@ bool VariantContainer::InfoSetupString(dc_type& container, const VariantHeader& 
 	return true;
 }
 
-bool VariantContainer::InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride){
+bool VariantContainer::InfoSetupString(dc_type& container,
+                                       const VariantHeader& header,
+                                       const std::vector<bool>& matches,
+                                       const uint32_t stride)
+{
 	if(container.header.data_header.IsUniform()){
 		for(int i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
@@ -586,7 +590,10 @@ bool VariantContainer::AddGenotypes(containers::VariantBlock& block, const Varia
 	return true;
 }
 
-bool VariantContainer::FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool VariantContainer::FormatSetupString(dc_type& container,
+                                         const VariantHeader& header,
+                                         const std::vector<bool>& matches)
+{
 	if(container.strides_uncompressed.size() == 0)
 		return false;
 
@@ -606,7 +613,7 @@ bool VariantContainer::FormatSetupString(dc_type& container, const VariantHeader
 
 	for(int i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
-			continue;
+
 		} else if(matches[this->variants_[i].fmt_pid]){
 			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<std::string>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
 			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
@@ -619,20 +626,22 @@ bool VariantContainer::FormatSetupString(dc_type& container, const VariantHeader
 	return true;
 }
 
-bool VariantContainer::FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride){
+bool VariantContainer::FormatSetupString(dc_type& container,
+                                         const VariantHeader& header,
+                                         const std::vector<bool>& matches,
+                                         const uint32_t stride)
+{
 	assert(container.header.data_header.IsUniform() == false);
 
 	uint32_t current_offset = 0;
-	uint32_t stride_offset  = 0;
-
 	for(int i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
-			continue;
+			std::cerr << "pid=" << this->variants_[i].fmt_pid << " matched in fstring: " << current_offset << " + " << stride*header.GetNumberSamples() << std::endl;
+
 		} else if(matches[this->variants_[i].fmt_pid]){
 			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<std::string>(container, current_offset, header.GetNumberSamples(), stride);
 			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
 			current_offset += stride * sizeof(char) * header.GetNumberSamples();
-			++stride_offset;
 		}
 	}
 	assert(current_offset == container.data_uncompressed.size());

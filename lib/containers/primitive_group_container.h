@@ -143,32 +143,50 @@ public:
 	}
 
     DataContainer ToDataContainer(void){
+    	if(this->size() == 0)
+    		return DataContainer();
+
     	uint32_t n_entries = 0;
-    	for(uint32_t i = 0; i < this->size(); ++i)
+    	uint32_t ref_size = this->at(0).size();
+    	for(uint32_t i = 0; i < this->size(); ++i){
+    		assert(this->at(i).size() == ref_size);
     		n_entries += this->at(i).size();
+    	}
 
 		DataContainer d;
-		d.data_uncompressed.resize(n_entries + 128);
-		d.strides_uncompressed.resize(n_entries + 128);
+		d.data_uncompressed.resize(n_entries*sizeof(return_type) + 128);
+		d.strides_uncompressed.resize(n_entries*sizeof(return_type) + 128);
+		d.header.data_header.stride = ref_size;
 
 		for(uint32_t i = 0; i < this->size(); ++i)
-			this->at(i).UpdateDataContainer(d);
+			this->at(i).UpdateDataContainer(d, false);
+
+		d.AddStride(ref_size);
 
 		return(d);
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
+		return(container);
+		/*
+		if(this->size() == 0)
+
+
 		uint32_t n_entries = 0;
-		for(uint32_t i = 0; i < this->size(); ++i)
+		uint32_t ref_size = this->at(0).size();
+		for(uint32_t i = 0; i < this->size(); ++i){
+			assert(this->at(i).size() == ref_size);
 			n_entries += this->at(i).size();
+		}
 
 		if(container.data_uncompressed.size() + n_entries > container.data_uncompressed.capacity())
 			container.data_uncompressed.resize((container.data_uncompressed.size()+n_entries)*2);
 
 		for(uint32_t i = 0; i < this->size(); ++i)
-			this->at(i).UpdateDataContainer(container);
+			this->at(i).UpdateDataContainer(container, false);
 
 		return(container);
+		*/
 	}
 
     void resize(void);

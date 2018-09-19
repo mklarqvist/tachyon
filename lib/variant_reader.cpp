@@ -678,16 +678,18 @@ bool VariantReader::TempWrite(void){
 	// Write out a fresh Tachyon header with the data from the Vcf header. As
 	// this data will not be modified during the import stage it is safe to
 	// write out now.
-	swriter.WriteYonHeader(this->global_header);
+	swriter.WriteFileHeader(this->global_header);
 
 	index::VariantIndexEntry index_entry;
 	uint32_t block_id = 0;
 
-	//io::BasicBuffer buf(100000);
+	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
 		gts.reset();
 		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
 		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+
+		// Todo: writer += block and writer does all work
 
 		containers::VariantBlock vblock;
 		vblock.Allocate(100,100,100);
@@ -711,6 +713,13 @@ bool VariantReader::TempWrite(void){
 		vblock.gt_ppa = &gts.permutation_array;
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
+			// Tet copy
+			//vc[i].ToVcfString(this->GetGlobalHeader(), buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			//yon1_vnt_t vcopy(vc[i]);
+			//vcopy.ToVcfString(this->GetGlobalHeader(), buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			//std::cerr.write(buf.data(), buf.size());
+			//buf.reset();
+
 			vblock.AddMore(vc[i]);
 			// Todo: Update controller (ref alt checks etc)
 			vblock += vc[i];
@@ -731,11 +740,10 @@ bool VariantReader::TempWrite(void){
 			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ", mixeds=" << vblock.info_containers[i].header.HasMixedStride() << ": " << vblock.info_containers[i].GetSizeUncompressed() << "->" << vblock.info_containers[i].GetSizeCompressed() << "\t" << vblock.info_containers[i].header.n_entries << "," << vblock.info_containers[i].header.n_additions << " stride: " << vblock.base_containers[i].header.data_header.stride << std::endl;
 		}
 
-		std::cerr << "format: ";
+		std::cerr << "format: " << std::endl;
 		for(int i = 0; i < vblock.footer.n_format_streams; ++i){
-			std::cerr << "," << i << ":" << vblock.format_containers[i].GetDataPrimitiveType() << ":" << vblock.format_containers[i].GetSizeUncompressed() << "->" << vblock.format_containers[i].GetSizeCompressed();
+			std::cerr << "," << i << ":" << vblock.format_containers[i].GetDataPrimitiveType() << ", mixeds=" << vblock.format_containers[i].header.HasMixedStride() << ": " << vblock.format_containers[i].GetSizeUncompressed() << "->" << vblock.format_containers[i].GetSizeCompressed() << "\t" << vblock.format_containers[i].header.n_entries << "," << vblock.format_containers[i].header.n_additions << " stride: " << vblock.base_containers[i].header.data_header.stride << std::endl;
 		}
-		std::cerr << std::endl;
 
 		vblock.Finalize();
 		// After all compression and writing is finished the header

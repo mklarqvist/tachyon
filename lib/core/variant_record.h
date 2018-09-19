@@ -29,6 +29,28 @@ public:
 	yon_allele& operator=(const char* value){ delete [] allele; l_allele = strlen(value); allele = new char[l_allele]; memcpy(allele, value, l_allele); return(*this); }
 	yon_allele& operator=(const char& value){ delete [] allele; l_allele = 1; allele = new char[l_allele]; allele[0] = value; return(*this); }
 
+	yon_allele(const yon_allele& other) : l_allele(other.l_allele), allele(new char[l_allele]){ memcpy(allele, other.allele, l_allele); }
+	yon_allele(yon_allele&& other) noexcept : l_allele(other.l_allele), allele(nullptr){ std::swap(allele, other.allele); other.l_allele = 0; }
+
+	yon_allele& operator=(const yon_allele& other){
+		delete [] allele;
+		l_allele = other.l_allele;
+		allele = new char[l_allele];
+		memcpy(allele, other.allele, l_allele);
+		return(*this);
+	}
+
+	yon_allele& operator=(yon_allele&& other) noexcept {
+		if(this == &other){
+			// precautions against self-moves
+			return *this;
+		}
+		l_allele = other.l_allele;
+		std::swap(allele, other.allele);
+		other.l_allele = 0;
+		return(*this);
+	}
+
 	~yon_allele(){ delete [] allele; }
 
 	yon_allele& ParseFromBuffer(const char* const in){
@@ -67,9 +89,30 @@ public:
 		m_fmt(0), m_info(0), m_allele(0),
 		qual(NAN), rid(0), pos(0),
 		alleles(nullptr), gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
-		info(nullptr), fmt(nullptr) //gt_raw(nullptr),
-		//info_ids(nullptr), fmt_ids(nullptr), flt_ids(nullptr)
+		info(nullptr), fmt(nullptr)
 	{}
+
+	yon1_vnt_t(const yon1_vnt_t& other) :
+		is_dirty(other.is_dirty), is_loaded_gt(other.is_loaded_gt), controller(other.controller),
+		n_base_ploidy(other.n_base_ploidy), n_alleles(other.n_alleles),
+		n_flt(other.n_flt), n_fmt(other.n_fmt), n_info(other.n_info), info_pid(other.info_pid), flt_pid(other.flt_pid), fmt_pid(other.fmt_pid),
+		m_fmt(other.m_fmt), m_info(other.m_info), m_allele(other.m_allele),
+		qual(other.qual), rid(other.rid), pos(other.pos),
+		info_hdr(other.info_hdr), fmt_hdr(other.fmt_hdr), flt_hdr(other.flt_hdr),
+		info_map(other.info_map), fmt_map(other.fmt_map), flt_map(other.flt_map),
+		alleles(new yon_allele[n_alleles]), gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
+		info(new containers::PrimitiveContainerInterface*[m_info]), fmt(new containers::PrimitiveGroupContainerInterface*[m_fmt])
+	{
+		for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
+		for(int i = 0; i < n_info; ++i) info[i] = std::move(other.info[i]->Clone());
+		for(int i = 0; i < n_fmt; ++i) fmt[i] = std::move(other.fmt[i]->Clone());
+		if(other.gt != nullptr) gt = new yon_gt(*other.gt);
+		if(other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
+		if(other.gt_sum_occ != nullptr){
+			gt_sum_occ = new yon_gt_summary[gt->n_o];
+			for(int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
+		}
+	}
 
 	~yon1_vnt_t(){
 		delete [] alleles;
@@ -77,8 +120,7 @@ public:
 		delete [] gt_sum_occ;
 		for(int i = 0; i < n_info; ++i) delete info[i];
 		for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
-		delete [] info; delete [] fmt; //delete gt_raw;
-		//delete info_ids, fmt_ids, flt_ids;
+		delete [] info; delete [] fmt;
 	}
 
 	bool EvaluateSummary(bool lazy_evaluate = true);
@@ -186,7 +228,7 @@ public:
 	void OutputHtslibVcfFormat(bcf1_t* rec,
 	                           bcf_hdr_t* hdr,
 	                           DataBlockSettings& settings,
-	                           yon_gt_rcd** external_exp) const
+	                           yon_gt_rcd* external_exp) const
 	{
 		if(n_fmt){
 			// Case when the only available FORMAT field is the GT field.
@@ -246,7 +288,7 @@ public:
 	void ToVcfString(const VariantHeader& header,
 	           io::BasicBuffer& buffer,
 	           uint32_t display,
-	           yon_gt_rcd** external_rcd = nullptr) const
+	           yon_gt_rcd* external_rcd = nullptr) const
 	{
 		buffer.Add(header.contigs_[rid].name.data(), header.contigs_[rid].name.size());
 		buffer += '\t';
@@ -301,7 +343,7 @@ public:
 			}
 			buffer += '\t';
 
-			if(n_fmt == 1 && is_loaded_gt &&
+			if(n_fmt == 1 &&
 			   controller.gt_available &&
 			   (display & YON_BLK_BV_GT))
 			{
@@ -309,10 +351,10 @@ public:
 				gt->d_exp = external_rcd;
 
 				// Iterate over samples and print FORMAT:GT value in Vcf format.
-				gt->d_exp[0]->PrintVcf(buffer, gt->m);
+				gt->d_exp[0].PrintVcf(buffer, gt->m);
 				for(uint32_t s = 1; s < header.GetNumberSamples(); ++s){
 					buffer += '\t';
-					gt->d_exp[s]->PrintVcf(buffer, gt->m);
+					gt->d_exp[s].PrintVcf(buffer, gt->m);
 				}
 
 				gt->d_exp = nullptr;
@@ -326,14 +368,14 @@ public:
 				gt->ExpandExternal(external_rcd);
 				gt->d_exp = external_rcd;
 
-				gt->d_exp[0]->PrintVcf(buffer, gt->m);
+				gt->d_exp[0].PrintVcf(buffer, gt->m);
 				for(uint32_t g = 1; g < n_fmt; ++g){
 					buffer += ':';
 					fmt[g]->ToVcfString(buffer, 0);
 				}
 				for(uint32_t s = 1; s < header.GetNumberSamples(); ++s){
 					buffer += '\t';
-					gt->d_exp[s]->PrintVcf(buffer, gt->m);
+					gt->d_exp[s].PrintVcf(buffer, gt->m);
 					for(uint32_t g = 1; g < n_fmt; ++g){
 						buffer += ':';
 						fmt[g]->ToVcfString(buffer, s);
@@ -479,7 +521,7 @@ public:
 		int j = 0;
 		for(uint32_t p = 0; p < n_base_ploidy; ++p){
 			for(uint32_t i = 2; i < gt_sum->d->n_ac_af; ++i, ++j){
-				ac_p->at(j) = gt_sum->d->ac_p[p][i];
+				ac_p->at(j) = gt_sum->alleles_strand[p][i];
 				++(*ac_p);
 			}
 		}
@@ -525,7 +567,7 @@ public:
 			int j = 0;
 			for(uint32_t p = 0; p < n_base_ploidy; ++p){
 				for(uint32_t k = 2; k < gt_sum_occ[i].d->n_ac_af; ++k, ++j){
-					ac_p->at(j) = gt_sum_occ[i].d->ac_p[p][k];
+					ac_p->at(j) = gt_sum_occ->alleles_strand[p][k];
 					++(*ac_p);
 				}
 			}
@@ -541,14 +583,27 @@ public:
 		return true;
 	}
 
-	// Todo: incorrect result when sample groupings are overlapping
+	/**<
+	 * Calculates various F-statistics over the provided groupings using
+	 * the Occ table. Calculates one set of statistics over all the groupings
+	 * and for each individual group. The calculations here are available only
+	 * for diploid individuals at biallelic sites.
+	 *
+	 * Warning: this function returns incorrect results if the provided
+	 *          grouping sets are overlapping. The incorrect results arise
+	 *          from the fact that a single individual cannot simultaneously
+	 *          exist in multiple distinct populations.
+	 * @param header Src VariantHeader.
+	 * @return       Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool EvaluatePopGenOcc(VariantHeader& header){
 		if(this->gt == nullptr) return false;
 		if(this->gt->n_o == 0) return false;
 		if(gt->n_allele != 2 || gt->m != 2) return false;
 
 		// Number of genotypes across populations.
-		const uint32_t n_gt_all = this->gt_sum->gt[2][2].n_cnt +
+		const uint32_t n_gt_all =
+				this->gt_sum->gt[2][2].n_cnt +
 				this->gt_sum->gt[2][3].n_cnt +
 				this->gt_sum->gt[3][2].n_cnt +
 				this->gt_sum->gt[3][3].n_cnt;

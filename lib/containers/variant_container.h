@@ -73,6 +73,19 @@ public:
 		delete [] variants_;
 	}
 
+	/*
+	VariantContainer& operator+=(const yon1_vnt_t& rec){
+		if(this->variants_ == nullptr){
+			this->n_capacity_ = 1000;
+			this->n_variants_ = 0;
+			this->variants_ = new yon1_vnt_t[this->n_capacity_];
+		}
+
+		this->variants_[this->n_variants_++] = rec;
+		return(*this);
+	}
+	*/
+
 	const size_t size(void) const { return(this->n_variants_); }
 	const size_t capacity(void) const { return(this->n_capacity_); }
 
@@ -82,6 +95,19 @@ public:
 	void resize(const uint32_t new_size);
 
 	bool Build(containers::VariantBlock& variant_block, const VariantHeader& header);
+
+	/**< @brief Reads one or more separate digital objects from disk
+	 * Primary function for reading partial data from disk. Data
+	 * read in this way is not checked for integrity until later.
+	 * @param stream   Input stream
+	 * @param settings Settings record describing reading parameters
+	 * @return         Returns FALSE if there was a problem, TRUE otherwise
+	 */
+	inline bool ReadBlock(std::ifstream& stream, const VariantHeader& header, DataBlockSettings& settings){
+		return(this->block_.read(stream, settings, header));
+	}
+
+private:
 	bool PermuteOrder(const containers::VariantBlock& variant_block);
 
 	bool AddInfo(containers::VariantBlock& variant_block, const VariantHeader& header);
@@ -158,18 +184,6 @@ public:
 	bool AddAlleles(dc_type& container);
 	bool AddNames(dc_type& container);
 
-	/**< @brief Reads one or more separate digital objects from disk
-	 * Primary function for reading partial data from disk. Data
-	 * read in this way is not checked for integrity until later.
-	 * @param stream   Input stream
-	 * @param settings Settings record describing reading parameters
-	 * @return         Returns FALSE if there was a problem, TRUE otherwise
-	 */
-	inline bool ReadBlock(std::ifstream& stream, const VariantHeader& header, DataBlockSettings& settings){
-		return(this->block_.read(stream, settings, header));
-	}
-
-
 public:
 	containers::VariantBlock block_;
 	// External memory allocation for linear use of lazy-evaluated
@@ -183,8 +197,15 @@ public:
 	yon1_vnt_t* variants_;
 };
 
+
+// IMPLEMENTATION -------------------------------------------------------------
+
+
 template <class return_ptype, class intrinsic_ptype>
-bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool VariantContainer::InfoSetup(dc_type& container,
+                                 const VariantHeader& header,
+                                 const std::vector<bool>& matches)
+{
 	if(container.strides_uncompressed.size() == 0)
 		return false;
 
@@ -210,14 +231,17 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 			++stride_offset;
 		}
 	}
-	std::cerr << current_offset << "/" << container.data_uncompressed.size() << std::endl;
 	assert(current_offset == container.data_uncompressed.size());
 	delete it;
 	return true;
 }
 
 template <class return_ptype, class intrinsic_ptype>
-bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
+bool VariantContainer::InfoSetup(dc_type& container,
+                                 const VariantHeader& header,
+                                 const std::vector<bool>& matches,
+                                 const uint32_t stride_size)
+{
 	uint32_t current_offset = 0;
 
 	if(container.header.data_header.IsUniform()){
@@ -239,14 +263,16 @@ bool VariantContainer::InfoSetup(dc_type& container, const VariantHeader& header
 				current_offset += stride_size * sizeof(intrinsic_ptype);
 			}
 		}
-		std::cerr << current_offset << "/" << container.data_uncompressed.size() << std::endl;
 		assert(current_offset == container.data_uncompressed.size());
 	}
 	return true;
 }
 
 template <class return_ptype, class intrinsic_ptype>
-bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool VariantContainer::FormatSetup(dc_type& container,
+                                   const VariantHeader& header,
+                                   const std::vector<bool>& matches)
+{
 	if(container.strides_uncompressed.size() == 0)
 		return false;
 
@@ -278,7 +304,11 @@ bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& head
 }
 
 template <class return_ptype, class intrinsic_ptype>
-bool VariantContainer::FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size){
+bool VariantContainer::FormatSetup(dc_type& container,
+                                   const VariantHeader& header,
+                                   const std::vector<bool>& matches,
+                                   const uint32_t stride_size)
+{
 	uint32_t current_offset = 0;
 
 	if(container.header.data_header.IsUniform()){
