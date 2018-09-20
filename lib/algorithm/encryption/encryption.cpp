@@ -2,6 +2,8 @@
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 
+#include "third_party/xxhash/xxhash.h"
+
 #include "algorithm/spinlock.h"
 #include "encryption.h"
 

@@ -2,7 +2,7 @@
 
 #include "variant_reader.h"
 
-#include "containers/variant_container.h"
+#include "containers/variant_containers.h"
 
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
@@ -205,7 +205,7 @@ bool VariantReader::NextBlockRaw(void){
 	return true;
 }
 
-containers::VariantBlock VariantReader::ReturnBlock(void){
+yon1_vb_t VariantReader::ReturnBlock(void){
 	block_entry_type c;
 
 	if(this->CheckNextValid() == false)
@@ -285,7 +285,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 
 	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
@@ -322,7 +322,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 	for(uint32_t i = 0; i < this->interval_container.GetBlockList().size(); ++i){
 		this->GetBlock(this->interval_container.GetBlockList()[i]);
 
-		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if((this->*filter_intervals)(vc[i]) == false)
@@ -413,7 +413,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		if(this->GetBlockSettings().annotate_extra)
 			this->occ_table.BuildTable(this->variant_container.gt_ppa);
@@ -498,7 +498,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < vc.size(); ++i){
@@ -574,7 +574,7 @@ bool VariantReader::Benchmark(const uint32_t threads){
 	return(true);
 }
 
-bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&)){
+bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&)){
 	if(!this->open(settings.input)){
 		std::cerr << "failed to open" << std::endl;
 		return 1;
@@ -681,11 +681,11 @@ bool VariantReader::TempWrite(void){
 
 
 	uint32_t block_id = 0;
-	VariantContainer vc2;
+	yon1_vc_t vc2;
 
 	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(vc2.size() == 500){

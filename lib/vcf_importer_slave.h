@@ -7,9 +7,8 @@
 #include "algorithm/permutation/genotype_sorter.h"
 #include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption.h"
-#include "containers/variant_block.h"
+#include "containers/variant_containers.h"
 #include "containers/vcf_container.h"
-#include "core/variant_importer_container_stats.h"
 #include "index/variant_index_entry.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
@@ -35,9 +34,9 @@ public:
 	typedef algorithm::CompressionManager   compression_manager_type;
 	typedef algorithm::GenotypeSorter       radix_sorter_type;
 	typedef algorithm::GenotypeEncoder      gt_encoder_type;
-	typedef containers::DataContainer       stream_container;
-	typedef containers::VariantBlock        block_type;
-	typedef support::VariantImporterContainerStats import_stats_type;
+	typedef yon1_dc_t       stream_container;
+	typedef yon1_vb_t        block_type;
+	typedef yon_vb_istats import_stats_type;
 	typedef VariantImporterSettings         settings_type;
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
@@ -138,9 +137,9 @@ public:
 	reorder_map_type contig_reorder_map_;
 
 	// Stats
-	support::VariantImporterContainerStats stats_basic;
-	support::VariantImporterContainerStats stats_info;
-	support::VariantImporterContainerStats stats_format;
+	yon_vb_istats stats_basic;
+	yon_vb_istats stats_info;
+	yon_vb_istats stats_format;
 };
 
 }

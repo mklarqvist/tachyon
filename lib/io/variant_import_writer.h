@@ -6,7 +6,7 @@
 
 #include "index/index.h"
 #include "support/magic_constants.h"
-#include "containers/data_container.h"
+#include "containers/data_containers.h"
 
 namespace tachyon {
 
@@ -14,7 +14,7 @@ class VariantWriterInterface {
 public:
 	typedef VariantWriterInterface     self_type;
 	typedef index::Index               sorted_index_type;
-	typedef containers::DataContainer  container_type;
+	typedef yon1_dc_t  container_type;
 
 public:
 	VariantWriterInterface();

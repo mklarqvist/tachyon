@@ -1,13 +1,17 @@
 #ifndef ALGORITHM_DIGEST_DIGEST_H_
 #define ALGORITHM_DIGEST_DIGEST_H_
 
+#include <fstream>
+
+#include "containers/data_containers.h"
+
 namespace tachyon{
 namespace algorithm{
 
 struct DigitalDigest{
 private:
 	typedef DigitalDigest             self_type;
-	typedef containers::DataContainer container_type;
+	typedef yon1_dc_t container_type;
 	typedef io::BasicBuffer           buffer_type;
 
 public:
@@ -129,7 +133,7 @@ struct DigitalDigestPair{
 private:
 	typedef DigitalDigestPair         self_type;
 	typedef DigitalDigest             digest_type;
-	typedef containers::DataContainer container_type;
+	typedef yon1_dc_t container_type;
 
 public:
 	DigitalDigestPair(){}

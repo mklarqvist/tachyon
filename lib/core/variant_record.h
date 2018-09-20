@@ -1,9 +1,8 @@
 #ifndef CORE_VARIANT_RECORD_H_
 #define CORE_VARIANT_RECORD_H_
 
-#include "containers/components/variant_block_footer.h"
-#include "containers/primitive_container.h"
 #include "containers/primitive_group_container.h"
+#include "containers/primitive_group_container_string.h"
 #include "genotypes.h"
 
 #include <cmath>

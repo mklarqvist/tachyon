@@ -9,7 +9,7 @@ namespace algorithm{
 class UncompressedCodec : public CompressionContainer{
 public:
 	typedef UncompressedCodec          self_type;
-	typedef containers::DataContainer  container_type;
+	typedef yon1_dc_t  container_type;
 	typedef io::BasicBuffer            buffer_type;
 	typedef yon_gt_ppa                 permutation_type;
 

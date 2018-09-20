@@ -2,7 +2,7 @@
 #define CONTAINERS_CHECKSUM_CONTAINER_H_
 
 #include "algorithm/digest/digest_manager.h"
-#include "containers/variant_block.h"
+#include "containers/variant_containers.h"
 #include "core/header/variant_header.h"
 #include "containers/components/generic_iterator.h"
 
@@ -19,7 +19,7 @@ public:
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
     typedef io::BasicBuffer          buffer_type;
-    typedef containers::VariantBlock block_type;
+    typedef yon1_vb_t block_type;
     typedef VariantHeader            header_type;
 
     typedef yonRawIterator<value_type>       iterator;

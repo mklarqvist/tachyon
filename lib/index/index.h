@@ -26,11 +26,13 @@ public:
 
 public:
 	Index() : is_sorted(true){}
+
 	Index(const self_type& other) :
 		is_sorted(other.is_sorted),
 		index_meta_(other.index_meta_),
 		index_(other.index_)
 	{}
+
 	~Index(){}
 
 	/**<
@@ -111,14 +113,14 @@ public:
 		this->index_.Add(contigs);
 		this->index_meta_.reserve(contigs.size());
 		for(int i = 0; i < contigs.size(); ++i)
-			this->index_meta_[i].contigID = contigs[i].idx;
+			this->index_meta_[i].contig_id = contigs[i].idx;
 	}
 
 	void Setup(const std::vector<YonContig>& contigs){
 		this->index_.Add(contigs);
 		this->index_meta_.reserve(contigs.size());
 		for(int i = 0; i < contigs.size(); ++i)
-			this->index_meta_[i].contigID = contigs[i].idx;
+			this->index_meta_[i].contig_id = contigs[i].idx;
 	}
 
 	inline int32_t AddSorted(const uint32_t contig_id,
@@ -136,8 +138,8 @@ public:
 		if(this->is_sorted){
 			if(this->index_meta_[entry.contig_id].n_variants == 0){
 				this->index_meta_[entry.contig_id].byte_offset_begin = entry.byte_offset;
-				this->index_meta_[entry.contig_id].minPosition = entry.min_position;
-				this->index_meta_[entry.contig_id].start_block = entry.block_id;
+				this->index_meta_[entry.contig_id].min_position = entry.min_position;
+				this->index_meta_[entry.contig_id].start_block  = entry.block_id;
 			}
 
 			this->index_meta_[entry.contig_id] += entry;

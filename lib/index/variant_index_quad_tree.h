@@ -16,22 +16,6 @@
 namespace tachyon{
 namespace index{
 
-/*
-class VIndex {
-
-
-	// Does not required sorted data. Linear array of variant block
-	// offsets.
-	VariantIndexLinear* c;
-	// If data is sorted then the meta index is equivalent to
-	// a run of linear blocks.
-	VariantIndexMeta* m;
-	// If data is sorted then the quad-tree allows random access
-	// lookups of data.
-	VariantIndexQuad* q;
-};
-*/
-
 class VariantIndexQuadTree {
 public:
 	typedef VariantIndexQuadTree       self_type;
@@ -166,9 +150,9 @@ public:
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 
 public:
-	size_type      n_contigs_; // number of contigs
-	size_type      n_capacity_;
-	pointer        contigs_;
+	size_type n_contigs_; // number of contigs
+	size_type n_capacity_;
+	pointer   contigs_;
 };
 
 }

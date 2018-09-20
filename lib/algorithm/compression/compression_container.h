@@ -2,7 +2,7 @@
 #define COMPRESSIONCONTAINER_H_
 
 #include "core/genotypes.h"
-#include "containers/data_container.h"
+#include "containers/data_containers.h"
 
 namespace tachyon{
 namespace algorithm{
@@ -210,7 +210,7 @@ EncodeInt16(int16_t input, uint8_t* output)
 class CompressionContainer{
 public:
 	typedef CompressionContainer          self_type;
-	typedef containers::DataContainer     container_type;
+	typedef yon1_dc_t     container_type;
 	typedef io::BasicBuffer               buffer_type;
 	typedef yon_gt_ppa                    permutation_type;
 

@@ -2,7 +2,6 @@
 #define CONTAINERS_PRIMITIVE_GROUP_CONTAINER_H_
 
 #include "components/generic_iterator.h"
-#include "containers/data_container.h"
 #include "primitive_container.h"
 
 namespace tachyon{
@@ -52,14 +51,14 @@ public:
 	 * done for writing out a Tachyon archive.
 	 * @return Returns a DataContainer with the contextual representation of the data into this container.
 	 */
-	virtual DataContainer ToDataContainer(void) =0;
+	virtual yon1_dc_t ToDataContainer(void) =0;
 
 	/**<
 	 * Add data from a PrimitiveGroupContainer into an already existing DataContainer.
 	 * @param container Destination DataContainer.
 	 * @return          Returns a reference to the input DataContainer with the contextual representation of the data in this container added to it.
 	 */
-	virtual DataContainer& UpdateDataContainer(DataContainer& container) =0;
+	virtual yon1_dc_t& UpdateDataContainer(yon1_dc_t& container) =0;
 
 
 	/**<
@@ -111,7 +110,7 @@ public:
     typedef value_type*             pointer;
     typedef const value_type*       const_pointer;
     typedef std::ptrdiff_t          difference_type;
-    typedef DataContainer           data_container_type;
+    typedef yon1_dc_t           data_container_type;
 
     typedef yonRawIterator<return_type>       iterator;
 	typedef yonRawIterator<const return_type> const_iterator;
@@ -137,9 +136,9 @@ public:
 		return(o);
     }
 
-    DataContainer ToDataContainer(void){
+    yon1_dc_t ToDataContainer(void){
     	if(this->size() == 0)
-    		return DataContainer();
+    		return yon1_dc_t();
 
     	uint32_t n_entries = 0;
     	uint32_t ref_size = this->at(0).size();
@@ -148,7 +147,7 @@ public:
     		n_entries += this->at(i).size();
     	}
 
-		DataContainer d;
+    	yon1_dc_t d;
 		d.data_uncompressed.resize(n_entries*sizeof(return_type) + 128);
 		d.strides_uncompressed.resize(n_entries*sizeof(return_type) + 128);
 		d.header.data_header.stride = ref_size;
@@ -161,7 +160,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container){
+    yon1_dc_t& UpdateDataContainer(yon1_dc_t& container){
 		if(this->size() == 0)
 			return(container);
 

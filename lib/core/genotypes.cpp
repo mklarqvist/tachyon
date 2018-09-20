@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "genotypes.h"
 #include "math/fisher_math.h"
 

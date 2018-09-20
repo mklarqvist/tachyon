@@ -6,11 +6,13 @@
 #include <cassert>
 #include <thread>
 
-#include "containers/variant_block.h"
+#include "containers/variant_containers.h"
 #include "core/genotypes.h"
 #include "io/vcf_utils.h"
 #include "core/variant_record.h"
 #include "containers/vcf_container.h"
+
+#include "third_party/xxhash/xxhash.h"
 
 namespace tachyon{
 namespace algorithm{
@@ -83,8 +85,8 @@ class GenotypeEncoder {
 public:
 	typedef GenotypeEncoder              self_type;
 	typedef io::BasicBuffer              buffer_type;
-	typedef containers::DataContainer    container_type;
-	typedef containers::VariantBlock     block_type;
+	typedef yon1_dc_t    container_type;
+	typedef yon1_vb_t     block_type;
 	typedef GenotypeEncoderStatistics    stats_type;
 
 public:

@@ -1,4 +1,3 @@
-#include "containers/components/variant_block_footer.h"
 #include "data_block_settings.h"
 
 namespace tachyon{

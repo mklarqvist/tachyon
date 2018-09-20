@@ -6,7 +6,7 @@
 // encryption
 #include "support/magic_constants.h"
 #include "io/basic_buffer.h"
-#include "containers/variant_block.h"
+#include "containers/variant_containers.h"
 
 namespace tachyon {
 
@@ -184,15 +184,15 @@ public:
  */
 class Keychain {
 public:
-    typedef Keychain                  self_type;
-	typedef std::size_t               size_type;
-    typedef KeychainKey*              value_type;
-    typedef value_type&               reference;
-    typedef const value_type&         const_reference;
-    typedef value_type*               pointer;
-    typedef const value_type*         const_pointer;
-    typedef containers::VariantBlock  variant_block_type;
-    typedef containers::DataContainer container_type;
+    typedef Keychain           self_type;
+	typedef std::size_t        size_type;
+    typedef KeychainKey*       value_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
+    typedef yon1_vb_t          variant_block_type;
+    typedef yon1_dc_t          container_type;
     typedef std::unordered_map<uint64_t, uint32_t> htable_type;
 
     typedef yonRawIterator<value_type>       iterator;
@@ -284,8 +284,8 @@ private:
 class EncryptionDecorator {
 public:
 	typedef EncryptionDecorator       self_type;
-	typedef containers::VariantBlock  variant_block_type;
-	typedef containers::DataContainer stream_container;
+	typedef yon1_vb_t  variant_block_type;
+	typedef yon1_dc_t stream_container;
 	typedef io::BasicBuffer           buffer_type;
 	typedef Keychain                  keychain_type;
 

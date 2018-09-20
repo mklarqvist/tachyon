@@ -14,7 +14,7 @@
 #include "algorithm/timer.h"
 #include "containers/interval_container.h"
 #include "containers/primitive_group_container.h"
-#include "containers/variant_block.h"
+#include "containers/variant_containers.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
@@ -45,7 +45,7 @@ public:
 	typedef index::VariantIndexEntry               index_entry_type;
 	typedef algorithm::VariantDigestManager        checksum_type;
 	typedef Keychain                               keychain_type;
-	typedef containers::VariantBlock               block_entry_type;
+	typedef yon1_vb_t                              block_entry_type;
 	typedef containers::IntervalContainer          interval_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
@@ -252,7 +252,7 @@ public:
 	// temp
 	bool Stats(void);
 	bool Benchmark(const uint32_t threads);
-	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&));
+	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&));
 
 	bool TempWrite(void);
 

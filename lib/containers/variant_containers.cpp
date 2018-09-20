@@ -1,0 +1,2500 @@
+#include "variant_containers.h"
+#include "algorithm/compression/genotype_encoder.h"
+#include "algorithm/permutation/genotype_sorter.h"
+#include "algorithm/compression/compression_manager.h"
+
+#include "third_party/xxhash/xxhash.h"
+
+namespace tachyon {
+
+// vnt controller
+yon_vb_hdr_cont::yon_vb_hdr_cont():
+	has_gt(0),
+	has_gt_permuted(0),
+	any_encrypted(0),
+	unused(0)
+{}
+yon_vb_hdr_cont::~yon_vb_hdr_cont(){}
+
+void yon_vb_hdr_cont::clear(){ memset(this, 0, sizeof(uint16_t)); }
+
+std::ostream& operator<<(std::ostream& stream, const yon_vb_hdr_cont& controller){
+	const uint16_t c = controller.has_gt |
+				  controller.has_gt_permuted << 1 |
+				  controller.any_encrypted   << 2 |
+				  controller.unused          << 3;
+
+	stream.write(reinterpret_cast<const char*>(&c), sizeof(uint16_t));
+	return(stream);
+}
+
+std::istream& operator>>(std::istream& stream, yon_vb_hdr_cont& controller){
+	uint16_t* c = reinterpret_cast<uint16_t*>(&controller);
+	stream.read(reinterpret_cast<char*>(c), sizeof(uint16_t));
+	return(stream);
+}
+
+// vbblock header
+yon_vb_hdr::yon_vb_hdr() :
+	l_offset_footer(0),
+	block_hash(0),
+	contig_id(-1),
+	min_position(0),
+	max_position(0),
+	n_variants(0)
+{}
+
+yon_vb_hdr::~yon_vb_hdr(){}
+
+std::ostream& operator<<(std::ostream& stream, const yon_vb_hdr& entry){
+	stream.write(reinterpret_cast<const char*>(&entry.l_offset_footer), sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.block_hash),      sizeof(uint64_t));
+	stream << entry.controller;
+	stream.write(reinterpret_cast<const char*>(&entry.contig_id),       sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.min_position),    sizeof(int64_t));
+	stream.write(reinterpret_cast<const char*>(&entry.max_position),    sizeof(int64_t));
+	stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(uint32_t));
+
+	return(stream);
+}
+
+std::ifstream& operator>>(std::ifstream& stream, yon_vb_hdr& entry){
+	stream.read(reinterpret_cast<char*>(&entry.l_offset_footer), sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.block_hash),      sizeof(uint64_t));
+	stream >> entry.controller;
+	stream.read(reinterpret_cast<char*>(&entry.contig_id),       sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.min_position),    sizeof(int64_t));
+	stream.read(reinterpret_cast<char*>(&entry.max_position),    sizeof(int64_t));
+	stream.read(reinterpret_cast<char*>(&entry.n_variants),      sizeof(uint32_t));
+
+	return(stream);
+}
+
+void yon_vb_hdr::reset(void){
+	this->l_offset_footer    = 0;
+	this->block_hash         = 0;
+	this->controller.clear();
+	this->contig_id          = -1;
+	this->min_position       = 0;
+	this->max_position       = 0;
+	this->n_variants         = 0;
+}
+
+// vblock footer
+yon_vb_ftr::yon_vb_ftr():
+	l_info_bitvector(0),
+	l_format_bitvector(0),
+	l_filter_bitvector(0),
+	n_info_streams(0),
+	n_format_streams(0),
+	n_filter_streams(0),
+	n_info_patterns(0),
+	n_format_patterns(0),
+	n_filter_patterns(0),
+	offsets(new header_type[YON_BLK_N_STATIC]),
+	info_offsets(nullptr),
+	format_offsets(nullptr),
+	filter_offsets(nullptr),
+	n_info_patterns_allocated(0),
+	n_format_patterns_allocated(0),
+	n_filter_patterns_allocated(0),
+	info_patterns(nullptr),
+	format_patterns(nullptr),
+	filter_patterns(nullptr),
+	info_map(nullptr),
+	format_map(nullptr),
+	filter_map(nullptr),
+	info_pattern_map(nullptr),
+	format_pattern_map(nullptr),
+	filter_pattern_map(nullptr)
+{}
+
+yon_vb_ftr::~yon_vb_ftr(){
+	delete [] this->offsets;
+	delete [] this->info_offsets;
+	delete [] this->format_offsets;
+	delete [] this->filter_offsets;
+	delete [] this->info_patterns;
+	delete [] this->format_patterns;
+	delete [] this->filter_patterns;
+	delete this->info_map;
+	delete this->format_map;
+	delete this->filter_map;
+	delete this->info_pattern_map;
+	delete this->format_pattern_map;
+	delete this->filter_pattern_map;
+}
+
+yon_vb_ftr::yon_vb_ftr(const self_type& other) :
+	l_info_bitvector(other.l_info_bitvector),
+	l_format_bitvector(other.l_format_bitvector),
+	l_filter_bitvector(other.l_filter_bitvector),
+	n_info_streams(other.n_info_streams),
+	n_format_streams(other.n_format_streams),
+	n_filter_streams(other.n_filter_streams),
+	n_info_patterns(other.n_info_patterns),
+	n_format_patterns(other.n_format_patterns),
+	n_filter_patterns(other.n_filter_patterns),
+	offsets(new header_type[YON_BLK_N_STATIC]),
+	info_offsets(new header_type[other.n_info_streams * 2]),
+	format_offsets(new header_type[other.n_format_streams * 2]),
+	filter_offsets(new header_type[other.n_filter_streams * 2]),
+	n_info_patterns_allocated(other.n_info_patterns_allocated),
+	n_format_patterns_allocated(other.n_format_patterns_allocated),
+	n_filter_patterns_allocated(other.n_filter_patterns_allocated),
+	info_patterns(new yon_blk_bv_pair[other.n_info_patterns_allocated]),
+	format_patterns(new yon_blk_bv_pair[other.n_format_patterns_allocated]),
+	filter_patterns(new yon_blk_bv_pair[other.n_filter_patterns_allocated]),
+	info_map(nullptr),
+	format_map(nullptr),
+	filter_map(nullptr),
+	info_pattern_map(nullptr),
+	format_pattern_map(nullptr),
+	filter_pattern_map(nullptr)
+{
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->offsets[i] = other.offsets[i];
+
+	for(uint32_t i = 0; i < this->n_info_streams; ++i)   this->info_offsets[i]   = other.info_offsets[i];
+	for(uint32_t i = 0; i < this->n_format_streams; ++i) this->format_offsets[i] = other.format_offsets[i];
+	for(uint32_t i = 0; i < this->n_filter_streams; ++i) this->filter_offsets[i] = other.filter_offsets[i];
+
+	for(uint32_t i = 0; i < this->n_info_patterns; ++i)   this->info_patterns[i]   = other.info_patterns[i];
+	for(uint32_t i = 0; i < this->n_format_patterns; ++i) this->format_patterns[i] = other.format_patterns[i];
+	for(uint32_t i = 0; i < this->n_filter_patterns; ++i) this->filter_patterns[i] = other.filter_patterns[i];
+
+	if(other.info_map != nullptr)   this->info_map   = new map_type(*other.info_map);
+	if(other.format_map != nullptr) this->format_map = new map_type(*other.format_map);
+	if(other.filter_map != nullptr) this->filter_map = new map_type(*other.filter_map);
+
+	if(other.info_pattern_map != nullptr)   this->info_pattern_map   = new map_pattern_type(*other.info_pattern_map);
+	if(other.format_pattern_map != nullptr) this->format_pattern_map = new map_pattern_type(*other.format_pattern_map);
+	if(other.filter_pattern_map != nullptr) this->filter_pattern_map = new map_pattern_type(*other.filter_pattern_map);
+}
+
+yon_vb_ftr::yon_vb_ftr(self_type&& other) noexcept :
+	l_info_bitvector(other.l_info_bitvector),
+	l_format_bitvector(other.l_format_bitvector),
+	l_filter_bitvector(other.l_filter_bitvector),
+	n_info_streams(other.n_info_streams),
+	n_format_streams(other.n_format_streams),
+	n_filter_streams(other.n_filter_streams),
+	n_info_patterns(other.n_info_patterns),
+	n_format_patterns(other.n_format_patterns),
+	n_filter_patterns(other.n_filter_patterns),
+	offsets(nullptr),
+	info_offsets(nullptr),
+	format_offsets(nullptr),
+	filter_offsets(nullptr),
+	n_info_patterns_allocated(other.n_info_patterns_allocated),
+	n_format_patterns_allocated(other.n_format_patterns_allocated),
+	n_filter_patterns_allocated(other.n_filter_patterns_allocated),
+	info_patterns(nullptr),
+	format_patterns(nullptr),
+	filter_patterns(nullptr),
+	info_map(nullptr),
+	format_map(nullptr),
+	filter_map(nullptr),
+	info_pattern_map(nullptr),
+	format_pattern_map(nullptr),
+	filter_pattern_map(nullptr)
+{
+	std::swap(this->offsets, other.offsets);
+	std::swap(this->info_offsets, other.info_offsets);
+	std::swap(this->format_offsets, other.format_offsets);
+	std::swap(this->filter_offsets, other.filter_offsets);
+	std::swap(this->info_patterns, other.info_patterns);
+	std::swap(this->format_patterns, other.format_patterns);
+	std::swap(this->filter_patterns, other.filter_patterns);
+	std::swap(this->info_map, other.info_map);
+	std::swap(this->format_map, other.format_map);
+	std::swap(this->filter_map, other.filter_map);
+	std::swap(this->info_pattern_map, other.info_pattern_map);
+	std::swap(this->format_pattern_map, other.format_pattern_map);
+	std::swap(this->filter_pattern_map, other.filter_pattern_map);
+}
+
+yon_vb_ftr& yon_vb_ftr::operator=(const self_type& other){
+	delete [] this->offsets;
+	delete [] this->info_offsets;
+	delete [] this->format_offsets;
+	delete [] this->filter_offsets;
+	delete [] this->info_patterns;
+	delete [] this->format_patterns;
+	delete [] this->filter_patterns;
+	delete this->info_map;
+	delete this->format_map;
+	delete this->filter_map;
+	delete this->info_pattern_map;
+	delete this->format_pattern_map;
+	delete this->filter_pattern_map;
+	*this = yon_vb_ftr(other); // invoke standard copy ctor followed by move ctor.
+	return(*this);
+}
+
+yon_vb_ftr& yon_vb_ftr::operator=(self_type&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	delete [] this->offsets;         this->offsets         = nullptr;
+	delete [] this->info_offsets;    this->info_offsets    = nullptr;
+	delete [] this->format_offsets;  this->format_offsets  = nullptr;
+	delete [] this->filter_offsets;  this->filter_offsets  = nullptr;
+	delete [] this->info_patterns;   this->info_patterns   = nullptr;
+	delete [] this->format_patterns; this->format_patterns = nullptr;
+	delete [] this->filter_patterns; this->filter_patterns = nullptr;
+	delete this->info_map;   this->info_map   = nullptr;
+	delete this->format_map; this->format_map = nullptr;
+	delete this->filter_map; this->filter_map = nullptr;
+	delete this->info_pattern_map;   this->info_pattern_map   = nullptr;
+	delete this->format_pattern_map; this->format_pattern_map = nullptr;
+	delete this->filter_pattern_map; this->filter_pattern_map = nullptr;
+
+	std::swap(this->offsets, other.offsets);
+	std::swap(this->info_offsets, other.info_offsets);
+	std::swap(this->format_offsets, other.format_offsets);
+	std::swap(this->filter_offsets, other.filter_offsets);
+	std::swap(this->info_patterns, other.info_patterns);
+	std::swap(this->format_patterns, other.format_patterns);
+	std::swap(this->filter_patterns, other.filter_patterns);
+	std::swap(this->info_map, other.info_map);
+	std::swap(this->format_map, other.format_map);
+	std::swap(this->filter_map, other.filter_map);
+	std::swap(this->info_pattern_map, other.info_pattern_map);
+	std::swap(this->format_pattern_map, other.format_pattern_map);
+	std::swap(this->filter_pattern_map, other.filter_pattern_map);
+
+	this->l_info_bitvector   = other.l_info_bitvector;
+	this->l_format_bitvector = other.l_format_bitvector;
+	this->l_filter_bitvector = other.l_filter_bitvector;
+	this->n_info_streams     = other.n_info_streams;
+	this->n_format_streams   = other.n_format_streams;
+	this->n_filter_streams   = other.n_filter_streams;
+	this->n_info_patterns    = other.n_info_patterns;
+	this->n_format_patterns  = other.n_format_patterns;
+	this->n_filter_patterns  = other.n_filter_patterns;
+	this->n_info_patterns_allocated   = other.n_info_patterns_allocated;
+	this->n_format_patterns_allocated = other.n_format_patterns_allocated;
+	this->n_filter_patterns_allocated = other.n_filter_patterns_allocated;
+
+	return(*this);
+}
+
+void yon_vb_ftr::reset(void){
+	// Headers of the various containers
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->offsets[i].reset();
+
+	for(uint32_t i = 0; i < this->n_info_streams; ++i)   this->info_offsets[i].reset();
+	for(uint32_t i = 0; i < this->n_format_streams; ++i) this->format_offsets[i].reset();
+	for(uint32_t i = 0; i < this->n_filter_streams; ++i) this->filter_offsets[i].reset();
+
+	for(uint32_t i = 0; i < this->n_info_patterns; ++i)   this->info_patterns[i].clear();
+	for(uint32_t i = 0; i < this->n_format_patterns; ++i) this->format_patterns[i].clear();
+	for(uint32_t i = 0; i < this->n_filter_patterns; ++i) this->filter_patterns[i].clear();
+
+	this->n_info_streams    = 0;
+	this->n_format_streams  = 0;
+	this->n_filter_streams  = 0;
+	this->n_info_patterns   = 0;
+	this->n_format_patterns = 0;
+	this->n_filter_patterns = 0;
+
+	this->resetTables();
+}
+
+void yon_vb_ftr::resetTables(){
+	if(this->info_map != nullptr)   this->info_map->clear();
+	if(this->format_map != nullptr) this->format_map->clear();
+	if(this->filter_map != nullptr) this->filter_map->clear();
+	if(this->info_pattern_map != nullptr)   this->info_pattern_map->clear();
+	if(this->format_pattern_map != nullptr) this->format_pattern_map->clear();
+	if(this->filter_pattern_map != nullptr) this->filter_pattern_map->clear();
+}
+
+void yon_vb_ftr::AllocateInfoHeaders(const uint32_t n_info_streams){
+	delete [] this->info_offsets;
+	if(n_info_streams == 0){
+		this->info_offsets = nullptr;
+		return;
+	}
+	this->info_offsets = new header_type[n_info_streams];
+}
+
+void yon_vb_ftr::AllocateFormatHeaders(const uint32_t n_format_streams){
+	delete [] this->format_offsets;
+	if(n_format_streams == 0){
+		this->format_offsets = nullptr;
+		return;
+	}
+	this->format_offsets = new header_type[n_format_streams];
+}
+
+void yon_vb_ftr::AllocateFilterHeaders(const uint32_t n_filter_streams){
+	delete [] this->filter_offsets;
+	if(n_filter_streams == 0){
+		this->filter_offsets = nullptr;
+		return;
+	}
+	this->filter_offsets = new header_type[n_filter_streams];
+}
+
+void yon_vb_ftr::AllocateHeaders(const uint32_t n_info_streams,
+                                         const uint32_t n_format_streams,
+                                         const uint32_t n_filter_streams)
+{
+	this->AllocateInfoHeaders(n_info_streams);
+	this->AllocateFormatHeaders(n_format_streams);
+	this->AllocateFilterHeaders(n_filter_streams);
+}
+
+bool yon_vb_ftr::ConstructInfoBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map){
+	for(uint32_t i = 0; i < this->n_info_patterns; ++i){
+		this->info_patterns[i].Build(this->n_info_streams, pattern_map);
+	}
+	return true;
+}
+
+bool yon_vb_ftr::ConstructFormatBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map){
+	for(uint32_t i = 0; i < this->n_format_patterns; ++i){
+		this->format_patterns[i].Build(this->n_format_streams, pattern_map);
+	}
+	return true;
+}
+
+bool yon_vb_ftr::ConstructFilterBitVector(std::unordered_map<uint32_t,uint32_t>* pattern_map){
+	for(uint32_t i = 0; i < this->n_filter_patterns; ++i){
+		this->filter_patterns[i].Build(this->n_filter_streams, pattern_map);
+	}
+	return true;
+}
+
+uint32_t yon_vb_ftr::AddPatternWrapper(const std::vector<int>& pattern,
+                                               map_pattern_type* pattern_map,
+                                               yon_blk_bv_pair* bv_pairs,
+                                               uint16_t& stream_counter)
+{
+	uint64_t pattern_hash = yon_vb_ftr::HashIdentifiers(pattern);
+	const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
+	if(it == pattern_map->end()){
+		(*pattern_map)[pattern_hash] = stream_counter;
+		bv_pairs[stream_counter].pattern = pattern;
+		++stream_counter;
+	}
+
+	return((*pattern_map)[pattern_hash]);
+}
+
+uint32_t yon_vb_ftr::AddInfoPattern(const std::vector<int>& pattern){
+	if(this->info_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_info_patterns_allocated == 0){
+		delete [] this->info_patterns;
+		this->info_patterns = new yon_blk_bv_pair[100];
+		this->n_info_patterns_allocated = 100;
+	}
+
+	// Resize if required.
+	if(this->n_info_patterns == this->n_info_patterns_allocated){
+		yon_blk_bv_pair* temp = this->info_patterns;
+
+		this->info_patterns = new yon_blk_bv_pair[this->n_info_patterns_allocated*2];
+		for(uint32_t i = 0; i < this->n_info_patterns_allocated; ++i){
+			this->info_patterns[i] = std::move(temp[i]);
+		}
+		this->n_info_patterns_allocated *= 2;
+		delete [] temp;
+	}
+
+	return(this->AddPatternWrapper(pattern,
+								   this->info_pattern_map,
+								   this->info_patterns,
+								   this->n_info_patterns));
+}
+
+uint32_t yon_vb_ftr::AddFormatPattern(const std::vector<int>& pattern){
+	if(this->format_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_format_patterns_allocated == 0){
+		delete [] this->format_patterns;
+		this->format_patterns = new yon_blk_bv_pair[100];
+		this->n_format_patterns_allocated = 100;
+	}
+
+	// Resize if required.
+	if(this->n_format_patterns == this->n_format_patterns_allocated){
+		yon_blk_bv_pair* temp = this->format_patterns;
+
+		this->format_patterns = new yon_blk_bv_pair[this->n_format_patterns_allocated*2];
+		for(uint32_t i = 0; i < this->n_format_patterns_allocated; ++i){
+			this->format_patterns[i] = std::move(temp[i]);
+		}
+		this->n_format_patterns_allocated *= 2;
+		delete [] temp;
+	}
+
+	return(this->AddPatternWrapper(pattern,
+								   this->format_pattern_map,
+								   this->format_patterns,
+								   this->n_format_patterns));
+}
+
+uint32_t yon_vb_ftr::AddFilterPattern(const std::vector<int>& pattern){
+	if(this->filter_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_filter_patterns_allocated == 0){
+		delete [] this->filter_patterns;
+		this->filter_patterns = new yon_blk_bv_pair[100];
+		this->n_filter_patterns_allocated = 100;
+	}
+
+	// Resize if required.
+	if(this->n_filter_patterns == this->n_filter_patterns_allocated){
+		yon_blk_bv_pair* temp = this->filter_patterns;
+
+		this->filter_patterns = new yon_blk_bv_pair[this->n_filter_patterns_allocated*2];
+		for(uint32_t i = 0; i < this->n_filter_patterns_allocated; ++i){
+			this->filter_patterns[i] = std::move(temp[i]);
+		}
+		this->n_filter_patterns_allocated *= 2;
+		delete [] temp;
+	}
+
+	return(this->AddPatternWrapper(pattern,
+								   this->filter_pattern_map,
+								   this->filter_patterns,
+								   this->n_filter_patterns));
+}
+
+// This wrapper adds patterns to the hash map when the data has
+// already been loaded. This occurs when loading an object from
+// disk/buffer.
+uint32_t yon_vb_ftr::UpdatePatternMapWrapper(const std::vector<int>& pattern,
+                                                  map_pattern_type* pattern_map,
+                                                  const uint16_t& local_position)
+{
+	uint64_t pattern_hash = yon_vb_ftr::HashIdentifiers(pattern);
+	const map_pattern_type::const_iterator it = pattern_map->find(pattern_hash); // search for pattern
+	if(it == pattern_map->end())
+		(*pattern_map)[pattern_hash] = local_position;
+
+	return((*pattern_map)[pattern_hash]);
+}
+
+uint32_t yon_vb_ftr::UpdateInfoPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
+	if(this->info_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_info_patterns_allocated == 0){
+		delete [] this->info_patterns;
+		this->info_patterns = new yon_blk_bv_pair[100];
+		this->n_info_patterns_allocated = 100;
+	}
+	return(this->UpdatePatternMapWrapper(pattern, this->info_pattern_map, local_position));
+}
+
+uint32_t yon_vb_ftr::UpdateFormatPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
+	if(this->format_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_format_patterns_allocated == 0){
+		delete [] this->format_patterns;
+		this->format_patterns = new yon_blk_bv_pair[100];
+		this->n_format_patterns_allocated = 100;
+	}
+	return(this->UpdatePatternMapWrapper(pattern, this->format_pattern_map, local_position));
+}
+
+uint32_t yon_vb_ftr::UpdateFilterPatternMap(const std::vector<int>& pattern, const uint16_t local_position){
+	if(this->filter_pattern_map == nullptr) this->AllocatePatternMaps();
+	if(this->n_filter_patterns_allocated == 0){
+		delete [] this->filter_patterns;
+		this->filter_patterns = new yon_blk_bv_pair[100];
+		this->n_filter_patterns_allocated = 100;
+	}
+	return(this->UpdatePatternMapWrapper(pattern, this->filter_pattern_map, local_position));
+}
+
+void yon_vb_ftr::Finalize(void){
+	this->ConstructInfoBitVector(this->info_map);
+	this->ConstructFormatBitVector(this->format_map);
+	this->ConstructFilterBitVector(this->filter_map);
+}
+
+bool yon_vb_ftr::AllocateMaps(void){
+	delete this->info_map;
+	delete this->filter_map;
+	delete this->format_map;
+
+	this->info_map   = new map_type();
+	this->filter_map = new map_type();
+	this->format_map = new map_type();
+
+	return true;
+}
+
+bool yon_vb_ftr::AllocatePatternMaps(void){
+	delete this->info_pattern_map;
+	this->info_pattern_map = new map_pattern_type();
+	if(this->n_info_patterns_allocated == 0){
+		this->info_patterns = new yon_blk_bv_pair[100];
+		this->n_info_patterns_allocated = 100;
+	}
+
+	delete this->filter_pattern_map;
+	this->filter_pattern_map = new map_pattern_type();
+	if(this->n_filter_patterns_allocated == 0){
+		this->filter_patterns = new yon_blk_bv_pair[100];
+		this->n_filter_patterns_allocated = 100;
+	}
+
+	delete this->format_pattern_map;
+	this->format_pattern_map = new map_pattern_type();
+	if(this->n_format_patterns_allocated == 0){
+		this->format_patterns = new yon_blk_bv_pair[100];
+		this->n_format_patterns_allocated = 100;
+	}
+
+	return true;
+}
+
+uint32_t yon_vb_ftr::UpdateOffsetMapWrapper(const header_type& offset,
+                                                    map_type* map,
+                                                    const uint16_t& local_position)
+{
+	assert(map != nullptr);
+	map_type::const_iterator it = map->find(offset.data_header.global_key);
+	if(it == map->end())
+		(*map)[offset.data_header.global_key] = local_position;
+
+	return((*map)[offset.data_header.global_key]);
+}
+
+uint32_t yon_vb_ftr::UpdateInfoMap(const header_type& offset, const uint16_t local_position){
+	if(this->info_map == nullptr) this->AllocateMaps();
+	return(this->UpdateOffsetMapWrapper(offset, this->info_map, local_position));
+}
+
+uint32_t yon_vb_ftr::UpdateFormatMap(const header_type& offset, const uint16_t local_position){
+	if(this->format_map == nullptr) this->AllocateMaps();
+	return(this->UpdateOffsetMapWrapper(offset, this->format_map, local_position));
+}
+
+uint32_t yon_vb_ftr::UpdateFilterMap(const header_type& offset, const uint16_t local_position){
+	if(this->filter_map == nullptr) this->AllocateMaps();
+	return(this->UpdateOffsetMapWrapper(offset, this->filter_map, local_position));
+}
+
+uint32_t yon_vb_ftr::AddStreamWrapper(const uint32_t global_id,
+                                              map_type* map,
+                                              header_type*& offsets,
+                                              uint16_t& n_streams)
+{
+	map_type::const_iterator it = map->find(global_id);
+	if(it == map->end()){
+		(*map)[global_id] = n_streams;
+		offsets[n_streams].data_header.global_key = global_id;
+		++n_streams;
+	}
+
+	return((*map)[global_id]);
+}
+
+uint32_t yon_vb_ftr::AddInfo(const uint32_t global_id){
+	if(this->info_map == nullptr) this->AllocateMaps();
+	return(this->AddStreamWrapper(global_id, this->info_map, this->info_offsets, this->n_info_streams));
+}
+
+uint32_t yon_vb_ftr::AddFormat(const uint32_t global_id){
+	if(this->format_map == nullptr) this->AllocateMaps();
+	return(this->AddStreamWrapper(global_id, this->format_map, this->format_offsets, this->n_format_streams));
+}
+
+uint32_t yon_vb_ftr::AddFilter(const uint32_t global_id){
+	if(this->filter_map == nullptr) this->AllocateMaps();
+	return(this->AddStreamWrapper(global_id, this->filter_map, this->filter_offsets, this->n_filter_streams));
+}
+
+io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_vb_ftr& entry){
+	buffer += (uint16_t)entry.n_info_streams;
+	buffer += (uint16_t)entry.n_format_streams;
+	buffer += (uint16_t)entry.n_filter_streams;
+	buffer += (uint16_t)entry.n_info_patterns;
+	buffer += (uint16_t)entry.n_format_patterns;
+	buffer += (uint16_t)entry.n_filter_patterns;
+
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)       buffer << entry.offsets[i];
+	for(uint32_t i = 0; i < entry.n_info_streams; ++i)   buffer << entry.info_offsets[i];
+	for(uint32_t i = 0; i < entry.n_format_streams; ++i) buffer << entry.format_offsets[i];
+	for(uint32_t i = 0; i < entry.n_filter_streams; ++i) buffer << entry.filter_offsets[i];
+
+	for(uint32_t i = 0; i < entry.n_info_patterns; ++i)   buffer << entry.info_patterns[i];
+	for(uint32_t i = 0; i < entry.n_format_patterns; ++i) buffer << entry.format_patterns[i];
+	for(uint32_t i = 0; i < entry.n_filter_patterns; ++i) buffer << entry.filter_patterns[i];
+
+	return(buffer);
+}
+
+
+io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_vb_ftr& entry){
+	entry.reset();
+
+	buffer >> entry.n_info_streams;
+	buffer >> entry.n_format_streams;
+	buffer >> entry.n_filter_streams;
+	buffer >> entry.n_info_patterns;
+	buffer >> entry.n_format_patterns;
+	buffer >> entry.n_filter_patterns;
+
+	entry.l_info_bitvector   = ceil((float)entry.n_info_streams    / 8);
+	entry.l_format_bitvector = ceil((float)entry.n_format_streams  / 8);
+	entry.l_filter_bitvector = ceil((float)entry.n_filter_streams  / 8);
+
+	entry.AllocateMaps(); // Construct new maps.
+	entry.AllocatePatternMaps(); // Construct new pattern maps.
+	entry.offsets        = new yon_dc_hdr[YON_BLK_N_STATIC];
+	entry.info_offsets   = new yon_dc_hdr[entry.n_info_streams];
+	entry.format_offsets = new yon_dc_hdr[entry.n_format_streams];
+	entry.filter_offsets = new yon_dc_hdr[entry.n_filter_streams];
+	entry.n_info_patterns_allocated   = entry.n_info_streams;
+	entry.n_format_patterns_allocated = entry.n_format_streams;
+	entry.n_filter_patterns_allocated = entry.n_filter_streams;
+
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)
+		buffer >> entry.offsets[i];
+
+	for(uint32_t i = 0; i < entry.n_info_streams; ++i){
+		buffer >> entry.info_offsets[i];
+		entry.UpdateInfoMap(entry.info_offsets[i], i);
+	}
+
+	for(uint32_t i = 0; i < entry.n_format_streams; ++i){
+		buffer >> entry.format_offsets[i];
+		entry.UpdateFormatMap(entry.format_offsets[i], i);
+	}
+
+	for(uint32_t i = 0; i < entry.n_filter_streams; ++i){
+		buffer >> entry.filter_offsets[i];
+		entry.UpdateFilterMap(entry.filter_offsets[i], i);
+	}
+
+	entry.info_patterns = new yon_blk_bv_pair[entry.n_info_patterns];
+	for(uint32_t i = 0; i < entry.n_info_patterns; ++i){
+		buffer >> entry.info_patterns[i];
+		entry.UpdateInfoPatternMap(entry.info_patterns[i].pattern, i);
+		entry.info_patterns[i].Build(entry.n_info_streams, entry.info_map);
+	}
+
+	entry.format_patterns = new yon_blk_bv_pair[entry.n_format_patterns];
+	for(uint32_t i = 0; i < entry.n_format_patterns; ++i){
+		buffer >> entry.format_patterns[i];
+		entry.UpdateFormatPatternMap(entry.format_patterns[i].pattern, i);
+		entry.format_patterns[i].Build(entry.n_format_streams, entry.format_map);
+	}
+
+	entry.filter_patterns = new yon_blk_bv_pair[entry.n_filter_patterns];
+	for(uint32_t i = 0; i < entry.n_filter_patterns; ++i){
+		buffer >> entry.filter_patterns[i];
+		entry.UpdateFilterPatternMap(entry.filter_patterns[i].pattern, i);
+		entry.filter_patterns[i].Build(entry.n_filter_streams, entry.filter_map);
+	}
+
+	return(buffer);
+}
+
+uint64_t yon_vb_ftr::HashIdentifiers(const std::vector<int>& id_vector){
+	XXH64_state_t* const state = XXH64_createState();
+	if (state==NULL) abort();
+
+	XXH_errorcode const resetResult = XXH64_reset(state, 71236251);
+	if (resetResult == XXH_ERROR) abort();
+
+	for(uint32_t i = 0; i < id_vector.size(); ++i){
+		XXH_errorcode const addResult = XXH64_update(state, (const void*)&id_vector[i], sizeof(int));
+		if (addResult == XXH_ERROR) abort();
+	}
+
+	uint64_t hash = XXH64_digest(state);
+	XXH64_freeState(state);
+
+	return hash;
+}
+
+yon1_vb_t::yon1_vb_t() :
+	n_info_c_allocated(0),
+	n_format_c_allocated(0),
+	base_containers(new container_type[YON_BLK_N_STATIC]),
+	info_containers(nullptr),
+	format_containers(nullptr),
+	gt_ppa(nullptr),
+	load_settings(nullptr),
+	end_block_(0),
+	start_compressed_data_(0),
+	end_compressed_data_(0)
+{
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
+	this->footer_support.resize(65536);
+}
+
+yon1_vb_t::yon1_vb_t(const uint16_t n_info, const uint16_t n_format) :
+	n_info_c_allocated(n_info),
+	n_format_c_allocated(n_format),
+	base_containers(new container_type[YON_BLK_N_STATIC]),
+	info_containers(new container_type[n_info]),
+	format_containers(new container_type[n_format]),
+	gt_ppa(nullptr),
+	load_settings(nullptr),
+	end_block_(0),
+	start_compressed_data_(0),
+	end_compressed_data_(0)
+{
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
+	this->footer_support.resize(65536);
+}
+
+yon1_vb_t::~yon1_vb_t(){
+	delete [] this->base_containers;
+	delete [] this->info_containers;
+	delete [] this->format_containers;
+	delete this->gt_ppa;
+	delete this->load_settings;
+}
+
+yon1_vb_t::yon1_vb_t(const self_type& other) :
+	n_info_c_allocated(other.n_info_c_allocated),
+	n_format_c_allocated(other.n_info_c_allocated),
+	header(other.header),
+	footer(other.footer),
+	base_containers(new container_type[YON_BLK_N_STATIC]),
+	info_containers(new container_type[other.n_info_c_allocated]),
+	format_containers(new container_type[other.n_format_c_allocated]),
+	gt_ppa(nullptr),
+	load_settings(nullptr),
+	end_block_(other.end_block_),
+	start_compressed_data_(other.start_compressed_data_),
+	end_compressed_data_(other.end_compressed_data_),
+	footer_support(other.footer_support)
+{
+	if(other.gt_ppa != nullptr){
+		// Copy ppa data to new object.
+		this->gt_ppa = new yon_gt_ppa(*other.gt_ppa);
+	}
+
+	if(other.load_settings != nullptr){
+		this->load_settings = new yon_blk_load_settings(*other.load_settings);
+	}
+
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i] = other.base_containers[i];
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   this->info_containers[i]   = other.info_containers[i];
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) this->format_containers[i] = other.format_containers[i];
+}
+
+yon1_vb_t::yon1_vb_t(self_type&& other) noexcept :
+	n_info_c_allocated(other.n_info_c_allocated),
+	n_format_c_allocated(other.n_format_c_allocated),
+	header(std::move(other.header)),
+	footer(std::move(other.footer)),
+	base_containers(nullptr),
+	info_containers(nullptr),
+	format_containers(nullptr),
+	gt_ppa(nullptr),
+	load_settings(nullptr),
+	end_block_(other.end_block_),
+	start_compressed_data_(other.start_compressed_data_),
+	end_compressed_data_(other.end_compressed_data_),
+	footer_support(std::move(other.footer_support))
+{
+	std::swap(this->base_containers, other.base_containers);
+	std::swap(this->info_containers, other.info_containers);
+	std::swap(this->format_containers, other.format_containers);
+	std::swap(this->gt_ppa, other.gt_ppa);
+	std::swap(this->load_settings, other.load_settings);
+}
+
+yon1_vb_t& yon1_vb_t::operator=(const self_type& other){
+	delete [] this->base_containers;
+	delete [] this->info_containers;
+	delete [] this->format_containers;
+	delete this->gt_ppa;
+	delete this->load_settings;
+	*this = yon1_vb_t(other); // invoke copy ctor
+	return(*this);
+}
+
+yon1_vb_t& yon1_vb_t::operator=(self_type&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	this->n_info_c_allocated   = other.n_info_c_allocated;
+	this->n_format_c_allocated = other.n_format_c_allocated;
+	this->header = std::move(other.header);
+	this->footer = std::move(other.footer);
+	delete [] this->base_containers; this->base_containers = nullptr;
+	std::swap(this->base_containers, other.base_containers);
+	delete [] this->info_containers; this->info_containers = nullptr;
+	std::swap(this->info_containers, other.info_containers);
+	delete [] this->format_containers; this->format_containers = nullptr;
+	std::swap(this->format_containers, other.format_containers);
+	delete this->gt_ppa; this->gt_ppa = nullptr;
+	std::swap(this->gt_ppa, other.gt_ppa);
+	this->end_block_ = other.end_block_;
+	this->start_compressed_data_ = other.start_compressed_data_;
+	this->end_compressed_data_ = other.end_compressed_data_;
+	this->footer_support = std::move(other.footer_support);
+	delete this->load_settings; this->load_settings = nullptr;
+	std::swap(this->load_settings, other.load_settings);
+	return(*this);
+}
+
+void yon1_vb_t::Allocate(const uint16_t n_info,
+                            const uint16_t n_format,
+                            const uint16_t n_filter)
+{
+	// Allocate space for INFO containers.
+	delete [] this->info_containers;
+	this->info_containers = new container_type[n_info];
+	this->n_info_c_allocated = n_info;
+
+	// Allocate space for FORMAT containers.
+	delete [] this->format_containers;
+	this->format_containers = new container_type[n_format];
+	this->n_format_c_allocated = n_format;
+
+	// Alocate space for headers.
+	this->footer.AllocateHeaders(n_info, n_format, n_filter);
+}
+
+void yon1_vb_t::clear(void){
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].reset();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   this->info_containers[i].reset();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) this->format_containers[i].reset();
+
+	this->base_containers[YON_BLK_ALLELES].SetType(YON_TYPE_STRUCT);
+	this->base_containers[YON_BLK_CONTROLLER].SetType(YON_TYPE_16B);
+	this->base_containers[YON_BLK_REFALT].SetType(YON_TYPE_8B);
+
+	this->end_block_             = 0;
+	this->start_compressed_data_ = 0;
+	this->end_compressed_data_   = 0;
+
+	this->header.reset();
+	this->footer.reset();
+	this->footer_support.reset();
+
+	if(this->gt_ppa != nullptr) this->gt_ppa->reset();
+}
+
+void yon1_vb_t::resize(const uint32_t s){
+	if(s == 0) return;
+
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)     this->base_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_info_c_allocated; ++i)   this->info_containers[i].resize(s);
+	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
+}
+
+void yon1_vb_t::UpdateContainers(const uint32_t n_samples){
+	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
+	this->base_containers[YON_BLK_POSITION].UpdateContainer();
+	this->base_containers[YON_BLK_REFALT].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_QUALITY].UpdateContainer();
+	this->base_containers[YON_BLK_NAMES].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_ALLELES].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_ID_FILTER].UpdateContainer();
+	this->base_containers[YON_BLK_ID_FORMAT].UpdateContainer();
+	this->base_containers[YON_BLK_ID_INFO].UpdateContainer();
+	this->base_containers[YON_BLK_GT_SUPPORT].UpdateContainer();
+	this->base_containers[YON_BLK_GT_PLOIDY].UpdateContainer();
+	this->base_containers[YON_BLK_CONTROLLER].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_S_INT64].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT8].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT16].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT32].UpdateContainer(false, true);
+	this->base_containers[YON_BLK_GT_N_INT64].UpdateContainer(false, true);
+
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
+		this->info_containers[i].UpdateContainer();
+	}
+
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
+		// Illegal to have BOOLEAN fields in the Vcf:Format column.
+		// Therefore we assert that this is never the case.
+		assert(this->format_containers[i].header.data_header.stride != 0);
+		this->format_containers[i].UpdateContainerFormat(true, true, n_samples);
+	}
+}
+
+bool yon1_vb_t::ReadHeaderFooter(std::ifstream& stream){
+	if(!stream.good()){
+		std::cerr << utility::timestamp("ERROR") << "File stream is corrupted..." << std::endl;
+		return false;
+	}
+
+	stream >> this->header; // load header
+	this->start_compressed_data_ = (uint64_t)stream.tellg(); // start of compressed data
+	stream.seekg(this->start_compressed_data_ + this->header.l_offset_footer); // seek to start of footer
+	this->end_compressed_data_   = stream.tellg(); // end of compressed data
+
+	assert(stream.good());
+
+	uint32_t footer_uLength = 0;
+	uint32_t footer_cLength = 0;
+	uint8_t footer_crc[MD5_DIGEST_LENGTH];
+	utility::DeserializePrimitive(footer_uLength, stream);
+	utility::DeserializePrimitive(footer_cLength, stream);
+	stream.read(reinterpret_cast<char*>(&footer_crc[0]), MD5_DIGEST_LENGTH);
+
+	this->footer_support.resize(footer_cLength);
+	stream.read(this->footer_support.data.data(), footer_cLength);
+	this->footer_support.data.n_chars_ = footer_cLength;
+	this->footer_support.data_uncompressed.resize(footer_uLength);
+	this->footer_support.data_uncompressed.n_chars_     = footer_uLength;
+	this->footer_support.header.data_header.controller.encoder = YON_ENCODE_ZSTD;
+	this->footer_support.header.data_header.cLength            = footer_cLength;
+	this->footer_support.header.data_header.uLength            = footer_uLength;
+	memcpy(&this->footer_support.header.data_header.crc[0], &footer_crc[0], MD5_DIGEST_LENGTH);
+
+	// Assert end-of-block marker
+	uint64_t eof_marker;
+	utility::DeserializePrimitive(eof_marker, stream);
+	assert(eof_marker == TACHYON_BLOCK_EOF);
+	this->end_block_ = stream.tellg(); // end-of-block offset
+	stream.seekg(this->start_compressed_data_);
+	return(stream.good());
+}
+
+bool yon1_vb_t::read(std::ifstream& stream){
+	if(this->header.controller.has_gt_permuted && this->header.controller.has_gt){
+		stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
+		stream >> this->base_containers[YON_BLK_PPA];
+	}
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
+		this->LoadContainer(stream, this->footer.offsets[i], this->base_containers[i]);
+
+	// Load all INFO
+	delete [] this->info_containers;
+	this->info_containers = new container_type[this->footer.n_info_streams];
+	this->n_info_c_allocated = this->footer.n_info_streams;
+	if(this->footer.n_info_streams){
+		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
+		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
+			this->LoadContainer(stream, this->footer.info_offsets[i], this->info_containers[i]);
+
+	}
+
+	// Load all FORMAT
+	delete [] this->format_containers;
+	this->format_containers = new container_type[this->footer.n_format_streams];
+	this->n_format_c_allocated = this->footer.n_format_streams;
+	if(this->footer.n_format_streams){
+		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
+		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
+			this->LoadContainer(stream, this->footer.format_offsets[i], this->format_containers[i]);
+
+		// EOF assertion
+		assert(this->end_compressed_data_ == (uint64_t)stream.tellg());
+	}
+
+	stream.seekg(this->end_block_); // seek to end-of-block
+	return(true);
+}
+
+
+bool yon1_vb_t::ParseSettings(DataBlockSettings& settings, const VariantHeader& header){
+	// Clear previous information (if any).
+	this->load_settings->clear();
+
+	// Construct a black-list of INFO fields that should not be loaded
+	// or displayed as they are being re-calculated internally and
+	// emitted. If a blacklisted field is available in this block then
+	// add that tag to the map.
+	/*
+	std::unordered_map<uint32_t, std::string> blocked_list;
+	if(settings.annotate_extra){
+		for(uint32_t i = 0; i < YON_GT_ANNOTATE_FIELDS.size(); ++i){
+			const YonInfo* info = header.GetInfo(YON_GT_ANNOTATE_FIELDS[i]);
+			if(info != nullptr){
+				blocked_list[info->idx] = YON_GT_ANNOTATE_FIELDS[i];
+			}
+		}
+	}
+	*/
+
+	// Parse Info. If all Info containers are loaded then we simply copy
+	// the order in which they occur. If we are provided with a vector
+	// of target global identifiers we have to first map these to the
+	// (possible) local identifiers.
+	if(settings.load_static & YON_BLK_BV_INFO){
+		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
+			//const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
+			//if(it == blocked_list.end()){
+				//std::cerr << "adding not blocked" << std::endl;
+				this->load_settings->info_id_local_loaded.push_back(i);
+				this->load_settings->info_id_global_loaded.push_back(this->footer.info_offsets[i].data_header.global_key);
+				this->load_settings->info_map_global[this->load_settings->info_id_global_loaded[i]] = i;
+			//} else {
+				//std::cerr << "skipping blocked" << std::endl;
+			//}
+		}
+		//std::cerr << this->info_id_local_loaded.size() << "," << this->info_id_global_loaded.size() << std::endl;
+	} else {
+		std::vector<int> local_ids;
+		std::vector<int> global_ids;
+		for(uint32_t i = 0; i < settings.info_id_global.size(); ++i){
+			// Searches for the global Vcf:INFO idx value in the block. If
+			// it is found then return that local idx otherwise -1. If the
+			// idx is found store it in the loaded idx vector.
+			//const std::unordered_map<uint32_t, std::string>::const_iterator it = blocked_list.find(this->footer.info_offsets[i].data_header.global_key);
+			//if(it == blocked_list.end()){
+				const int local = this->GetInfoPosition(settings.info_id_global[i]);
+				if(local >= 0){
+					local_ids.push_back(local);
+					global_ids.push_back(settings.info_id_global[i]);
+				}
+			//}
+		}
+
+		if(local_ids.size()){
+			// Dedupe vectors. This prevents multiple parsings of the same
+			// target data container as this is illegal.
+			for(uint32_t i = 0; i < local_ids.size(); ++i){
+				std::unordered_map<int, int>::const_iterator it = this->load_settings->info_map_global.find(global_ids[i]);
+				if(it == this->load_settings->info_map_global.end()){
+					this->load_settings->info_id_local_loaded.push_back(local_ids[i]);
+					this->load_settings->info_id_global_loaded.push_back(global_ids[i]);
+					this->load_settings->info_map_global[global_ids[i]] = i;
+				}
+			}
+		}
+	}
+
+	// Parse Format. If all Format containers are loaded then we simply copy
+	// the order in which they occur. If we are provided with a vector
+	// of target global identifiers we have to first map these to the
+	// (possible) local identifiers.
+	if(settings.load_static & YON_BLK_BV_FORMAT){
+		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
+			this->load_settings->format_id_local_loaded.push_back(i);
+			this->load_settings->format_id_global_loaded.push_back(this->footer.format_offsets[i].data_header.global_key);
+			this->load_settings->format_map_global[this->load_settings->format_id_global_loaded[i]] = i;
+		}
+	} else {
+		std::vector<int> local_ids;
+		std::vector<int> global_ids;
+		for(uint32_t i = 0; i < settings.format_id_global.size(); ++i){
+			// Searches for the global Vcf:FORMAT idx value in the block. If
+			// it is found then return that local idx otherwise -1. If the
+			// idx is found store it in the loaded idx vector.
+			const int local = this->GetFormatPosition(settings.format_id_global[i]);
+			if(local >= 0){
+				local_ids.push_back(local);
+				global_ids.push_back(settings.format_id_global[i]);
+			}
+		}
+
+		if(local_ids.size()){
+			// Dedupe vectors. This prevents multiple parsings of the same
+			// target data container as this is illegal.
+			for(uint32_t i = 0; i < local_ids.size(); ++i){
+				std::unordered_map<int, int>::const_iterator it = this->load_settings->format_map_global.find(global_ids[i]);
+				if(it == this->load_settings->format_map_global.end()){
+					this->load_settings->format_id_local_loaded.push_back(local_ids[i]);
+					this->load_settings->format_id_global_loaded.push_back(global_ids[i]);
+					this->load_settings->format_map_global[global_ids[i]] = i;
+				}
+			}
+		}
+	}
+
+	return(this->ParseLoadedPatterns(settings));
+}
+
+bool yon1_vb_t::ParseLoadedPatterns(DataBlockSettings& settings){
+	// Clear previous information (if any).
+	this->load_settings->info_patterns_local.clear();
+	this->load_settings->format_patterns_local.clear();
+	this->load_settings->info_patterns_local.resize(this->footer.n_info_patterns);
+	this->load_settings->format_patterns_local.resize(this->footer.n_format_patterns);
+
+	// Iterate over Info patterns.
+	if(this->load_settings->info_id_global_loaded.size()){
+		// If all Vcf::INFO fields are desired then return them
+		// in the stored order to guarantee bit-exactness. Otherwise
+		// return in the order requested.
+		if((settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
+			for(uint32_t p = 0; p < this->footer.n_info_patterns; ++p){
+				this->load_settings->info_patterns_local[p] = this->footer.info_patterns[p].pattern;
+			}
+		} else { // Return in requested order.
+			for(uint32_t p = 0; p < this->footer.n_info_patterns; ++p){
+				this->load_settings->info_patterns_local[p] = this->IntersectInfoPatterns(this->load_settings->info_id_global_loaded, p);
+			}
+		}
+	}
+
+	// Iterate over Format patterns.
+	if(this->load_settings->format_id_global_loaded.size()){
+		if(settings.load_static & YON_BLK_BV_FORMAT){
+			// If all Vcf::FORMAT fields are desired then return them
+			// in the stored order to guarantee bit-exactness. Otherwise
+			// return in the order requested.
+			for(uint32_t p = 0; p < this->footer.n_format_patterns; ++p){
+				this->load_settings->format_patterns_local[p] = this->footer.format_patterns[p].pattern;
+			}
+		} else {
+			for(uint32_t p = 0; p < this->footer.n_format_patterns; ++p){
+				this->load_settings->format_patterns_local[p] = this->IntersectFormatPatterns(this->load_settings->format_id_global_loaded, p);
+			}
+		}
+	}
+
+	return true;
+}
+
+bool yon1_vb_t::read(std::ifstream& stream,
+                        block_settings_type& settings,
+                        const VariantHeader& header)
+{
+	if(this->load_settings == nullptr)
+		this->load_settings = new yon_blk_load_settings;
+
+	// Allocate enough memory to store all available Format and
+	// Info containers.
+	delete [] this->info_containers;
+	this->info_containers    = new yon1_vb_t::container_type[this->footer.n_info_streams];
+	this->n_info_c_allocated = this->footer.n_info_streams;
+
+	delete [] this->format_containers;
+	this->format_containers    = new yon1_vb_t::container_type[this->footer.n_format_streams];
+	this->n_format_c_allocated = this->footer.n_format_streams;
+
+	// Interpret the user-specified block-settings if any. This step converts
+	// global index offset values into local offsets and computes new pattern
+	// vectors if required. The ordering of the values are according to the
+	// input sequence not according to the actual stored order.
+	if(this->ParseSettings(settings, header) == false){
+		std::cerr << utility::timestamp("ERROR") << "Failed to interpret block settings..." << std::endl;
+		return false;
+	}
+
+	// Load the FORMAT:GT (GBPBWT) permutation array.
+	if(settings.load_static & YON_BLK_BV_PPA){
+		// If there is FORMAT:GT field data available AND that data has
+		// been permuted then create a new yon_gt_ppa object to store
+		// this data.
+		if(this->header.controller.has_gt_permuted && this->header.controller.has_gt){
+			stream.seekg(this->start_compressed_data_ + this->footer.offsets[YON_BLK_PPA].data_header.offset);
+			this->LoadContainerSeek(stream,
+									this->footer.offsets[YON_BLK_PPA],
+									this->base_containers[YON_BLK_PPA]);
+
+			this->gt_ppa = new yon_gt_ppa;
+			this->gt_ppa->n_s = header.GetNumberSamples();
+		}
+	}
+
+	// Load base meta containers.
+	for(uint32_t i = YON_BLK_CONTIG; i < YON_BLK_GT_INT8; ++i){
+		if(settings.load_static & (1 << i)){
+			this->LoadContainerSeek(stream,
+									this->footer.offsets[i],
+									this->base_containers[i]);
+		}
+	}
+
+	// Load genotype containers. At the moment, genotype containers
+	// cannot be loaded individually by using this wrapper routine.
+	// If you wish to load these separately you will have to do
+	// so manually.
+	if((settings.load_static & YON_BLK_BV_GT) || (settings.load_static & YON_BLK_BV_FORMAT)){
+		this->load_settings->loaded_genotypes = true;
+		this->LoadContainerSeek(stream, this->footer.offsets[YON_BLK_GT_INT8], this->base_containers[YON_BLK_GT_INT8]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT16],    this->base_containers[YON_BLK_GT_INT16]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT32],    this->base_containers[YON_BLK_GT_INT32]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_INT64],    this->base_containers[YON_BLK_GT_INT64]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT8],   this->base_containers[YON_BLK_GT_S_INT8]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT16],  this->base_containers[YON_BLK_GT_S_INT16]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT32],  this->base_containers[YON_BLK_GT_S_INT32]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_S_INT64],  this->base_containers[YON_BLK_GT_S_INT64]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT8],   this->base_containers[YON_BLK_GT_N_INT8]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT16],  this->base_containers[YON_BLK_GT_N_INT16]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT32],  this->base_containers[YON_BLK_GT_N_INT32]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_N_INT64],  this->base_containers[YON_BLK_GT_N_INT64]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_SUPPORT],  this->base_containers[YON_BLK_GT_SUPPORT]);
+		this->LoadContainer(stream, this->footer.offsets[YON_BLK_GT_PLOIDY],   this->base_containers[YON_BLK_GT_PLOIDY]);
+	}
+
+	// Load Info containers. Technically there is no difference between the two
+	// conditions below in terms of outcome. However, the first case guarantees
+	// that data is loaded linearly from disk as this can be guaranteed when loading
+	// all available data. There is no such guarntees for the second case.
+	if(this->footer.n_info_streams && (settings.load_static & YON_BLK_BV_INFO) && settings.annotate_extra == false){
+		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
+
+		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
+			this->LoadContainer(stream,
+								this->footer.info_offsets[i],
+								this->info_containers[i]);
+		}
+	}
+	// If we have a user-supplied list of identifiers parsed above.
+	else {
+		for(uint32_t i = 0; i < this->load_settings->info_id_local_loaded.size(); ++i){
+			this->LoadContainerSeek(stream,
+									this->footer.info_offsets[this->load_settings->info_id_local_loaded[i]],
+									this->info_containers[this->load_settings->info_id_local_loaded[i]]);
+		}
+
+	}
+
+	// Load Format containers. Technically there is no difference between the two
+	// conditions below in terms of outcome. However, the first case guarantees
+	// that data is loaded linearly from disk as this can be guaranteed when loading
+	// all available data. There is no such guarntees for the second case.
+	for(uint32_t i = 0; i < this->load_settings->format_id_local_loaded.size(); ++i){
+		this->LoadContainerSeek(stream,
+		                        this->footer.format_offsets[this->load_settings->format_id_local_loaded[i]],
+		                        this->format_containers[this->load_settings->format_id_local_loaded[i]]);
+	}
+
+	// Seek to end-of-block position.
+	stream.seekg(this->end_block_);
+	return(true);
+}
+
+uint64_t yon1_vb_t::GetCompressedSize(void) const{
+	uint64_t total = 0;
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
+		total += this->base_containers[YON_BLK_PPA].GetObjectSize();
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].GetObjectSize();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].GetObjectSize();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].GetObjectSize();
+
+	return(total);
+}
+
+uint64_t yon1_vb_t::GetUncompressedSize(void) const{
+	uint64_t total = 0;
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
+		total += this->base_containers[YON_BLK_PPA].data_uncompressed.size();
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)              total += this->base_containers[i].data_uncompressed.size() + this->base_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)   total += this->info_containers[i].data_uncompressed.size() + this->info_containers[i].strides_uncompressed.size();
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i) total += this->format_containers[i].data_uncompressed.size() + this->format_containers[i].strides_uncompressed.size();
+
+	return(total);
+}
+
+void yon1_vb_t::UpdateOutputStatistics(import_stats_type& stats_basic,
+                                          import_stats_type& stats_info,
+                                          import_stats_type& stats_format)
+{
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
+		stats_basic[0] += this->base_containers[YON_BLK_PPA];
+
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
+		stats_basic[i] += this->base_containers[i];
+
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
+		stats_info[this->footer.info_offsets[i].data_header.global_key] += this->info_containers[i];
+	}
+
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
+		stats_format[this->footer.format_offsets[i].data_header.global_key] += this->format_containers[i];
+	}
+}
+
+bool yon1_vb_t::write(std::ostream& stream)
+{
+	if(stream.good() == false){
+		return false;
+	}
+
+	// Keep track of start offset and other offets in the
+	// stream.
+	const uint64_t begin_pos = stream.tellp();
+	this->header.l_offset_footer = this->GetCompressedSize();
+	stream << this->header;
+	const uint64_t start_pos = stream.tellp();
+
+	if(this->header.controller.has_gt && this->header.controller.has_gt_permuted)
+		this->WriteContainer(stream, this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], (uint64_t)stream.tellp() - start_pos);
+
+	// Start at offset 1 because offset 0 (YON_BLK_PPA) is encoding for the
+	// genotype permutation array that is handled differently.
+	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i)
+		this->WriteContainer(stream, this->footer.offsets[i], this->base_containers[i], (uint64_t)stream.tellp() - start_pos);
+
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
+		this->WriteContainer(stream, this->footer.info_offsets[i], this->info_containers[i], (uint64_t)stream.tellp() - start_pos);
+
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
+		this->WriteContainer(stream, this->footer.format_offsets[i], this->format_containers[i], (uint64_t)stream.tellp() - start_pos);
+
+	// Assert that the written amount equals the expected amount.
+	assert(this->header.l_offset_footer == (uint64_t)stream.tellp() - start_pos);
+
+	return(stream.good());
+}
+
+bool yon1_vb_t::operator+=(yon1_vnt_t& rcd){
+	// Meta positions
+	this->base_containers[YON_BLK_POSITION].Add((int64_t)rcd.pos);
+	++this->base_containers[YON_BLK_POSITION];
+
+	// Contig ID
+	this->base_containers[YON_BLK_CONTIG].Add((int32_t)rcd.rid);
+	++this->base_containers[YON_BLK_CONTIG];
+
+	// Ref-alt data
+	if(rcd.UsePackedRefAlt()){ // Is simple SNV and possible extra case when <NON_REF> in gVCF
+		rcd.controller.alleles_packed = true;
+		const uint8_t ref_alt = rcd.PackRefAltByte();
+		this->base_containers[YON_BLK_REFALT].AddLiteral(ref_alt);
+		++this->base_containers[YON_BLK_REFALT];
+	}
+	// add complex
+	else {
+		// Special encoding
+		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+			// Write out allele
+			this->base_containers[YON_BLK_ALLELES].AddLiteral((uint16_t)rcd.alleles[i].l_allele);
+			this->base_containers[YON_BLK_ALLELES].AddCharacter(rcd.alleles[i].allele, rcd.alleles[i].l_allele);
+		}
+		++this->base_containers[YON_BLK_ALLELES]; // update before to not trigger
+		this->base_containers[YON_BLK_ALLELES].AddStride(rcd.n_alleles);
+	}
+
+	// Quality
+	this->base_containers[YON_BLK_QUALITY].Add(rcd.qual);
+	++this->base_containers[YON_BLK_QUALITY];
+
+	// Variant name
+	this->base_containers[YON_BLK_NAMES].AddStride(rcd.name.size());
+	this->base_containers[YON_BLK_NAMES].AddCharacter(rcd.name);
+	++this->base_containers[YON_BLK_NAMES];
+
+	// Tachyon pattern identifiers
+	this->base_containers[YON_BLK_ID_INFO].Add(rcd.info_pid);
+	this->base_containers[YON_BLK_ID_FORMAT].Add(rcd.fmt_pid);
+	this->base_containers[YON_BLK_ID_FILTER].Add(rcd.flt_pid);
+	++this->base_containers[YON_BLK_ID_INFO];
+	++this->base_containers[YON_BLK_ID_FORMAT];
+	++this->base_containers[YON_BLK_ID_FILTER];
+
+	// Check if all variants are of length 1 (as in all alleles are SNVs)
+	bool all_snv = true;
+	for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+		if(rcd.alleles[i].size() != 1) all_snv = false;
+	}
+	rcd.controller.all_snv = all_snv;
+
+	// Controller
+	this->base_containers[YON_BLK_CONTROLLER].AddLiteral((uint16_t)rcd.controller.ToValue()); // has been overloaded
+	++this->base_containers[YON_BLK_CONTROLLER];
+
+	// Ploidy
+	this->base_containers[YON_BLK_GT_PLOIDY].Add(rcd.n_base_ploidy);
+	++this->base_containers[YON_BLK_GT_PLOIDY];
+
+	return true;
+}
+
+std::vector<int> yon1_vb_t::IntersectInfoKeys(const std::vector<int>& info_ids_global) const{
+	std::vector<int> info_ids_found;
+	if(info_ids_global.size() == 0) return(info_ids_found);
+
+	for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_info_streams; ++j){
+			if(this->footer.info_offsets[j].data_header.global_key == info_ids_global[i])
+				info_ids_found.push_back(this->footer.info_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(info_ids_found);
+}
+
+std::vector<int> yon1_vb_t::IntersectFormatKeys(const std::vector<int>& format_ids_global) const{
+	std::vector<int> format_ids_found;
+	if(format_ids_global.size() == 0) return(format_ids_found);
+
+	for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_format_streams; ++j){
+			if(this->footer.format_offsets[j].data_header.global_key == format_ids_global[i])
+				format_ids_found.push_back(this->footer.format_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(format_ids_found);
+}
+
+std::vector<int> yon1_vb_t::IntersectFilterKeys(const std::vector<int>& filter_ids_global) const{
+	std::vector<int> filter_ids_found;
+	if(filter_ids_global.size() == 0) return(filter_ids_found);
+
+	for(uint32_t i = 0; i < filter_ids_global.size(); ++i){
+		for(uint32_t j = 0; j < this->footer.n_filter_streams; ++j){
+			if(this->footer.filter_offsets[j].data_header.global_key == filter_ids_global[i])
+				filter_ids_found.push_back(this->footer.filter_offsets[j].data_header.global_key);
+		}
+	}
+
+	return(filter_ids_found);
+}
+
+std::vector<int> yon1_vb_t::IntersectInfoPatterns(const std::vector<int>& info_ids_global, const uint32_t local_id) const{
+	std::vector<int> info_ids_found;
+	if(info_ids_global.size() == 0) return(info_ids_found);
+	assert(local_id < this->footer.n_info_patterns);
+
+	for(uint32_t i = 0; i < info_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.info_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.info_patterns[local_id].pattern[k] == info_ids_global[i]){
+				info_ids_found.push_back(this->footer.info_patterns[local_id].pattern[k]);
+			}
+		}
+	}
+
+	return(info_ids_found);
+}
+
+std::vector<int> yon1_vb_t::IntersectFormatPatterns(const std::vector<int>& format_ids_global, const uint32_t local_id) const{
+	std::vector<int> format_ids_found;
+	if(format_ids_global.size() == 0) return(format_ids_found);
+	assert(local_id < this->footer.n_format_patterns);
+
+	for(uint32_t i = 0; i < format_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.format_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.format_patterns[local_id].pattern[k] == format_ids_global[i])
+				format_ids_found.push_back(this->footer.format_patterns[local_id].pattern[k]);
+		}
+	}
+
+	return(format_ids_found);
+}
+
+std::vector<int> yon1_vb_t::IntersectFilterPatterns(const std::vector<int>& filter_ids_global, const uint32_t local_id) const{
+	std::vector<int> filter_ids_found;
+	if(filter_ids_global.size() == 0) return(filter_ids_found);
+	assert(local_id < this->footer.n_filter_patterns);
+
+	for(uint32_t i = 0; i < filter_ids_global.size(); ++i){
+		for(uint32_t k = 0; k < this->footer.filter_patterns[local_id].pattern.size(); ++k){
+			if(this->footer.filter_patterns[local_id].pattern[k] == filter_ids_global[i])
+				filter_ids_found.push_back(this->footer.filter_patterns[local_id].pattern[k]);
+		}
+	}
+
+	return(filter_ids_found);
+}
+
+std::vector<uint32_t> yon1_vb_t::GetInfoKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
+		ret.push_back(this->footer.info_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+std::vector<uint32_t> yon1_vb_t::GetFormatKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
+		ret.push_back(this->footer.format_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+std::vector<uint32_t> yon1_vb_t::GetFilterKeys(void) const{
+	std::vector<uint32_t> ret;
+	for(uint32_t i = 0; i < this->footer.n_filter_streams; ++i)
+		ret.push_back(this->footer.filter_offsets[i].data_header.global_key);
+
+	return(ret);
+}
+
+int32_t yon1_vb_t::GetInfoPosition(const uint32_t global_id) const{
+	if(this->footer.info_map == nullptr) return -1;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.info_map->find(global_id);
+	if(it == this->footer.info_map->end()) return -1;
+	return(it->second);
+}
+
+int32_t yon1_vb_t::GetFormatPosition(const uint32_t global_id) const{
+	if(this->footer.format_map == nullptr) return -1;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.format_map->find(global_id);
+	if(it == this->footer.format_map->end()) return -1;
+	return(it->second);
+}
+
+int32_t yon1_vb_t::GetFilterPosition(const uint32_t global_id) const{
+	if(this->footer.filter_map == nullptr) return -1;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+	if(it == this->footer.filter_map->end()) return -1;
+	return(it->second);
+}
+
+bool yon1_vb_t::HasInfo(const uint32_t global_id) const{
+	if(this->footer.info_map == nullptr) return false;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.info_map->find(global_id);
+	if(it == this->footer.info_map->end()) return false;
+	return(true);
+}
+
+bool yon1_vb_t::HasFormat(const uint32_t global_id) const{
+	if(this->footer.format_map == nullptr) return false;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.format_map->find(global_id);
+	if(it == this->footer.format_map->end()) return false;
+	return(true);
+}
+
+bool yon1_vb_t::HasFilter(const uint32_t global_id) const{
+	if(this->footer.filter_map == nullptr) return false;
+	yon_vb_ftr::map_type::const_iterator it = this->footer.filter_map->find(global_id);
+	if(it == this->footer.filter_map->end()) return false;
+	return(true);
+}
+
+yon1_dc_t* yon1_vb_t::GetInfoContainer(const uint32_t global_id) const{
+	if(this->HasInfo(global_id))
+		return(&this->info_containers[this->footer.info_map->at(global_id)]);
+	else
+		return nullptr;
+}
+
+yon1_dc_t* yon1_vb_t::GetFormatContainer(const uint32_t global_id) const{
+	if(this->HasFormat(global_id))
+		return(&this->format_containers[this->footer.format_map->at(global_id)]);
+	else
+		return nullptr;
+}
+
+std::vector<bool> yon1_vb_t::InfoPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_info_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_info_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.info_patterns[i].pattern.size(); ++j){
+			if(this->footer.info_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
+}
+
+std::vector<bool> yon1_vb_t::FormatPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_format_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_format_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.format_patterns[i].pattern.size(); ++j){
+			if(this->footer.format_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
+}
+
+std::vector<bool> yon1_vb_t::FilterPatternSetMembership(const int value) const{
+	std::vector<bool> matches(this->footer.n_filter_patterns, false);
+	for(uint32_t i = 0; i < this->footer.n_filter_patterns; ++i){
+		for(uint32_t j = 0; j < this->footer.filter_patterns[i].pattern.size(); ++j){
+			if(this->footer.filter_patterns[i].pattern[j] == value){
+				matches[i] = true;
+				break;
+			}
+		}
+	}
+	return(matches);
+}
+
+void yon1_vc_t::reserve(const uint32_t new_size){
+	if(new_size < this->n_capacity_){
+		if(new_size < this->n_variants_){
+			// Invoke dtor on trailing elements.
+			for(int i = new_size; i < this->n_variants_; ++i)
+				((this->variants_ + i)->~yon1_vnt_t)();
+
+			// Resize.
+			this->n_variants_ = new_size;
+			return;
+		}
+		return;
+	}
+
+	yon1_vnt_t* temp = this->variants_;
+	this->variants_ = static_cast<yon1_vnt_t*>(::operator new[](new_size*sizeof(yon1_vnt_t)));
+
+	for(int i = 0; i < this->n_variants_; ++i){
+		new( &this->variants_[i] ) yon1_vnt_t( std::move(temp[i]) );
+		((temp + i)->~yon1_vnt_t)(); // invoke dtor.
+	}
+
+	// Clear previous data.
+	::operator delete[](static_cast<void*>(temp));
+
+	this->n_capacity_ = new_size;
+}
+
+bool yon1_vc_t::Build(yon1_vb_t& variant_block, const VariantHeader& header){
+	// Interlace meta streams into the variant records.
+	this->AddController(variant_block.base_containers[YON_BLK_CONTROLLER]);
+	this->AddContigs(variant_block.base_containers[YON_BLK_CONTIG]);
+	this->AddPositions(variant_block.base_containers[YON_BLK_POSITION]);
+	this->AddQuality(variant_block.base_containers[YON_BLK_QUALITY]);
+	this->AddFilterIds(variant_block.base_containers[YON_BLK_ID_FILTER]);
+	this->AddFormatIds(variant_block.base_containers[YON_BLK_ID_FORMAT]);
+	this->AddInfoIds(variant_block.base_containers[YON_BLK_ID_INFO]);
+	this->AddPloidy(variant_block.base_containers[YON_BLK_GT_PLOIDY]);
+	this->AddAlleles(variant_block.base_containers[YON_BLK_ALLELES]);
+	this->AddNames(variant_block.base_containers[YON_BLK_NAMES]);
+	this->AddRefAlt(variant_block.base_containers[YON_BLK_REFALT]);
+
+	// Allocate memory to support upcoming data to overload into the
+	// containers. After memory allocation we provide the list of local
+	// offsets that provide data.
+	for(int i = 0; i < this->n_variants_; ++i){
+		this->variants_[i].info   = new containers::PrimitiveContainerInterface*[variant_block.footer.n_info_streams];
+		this->variants_[i].m_info = variant_block.footer.n_info_streams;
+		this->variants_[i].fmt    = new containers::PrimitiveGroupContainerInterface*[variant_block.footer.n_format_streams];
+		this->variants_[i].m_fmt  = variant_block.footer.n_format_streams;
+	}
+
+	this->AddFilter(variant_block, header);
+	this->AddInfo(variant_block, header);
+	this->AddFormat(variant_block, header);
+	this->PermuteOrder(variant_block);
+
+	return true;
+}
+
+bool yon1_vc_t::PermuteOrder(const yon1_vb_t& variant_block){
+	// Map local in block to local in variant.
+	// Data is added to variants in the order they appear in the raw data block.
+	// This is not necessarily corect as data may have been intended to be read in
+	// a different order. We have to map from these global identifiers to the per-variant
+	// local offsets by permuting the global to local order.
+	std::vector< std::vector<int> > local_info_patterns(variant_block.load_settings->info_patterns_local.size());
+	for(int i = 0; i < local_info_patterns.size(); ++i){
+		std::vector<std::pair<int,int>> internal(variant_block.load_settings->info_patterns_local[i].size());
+		for(int j = 0 ; j < internal.size(); ++j){
+			internal[j] = std::pair<int,int>((*variant_block.footer.info_map)[variant_block.load_settings->info_patterns_local[i][j]], j);
+		}
+		std::sort(internal.begin(), internal.end());
+
+		local_info_patterns[i].resize(internal.size());
+		for(int j = 0; j < internal.size(); ++j){
+			local_info_patterns[i][internal[j].second] = j;
+			//std::cerr << "local info now: " << internal[j].second << "=" << j << std::endl;
+		}
+	}
+
+	std::vector< std::vector<int> > local_format_patterns(variant_block.load_settings->format_patterns_local.size());
+	for(int i = 0; i < local_format_patterns.size(); ++i){
+		std::vector<std::pair<int,int>> internal(variant_block.load_settings->format_patterns_local[i].size());
+		for(int j = 0 ; j < internal.size(); ++j){
+			internal[j] = std::pair<int,int>((*variant_block.footer.format_map)[variant_block.load_settings->format_patterns_local[i][j]], j);
+		}
+		std::sort(internal.begin(), internal.end());
+
+		local_format_patterns[i].resize(internal.size());
+		for(int j = 0; j < internal.size(); ++j){
+			local_format_patterns[i][internal[j].second] = j;
+			//std::cerr << "local format now: " << internal[j].second << "=" << j << std::endl;
+		}
+	}
+
+	// Permute Info and Format fields back into original ordering
+	// NOT the order they were loaded in (FILO-stack order).
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].info_pid >= 0){
+			//std::cerr << "info pid=" << this->variants_[i].info_pid << " : " << this->variants_[i].n_info << std::endl;
+			containers::PrimitiveContainerInterface** old = this->variants_[i].info;
+			std::vector<const YonInfo*> old_hdr = this->variants_[i].info_hdr;
+
+			this->variants_[i].info = new containers::PrimitiveContainerInterface*[this->variants_[i].m_info];
+			for(int k = 0; k < this->variants_[i].n_info; ++k){
+				//std::cerr << "info " << k << "->" << local_info_patterns[this->variants_[i].info_pid][k] << std::endl;
+				this->variants_[i].info[k] = old[local_info_patterns[this->variants_[i].info_pid][k]];
+				this->variants_[i].info_hdr[k] = old_hdr[local_info_patterns[this->variants_[i].info_pid][k]];
+				this->variants_[i].info_map[this->variants_[i].info_hdr[k]->id] = k;
+			}
+			delete [] old;
+		}
+
+		if(this->variants_[i].fmt_pid >= 0){
+			containers::PrimitiveGroupContainerInterface** old = this->variants_[i].fmt;
+			std::vector<const YonFormat*> old_hdr = this->variants_[i].fmt_hdr;
+
+			this->variants_[i].fmt = new containers::PrimitiveGroupContainerInterface*[this->variants_[i].m_fmt];
+			for(int k = 0; k < this->variants_[i].n_fmt; ++k){
+				this->variants_[i].fmt[k] = old[local_format_patterns[this->variants_[i].fmt_pid][k]];
+				this->variants_[i].fmt_hdr[k] = old_hdr[local_format_patterns[this->variants_[i].fmt_pid][k]];
+				this->variants_[i].fmt_map[this->variants_[i].fmt_hdr[k]->id] = k;
+			}
+			delete [] old;
+		}
+	}
+
+	return true;
+}
+
+bool yon1_vc_t::AddInfo(yon1_vb_t& variant_block, const VariantHeader& header){
+	for(int i = 0; i < variant_block.load_settings->info_id_local_loaded.size(); ++i){
+		// Evaluate the set-membership of a given global key in the available Info patterns
+		// described in the data container footer.
+		std::vector<bool> matches = variant_block.InfoPatternSetMembership(variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].header.GetGlobalKey());
+		// Add Info data.
+		//std::cerr << "Adding info: " << variant_block.load_settings->info_id_local_loaded[i] << "->" << variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx() << "->" << header.info_fields_[variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]].GetIdx()].id << std::endl;
+		this->AddInfoWrapper(variant_block.info_containers[variant_block.load_settings->info_id_local_loaded[i]], header, matches);
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddFilter(yon1_vb_t& variant_block, const VariantHeader& header){
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].flt_pid >= 0){
+			const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
+			for(int j = 0; j < filter_patterns.pattern.size(); ++j){
+				this->variants_[i].flt_hdr.push_back(&header.filter_fields_[filter_patterns.pattern[j]]);
+				++this->variants_[i].n_flt;
+			}
+		}
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddFormat(yon1_vb_t& variant_block, const VariantHeader& header){
+	if(variant_block.load_settings->format_id_local_loaded.size() == 0 && variant_block.load_settings->loaded_genotypes){
+		//std::cerr << "adding genotypes when no other fmt is loaded" << std::endl;
+		// Add genotypes.
+		this->AddGenotypes(variant_block, header);
+
+		for(int j = 0; j < this->n_variants_; ++j){
+			if(this->variants_[j].controller.gt_available){
+				// Format:Gt field has to appear first in order. This is
+				// a restriction imposed by htslib bcf.
+				assert(this->variants_[j].fmt_hdr.size() == 0);
+				this->variants_[j].is_loaded_gt = true;
+				// Do not store header pointer and allocate a new format container
+				// because this data is hidden.
+
+				this->variants_[j].gt->Evaluate();
+				//records[i].gt->Expand();
+			}
+		}
+	}
+
+	for(int i = 0; i < variant_block.load_settings->format_id_local_loaded.size(); ++i){
+		// If genotype data has been loaded.
+		yon1_dc_t& dc = variant_block.format_containers[variant_block.load_settings->format_id_local_loaded[i]];
+		if(header.format_fields_[dc.GetGlobalKey()].id == "GT"){
+			//std::cerr << "adding format" << std::endl;
+			assert(variant_block.load_settings->loaded_genotypes);
+			std::vector<bool> matches = variant_block.FormatPatternSetMembership(dc.GetGlobalKey());
+
+			// Add genotypes.
+			this->AddGenotypes(variant_block, header);
+
+			for(int j = 0; j < this->n_variants_; ++j){
+				if(this->variants_[j].fmt_pid == -1){
+					continue;
+				} else if(matches[this->variants_[j].fmt_pid]){
+					// Format:Gt field has to appear first in order. This is
+					// a restriction imposed by htslib bcf.
+					assert(this->variants_[j].fmt_hdr.size() == 0);
+					this->variants_[j].is_loaded_gt = true;
+					this->variants_[j].fmt[this->variants_[j].n_fmt++] = new containers::PrimitiveGroupContainer<int32_t>();
+					this->variants_[j].fmt_hdr.push_back(&header.format_fields_[dc.GetGlobalKey()]);
+
+					// Lazy-evaluate minimum genotypes.
+					this->variants_[j].gt->Evaluate();
+					//records[i].gt->Expand();
+				}
+			}
+			continue;
+		}
+
+		// Evaluate the set-membership of a given global key in the available Format patterns
+		// described in the data container footer.
+		std::vector<bool> matches = variant_block.FormatPatternSetMembership(dc.GetGlobalKey());
+		// Add Format data.
+		//std::cerr << "Adding format: " << variant_block.load_settings->format_id_local_loaded[i] << "->" << dc.GetIdx() << "->" << header.format_fields_[dc.GetIdx()].id << std::endl;
+		this->AddFormatWrapper(dc, header, matches);
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddInfoWrapper(dc_type& container,
+                                      const VariantHeader& header,
+                                      const std::vector<bool>& matches)
+{
+	if((container.data_uncompressed.size() == 0 &&
+	   header.info_fields_[container.header.GetGlobalKey()].yon_type == YON_VCF_HEADER_FLAG) || container.header.data_header.GetPrimitiveType() == YON_TYPE_BOOLEAN)
+	{
+		for(int i = 0; i < this->n_variants_; ++i){
+			if(this->variants_[i].info_pid == -1){
+				continue;
+			} else if(matches[this->variants_[i].info_pid]){
+				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<int32_t>(0);
+				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+			}
+		}
+		return false;
+	}
+
+	if(container.data_uncompressed.size() == 0){
+		//std::cerr << "info no data return" << std::endl;
+		return false;
+	}
+
+	if(container.header.data_header.HasMixedStride()){
+		if(container.header.data_header.IsSigned()){
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, int8_t>(container, header,  matches));  break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, int16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, int32_t>(container, header,  matches));    break;
+			//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches));    break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches)); break;
+			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		} else {
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, uint8_t>(container, header,  matches));   break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, uint16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, uint32_t>(container, header,  matches));    break;
+			//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches));    break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches)); break;
+			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		}
+	} else {
+		if(container.header.data_header.IsSigned()){
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, int8_t>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, int16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, int32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			//case(YON_TYPE_64B):    (this->InfoSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		} else {
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->InfoSetup<int32_t, uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->InfoSetup<int32_t, uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->InfoSetup<int32_t, uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			//case(YON_TYPE_64B):    (this->InfoSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->InfoSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->InfoSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_CHAR):   (this->InfoSetupString(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type: " << (int)container.header.data_header.controller.type << std::endl; return false;
+
+			}
+		}
+	}
+	return true;
+}
+
+bool yon1_vc_t::InfoSetupString(dc_type& container,
+                                       const VariantHeader& header,
+                                       const std::vector<bool>& matches)
+{
+	if(container.strides_uncompressed.size() == 0)
+		return false;
+
+	yon_cont_ref_iface* it = nullptr;
+	switch(container.header.stride_header.controller.type){
+	case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	}
+	assert(it != nullptr);
+
+	uint32_t current_offset = 0;
+	uint32_t stride_offset = 0;
+
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].info_pid == -1){
+			continue;
+		} else if(matches[this->variants_[i].info_pid]){
+			this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<std::string>(&container.data_uncompressed[current_offset], it->GetInt32(stride_offset));
+			this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+			current_offset += it->GetInt32(stride_offset) * sizeof(char);
+			++stride_offset;
+		}
+	}
+	assert(current_offset == container.data_uncompressed.size());
+	delete it;
+	return true;
+}
+
+bool yon1_vc_t::InfoSetupString(dc_type& container,
+                                       const VariantHeader& header,
+                                       const std::vector<bool>& matches,
+                                       const uint32_t stride)
+{
+	if(container.header.data_header.IsUniform()){
+		for(int i = 0; i < this->n_variants_; ++i){
+			if(this->variants_[i].info_pid == -1){
+				continue;
+			} else if(matches[this->variants_[i].info_pid]){
+				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<std::string>(&container.data_uncompressed[0], stride);
+				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+			}
+		}
+	} else {
+		uint32_t current_offset = 0;
+		for(int i = 0; i < this->n_variants_; ++i){
+			if(this->variants_[i].info_pid == -1){
+				continue;
+			} else if(matches[this->variants_[i].info_pid]){
+				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<std::string>(&container.data_uncompressed[current_offset], stride);
+				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
+				current_offset += stride;
+			}
+		}
+		assert(current_offset == container.data_uncompressed.size());
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddFormatWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+	if(container.data_uncompressed.size() == 0){
+		return false;
+	}
+
+	if(container.header.data_header.HasMixedStride()){
+		if(container.header.data_header.IsSigned()){
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, int8_t>(container, header,  matches));  break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, int16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, int32_t>(container, header,  matches));    break;
+			//case(YON_TYPE_64B):    (this->FormatSetup<int64_t>(container, header,  matches));    break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches)); break;
+			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		} else {
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, uint8_t>(container, header,  matches));   break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, uint16_t>(container, header,  matches));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, uint32_t>(container, header,  matches));    break;
+			//case(YON_TYPE_64B):    (this->FormatSetup<uint64_t>(container, header,  matches));    break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches)); break;
+			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		}
+	} else {
+		if(container.header.data_header.IsSigned()){
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, int8_t>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, int16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, int32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			//case(YON_TYPE_64B):    (this->FormatSetup<int64_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
+			}
+		} else {
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B):     (this->FormatSetup<int32_t, uint8_t>(container, header,  matches, container.header.data_header.stride));   break;
+			case(YON_TYPE_16B):    (this->FormatSetup<int32_t, uint16_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_32B):    (this->FormatSetup<int32_t, uint32_t>(container, header,  matches, container.header.data_header.stride));    break;
+			//case(YON_TYPE_64B):    (this->FormatSetup<uint64_t>(container, header,  matches, container.header.data_header.stride));    break;
+			case(YON_TYPE_FLOAT):  (this->FormatSetup<float, float>(container, header,  matches, container.header.data_header.stride));  break;
+			case(YON_TYPE_DOUBLE): (this->FormatSetup<double, double>(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_CHAR):   (this->FormatSetupString(container, header,  matches, container.header.data_header.stride)); break;
+			case(YON_TYPE_BOOLEAN):
+			case(YON_TYPE_STRUCT):
+			case(YON_TYPE_UNKNOWN):
+			default: std::cerr << "Disallowed type in fmt: " << (int)container.header.data_header.controller.type << std::endl; return false;
+
+			}
+		}
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddGenotypes(yon1_vb_t& block, const VariantHeader& header){
+	const bool uniform_stride = block.base_containers[YON_BLK_GT_SUPPORT].header.data_header.IsUniform();
+	containers::PrimitiveContainer<uint32_t> lengths(block.base_containers[YON_BLK_GT_SUPPORT]); // n_runs / objects size
+
+	uint64_t offset_rle8     = 0; const char* const rle8     = block.base_containers[YON_BLK_GT_INT8].data_uncompressed.data();
+	uint64_t offset_rle16    = 0; const char* const rle16    = block.base_containers[YON_BLK_GT_INT16].data_uncompressed.data();
+	uint64_t offset_rle32    = 0; const char* const rle32    = block.base_containers[YON_BLK_GT_INT32].data_uncompressed.data();
+	uint64_t offset_rle64    = 0; const char* const rle64    = block.base_containers[YON_BLK_GT_INT64].data_uncompressed.data();
+
+	uint64_t offset_simple8  = 0; const char* const simple8  = block.base_containers[YON_BLK_GT_S_INT8].data_uncompressed.data();
+	uint64_t offset_simple16 = 0; const char* const simple16 = block.base_containers[YON_BLK_GT_S_INT16].data_uncompressed.data();
+	uint64_t offset_simple32 = 0; const char* const simple32 = block.base_containers[YON_BLK_GT_S_INT32].data_uncompressed.data();
+	uint64_t offset_simple64 = 0; const char* const simple64 = block.base_containers[YON_BLK_GT_S_INT64].data_uncompressed.data();
+
+	uint64_t offset_nploid8  = 0; const char* const nploid8  = block.base_containers[YON_BLK_GT_N_INT8].data_uncompressed.data();
+	uint64_t offset_nploid16 = 0; const char* const nploid16 = block.base_containers[YON_BLK_GT_N_INT16].data_uncompressed.data();
+	uint64_t offset_nploid32 = 0; const char* const nploid32 = block.base_containers[YON_BLK_GT_N_INT32].data_uncompressed.data();
+	uint64_t offset_nploid64 = 0; const char* const nploid64 = block.base_containers[YON_BLK_GT_N_INT64].data_uncompressed.data();
+
+	assert(block.base_containers[YON_BLK_GT_INT8].data_uncompressed.size()    % sizeof(uint8_t) == 0);
+	assert(block.base_containers[YON_BLK_GT_INT16].data_uncompressed.size()   % sizeof(uint16_t)  == 0);
+	assert(block.base_containers[YON_BLK_GT_INT32].data_uncompressed.size()   % sizeof(uint32_t)  == 0);
+	assert(block.base_containers[YON_BLK_GT_INT64].data_uncompressed.size()   % sizeof(uint64_t)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT8].data_uncompressed.size()  % sizeof(uint8_t) == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT16].data_uncompressed.size() % sizeof(uint16_t)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT32].data_uncompressed.size() % sizeof(uint32_t)  == 0);
+	assert(block.base_containers[YON_BLK_GT_S_INT64].data_uncompressed.size() % sizeof(uint64_t)  == 0);
+
+	uint64_t gt_offset = 0;
+	uint8_t incrementor = 1;
+	if(uniform_stride) incrementor = 0;
+
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].controller.gt_available){
+			// Case run-length encoding diploid and biallelic and no missing
+			if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
+				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint8_t>( &rle8[offset_rle8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint8_t>(&rle8[offset_rle8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_rle8 += lengths[gt_offset]*sizeof(uint8_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint16_t>( &rle16[offset_rle16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint16_t>(&rle16[offset_rle16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_rle16 += lengths[gt_offset]*sizeof(uint16_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint32_t>( &rle32[offset_rle32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint32_t>(&rle32[offset_rle32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_rle32 += lengths[gt_offset]*sizeof(uint32_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint64_t>( &rle64[offset_rle64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint64_t>(&rle64[offset_rle64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_rle64 += lengths[gt_offset]*sizeof(uint64_t);
+				} else {
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
+					exit(1);
+				}
+
+			}
+			// Case run-length encoding diploid and biallelic/EOV or n-allelic
+			else if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_NALLELIC) {
+				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint8_t>( &simple8[offset_simple8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint8_t>(&simple8[offset_simple8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_simple8 += lengths[gt_offset]*sizeof(uint8_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint16_t>( &simple16[offset_simple16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint16_t>(&simple16[offset_simple16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_simple16 += lengths[gt_offset]*sizeof(uint16_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint32_t>( &simple32[offset_simple32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint32_t>(&simple32[offset_simple32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_simple32 += lengths[gt_offset]*sizeof(uint32_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint64_t>( &simple64[offset_simple64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint64_t>(&simple64[offset_simple64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_simple64 += lengths[gt_offset]*sizeof(uint64_t);
+				} else {
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
+					exit(1);
+				}
+			}
+			// Case BCF-style encoding of diploids
+			else if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_BCF_DIPLOID) {
+				std::cerr << "illegal gt type" << std::endl;
+				exit(1);
+				/*
+				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidBCF<uint8_t>( &simple8[offset_simple8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					offset_simple8 += lengths[gt_offset]*sizeof(uint8_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidBCF<uint16_t>( &simple16[offset_simple16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					offset_simple16 += lengths[gt_offset]*sizeof(uint16_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidBCF<uint32_t>( &simple32[offset_simple32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					offset_simple32 += lengths[gt_offset]*sizeof(uint32_t);
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidBCF<uint64_t>( &simple64[offset_simple64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					offset_simple64 += lengths[gt_offset]*sizeof(uint64_t);
+				}  else {
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
+					exit(1);
+				}
+				*/
+			}
+			// Case RLE-encoding of nploids
+			else if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_NPLOID) {
+				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint8_t>( &nploid8[offset_nploid8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeNploid<uint8_t>(&nploid8[offset_nploid8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_nploid8 += lengths[gt_offset]*(sizeof(uint8_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint16_t>( &nploid16[offset_nploid16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeNploid<uint16_t>(&nploid16[offset_nploid16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_nploid16 += lengths[gt_offset]*(sizeof(uint16_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint32_t>( &nploid32[offset_nploid32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeNploid<uint32_t>(&nploid32[offset_nploid32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_nploid32 += lengths[gt_offset]*(sizeof(uint32_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
+				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
+					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint64_t>( &nploid64[offset_nploid64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
+					this->variants_[i].gt = GetGenotypeNploid<uint64_t>(&nploid64[offset_nploid64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					offset_nploid64 += lengths[gt_offset]*(sizeof(uint64_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
+				}  else {
+					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
+					exit(1);
+				}
+			}
+			// Case other potential encodings
+			else {
+				std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding family..." << std::endl;
+				//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint8_t>( );
+				exit(1);
+			}
+
+			// Increment offset
+			gt_offset += incrementor;
+
+		} else { // No GT available
+			this->variants_[i].gt = new yon_gt();
+		}
+	}
+
+	assert(offset_rle8     == block.base_containers[YON_BLK_GT_INT8].GetSizeUncompressed());
+	assert(offset_rle16    == block.base_containers[YON_BLK_GT_INT16].GetSizeUncompressed());
+	assert(offset_rle32    == block.base_containers[YON_BLK_GT_INT32].GetSizeUncompressed());
+	assert(offset_rle64    == block.base_containers[YON_BLK_GT_INT64].GetSizeUncompressed());
+	assert(offset_simple8  == block.base_containers[YON_BLK_GT_S_INT8].GetSizeUncompressed());
+	assert(offset_simple16 == block.base_containers[YON_BLK_GT_S_INT16].GetSizeUncompressed());
+	assert(offset_simple32 == block.base_containers[YON_BLK_GT_S_INT32].GetSizeUncompressed());
+	assert(offset_simple64 == block.base_containers[YON_BLK_GT_S_INT64].GetSizeUncompressed());
+	assert(offset_nploid8  == block.base_containers[YON_BLK_GT_N_INT8].GetSizeUncompressed());
+	assert(offset_nploid16 == block.base_containers[YON_BLK_GT_N_INT16].GetSizeUncompressed());
+	assert(offset_nploid32 == block.base_containers[YON_BLK_GT_N_INT32].GetSizeUncompressed());
+	assert(offset_nploid64 == block.base_containers[YON_BLK_GT_N_INT64].GetSizeUncompressed());
+
+	return true;
+}
+
+bool yon1_vc_t::FormatSetupString(dc_type& container,
+                                         const VariantHeader& header,
+                                         const std::vector<bool>& matches)
+{
+	if(container.strides_uncompressed.size() == 0)
+		return false;
+
+	assert(container.header.data_header.IsUniform() == false);
+
+	yon_cont_ref_iface* it = nullptr;
+	switch(container.header.stride_header.controller.type){
+	case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+	}
+	assert(it != nullptr);
+
+	uint32_t current_offset = 0;
+	uint32_t stride_offset = 0;
+
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].fmt_pid == -1){
+
+		} else if(matches[this->variants_[i].fmt_pid]){
+			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<std::string>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
+			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
+			current_offset += it->GetInt32(stride_offset) * sizeof(char) * header.GetNumberSamples();
+			++stride_offset;
+		}
+	}
+	assert(current_offset == container.data_uncompressed.size());
+	delete it;
+	return true;
+}
+
+bool yon1_vc_t::FormatSetupString(dc_type& container,
+                                         const VariantHeader& header,
+                                         const std::vector<bool>& matches,
+                                         const uint32_t stride)
+{
+	assert(container.header.data_header.IsUniform() == false);
+
+	uint32_t current_offset = 0;
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].fmt_pid == -1){
+			std::cerr << "pid=" << this->variants_[i].fmt_pid << " matched in fstring: " << current_offset << " + " << stride*header.GetNumberSamples() << std::endl;
+
+		} else if(matches[this->variants_[i].fmt_pid]){
+			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<std::string>(container, current_offset, header.GetNumberSamples(), stride);
+			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
+			current_offset += stride * sizeof(char) * header.GetNumberSamples();
+		}
+	}
+	assert(current_offset == container.data_uncompressed.size());
+	return true;
+}
+
+bool yon1_vc_t::AddQuality(dc_type& container){
+	if(container.data_uncompressed.size() == 0)
+		return false;
+
+	yon_cont_ref<float> it(container.data_uncompressed.data(), container.data_uncompressed.size());
+
+	// If data is uniform.
+	if(container.header.data_header.controller.uniform){
+		it.is_uniform_ = true;
+
+		for(int i = 0; i < this->n_variants_; ++i){
+			this->variants_[i].qual = it[0];
+		}
+	} else {
+		assert(this->n_variants_ == it.n_elements_);
+		for(int i = 0; i < this->n_variants_; ++i){
+			this->variants_[i].qual = it[i];
+		}
+	}
+
+	return true;
+}
+
+bool yon1_vc_t::AddRefAlt(dc_type& container){
+	if(container.data_uncompressed.size() == 0)
+		return false;
+
+	uint32_t stride_add = 1;
+	yon_cont_ref<uint8_t> it(container.data_uncompressed.data(), container.data_uncompressed.size());
+	if(container.header.data_header.IsUniform()){
+		stride_add = 0;
+	}
+
+	uint32_t refalt_position = 0;
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
+		if(this->variants_[i].controller.alleles_packed){
+			// load from special packed
+			// this is always diploid
+			this->variants_[i].n_alleles = 2;
+			this->variants_[i].alleles   = new yon_allele[2];
+			this->variants_[i].m_allele  = 2;
+
+			// If data is <non_ref> or not
+			if((it[refalt_position] & 15) != 5){
+				//assert((refalt[refalt_position] & 15) < 5);
+				const char ref = YON_REFALT_LOOKUP[it[refalt_position] & 15];
+				this->variants_[i].alleles[1] = ref;
+
+			} else {
+				const std::string s = "<NON_REF>";
+				this->variants_[i].alleles[1] = s;
+			}
+
+			// If data is <non_ref> or not
+			if(((it[refalt_position] >> 4) & 15) != 5){
+				//assert(((refalt[refalt_position] >> 4) & 15) < 5);
+				const char alt = YON_REFALT_LOOKUP[(it[refalt_position] >> 4) & 15];
+				this->variants_[i].alleles[0] = alt;
+			} else {
+				const std::string s = "<NON_REF>";
+				this->variants_[i].alleles[1] = s;
+			}
+			// Do not increment in case this data is uniform
+			if(it.is_uniform_ == false) refalt_position += stride_add;
+		}
+		// otherwise load from literal cold
+		else {
+			// number of alleles is parsed from the stride container
+		}
+	}
+
+	return true;
+}
+
+bool yon1_vc_t::AddAlleles(dc_type& container){
+	if(container.data_uncompressed.size() == 0)
+		return false;
+
+	if(container.header.data_header.HasMixedStride()){
+		yon_cont_ref_iface* it = nullptr;
+		switch(container.header.stride_header.controller.type){
+		case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		}
+		assert(it != nullptr);
+
+		uint32_t offset = 0;
+		uint32_t stride_offset = 0;
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			if(this->variants_[i].controller.alleles_packed == false){
+				this->variants_[i].n_alleles = it->GetInt32(stride_offset);
+				this->variants_[i].alleles   = new yon_allele[it->GetInt32(stride_offset)];
+				this->variants_[i].m_allele  = it->GetInt32(stride_offset);
+
+				for(uint32_t j = 0; j < this->variants_[i].n_alleles; ++j){
+					const uint16_t& l_string = *reinterpret_cast<const uint16_t* const>(&container.data_uncompressed[offset]);
+					this->variants_[i].alleles[j].ParseFromBuffer(&container.data_uncompressed[offset]);
+					offset += sizeof(uint16_t) + l_string;
+				}
+				++stride_offset;
+			}
+		}
+		assert(offset == container.GetSizeUncompressed());
+		delete it;
+	} else {
+		uint32_t offset = 0;
+		const uint32_t stride = container.header.data_header.stride;
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			if(this->variants_[i].controller.alleles_packed == false){
+				this->variants_[i].n_alleles = stride;
+				this->variants_[i].alleles   = new yon_allele[stride];
+				this->variants_[i].m_allele  = stride;
+
+				for(uint32_t j = 0; j < this->variants_[i].n_alleles; ++j){
+					const uint16_t& l_string = *reinterpret_cast<const uint16_t* const>(&container.data_uncompressed[offset]);
+					this->variants_[i].alleles[j].ParseFromBuffer(&container.data_uncompressed[offset]);
+					offset += sizeof(uint16_t) + l_string;
+				}
+			}
+		}
+		assert(offset == container.GetSizeUncompressed());
+	}
+	return true;
+}
+
+bool yon1_vc_t::AddNames(dc_type& container){
+	if(container.data_uncompressed.size() == 0)
+		return false;
+
+	if(container.header.data_header.HasMixedStride()){
+		yon_cont_ref_iface* it = nullptr;
+		switch(container.header.stride_header.controller.type){
+		case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+		}
+		assert(it != nullptr);
+
+		uint32_t offset = 0;
+		uint32_t stride_offset = 0;
+
+		assert(it->n_elements_ == this->n_variants_);
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			this->variants_[i].name = std::string(&container.data_uncompressed.data()[offset], it->GetInt32(i));
+			offset += it->GetInt32(i);
+		}
+		assert(offset == container.data_uncompressed.size());
+		delete it;
+	} else {
+		uint32_t offset = 0;
+		const uint32_t stride = container.header.data_header.stride;
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			this->variants_[i].name = std::string(&container.data_uncompressed.data()[offset], stride);
+			offset += stride;
+		}
+		assert(offset == container.data_uncompressed.size());
+	}
+	return true;
+}
+
+bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples){
+	// Destroy existing data.
+	this->block_.clear();
+
+	algorithm::GenotypeSorter  gts;
+	gts.SetSamples(n_samples);
+	algorithm::GenotypeEncoder gte(n_samples);
+
+	this->block_.Allocate(100,100,100); // todo: fix
+	this->block_.resize(128000);
+
+	this->block_.header.controller.has_gt = false;
+	this->block_.header.controller.has_gt_permuted = false;
+
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->at(i).controller.gt_available){
+			this->block_.header.controller.has_gt = true;
+			this->block_.header.controller.has_gt_permuted = true;
+			break;
+		}
+	}
+
+	// If there is data available.
+	if(this->block_.header.controller.has_gt){
+		if(this->block_.header.controller.has_gt_permuted){
+			if(gts.Build(this->variants_, this->n_variants_) == false){
+				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to permute genotypes..." << std::endl;
+				return false;
+			}
+		}
+
+		if(gte.Encode(this->variants_, this->n_variants_, this->block_, gts.permutation_array) == false){
+			std::cerr << utility::timestamp("ERROR","ENCODE") << "Failed to encode genotypes..." << std::endl;
+			return false;
+		}
+
+		if(this->block_.gt_ppa != nullptr) delete this->block_.gt_ppa;
+		this->block_.gt_ppa = new yon_gt_ppa(std::move(gts.permutation_array));
+	}
+
+	// Add data to the data container.
+	for(uint32_t i = 0; i < this->size(); ++i){
+		this->block_.AddMore(this->at(i));
+		this->block_ += this->at(i);
+	}
+
+	// Update container prior to writing.
+	this->block_.UpdateContainers(n_samples);
+
+	// Compress data.
+	algorithm::CompressionManager codec_manager;
+	codec_manager.Compress(this->block_, 20 ,n_samples);
+
+	// Finalize block.
+	this->block_.Finalize();
+
+	// After all compression and writing is finished the header
+	// offsets are themselves compressed and stored in the block.
+	this->block_.PackFooter(); // Pack footer into buffer.
+	codec_manager.zstd_codec.Compress(this->block_.footer_support);
+
+	return(true);
+}
+
+}

@@ -11,10 +11,8 @@
 
 #include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
-#include "core/variant_importer_container_stats.h"
 #include "core/footer/footer.h"
-
-#include "containers/variant_container.h"
+#include "containers/variant_containers.h"
 
 namespace tachyon{
 
@@ -351,7 +349,7 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
-	void emplace(uint32_t block_id, containers::VariantBlock& container, index::VariantIndexEntry& index_entry){
+	void emplace(uint32_t block_id, yon1_vb_t& container, index::VariantIndexEntry& index_entry){
 		std::unique_lock<std::mutex> l(lock);
 
 		cv_next_checkpoint.wait(l, [this, block_id](){
@@ -387,7 +385,7 @@ struct yon_writer_sync {
 	 * @param index_entry Reference to src VariantIndexEntry.
 	 * @return            Returns TRUE upon sucess or FALSE otherwise.
 	 */
-	bool Write(containers::VariantBlock& block,
+	bool Write(yon1_vb_t& block,
 	           const containers::VcfContainer& container,
 	           index::VariantIndexEntry& index_entry)
 	{
@@ -396,7 +394,7 @@ struct yon_writer_sync {
 		return(this->writer->stream->good());
 	}
 
-	bool Write(containers::VariantBlock& container,
+	bool Write(yon1_vb_t& container,
 			   index::VariantIndexEntry& index_entry)
 	{
 		this->WriteBlock(container, index_entry); // write block
@@ -454,7 +452,7 @@ struct yon_writer_sync {
 	 * @param index_entry Source VariantIndexEntry to update the variant index with.
 	 * @return            Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool WriteBlock(containers::VariantBlock& block, index::VariantIndexEntry& index_entry){
+	bool WriteBlock(yon1_vb_t& block, index::VariantIndexEntry& index_entry){
 		index_entry.byte_offset = this->writer->stream->tellp();
 		block.write(*this->writer->stream);
 		this->writer->WriteBlockFooter(block.footer_support);
@@ -505,9 +503,9 @@ public:
 	VariantWriterInterface* writer; // writer
 
 	// Stats
-	support::VariantImporterContainerStats stats_basic;
-	support::VariantImporterContainerStats stats_info;
-	support::VariantImporterContainerStats stats_format;
+	yon_vb_istats stats_basic;
+	yon_vb_istats stats_info;
+	yon_vb_istats stats_format;
 };
 
 /**<

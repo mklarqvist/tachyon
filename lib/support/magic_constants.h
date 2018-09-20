@@ -6,7 +6,79 @@
 
 extern int SILENT;
 
-namespace tachyon{
+/**<
+ * These definitions correspond to the array offsets for the
+ * invariant containers in the yon1_vb_t/yon_vb_ftr.
+ * These correspond to the core components for site information
+ * and internals such as CONTROLLER, ID_*, and GT_SUPPORT and
+ * GT_PLOIDY.
+ */
+#define YON_BLK_N_STATIC   25// Total number of invariant headers
+#define YON_BLK_PPA         0 // Sample permutation array
+#define YON_BLK_CONTIG      1
+#define YON_BLK_POSITION    2
+#define YON_BLK_REFALT      3
+#define YON_BLK_CONTROLLER  4 // Set memberships
+#define YON_BLK_QUALITY     5
+#define YON_BLK_NAMES       6
+#define YON_BLK_ALLELES     7
+#define YON_BLK_ID_INFO     8
+#define YON_BLK_ID_FORMAT   9
+#define YON_BLK_ID_FILTER  10
+#define YON_BLK_GT_INT8    11 // Run-length encoded genotypes
+#define YON_BLK_GT_INT16   12
+#define YON_BLK_GT_INT32   13
+#define YON_BLK_GT_INT64   14
+#define YON_BLK_GT_S_INT8  15 // Standard encoded genotypes
+#define YON_BLK_GT_S_INT16 16
+#define YON_BLK_GT_S_INT32 17
+#define YON_BLK_GT_S_INT64 18
+#define YON_BLK_GT_N_INT8  19 // Standard encoded genotypes
+#define YON_BLK_GT_N_INT16 20
+#define YON_BLK_GT_N_INT32 21
+#define YON_BLK_GT_N_INT64 22
+#define YON_BLK_GT_SUPPORT 23 // Genotype support
+#define YON_BLK_GT_PLOIDY  24 // Genotype ploidy
+
+#define YON_BLK_BV_PPA         (1 << YON_BLK_PPA)
+#define YON_BLK_BV_CONTIG      (1 << YON_BLK_CONTIG)
+#define YON_BLK_BV_POSITION    (1 << YON_BLK_POSITION)
+#define YON_BLK_BV_REFALT      (1 << YON_BLK_REFALT)
+#define YON_BLK_BV_CONTROLLER  (1 << YON_BLK_CONTROLLER)
+#define YON_BLK_BV_QUALITY     (1 << YON_BLK_QUALITY)
+#define YON_BLK_BV_NAMES       (1 << YON_BLK_NAMES)
+#define YON_BLK_BV_ALLELES     (1 << YON_BLK_ALLELES)
+#define YON_BLK_BV_ID_INFO     (1 << YON_BLK_ID_INFO)
+#define YON_BLK_BV_ID_FORMAT   (1 << YON_BLK_ID_FORMAT)
+#define YON_BLK_BV_ID_FILTER   (1 << YON_BLK_ID_FILTER)
+#define YON_BLK_BV_GT_INT8     (1 << YON_BLK_GT_INT8)
+#define YON_BLK_BV_GT_INT16    (1 << YON_BLK_GT_INT16)
+#define YON_BLK_BV_GT_INT32    (1 << YON_BLK_GT_INT32)
+#define YON_BLK_BV_GT_INT64    (1 << YON_BLK_GT_INT64)
+#define YON_BLK_BV_GT_S_INT8   (1 << YON_BLK_GT_S_INT8)
+#define YON_BLK_BV_GT_S_INT16  (1 << YON_BLK_GT_S_INT16)
+#define YON_BLK_BV_GT_S_INT32  (1 << YON_BLK_GT_S_INT32)
+#define YON_BLK_BV_GT_S_INT64  (1 << YON_BLK_GT_S_INT64)
+#define YON_BLK_BV_GT_N_INT8   (1 << YON_BLK_GT_N_INT8)
+#define YON_BLK_BV_GT_N_INT16  (1 << YON_BLK_GT_N_INT16)
+#define YON_BLK_BV_GT_N_INT32  (1 << YON_BLK_GT_N_INT32)
+#define YON_BLK_BV_GT_N_INT64  (1 << YON_BLK_GT_N_INT64)
+#define YON_BLK_BV_GT_SUPPORT  (1 << YON_BLK_GT_SUPPORT)
+#define YON_BLK_BV_GT_PLOIDY   (1 << YON_BLK_GT_PLOIDY)
+// Special values
+#define YON_BLK_BV_INFO        (1 << (YON_BLK_N_STATIC))
+#define YON_BLK_BV_FORMAT      (1 << (YON_BLK_N_STATIC + 1))
+#define YON_BLK_BV_GT          ((YON_BLK_BV_GT_INT8)|(YON_BLK_BV_GT_INT16)|(YON_BLK_BV_GT_INT32)|(YON_BLK_BV_GT_INT64)|(YON_BLK_BV_GT_S_INT8)|(YON_BLK_BV_GT_S_INT16)|(YON_BLK_BV_GT_S_INT32)|(YON_BLK_BV_GT_S_INT64)|(YON_BLK_BV_GT_N_INT8)|(YON_BLK_BV_GT_N_INT16)|(YON_BLK_BV_GT_N_INT32)|(YON_BLK_BV_GT_N_INT64)|(YON_BLK_BV_GT_SUPPORT)|(YON_BLK_BV_GT_PLOIDY))
+
+namespace tachyon {
+
+const std::vector<std::string> YON_BLK_PRINT_NAMES = {
+		"PPA","CONTIG","POSITION","REFALT","CONTROLLER","QUALITY","NAMES",
+		"ALLELES","ID_INFO","ID_FORMAT","ID_FILTER",
+		"GT_INT8","GT_INT16","GT_INT32","GT_INT64",
+		"GT_S_INT8","GT_S_INT16","GT_S_INT32","GT_S_INT64",
+		"GT_N_INT8","GT_N_INT16","GT_N_INT32","GT_N_INT64",
+		"GT_SUPPORT","GT_PLOIDY"};
 
 extern std::string LITERAL_COMMAND_LINE;
 extern std::string INTERPRETED_COMMAND;

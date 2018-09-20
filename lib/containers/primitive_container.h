@@ -3,9 +3,8 @@
 
 #include <typeinfo>
 
-#include "containers/data_container.h"
+#include "containers/data_containers.h"
 #include "components/generic_iterator.h"
-#include "math/summary_statistics.h"
 #include "utility/support_vcf.h"
 
 namespace tachyon{
@@ -109,7 +108,7 @@ public:
 	 * done for writing out a Tachyon archive.
 	 * @return Returns a DataContainer with the contextual representation of the data into this container.
 	 */
-	virtual DataContainer ToDataContainer(void) =0;
+	virtual yon1_dc_t ToDataContainer(void) =0;
 
 	/**<
 	 * Add data from a PrimitiveContainer into an already existing DataContainer.
@@ -118,7 +117,7 @@ public:
 	 * @param container Destination DataContainer.
 	 * @return          Returns a reference to the input DataContainer with the contextual representation of the data in this container added to it.
 	 */
-	virtual DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride) =0;
+	virtual yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride) =0;
 
 	// Capacity
 	inline bool empty(void) const{ return(this->n_entries_ == 0); }
@@ -160,14 +159,14 @@ template <class return_type>
 class PrimitiveContainer : public PrimitiveContainerInterface {
 public:
 	typedef PrimitiveContainer self_type;
-    typedef std::size_t       size_type;
-    typedef return_type       value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
-    typedef std::ptrdiff_t    difference_type;
-    typedef DataContainer     container_type;
+    typedef std::size_t        size_type;
+    typedef return_type        value_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
+    typedef std::ptrdiff_t     difference_type;
+    typedef yon1_dc_t      container_type;
 
     typedef yonRawIterator<value_type>       iterator;
     typedef yonRawIterator<const value_type> const_iterator;
@@ -216,11 +215,11 @@ public:
 	void operator+=(const double entry);
 	void operator+=(const std::string& entry);
 
-	DataContainer ToDataContainer(void){
+	yon1_dc_t ToDataContainer(void){
 		if(this->size() == 0)
-			return(DataContainer());
+			return(yon1_dc_t());
 
-		DataContainer d;
+		yon1_dc_t d;
 		d.data_uncompressed.resize(this->size()*sizeof(return_type) + 128);
 		d.strides_uncompressed.resize(this->size()*sizeof(return_type) + 128);
 		d.header.data_header.stride = this->size();
@@ -232,7 +231,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride = true){
+	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true){
 		if(this->size() == 0)
 			return(container);
 
@@ -370,11 +369,11 @@ public:
 	inline void operator+=(const double entry){ this->data_ += std::to_string(entry); }
 	inline void operator+=(const std::string& entry){ this->data_ += entry; }
 
-	DataContainer ToDataContainer(void){
+	yon1_dc_t ToDataContainer(void){
 		if(this->size() == 0)
-			return DataContainer();
+			return yon1_dc_t();
 
-		DataContainer d;
+		yon1_dc_t d;
 		d.data_uncompressed.resize(this->size() + 128);
 		d.strides_uncompressed.resize(this->size() + 128);
 		d.header.data_header.stride = this->size();
@@ -388,7 +387,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container, const bool update_stride = true){
+	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true){
 		if(this->size() == 0)
 			return container;
 

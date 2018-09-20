@@ -18,7 +18,7 @@ private:
     typedef value_type*             pointer;
     typedef const value_type*       const_pointer;
     typedef std::ptrdiff_t          difference_type;
-    typedef DataContainer           data_container_type;
+    typedef yon1_dc_t           data_container_type;
 
     typedef yonRawIterator<value_type>       iterator;
 	typedef yonRawIterator<const value_type> const_iterator;
@@ -53,15 +53,15 @@ public:
 		return max_stride;
 	}
 
-	DataContainer ToDataContainer(void){
+	yon1_dc_t ToDataContainer(void){
 		if(this->size() == 0)
-			return DataContainer();
+			return yon1_dc_t();
 
 		// Find the longest string in this Format record.
 		const uint32_t stride    = this->BalanceVector();
 		const uint32_t l_entries = this->size() * l_entries;
 
-		DataContainer d;
+		yon1_dc_t d;
 		d.data_uncompressed.resize(l_entries + 128);
 		d.strides_uncompressed.resize(l_entries + 128);
 		d.header.data_header.stride = stride;
@@ -82,7 +82,7 @@ public:
 		return(d);
 	}
 
-	DataContainer& UpdateDataContainer(DataContainer& container){
+	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container){
 		if(this->size() == 0)
 			return container;
 

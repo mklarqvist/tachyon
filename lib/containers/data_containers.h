@@ -1,34 +1,220 @@
-#ifndef CORE_STREAMCONTAINER_H_
-#define CORE_STREAMCONTAINER_H_
+#ifndef CONTAINERS_DATA_CONTAINERS_H_
+#define CONTAINERS_DATA_CONTAINERS_H_
 
+#ifndef MD5_DIGEST_LENGTH
+#define MD5_DIGEST_LENGTH 16
+#endif
+
+#include <vector>
+#include <string>
+#include <cstring>
 #include <cassert>
+#include <unordered_map>
+#include <cmath>
 
-#include "components/data_container_header.h"
-#include "components/data_container_header_controller.h"
+#include "support/magic_constants.h"
 #include "io/basic_buffer.h"
+#include "core/data_block_settings.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+
+struct yon_blk_bv_pair {
+	yon_blk_bv_pair();
+	~yon_blk_bv_pair();
+	yon_blk_bv_pair& operator=(const yon_blk_bv_pair& other);
+	yon_blk_bv_pair& operator=(yon_blk_bv_pair&& other) noexcept;
+
+	void clear(void);
+
+	/**<
+	 * Predicate for a target local idx field in this pattern. Returns
+	 * TRUE if the bit is set or FALSE otherwise. This function performs
+	 * no checks for the target bit position being out-of-bounds.
+	 * @param position Target bit position.
+	 * @return         Returns TRUE if the bit is set or FALSE otherwise.
+	 */
+	inline bool operator[](const uint32_t position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+
+	/**<
+	 * Construct the lookup bit-vector for this object. This function needs
+	 * to know the total number of fields that are set in the parent
+	 * yon_vb_ftr structure as this will determine that byte-width
+	 * of the bit-vector. Additionally, this function needs to be given a
+	 * pointer to the map from global idx to local idx as the bit-vector
+	 * bits corresponds to local idx predicates.
+	 *
+	 * Internally the bit-vector for all objects in a yon_vb_ftr
+	 * structure has ceil(n_total_fields/8) bytes allocated for the base
+	 * array.
+	 * @param n_footer_total_fields Total number of fields set in the parent yon_vb_ftr.
+	 * @param local_map             Pointer to map from global idx to local idx.
+	 */
+	void Build(const uint32_t n_footer_total_fields,
+	           const std::unordered_map<uint32_t, uint32_t>* local_map);
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry);
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry);
+
+public:
+	std::vector<int> pattern; // vector of global idx values.
+	uint8_t  l_bytes; // number of bytes in bit-vector.
+	uint8_t* bit_bytes; // byte array interpreted as a bit-vector.
+};
+
+// Controller type for stream container
+struct yon_dc_hdr_cont {
+public:
+	typedef yon_dc_hdr_cont self_type;
+	typedef io::BasicBuffer               buffer_type;
+
+public:
+	yon_dc_hdr_cont();
+	~yon_dc_hdr_cont();
+
+	inline void clear();
+
+	inline bool IsEncrypted(void) const{ return(this->encryption > 0); }
+	inline bool CompareType(const uint8_t& type) const{ return(this->type == type); }
+	inline bool CompareTypeSign(const uint8_t& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
+
+	self_type& operator=(const self_type& other);
+	bool operator==(const self_type& other) const;
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+
+private:
+	friend buffer_type& operator<<(buffer_type& buffer,const self_type& controller);
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& controller);
+	friend std::istream& operator>>(std::istream& stream, self_type& controller);
+	friend buffer_type& operator>>(buffer_type& buffer, self_type& controller);
+
+public:
+	uint32_t signedness:    1, // Signed type
+	         mixedStride:   1, // Different stride sizes
+	         type:          6, // Base typing (extra bits reserved for future use)
+	         encoder:       5, // Encoder bits (see encoder for values)
+	         uniform:       1, // Triggered if all values in the buffer are the same
+	         encryption:    2, // Encryption type
+			 preprocessor: 16; // preprocessor bits (extra reserved for future used)
+};
+
+struct yon_dc_hdr_obj {
+public:
+	typedef yon_dc_hdr_obj     self_type;
+	typedef yon_dc_hdr_cont controller_type;
+
+public:
+	yon_dc_hdr_obj();
+	yon_dc_hdr_obj(const self_type& other);
+	yon_dc_hdr_obj(self_type&& other) noexcept;
+	self_type& operator=(const self_type& other);
+	self_type& operator=(self_type&& other) noexcept;
+	~yon_dc_hdr_obj();
+
+	void reset(void);
+
+	bool operator==(const self_type& other) const;
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+
+	int8_t GetPrimitiveWidth(void) const;
+
+	inline int32_t& GetStride(void){ return(this->stride); }
+	inline const int32_t& GetStride(void) const{ return(this->stride); }
+	inline bool IsUniform(void) const{ return(this->controller.uniform); }
+	inline bool IsSigned(void) const{ return(this->controller.signedness); }
+	inline bool HasMixedStride(void) const{ return(this->controller.mixedStride); }
+	inline void SetUniform(const bool yes){ this->controller.uniform = yes; }
+	inline void SetSignedness(const bool yes){ this->controller.signedness = yes; }
+	inline void SetMixedStride(const bool yes){ this->controller.mixedStride = yes; }
+
+	inline TACHYON_CORE_TYPE GetPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline TACHYON_CORE_COMPRESSION GetEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+
+	// Set types
+	inline void SetType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
+
+	// Checksum
+	inline uint8_t* GetChecksum(void){ return(&this->crc[0]); }
+	inline const uint8_t* GetChecksum(void) const{ return(&this->crc[0]); }
+	bool CheckChecksum(const uint8_t* compare) const;
+
+private:
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
+
+public:
+	controller_type controller; // controller bits
+	int32_t  stride;  // stride size: -1 if not uniform, a non-zero positive value otherwise
+	uint32_t offset; // relative file offset
+	uint32_t cLength;// compressed length
+	uint32_t uLength;// uncompressed length
+	uint32_t eLength;// encrypted length
+	uint8_t  crc[MD5_DIGEST_LENGTH];  // MD5 checksum
+	int32_t  global_key;// global key
+};
+
+struct yon_dc_hdr {
+private:
+	typedef yon_dc_hdr       self_type;
+	typedef yon_dc_hdr_obj header_type;
+	typedef io::BasicBuffer           buffer_type;
+
+public:
+	yon_dc_hdr();
+	yon_dc_hdr(const self_type& other);
+	~yon_dc_hdr();
+
+	self_type& operator=(const self_type& other);
+	self_type& operator=(self_type&& other) noexcept;
+
+	void reset(void);
+
+	// Comparators
+	bool operator==(const self_type& other) const;
+	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+
+	self_type& operator+=(const self_type& other);
+
+	// Accessors
+	inline int32_t& GetGlobalKey(void){ return(this->data_header.global_key); }
+	inline const int32_t& GetGlobalKey(void) const{ return(this->data_header.global_key); }
+	inline bool HasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
+
+private:
+	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry);
+	friend buffer_type& operator>>(buffer_type& buffer, self_type& entry);
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
+
+public:
+	uint64_t identifier;
+	uint32_t n_entries;      // number of container entries
+	uint32_t n_additions;    // number of times an addition operation was executed
+	uint32_t n_strides;      // number of stride elements
+	header_type data_header;
+	header_type stride_header;
+};
 
 /**<
  * Primary data container in Tachyon. Store actual byte
  * streams and its associated data required to restore
  * the input object.
  */
-class DataContainer {
+class yon1_dc_t {
 public:
-	typedef DataContainer       self_type;
-	typedef DataContainerHeader header_type;
+	typedef yon1_dc_t       self_type;
+	typedef yon_dc_hdr header_type;
 	typedef io::BasicBuffer     buffer_type;
 
 public:
-	DataContainer();
-	DataContainer(const uint32_t start_size);
-	~DataContainer();
-	DataContainer(self_type&& other) noexcept;
-	DataContainer(const self_type& other);
-	DataContainer& operator=(const self_type& other);
-	DataContainer& operator=(self_type&& other) noexcept;
+	yon1_dc_t();
+	yon1_dc_t(const uint32_t start_size);
+	~yon1_dc_t();
+	yon1_dc_t(self_type&& other) noexcept;
+	yon1_dc_t(const self_type& other);
+	yon1_dc_t& operator=(const self_type& other);
+	yon1_dc_t& operator=(self_type&& other) noexcept;
 
 	/**<
 	 * Set the primitive (or higher-order primitive) type for
@@ -272,6 +458,5 @@ public:
 };
 
 }
-}
 
-#endif /* CORE_STREAMCONTAINER_H_ */
+#endif /* CONTAINERS_DATA_CONTAINERS_H_ */

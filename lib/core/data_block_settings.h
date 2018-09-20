@@ -4,7 +4,6 @@
 #include <regex>
 #include "support/helpers.h"
 #include "core/header/variant_header.h"
-#include "containers/components/data_container_header.h"
 
 namespace tachyon{
 
