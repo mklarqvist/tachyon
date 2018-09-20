@@ -6,7 +6,7 @@
 
 #include "index/index.h"
 #include "support/magic_constants.h"
-#include "containers/data_containers.h"
+#include "containers/data_container.h"
 
 namespace tachyon {
 

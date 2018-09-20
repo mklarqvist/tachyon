@@ -14,7 +14,6 @@
 #include "algorithm/timer.h"
 #include "containers/interval_container.h"
 #include "containers/primitive_group_container.h"
-#include "containers/variant_containers.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
@@ -29,6 +28,7 @@
 
 #include "algorithm/parallel/variant_slaves.h"
 #include "algorithm/parallel/variant_base_slave.h"
+#include "containers/variant_container.h"
 
 namespace tachyon{
 

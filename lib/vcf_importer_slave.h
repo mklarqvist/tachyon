@@ -7,7 +7,7 @@
 #include "algorithm/permutation/genotype_sorter.h"
 #include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption.h"
-#include "containers/variant_containers.h"
+#include "containers/variant_container.h"
 #include "containers/vcf_container.h"
 #include "index/variant_index_entry.h"
 #include "index/variant_index_meta_entry.h"

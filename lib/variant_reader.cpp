@@ -1,8 +1,7 @@
+#include <containers/variant_container.h>
 #include <openssl/evp.h>
 
 #include "variant_reader.h"
-
-#include "containers/variant_containers.h"
 
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"

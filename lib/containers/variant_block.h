@@ -1,25 +1,12 @@
-#ifndef CONTAINERS_VARIANT_CONTAINERS_H_
-#define CONTAINERS_VARIANT_CONTAINERS_H_
+#ifndef CONTAINERS_VARIANT_BLOCK_H_
+#define CONTAINERS_VARIANT_BLOCK_H_
 
-#include <vector>
-#include <string>
-#include <cstring>
-#include <cassert>
-#include <unordered_map>
-#include <cmath>
 #include <fstream>
 
-#include "index/index.h"
-#include "data_containers.h"
-#include "primitive_container.h"
 #include "core/variant_record.h"
 
 namespace tachyon {
 
-/** @brief Controller flags for an IndexBlockEntry
- * This structure is for internal use only and describes
- * various internal states as flags.
- */
 struct yon_vb_hdr_cont {
 	typedef yon_vb_hdr_cont self_type;
 
@@ -40,13 +27,10 @@ public:
 		unused:          13; // reserved for future use
 };
 
-/** @brief Fixed-sized components of an IndexBlockEntry
- * For internal use only. This is a subcomponent of fixed
- * size describing:
- * 1) Contig, minimum and maximum genomic coordinates
- * 2) Offsets into the containers
- * 3) Number of containers and ID patterns
- * 4) Controller flags
+/**<
+ * Header components of a VariantBlock structure. Primarily used
+ * for housekeeping and also provides the critical virtual offset
+ * to the footer start position.
  */
 struct yon_vb_hdr{
 private:
@@ -82,6 +66,11 @@ public:
 	uint32_t n_variants;    // number of variants in this block
 };
 
+/**<
+ * Footer component of a VariantBlock. Contains considerable amount
+ * of critical functions and data members absolutely vital to the
+ * functioning of a VariantBlock.
+ */
 struct yon_vb_ftr {
 public:
 	typedef yon_vb_ftr  self_type;
@@ -570,20 +559,19 @@ private:
 };
 
 /**
- * Primary Tachyon block object: stores containers of data and
- * provides encapsulated and abstracted access to its
- * contents.
+ * Primary Tachyon Variant Block structure: stores containers of data and
+ * provides encapsulated and abstracted access to its contents.
  */
 class yon1_vb_t {
 public:
-	typedef yon1_vb_t                    self_type;
-	typedef yon1_dc_t                   container_type;
-	typedef yon_vb_hdr              block_header_type;
-	typedef yon_vb_ftr              block_footer_type;
-	typedef io::BasicBuffer                 buffer_type;
-	typedef yon_vb_istats import_stats_type;
-	typedef yon_dc_hdr             offset_type;
-	typedef DataBlockSettings               block_settings_type;
+	typedef yon1_vb_t          self_type;
+	typedef yon1_dc_t          container_type;
+	typedef yon_vb_hdr         block_header_type;
+	typedef yon_vb_ftr         block_footer_type;
+	typedef io::BasicBuffer    buffer_type;
+	typedef yon_vb_istats      import_stats_type;
+	typedef yon_dc_hdr         offset_type;
+	typedef DataBlockSettings  block_settings_type;
 
 public:
 	yon1_vb_t();
@@ -901,34 +889,7 @@ public:
 	 * (container) and moves that offset to the footer. This operation is mandatory
 	 * prior to writing this block!
 	 */
-	void Finalize(void){
-		this->footer.Finalize();
-
-		// Pre-calculate the virtual file offsets prior to writing the block
-		// to disk. This is required during parallel processing as we do not
-		// want to the writer slave to spend time compressing or doing any
-		// other compute instead of simply writing at I/O saturated speeds.
-		uint64_t b_offset = 0;
-		if(this->header.controller.has_gt && this->header.controller.has_gt_permuted){
-			this->UpdateHeader(this->footer.offsets[YON_BLK_PPA], this->base_containers[YON_BLK_PPA], 0);
-			b_offset += this->base_containers[YON_BLK_PPA].GetObjectSize();
-		}
-
-		for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
-			this->UpdateHeader(this->footer.offsets[i], this->base_containers[i], b_offset);
-			b_offset += this->base_containers[i].GetObjectSize();
-		}
-
-		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
-			this->UpdateHeader(this->footer.info_offsets[i], this->info_containers[i], b_offset);
-			b_offset += this->info_containers[i].GetObjectSize();
-		}
-
-		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
-			this->UpdateHeader(this->footer.format_offsets[i], this->format_containers[i], b_offset);
-			b_offset += this->format_containers[i].GetObjectSize();
-		}
-	}
+	void Finalize(void);
 
 	int32_t GetInfoPosition(const uint32_t global_id)   const;
 	int32_t GetFormatPosition(const uint32_t global_id) const;
@@ -1062,406 +1023,8 @@ public:
 	container_type footer_support; // used internally only
 };
 
-//
-class yon_cont_ref_iface {
-public:
-	yon_cont_ref_iface() : is_uniform_(false), n_offset_(0), n_elements_(0), b_data_(0), data_(nullptr){}
-	yon_cont_ref_iface(char* data, uint64_t l_data) : is_uniform_(false), n_offset_(0), n_elements_(0), b_data_(l_data), data_(data){}
-	virtual ~yon_cont_ref_iface(){
-		// do not delete data. it is not owned by this
-	}
-
-	// next()
-	// -> stride of response + response pointer
-	virtual bool next() =0;
-	virtual int32_t GetInt32(const uint32_t p) =0;
-
-public:
-	bool is_uniform_;
-	uint32_t n_offset_;
-	uint32_t n_elements_;
-	uint64_t b_data_;
-	char* data_;
-};
-
-template <class return_ptype>
-class yon_cont_ref : public yon_cont_ref_iface {
-public:
-	yon_cont_ref() : variants_(nullptr){}
-	yon_cont_ref(char* data, uint64_t l_data) :
-		yon_cont_ref_iface(data, l_data),
-		variants_(reinterpret_cast<return_ptype*>(this->data_))
-	{
-		this->n_elements_ = l_data / sizeof(return_ptype);
-		assert(l_data % sizeof(return_ptype) == 0);
-	}
-	~yon_cont_ref(){}
-
-	bool next(){
-		if(this->is_uniform_) return true;
-		if(this->n_offset_ == this->n_elements_) return false;
-		++this->n_offset_;
-		return true;
-	}
-
-	inline return_ptype& operator[](const uint32_t p){ return(this->variants_[p]); }
-	inline const return_ptype& operator[](const uint32_t p) const{ return(this->variants_[p]); }
-	inline int32_t GetInt32(const uint32_t p){ return((int32_t)this->variants_[p]); }
-
-public:
-	return_ptype* variants_;
-};
-
-class yon1_vc_t {
-public:
-	typedef yon1_dc_t dc_type;
-	typedef yon1_vc_t self_type;
-    typedef std::size_t       size_type;
-    typedef yon1_vnt_t        value_type;
-    typedef value_type&       reference;
-    typedef const value_type& const_reference;
-    typedef value_type*       pointer;
-    typedef const value_type* const_pointer;
-    typedef std::ptrdiff_t    difference_type;
-
-    typedef yonRawIterator<value_type>       iterator;
-	typedef yonRawIterator<const value_type> const_iterator;
-
-public:
-	yon1_vc_t() : n_variants_(0), n_capacity_(0), variants_(nullptr){}
-	yon1_vc_t(const uint32_t size) :
-		n_variants_(0), n_capacity_(size),
-		//variants_(new yon1_vnt_t[size])
-		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
-	{
-
-	}
-
-	yon1_vc_t(yon1_vb_t& variant_block, const VariantHeader& header) :
-		n_variants_(variant_block.header.n_variants), n_capacity_(variant_block.header.n_variants + 64),
-		//variants_(new yon1_vnt_t[size])
-		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
-	{
-		if(this->n_variants_){
-			for(int i = 0; i < this->n_variants_; ++i)
-				new( &this->variants_[i] ) yon1_vnt_t( );
-
-			this->Build(variant_block, header);
-		}
-	}
-
-	~yon1_vc_t(){
-		//delete [] variants_;
-		for(std::size_t i = 0; i < this->size(); ++i)
-			((this->variants_ + i)->~yon1_vnt_t)();
-
-		::operator delete[](static_cast<void*>(this->variants_));
-	}
-
-	yon1_vc_t& operator+=(const yon1_vnt_t& rec){
-		if(this->variants_ == nullptr || this->capacity() == 0)
-			this->reserve();
-
-		if(this->size() == this->capacity())
-			this->reserve();
-
-		new( &this->variants_[this->n_variants_] ) yon1_vnt_t( rec );
-		++this->n_variants_;
-
-		return(*this);
-	}
-
-	const size_t size(void) const { return(this->n_variants_); }
-	const size_t capacity(void) const { return(this->n_capacity_); }
-
-	void clear(void){
-		for(std::size_t i = 0; i < this->size(); ++i)
-			((this->variants_ + i)->~yon1_vnt_t)();
-
-		this->n_variants_ = 0;
-		this->block_.clear();
-	}
-
-	inline void reserve(void){ this->reserve(n_capacity_ + 1000); }
-	void reserve(const uint32_t new_size);
-	void resize(const uint32_t new_size);
-
-	bool Build(yon1_vb_t& variant_block, const VariantHeader& header);
-
-	/**< @brief Reads a target Tachyon block from disk.
-	 * Primary function for reading partial data from disk. Data
-	 * read in this way is not checked for integrity in this function.
-	 * @param stream    Src stream handle.
-	 * @param header    Src global header.
-	 * @param settings  Settings record describing reading parameters.
-	 * @return          Returns TRUE upon success or FALSE otherwise.
-	 */
-	inline bool ReadBlock(std::ifstream& stream, const VariantHeader& header, DataBlockSettings& settings){
-		return(this->block_.read(stream, settings, header));
-	}
-
-	bool PrepareWritableBlock(const uint32_t n_samples);
-
-	index::VariantIndexEntry GetIndexEntry(void){
-		index::VariantIndexEntry index_entry;
-		//index_entry.blockID     = block_id;
-		index_entry.contig_id    = this->block_.header.contig_id;
-		index_entry.min_position = this->block_.header.min_position;
-		index_entry.max_position = this->block_.header.max_position;
-		index_entry.n_variants   = this->block_.header.n_variants;
-		return(index_entry);
-	}
-
-	 // Element access
-	inline reference at(const size_type& position){ return(this->variants_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->variants_[position]); }
-	inline reference operator[](const size_type& position){ return(this->variants_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->variants_[position]); }
-	inline pointer data(void){ return(this->variants_); }
-	inline const_pointer data(void) const{ return(this->variants_); }
-	inline reference front(void){ return(this->variants_[0]); }
-	inline const_reference front(void) const{ return(this->variants_[0]); }
-	inline reference back(void){ return(this->variants_[(n_variants_ == 0 ? 0 : n_variants_ - 1)]); }
-	inline const_reference back(void) const{ return(this->variants_[(n_variants_ == 0 ? 0 : n_variants_ - 1)]); }
-
-	// Iterator
-	inline iterator begin(){ return iterator(&this->variants_[0]); }
-	inline iterator end(){ return iterator(&this->variants_[this->n_variants_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->variants_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->variants_[this->n_variants_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->variants_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->variants_[this->n_variants_]); }
-
-private:
-	bool PermuteOrder(const yon1_vb_t& variant_block);
-
-	bool AddInfo(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddFilter(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddFormat(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddInfoWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool AddFormatWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-
-	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-
-	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
-
-	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride);
-
-	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-
-	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
-
-	bool AddGenotypes(yon1_vb_t& block, const VariantHeader& header);
-
-	template <class T>
-	bool AddBaseInteger(dc_type& container, void(yon1_vnt_t::*fnc)(const T v)){
-		if(container.data_uncompressed.size() == 0)
-			return false;
-
-		assert(container.header.HasMixedStride() == false);
-
-		yon_cont_ref_iface* it = nullptr;
-		switch(container.header.data_header.controller.type){
-		case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		}
-		assert(it != nullptr);
-
-		// If data is uniform.
-		if(container.header.data_header.controller.uniform){
-			it->is_uniform_ = true;
-
-			for(int i = 0; i < this->n_variants_; ++i){
-				(variants_[i].*fnc)(it->GetInt32(0));
-			}
-		} else {
-			assert(this->n_variants_ == it->n_elements_);
-			for(int i = 0; i < this->n_variants_; ++i){
-				(variants_[i].*fnc)(it->GetInt32(i));
-			}
-		}
-		delete it;
-		return true;
-	}
-
-	bool FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride);
-
-	inline bool AddContigs(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetChromosome)); }
-	inline bool AddController(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetController)); }
-	inline bool AddPositions(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetPosition)); }
-
-	bool AddQuality(dc_type& container);
-	bool AddRefAlt(dc_type& container);
-
-	inline bool AddFilterIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFilterPId)); }
-	inline bool AddFormatIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFormatPId)); }
-	inline bool AddInfoIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetInfoPId)); }
-	inline bool AddPloidy(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetBasePloidy)); }
-
-	bool AddAlleles(dc_type& container);
-	bool AddNames(dc_type& container);
-
-public:
-	yon1_vb_t block_;
-	// External memory allocation for linear use of lazy-evaluated
-	// expansion of genotype records. This is critical when the sample
-	// numbers are becoming large as allocating/deallocating hundreds
-	// of thousands of pointers for every variant is very time consuming.
-	//yon_gt_rcd** gt_exp;
-
-	size_t n_variants_;
-	size_t n_capacity_;
-	yon1_vnt_t* variants_;
-};
-
-
-// IMPLEMENTATION -------------------------------------------------------------
-
-
-template <class return_ptype, class intrinsic_ptype>
-bool yon1_vc_t::InfoSetup(dc_type& container,
-                                 const VariantHeader& header,
-                                 const std::vector<bool>& matches)
-{
-	if(container.strides_uncompressed.size() == 0)
-		return false;
-
-	yon_cont_ref_iface* it = nullptr;
-	switch(container.header.stride_header.controller.type){
-	case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	}
-	assert(it != nullptr);
-
-	uint32_t current_offset = 0;
-	uint32_t stride_offset = 0;
-
-	for(int i = 0; i < this->n_variants_; ++i){
-		if(this->variants_[i].info_pid == -1){
-			continue;
-		} else if(matches[this->variants_[i].info_pid]){
-			this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, it->GetInt32(stride_offset));
-			this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype);
-			++stride_offset;
-		}
-	}
-	assert(current_offset == container.data_uncompressed.size());
-	delete it;
-	return true;
-}
-
-template <class return_ptype, class intrinsic_ptype>
-bool yon1_vc_t::InfoSetup(dc_type& container,
-                                 const VariantHeader& header,
-                                 const std::vector<bool>& matches,
-                                 const uint32_t stride_size)
-{
-	uint32_t current_offset = 0;
-
-	if(container.header.data_header.IsUniform()){
-		for(int i = 0; i < this->n_variants_; ++i){
-			if(this->variants_[i].info_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].info_pid]){
-				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, 0, stride_size);
-				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-			}
-		}
-	} else {
-		for(int i = 0; i < this->n_variants_; ++i){
-			if(this->variants_[i].info_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].info_pid]){
-				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
-				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size * sizeof(intrinsic_ptype);
-			}
-		}
-		assert(current_offset == container.data_uncompressed.size());
-	}
-	return true;
-}
-
-template <class return_ptype, class intrinsic_ptype>
-bool yon1_vc_t::FormatSetup(dc_type& container,
-                                   const VariantHeader& header,
-                                   const std::vector<bool>& matches)
-{
-	if(container.strides_uncompressed.size() == 0)
-		return false;
-
-	yon_cont_ref_iface* it = nullptr;
-	switch(container.header.stride_header.controller.type){
-	case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
-	}
-	assert(it != nullptr);
-
-	uint32_t current_offset = 0;
-	uint32_t stride_offset = 0;
-
-	for(int i = 0; i < this->n_variants_; ++i){
-		if(this->variants_[i].fmt_pid == -1){
-			continue;
-		} else if(matches[this->variants_[i].fmt_pid]){
-			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
-			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype) * header.GetNumberSamples();
-			++stride_offset;
-		}
-	}
-	assert(current_offset == container.data_uncompressed.size());
-	delete it;
-	return true;
-}
-
-template <class return_ptype, class intrinsic_ptype>
-bool yon1_vc_t::FormatSetup(dc_type& container,
-                                   const VariantHeader& header,
-                                   const std::vector<bool>& matches,
-                                   const uint32_t stride_size)
-{
-	uint32_t current_offset = 0;
-
-	if(container.header.data_header.IsUniform()){
-		for(int i = 0; i < this->n_variants_; ++i){
-			if(this->variants_[i].fmt_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].fmt_pid]){
-				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, 0, header.GetNumberSamples(), stride_size);
-				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-			}
-		}
-	} else {
-		for(int i = 0; i < this->n_variants_; ++i){
-			if(this->variants_[i].fmt_pid == -1){
-				continue;
-			} else if(matches[this->variants_[i].fmt_pid]){
-				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
-				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
-				current_offset += stride_size * sizeof(intrinsic_ptype) * header.GetNumberSamples();
-			}
-		}
-		assert(current_offset == container.data_uncompressed.size());
-	}
-	return true;
-}
-
 }
 
 
 
-#endif /* CONTAINERS_VARIANT_CONTAINERS_H_ */
+#endif /* CONTAINERS_VARIANT_BLOCK_H_ */

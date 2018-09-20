@@ -6,7 +6,7 @@
 #include <cassert>
 #include <thread>
 
-#include "containers/variant_containers.h"
+#include "containers/variant_container.h"
 #include "core/genotypes.h"
 #include "io/vcf_utils.h"
 #include "core/variant_record.h"

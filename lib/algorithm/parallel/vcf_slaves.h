@@ -12,7 +12,7 @@
 #include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
 #include "core/footer/footer.h"
-#include "containers/variant_containers.h"
+#include "containers/variant_container.h"
 
 namespace tachyon{
 
