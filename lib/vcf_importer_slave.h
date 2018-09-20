@@ -6,7 +6,7 @@
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
 #include "algorithm/digest/variant_digest_manager.h"
-#include "algorithm/encryption/encryption_decorator.h"
+#include "algorithm/encryption/encryption.h"
 #include "containers/variant_block.h"
 #include "containers/vcf_container.h"
 #include "core/variant_importer_container_stats.h"

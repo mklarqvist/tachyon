@@ -2,7 +2,6 @@
 #define ALGORITHM_PARALLEL_VARIANT_BASE_SLAVE_H_
 
 #include "containers/variant_container.h"
-#include "core/ts_tv_object.h"
 
 namespace tachyon {
 
@@ -19,8 +18,8 @@ public:
 
 class VariantBaseSlave : public VariantBaseSlaveInterface {
 public:
-	VariantBaseSlave(void) : global_header(nullptr){}
-	virtual ~VariantBaseSlave(){}
+	VariantBaseSlave(void) : global_header(nullptr), gt_exp(nullptr){}
+	virtual ~VariantBaseSlave(){ delete [] gt_exp; }
 
 	/**<
 	 * Basic unpacking function for VariantBlock data. Attempts
@@ -30,7 +29,7 @@ public:
 	 * @return   Returns TRUE upon success or FALSE otherwise.
 	 */
 	virtual bool Unpack(containers::VariantBlock*& dc){
-		vc.GetBlock() = std::move(*dc); // copy test
+		vc = std::move(*dc); // copy test
 		delete dc;
 		dc = nullptr;
 
@@ -50,7 +49,7 @@ public:
 		*/
 
 		// Internally decompress available data
-		if(!this->codec_manager.Decompress(vc.GetBlock())){
+		if(!this->codec_manager.Decompress(vc)){
 			std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 			return false;
 		}
@@ -60,7 +59,8 @@ public:
 
 public:
 	VariantHeader* global_header;
-	containers::VariantBlockContainer vc;
+	containers::VariantBlock vc;
+	yon_gt_rcd* gt_exp;
 	DataBlockSettings settings;
 	algorithm::CompressionManager codec_manager;
 };
@@ -80,12 +80,12 @@ public:
 
 	bool LoadData(containers::VariantBlock*& dc){
 		// Move data over to local VariantBlockContainer.
-		vc.GetBlock() = std::move(*dc); // copy test
+		vc = std::move(*dc); // copy test
 		delete dc;
 		dc = nullptr;
 
 		// Update data read.
-		this->data_loaded += vc.GetBlock().GetCompressedSize();
+		this->data_loaded += vc.GetCompressedSize();
 		return true;
 	}
 
@@ -95,8 +95,8 @@ public:
 			return false;
 		}
 		// Update data read.
-		this->data_loaded += vc.GetBlock().GetCompressedSize();
-		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+		this->data_loaded += vc.GetCompressedSize();
+		this->data_uncompressed += vc.GetUncompressedSize();
 
 		return true;
 	}
@@ -107,11 +107,11 @@ public:
 			return false;
 		}
 		// Update data read.
-		this->data_loaded += vc.GetBlock().GetCompressedSize();
-		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+		this->data_loaded += vc.GetCompressedSize();
+		this->data_uncompressed += vc.GetUncompressedSize();
 
-		VariantContainer ivc(vc.GetBlock().header.n_variants);
-		ivc.Build(vc.GetBlock(), *this->global_header);
+		VariantContainer ivc(vc.header.n_variants);
+		ivc.Build(vc, *this->global_header);
 
 		return true;
 	}
@@ -123,11 +123,11 @@ public:
 		}
 
 		// Update data read.
-		this->data_loaded += vc.GetBlock().GetCompressedSize();
-		this->data_uncompressed += vc.GetBlock().GetUncompressedSize();
+		this->data_loaded += vc.GetCompressedSize();
+		this->data_uncompressed += vc.GetUncompressedSize();
 
-		VariantContainer ivc(vc.GetBlock().header.n_variants);
-		ivc.Build(vc.GetBlock(), *this->global_header);
+		VariantContainer ivc(vc.header.n_variants);
+		ivc.Build(vc, *this->global_header);
 
 		return true;
 	}
@@ -151,29 +151,26 @@ public:
 			return false;
 		}
 
-		if(this->vc.GetBlock().header.controller.has_gt == false)
+		if(this->vc.header.controller.has_gt == false)
 			return true;
 
-		VariantContainer ivc(vc.GetBlock().header.n_variants);
-		ivc.Build(vc.GetBlock(), *this->global_header);
+		VariantContainer ivc(vc, *this->global_header);
 
 		s_local.reset();
 		for(uint32_t i = 0; i < ivc.size(); ++i){
 			if(ivc[i].is_loaded_gt){
-				//entries[i].gt->ExpandExternal(this->vc.GetAllocatedGenotypeMemory());
-				//s.Update(entries[i], this->vc.GetAllocatedGenotypeMemory());
 				s_local.Update(ivc[i]);
 			}
 		}
 
 
-		assert(vc.GetBlock().gt_ppa != nullptr);
+		assert(vc.gt_ppa != nullptr);
 
-		if(this->vc.GetBlock().header.controller.has_gt_permuted){
+		if(this->vc.header.controller.has_gt_permuted){
 			// Reduce function for adding together TsTv objects
 			// in the sample order as described in the local
 			// permutation array.
-			s.Add(s_local, vc.GetBlock().gt_ppa);
+			s.Add(s_local, vc.gt_ppa);
 		} else
 			s += s_local;
 

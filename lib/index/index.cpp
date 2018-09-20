@@ -39,8 +39,8 @@ std::vector<VariantIndexEntry> Index::FindOverlap(const uint32_t& contig_id,
 	for(int i = 0; i < possible_bins.size(); ++i){
 		// Cycle over the YON blocks this bin have data mapping to
 		for(uint32_t j = 0; j < possible_bins[i].size(); ++j){
-			if(this->linear_[possible_bins[i][j]].minPosition < end_pos &&
-			   this->linear_[possible_bins[i][j]].maxPosition > start_pos)
+			if(this->linear_[possible_bins[i][j]].min_position < end_pos &&
+			   this->linear_[possible_bins[i][j]].max_position > start_pos)
 			{
 				yon_blocks.push_back(possible_bins[i][j]);
 			}
@@ -59,7 +59,7 @@ std::vector<VariantIndexEntry> Index::FindOverlap(const uint32_t& contig_id,
 	yon_blocks_deduped.push_back(this->linear_[yon_blocks[0]]);
 
 	for(uint32_t i = 1; i < yon_blocks.size(); ++i){
-		if(yon_blocks[i] != yon_blocks_deduped.back().blockID){
+		if(yon_blocks[i] != yon_blocks_deduped.back().block_id){
 			yon_blocks_deduped.push_back(this->linear_[yon_blocks[i]]);
 		}
 	}

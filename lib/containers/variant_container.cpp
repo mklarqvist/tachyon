@@ -1,11 +1,20 @@
 #include "variant_container.h"
 #include "support/magic_constants.h"
 
+#include "algorithm/compression/genotype_encoder.h"
+#include "algorithm/permutation/genotype_sorter.h"
+#include "algorithm/compression/compression_manager.h"
+
 namespace tachyon {
 
-void VariantContainer::resize(const uint32_t new_size){
+void VariantContainer::reserve(const uint32_t new_size){
 	if(new_size < this->n_capacity_){
 		if(new_size < this->n_variants_){
+			// Invoke dtor on trailing elements.
+			for(int i = new_size; i < this->n_variants_; ++i)
+				((this->variants_ + i)->~yon1_vnt_t)();
+
+			// Resize.
 			this->n_variants_ = new_size;
 			return;
 		}
@@ -13,11 +22,16 @@ void VariantContainer::resize(const uint32_t new_size){
 	}
 
 	yon1_vnt_t* temp = this->variants_;
-	this->variants_ = new yon1_vnt_t[new_size];
-	for(int i = 0; i < this->n_variants_; ++i)
-		this->variants_[i] = std::move(temp[i]);
+	this->variants_ = static_cast<yon1_vnt_t*>(::operator new[](new_size*sizeof(yon1_vnt_t)));
 
-	delete [] temp;
+	for(int i = 0; i < this->n_variants_; ++i){
+		new( &this->variants_[i] ) yon1_vnt_t( std::move(temp[i]) );
+		((temp + i)->~yon1_vnt_t)(); // invoke dtor.
+	}
+
+	// Clear previous data.
+	::operator delete[](static_cast<void*>(temp));
+
 	this->n_capacity_ = new_size;
 }
 
@@ -470,19 +484,20 @@ bool VariantContainer::AddGenotypes(containers::VariantBlock& block, const Varia
 			if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_BIALLELIC){
 				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint8_t>( &rle8[offset_rle8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidRLE<uint8_t>::GetObjects(&rle8[offset_rle8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint8_t>(&rle8[offset_rle8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_rle8 += lengths[gt_offset]*sizeof(uint8_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint16_t>( &rle16[offset_rle16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidRLE<uint16_t>::GetObjects(&rle16[offset_rle16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint16_t>(&rle16[offset_rle16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_rle16 += lengths[gt_offset]*sizeof(uint16_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint32_t>( &rle32[offset_rle32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidRLE<uint32_t>::GetObjects(&rle32[offset_rle32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint32_t>(&rle32[offset_rle32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_rle32 += lengths[gt_offset]*sizeof(uint32_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidRLE<uint64_t>( &rle64[offset_rle64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidRLE<uint64_t>::GetObjects(&rle64[offset_rle64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidRLE<uint64_t>(&rle64[offset_rle64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_rle64 += lengths[gt_offset]*sizeof(uint64_t);
 				} else {
 					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
@@ -494,19 +509,19 @@ bool VariantContainer::AddGenotypes(containers::VariantBlock& block, const Varia
 			else if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_DIPLOID_NALLELIC) {
 				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint8_t>( &simple8[offset_simple8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidSimple<uint8_t>::GetObjects(&simple8[offset_simple8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint8_t>(&simple8[offset_simple8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_simple8 += lengths[gt_offset]*sizeof(uint8_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint16_t>( &simple16[offset_simple16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidSimple<uint16_t>::GetObjects(&simple16[offset_simple16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint16_t>(&simple16[offset_simple16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_simple16 += lengths[gt_offset]*sizeof(uint16_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint32_t>( &simple32[offset_simple32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidSimple<uint32_t>::GetObjects(&simple32[offset_simple32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint32_t>(&simple32[offset_simple32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_simple32 += lengths[gt_offset]*sizeof(uint32_t);
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerDiploidSimple<uint64_t>( &simple64[offset_simple64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerDiploidSimple<uint64_t>::GetObjects(&simple64[offset_simple64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeDiploidSimple<uint64_t>(&simple64[offset_simple64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_simple64 += lengths[gt_offset]*sizeof(uint64_t);
 				} else {
 					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
@@ -540,19 +555,19 @@ bool VariantContainer::AddGenotypes(containers::VariantBlock& block, const Varia
 			else if(this->variants_[i].controller.gt_compression_type == TACHYON_GT_ENCODING::YON_GT_RLE_NPLOID) {
 				if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_BYTE){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint8_t>( &nploid8[offset_nploid8], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerNploid<uint8_t>::GetObjects(&nploid8[offset_nploid8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeNploid<uint8_t>(&nploid8[offset_nploid8], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_nploid8 += lengths[gt_offset]*(sizeof(uint8_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U16){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint16_t>( &nploid16[offset_nploid16], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerNploid<uint16_t>::GetObjects(&nploid16[offset_nploid16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeNploid<uint16_t>(&nploid16[offset_nploid16], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_nploid16 += lengths[gt_offset]*(sizeof(uint16_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U32){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint32_t>( &nploid32[offset_nploid32], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerNploid<uint32_t>::GetObjects(&nploid32[offset_nploid32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeNploid<uint32_t>(&nploid32[offset_nploid32], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_nploid32 += lengths[gt_offset]*(sizeof(uint32_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
 				} else if(this->variants_[i].controller.gt_primtive_type == TACHYON_GT_PRIMITIVE_TYPE::YON_GT_U64){
 					//this->variants_[i].gt_raw = new containers::GenotypeContainerNploid<uint64_t>( &nploid64[offset_nploid64], lengths[gt_offset], this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue());
-					this->variants_[i].gt = containers::GenotypeContainerNploid<uint64_t>::GetObjects(&nploid64[offset_nploid64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
+					this->variants_[i].gt = GetGenotypeNploid<uint64_t>(&nploid64[offset_nploid64], lengths[gt_offset], header.GetNumberSamples(), this->variants_[i].n_alleles, this->variants_[i].n_base_ploidy, this->variants_[i].controller.ToValue(), block.gt_ppa);
 					offset_nploid64 += lengths[gt_offset]*(sizeof(uint64_t) + this->variants_[i].n_base_ploidy*sizeof(uint8_t));
 				}  else {
 					std::cerr << utility::timestamp("ERROR","GT") << "Unknown GT encoding primitive..." << std::endl;
@@ -810,4 +825,69 @@ bool VariantContainer::AddNames(dc_type& container){
 	}
 	return true;
 }
+
+bool VariantContainer::PrepareWritableBlock(const uint32_t n_samples){
+	// Destroy existing data.
+	this->block_.clear();
+
+	algorithm::GenotypeSorter  gts;
+	gts.SetSamples(n_samples);
+	algorithm::GenotypeEncoder gte(n_samples);
+
+	this->block_.Allocate(100,100,100); // todo: fix
+	this->block_.resize(128000);
+
+	this->block_.header.controller.has_gt = false;
+	this->block_.header.controller.has_gt_permuted = false;
+
+	for(int i = 0; i < this->n_variants_; ++i){
+		if(this->at(i).controller.gt_available){
+			this->block_.header.controller.has_gt = true;
+			this->block_.header.controller.has_gt_permuted = true;
+			break;
+		}
+	}
+
+	// If there is data available.
+	if(this->block_.header.controller.has_gt){
+		if(this->block_.header.controller.has_gt_permuted){
+			if(gts.Build(this->variants_, this->n_variants_) == false){
+				std::cerr << utility::timestamp("ERROR","PERMUTE") << "Failed to permute genotypes..." << std::endl;
+				return false;
+			}
+		}
+
+		if(gte.Encode(this->variants_, this->n_variants_, this->block_, gts.permutation_array) == false){
+			std::cerr << utility::timestamp("ERROR","ENCODE") << "Failed to encode genotypes..." << std::endl;
+			return false;
+		}
+
+		if(this->block_.gt_ppa != nullptr) delete this->block_.gt_ppa;
+		this->block_.gt_ppa = new yon_gt_ppa(std::move(gts.permutation_array));
+	}
+
+	// Add data to the data container.
+	for(uint32_t i = 0; i < this->size(); ++i){
+		this->block_.AddMore(this->at(i));
+		this->block_ += this->at(i);
+	}
+
+	// Update container prior to writing.
+	this->block_.UpdateContainers(n_samples);
+
+	// Compress data.
+	algorithm::CompressionManager codec_manager;
+	codec_manager.Compress(this->block_, 20 ,n_samples);
+
+	// Finalize block.
+	this->block_.Finalize();
+
+	// After all compression and writing is finished the header
+	// offsets are themselves compressed and stored in the block.
+	this->block_.PackFooter(); // Pack footer into buffer.
+	codec_manager.zstd_codec.Compress(this->block_.footer_support);
+
+	return(true);
+}
+
 }

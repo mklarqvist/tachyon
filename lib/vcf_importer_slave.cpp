@@ -36,7 +36,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 
 	// Assign new block id. This is provided by the producer.
 	this->block_id = block_id;
-	this->index_entry.blockID = block_id;
+	this->index_entry.block_id = block_id;
 
 	if(this->n_blocks_processed++ == 0){
 		// Allocate containers and offsets for this file.
@@ -385,7 +385,7 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd){
 		// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
 		// simple SNV/indels.
 		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
-			if(std::regex_match(rcd.alleles[i].allele, utility::YON_VARIANT_STANDARD)){
+			if(std::regex_match(rcd.alleles[i].allele, YON_REGEX_CANONICAL_BASES)){
 				if(rcd.alleles[i].l_allele > longest)
 					longest = rcd.alleles[i].l_allele;
 			}
@@ -418,10 +418,10 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd){
 
 		//std::cerr << "End pos used: " << end_position_used << std::endl;
 	}
-	if(index_bin > this->index_entry.maxBin) this->index_entry.maxBin = index_bin;
-	if(index_bin < this->index_entry.minBin) this->index_entry.minBin = index_bin;
-	if(end_position_used > this->index_entry.maxPosition)
-		this->index_entry.maxPosition = end_position_used;
+	if(index_bin > this->index_entry.max_bin) this->index_entry.max_bin = index_bin;
+	if(index_bin < this->index_entry.min_bin) this->index_entry.min_bin = index_bin;
+	if(end_position_used > this->index_entry.max_position)
+		this->index_entry.max_position = end_position_used;
 
 	// Update number of entries in block
 	++this->index_entry.n_variants;

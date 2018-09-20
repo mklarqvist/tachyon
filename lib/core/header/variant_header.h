@@ -1,9 +1,8 @@
 #ifndef CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 #define CORE_BASE_HEADER_YON_TACHYONHEADER_H_
 
-#include "support/enums.h"
+#include "support/magic_constants.h"
 #include "support/helpers.h"
-#include "algorithm/OpenHashTable.h"
 #include "io/basic_buffer.h"
 
 #include "io/vcf_utils.h"

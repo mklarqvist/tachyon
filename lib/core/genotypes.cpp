@@ -21,6 +21,25 @@ yon_gt_ppa::yon_gt_ppa(yon_gt_ppa&& other) noexcept :
 	other.ordering = nullptr;
 }
 
+yon_gt_ppa& yon_gt_ppa::operator=(const yon_gt_ppa& other){
+	delete [] ordering;
+	n_s = other.n_s;
+	ordering = new uint32_t[n_s];
+	memcpy(this->ordering, other.ordering, sizeof(uint32_t)*this->n_s);
+	return(*this);
+}
+
+yon_gt_ppa& yon_gt_ppa::operator=(yon_gt_ppa&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+	delete [] ordering; ordering = nullptr;
+	n_s = other.n_s;
+	std::swap(ordering, other.ordering);
+	return(*this);
+}
+
 void yon_gt_ppa::Allocate(const uint32_t n_s){
 	delete [] this->ordering;
 	this->n_s = n_s;
@@ -195,6 +214,134 @@ io::BasicBuffer& yon_gt_rcd::PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_
 	return(buffer);
 }
 
+// Start GT
+
+yon_gt::yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
+		   n_allele(0), ppa(nullptr), data(nullptr),
+		   d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
+		   dirty(false)
+{}
+
+yon_gt::yon_gt(const yon_gt& other) :
+	eval_cont(other.eval_cont), add(other.add), global_phase(other.global_phase), shift(other.shift),
+	p(other.p), m(other.m), method(other.method), n_s(other.n_s), n_i(other.n_i), n_o(other.n_o),
+	n_allele(other.n_allele), ppa(other.ppa), data(other.data),
+	d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
+	dirty(other.dirty)
+{
+	if(other.d_exp != nullptr){
+		d_exp = new yon_gt_rcd[n_s];
+		for(int i = 0; i < n_s; ++i) d_exp[i] = std::move(other.d_exp[i].Clone(m));
+	}
+
+	if(other.rcds != nullptr){
+		rcds = new yon_gt_rcd[n_i];
+		for(int i = 0; i < n_i; ++i) rcds[i] = std::move(other.rcds[i].Clone(m));
+	}
+
+	if(n_o){
+		assert(n_i_occ != nullptr);
+		n_i_occ = new uint32_t[n_o];
+		for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
+		assert(d_occ != nullptr);
+		d_occ = new yon_gt_rcd*[n_o];
+		for(int i = 0; i < n_o; ++i){
+			d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
+			for(int j = 0; j < n_i_occ[i]; ++j)
+				d_occ[i][j] = std::move(other.d_occ[i][j].Clone(m));
+		}
+	}
+}
+
+yon_gt& yon_gt::operator=(const yon_gt& other){
+	// Destroy local data.
+	delete [] rcds;
+	delete [] d_exp;
+	if(d_occ != nullptr){
+		for(uint32_t i = 0; i < this->n_o; ++i)
+			delete [] d_occ[i];
+	}
+	delete [] n_i_occ;
+	delete [] d_occ;
+
+	eval_cont = other.eval_cont; add = other.add; global_phase = other.global_phase;
+	shift = other.shift; p = other.p; m = other.m; method = other.method;
+	n_s = other.n_s; n_i = other.n_i; n_o = other.n_o;
+	n_allele = other.n_allele; ppa = other.ppa; data = other.data;
+	d_exp = nullptr; rcds = nullptr; n_i_occ = nullptr; d_occ = nullptr;
+	dirty = other.dirty;
+
+	if(other.d_exp != nullptr){
+		d_exp = new yon_gt_rcd[n_s];
+		for(int i = 0; i < n_s; ++i) d_exp[i] = std::move(other.d_exp[i].Clone(m));
+	}
+
+	if(other.rcds != nullptr){
+		rcds = new yon_gt_rcd[n_i];
+		for(int i = 0; i < n_i; ++i) rcds[i] = std::move(other.rcds[i].Clone(m));
+	}
+
+	if(n_o){
+		assert(n_i_occ != nullptr);
+		n_i_occ = new uint32_t[n_o];
+		for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
+		assert(d_occ != nullptr);
+		d_occ = new yon_gt_rcd*[n_o];
+		for(int i = 0; i < n_o; ++i){
+			d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
+			for(int j = 0; j < n_i_occ[i]; ++j)
+				d_occ[i][j] = std::move(other.d_occ[i][j].Clone(m));
+		}
+	}
+
+	return(*this);
+}
+
+yon_gt::yon_gt(yon_gt&& other) noexcept :
+		eval_cont(other.eval_cont), add(other.add), global_phase(other.global_phase), shift(other.shift),
+		p(other.p), m(other.m), method(other.method), n_s(other.n_s), n_i(other.n_i), n_o(other.n_o),
+		n_allele(other.n_allele), ppa(other.ppa), data(other.data),
+		d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
+		dirty(other.dirty)
+{
+	std::swap(d_exp, other.d_exp);
+	std::swap(rcds, other.rcds);
+	std::swap(n_i_occ, other.n_i_occ);
+	std::swap(d_occ, other.d_occ);
+}
+
+yon_gt& yon_gt::operator=(yon_gt&& other) noexcept{
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	// Destroy local data.
+	delete [] rcds;
+	delete [] d_exp;
+	if(d_occ != nullptr){
+		for(uint32_t i = 0; i < this->n_o; ++i)
+			delete [] d_occ[i];
+	}
+	delete [] n_i_occ;
+	delete [] d_occ;
+
+	eval_cont = other.eval_cont; add = other.add; global_phase = other.global_phase;
+	shift = other.shift; p = other.p; m = other.m; method = other.method;
+	n_s = other.n_s; n_i = other.n_i; n_o = other.n_o;
+	n_allele = other.n_allele; ppa = other.ppa; data = other.data;
+	d_exp = nullptr; rcds = nullptr; n_i_occ = nullptr; d_occ = nullptr;
+	dirty = other.dirty;
+
+	std::swap(d_exp, other.d_exp);
+	std::swap(rcds, other.rcds);
+	std::swap(n_i_occ, other.n_i_occ);
+	std::swap(d_occ, other.d_occ);
+
+	return(*this);
+}
+
+
 yon_gt::~yon_gt(){
 	delete [] rcds;
 	delete [] d_exp;
@@ -204,6 +351,453 @@ yon_gt::~yon_gt(){
 	}
 	delete [] n_i_occ;
 	delete [] d_occ;
+}
+
+bool yon_gt::Evaluate(void){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	if(this->method == 1) return(this->EvaluateRecordsM1());
+	else if(this->method == 2) return(this->EvaluateRecordsM2());
+	else if(this->method == 4) return(this->EvaluateRecordsM4());
+	else {
+		std::cerr << "not implemented method " << (int)this->method << std::endl;
+	}
+	return false;
+}
+
+bool yon_gt::EvaluateRecordsM1(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	switch(this->p){
+	case(1): return(this->EvaluateRecordsM1_<uint8_t>());
+	case(2): return(this->EvaluateRecordsM1_<uint16_t>());
+	case(4): return(this->EvaluateRecordsM1_<uint32_t>());
+	case(8): return(this->EvaluateRecordsM1_<uint64_t>());
+	default:
+		std::cerr << "illegal primitive in EvaluateRecordsM1" << std::endl;
+		exit(1);
+	}
+}
+
+bool yon_gt::EvaluateRecordsM2(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	switch(this->p){
+	case(1): return(this->EvaluateRecordsM2_<uint8_t>());
+	case(2): return(this->EvaluateRecordsM2_<uint16_t>());
+	case(4): return(this->EvaluateRecordsM2_<uint32_t>());
+	case(8): return(this->EvaluateRecordsM2_<uint64_t>());
+	default:
+		std::cerr << "illegal primitive in EvaluateRecordsM2" << std::endl;
+		exit(1);
+	}
+}
+
+bool yon_gt::EvaluateRecordsM4(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	switch(this->p){
+	case(1): return(this->EvaluateRecordsM4_<uint8_t>());
+	case(2): return(this->EvaluateRecordsM4_<uint16_t>());
+	case(4): return(this->EvaluateRecordsM4_<uint32_t>());
+	case(8): return(this->EvaluateRecordsM4_<uint64_t>());
+	default:
+		std::cerr << "illegal primitive in EvaluateRecordsM1" << std::endl;
+		exit(1);
+	}
+}
+
+bool yon_gt::ExpandRecordsPpa(void){
+	if(this->eval_cont & YON_GT_UN_EXPAND)
+		return true;
+
+	if((this->eval_cont & YON_GT_UN_RCDS) == false){
+		bool eval = this->Evaluate();
+		if(eval == false) return false;
+	}
+
+	assert(this->rcds != nullptr);
+	assert(this->ppa != nullptr);
+
+	if(this->d_exp != nullptr) delete [] this->d_exp;
+	this->d_exp = new yon_gt_rcd[this->n_s];
+
+	uint64_t cum_sample = 0;
+	uint64_t cum_offset = 0;
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+			const uint32_t& target_ppa = this->ppa->at(cum_sample);
+			this->d_exp[target_ppa] = std::move(this->rcds[i].Clone(this->m));
+			this->d_exp[target_ppa].run_length = 1;
+			cum_offset += this->p * this->m;
+		}
+	}
+	assert(cum_sample == this->n_s);
+	assert(cum_offset == this->n_s * this->m * this->p);
+	this->eval_cont |= YON_GT_UN_EXPAND;
+	return true;
+}
+
+bool yon_gt::ExpandRecordsPpaExternal(yon_gt_rcd* d_expe){
+	if((this->eval_cont & YON_GT_UN_RCDS) == false){
+		bool eval = this->Evaluate();
+		if(eval == false) return false;
+	}
+
+	assert(this->rcds != nullptr);
+	assert(this->ppa != nullptr);
+
+	uint64_t cum_sample = 0;
+	uint64_t cum_offset = 0;
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+			const uint32_t& target_ppa = this->ppa->at(cum_sample);
+			d_expe[target_ppa] = std::move(this->rcds[i].Clone(this->m));
+			d_expe[target_ppa].run_length = 1;
+			cum_offset += this->p * this->m;
+		}
+	}
+	assert(cum_sample == this->n_s);
+	assert(cum_offset == this->n_s * this->m * this->p);
+	return true;
+}
+
+bool yon_gt::Expand(void){
+	if(this->ppa != nullptr)
+		return(this->ExpandRecordsPpa());
+	else return(this->ExpandRecords());
+}
+
+bool yon_gt::ExpandExternal(yon_gt_rcd* d_expe){
+	if(this->ppa != nullptr)
+		return(this->ExpandRecordsPpaExternal(d_expe));
+	else return(this->ExpandRecordsExternal(d_expe));
+}
+
+bool yon_gt::ExpandRecords(void){
+	if((this->eval_cont & YON_GT_UN_RCDS) == false){
+		bool eval = this->Evaluate();
+		if(eval == false) return false;
+	}
+
+	if(this->eval_cont & YON_GT_UN_EXPAND)
+		return true;
+
+	assert(this->rcds != nullptr);
+
+	if(this->d_exp != nullptr) delete [] this->d_exp;
+	this->d_exp = new yon_gt_rcd[this->n_s];
+
+	uint64_t cum_sample = 0;
+	uint64_t cum_offset = 0;
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+			this->d_exp[cum_sample] = std::move(this->rcds[i].Clone(this->m));
+			this->d_exp[cum_sample].run_length = 1;
+			cum_offset += this->p * this->m;
+		}
+	}
+	assert(cum_sample == this->n_s);
+	assert(cum_offset == this->n_s * this->m * this->p);
+	this->eval_cont |= YON_GT_UN_EXPAND;
+	return true;
+}
+
+bool yon_gt::ExpandRecordsExternal(yon_gt_rcd* d_expe){
+	if((this->eval_cont & YON_GT_UN_RCDS) == false){
+		bool eval = this->Evaluate();
+		if(eval == false) return false;
+	}
+
+	assert(this->rcds != nullptr);
+
+	uint64_t cum_sample = 0;
+	uint64_t cum_offset = 0;
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
+			d_expe[cum_sample] = std::move(this->rcds[i].Clone(this->m));
+			d_expe[cum_sample].run_length = 1;
+			cum_offset += this->p * this->m;
+		}
+	}
+	assert(cum_sample == this->n_s);
+	assert(cum_offset == this->n_s * this->m * this->p);
+	return true;
+}
+
+bcf1_t* yon_gt::UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) {
+   // Prevent double evaluation.
+   if((this->eval_cont & YON_GT_UN_EXPAND)){
+	   bool check = this->Expand();
+	   if(check == false){
+		   std::cerr << utility::timestamp("ERROR","GT") << "Failed to lazy-expand genotype records..." << std::endl;
+		   return rec;
+	   }
+   }
+
+   assert(this->d_exp != nullptr);
+
+   int32_t* tmpi = new int32_t[this->n_s*this->m];
+   uint32_t gt_offset = 0;
+   for(uint32_t i = 0; i < this->n_s; ++i){
+	   for(uint32_t j = 0; j < this->m; ++j, ++gt_offset){
+		   if(this->d_exp[i].allele[j] == 0)      tmpi[gt_offset] = 0;
+		   else if(this->d_exp[i].allele[j] == 1) tmpi[gt_offset] = 1;
+		   else tmpi[gt_offset] = YON_GT_BCF1(this->d_exp[i].allele[j]);
+	   }
+   }
+   assert(gt_offset == this->n_s*this->m);
+
+   bcf_update_genotypes(hdr, rec, tmpi, this->n_s*this->m);
+
+   delete [] tmpi;
+   return(rec);
+}
+
+// summary record
+yon_gt_summary_rcd::yon_gt_summary_rcd() :
+	n_ploidy(0), n_ac_af(0), n_fs(0), ac(nullptr), af(nullptr),
+	nm(0), npm(0), an(0), fs_a(nullptr), hwe_p(0),
+	f_pic(0), heterozygosity(0)
+{}
+
+yon_gt_summary_rcd::yon_gt_summary_rcd(const yon_gt_summary_rcd& other) :
+	n_ploidy(other.n_ploidy), n_ac_af(other.n_ac_af), n_fs(other.n_fs), ac(nullptr), af(nullptr),
+	nm(other.nm), npm(other.npm), an(other.an), fs_a(nullptr), hwe_p(other.hwe_p),
+	f_pic(other.f_pic), heterozygosity(other.heterozygosity)
+{
+	if(other.ac != nullptr){ ac = new uint32_t[n_ac_af]; memcpy(ac, other.ac, n_ac_af*sizeof(uint32_t)); }
+	if(other.af != nullptr){ af = new float[n_ac_af]; memcpy(af, other.af, n_ac_af*sizeof(float)); }
+	if(other.fs_a != nullptr){ fs_a = new float[n_fs]; memcpy(fs_a, other.fs_a, n_fs*sizeof(float)); }
+}
+
+yon_gt_summary_rcd& yon_gt_summary_rcd::operator=(const yon_gt_summary_rcd& other){
+	delete [] ac; ac = nullptr;
+	delete [] af; af = nullptr;
+	delete [] fs_a; fs_a = nullptr;
+	n_ploidy = other.n_ploidy; n_ac_af = other.n_ac_af; n_fs = other.n_fs;
+	nm = other.nm; npm = other.npm; an = other.an; hwe_p = other.hwe_p;
+	f_pic = other.f_pic; heterozygosity = other.heterozygosity;
+	if(other.ac != nullptr){ ac = new uint32_t[n_ac_af]; memcpy(ac, other.ac, n_ac_af*sizeof(uint32_t)); }
+	if(other.af != nullptr){ af = new float[n_ac_af]; memcpy(af, other.af, n_ac_af*sizeof(float)); }
+	if(other.fs_a != nullptr){ fs_a = new float[n_fs]; memcpy(fs_a, other.fs_a, n_fs*sizeof(float)); }
+
+	return(*this);
+}
+
+yon_gt_summary_rcd::yon_gt_summary_rcd(yon_gt_summary_rcd&& other) noexcept :
+	n_ploidy(other.n_ploidy), n_ac_af(other.n_ac_af), n_fs(other.n_fs), ac(nullptr), af(nullptr),
+	nm(other.nm), npm(other.npm), an(other.an), fs_a(nullptr), hwe_p(other.hwe_p),
+	f_pic(other.f_pic), heterozygosity(other.heterozygosity)
+{
+	std::swap(ac, other.ac);
+	std::swap(af, other.af);
+	std::swap(fs_a, other.fs_a);
+}
+
+yon_gt_summary_rcd& yon_gt_summary_rcd::operator=(yon_gt_summary_rcd&& other) noexcept {
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	n_ploidy = other.n_ploidy; n_ac_af = other.n_ac_af; n_fs = other.n_fs;
+	nm = other.nm; npm = other.npm; an = other.an; hwe_p = other.hwe_p;
+	f_pic = other.f_pic; heterozygosity = other.heterozygosity;
+	std::swap(ac, other.ac);
+	std::swap(af, other.af);
+	std::swap(fs_a, other.fs_a);
+
+	return(*this);
+}
+
+yon_gt_summary_rcd::~yon_gt_summary_rcd(){
+	delete [] ac; delete [] af;
+	delete [] fs_a;
+	// Do not delete ac_p as it is borrowed
+}
+
+// summary object
+yon_gt_summary_obj::yon_gt_summary_obj() : n_cnt(0), children(nullptr){}
+yon_gt_summary_obj::yon_gt_summary_obj(yon_gt_summary_obj&& other) noexcept : n_cnt(other.n_cnt), children(nullptr){ std::swap(children, other.children); }
+yon_gt_summary_obj& yon_gt_summary_obj::operator=(yon_gt_summary_obj&& other) noexcept{
+	if(this == &other) return *this;
+	delete [] children; children = nullptr;
+	n_cnt = other.n_cnt;
+	std::swap(children, other.children);
+	return(*this);
+}
+yon_gt_summary_obj::~yon_gt_summary_obj(){ delete [] this->children; }
+
+// Clone helper ctor.
+yon_gt_summary_obj::yon_gt_summary_obj(const uint8_t n_alleles, const uint64_t cnt, yon_gt_summary_obj* c) :
+	n_cnt(cnt), children(nullptr)
+{
+	if(c != nullptr){
+		children = new yon_gt_summary_obj[n_alleles];
+		for(int i = 0; i < n_alleles; ++i){
+			children[i] = std::move(c[i].Clone(n_alleles));
+		}
+	}
+}
+
+// genotype summary
+yon_gt_summary::yon_gt_summary(void) :
+	n_ploidy(0),
+	n_alleles(0),
+	alleles(nullptr),
+	alleles_strand(nullptr),
+	gt(nullptr),
+	d(nullptr)
+{
+
+}
+
+yon_gt_summary::yon_gt_summary(const uint8_t base_ploidy, const uint8_t n_alleles) :
+	n_ploidy(base_ploidy),
+	n_alleles(n_alleles + 2),
+	alleles(new uint32_t[this->n_alleles]),
+	alleles_strand(new uint32_t*[this->n_ploidy]),
+	gt(new yon_gt_summary_obj[this->n_alleles]),
+	d(nullptr)
+{
+	memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
+		this->alleles_strand[i] = new uint32_t[this->n_alleles];
+		memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
+	}
+
+	// Add layers to the root node.
+	for(uint32_t i = 0; i < this->n_alleles; ++i)
+		this->AddGenotypeLayer(&this->gt[i], 1);
+}
+
+yon_gt_summary::yon_gt_summary(yon_gt_summary&& other) noexcept :
+	n_ploidy(other.n_ploidy), n_alleles(other.n_alleles),
+	alleles(nullptr), alleles_strand(nullptr), gt(nullptr), d(nullptr)
+{
+	std::swap(alleles, other.alleles);
+	std::swap(alleles_strand, other.alleles_strand);
+	std::swap(gt, other.gt);
+	std::swap(d, other.d);
+}
+
+yon_gt_summary& yon_gt_summary::operator=(yon_gt_summary&& other) noexcept {
+	if(this == &other){
+		// precautions against self-moves
+		return *this;
+	}
+
+	// Clear local data without cosideration.
+	delete [] this->alleles;
+	delete [] this->gt;
+	if(this->alleles_strand != nullptr){
+		for(uint32_t i = 0; i < this->n_ploidy; ++i)
+			delete this->alleles_strand[i];
+		delete [] this->alleles_strand;
+	}
+	delete this->d;
+
+	// Move.
+	n_ploidy = other.n_ploidy; n_alleles = other.n_alleles;
+	alleles = nullptr; alleles_strand = nullptr; gt = nullptr; d = nullptr;
+	std::swap(alleles, other.alleles);
+	std::swap(alleles_strand, other.alleles_strand);
+	std::swap(gt, other.gt);
+	std::swap(d, other.d);
+
+	return(*this);
+}
+
+yon_gt_summary::yon_gt_summary(const yon_gt_summary& other) :
+	n_ploidy(other.n_ploidy), n_alleles(other.n_alleles),
+	alleles(new uint32_t[n_alleles]),
+	alleles_strand(new uint32_t*[n_ploidy]),
+	gt(new yon_gt_summary_obj[n_alleles]),
+	d(nullptr)
+{
+	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
+	for(uint32_t i = 0; i < n_ploidy; ++i){
+		alleles_strand[i] = new uint32_t[n_alleles];
+		for(int j = 0; j < n_alleles; ++j) alleles_strand[i][j] = other.alleles_strand[i][j];
+	}
+	if(other.d != nullptr) this->d = new yon_gt_summary_rcd(*other.d);
+	for(int i = 0; i < n_alleles; ++i) gt[i] = std::move(other.gt[i].Clone(n_alleles));
+}
+
+yon_gt_summary& yon_gt_summary::operator=(const yon_gt_summary& other){
+	// Delete previous data without consideration.
+	delete [] this->alleles;
+	delete [] this->gt;
+	if(this->alleles_strand != nullptr){
+		for(uint32_t i = 0; i < this->n_ploidy; ++i)
+			delete this->alleles_strand[i];
+		delete [] this->alleles_strand;
+	}
+	delete this->d; this->d = nullptr;
+
+	n_ploidy = other.n_ploidy; n_alleles = other.n_alleles;
+	alleles = new uint32_t[n_alleles];
+	alleles_strand = new uint32_t*[n_ploidy];
+	gt = new yon_gt_summary_obj[n_alleles];
+
+	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
+		alleles_strand[i] = new uint32_t[n_alleles];
+		for(int j = 0; j < n_alleles; ++j) alleles_strand[i][j] = other.alleles_strand[i][j];
+	}
+	if(other.d != nullptr) this->d = new yon_gt_summary_rcd(*other.d);
+	for(int i = 0; i < n_alleles; ++i) gt[i] = std::move(other.gt[i].Clone(n_alleles));
+
+	return(*this);
+}
+
+void yon_gt_summary::Setup(const uint8_t base_ploidy, const uint8_t n_als){
+	n_ploidy  = base_ploidy;
+	n_alleles = n_als + 2;
+	// Destroy previous data without consideration.
+	delete [] this->alleles;
+	delete [] this->gt;
+	if(this->alleles_strand != nullptr){
+		for(uint32_t i = 0; i < this->n_ploidy; ++i)
+			delete this->alleles_strand[i];
+		delete [] this->alleles_strand;
+	}
+	delete this->d;
+
+	alleles = new uint32_t[n_alleles];
+	alleles_strand = new uint32_t*[this->n_ploidy];
+	gt = new yon_gt_summary_obj[this->n_alleles];
+	d = nullptr;
+
+	memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
+	for(uint32_t i = 0; i < this->n_ploidy; ++i){
+		this->alleles_strand[i] = new uint32_t[this->n_alleles];
+		memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
+	}
+
+	// Add layers to the root node.
+	for(uint32_t i = 0; i < this->n_alleles; ++i)
+		this->AddGenotypeLayer(&this->gt[i], 1);
+}
+
+yon_gt_summary::~yon_gt_summary(){
+	delete [] this->alleles;
+	delete [] this->gt;
+	if(this->alleles_strand != nullptr){
+		for(uint32_t i = 0; i < this->n_ploidy; ++i)
+			delete this->alleles_strand[i];
+		delete [] this->alleles_strand;
+	}
+	delete this->d;
 }
 
 bool yon_gt_summary::AddGenotypeLayer(yon_gt_summary_obj* target, uint8_t depth){
@@ -680,6 +1274,38 @@ bool yon_occ::BuildTable(const yon_gt_ppa* ppa_p){
 	}
 
 	return true;
+}
+
+// support
+yon_vnt_cnt::yon_vnt_cnt(void) :
+	gt_available(0),
+	gt_has_missing(0),
+	gt_phase_uniform(0),
+	gt_has_mixed_phasing(0),
+	gt_compression_type(0),
+	gt_primtive_type(0),
+	gt_mixed_ploidy(0),
+	biallelic(0),
+	simple_snv(0),
+	diploid(0),
+	alleles_packed(0),
+	all_snv(0)
+{}
+
+void yon_vnt_cnt::operator=(const uint16_t& value){
+	const yon_vnt_cnt* const other = reinterpret_cast<const yon_vnt_cnt* const>(&value);
+	this->gt_available      = other->gt_available;
+	this->gt_has_missing    = other->gt_has_missing;
+	this->gt_phase_uniform  = other->gt_phase_uniform;
+	this->gt_has_mixed_phasing = other->gt_has_mixed_phasing;
+	this->gt_compression_type  = other->gt_compression_type;
+	this->gt_primtive_type = other->gt_primtive_type;
+	this->gt_mixed_ploidy  = other->gt_mixed_ploidy;
+	this->biallelic        = other->biallelic;
+	this->simple_snv       = other->simple_snv;
+	this->diploid          = other->diploid;
+	this->alleles_packed   = other->alleles_packed;
+	this->all_snv          = other->all_snv;
 }
 
 }

@@ -20,7 +20,14 @@ namespace tachyon{
 
 namespace utility{
 
-// Base functionality converting data to a valid VCF string
+/**<
+ * Helper functions for converting a given encoded tachyon primitive value
+ * into a valid Vcf string.
+ * @param stream Dst buffer reference.
+ * @param data   Src pointer to data.
+ * @param n_data Number of entries the src pointer is pointing to.
+ * @return       Returns a reference to the dst buffer reference.
+ */
 io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint8_t* const data, const size_t n_data);
 io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint16_t* const data, const size_t n_data);
 io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint32_t* const data, const size_t n_data);
@@ -34,6 +41,15 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const float* const data, c
 io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const double* const data, const size_t n_data);
 io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const std::string& string);
 
+/**<
+ * Helper functions for adding raw primitive data into a htslib bcf1_t info field.
+ * @param rec       Dst htslib bcf1_t record pointer.
+ * @param hdr       Pointer reference to htslib bcf header.
+ * @param tag       Tag string telling us where to append data in the record.
+ * @param data      Src data pointer.
+ * @param n_entries Number of entries the src data pointer is pointing to.
+ * @return          Returns the (possibly) updated htslib bcf1_t record pointer.
+ */
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint8_t* const data, const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint16_t* const data, const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint32_t* const data, const size_t n_entries);
@@ -45,6 +61,15 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const double* const data, const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const std::string& data);
 
+/**<
+ * Conversion functions for a given primitive into the accepted primitive types
+ * of htslib bcf1_t. Pre-processing steps involves the narrowing or expansion of
+ * integers/floats and their corresponding missing/NAN/EOV values.
+ * @param src       Src data pointer.
+ * @param dst       Dst primitive pointer.
+ * @param n_entries Number of entries the src data pointer is pointing to.
+ * @return          Returns the (possibly) converted primitive.
+ */
 int32_t* FormatDataHtslib(const uint8_t* const src, int32_t* dst, const size_t n_entries);
 int32_t* FormatDataHtslib(const uint16_t* const src, int32_t* dst, const size_t n_entries);
 int32_t* FormatDataHtslib(const uint32_t* const src, int32_t* dst, const size_t n_entries);

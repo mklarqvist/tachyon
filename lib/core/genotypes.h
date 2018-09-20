@@ -10,10 +10,14 @@
 
 namespace tachyon {
 
+/****************************
+*  Core genotype
+****************************/
 #define YON_GT_RCD_MISS 0
 #define YON_GT_RCD_EOV  1
 #define YON_GT_RCD_REF  2
 
+// Routines for packing/unpacking GT objects.
 #define YON_GT_RLE_ALLELE_A(PRIMITITVE, SHIFT, ADD)  (((PRIMITITVE) & ((1 << (SHIFT)) - 1) << (ADD)) >> (ADD));
 #define YON_GT_RLE_ALLELE_B(PRIMITIVE, SHIFT, ADD)   (((PRIMITIVE) & ((1 << (SHIFT)) - 1) << ((ADD)+(SHIFT))) >> ((ADD)+(SHIFT)));
 #define YON_GT_RLE_LENGTH(PRIMITIVE, SHIFT, ADD)     ((PRIMITIVE) >> (2*(SHIFT) + (ADD)))
@@ -47,16 +51,24 @@ const uint8_t YON_GT_RLE_RECODE[3] = {2, 3, 0};
 // annotation of genotypes.
 const std::vector< std::string > YON_GT_ANNOTATE_FIELDS = {"NM","NPM","AN","HWE_P","AC","AF","AC_P","FS_A","F_PIC","HET","MULTI_ALLELIC"};
 
-// Basic structure that maintains the permutation
-// order of the samples in relation to the global header.
-// This object is required if you want to use individual
-// genotypes in the ORIGINAL order. If this is not required
-// in your use-case then this structure has no value.
+/****************************
+*  Basic structures
+****************************/
+
+/**<
+ * Basic structure that maintains the permutation
+ * order of the samples in relation to the global header.
+ * This object is required if you want to use individual
+ * genotypes in the ORIGINAL order. If this is not required
+ * in your use-case then this structure has no value.
+ */
 struct yon_gt_ppa {
 	yon_gt_ppa(void);
 	yon_gt_ppa(const uint32_t n_samples);
 	yon_gt_ppa(const yon_gt_ppa& other);
 	yon_gt_ppa(yon_gt_ppa&& other) noexcept;
+	yon_gt_ppa& operator=(const yon_gt_ppa& other);
+	yon_gt_ppa& operator=(yon_gt_ppa&& other) noexcept;
 
 	~yon_gt_ppa(void);
 
@@ -84,6 +96,10 @@ struct yon_gt_ppa {
 	uint32_t* ordering;
 };
 
+/**<
+ * Supportive structure in genotype sorter (gtPBWT). Has no
+ * other uses.
+ */
 struct yon_radix_gt {
 public:
 	yon_radix_gt();
@@ -99,6 +115,12 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const yon_radix_gt& genotype);
 
+	/**<
+	 * Return a bit-packed representation of this data. This should
+	 * be considered a private function as it has no external functionality.
+	 * @param shift_size Number of bits to shift in.
+	 * @return           Returns a bit-packed integer.
+	 */
 	uint64_t GetPackedInteger(const uint8_t& shift_size = 8) const;
 
 	void resize(const uint8_t new_ploidy);
@@ -111,6 +133,16 @@ public:
 };
 
 // Primary generic Tachyon FORMAT:GT structure.
+/**<
+ * Primary Tachyon Format:Gt structure. Encodes alleles
+ * as:
+ *    0: missing
+ *    1: sentinel node (EOV)
+ *    2: reference
+ *    3: first alt
+ *    4: second alt
+ *    N: ...
+ */
 struct yon_gt_rcd {
 public:
 	yon_gt_rcd();
@@ -121,8 +153,21 @@ public:
 	yon_gt_rcd& operator=(yon_gt_rcd&& other);
 	~yon_gt_rcd();
 
+	/**<
+	 * Cloning subroutine for copying data with the help of externally
+	 * provided information. This function requires the knowledge of what
+	 * base ploidy this data was constructed with.
+	 * @param ploidy Src base ploidy this data was constructed with.
+	 * @return       Returns an new instance of yon_gt_rcd.
+	 */
 	inline yon_gt_rcd Clone(const uint32_t ploidy){ return(yon_gt_rcd(run_length, ploidy, allele)); }
 
+	/**<
+	 * Convert this Genotype representation into a valid Vcf string.
+	 * @param buffer   Dst buffer.
+	 * @param n_ploidy Src base ploidy this data was constructed with.
+	 * @return         Returns a reference to the dst buffer.
+	 */
 	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy);
 
 public:
@@ -133,339 +178,55 @@ public:
 // Forward declare.
 struct yon_gt_summary;
 
+/**<
+ * Genotype container in Tachyon. Stores all genotype records and
+ * provides functionality to query and interact with them.
+ */
 struct yon_gt {
 public:
 	typedef yonRawIterator<yon_gt_rcd>       iterator;
 	typedef yonRawIterator<const yon_gt_rcd> const_iterator;
 
 public:
-    yon_gt() : eval_cont(0), add(0), global_phase(0), shift(0), p(0), m(0), method(0), n_s(0), n_i(0), n_o(0),
-               n_allele(0), ppa(nullptr), data(nullptr),
-			   d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
-			   dirty(false)
-    {}
+	yon_gt();
+	yon_gt(const yon_gt& other);
+	yon_gt& operator=(const yon_gt& other);
+	yon_gt(yon_gt&& other) noexcept;
+	yon_gt& operator=(yon_gt&& other) noexcept;
+	~yon_gt();
 
-    yon_gt(const yon_gt& other) :
-    	eval_cont(other.eval_cont), add(other.add), global_phase(other.global_phase), shift(other.shift),
-		p(other.p), m(other.m), method(other.method), n_s(other.n_s), n_i(other.n_i), n_o(other.n_o),
-		n_allele(other.n_allele), ppa(other.ppa), data(other.data),
-		d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
-		dirty(other.dirty)
-    {
-    	if(other.d_exp != nullptr){
-    		d_exp = new yon_gt_rcd[n_s];
-    		for(int i = 0; i < n_s; ++i) d_exp[i] = std::move(other.d_exp[i].Clone(m));
-    	}
+	// Iterator
+	inline iterator begin(){ return iterator(&this->rcds[0]); }
+	inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
+	inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
+	inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
+	inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
+	inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
 
-    	if(other.rcds != nullptr){
-    		rcds = new yon_gt_rcd[n_i];
-    		for(int i = 0; i < n_i; ++i) rcds[i] = std::move(other.rcds[i].Clone(m));
-    	}
+	/**<
+	* Lazy-evaluate internal objects (yon_gt_rcd) from the provided data
+	* and method. Converts primitive encoded data into a record structure
+	* tuple with (run length, alleles) with the alleles encoded as the first
+	* bit for phasing and the remainder seven bits for allele encodings.
+	*
+	* Decodings are invoked from the EvaluateRecordsM*() functions. These
+	* corresponds to the following genotype encodings:
+	*     M1) Diploid bi-allelic
+	*     M2) Diploid other
+	*     M4) Nploid
+	*
+	* @return Returns TRUE upon success or FALSE otherwise
+	*/
+	bool Evaluate(void);
+	bool EvaluateRecordsM1();
+	bool EvaluateRecordsM2();
+	bool EvaluateRecordsM4();
+	template <class T> bool EvaluateRecordsM1_();
+	template <class T> bool EvaluateRecordsM2_();
+	template <class T> bool EvaluateRecordsM4_();
 
-    	if(n_o){
-    		assert(n_i_occ != nullptr);
-    		n_i_occ = new uint32_t[n_o];
-    		for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
-    		assert(d_occ != nullptr);
-    		d_occ = new yon_gt_rcd*[n_o];
-    		for(int i = 0; i < n_o; ++i){
-    			d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
-    			for(int j = 0; j < n_i_occ[i]; ++j)
-    				d_occ[i][j] = std::move(other.d_occ[i][j].Clone(m));
-    		}
-    	}
-    }
-
-    yon_gt& operator=(const yon_gt& other){
-    	// Destroy local data.
-		delete [] rcds;
-		delete [] d_exp;
-		if(d_occ != nullptr){
-			for(uint32_t i = 0; i < this->n_o; ++i)
-				delete [] d_occ[i];
-		}
-		delete [] n_i_occ;
-		delete [] d_occ;
-
-		eval_cont = other.eval_cont; add = other.add; global_phase = other.global_phase;
-		shift = other.shift; p = other.p; m = other.m; method = other.method;
-		n_s = other.n_s; n_i = other.n_i; n_o = other.n_o;
-		n_allele = other.n_allele; ppa = other.ppa; data = other.data;
-		d_exp = nullptr; rcds = nullptr; n_i_occ = nullptr; d_occ = nullptr;
-		dirty = other.dirty;
-
-		if(other.d_exp != nullptr){
-			d_exp = new yon_gt_rcd[n_s];
-			for(int i = 0; i < n_s; ++i) d_exp[i] = std::move(other.d_exp[i].Clone(m));
-		}
-
-		if(other.rcds != nullptr){
-			rcds = new yon_gt_rcd[n_i];
-			for(int i = 0; i < n_i; ++i) rcds[i] = std::move(other.rcds[i].Clone(m));
-		}
-
-		if(n_o){
-			assert(n_i_occ != nullptr);
-			n_i_occ = new uint32_t[n_o];
-			for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
-			assert(d_occ != nullptr);
-			d_occ = new yon_gt_rcd*[n_o];
-			for(int i = 0; i < n_o; ++i){
-				d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
-				for(int j = 0; j < n_i_occ[i]; ++j)
-					d_occ[i][j] = std::move(other.d_occ[i][j].Clone(m));
-			}
-		}
-
-		return(*this);
-    }
-
-    yon_gt(yon_gt&& other) noexcept :
-        	eval_cont(other.eval_cont), add(other.add), global_phase(other.global_phase), shift(other.shift),
-    		p(other.p), m(other.m), method(other.method), n_s(other.n_s), n_i(other.n_i), n_o(other.n_o),
-    		n_allele(other.n_allele), ppa(other.ppa), data(other.data),
-    		d_exp(nullptr), rcds(nullptr), n_i_occ(nullptr), d_occ(nullptr),
-    		dirty(other.dirty)
-	{
-    	std::swap(d_exp, other.d_exp);
-    	std::swap(rcds, other.rcds);
-    	std::swap(n_i_occ, other.n_i_occ);
-    	std::swap(d_occ, other.d_occ);
-	}
-
-    yon_gt& operator=(yon_gt&& other) noexcept{
-    	if(this == &other){
-			// precautions against self-moves
-			return *this;
-		}
-
-    	// Destroy local data.
-    	delete [] rcds;
-		delete [] d_exp;
-		if(d_occ != nullptr){
-			for(uint32_t i = 0; i < this->n_o; ++i)
-				delete [] d_occ[i];
-		}
-		delete [] n_i_occ;
-		delete [] d_occ;
-
-    	eval_cont = other.eval_cont; add = other.add; global_phase = other.global_phase;
-    	shift = other.shift; p = other.p; m = other.m; method = other.method;
-    	n_s = other.n_s; n_i = other.n_i; n_o = other.n_o;
-		n_allele = other.n_allele; ppa = other.ppa; data = other.data;
-		d_exp = nullptr; rcds = nullptr; n_i_occ = nullptr; d_occ = nullptr;
-		dirty = other.dirty;
-
-		std::swap(d_exp, other.d_exp);
-		std::swap(rcds, other.rcds);
-		std::swap(n_i_occ, other.n_i_occ);
-		std::swap(d_occ, other.d_occ);
-
-		return(*this);
-	}
-
-    ~yon_gt();
-
-    // Accessors
-    template <class T>
-    inline T& GetPrimitive(const uint32_t sample){ return(*reinterpret_cast<T*>(&this->data[sample])); }
-
-    template <class T>
-	inline T& GetPrimitivePpa(const uint32_t sample){ return(this->ppa[*reinterpret_cast<T*>(&this->data[sample])]); }
-
-    // Iterator
-   inline iterator begin(){ return iterator(&this->rcds[0]); }
-   inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
-   inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
-   inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
-   inline const_iterator cbegin() const{ return const_iterator(&this->rcds[0]); }
-   inline const_iterator cend()   const{ return const_iterator(&this->rcds[this->n_i]); }
-
-   /**<
-    * Lazy-evaluate internal objects (yon_gt_rcd) from the provided data
-    * and method. Converts primitive encoded data into a record structure
-    * tuple with (run length, alleles) with the alleles encoded as the first
-    * bit for phasing and the remainder seven bits for allele encodings. The
-    * allele encoding is ALLELE + 2 for standard alleles and 0 for missing and
-    * 1 for the sentinel end-of-vector symbol.
-    * @return Returns TRUE upon success or FALSE otherwise
-    */
-   bool Evaluate(void){
-	   // Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-		if(this->method == 1) return(this->EvaluateRecordsM1());
-		else if(this->method == 2) return(this->EvaluateRecordsM2());
-		else if(this->method == 4) return(this->EvaluateRecordsM4());
-		else {
-			std::cerr << "not implemented method " << (int)this->method << std::endl;
-		}
-		return false;
-	}
-
-    bool EvaluateRecordsM1(){
- 	    // Prevent double evaluation.
- 		if(this->eval_cont & YON_GT_UN_RCDS)
- 			return true;
-
-    	switch(this->p){
-    	case(1): return(this->EvaluateRecordsM1_<uint8_t>());
-    	case(2): return(this->EvaluateRecordsM1_<uint16_t>());
-    	case(4): return(this->EvaluateRecordsM1_<uint32_t>());
-    	case(8): return(this->EvaluateRecordsM1_<uint64_t>());
-    	default:
-    		std::cerr << "illegal primitive in EvaluateRecordsM1" << std::endl;
-    		exit(1);
-    	}
-    }
-
-    template <class T>
-    bool EvaluateRecordsM1_(){
-    	// Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-    	if(this->rcds != nullptr) delete [] this->rcds;
-    	assert(this->m == 2);
-    	assert(this->n_allele == 2);
-
-    	// Allocate memory for new records.
-    	this->rcds = new yon_gt_rcd[this->n_i];
-
-    	// Reinterpret byte stream into the appropriate actual
-    	// primitive type.
-    	const T* r_data = reinterpret_cast<const T*>(this->data);
-
-    	// Keep track of the cumulative number of genotypes observed
-    	// as a means of asserting correctness.
-    	uint64_t n_total = 0;
-
-    	// Iterate over the internal run-length encoded genotypes
-    	// and populate the rcds structure.
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			uint8_t phasing = 0;
-			if(add) phasing = r_data[i] & 1;
-			else    phasing = this->global_phase;
-
-			this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
-			this->rcds[i].allele = new uint8_t[2];
-			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
-			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
-			// Store an allele encoded as (ALLELE << 1 | phasing).
-			this->rcds[i].allele[0] = (YON_GT_RLE_RECODE[this->rcds[i].allele[0]] << 1) | phasing;
-			this->rcds[i].allele[1] = (YON_GT_RLE_RECODE[this->rcds[i].allele[1]] << 1) | phasing;
-			n_total += this->rcds[i].run_length;
-		}
-		assert(n_total == this->n_s);
-		this->eval_cont |= YON_GT_UN_RCDS;
-    }
-
-    bool EvaluateRecordsM2(){
-    	// Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-		switch(this->p){
-		case(1): return(this->EvaluateRecordsM2_<uint8_t>());
-		case(2): return(this->EvaluateRecordsM2_<uint16_t>());
-		case(4): return(this->EvaluateRecordsM2_<uint32_t>());
-		case(8): return(this->EvaluateRecordsM2_<uint64_t>());
-		default:
-			std::cerr << "illegal primitive in EvaluateRecordsM2" << std::endl;
-			exit(1);
-		}
-	}
-
-	template <class T>
-	bool EvaluateRecordsM2_(){
-		// Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-		if(this->rcds != nullptr) delete [] this->rcds;
-		assert(this->m == 2);
-
-		// Allocate memory for new records.
-		this->rcds = new yon_gt_rcd[this->n_i];
-
-		// Reinterpret byte stream into the appropriate actual
-		// primitive type.
-		const T* r_data = reinterpret_cast<const T*>(this->data);
-
-		// Keep track of the cumulative number of genotypes observed
-		// as a means of asserting correctness.
-		uint64_t n_total = 0;
-
-		// Iterate over the internal run-length encoded genotypes
-		// and populate the rcds structure.
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			uint8_t phasing = 0;
-			if(add) phasing = r_data[i] & 1;
-			else    phasing = this->global_phase;
-
-			this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
-			this->rcds[i].allele = new uint8_t[2];
-			this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
-			this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
-			// Store an allele encoded as (ALLELE << 1 | phasing).
-			this->rcds[i].allele[0] = (this->rcds[i].allele[0] << 1) | phasing;
-			this->rcds[i].allele[1] = (this->rcds[i].allele[1] << 1) | phasing;
-			n_total += this->rcds[i].run_length;
-		}
-		assert(n_total == this->n_s);
-		this->eval_cont |= YON_GT_UN_RCDS;
-	}
-
-	 bool EvaluateRecordsM4(){
-		 // Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-		switch(this->p){
-		case(1): return(this->EvaluateRecordsM4_<uint8_t>());
-		case(2): return(this->EvaluateRecordsM4_<uint16_t>());
-		case(4): return(this->EvaluateRecordsM4_<uint32_t>());
-		case(8): return(this->EvaluateRecordsM4_<uint64_t>());
-		default:
-			std::cerr << "illegal primitive in EvaluateRecordsM1" << std::endl;
-			exit(1);
-		}
-	}
-
-	template <class T>
-	bool EvaluateRecordsM4_(){
-		// Prevent double evaluation.
-		if(this->eval_cont & YON_GT_UN_RCDS)
-			return true;
-
-		if(this->rcds != nullptr) delete [] this->rcds;
-		assert(this->m != 2);
-
-		// Allocate memory for new records.
-		this->rcds = new yon_gt_rcd[this->n_i];
-
-		// Keep track of the cumulative number of genotypes observed
-		// as a means of asserting correctness.
-		uint64_t n_total  = 0;
-		uint64_t b_offset = 0;
-
-		// Iterate over the internal run-length encoded genotypes
-		// and populate the rcds structure.
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			const T* run_length = reinterpret_cast<const T*>(&this->data[b_offset]);
-			b_offset += sizeof(T);
-
-			this->rcds[i].run_length = *run_length;
-			this->rcds[i].allele = new uint8_t[this->m];
-			for(uint32_t j = 0; j < this->m; ++j, ++b_offset)
-				this->rcds[i].allele[j] = this->data[b_offset];
-
-			n_total += this->rcds[i].run_length;
-		}
-		assert(n_total == this->n_s);
-		this->eval_cont |= YON_GT_UN_RCDS;
-	}
+	bool Expand(void);
+	bool ExpandExternal(yon_gt_rcd* d_expe);
 
 	/**<
 	 * Lazy evaluated (expands) (possibly) run-length encoded rcds structures
@@ -478,36 +239,7 @@ public:
 	 * otherwise.
 	 * @return Always returns TRUE if the critical assertions passes.
 	 */
-	bool ExpandRecordsPpa(void){
-		if(this->eval_cont & YON_GT_UN_EXPAND)
-			return true;
-
-		if((this->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = this->Evaluate();
-			if(eval == false) return false;
-		}
-
-		assert(this->rcds != nullptr);
-		assert(this->ppa != nullptr);
-
-		if(this->d_exp != nullptr) delete [] this->d_exp;
-		this->d_exp = new yon_gt_rcd[this->n_s];
-
-		uint64_t cum_sample = 0;
-		uint64_t cum_offset = 0;
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
-				const uint32_t& target_ppa = this->ppa->at(cum_sample);
-				this->d_exp[target_ppa] = std::move(this->rcds[i].Clone(this->m));
-				this->d_exp[target_ppa].run_length = 1;
-				cum_offset += this->p * this->m;
-			}
-		}
-		assert(cum_sample == this->n_s);
-		assert(cum_offset == this->n_s * this->m * this->p);
-		this->eval_cont |= YON_GT_UN_EXPAND;
-		return true;
-	}
+	bool ExpandRecordsPpa(void);
 
 	/**<
 	 * Expand records into externally allocated yon_gt_rcd
@@ -517,41 +249,8 @@ public:
 	 * @param d_expe Dst array of yon_gt_rcd*.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool ExpandRecordsPpaExternal(yon_gt_rcd* d_expe){
-		if((this->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = this->Evaluate();
-			if(eval == false) return false;
-		}
+	bool ExpandRecordsPpaExternal(yon_gt_rcd* d_expe);
 
-		assert(this->rcds != nullptr);
-		assert(this->ppa != nullptr);
-
-		uint64_t cum_sample = 0;
-		uint64_t cum_offset = 0;
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
-				const uint32_t& target_ppa = this->ppa->at(cum_sample);
-				d_expe[target_ppa] = std::move(this->rcds[i].Clone(this->m));
-				d_expe[target_ppa].run_length = 1;
-				cum_offset += this->p * this->m;
-			}
-		}
-		assert(cum_sample == this->n_s);
-		assert(cum_offset == this->n_s * this->m * this->p);
-		return true;
-	}
-
-	bool Expand(void){
-		if(this->ppa != nullptr)
-			return(this->ExpandRecordsPpa());
-		else return(this->ExpandRecords());
-	}
-
-	bool ExpandExternal(yon_gt_rcd* d_expe){
-		if(this->ppa != nullptr)
-			return(this->ExpandRecordsPpaExternal(d_expe));
-		else return(this->ExpandRecordsExternal(d_expe));
-	}
 
 	/**<
 	 * Expand records into internally into individual pointers
@@ -560,34 +259,7 @@ public:
 	 * relative the global ordering.
 	 * @return Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool ExpandRecords(void){
-		if((this->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = this->Evaluate();
-			if(eval == false) return false;
-		}
-
-		if(this->eval_cont & YON_GT_UN_EXPAND)
-			return true;
-
-		assert(this->rcds != nullptr);
-
-		if(this->d_exp != nullptr) delete [] this->d_exp;
-		this->d_exp = new yon_gt_rcd[this->n_s];
-
-		uint64_t cum_sample = 0;
-		uint64_t cum_offset = 0;
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
-				this->d_exp[cum_sample] = std::move(this->rcds[i].Clone(this->m));
-				this->d_exp[cum_sample].run_length = 1;
-				cum_offset += this->p * this->m;
-			}
-		}
-		assert(cum_sample == this->n_s);
-		assert(cum_offset == this->n_s * this->m * this->p);
-		this->eval_cont |= YON_GT_UN_EXPAND;
-		return true;
-	}
+	bool ExpandRecords(void);
 
 	/**<
 	 * Expand records into externally allocated yon_gt_rcd
@@ -597,144 +269,159 @@ public:
 	 * @param d_expe Dst array of yon_gt_rcd*.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool ExpandRecordsExternal(yon_gt_rcd* d_expe){
-		if((this->eval_cont & YON_GT_UN_RCDS) == false){
-			bool eval = this->Evaluate();
-			if(eval == false) return false;
-		}
+	bool ExpandRecordsExternal(yon_gt_rcd* d_expe);
 
-		assert(this->rcds != nullptr);
-
-		uint64_t cum_sample = 0;
-		uint64_t cum_offset = 0;
-		for(uint32_t i = 0; i < this->n_i; ++i){
-			for(uint32_t j = 0; j < this->rcds[i].run_length; ++j, ++cum_sample){
-				d_expe[cum_sample] = std::move(this->rcds[i].Clone(this->m));
-				d_expe[cum_sample].run_length = 1;
-				cum_offset += this->p * this->m;
-			}
-		}
-		assert(cum_sample == this->n_s);
-		assert(cum_offset == this->n_s * this->m * this->p);
-		return true;
-	}
-
-   /**<
-    * Transform lazy-evaluated Tachyon genotype encodings (d_exp)
-    * to htslib bcf1_t genotype encodings.
-    * @param rec Input bcf1_t record.
-    * @param hdr Input htslib bcf header.
-    * @return    Returns the pointer to the input bcf1_t record.
-    */
-   bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr) {
-	   // Prevent double evaluation.
-	   if((this->eval_cont & YON_GT_UN_EXPAND)){
-		   bool check = this->Expand();
-		   if(check == false){
-			   std::cerr << utility::timestamp("ERROR","GT") << "Failed to lazy-expand genotype records..." << std::endl;
-			   return rec;
-		   }
-	   }
-
-	   assert(this->d_exp != nullptr);
-
-	   int32_t* tmpi = new int32_t[this->n_s*this->m];
-	   uint32_t gt_offset = 0;
-	   for(uint32_t i = 0; i < this->n_s; ++i){
-		   for(uint32_t j = 0; j < this->m; ++j, ++gt_offset){
-			   if(this->d_exp[i].allele[j] == 0)      tmpi[gt_offset] = 0;
-			   else if(this->d_exp[i].allele[j] == 1) tmpi[gt_offset] = 1;
-			   else tmpi[gt_offset] = YON_GT_BCF1(this->d_exp[i].allele[j]);
-		   }
-	   }
-	   assert(gt_offset == this->n_s*this->m);
-
-	   bcf_update_genotypes(hdr, rec, tmpi, this->n_s*this->m);
-
-	   delete [] tmpi;
-	   return(rec);
-   }
+	/**<
+	* Transform lazy-evaluated Tachyon genotype encodings (d_exp)
+	* to htslib bcf1_t genotype encodings.
+	* @param rec Input bcf1_t record.
+	* @param hdr Input htslib bcf header.
+	* @return    Returns the pointer to the input bcf1_t record.
+	*/
+	bcf1_t* UpdateHtslibGenotypes(bcf1_t* rec, bcf_hdr_t* hdr);
 
 public:
 	uint16_t eval_cont;
-    uint8_t  add : 7,
+	uint8_t  add : 7,
              global_phase : 1;
-    uint8_t  shift;
-    uint8_t  p, m, method; // bytes per entry, base ploidy, base method
-    uint32_t n_s, n_i, n_o;     // number samples, number of entries
-    uint8_t  n_allele;
-    yon_gt_ppa* ppa; // pointer to ppa
-    const uint8_t* data; // pointer to data
-    yon_gt_rcd* d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
-    yon_gt_rcd* rcds; // lazy interpreted internal records
-    uint32_t* n_i_occ;
-    yon_gt_rcd** d_occ; // lazy evaluation of occ table
-    bool dirty;
+	uint8_t  shift;
+	uint8_t  p, m, method; // bytes per entry, base ploidy, base method
+	uint32_t n_s, n_i, n_o;     // number samples, number of entries
+	uint8_t  n_allele;
+	yon_gt_ppa* ppa; // pointer to ppa
+	const uint8_t* data; // pointer to data
+	yon_gt_rcd* d_exp; // lazy evaluated from ppa/normal to internal offset (length = n_samples). This can be very expensive if evaluated internally for every record.
+	yon_gt_rcd* rcds; // lazy interpreted internal records
+	uint32_t* n_i_occ;
+	yon_gt_rcd** d_occ; // lazy evaluation of occ table
+	bool dirty;
 };
+
+template <class T>
+bool yon_gt::EvaluateRecordsM1_(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	if(this->rcds != nullptr) delete [] this->rcds;
+	assert(this->m == 2);
+	assert(this->n_allele == 2);
+
+	// Allocate memory for new records.
+	this->rcds = new yon_gt_rcd[this->n_i];
+
+	// Reinterpret byte stream into the appropriate actual
+	// primitive type.
+	const T* r_data = reinterpret_cast<const T*>(this->data);
+
+	// Keep track of the cumulative number of genotypes observed
+	// as a means of asserting correctness.
+	uint64_t n_total = 0;
+
+	// Iterate over the internal run-length encoded genotypes
+	// and populate the rcds structure.
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		uint8_t phasing = 0;
+		if(add) phasing = r_data[i] & 1;
+		else    phasing = this->global_phase;
+
+		this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
+		this->rcds[i].allele = new uint8_t[2];
+		this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
+		this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
+		// Store an allele encoded as (ALLELE << 1 | phasing).
+		this->rcds[i].allele[0] = (YON_GT_RLE_RECODE[this->rcds[i].allele[0]] << 1) | phasing;
+		this->rcds[i].allele[1] = (YON_GT_RLE_RECODE[this->rcds[i].allele[1]] << 1) | phasing;
+		n_total += this->rcds[i].run_length;
+	}
+	assert(n_total == this->n_s);
+	this->eval_cont |= YON_GT_UN_RCDS;
+}
+
+template <class T>
+bool yon_gt::EvaluateRecordsM2_(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	if(this->rcds != nullptr) delete [] this->rcds;
+	assert(this->m == 2);
+
+	// Allocate memory for new records.
+	this->rcds = new yon_gt_rcd[this->n_i];
+
+	// Reinterpret byte stream into the appropriate actual
+	// primitive type.
+	const T* r_data = reinterpret_cast<const T*>(this->data);
+
+	// Keep track of the cumulative number of genotypes observed
+	// as a means of asserting correctness.
+	uint64_t n_total = 0;
+
+	// Iterate over the internal run-length encoded genotypes
+	// and populate the rcds structure.
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		uint8_t phasing = 0;
+		if(add) phasing = r_data[i] & 1;
+		else    phasing = this->global_phase;
+
+		this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
+		this->rcds[i].allele = new uint8_t[2];
+		this->rcds[i].allele[0] = YON_GT_RLE_ALLELE_B(r_data[i], shift, add);
+		this->rcds[i].allele[1] = YON_GT_RLE_ALLELE_A(r_data[i], shift, add);
+		// Store an allele encoded as (ALLELE << 1 | phasing).
+		this->rcds[i].allele[0] = (this->rcds[i].allele[0] << 1) | phasing;
+		this->rcds[i].allele[1] = (this->rcds[i].allele[1] << 1) | phasing;
+		n_total += this->rcds[i].run_length;
+	}
+	assert(n_total == this->n_s);
+	this->eval_cont |= YON_GT_UN_RCDS;
+}
+
+
+
+template <class T>
+bool yon_gt::EvaluateRecordsM4_(){
+	// Prevent double evaluation.
+	if(this->eval_cont & YON_GT_UN_RCDS)
+		return true;
+
+	if(this->rcds != nullptr) delete [] this->rcds;
+	assert(this->m != 2);
+
+	// Allocate memory for new records.
+	this->rcds = new yon_gt_rcd[this->n_i];
+
+	// Keep track of the cumulative number of genotypes observed
+	// as a means of asserting correctness.
+	uint64_t n_total  = 0;
+	uint64_t b_offset = 0;
+
+	// Iterate over the internal run-length encoded genotypes
+	// and populate the rcds structure.
+	for(uint32_t i = 0; i < this->n_i; ++i){
+		const T* run_length = reinterpret_cast<const T*>(&this->data[b_offset]);
+		b_offset += sizeof(T);
+
+		this->rcds[i].run_length = *run_length;
+		this->rcds[i].allele = new uint8_t[this->m];
+		for(uint32_t j = 0; j < this->m; ++j, ++b_offset)
+			this->rcds[i].allele[j] = this->data[b_offset];
+
+		n_total += this->rcds[i].run_length;
+	}
+	assert(n_total == this->n_s);
+	this->eval_cont |= YON_GT_UN_RCDS;
+}
 
 struct yon_gt_summary_rcd {
 public:
-	yon_gt_summary_rcd() :
-		n_ploidy(0), n_ac_af(0), n_fs(0), ac(nullptr), af(nullptr),
-		nm(0), npm(0), an(0), fs_a(nullptr), hwe_p(0),
-		f_pic(0), heterozygosity(0)
-	{}
-
-	yon_gt_summary_rcd(const yon_gt_summary_rcd& other) :
-		n_ploidy(other.n_ploidy), n_ac_af(other.n_ac_af), n_fs(other.n_fs), ac(nullptr), af(nullptr),
-		nm(other.nm), npm(other.npm), an(other.an), fs_a(nullptr), hwe_p(other.hwe_p),
-		f_pic(other.f_pic), heterozygosity(other.heterozygosity)
-	{
-		if(other.ac != nullptr){ ac = new uint32_t[n_ac_af]; memcpy(ac, other.ac, n_ac_af*sizeof(uint32_t)); }
-		if(other.af != nullptr){ af = new float[n_ac_af]; memcpy(af, other.af, n_ac_af*sizeof(float)); }
-		if(other.fs_a != nullptr){ fs_a = new float[n_fs]; memcpy(fs_a, other.fs_a, n_fs*sizeof(float)); }
-	}
-
-	yon_gt_summary_rcd& operator=(const yon_gt_summary_rcd& other){
-		delete [] ac; ac = nullptr;
-		delete [] af; af = nullptr;
-		delete [] fs_a; fs_a = nullptr;
-		n_ploidy = other.n_ploidy; n_ac_af = other.n_ac_af; n_fs = other.n_fs;
-		nm = other.nm; npm = other.npm; an = other.an; hwe_p = other.hwe_p;
-		f_pic = other.f_pic; heterozygosity = other.heterozygosity;
-		if(other.ac != nullptr){ ac = new uint32_t[n_ac_af]; memcpy(ac, other.ac, n_ac_af*sizeof(uint32_t)); }
-		if(other.af != nullptr){ af = new float[n_ac_af]; memcpy(af, other.af, n_ac_af*sizeof(float)); }
-		if(other.fs_a != nullptr){ fs_a = new float[n_fs]; memcpy(fs_a, other.fs_a, n_fs*sizeof(float)); }
-
-		return(*this);
-	}
-
-	yon_gt_summary_rcd(yon_gt_summary_rcd&& other) noexcept :
-		n_ploidy(other.n_ploidy), n_ac_af(other.n_ac_af), n_fs(other.n_fs), ac(nullptr), af(nullptr),
-		nm(other.nm), npm(other.npm), an(other.an), fs_a(nullptr), hwe_p(other.hwe_p),
-		f_pic(other.f_pic), heterozygosity(other.heterozygosity)
-	{
-		std::swap(ac, other.ac);
-		std::swap(af, other.af);
-		std::swap(fs_a, other.fs_a);
-	}
-
-	yon_gt_summary_rcd& operator=(yon_gt_summary_rcd&& other) noexcept {
-		if(this == &other){
-			// precautions against self-moves
-			return *this;
-		}
-
-		n_ploidy = other.n_ploidy; n_ac_af = other.n_ac_af; n_fs = other.n_fs;
-		nm = other.nm; npm = other.npm; an = other.an; hwe_p = other.hwe_p;
-		f_pic = other.f_pic; heterozygosity = other.heterozygosity;
-		std::swap(ac, other.ac);
-		std::swap(af, other.af);
-		std::swap(fs_a, other.fs_a);
-
-		return(*this);
-	}
-
-	~yon_gt_summary_rcd(){
-		delete [] ac; delete [] af;
-		delete [] fs_a;
-		// Do not delete ac_p as it is borrowed
-	}
+	yon_gt_summary_rcd();
+	yon_gt_summary_rcd(const yon_gt_summary_rcd& other);
+	yon_gt_summary_rcd& operator=(const yon_gt_summary_rcd& other);
+	yon_gt_summary_rcd(yon_gt_summary_rcd&& other) noexcept;
+	yon_gt_summary_rcd& operator=(yon_gt_summary_rcd&& other) noexcept;
+	~yon_gt_summary_rcd();
 
 public:
 	uint8_t n_ploidy;
@@ -761,25 +448,15 @@ public:
  */
 struct yon_gt_summary_obj {
 public:
-	yon_gt_summary_obj() : n_cnt(0), children(nullptr){}
+	yon_gt_summary_obj();
 	yon_gt_summary_obj(const yon_gt_summary_obj& other) = delete;
 	yon_gt_summary_obj& operator=(const yon_gt_summary_obj& other) = delete;
-	yon_gt_summary_obj(yon_gt_summary_obj&& other) noexcept : n_cnt(other.n_cnt), children(nullptr){ std::swap(children, other.children); }
-	yon_gt_summary_obj& operator=(yon_gt_summary_obj&& other) noexcept{
-		if(this == &other) return *this;
-		delete [] children; children = nullptr;
-		n_cnt = other.n_cnt;
-		std::swap(children, other.children);
-		return(*this);
-	}
-	~yon_gt_summary_obj(){ delete [] this->children; }
+	yon_gt_summary_obj(yon_gt_summary_obj&& other) noexcept;
+	yon_gt_summary_obj& operator=(yon_gt_summary_obj&& other) noexcept;
+	~yon_gt_summary_obj();
 
 	// Clone helper ctor.
-	yon_gt_summary_obj(const uint8_t n_alleles, const uint64_t cnt, yon_gt_summary_obj* c) :
-		n_cnt(cnt), children(new yon_gt_summary_obj[n_alleles])
-	{
-		for(int i = 0; i < n_alleles; ++i) children[i] = std::move(c[i].Clone(n_alleles));
-	}
+	yon_gt_summary_obj(const uint8_t n_alleles, const uint64_t cnt, yon_gt_summary_obj* c);
 
 	yon_gt_summary_obj Clone(const uint8_t n_alleles){ return(yon_gt_summary_obj(n_alleles, n_cnt, children)); }
 
@@ -793,155 +470,15 @@ public:
 
 struct yon_gt_summary {
 public:
-	yon_gt_summary(void) :
-		n_ploidy(0),
-		n_alleles(0),
-		alleles(nullptr),
-		alleles_strand(nullptr),
-		gt(nullptr),
-		d(nullptr)
-	{
+	yon_gt_summary(void);
+	yon_gt_summary(const uint8_t base_ploidy, const uint8_t n_alleles);
+	yon_gt_summary(yon_gt_summary&& other) noexcept;
+	yon_gt_summary& operator=(yon_gt_summary&& other) noexcept;
+	yon_gt_summary(const yon_gt_summary& other);
+	yon_gt_summary& operator=(const yon_gt_summary& other);
+	~yon_gt_summary();
 
-	}
-
-	yon_gt_summary(const uint8_t base_ploidy, const uint8_t n_alleles) :
-		n_ploidy(base_ploidy),
-		n_alleles(n_alleles + 2),
-		alleles(new uint32_t[this->n_alleles]),
-		alleles_strand(new uint32_t*[this->n_ploidy]),
-		gt(new yon_gt_summary_obj[this->n_alleles]),
-		d(nullptr)
-	{
-		memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
-		for(uint32_t i = 0; i < this->n_ploidy; ++i){
-			this->alleles_strand[i] = new uint32_t[this->n_alleles];
-			memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
-		}
-
-		// Add layers to the root node.
-		for(uint32_t i = 0; i < this->n_alleles; ++i)
-			this->AddGenotypeLayer(&this->gt[i], 1);
-	}
-
-	yon_gt_summary(yon_gt_summary&& other) noexcept :
-		n_ploidy(other.n_ploidy), n_alleles(other.n_alleles),
-		alleles(nullptr), alleles_strand(nullptr), gt(nullptr), d(nullptr)
-	{
-		std::swap(alleles, other.alleles);
-		std::swap(alleles_strand, other.alleles_strand);
-		std::swap(gt, other.gt);
-		std::swap(d, other.d);
-	}
-
-	yon_gt_summary& operator=(yon_gt_summary&& other) noexcept {
-		if(this == &other){
-			// precautions against self-moves
-			return *this;
-		}
-
-		// Clear local data without cosideration.
-		delete [] this->alleles;
-		delete [] this->gt;
-		if(this->alleles_strand != nullptr){
-			for(uint32_t i = 0; i < this->n_ploidy; ++i)
-				delete this->alleles_strand[i];
-			delete [] this->alleles_strand;
-		}
-		delete this->d;
-
-		// Move.
-		n_ploidy = other.n_ploidy; n_alleles = other.n_alleles;
-		alleles = nullptr; alleles_strand = nullptr; gt = nullptr; d = nullptr;
-		std::swap(alleles, other.alleles);
-		std::swap(alleles_strand, other.alleles_strand);
-		std::swap(gt, other.gt);
-		std::swap(d, other.d);
-
-		return(*this);
-	}
-
-	yon_gt_summary(const yon_gt_summary& other) :
-		n_ploidy(other.n_ploidy), n_alleles(other.n_alleles),
-		alleles(new uint32_t[n_alleles]),
-		alleles_strand(new uint32_t*[n_ploidy]),
-		gt(new yon_gt_summary_obj[n_alleles]),
-		d(nullptr)
-	{
-		for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-		for(uint32_t i = 0; i < this->n_ploidy; ++i){
-			alleles_strand[i] = new uint32_t[n_alleles];
-			for(int j = 0; j < n_alleles; ++j) alleles_strand[i][j] = other.alleles_strand[i][j];
-		}
-		if(other.d != nullptr) this->d = new yon_gt_summary_rcd(*other.d);
-		for(int i = 0; i < n_alleles; ++i) gt[i] = std::move(other.gt[i].Clone(n_alleles));
-	}
-
-	yon_gt_summary& operator=(const yon_gt_summary& other){
-		// Delete previous data without consideration.
-		delete [] this->alleles;
-		delete [] this->gt;
-		if(this->alleles_strand != nullptr){
-			for(uint32_t i = 0; i < this->n_ploidy; ++i)
-				delete this->alleles_strand[i];
-			delete [] this->alleles_strand;
-		}
-		delete this->d; this->d = nullptr;
-
-		n_ploidy = other.n_ploidy; n_alleles = other.n_alleles;
-		alleles = new uint32_t[n_alleles];
-		alleles_strand = new uint32_t*[n_ploidy];
-		gt = new yon_gt_summary_obj[n_alleles];
-
-		for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-		for(uint32_t i = 0; i < this->n_ploidy; ++i){
-			alleles_strand[i] = new uint32_t[n_alleles];
-			for(int j = 0; j < n_alleles; ++j) alleles_strand[i][j] = other.alleles_strand[i][j];
-		}
-		if(other.d != nullptr) this->d = new yon_gt_summary_rcd(*other.d);
-		for(int i = 0; i < n_alleles; ++i) gt[i] = std::move(other.gt[i].Clone(n_alleles));
-
-		return(*this);
-	}
-
-	void Setup(const uint8_t base_ploidy, const uint8_t n_als){
-		n_ploidy  = base_ploidy;
-		n_alleles = n_als + 2;
-		// Destroy previous data without consideration.
-		delete [] this->alleles;
-		delete [] this->gt;
-		if(this->alleles_strand != nullptr){
-			for(uint32_t i = 0; i < this->n_ploidy; ++i)
-				delete this->alleles_strand[i];
-			delete [] this->alleles_strand;
-		}
-		delete this->d;
-
-		alleles = new uint32_t[n_alleles];
-		alleles_strand = new uint32_t*[this->n_ploidy];
-		gt = new yon_gt_summary_obj[this->n_alleles];
-		d = nullptr;
-
-		memset(this->alleles, 0, sizeof(uint32_t)*this->n_alleles);
-		for(uint32_t i = 0; i < this->n_ploidy; ++i){
-			this->alleles_strand[i] = new uint32_t[this->n_alleles];
-			memset(this->alleles_strand[i], 0, sizeof(uint32_t)*this->n_alleles);
-		}
-
-		// Add layers to the root node.
-		for(uint32_t i = 0; i < this->n_alleles; ++i)
-			this->AddGenotypeLayer(&this->gt[i], 1);
-	}
-
-	~yon_gt_summary(){
-		delete [] this->alleles;
-		delete [] this->gt;
-		if(this->alleles_strand != nullptr){
-			for(uint32_t i = 0; i < this->n_ploidy; ++i)
-				delete this->alleles_strand[i];
-			delete [] this->alleles_strand;
-		}
-		delete this->d;
-	}
+	void Setup(const uint8_t base_ploidy, const uint8_t n_als);
 
 	/**<
 	 * Iteratively add layers to the complete trie in order to represent
@@ -986,10 +523,15 @@ public:
 	uint8_t    n_alleles; // number of alleles
 	uint32_t*  alleles; // allele counts
 	uint32_t** alleles_strand; // allelic counts per chromosome
-	yon_gt_summary_obj* gt; // full genotypic trie with branch-size n_alleles
+	yon_gt_summary_obj* gt; // complete genotypic trie with branch-size n_alleles
 	yon_gt_summary_rcd* d; // lazy evaluated record
 };
 
+/**<
+ * Structure for using the partial-sum algortihms with
+ * constrained run-length encoded genotypes. Allows for
+ * O(1)-time partitions into one or more groupings.
+ */
 struct yon_occ {
 public:
 	typedef std::unordered_map<std::string, uint32_t> map_type;
@@ -1026,48 +568,25 @@ public:
  * functioning of tachyon.
  */
 struct yon_vnt_cnt {
-	yon_vnt_cnt(void) :
-		gt_available(0),
-		gt_has_missing(0),
-		gt_phase_uniform(0),
-		gt_has_mixed_phasing(0),
-		gt_compression_type(0),
-		gt_primtive_type(0),
-		gt_mixed_ploidy(0),
-		biallelic(0),
-		simple_snv(0),
-		diploid(0),
-		alleles_packed(0),
-		all_snv(0)
-	{
-
-	}
-
-	// Dtor
-	~yon_vnt_cnt(){}
+	yon_vnt_cnt(void);
+	~yon_vnt_cnt() = default;
 
 	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const yon_vnt_cnt& entry){
 		buffer += (uint16_t)*reinterpret_cast<const uint16_t* const>(&entry);
 		return(buffer);
-
 	}
 
-	void operator=(const uint16_t& value){
-		const yon_vnt_cnt* const other = reinterpret_cast<const yon_vnt_cnt* const>(&value);
-		this->gt_available      = other->gt_available;
-		this->gt_has_missing    = other->gt_has_missing;
-		this->gt_phase_uniform  = other->gt_phase_uniform;
-		this->gt_has_mixed_phasing = other->gt_has_mixed_phasing;
-		this->gt_compression_type  = other->gt_compression_type;
-		this->gt_primtive_type = other->gt_primtive_type;
-		this->gt_mixed_ploidy  = other->gt_mixed_ploidy;
-		this->biallelic        = other->biallelic;
-		this->simple_snv       = other->simple_snv;
-		this->diploid          = other->diploid;
-		this->alleles_packed   = other->alleles_packed;
-		this->all_snv          = other->all_snv;
-	}
+	/**<
+	 * Interpret a packed uint16_t into a controller struct and
+	 * overload this object with it.
+	 * @param value Src packed integer.
+	 */
+	void operator=(const uint16_t& value);
 
+	/**<
+	 * Convert this structure into a bit-packed uint16_t value.
+	 * @return Returns a bit-packed representation of this object.
+	 */
 	inline uint16_t ToValue(void) const{ return((uint16_t)*reinterpret_cast<const uint16_t* const>(this)); }
 
 
@@ -1100,8 +619,90 @@ struct yon_vnt_cnt {
 		diploid:             1, // is diploid
 		alleles_packed:      1, // are the alleles packed in a BYTE
 		all_snv:             1; // are all ref/alt simple SNVs
-
 };
+
+/****************************
+*  Supportive conversion functions
+****************************/
+template <class T>
+static yon_gt* GetGenotypeDiploidRLE(
+	const char* data,
+	const uint32_t n_entries,
+	const uint32_t n_samples,
+	const uint16_t n_als,
+	const uint8_t  n_ploidy,
+	const uint16_t controller,
+	yon_gt_ppa* ppa)
+{
+	yon_gt* x = new yon_gt;
+	const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+	x->shift  = cont->gt_has_missing     ? 2 : 1;
+	x->add    = cont->gt_has_mixed_phasing ? 1 : 0;
+	x->global_phase = cont->gt_phase_uniform;
+	x->data   = reinterpret_cast<const uint8_t*>(data);
+	x->n_i    = n_entries;
+	x->method = 1;
+	x->p     = sizeof(T);
+	x->m     = 2;
+	x->n_s   = n_samples;
+	x->n_allele = n_als;
+	x->ppa = ppa;
+	return(x);
+}
+
+template <class T>
+static yon_gt* GetGenotypeDiploidSimple(
+	const char* data,
+	const uint32_t n_entries,
+	const uint32_t n_samples,
+	const uint16_t n_als,
+	const uint8_t  n_ploidy,
+	const uint16_t controller,
+	yon_gt_ppa* ppa)
+{
+	yon_gt* x = new yon_gt;
+	const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+	x->n_allele = n_als;
+	x->shift = ceil(log2(x->n_allele + 2 + 1));
+	x->add   = cont->gt_has_mixed_phasing ? 1 : 0;
+	x->global_phase = cont->gt_phase_uniform;
+	x->data = reinterpret_cast<const uint8_t*>(data);
+	x->n_i = n_entries;
+	x->method = 2;
+	x->p = sizeof(T);
+	x->m = 2;
+	x->n_s = n_samples;
+	x->ppa = ppa;
+
+	return(x);
+}
+
+template <class T>
+static yon_gt* GetGenotypeNploid(
+	const char* data,
+	const uint32_t n_entries,
+	const uint32_t n_samples,
+	const uint16_t n_als,
+	const uint8_t  n_ploidy,
+	const uint16_t controller,
+	yon_gt_ppa* ppa)
+{
+	yon_gt* x = new yon_gt;
+	const yon_vnt_cnt* cont = reinterpret_cast<const yon_vnt_cnt*>(&controller);
+	x->shift = 0;
+	x->add   = cont->gt_has_mixed_phasing;
+	x->global_phase = cont->gt_phase_uniform;
+	x->data = reinterpret_cast<const uint8_t*>(data);
+	x->n_i = n_entries;
+	x->method = 4;
+	x->m = n_ploidy;
+	x->p = sizeof(T);
+	x->n_s = n_samples;
+	x->n_allele = n_als;
+	x->ppa = ppa;
+
+	return(x);
+}
 
 }
 

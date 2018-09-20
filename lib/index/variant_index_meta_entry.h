@@ -39,18 +39,18 @@ public:
 	}
 
 	void operator=(const entry_type& entry){
-		this->contigID          = entry.contigID;
+		this->contigID          = entry.contig_id;
 		this->n_blocks          = 1;
 		this->n_variants        = entry.n_variants;
 		this->byte_offset_begin = entry.byte_offset;
 		this->byte_offest_end   = entry.byte_offset_end;
-		this->minPosition       = entry.minPosition;
-		this->maxPosition       = entry.maxPosition;
-		this->start_block       = entry.blockID;
-		this->end_block         = entry.blockID;
+		this->minPosition       = entry.min_position;
+		this->maxPosition       = entry.max_position;
+		this->start_block       = entry.block_id;
+		this->end_block         = entry.block_id;
 	}
 
-	inline bool operator==(const entry_type& entry) const{ return(this->contigID == entry.contigID); }
+	inline bool operator==(const entry_type& entry) const{ return(this->contigID == entry.contig_id); }
 	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
 
 	bool operator==(const self_type& other) const{
@@ -70,8 +70,8 @@ public:
 		++this->n_blocks;
 		this->n_variants     += entry.n_variants;
 		this->byte_offest_end = entry.byte_offset_end;
-		this->maxPosition     = entry.maxPosition;
-		this->end_block       = entry.blockID;
+		this->maxPosition     = entry.max_position;
+		this->end_block       = entry.block_id;
 	}
 
 	std::ostream& Print(std::ostream& stream) const{

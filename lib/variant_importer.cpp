@@ -2,6 +2,8 @@
 #include <regex>
 #include <thread>
 
+#include <openssl/evp.h>
+
 #include "io/variant_import_writer.h"
 #include "variant_importer.h"
 #include "containers/checksum_container.h"

@@ -1,8 +1,6 @@
 #include "core/genotypes.h"
 #include "compression_manager.h"
 
-#include "containers/stride_container.h"
-
 namespace tachyon {
 namespace algorithm {
 

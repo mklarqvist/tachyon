@@ -1,6 +1,9 @@
 #ifndef ALGORITHM_PARALLEL_VCF_SLAVES_H_
 #define ALGORITHM_PARALLEL_VCF_SLAVES_H_
 
+#include <openssl/evp.h>
+
+#include <atomic>
 #include <cstdint>
 #include <thread>
 #include <mutex>
@@ -410,12 +413,12 @@ struct yon_writer_sync {
 	 */
 	bool UpdateIndex(const containers::VcfContainer& container, index::VariantIndexEntry& index_entry){
 		assert(this->writer != nullptr);
-		index_entry.blockID         = this->writer->n_blocks_written;
-		index_entry.byte_offset_end = this->writer->stream->tellp();
-		index_entry.contigID        = container.front()->rid;
-		index_entry.minPosition     = container.front()->pos;
-		index_entry.n_variants      = container.sizeWithoutCarryOver();
-		this->writer->index        += index_entry;
+		index_entry.block_id         = this->writer->n_blocks_written;
+		index_entry.byte_offset_end  = this->writer->stream->tellp();
+		index_entry.contig_id        = container.front()->rid;
+		index_entry.min_position     = container.front()->pos;
+		index_entry.n_variants       = container.sizeWithoutCarryOver();
+		this->writer->index         += index_entry;
 
 		index_entry.print(std::cerr);
 		std::cerr << std::endl;
@@ -429,7 +432,7 @@ struct yon_writer_sync {
 
 	bool UpdateIndex(index::VariantIndexEntry& index_entry){
 		assert(this->writer != nullptr);
-		index_entry.blockID         = this->writer->n_blocks_written;
+		index_entry.block_id        = this->writer->n_blocks_written;
 		index_entry.byte_offset_end = this->writer->stream->tellp();
 		this->writer->index        += index_entry;
 

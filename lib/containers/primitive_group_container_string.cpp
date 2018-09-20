@@ -5,6 +5,14 @@ namespace containers{
 
 PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer() : containers_(nullptr){}
 
+PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const self_type& other) :
+	PrimitiveGroupContainerInterface(other),
+	containers_(static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type))))
+{
+	for(int i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( other.at(i) );
+}
+
 PrimitiveGroupContainer<std::string>::PrimitiveGroupContainer(const data_container_type& container,
 	                                                          const uint32_t& offset,
 	                                                          const uint32_t& n_entries,

@@ -45,7 +45,7 @@ public:
 	 * @param src Reference to a PrimitiveGroupContainerInterface.
 	 * @return    Returns a reference to the moved object.
 	 */
-	virtual PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src) =0;
+	virtual PrimitiveGroupContainerInterface* Move(void) =0;
 
 	/**<
 	 * Convert a PrimitiveGroupContainer into a DataContainer. This is primarily
@@ -118,6 +118,7 @@ public:
 
 public:
     PrimitiveGroupContainer();
+    PrimitiveGroupContainer(const self_type& other);
     PrimitiveGroupContainer(const data_container_type& container,
                             const uint32_t& offset,
 	                        const uint32_t n_objects,
@@ -125,22 +126,16 @@ public:
     ~PrimitiveGroupContainer(void);
 
     inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
-    PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src){
-		self_type* o = reinterpret_cast<self_type*>(&src);
-		this->n_capacity_ = o->n_capacity_;
-		this->n_objects_  = o->n_objects_;
 
-		// delete data here
-		for(std::size_t i = 0; i < this->n_objects_; ++i)
-			((this->containers_ + i)->~value_type)();
-
-		::operator delete[](static_cast<void*>(this->containers_));
-		this->containers_ = nullptr;
-
-		std::swap(this->containers_, o->containers_);
-
-		return(*this);
-	}
+    PrimitiveGroupContainerInterface* Move(void){
+    	self_type* o = new self_type();
+    	o->n_capacity_ = this->n_capacity_;
+    	o->n_objects_  = this->n_objects_;
+    	this->n_capacity_ = 0;
+    	this->n_objects_  = 0;
+		std::swap(o->containers_, this->containers_);
+		return(o);
+    }
 
     DataContainer ToDataContainer(void){
     	if(this->size() == 0)
@@ -167,10 +162,8 @@ public:
 	}
 
 	DataContainer& UpdateDataContainer(DataContainer& container){
-		return(container);
-		/*
 		if(this->size() == 0)
-
+			return(container);
 
 		uint32_t n_entries = 0;
 		uint32_t ref_size = this->at(0).size();
@@ -185,8 +178,9 @@ public:
 		for(uint32_t i = 0; i < this->size(); ++i)
 			this->at(i).UpdateDataContainer(container, false);
 
+		container.AddStride(ref_size);
+
 		return(container);
-		*/
 	}
 
     void resize(void);
@@ -234,6 +228,15 @@ private:
 
 template <class return_type>
 PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer() : containers_(nullptr){}
+
+template <class return_type>
+PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const self_type& other) :
+	PrimitiveGroupContainerInterface(other),
+	containers_(static_cast<pointer>(::operator new[](this->n_capacity_*sizeof(value_type))))
+{
+	for(int i = 0; i < this->size(); ++i)
+		new( &this->containers_[i] ) value_type( other.at(i) );
+}
 
 template <class return_type>
 PrimitiveGroupContainer<return_type>::PrimitiveGroupContainer(const data_container_type& container,

@@ -4,7 +4,6 @@
 #include <regex>
 
 #include "support/helpers.h"
-#include "support/enums.h"
 
 namespace tachyon{
 

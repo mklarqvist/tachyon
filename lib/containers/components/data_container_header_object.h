@@ -2,7 +2,7 @@
 #define CONTAINERS_COMPONENTS_DATA_CONTAINER_HEADER_OBJECT_H_
 
 #include "io/basic_buffer.h"
-#include "support/enums.h"
+#include "support/magic_constants.h"
 #include "data_container_header_controller.h"
 
 #include "openssl/md5.h"

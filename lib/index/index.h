@@ -2,6 +2,7 @@
 #define INDEX_INDEX_H_
 
 #include <algorithm>
+#include <memory>
 
 #include "variant_index_meta.h"
 #include "variant_index_quad_tree.h"
@@ -10,7 +11,7 @@
 namespace tachyon{
 namespace index{
 
-class Index{
+class Index {
 public:
 	typedef Index                 self_type;
     typedef std::size_t           size_type;
@@ -133,13 +134,13 @@ public:
 
 		// Update the meta index if the input data is sorted.
 		if(this->is_sorted){
-			if(this->index_meta_[entry.contigID].n_variants == 0){
-				this->index_meta_[entry.contigID].byte_offset_begin = entry.byte_offset;
-				this->index_meta_[entry.contigID].minPosition = entry.minPosition;
-				this->index_meta_[entry.contigID].start_block = entry.blockID;
+			if(this->index_meta_[entry.contig_id].n_variants == 0){
+				this->index_meta_[entry.contig_id].byte_offset_begin = entry.byte_offset;
+				this->index_meta_[entry.contig_id].minPosition = entry.min_position;
+				this->index_meta_[entry.contig_id].start_block = entry.block_id;
 			}
 
-			this->index_meta_[entry.contigID] += entry;
+			this->index_meta_[entry.contig_id] += entry;
 		}
 		return(*this);
 	}
@@ -164,6 +165,10 @@ private:
 	}
 
 private:
+	// Pimpl idiom
+	//class IndexImpl;
+	//std::unique_ptr<IndexImpl> mImpl;
+
 	bool is_sorted;
 	variant_meta_type      index_meta_;
 	variant_quad_tree_type index_;

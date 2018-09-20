@@ -15,8 +15,6 @@
 namespace tachyon{
 namespace utility{
 
-const std::regex YON_VARIANT_STANDARD("^[ATGC]{1,}$");
-
 int isBigEndian(void);
 
 std::vector<std::string> &split(std::string &s, char delim, std::vector<std::string> &elems);
@@ -30,7 +28,6 @@ std::string remove_excess_whitespace(const std::string& string);
 
 std::string timestamp(const std::string type);
 std::string timestamp(const std::string type, const std::string type2);
-inline void FlushErrPointer(std::ostream& stream){ stream << "\33[2K\r\033[0m"; }
 std::string datetime();
 std::string NumberThousandsSeparator(std::string number);
 

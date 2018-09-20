@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include <regex>
 
-#include "support/enums.h"
+#include "support/magic_constants.h"
 #include "utility.h"
 #include "variant_reader.h"
 

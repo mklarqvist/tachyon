@@ -8,7 +8,6 @@
 #include "data_container_header_controller.h"
 #include "data_container_header_object.h"
 #include "io/basic_buffer.h"
-#include "support/enums.h"
 
 namespace tachyon{
 namespace containers{

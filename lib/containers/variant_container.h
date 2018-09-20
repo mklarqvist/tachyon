@@ -4,12 +4,10 @@
 #include "core/data_block_settings.h"
 #include "core/variant_record.h"
 #include "containers/variant_block.h"
-#include "containers/genotype_container_diploid_bcf.h"
-#include "containers/genotype_container_diploid_simple.h"
-#include "containers/genotype_container_diploid_rle.h"
-#include "containers/genotype_container_nploid.h"
 
 #include "primitive_group_container_string.h"
+#include "components/generic_iterator.h"
+#include "index/variant_index_entry.h"
 
 namespace tachyon{
 
@@ -37,10 +35,10 @@ public:
 template <class return_ptype>
 class yon_cont_ref : public yon_cont_ref_iface {
 public:
-	yon_cont_ref() : entries_(nullptr){}
+	yon_cont_ref() : variants_(nullptr){}
 	yon_cont_ref(char* data, uint64_t l_data) :
 		yon_cont_ref_iface(data, l_data),
-		entries_(reinterpret_cast<return_ptype*>(this->data_))
+		variants_(reinterpret_cast<return_ptype*>(this->data_))
 	{
 		this->n_elements_ = l_data / sizeof(return_ptype);
 		assert(l_data % sizeof(return_ptype) == 0);
@@ -54,58 +52,133 @@ public:
 		return true;
 	}
 
-	inline return_ptype& operator[](const uint32_t p){ return(this->entries_[p]); }
-	inline const return_ptype& operator[](const uint32_t p) const{ return(this->entries_[p]); }
-	inline int32_t GetInt32(const uint32_t p){ return((int32_t)this->entries_[p]); }
+	inline return_ptype& operator[](const uint32_t p){ return(this->variants_[p]); }
+	inline const return_ptype& operator[](const uint32_t p) const{ return(this->variants_[p]); }
+	inline int32_t GetInt32(const uint32_t p){ return((int32_t)this->variants_[p]); }
 
 public:
-	return_ptype* entries_;
+	return_ptype* variants_;
 };
 
 class VariantContainer {
 public:
 	typedef containers::DataContainer dc_type;
+	typedef VariantContainer self_type;
+    typedef std::size_t       size_type;
+    typedef yon1_vnt_t        value_type;
+    typedef value_type&       reference;
+    typedef const value_type& const_reference;
+    typedef value_type*       pointer;
+    typedef const value_type* const_pointer;
+    typedef std::ptrdiff_t    difference_type;
+
+    typedef yonRawIterator<value_type>       iterator;
+	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
 	VariantContainer() : n_variants_(0), n_capacity_(0), variants_(nullptr){}
-	VariantContainer(const uint32_t size) : n_variants_(size), n_capacity_(size), variants_(new yon1_vnt_t[size]){}
-	~VariantContainer(){
-		delete [] variants_;
+	VariantContainer(const uint32_t size) :
+		n_variants_(0), n_capacity_(size),
+		//variants_(new yon1_vnt_t[size])
+		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
+	{
+
 	}
 
-	/*
-	VariantContainer& operator+=(const yon1_vnt_t& rec){
-		if(this->variants_ == nullptr){
-			this->n_capacity_ = 1000;
-			this->n_variants_ = 0;
-			this->variants_ = new yon1_vnt_t[this->n_capacity_];
-		}
+	VariantContainer(containers::VariantBlock& variant_block, const VariantHeader& header) :
+		n_variants_(variant_block.header.n_variants), n_capacity_(variant_block.header.n_variants + 64),
+		//variants_(new yon1_vnt_t[size])
+		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
+	{
+		if(this->n_variants_){
+			for(int i = 0; i < this->n_variants_; ++i)
+				new( &this->variants_[i] ) yon1_vnt_t( );
 
-		this->variants_[this->n_variants_++] = rec;
+			this->Build(variant_block, header);
+		}
+	}
+
+	~VariantContainer(){
+		//delete [] variants_;
+		for(std::size_t i = 0; i < this->size(); ++i)
+			((this->variants_ + i)->~yon1_vnt_t)();
+
+		::operator delete[](static_cast<void*>(this->variants_));
+	}
+
+	VariantContainer& operator+=(const yon1_vnt_t& rec){
+		if(this->variants_ == nullptr || this->capacity() == 0)
+			this->reserve();
+
+		if(this->size() == this->capacity())
+			this->reserve();
+
+		new( &this->variants_[this->n_variants_] ) yon1_vnt_t( rec );
+		++this->n_variants_;
+
 		return(*this);
 	}
-	*/
 
 	const size_t size(void) const { return(this->n_variants_); }
 	const size_t capacity(void) const { return(this->n_capacity_); }
 
-	yon1_vnt_t& operator[](const uint32_t p){ return(this->variants_[p]); }
-	const yon1_vnt_t& operator[](const uint32_t p) const{ return(this->variants_[p]); }
+	void clear(void){
+		for(std::size_t i = 0; i < this->size(); ++i)
+			((this->variants_ + i)->~yon1_vnt_t)();
 
+		this->n_variants_ = 0;
+		this->block_.clear();
+	}
+
+	inline void reserve(void){ this->reserve(n_capacity_ + 1000); }
+	void reserve(const uint32_t new_size);
 	void resize(const uint32_t new_size);
 
 	bool Build(containers::VariantBlock& variant_block, const VariantHeader& header);
 
-	/**< @brief Reads one or more separate digital objects from disk
+	/**< @brief Reads a target Tachyon block from disk.
 	 * Primary function for reading partial data from disk. Data
-	 * read in this way is not checked for integrity until later.
-	 * @param stream   Input stream
-	 * @param settings Settings record describing reading parameters
-	 * @return         Returns FALSE if there was a problem, TRUE otherwise
+	 * read in this way is not checked for integrity in this function.
+	 * @param stream    Src stream handle.
+	 * @param header    Src global header.
+	 * @param settings  Settings record describing reading parameters.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
 	inline bool ReadBlock(std::ifstream& stream, const VariantHeader& header, DataBlockSettings& settings){
 		return(this->block_.read(stream, settings, header));
 	}
+
+	bool PrepareWritableBlock(const uint32_t n_samples);
+
+	index::VariantIndexEntry GetIndexEntry(void){
+		index::VariantIndexEntry index_entry;
+		//index_entry.blockID     = block_id;
+		index_entry.contig_id    = this->block_.header.contigID;
+		index_entry.min_position = this->block_.header.minPosition;
+		index_entry.max_position = this->block_.header.maxPosition;
+		index_entry.n_variants   = this->block_.header.n_variants;
+		return(index_entry);
+	}
+
+	 // Element access
+	inline reference at(const size_type& position){ return(this->variants_[position]); }
+	inline const_reference at(const size_type& position) const{ return(this->variants_[position]); }
+	inline reference operator[](const size_type& position){ return(this->variants_[position]); }
+	inline const_reference operator[](const size_type& position) const{ return(this->variants_[position]); }
+	inline pointer data(void){ return(this->variants_); }
+	inline const_pointer data(void) const{ return(this->variants_); }
+	inline reference front(void){ return(this->variants_[0]); }
+	inline const_reference front(void) const{ return(this->variants_[0]); }
+	inline reference back(void){ return(this->variants_[(n_variants_ == 0 ? 0 : n_variants_ - 1)]); }
+	inline const_reference back(void) const{ return(this->variants_[(n_variants_ == 0 ? 0 : n_variants_ - 1)]); }
+
+	// Iterator
+	inline iterator begin(){ return iterator(&this->variants_[0]); }
+	inline iterator end(){ return iterator(&this->variants_[this->n_variants_]); }
+	inline const_iterator begin() const{ return const_iterator(&this->variants_[0]); }
+	inline const_iterator end() const{ return const_iterator(&this->variants_[this->n_variants_]); }
+	inline const_iterator cbegin() const{ return const_iterator(&this->variants_[0]); }
+	inline const_iterator cend() const{ return const_iterator(&this->variants_[this->n_variants_]); }
 
 private:
 	bool PermuteOrder(const containers::VariantBlock& variant_block);

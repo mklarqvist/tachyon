@@ -15,7 +15,7 @@
 namespace tachyon {
 namespace io{
 
-struct BasicBuffer{
+struct BasicBuffer {
 public:
     typedef BasicBuffer       self_type;
     typedef char              value_type;

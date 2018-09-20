@@ -1,3 +1,5 @@
+#include <openssl/evp.h>
+
 #include "variant_reader.h"
 
 #include "containers/variant_container.h"
@@ -10,15 +12,19 @@
 namespace tachyon {
 
 VariantReader::VariantReader() :
-	b_data_start(0)
+	b_data_start(0),
+	gt_exp(nullptr)
 {}
 
 VariantReader::VariantReader(const std::string& filename) :
 	b_data_start(0),
-	basic_reader(filename)
+	basic_reader(filename),
+	gt_exp(nullptr)
 {}
 
-VariantReader::~VariantReader(){}
+VariantReader::~VariantReader(){
+	delete [] gt_exp;
+}
 
 VariantReader::VariantReader(const self_type& other) :
 	b_data_start(other.b_data_start),
@@ -35,10 +41,14 @@ VariantReader::VariantReader(const self_type& other) :
 	checksums(other.checksums),
 	keychain(other.keychain),
 	interval_container(other.interval_container),
-	occ_table(other.occ_table)
+	occ_table(other.occ_table),
+	gt_exp(nullptr)
 {
+	if(other.gt_exp != nullptr){
+		// Allocate new array but do not copy contents.
+		gt_exp = new yon_gt_rcd[global_header.GetNumberSamples()];
+	}
 	this->basic_reader.stream_.seekg(this->b_data_start);
-	this->variant_container << this->global_header;
 }
 
 bool VariantReader::open(void){
@@ -119,9 +129,6 @@ bool VariantReader::open(void){
 	// reader object.
 	this->b_data_start = this->basic_reader.stream_.tellg();
 
-	// Add global header pointer to variant container.
-	this->variant_container << this->global_header;
-
 	// Keep track of start position
 	const uint64_t return_pos = this->basic_reader.stream_.tellg();
 	this->basic_reader.stream_.seekg(this->global_footer.offset_end_of_data);
@@ -136,37 +143,37 @@ bool VariantReader::NextBlock(){
 	if(this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
-	this->variant_container.reset();
+	this->variant_container.clear();
 
-	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
-	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
+	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
+	if(!this->variant_container.read(this->basic_reader.stream_, this->block_settings, this->global_header))
 		return false;
 
 	// encryption manager ascertainment
-	if(this->variant_container.AnyEncrypted()){
+	if(this->variant_container.header.controller.any_encrypted){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return false;
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.Decrypt(this->variant_container.GetBlock(), this->keychain)){
+		if(!encryption_manager.Decrypt(this->variant_container, this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return false;
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(this->variant_container.GetBlock())){
+	if(!this->codec_manager.Decompress(this->variant_container)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -179,60 +186,59 @@ bool VariantReader::NextBlockRaw(void){
 	if(this->CheckNextValid() == false) return false;
 
 	// Reset and re-use
-	this->variant_container.reset();
+	this->variant_container.clear();
 
-	if(!this->variant_container.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.ReadHeaderFooter(this->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.GetBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
-	this->variant_container.GetBlock().footer_support.data_uncompressed >> this->variant_container.GetBlock().footer;
+	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.ReadBlock(this->basic_reader.stream_, this->block_settings))
+	if(!this->variant_container.read(this->basic_reader.stream_, this->block_settings, this->global_header))
 		return false;
 
 	// All passed
 	return true;
 }
 
-containers::VariantBlockContainer VariantReader::ReturnBlock(void){
-	variant_container_type c;
-	c << this->GetGlobalHeader();
+containers::VariantBlock VariantReader::ReturnBlock(void){
+	block_entry_type c;
 
 	if(this->CheckNextValid() == false)
 		return c;
 
-	if(!c.GetBlock().ReadHeaderFooter(this->basic_reader.stream_))
+	if(!c.ReadHeaderFooter(this->basic_reader.stream_))
 		return(c);
 
-	if(!this->codec_manager.zstd_codec.Decompress(c.GetBlock().footer_support)){
+	if(!this->codec_manager.zstd_codec.Decompress(c.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
-	c.GetBlock().footer_support.data_uncompressed >> c.GetBlock().footer;
+	c.footer_support.data_uncompressed >> c.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!c.ReadBlock(this->basic_reader.stream_, this->block_settings))
+	if(!c.read(this->basic_reader.stream_, this->block_settings, this->global_header))
 		return(c);
 
 	// encryption manager ascertainment
-	if(c.AnyEncrypted()){
+	if(c.header.controller.any_encrypted){
 		if(this->keychain.size() == 0){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Data is encrypted but no keychain was provided!" << std::endl;
 			return(c);
 		}
 
 		encryption_manager_type encryption_manager;
-		if(!encryption_manager.Decrypt(c.GetBlock(), this->keychain)){
+		if(!encryption_manager.Decrypt(c, this->keychain)){
 			std::cerr << utility::timestamp("ERROR", "DECRYPTION") << "Failed decryption!" << std::endl;
 			return(c);
 		}
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(c.GetBlock())){
+	if(!this->codec_manager.Decompress(c)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return(c);
 	}
@@ -274,15 +280,15 @@ bool VariantReader::LoadKeychainFile(void){
 }
 
 uint64_t VariantReader::OutputVcfLinear(void){
-	this->variant_container.AllocateGenotypeMemory();
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
-		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
 
 		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
-			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
+			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if(this->variant_filters.Filter(vc[i], i) == false)
@@ -296,7 +302,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 				vc[i].AddGenotypeStatistics(this->global_header);
 				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
-			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->gt_exp);
 			std::cout.write(buf.data(), buf.size());
 			buf.reset();
 		}
@@ -306,7 +312,8 @@ uint64_t VariantReader::OutputVcfLinear(void){
 }
 
 uint64_t VariantReader::OutputVcfSearch(void){
-	this->variant_container.AllocateGenotypeMemory();
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
@@ -315,8 +322,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 	for(uint32_t i = 0; i < this->interval_container.GetBlockList().size(); ++i){
 		this->GetBlock(this->interval_container.GetBlockList()[i]);
 
-		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
-		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if((this->*filter_intervals)(vc[i]) == false)
@@ -330,7 +336,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 				vc[i].AddGenotypeStatistics(this->global_header);
 			}
 
-			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
+			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->gt_exp);
 			std::cout.write(buf.data(), buf.size());
 			buf.reset();
 		}
@@ -373,7 +379,8 @@ uint64_t VariantReader::OutputRecords(void){
 }
 
 uint64_t VariantReader::OutputHtslibVcfLinear(void){
-	this->variant_container.AllocateGenotypeMemory();
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Open a htslib file handle for the target output
 	// destination.
@@ -406,11 +413,10 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
-		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
 
 		if(this->GetBlockSettings().annotate_extra)
-			this->occ_table.BuildTable(this->variant_container.GetBlock().gt_ppa);
+			this->occ_table.BuildTable(this->variant_container.gt_ppa);
 
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < vc.size(); ++i){
@@ -428,7 +434,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
-			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->GetCurrentContainer().GetAllocatedGenotypeMemory());
+			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
 
@@ -456,7 +462,8 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 }
 
 uint64_t VariantReader::OutputHtslibVcfSearch(void){
-	this->variant_container.AllocateGenotypeMemory();
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
 	// Open a htslib file handle for the target output
 	// destination.
@@ -491,8 +498,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Iterate over available blocks.
 	while(this->NextBlock()){
-		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
-		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
+		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
 
 		// Iterate over available records in this block.
 		for(uint32_t i = 0; i < vc.size(); ++i){
@@ -509,7 +515,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
-			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->GetCurrentContainer().GetAllocatedGenotypeMemory());
+			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){
@@ -570,55 +576,54 @@ bool VariantReader::Benchmark(const uint32_t threads){
 
 bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(containers::VariantBlock*&)){
 	if(!this->open(settings.input)){
-			std::cerr << "failed to open" << std::endl;
-			return 1;
-		}
+		std::cerr << "failed to open" << std::endl;
+		return 1;
+	}
 
-		this->GetBlockSettings().LoadAll(true);
+	this->GetBlockSettings().LoadAll(true);
 
-		// Begin
-		algorithm::Timer timer; timer.Start();
-		const uint32_t n_threads = threads;
-		yon_producer_vblock<VariantReader> prd(n_threads);
-		prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
-		prd.Start();
+	// Begin
+	algorithm::Timer timer; timer.Start();
+	const uint32_t n_threads = threads;
+	yon_producer_vblock<VariantReader> prd(n_threads);
+	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container);
+	prd.Start();
 
-		yon_consumer_vblock<VariantSlavePerformance>* csm = new yon_consumer_vblock<VariantSlavePerformance>[n_threads];
-		VariantSlavePerformance* slave = new VariantSlavePerformance[n_threads];
+	yon_consumer_vblock<VariantSlavePerformance>* csm = new yon_consumer_vblock<VariantSlavePerformance>[n_threads];
+	VariantSlavePerformance* slave = new VariantSlavePerformance[n_threads];
 
-		for(int i = 0; i < n_threads; ++i){
-			csm[i].thread_id      = i;
-			csm[i].data_available = &prd.data_available;
-			csm[i].data_pool      = &prd.data_pool;
+	for(int i = 0; i < n_threads; ++i){
+		csm[i].thread_id      = i;
+		csm[i].data_available = &prd.data_available;
+		csm[i].data_pool      = &prd.data_pool;
 
-			slave[i].settings = this->GetBlockSettings();
-			slave[i].vc << this->global_header;
-			slave[i].vc.AllocateGenotypeMemory();
-			slave[i].global_header = &this->global_header;
+		slave[i].settings = this->GetBlockSettings();
+		slave[i].gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
+		slave[i].global_header = &this->global_header;
 
-			csm[i].Start(func, slave[i]);
-		}
-		// Join consumer and producer threads.
-		for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
+		csm[i].Start(func, slave[i]);
+	}
+	// Join consumer and producer threads.
+	for(uint32_t i = 0; i < n_threads; ++i) csm[i].thread_.join();
 
-		prd.all_finished = true;
-		prd.thread_.join();
+	prd.all_finished = true;
+	prd.thread_.join();
 
-		for(uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
+	for(uint32_t i = 1; i < n_threads; ++i) slave[0] += slave[i];
 
-		delete [] slave;
-		delete [] csm;
+	delete [] slave;
+	delete [] csm;
 
-		const double time_elapsed = timer.Elapsed().count();
-		std::cerr << utility::timestamp("LOG") << time_elapsed << "\t" << slave[0].data_loaded << "\t" << (double)slave[0].data_loaded/time_elapsed/1e6 << "\t" << slave[0].data_uncompressed << "\t" << (double)slave[0].data_uncompressed/time_elapsed/1e6 << std::endl;
-		return true;
+	const double time_elapsed = timer.Elapsed().count();
+	std::cerr << utility::timestamp("LOG") << time_elapsed << "\t" << slave[0].data_loaded << "\t" << (double)slave[0].data_loaded/time_elapsed/1e6 << "\t" << slave[0].data_uncompressed << "\t" << (double)slave[0].data_uncompressed/time_elapsed/1e6 << std::endl;
+	return true;
 }
 
 bool VariantReader::Stats(void){
 	const uint32_t n_threads = std::thread::hardware_concurrency();
 	//const uint32_t n_threads = 1;
 	yon_producer_vblock<VariantReader> prd(n_threads);
-	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container.GetBlock());
+	prd.Setup(&VariantReader::NextBlockRaw, *this, this->variant_container);
 	prd.Start();
 
 	yon_consumer_vblock<VariantSlaveTsTv>* csm = new yon_consumer_vblock<VariantSlaveTsTv>[n_threads];
@@ -633,8 +638,7 @@ bool VariantReader::Stats(void){
 		slave_test[i].settings = this->GetBlockSettings();
 		slave_test[i].s.SetSize(this->global_header.GetNumberSamples());
 		slave_test[i].s_local.SetSize(this->global_header.GetNumberSamples());
-		slave_test[i].vc << this->global_header;
-		slave_test[i].vc.AllocateGenotypeMemory();
+		slave_test[i].gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 		slave_test[i].global_header = &this->global_header;
 
 		csm[i].Start(&VariantSlaveTsTv::GatherGenotypeStatistics, slave_test[i]);
@@ -661,13 +665,8 @@ bool VariantReader::Stats(void){
 	return true;
 }
 
+
 bool VariantReader::TempWrite(void){
-	this->variant_container.AllocateGenotypeMemory();
-
-	algorithm::GenotypeSorter  gts;
-	gts.SetSamples(this->GetGlobalHeader().GetNumberSamples());
-	algorithm::GenotypeEncoder gte(this->GetGlobalHeader().GetNumberSamples());
-
 	VariantWriterInterface* writer = new VariantWriterStream();
 	yon_writer_sync swriter; swriter.writer = writer;
 	// The index needs to know how many contigs that's described in the
@@ -680,86 +679,45 @@ bool VariantReader::TempWrite(void){
 	// write out now.
 	swriter.WriteFileHeader(this->global_header);
 
-	index::VariantIndexEntry index_entry;
+
 	uint32_t block_id = 0;
+	VariantContainer vc2;
 
 	io::BasicBuffer buf(100000);
 	while(this->NextBlock()){
-		gts.reset();
-		VariantContainer vc(this->GetCurrentContainer().GetBlock().header.n_variants);
-		vc.Build(this->GetCurrentContainer().GetBlock(), this->global_header);
-
-		// Todo: writer += block and writer does all work
-
-		containers::VariantBlock vblock;
-		vblock.Allocate(100,100,100);
-		vblock.resize(128000);
-
-		vblock.header.controller.has_gt = true;
-		vblock.header.controller.has_gt_permuted = true;
-		//vblock.header.n_variants = vc.n_variants_;
-		//std::cerr << "setting nvariants to " << vc.n_variants_ << std::endl;
-
-		if(gts.Build(vc.variants_, vc.n_variants_) == false){
-			std::cerr << "failed to permute" << std::endl;
-			return false;
-		}
-
-		if(gte.Encode(vc.variants_, vc.n_variants_, vblock, gts.permutation_array) == false){
-			std::cerr << "failed to encode genotypes" << std::endl;
-			return false;
-		}
-
-		vblock.gt_ppa = &gts.permutation_array;
+		VariantContainer vc(this->GetCurrentContainer(), this->global_header);
 
 		for(uint32_t i = 0; i < vc.size(); ++i){
-			// Tet copy
-			//vc[i].ToVcfString(this->GetGlobalHeader(), buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
-			//yon1_vnt_t vcopy(vc[i]);
-			//vcopy.ToVcfString(this->GetGlobalHeader(), buf, this->GetBlockSettings().display_static, this->variant_container.GetAllocatedGenotypeMemory());
-			//std::cerr.write(buf.data(), buf.size());
-			//buf.reset();
+			if(vc2.size() == 500){
+				if(vc2.PrepareWritableBlock(this->global_header.GetNumberSamples()) == false){
+					std::cerr << "failed to prepare" << std::endl;
+					return false;
+				}
 
-			vblock.AddMore(vc[i]);
-			// Todo: Update controller (ref alt checks etc)
-			vblock += vc[i];
+				index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
+				index_entry.block_id = block_id;
+
+				swriter.emplace(block_id, vc2.block_, index_entry);
+				++block_id;
+				vc2.clear();
+			}
+			vc[i].gt->Expand();
+			vc2 += vc[i];
+		}
+	}
+
+	if(vc2.size()){
+		if(vc2.PrepareWritableBlock(this->global_header.GetNumberSamples()) == false){
+			std::cerr << "failed to prepare" << std::endl;
+			return false;
 		}
 
-		std::cerr << vblock.size() << ": " << vblock.header.minPosition << "-" << vblock.header.maxPosition << std::endl;
-		vblock.UpdateContainers(this->global_header.GetNumberSamples());
-		this->codec_manager.Compress(vblock, 20 ,this->global_header.GetNumberSamples());
+		index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
+		index_entry.block_id = block_id;
 
-		std::cerr << "base: ";
-		for(int i = 0; i < YON_BLK_N_STATIC; ++i){
-			std::cerr << "," << YON_BLK_PRINT_NAMES[i] << ":" << vblock.base_containers[i].GetSizeUncompressed() << ":" << vblock.base_containers[i].header.HasMixedStride();
-		}
-		std::cerr << std::endl;
-
-		std::cerr << "info: " << std::endl;
-		for(int i = 0; i < vblock.footer.n_info_streams; ++i){
-			std::cerr << "," << i << ":" << vblock.info_containers[i].GetDataPrimitiveType() << ", mixeds=" << vblock.info_containers[i].header.HasMixedStride() << ": " << vblock.info_containers[i].GetSizeUncompressed() << "->" << vblock.info_containers[i].GetSizeCompressed() << "\t" << vblock.info_containers[i].header.n_entries << "," << vblock.info_containers[i].header.n_additions << " stride: " << vblock.base_containers[i].header.data_header.stride << std::endl;
-		}
-
-		std::cerr << "format: " << std::endl;
-		for(int i = 0; i < vblock.footer.n_format_streams; ++i){
-			std::cerr << "," << i << ":" << vblock.format_containers[i].GetDataPrimitiveType() << ", mixeds=" << vblock.format_containers[i].header.HasMixedStride() << ": " << vblock.format_containers[i].GetSizeUncompressed() << "->" << vblock.format_containers[i].GetSizeCompressed() << "\t" << vblock.format_containers[i].header.n_entries << "," << vblock.format_containers[i].header.n_additions << " stride: " << vblock.base_containers[i].header.data_header.stride << std::endl;
-		}
-
-		vblock.Finalize();
-		// After all compression and writing is finished the header
-		// offsets are themselves compressed and stored in the block.
-		vblock.PackFooter(); // Pack footer into buffer.
-		this->codec_manager.zstd_codec.Compress(vblock.footer_support);
-
-		index_entry.blockID = block_id;
-		index_entry.contigID = vblock.header.contigID;
-		index_entry.minPosition = vblock.header.minPosition;
-		index_entry.maxPosition = vblock.header.maxPosition;
-		index_entry.n_variants = vblock.header.n_variants;
-		swriter.emplace(block_id, vblock, index_entry);
-		vblock.gt_ppa = nullptr;
+		swriter.emplace(block_id, vc2.block_, index_entry);
 		++block_id;
-		index_entry.reset();
+		vc2.clear();
 	}
 
 	swriter.WriteFinal(checksums);

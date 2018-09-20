@@ -61,7 +61,9 @@ public:
 	 * @param src Reference to a PrimitiveContainerInterface.
 	 * @return    Returns a reference to the moved object.
 	 */
-	virtual PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src) =0;
+	virtual PrimitiveContainerInterface* Move(void) =0;
+
+	virtual void ExpandEmpty(const uint32_t to) =0;
 
 	virtual void resize(void) =0;
 	virtual void resize(const size_t new_size) =0;
@@ -185,15 +187,17 @@ public:
     ~PrimitiveContainer(void);
 
     inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
-    PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
-    	self_type* o      = reinterpret_cast<self_type*>(&src);
-    	this->is_uniform_ = o->is_uniform_;
-    	this->n_capacity_ = o->n_capacity_;
-    	this->n_entries_  = o->n_entries_;
-    	this->entries_    = nullptr;
-    	std::swap(this->entries_, o->entries_);
-    	return(*this);
-    }
+
+    PrimitiveContainerInterface* Move(void){
+		self_type* o      = new self_type();
+		o->is_uniform_ = this->is_uniform_;
+		o->n_capacity_ = this->n_capacity_;
+		o->n_entries_  = this->n_entries_;
+		std::swap(this->entries_, o->entries_);
+		this->n_capacity_ = 0;
+		this->n_entries_  = 0;
+		return(o);
+	}
 
     void resize(void);
 	void resize(const size_t new_size);
@@ -242,6 +246,14 @@ public:
 		++container;
 
 		return(container);
+	}
+
+	void ExpandEmpty(const uint32_t to){
+		// Cannot resize into mixed stride with EOV values
+		// if there are no negative values available.
+		assert(std::numeric_limits<return_type>::min() != 0);
+		if(to > this->capacity()) this->resize(to + 10);
+		for(int i = 0; i < n_entries_; to) entries_[i] = std::numeric_limits<return_type>::min() + 1;
 	}
 
     // Element access
@@ -325,13 +337,21 @@ public:
 	~PrimitiveContainer(void){}
 
 	inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
-	PrimitiveContainerInterface& Move(PrimitiveContainerInterface& src){
-		self_type* o   = reinterpret_cast<self_type*>(&src);
-		this->is_uniform_ = o->is_uniform_;
-		this->n_capacity_ = o->n_capacity_;
-		this->n_entries_  = o->n_entries_;
+	PrimitiveContainerInterface* Move(void){
+		self_type* o      = new self_type();
+		o->is_uniform_ = this->is_uniform_;
+		o->n_capacity_ = this->n_capacity_;
+		o->n_entries_  = this->n_entries_;
 		this->data_ = std::move(o->data_);
-		return(*this);
+		this->data_.clear();
+		this->n_entries_  = 0;
+		this->n_capacity_ = 1;
+		return(o);
+	}
+
+	void ExpandEmpty(const uint32_t to){
+		const size_t sz = data_.size();
+		for(int i = sz; i < to; ++i) data_.push_back('\0');
 	}
 
 	inline void resize(void){}
@@ -545,7 +565,7 @@ PrimitiveContainer<return_type>::~PrimitiveContainer(void){
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer(const self_type& other) :
-PrimitiveContainerInterface(other),
+	PrimitiveContainerInterface(other),
 	entries_(new value_type[this->n_capacity_])
 {
 	memcpy(this->entries_, other.entries_, sizeof(value_type)*this->size());

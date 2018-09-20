@@ -25,25 +25,20 @@ private:
 
 public:
     PrimitiveGroupContainer();
+    PrimitiveGroupContainer(const self_type& other);
     PrimitiveGroupContainer(const data_container_type& container, const uint32_t& offset, const uint32_t& n_entries, const uint32_t strides_each);
     ~PrimitiveGroupContainer(void);
 
     inline PrimitiveGroupContainerInterface* Clone(){ return(new self_type(*this)); }
-	PrimitiveGroupContainerInterface& Move(PrimitiveGroupContainerInterface& src){
-		self_type* o = reinterpret_cast<self_type*>(&src);
-		this->n_capacity_ = o->n_capacity_;
-		this->n_objects_  = o->n_objects_;
 
-		for(std::size_t i = 0; i < this->size(); ++i)
-			((this->containers_ + i)->~PrimitiveContainer)();
-
-		::operator delete[](static_cast<void*>(this->containers_));
-
-		this->containers_ = nullptr;
-
-		std::swap(this->containers_, o->containers_);
-
-		return(*this);
+	PrimitiveGroupContainerInterface* Move(void){
+		self_type* o = new self_type();
+		o->n_capacity_ = this->n_capacity_;
+		o->n_objects_  = this->n_objects_;
+		this->n_capacity_ = 0;
+		this->n_objects_  = 0;
+		std::swap(o->containers_, this->containers_);
+		return(o);
 	}
 
 	uint32_t BalanceVector(){
@@ -72,16 +67,14 @@ public:
 		d.header.data_header.stride = stride;
 
 		for(uint32_t i = 0; i < this->size(); ++i){
-			uint32_t delta = stride - this->at(i).data_.size();
-			this->at(i).UpdateDataContainer(d, false);
 			// If the target string is short then the largest string
 			// available we pad the data added with null-terminations.
 			// This will force the importing algorithm to skip premature
 			// terminations while still maintaining the required matrix
 			// properties of a Format record.
-			for(int j = 0; j < delta; ++j)
-				d.data_uncompressed += (char)'\0';
-
+			this->at(i).ExpandEmpty(stride);
+			// Add actual data.
+			this->at(i).UpdateDataContainer(d, false);
 		}
 
 		d.AddStride(stride);

@@ -10,13 +10,11 @@
 
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/digest/variant_digest_manager.h"
-#include "algorithm/encryption/encryption_decorator.h"
+#include "algorithm/encryption/encryption.h"
 #include "algorithm/timer.h"
-#include "containers/genotype_container.h"
 #include "containers/interval_container.h"
 #include "containers/primitive_group_container.h"
 #include "containers/variant_block.h"
-#include "containers/variant_block_container.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 #include "core/variant_reader_filters.h"
@@ -29,14 +27,12 @@
 #include "utility/support_vcf.h"
 #include "io/basic_reader.h"
 
-#include "core/ts_tv_object.h"
-
 #include "algorithm/parallel/variant_slaves.h"
 #include "algorithm/parallel/variant_base_slave.h"
 
 namespace tachyon{
 
-class VariantReader{
+class VariantReader {
 public:
 	typedef VariantReader                          self_type;
 	typedef io::BasicBuffer                        buffer_type;
@@ -51,7 +47,6 @@ public:
 	typedef Keychain                               keychain_type;
 	typedef containers::VariantBlock               block_entry_type;
 	typedef containers::IntervalContainer          interval_container_type;
-	typedef containers::VariantBlockContainer      variant_container_type;
 	typedef VariantReaderFilters                   variant_filter_type;
 	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
 	typedef io::BasicReader                        basic_reader_type;
@@ -102,8 +97,8 @@ public:
 	inline index_type& GetIndex(void){ return(this->index); }
 	inline const index_type& GetIndex(void) const{ return(this->index); }
 	inline size_t GetFilesize(void) const{ return(this->basic_reader.filesize_); }
-	inline variant_container_type& GetCurrentContainer(void){ return(this->variant_container); }
-	inline const variant_container_type& GetCurrentContainer(void) const{ return(this->variant_container); }
+	inline block_entry_type& GetCurrentContainer(void){ return(this->variant_container); }
+	inline const block_entry_type& GetCurrentContainer(void) const{ return(this->variant_container); }
 
 	/**<
 	 * Opens a YON file. Performs all prerequisite
@@ -177,7 +172,7 @@ public:
 		return true;
 	}
 
-	containers::VariantBlockContainer ReturnBlock(void);
+	block_entry_type ReturnBlock(void);
 
 	/**<
 	 * Get the target YON block that matches the provided index
@@ -270,7 +265,7 @@ private:
 private:
 	uint64_t                b_data_start;
 	basic_reader_type       basic_reader;
-	variant_container_type  variant_container;
+	block_entry_type        variant_container;
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
@@ -282,6 +277,13 @@ private:
 	keychain_type           keychain;
 	interval_container_type interval_container;
 	yon_occ                 occ_table;
+
+
+	// External memory allocation for linear use of lazy-evaluated
+	// expansion of genotype records. This is critical when the sample
+	// numbers are becoming large as allocating/deallocating hundreds
+	// of thousands of pointers for every variant is very time consuming.
+	yon_gt_rcd* gt_exp;
 };
 
 class VariantReader::VariantReaderImpl {
