@@ -27,6 +27,7 @@ public:
 	VariantReaderImpl() = default;
 	VariantReaderImpl(const std::string& filename) : basic_reader(filename){}
 
+public:
 	basic_reader_type       basic_reader;
 	checksum_type           checksums;
 	codec_manager_type      codec_manager;
@@ -469,7 +470,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
-			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
+			vc[i].OutputHtslibVcfInfo(rec, hdr);
 			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
@@ -550,7 +551,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 			}
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
-			vc[i].OutputHtslibVcfInfo(rec, hdr, this->GetBlockSettings());
+			vc[i].OutputHtslibVcfInfo(rec, hdr);
 			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 

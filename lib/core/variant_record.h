@@ -82,115 +82,12 @@ public:
  */
 struct yon1_vnt_t {
 public:
-	yon1_vnt_t() :
-		is_dirty(false), is_loaded_gt(false), n_base_ploidy(0), n_alleles(0),
-		n_flt(0), n_fmt(0), n_info(0), info_pid(-1), flt_pid(-1), fmt_pid(-1),
-		m_fmt(0), m_info(0), m_allele(0),
-		qual(NAN), rid(0), pos(0),
-		alleles(nullptr), gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
-		info(nullptr), fmt(nullptr)
-	{}
-
-	yon1_vnt_t(const yon1_vnt_t& other) :
-		is_dirty(other.is_dirty), is_loaded_gt(other.is_loaded_gt), controller(other.controller),
-		n_base_ploidy(other.n_base_ploidy), n_alleles(other.n_alleles),
-		n_flt(other.n_flt), n_fmt(other.n_fmt), n_info(other.n_info),
-		info_pid(other.info_pid), flt_pid(other.flt_pid), fmt_pid(other.fmt_pid),
-		m_fmt(other.m_fmt), m_info(other.m_info), m_allele(other.m_allele),
-		qual(other.qual), rid(other.rid), pos(other.pos), name(other.name),
-		info_hdr(other.info_hdr), fmt_hdr(other.fmt_hdr), flt_hdr(other.flt_hdr),
-		info_map(other.info_map), fmt_map(other.fmt_map), flt_map(other.flt_map),
-		alleles(new yon_allele[n_alleles]),
-		gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
-		info(nullptr), fmt(nullptr)
-	{
-		if(n_info) info = new containers::PrimitiveContainerInterface*[m_info];
-		if(n_fmt)  fmt  = new containers::PrimitiveGroupContainerInterface*[m_fmt];
-		for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-		for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
-		for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
-		if(other.gt != nullptr) gt = new yon_gt(*other.gt);
-		if(other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
-		if(other.gt_sum_occ != nullptr){
-			gt_sum_occ = new yon_gt_summary[gt->n_o];
-			for(int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
-		}
-	}
-
-	yon1_vnt_t& operator=(const yon1_vnt_t& other){
-		// Delete existing data without consideration.
-		delete [] alleles;
-		delete gt, gt_sum;
-		delete [] gt_sum_occ;
-		for(int i = 0; i < n_info; ++i) delete info[i];
-		for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
-		delete [] info; delete [] fmt;
-
-		// Copy data.
-		is_dirty = other.is_dirty; is_loaded_gt = other.is_loaded_gt; controller = other.controller;
-		n_base_ploidy = other.n_base_ploidy; n_alleles = other.n_alleles;
-		n_flt = other.n_flt; n_fmt = other.n_fmt; n_info = other.n_info;
-		info_pid = other.info_pid; flt_pid = other.flt_pid; fmt_pid = other.fmt_pid;
-		m_fmt = other.m_fmt; m_info = other.m_info; m_allele = other.m_allele;
-		qual = other.qual; rid = other.rid; pos = other.pos; name = other.name;
-		info_hdr = other.info_hdr; fmt_hdr = other.fmt_hdr; flt_hdr = other.flt_hdr;
-		info_map = other.info_map; fmt_map = other.fmt_map; flt_map = other.flt_map;
-		alleles = new yon_allele[n_alleles];
-		gt = nullptr; gt_sum = nullptr; gt_sum_occ = nullptr,
-		info = nullptr; fmt = nullptr;
-
-		if(n_info) info = new containers::PrimitiveContainerInterface*[m_info];
-		if(n_fmt)  fmt  = new containers::PrimitiveGroupContainerInterface*[m_fmt];
-		for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
-		for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
-		for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
-		if(other.gt != nullptr) gt = new yon_gt(*other.gt);
-		if(other.gt_sum != nullptr) gt_sum = new yon_gt_summary(*other.gt_sum);
-		if(other.gt_sum_occ != nullptr){
-			gt_sum_occ = new yon_gt_summary[gt->n_o];
-			for(int i = 0; i < gt->n_o; ++i) gt_sum_occ[i] = other.gt_sum_occ[i];
-		}
-
-		return(*this);
-	}
-
-	yon1_vnt_t(yon1_vnt_t&& other) noexcept :
-		is_dirty(other.is_dirty), is_loaded_gt(other.is_loaded_gt), controller(other.controller),
-		n_base_ploidy(other.n_base_ploidy), n_alleles(other.n_alleles),
-		n_flt(other.n_flt), n_fmt(other.n_fmt), n_info(other.n_info),
-		info_pid(other.info_pid), flt_pid(other.flt_pid), fmt_pid(other.fmt_pid),
-		m_fmt(other.m_fmt), m_info(other.m_info), m_allele(other.m_allele),
-		qual(other.qual), rid(other.rid), pos(other.pos), name(std::move(other.name)),
-		info_hdr(other.info_hdr), fmt_hdr(other.fmt_hdr), flt_hdr(other.flt_hdr),
-		info_map(other.info_map), fmt_map(other.fmt_map), flt_map(other.flt_map),
-		alleles(nullptr),
-		gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
-		info(nullptr), fmt(nullptr)
-	{
-		std::swap(alleles, other.alleles);
-		std::swap(gt, other.gt);
-		std::swap(gt_sum, other.gt_sum);
-		std::swap(gt_sum_occ, other.gt_sum_occ);
-		if(n_info){
-			info = new containers::PrimitiveContainerInterface*[n_info];
-			for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Move();
-		}
-
-		if(n_fmt){
-			fmt = new containers::PrimitiveGroupContainerInterface*[n_fmt];
-			for(int i = 0; i < n_fmt; ++i) fmt[i] = other.fmt[i]->Move();
-		}
-	}
+	yon1_vnt_t();
+	yon1_vnt_t(const yon1_vnt_t& other);
+	yon1_vnt_t& operator=(const yon1_vnt_t& other);
+	yon1_vnt_t(yon1_vnt_t&& other) noexcept;
 	//yon1_vnt_t& operator=(yon1_vnt_t&& other) noexcept = delete; // temporarily deleted
-
-	~yon1_vnt_t(){
-		delete [] alleles;
-		delete gt, gt_sum;
-		delete [] gt_sum_occ;
-		for(int i = 0; i < n_info; ++i) delete info[i];
-		for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
-		delete [] info; delete [] fmt;
-	}
+	~yon1_vnt_t();
 
 	bool UpdateBase(const bcf1_t* record);
 
@@ -242,7 +139,7 @@ public:
 	 */
 	bcf1_t* UpdateHtslibVcfRecord(bcf1_t* rec, bcf_hdr_t* hdr) const;
 
-	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr, DataBlockSettings& settings);
+	void OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr);
 
 	void OutputHtslibVcfFormat(bcf1_t* rec,
 	                           bcf_hdr_t* hdr,

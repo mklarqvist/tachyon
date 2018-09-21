@@ -92,7 +92,93 @@ public:
 	inline entry_type& GetCurrent(void){ return(this->current_entry_); }
 	inline const entry_type& GetCurrent(void) const{ return(this->current_entry_); }
 
-	bool IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id);
+	bool IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
+		int32_t index_bin = -1;
+		const int32_t info_end_key = rcd.GetInfoOffset("END");
+
+		// Ascertain that the meta entry has been evaluated
+		// prior to executing this function.
+		if(rcd.n_alleles == 0){
+			std::cerr << utility::timestamp("ERROR","IMPORT") << "The target meta record must be parsed prior to executing indexing functions..." << std::endl;
+			return false;
+		}
+
+		int64_t end_position_used = rcd.pos;
+
+		// The Info field END is used as the end position of an internal if it is available. This field
+		// is usually only set for non-standard variants such as SVs or other special meaning records.
+		if(info_end_key != -1){
+			if(rcd.info[info_end_key]->size() == 1){
+				//TACHYON_CORE_TYPE type = rcd.info[info_end_key]->data_type_;
+				TACHYON_CORE_TYPE type = YON_TYPE_16B;
+				uint32_t end_pos = 0;
+				switch(type){
+				case(YON_TYPE_8B):  end_pos = reinterpret_cast<containers::PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(YON_TYPE_16B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(YON_TYPE_32B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(YON_TYPE_64B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
+				default:
+					std::cerr << "unknown end type: " << type << std::endl;
+					exit(1);
+					break;
+				}
+
+				index_bin = this->AddSorted(rcd.rid, rcd.pos, end_pos, block_id);
+
+			} else {
+				std::cerr << "size of Info:End is not 1..." << std::endl;
+			}
+
+
+		}
+
+		// If the END field cannot be found then we check if the variant is a
+		if(index_bin == -1){
+			int32_t longest = -1;
+			// Iterate over available allele information and find the longest
+			// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
+			// simple SNV/indels.
+			for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+				if(std::regex_match(rcd.alleles[i].allele, YON_REGEX_CANONICAL_BASES)){
+					if(rcd.alleles[i].l_allele > longest)
+						longest = rcd.alleles[i].l_allele;
+				}
+			}
+
+			// Update the variant index with the target bin(s) found.
+			if(longest > 1){
+				index_bin = this->AddSorted(rcd.rid,
+											rcd.pos,
+											rcd.pos + longest,
+											block_id);
+				//index_bin = 0;
+				end_position_used = rcd.pos + longest;
+			}
+			// In the cases of special-meaning alleles such as copy-number (e.g. <CN>)
+			// or SV (e.g. A[B)) they are index according to their left-most value only.
+			// This has the implication that they cannot be found by means of interval
+			// intersection searches. If special-meaning variants were to be supported
+			// in the index then many more blocks would have to be searched for each
+			// query as the few special cases will dominate the many general cases. For
+			// this reason special-meaning alleles are not completely indexed.
+			else {
+				index_bin = this->AddSorted(rcd.rid,
+											rcd.pos,
+											rcd.pos,
+											block_id);
+			}
+		}
+
+		if(index_bin > this->current_entry_.max_bin) this->current_entry_.max_bin = index_bin;
+		if(index_bin < this->current_entry_.min_bin) this->current_entry_.min_bin = index_bin;
+		if(end_position_used > this->current_entry_.max_position)
+			this->current_entry_.max_position = end_position_used;
+
+		// Update number of entries in block
+		++this->current_entry_.n_variants;
+
+		return true;
+	}
 
 	/**<
 	 * Index a record using a htslib bcf1_t record. This function is used

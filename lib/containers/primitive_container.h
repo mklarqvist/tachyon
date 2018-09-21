@@ -17,7 +17,6 @@ public:
 
 public:
 	PrimitiveContainerInterface(void) :
-		data_type_(YON_TYPE_UNKNOWN),
 		is_uniform_(false),
 		n_entries_(0),
 		n_capacity_(0)
@@ -26,7 +25,6 @@ public:
 	}
 
 	PrimitiveContainerInterface(const bool uniform, const size_t size) :
-		data_type_(YON_TYPE_UNKNOWN),
 		is_uniform_(uniform),
 		n_entries_(size),
 		n_capacity_(size)
@@ -149,7 +147,6 @@ public:
 	                                          const std::string& tag) const =0;
 
 protected:
-	TACHYON_CORE_TYPE data_type_;
 	bool    is_uniform_;
     size_t  n_entries_;
     size_t  n_capacity_;
@@ -166,7 +163,7 @@ public:
     typedef value_type*        pointer;
     typedef const value_type*  const_pointer;
     typedef std::ptrdiff_t     difference_type;
-    typedef yon1_dc_t      container_type;
+    typedef yon1_dc_t          container_type;
 
     typedef yonRawIterator<value_type>       iterator;
     typedef yonRawIterator<const value_type> const_iterator;
