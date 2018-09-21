@@ -1,3 +1,25 @@
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
 #ifndef UTILITY_SUPPORT_VCF_H_
 #define UTILITY_SUPPORT_VCF_H_
 
@@ -233,15 +255,15 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const std::string& string)
  * @param n_entries Number of entries the src data pointer is pointing to.
  * @return          Returns the (possibly) updated htslib bcf1_t record pointer.
  */
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint8_t* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint8_t* const data,  const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint16_t* const data, const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint32_t* const data, const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const uint64_t* const data, const size_t n_entries);
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int8_t* const data, const size_t n_entries);
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int16_t* const data, const size_t n_entries);
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int32_t* const data, const size_t n_entries);
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const float* const data, const size_t n_entries);
-bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const double* const data, const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int8_t* const data,   const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int16_t* const data,  const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const int32_t* const data,  const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const float* const data,    const size_t n_entries);
+bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const double* const data,   const size_t n_entries);
 bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string& tag, const std::string& data);
 
 /**<
@@ -253,16 +275,16 @@ bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec, bcf_hdr_t* hdr, const std::string
  * @param n_entries Number of entries the src data pointer is pointing to.
  * @return          Returns the (possibly) converted primitive.
  */
-int32_t* FormatDataHtslib(const uint8_t* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const uint8_t*  const src, int32_t* dst, const size_t n_entries);
 int32_t* FormatDataHtslib(const uint16_t* const src, int32_t* dst, const size_t n_entries);
 int32_t* FormatDataHtslib(const uint32_t* const src, int32_t* dst, const size_t n_entries);
 int32_t* FormatDataHtslib(const uint64_t* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const int8_t* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const int16_t* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const int32_t* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const int64_t* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const float* const src, int32_t* dst, const size_t n_entries);
-int32_t* FormatDataHtslib(const double* const src, int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const int8_t*  const src,  int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const int16_t* const src,  int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const int32_t* const src,  int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const int64_t* const src,  int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const float*   const src,  int32_t* dst, const size_t n_entries);
+int32_t* FormatDataHtslib(const double*  const src,  int32_t* dst, const size_t n_entries);
 
 template <class T>
 float* FormatDataHtslib(const T* const src, float* dst, const size_t n_entries){

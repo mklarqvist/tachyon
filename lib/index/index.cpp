@@ -46,9 +46,7 @@ Index::~Index(){}
 
 bool Index::empty(void) const{ return(this->mImpl->index_.empty()); }
 size_t Index::size(void) const{ return(this->mImpl->index_.size()); }
-size_t Index::sizeMeta(void) const{ return(this->mImpl->index_meta_.size()); }
 uint64_t Index::GetLinearSize(void) const{ return(this->mImpl->linear_.size()); }
-
 
 std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id) const{
 	if(contig_id > this->mImpl->index_meta_.size())
@@ -175,6 +173,194 @@ std::ostream& Index::Print(std::ostream& stream) const{
 		stream << std::endl;
 	}
 	return(stream);
+}
+
+bool Index::IndexContainer(const yon1_vc_t& vc, const uint32_t block_id){
+	current_entry_.reset();
+	current_entry_.block_id     = block_id;
+	current_entry_.contig_id    = vc.block_.header.contig_id;
+	current_entry_.min_position = vc.block_.header.min_position;
+	current_entry_.max_position = vc.block_.header.max_position;
+	current_entry_.n_variants   = vc.block_.header.n_variants;
+
+	for(int i = 0; i < vc.size(); ++i){
+		if(this->IndexRecord(vc[i], block_id) == false){
+			std::cerr << "failed to index a record" << std::endl;
+		}
+	}
+
+	return true;
+}
+
+bool Index::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
+	int32_t index_bin = -1;
+	const int32_t info_end_key = rcd.GetInfoOffset("END");
+
+	// Ascertain that the meta entry has been evaluated
+	// prior to executing this function.
+	if(rcd.n_alleles == 0){
+		std::cerr << utility::timestamp("ERROR","IMPORT") << "The target meta record must be parsed prior to executing indexing functions..." << std::endl;
+		return false;
+	}
+
+	int64_t end_position_used = rcd.pos;
+
+	// The Info field END is used as the end position of an internal if it is available. This field
+	// is usually only set for non-standard variants such as SVs or other special meaning records.
+	if(info_end_key != -1){
+		if(rcd.info[info_end_key]->size() == 1){
+			const uint8_t word_width = rcd.info[info_end_key]->GetWordWidth();
+			int64_t end_pos = 0;
+
+			switch(word_width){
+			case(1): end_pos = reinterpret_cast<PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0);  break;
+			case(2): end_pos = reinterpret_cast<PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
+			case(4): end_pos = reinterpret_cast<PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
+			case(8): end_pos = reinterpret_cast<PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
+			default:
+				std::cerr << "unknown end type: " << (int)word_width << std::endl;
+				exit(1);
+				break;
+			}
+
+			std::cerr << "have end. " << "adding: (" << rcd.rid << "," << rcd.pos << "," << end_pos << ")"  << std::endl;
+
+			index_bin = this->AddSorted(rcd.rid, rcd.pos, end_pos, block_id);
+
+		} else {
+			std::cerr << "size of Info:End is not 1..." << std::endl;
+		}
+	}
+
+	// If the END field cannot be found then we check if the variant is a
+	if(index_bin == -1){
+		int32_t longest = -1;
+		// Iterate over available allele information and find the longest
+		// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
+		// simple SNV/indels.
+		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+			if(std::regex_match(rcd.alleles[i].allele, YON_REGEX_CANONICAL_BASES)){
+				if(rcd.alleles[i].l_allele > longest)
+					longest = rcd.alleles[i].l_allele;
+			}
+		}
+
+		// Update the variant index with the target bin(s) found.
+		if(longest > 1){
+			index_bin = this->AddSorted(rcd.rid, rcd.pos, rcd.pos + longest, block_id);
+			//index_bin = 0;
+			end_position_used = rcd.pos + longest;
+		}
+		// In the cases of special-meaning alleles such as copy-number (e.g. <CN>)
+		// or SV (e.g. A[B)) they are index according to their left-most value only.
+		// This has the implication that they cannot be found by means of interval
+		// intersection searches. If special-meaning variants were to be supported
+		// in the index then many more blocks would have to be searched for each
+		// query as the few special cases will dominate the many general cases. For
+		// this reason special-meaning alleles are not completely indexed.
+		else {
+			index_bin = this->AddSorted(rcd.rid, rcd.pos, rcd.pos, block_id);
+		}
+	}
+
+	if(index_bin > this->current_entry_.max_bin) this->current_entry_.max_bin = index_bin;
+	if(index_bin < this->current_entry_.min_bin) this->current_entry_.min_bin = index_bin;
+	if(end_position_used > this->current_entry_.max_position)
+		this->current_entry_.max_position = end_position_used;
+
+	// Update number of entries in block
+	++this->current_entry_.n_variants;
+
+	return true;
+}
+
+bool Index::IndexRecord(const bcf1_t*  record,
+				 const uint32_t block_id,
+				 const int32_t  info_end_key,
+				 const yon1_vnt_t& rcd)
+{
+	assert(record != nullptr);
+	int32_t index_bin = -1;
+
+	// Ascertain that the meta entry has been evaluated
+	// prior to executing this function.
+	if(rcd.n_alleles == 0){
+		std::cerr << utility::timestamp("ERROR","IMPORT") << "The target meta record must be parsed prior to executing indexing functions..." << std::endl;
+		return false;
+	}
+
+	int64_t end_position_used = record->pos;
+
+	// The Info field END is used as the end position of an internal if it is available. This field
+	// is usually only set for non-standard variants such as SVs or other special meaning records.
+	if(info_end_key != -1){
+		// Linear search for the END key: this is not optimal but is probably faster
+		// than first constructing a hash table for each record.
+		const int n_info_fields = record->n_info;
+
+		// Iterate over available Info fields.
+		for(uint32_t i = 0; i < n_info_fields; ++i){
+			if(record->d.info[i].key == info_end_key){
+				uint32_t end = 0;
+
+				switch(record->d.info[i].type){
+				case(BCF_BT_INT8):  end = *reinterpret_cast<int8_t*> (record->d.info[i].vptr); break;
+				case(BCF_BT_INT16): end = *reinterpret_cast<int16_t*>(record->d.info[i].vptr); break;
+				case(BCF_BT_INT32): end = *reinterpret_cast<int32_t*>(record->d.info[i].vptr); break;
+				default:
+					std::cerr << utility::timestamp("ERROR","INDEX") << "Illegal END primitive type: " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
+					return false;
+				}
+
+				index_bin = this->AddSorted(rcd.rid, record->pos, end, block_id);
+				break;
+			}
+		}
+	}
+
+	// If the END field cannot be found then we check if the variant is a
+	if(index_bin == -1){
+		int32_t longest = -1;
+		// Iterate over available allele information and find the longest
+		// SNV/indel length. The regex pattern ^[ATGC]{1,}$ searches for
+		// simple SNV/indels.
+		for(uint32_t i = 0; i < rcd.n_alleles; ++i){
+			if(std::regex_match(rcd.alleles[i].allele, YON_REGEX_CANONICAL_BASES)){
+				if(rcd.alleles[i].l_allele > longest)
+					longest = rcd.alleles[i].l_allele;
+			}
+		}
+
+		// Update the variant index with the target bin(s) found.
+		if(longest > 1){
+			index_bin = this->AddSorted(rcd.rid,
+			                            record->pos,
+			                            record->pos + longest,
+			                            block_id);
+			//index_bin = 0;
+			end_position_used = record->pos + longest;
+		}
+		// In the cases of special-meaning alleles such as copy-number (e.g. <CN>)
+		// or SV (e.g. A[B)) they are index according to their left-most value only.
+		// This has the implication that they cannot be found by means of interval
+		// intersection searches. If special-meaning variants were to be supported
+		// in the index then many more blocks would have to be searched for each
+		// query as the few special cases will dominate the many general cases. For
+		// this reason special-meaning alleles are not completely indexed.
+		else {
+			index_bin = this->AddSorted(rcd.rid, record->pos, record->pos, block_id);
+		}
+	}
+
+	if(index_bin > this->current_entry_.max_bin) this->current_entry_.max_bin = index_bin;
+	if(index_bin < this->current_entry_.min_bin) this->current_entry_.min_bin = index_bin;
+	if(end_position_used > this->current_entry_.max_position)
+		this->current_entry_.max_position = end_position_used;
+
+	// Update number of entries in block
+	++this->current_entry_.n_variants;
+
+	return true;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Index& entry){
