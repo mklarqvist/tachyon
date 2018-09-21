@@ -5,7 +5,7 @@
 
 #include "data_container.h"
 #include "components/generic_iterator.h"
-#include "utility/support_vcf.h"
+#include "support_vcf.h"
 
 namespace tachyon{
 namespace containers{

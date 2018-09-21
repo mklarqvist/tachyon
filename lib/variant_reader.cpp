@@ -15,6 +15,24 @@
 
 namespace tachyon {
 
+VariantReaderSettings::VariantReaderSettings() :
+	drop_format(false), header_only(false), show_header(true),
+	annotate_genotypes(false), use_htslib(false),
+	output("-"), output_type('v')
+{}
+
+std::string VariantReaderSettings::get_settings_string(void) const{
+	return(std::string(
+	"{"
+	"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
+	",\"output\":" + (this->output.length() ? "\"" + this->output + "\"" : "null") +
+	",\"keychain_file\":" + (this->keychain_file.length() ? "\"" + this->keychain_file + "\"" : "null") +
+	",\"annotate_genotypes\":" + (this->annotate_genotypes ? "true" : "false") +
+	",\"drop_format\":" + (this->drop_format ? "true" : "false") +
+	"}; timestamp=" + tachyon::utility::datetime()
+	));
+}
+
 class VariantReader::VariantReaderImpl {
 public:
 	typedef algorithm::CompressionManager          codec_manager_type;

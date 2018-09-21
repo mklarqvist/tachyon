@@ -1,28 +1,13 @@
 #ifndef CONTAINERS_VARIANT_READER_FILTERS_H_
 #define CONTAINERS_VARIANT_READER_FILTERS_H_
 
+#include "support/magic_constants.h"
 #include "variant_record.h"
 #include "variant_reader_filters_tuple.h"
 
-namespace tachyon{
+namespace tachyon {
 
-enum TACHYON_FILTER_FUNCTION{
-	YON_FILTER_NUMBER_ALT_ALLELES,
-	YON_FILTER_MIXED_PHASING,
-	YON_FILTER_MIXED_PLOIDY,
-	YON_FILTER_MISSING_GT,
-	YON_FILTER_ALLELE_FREQUENCY,
-	YON_FILTER_ALLELE_COUNT,
-	YON_FILTER_UNIFORM_PHASE,
-	YON_FILTER_KNOWN_NOVEL,
-	YON_FILTER_REFERENCE_ALLELE,
-	YON_FILTER_ALT_ALLELE,
-	YON_FILTER_NAME,
-	YON_FILTER_UNSEEN_ALT,
-	YON_FILTER_QUALITY
-};
-
-struct VariantReaderFilters{
+struct VariantReaderFilters {
 public:
 	typedef VariantReaderFilters self_type;
 	typedef VariantReaderFiltersTupleInterface value_type;
@@ -38,33 +23,34 @@ public:
 
 public:
 	VariantReaderFilters();
-	~VariantReaderFilters();
-
 	VariantReaderFilters(const VariantReaderFilters& other) = delete;
 	VariantReaderFilters& operator=(const self_type& other) = delete;
+	~VariantReaderFilters();
 
 	template <class T>
-	void Add(TACHYON_FILTER_FUNCTION filter_function, const T& r_value, const TACHYON_COMPARATOR_TYPE& comparator);
+	void Add(TACHYON_FILTER_FUNCTION filter_function,
+	         const T& r_value,
+	         const TACHYON_COMPARATOR_TYPE& comparator);
 
 	// Capacity
 	inline const size_type& size(void) const{ return(this->n_filters_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
 
 	// Has mixed phasing
-	inline bool FilterMixedPhasing(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterMixedPhasing(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter(objects.controller.gt_has_mixed_phasing));
 	}
 
-	inline bool FilterKnownNovel(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterKnownNovel(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter((uint32_t)objects.name.size()));
 	}
 
-	inline bool FilterQuality(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterQuality(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter(objects.qual));
 	}
 
 	// GT data matches this
-	inline bool FilterUniformMatchPhase(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterUniformMatchPhase(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		if(objects.controller.gt_has_mixed_phasing == true) return false;
 		return(pair->applyFilter(objects.controller.gt_has_mixed_phasing));
 	}
@@ -74,13 +60,13 @@ public:
 	bool FilterAlleleFrequency(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const;
 	bool FilterUnseenAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const;
 
-	inline bool FilterAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		// Remove one to total count as REF is counted here
 		// Recast as signed integer to avoid possible underflowing issues
 		return(pair->applyFilter(objects.n_alleles - 1));
 	}
 
-	inline bool FilterAlleleCount(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterAlleleCount(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
 			if(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[i])){
 				return true;
@@ -90,21 +76,21 @@ public:
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
-	inline bool FilterHasMissingGenotypes(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterHasMissingGenotypes(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[0]));
 	}
 
 	// Unused parameter position available in definition to allow a unified pointer definition
-	inline bool FilterMixedPloidy(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterMixedPloidy(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[1]));
 	}
 
-	inline bool FilterReferenceAllele(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterReferenceAllele(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		//std::cerr << objects.meta->at(position).alleles[0].toString() << std::endl;
 		return(pair->applyFilter(objects.alleles[0].ToString()));
 	}
 
-	inline bool FilterAlternativeAllele(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterAlternativeAllele(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		for(uint32_t i = 1; i < objects.n_alleles; ++i){
 			if(pair->applyFilter(objects.alleles[i].ToString()))
 				return true;
@@ -112,7 +98,7 @@ public:
 		return false;
 	}
 
-	inline bool FilterName(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
+	inline bool FilterName(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
 		return(pair->applyFilter(objects.name));
 	}
 
@@ -148,10 +134,15 @@ public:
 
 
 template <class T>
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const T& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function,
+                               const T& r_value,
+                               const TACHYON_COMPARATOR_TYPE& comparator)
+{
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity())
+	if(this->size() + 1 == this->capacity()){
+		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
+	}
 
 	// Construct new filter function
 	this->filter_data_[this->n_filters_++] = new VariantReaderFiltersTuple<T>(r_value, comparator);

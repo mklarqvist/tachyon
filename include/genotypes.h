@@ -28,7 +28,7 @@ DEALINGS IN THE SOFTWARE.
 #include "htslib/vcf.h"
 
 #include "io/basic_buffer.h"
-#include "utility/support_vcf.h"
+#include "support_vcf.h"
 
 namespace tachyon {
 

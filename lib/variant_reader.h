@@ -15,12 +15,11 @@
 #include "core/header/variant_header.h"
 
 #include "core/variant_reader_filters.h"
-#include "core/variant_reader_settings.h"
 #include "core/data_block_settings.h"
 
 #include "index.h"
 
-#include "utility/support_vcf.h"
+#include "support_vcf.h"
 
 #include "variant_container.h"
 
@@ -28,6 +27,27 @@
 #include "algorithm/parallel/variant_base_slave.h"
 
 namespace tachyon{
+
+struct VariantReaderSettings{
+public:
+	typedef VariantReaderSettings self_type;
+
+public:
+	VariantReaderSettings();
+	~VariantReaderSettings() = default;
+
+	/**<
+	 * Construct a string with the internal interpreted parameters
+	 * @return Returns a string
+	 */
+	std::string get_settings_string(void) const;
+
+public:
+	bool drop_format, header_only, show_header, annotate_genotypes;
+	bool use_htslib;
+	std::string input, output, group_file, keychain_file;
+	char output_type;
+};
 
 class VariantReader {
 public:
