@@ -16,23 +16,9 @@ public:
 	typedef std::size_t size_type;
 
 public:
-	PrimitiveContainerInterface(void) :
-		is_uniform_(false),
-		n_entries_(0),
-		n_capacity_(0)
-	{
-
-	}
-
-	PrimitiveContainerInterface(const bool uniform, const size_t size) :
-		is_uniform_(uniform),
-		n_entries_(size),
-		n_capacity_(size)
-	{
-
-	}
-
-	virtual ~PrimitiveContainerInterface(){}
+	PrimitiveContainerInterface(void);
+	PrimitiveContainerInterface(const bool uniform, const size_t size);
+	virtual ~PrimitiveContainerInterface();
 
 	/**<
 	 * Virtual clone (copy) constructor for the situation when
@@ -146,6 +132,12 @@ public:
 	                                          bcf_hdr_t* hdr,
 	                                          const std::string& tag) const =0;
 
+	/**<
+	 * Return the word width of the templated return type in the implementation
+	 * classes. This is useful for knowing the byte width of objects stored in the
+	 * specialized children without having knowledge of their explicit typing.
+	 * @return Returns the byte width of the return type.
+	 */
 	virtual uint8_t GetWordWidth(void) =0;
 
 protected:
@@ -186,16 +178,7 @@ public:
 
     inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
 
-    PrimitiveContainerInterface* Move(void){
-		self_type* o      = new self_type();
-		o->is_uniform_ = this->is_uniform_;
-		o->n_capacity_ = this->n_capacity_;
-		o->n_entries_  = this->n_entries_;
-		std::swap(this->entries_, o->entries_);
-		this->n_capacity_ = 0;
-		this->n_entries_  = 0;
-		return(o);
-	}
+    PrimitiveContainerInterface* Move(void);
 
     void resize(void);
 	void resize(const size_t new_size);
@@ -214,45 +197,9 @@ public:
 	void operator+=(const double entry);
 	void operator+=(const std::string& entry);
 
-	yon1_dc_t ToDataContainer(void){
-		if(this->size() == 0)
-			return(yon1_dc_t());
-
-		yon1_dc_t d;
-		d.data_uncompressed.resize(this->size()*sizeof(return_type) + 128);
-		d.strides_uncompressed.resize(this->size()*sizeof(return_type) + 128);
-		d.header.data_header.stride = this->size();
-
-		for(uint32_t i = 0; i < this->size(); ++i) d.Add(this->at(i));
-		d.AddStride(this->size());
-		++d;
-
-		return(d);
-	}
-
-	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true){
-		if(this->size() == 0)
-			return(container);
-
-		if(container.data_uncompressed.size() + this->size()*sizeof(return_type) > container.data_uncompressed.capacity())
-			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size()*sizeof(return_type))*2);
-
-		for(uint32_t i = 0; i < this->size(); ++i)
-			container.Add(this->at(i));
-
-		if(update_stride) container.AddStride(this->size());
-		++container;
-
-		return(container);
-	}
-
-	void ExpandEmpty(const uint32_t to){
-		// Cannot resize into mixed stride with EOV values
-		// if there are no negative values available.
-		assert(std::numeric_limits<return_type>::min() != 0);
-		if(to > this->capacity()) this->resize(to + 10);
-		for(int i = 0; i < n_entries_; to) entries_[i] = std::numeric_limits<return_type>::min() + 1;
-	}
+	yon1_dc_t ToDataContainer(void);
+	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true);
+	void ExpandEmpty(const uint32_t to);
 
 	inline uint8_t GetWordWidth(void){ return(sizeof(return_type)); }
 
@@ -314,45 +261,15 @@ public:
 	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-    PrimitiveContainer(){ this->n_capacity_ = 1; this->n_entries_ = 0; }
-	PrimitiveContainer(const char* data, const size_t l_data) :
-		PrimitiveContainerInterface(false, 1),
-		data_(data, l_data)
-    {
-
-    }
-	PrimitiveContainer(const PrimitiveContainer& other) :
-		PrimitiveContainerInterface(other.is_uniform_, 1),
-		data_(other.data_.data(), other.data_.size())
-	{
-	}
-
-	PrimitiveContainer& operator=(const PrimitiveContainer& other){
-		this->is_uniform_ = other.is_uniform_;
-		this->n_entries_ = other.n_entries_;
-		data_ = other.data_;
-		return(*this);
-	}
-
-	~PrimitiveContainer(void){}
+    PrimitiveContainer();
+	PrimitiveContainer(const char* data, const size_t l_data);
+	PrimitiveContainer(const PrimitiveContainer& other);
+	PrimitiveContainer& operator=(const PrimitiveContainer& other);
+	~PrimitiveContainer(void);
 
 	inline PrimitiveContainerInterface* Clone(){ return(new self_type(*this)); }
-	PrimitiveContainerInterface* Move(void){
-		self_type* o      = new self_type();
-		o->is_uniform_ = this->is_uniform_;
-		o->n_capacity_ = this->n_capacity_;
-		o->n_entries_  = this->n_entries_;
-		this->data_ = std::move(o->data_);
-		this->data_.clear();
-		this->n_entries_  = 0;
-		this->n_capacity_ = 1;
-		return(o);
-	}
-
-	void ExpandEmpty(const uint32_t to){
-		const size_t sz = data_.size();
-		for(int i = sz; i < to; ++i) data_.push_back('\0');
-	}
+	PrimitiveContainerInterface* Move(void);
+	void ExpandEmpty(const uint32_t to);
 
 	inline uint8_t GetWordWidth(void){ return(sizeof(char)); }
 
@@ -372,40 +289,8 @@ public:
 	inline void operator+=(const double entry){ this->data_ += std::to_string(entry); }
 	inline void operator+=(const std::string& entry){ this->data_ += entry; }
 
-	yon1_dc_t ToDataContainer(void){
-		if(this->size() == 0)
-			return yon1_dc_t();
-
-		yon1_dc_t d;
-		d.data_uncompressed.resize(this->size() + 128);
-		d.strides_uncompressed.resize(this->size() + 128);
-		d.header.data_header.stride = this->size();
-
-		for(uint32_t i = 0; i < this->size(); ++i){
-			d.AddString(this->data_.c_str(), this->data_.size());
-			d.AddStride(this->data_.size());
-			++d;
-		}
-
-		return(d);
-	}
-
-	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true){
-		if(this->size() == 0)
-			return container;
-
-		if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
-			container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
-
-		for(uint32_t i = 0; i < this->size(); ++i){
-			// Add C-style strings to buffer.
-			container.AddString(this->data_.c_str(), this->data_.size());
-			if(update_stride) container.AddStride(this->data_.size());
-			++container;
-		}
-
-		return(container);
-	}
+	yon1_dc_t ToDataContainer(void);
+	yon1_dc_t& UpdateDataContainer(yon1_dc_t& container, const bool update_stride = true);
 
 	// Element access
 	inline pointer data(void){ return(&this->data_); }
@@ -420,14 +305,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->data_); }
 	inline const_iterator cend() const{ return const_iterator(&this->data_ + this->n_entries_); }
 
-	io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const{
-		if(this->data_.size() == 0){
-			buffer += '.';
-			return(buffer);
-		}
-		buffer += this->data_;
-		return(buffer);
-	}
+	io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const;
 
 	inline bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 	                                         bcf_hdr_t* hdr,
@@ -442,7 +320,25 @@ public:
 
 
 // IMPLEMENTATION -------------------------------------------------------------
+// templated
 
+PrimitiveContainerInterface::PrimitiveContainerInterface(void) :
+	is_uniform_(false),
+	n_entries_(0),
+	n_capacity_(0)
+{
+
+}
+
+PrimitiveContainerInterface::PrimitiveContainerInterface(const bool uniform, const size_t size) :
+	is_uniform_(uniform),
+	n_entries_(size),
+	n_capacity_(size)
+{
+
+}
+
+PrimitiveContainerInterface::~PrimitiveContainerInterface(){}
 
 template <class return_type>
 PrimitiveContainer<return_type>::PrimitiveContainer() :
@@ -641,6 +537,61 @@ void PrimitiveContainer<return_type>::SetupSigned(const container_type& containe
 }
 
 template <class return_type>
+PrimitiveContainerInterface* PrimitiveContainer<return_type>::Move(void){
+	self_type* o      = new self_type();
+	o->is_uniform_ = this->is_uniform_;
+	o->n_capacity_ = this->n_capacity_;
+	o->n_entries_  = this->n_entries_;
+	std::swap(this->entries_, o->entries_);
+	this->n_capacity_ = 0;
+	this->n_entries_  = 0;
+	return(o);
+}
+
+template <class return_type>
+yon1_dc_t PrimitiveContainer<return_type>::ToDataContainer(void){
+	if(this->size() == 0)
+		return(yon1_dc_t());
+
+	yon1_dc_t d;
+	d.data_uncompressed.resize(this->size()*sizeof(return_type) + 128);
+	d.strides_uncompressed.resize(this->size()*sizeof(return_type) + 128);
+	d.header.data_header.stride = this->size();
+
+	for(uint32_t i = 0; i < this->size(); ++i) d.Add(this->at(i));
+	d.AddStride(this->size());
+	++d;
+
+	return(d);
+}
+
+template <class return_type>
+yon1_dc_t& PrimitiveContainer<return_type>::UpdateDataContainer(yon1_dc_t& container, const bool update_stride){
+	if(this->size() == 0)
+		return(container);
+
+	if(container.data_uncompressed.size() + this->size()*sizeof(return_type) > container.data_uncompressed.capacity())
+		container.data_uncompressed.resize((container.data_uncompressed.size()+this->size()*sizeof(return_type))*2);
+
+	for(uint32_t i = 0; i < this->size(); ++i)
+		container.Add(this->at(i));
+
+	if(update_stride) container.AddStride(this->size());
+	++container;
+
+	return(container);
+}
+
+template <class return_type>
+void PrimitiveContainer<return_type>::ExpandEmpty(const uint32_t to){
+	// Cannot resize into mixed stride with EOV values
+	// if there are no negative values available.
+	assert(std::numeric_limits<return_type>::min() != 0);
+	if(to > this->capacity()) this->resize(to + 10);
+	for(int i = 0; i < n_entries_; to) entries_[i] = std::numeric_limits<return_type>::min() + 1;
+}
+
+template <class return_type>
 void PrimitiveContainer<return_type>::resize(void){
 	pointer temp       = this->entries_;
 	this->entries_     = new value_type[this->n_capacity_*2];
@@ -798,6 +749,94 @@ void PrimitiveContainer<return_type>::operator+=(const double entry){
 template <class return_type>
 void PrimitiveContainer<return_type>::operator+=(const std::string& entry){
 	std::cerr << utility::timestamp("WARNING") << "Cannot add a string to this container" << std::endl;
+}
+
+
+// IMPLEMENTATION -------------------------------------------------------------
+// string
+
+
+PrimitiveContainer<std::string>::PrimitiveContainer(){ this->n_capacity_ = 1; this->n_entries_ = 0; }
+PrimitiveContainer<std::string>::PrimitiveContainer(const char* data, const size_t l_data) :
+	PrimitiveContainerInterface(false, 1),
+	data_(data, l_data)
+{
+
+}
+PrimitiveContainer<std::string>::PrimitiveContainer(const PrimitiveContainer& other) :
+	PrimitiveContainerInterface(other.is_uniform_, 1),
+	data_(other.data_.data(), other.data_.size())
+{
+}
+
+PrimitiveContainer& PrimitiveContainer<std::string>::operator=(const PrimitiveContainer& other){
+	this->is_uniform_ = other.is_uniform_;
+	this->n_entries_ = other.n_entries_;
+	data_ = other.data_;
+	return(*this);
+}
+
+PrimitiveContainer<std::string>::~PrimitiveContainer(void){}
+
+PrimitiveContainerInterface* PrimitiveContainer<std::string>::Move(void){
+	self_type* o      = new self_type();
+	o->is_uniform_ = this->is_uniform_;
+	o->n_capacity_ = this->n_capacity_;
+	o->n_entries_  = this->n_entries_;
+	this->data_ = std::move(o->data_);
+	this->data_.clear();
+	this->n_entries_  = 0;
+	this->n_capacity_ = 1;
+	return(o);
+}
+
+void PrimitiveContainer<std::string>::ExpandEmpty(const uint32_t to){
+	const size_t sz = data_.size();
+	for(int i = sz; i < to; ++i) data_.push_back('\0');
+}
+
+yon1_dc_t PrimitiveContainer<std::string>::ToDataContainer(void){
+	if(this->size() == 0)
+		return yon1_dc_t();
+
+	yon1_dc_t d;
+	d.data_uncompressed.resize(this->size() + 128);
+	d.strides_uncompressed.resize(this->size() + 128);
+	d.header.data_header.stride = this->size();
+
+	for(uint32_t i = 0; i < this->size(); ++i){
+		d.AddString(this->data_.c_str(), this->data_.size());
+		d.AddStride(this->data_.size());
+		++d;
+	}
+
+	return(d);
+}
+
+yon1_dc_t& PrimitiveContainer<std::string>::UpdateDataContainer(yon1_dc_t& container, const bool update_stride){
+	if(this->size() == 0)
+		return container;
+
+	if(container.data_uncompressed.size() + this->size() > container.data_uncompressed.capacity())
+		container.data_uncompressed.resize((container.data_uncompressed.size()+this->size())*2);
+
+	for(uint32_t i = 0; i < this->size(); ++i){
+		// Add C-style strings to buffer.
+		container.AddString(this->data_.c_str(), this->data_.size());
+		if(update_stride) container.AddStride(this->data_.size());
+		++container;
+	}
+
+	return(container);
+}
+
+io::BasicBuffer& PrimitiveContainer<std::string>::ToVcfString(io::BasicBuffer& buffer) const{
+	if(this->data_.size() == 0){
+		buffer += '.';
+		return(buffer);
+	}
+	buffer += this->data_;
+	return(buffer);
 }
 
 }
