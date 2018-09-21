@@ -1,3 +1,25 @@
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
 #ifndef CORE_VARIANT_RECORD_H_
 #define CORE_VARIANT_RECORD_H_
 
@@ -7,7 +29,7 @@
 
 #include <cmath>
 
-namespace tachyon{
+namespace tachyon {
 
 /****************************
 *  Core
@@ -120,15 +142,15 @@ public:
 	std::string GetAlleleString(void) const;
 
 	// Base setters for function pointer overloading.
-	void SetController(const uint16_t value){ this->controller = value; }
-	void SetBasePloidy(const uint8_t value){ this->n_base_ploidy = value; }
-	void SetInfoPId(const int32_t value){ this->info_pid = value; }
-	void SetFormatPId(const int32_t value){ this->fmt_pid = value; }
-	void SetFilterPId(const int32_t value){ this->flt_pid = value; }
-	void SetQuality(const float value){ this->qual = value; }
-	void SetPosition(const int64_t value){ this->pos = value; }
-	void SetChromosome(const uint32_t value){ this->rid = value; }
-	void SetName(const std::string& value);
+	inline void SetController(const uint16_t value){ this->controller = value; }
+	inline void SetBasePloidy(const uint8_t value){ this->n_base_ploidy = value; }
+	inline void SetInfoPatternId(const int32_t value){ this->info_pid = value; }
+	inline void SetFormatPatternId(const int32_t value){ this->fmt_pid = value; }
+	inline void SetFilterPatternId(const int32_t value){ this->flt_pid = value; }
+	inline void SetQuality(const float value){ this->qual = value; }
+	inline void SetPosition(const int64_t value){ this->pos = value; }
+	inline void SetChromosome(const uint32_t value){ this->rid = value; }
+	inline void SetName(const std::string& value);
 
 	/**<
 	 * Updates a htslib bcf1_t record with data available in this meta record.
@@ -205,9 +227,7 @@ public:
 	}
 
 	bool AddFilter(const std::string& tag, VariantHeader& header);
-
 	bool AddGenotypeStatistics(VariantHeader& header, const bool replace_existing = true);
-
 	bool AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names);
 
 	/**<
@@ -237,14 +257,14 @@ public:
 	bool is_dirty; // if data has been modified
 	bool is_loaded_gt;
 	yon_vnt_cnt controller;
-	uint8_t   n_base_ploidy;
-	uint16_t  n_alleles;
-	int32_t   n_flt, n_fmt, n_info;
-	int32_t   info_pid, flt_pid, fmt_pid;
-	int32_t   m_fmt, m_info, m_allele; // allocated sizes
-	float     qual;
-	uint32_t  rid;
-	int64_t   pos;
+	uint8_t  n_base_ploidy;
+	uint16_t n_alleles;
+	int32_t  n_flt, n_fmt, n_info;
+	int32_t  info_pid, flt_pid, fmt_pid;
+	int32_t  m_fmt, m_info, m_allele; // allocated sizes
+	float    qual;
+	uint32_t rid;
+	int64_t  pos;
 	std::string name;
 
 	std::vector<const YonInfo*> info_hdr;
@@ -340,10 +360,9 @@ public:
 	}
 
 	/**<
-	 * Gathers summary statistics for a vector of genotypes
-	 * at a given site. Collects information regarding the
-	 * number of missing genotypes and count of sentinel
-	 * nodes, checks if the phasing is uniform and whether
+	 * Gathers summary statistics for a vector of genotypes at a given site.
+	 * Collects information regarding the number of missing genotypes and
+	 * count of sentinel nodes, checks if the phasing is uniform and whether
 	 * all the genotypes are identical.
 	 * Todo: Use hashes to check for uniformity of genotypes.
 	 * @param rec       The src yon1_vnt_t record.
@@ -450,9 +469,8 @@ public:
 };
 
 /**<
- * Supportive structure for computing variant-centric
- * summary statistics using the genotypes and site-specific
- * meta information.
+ * Supportive structure for computing variant-centric summary statistics
+ * using the genotypes and site-specific meta information.
  */
 struct yon_stats_tstv {
 public:
@@ -466,12 +484,12 @@ public:
 			delete [] b_size;
 		}
 
-		uint32_t  n_allele;
-		uint32_t  n_non_ref; // Number of alleles with non-ref alleles.
-		uint32_t  t_non_ref; // Target id for non-ref allele.
-		uint8_t*  allele_encodings;
-		uint8_t*  non_ref_encodings;
-		int32_t*  b_size;
+		uint32_t n_allele;
+		uint32_t n_non_ref; // Number of alleles with non-ref alleles.
+		uint32_t t_non_ref; // Target id for non-ref allele.
+		uint8_t* allele_encodings;
+		uint8_t* non_ref_encodings;
+		int32_t* b_size;
 	};
 
 public:
@@ -556,7 +574,11 @@ public:
 	void UpdateDiploid(const yon_gt* gt, yon_stats_tstv_obj& helper);
 	void UpdateNPloidy(const yon_gt* gt, yon_stats_tstv_obj& helper);
 
-	// Todo: expand if necessary.
+	/**<
+	 * Short-hand support function for invoking LazyEvaluate() in all available
+	 * children objects. See LazyEvaluate() in the children structure for more
+	 * information.
+	 */
 	void Evaluate(void){
 		for(uint32_t i = 0; i < this->n_s; ++i)
 			this->sample[i].LazyEvalute();

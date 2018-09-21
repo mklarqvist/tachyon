@@ -1,8 +1,8 @@
 #ifndef COMPRESSIONCONTAINER_H_
 #define COMPRESSIONCONTAINER_H_
 
-#include "core/genotypes.h"
-#include "containers/data_container.h"
+#include "genotypes.h"
+#include "data_container.h"
 
 namespace tachyon{
 namespace algorithm{

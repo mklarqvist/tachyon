@@ -12,7 +12,7 @@
 #include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
 #include "core/footer/footer.h"
-#include "containers/variant_container.h"
+#include "variant_container.h"
 
 namespace tachyon{
 
@@ -349,7 +349,7 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
-	void emplace(uint32_t block_id, yon1_vb_t& container, index::VariantIndexEntry& index_entry){
+	void emplace(uint32_t block_id, yon1_vb_t& container, yon1_idx_rec& index_entry){
 		std::unique_lock<std::mutex> l(lock);
 
 		cv_next_checkpoint.wait(l, [this, block_id](){
@@ -387,7 +387,7 @@ struct yon_writer_sync {
 	 */
 	bool Write(yon1_vb_t& block,
 	           const containers::VcfContainer& container,
-	           index::VariantIndexEntry& index_entry)
+	           yon1_idx_rec& index_entry)
 	{
 		this->WriteBlock(block, index_entry); // write block
 		this->UpdateIndex(container, index_entry); // Update index.
@@ -395,7 +395,7 @@ struct yon_writer_sync {
 	}
 
 	bool Write(yon1_vb_t& container,
-			   index::VariantIndexEntry& index_entry)
+			   yon1_idx_rec& index_entry)
 	{
 		this->WriteBlock(container, index_entry); // write block
 		this->UpdateIndex(index_entry); // Update index.
@@ -409,7 +409,7 @@ struct yon_writer_sync {
 	 * @param index_entry  Reference to source VariantIndexEntry.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool UpdateIndex(const containers::VcfContainer& container, index::VariantIndexEntry& index_entry){
+	bool UpdateIndex(const containers::VcfContainer& container, yon1_idx_rec& index_entry){
 		assert(this->writer != nullptr);
 		index_entry.block_id         = this->writer->n_blocks_written;
 		index_entry.byte_offset_end  = this->writer->stream->tellp();
@@ -428,7 +428,7 @@ struct yon_writer_sync {
 		return true;
 	}
 
-	bool UpdateIndex(index::VariantIndexEntry& index_entry){
+	bool UpdateIndex(yon1_idx_rec& index_entry){
 		assert(this->writer != nullptr);
 		index_entry.block_id        = this->writer->n_blocks_written;
 		index_entry.byte_offset_end = this->writer->stream->tellp();
@@ -452,7 +452,7 @@ struct yon_writer_sync {
 	 * @param index_entry Source VariantIndexEntry to update the variant index with.
 	 * @return            Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool WriteBlock(yon1_vb_t& block, index::VariantIndexEntry& index_entry){
+	bool WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_entry){
 		index_entry.byte_offset = this->writer->stream->tellp();
 		block.write(*this->writer->stream);
 		this->writer->WriteBlockFooter(block.footer_support);

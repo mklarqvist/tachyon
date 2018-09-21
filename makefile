@@ -47,7 +47,7 @@ DEBUG_FLAGS :=
 endif
 
 # Global build parameters
-INCLUDE_PATH = -I./lib/
+INCLUDE_PATH = -I./lib/ -I./include/
 ZSTD_LIBRARY_PATH = 
 
 # Check if ZSTD is in the current directory
@@ -172,8 +172,8 @@ lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
 
 tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
-	$(MAKE) cleanmost
-	$(MAKE) library library=true
+	#$(MAKE) cleanmost
+	#$(MAKE) library library=true
 	#$(MAKE) examples
 
 library: $(OBJECTS)

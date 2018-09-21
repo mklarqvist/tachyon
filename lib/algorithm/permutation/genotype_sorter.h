@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "core/genotypes.h"
+#include "genotypes.h"
 #include "containers/vcf_container.h"
 
 namespace tachyon {

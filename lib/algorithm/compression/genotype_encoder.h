@@ -6,10 +6,10 @@
 #include <cassert>
 #include <thread>
 
-#include "containers/variant_container.h"
-#include "core/genotypes.h"
+#include "variant_container.h"
+#include "genotypes.h"
 #include "io/vcf_utils.h"
-#include "core/variant_record.h"
+#include "variant_record.h"
 #include "containers/vcf_container.h"
 
 #include "third_party/xxhash/xxhash.h"

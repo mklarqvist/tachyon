@@ -3,7 +3,7 @@
 
 #include "openssl/md5.h"
 #include "digest_manager.h"
-#include "containers/variant_container.h"
+#include "variant_container.h"
 
 namespace tachyon{
 namespace algorithm{

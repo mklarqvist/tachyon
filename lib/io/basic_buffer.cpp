@@ -97,6 +97,27 @@ void BasicBuffer::resize(const self_type& other){
 	}
 }
 
+void BasicBuffer::set(const size_t size){
+	this->n_chars_ = 0;
+	this->width_ = size;
+	if(this->buffer_ != nullptr)
+		delete [] this->buffer_;
+
+	this->buffer_ = new char[size];
+}
+
+void BasicBuffer::set(const size_t size, char* target){
+	this->n_chars_ = 0;
+	this->width_ = size;
+	this->buffer_ = target;
+}
+
+void BasicBuffer::set(char* target){
+	this->n_chars_ = 0;
+	this->width_ = 0;
+	this->buffer_ = target;
+}
+
 void BasicBuffer::Add(const char* data, const uint32_t length){
 	if(this->size() + length >= this->capacity())
 		this->resize((this->size() + length) * 2);
@@ -311,6 +332,69 @@ BasicBuffer& BasicBuffer::operator+=(const std::string& value){
 	}
 
 	return *this;
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, uint8_t& target){
+	target = *reinterpret_cast<uint8_t*>(&data.buffer_[data.iterator_position_++]);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, uint16_t& target){
+	target = *reinterpret_cast<uint16_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(uint16_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, uint32_t& target){
+	target = *reinterpret_cast<uint32_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(uint32_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, uint64_t& target){
+	target = *reinterpret_cast<uint64_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(uint64_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, int8_t& target){
+	target = *reinterpret_cast<int8_t*>(&data.buffer_[data.iterator_position_++]);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, int16_t& target){
+	target = *reinterpret_cast<int16_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(int16_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, int32_t& target){
+	target = *reinterpret_cast<int32_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(int32_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, int64_t& target){
+	target = *reinterpret_cast<int64_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(int64_t);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, float& target){
+	target = *reinterpret_cast<float*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(float);
+	return(data);
+}
+
+BasicBuffer& operator>>(BasicBuffer& data, double& target){
+	target = *reinterpret_cast<double*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(double);
+	return(data);
+}
+
+std::ostream& operator<<(std::ostream& out, const BasicBuffer& data){
+	out.write(data.data(), data.size());
+	return(out);
 }
 
 void SerializeString(const std::string& string, io::BasicBuffer& buffer){

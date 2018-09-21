@@ -1,7 +1,7 @@
 #ifndef CONTAINERS_VARIANT_READER_FILTERS_H_
 #define CONTAINERS_VARIANT_READER_FILTERS_H_
 
-#include "core/variant_record.h"
+#include "variant_record.h"
 #include "variant_reader_filters_tuple.h"
 
 namespace tachyon{

@@ -1,4 +1,4 @@
-#include "core/genotypes.h"
+#include "genotypes.h"
 #include "compression_manager.h"
 
 namespace tachyon {

@@ -5,14 +5,13 @@
 #include <limits>
 
 namespace tachyon{
-namespace index{
 
-struct VariantIndexEntry {
+struct yon1_idx_rec {
 public:
-	typedef VariantIndexEntry self_type;
+	typedef yon1_idx_rec self_type;
 
 public:
-	VariantIndexEntry() :
+	yon1_idx_rec() :
 		block_id(0),
 		contig_id(-1),
 		n_variants(0),
@@ -55,7 +54,7 @@ public:
 		return true;
 	}
 
-	~VariantIndexEntry(){}
+	~yon1_idx_rec(){}
 
 	void reset(void){
 		this->block_id         = 0;
@@ -115,7 +114,6 @@ public:
 	int32_t  max_bin;
 };
 
-}
 }
 
 #endif

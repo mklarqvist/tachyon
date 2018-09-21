@@ -1,3 +1,25 @@
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
 #ifndef INDEX_INDEX_H_
 #define INDEX_INDEX_H_
 
@@ -6,17 +28,17 @@
 #include <vector>
 
 #include "core/header/variant_header.h"
-#include "variant_index_entry.h"
-#include "core/variant_record.h"
+#include "index_record.h"
+#include "variant_container.h"
 
 namespace tachyon {
 
 class Index {
 public:
-	typedef Index             self_type;
-    typedef std::size_t       size_type;
-    typedef index::VariantIndexEntry entry_type;
-	typedef YonContig         contig_type;
+	typedef Index        self_type;
+    typedef std::size_t  size_type;
+    typedef yon1_idx_rec entry_type;
+	typedef YonContig    contig_type;
 
 public:
 	Index();
@@ -92,6 +114,23 @@ public:
 	inline entry_type& GetCurrent(void){ return(this->current_entry_); }
 	inline const entry_type& GetCurrent(void) const{ return(this->current_entry_); }
 
+	bool IndexContainer(const yon1_vc_t& vc, const uint32_t block_id){
+		current_entry_.reset();
+		current_entry_.block_id     = block_id;
+		current_entry_.contig_id    = vc.block_.header.contig_id;
+		current_entry_.min_position = vc.block_.header.min_position;
+		current_entry_.max_position = vc.block_.header.max_position;
+		current_entry_.n_variants   = vc.block_.header.n_variants;
+
+		for(int i = 0; i < vc.size(); ++i){
+			if(this->IndexRecord(vc[i], block_id) == false){
+				std::cerr << "failed to index a record" << std::endl;
+			}
+		}
+
+		return true;
+	}
+
 	bool IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
 		int32_t index_bin = -1;
 		const int32_t info_end_key = rcd.GetInfoOffset("END");
@@ -109,27 +148,27 @@ public:
 		// is usually only set for non-standard variants such as SVs or other special meaning records.
 		if(info_end_key != -1){
 			if(rcd.info[info_end_key]->size() == 1){
-				//TACHYON_CORE_TYPE type = rcd.info[info_end_key]->data_type_;
-				TACHYON_CORE_TYPE type = YON_TYPE_16B;
-				uint32_t end_pos = 0;
-				switch(type){
-				case(YON_TYPE_8B):  end_pos = reinterpret_cast<containers::PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0); break;
-				case(YON_TYPE_16B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
-				case(YON_TYPE_32B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
-				case(YON_TYPE_64B): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
+				const uint8_t word_width = rcd.info[info_end_key]->GetWordWidth();
+				int64_t end_pos = 0;
+
+				switch(word_width){
+				case(1): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0);  break;
+				case(2): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(4): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(8): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
 				default:
-					std::cerr << "unknown end type: " << type << std::endl;
+					std::cerr << "unknown end type: " << (int)word_width << std::endl;
 					exit(1);
 					break;
 				}
+
+				std::cerr << "have end. " << "adding: (" << rcd.rid << "," << rcd.pos << "," << end_pos << ")"  << std::endl;
 
 				index_bin = this->AddSorted(rcd.rid, rcd.pos, end_pos, block_id);
 
 			} else {
 				std::cerr << "size of Info:End is not 1..." << std::endl;
 			}
-
-
 		}
 
 		// If the END field cannot be found then we check if the variant is a

@@ -1,4 +1,4 @@
-#include <containers/variant_container.h>
+#include <variant_container.h>
 #include <openssl/evp.h>
 
 #include "variant_reader.h"
@@ -736,8 +736,10 @@ bool VariantReader::TempWrite(void){
 					return false;
 				}
 
-				index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
-				index_entry.block_id = block_id;
+				//index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
+				//index_entry.block_id = block_id;
+				writer->index.IndexContainer(vc2, block_id);
+				index_entry_type index_entry = writer->index.GetCurrent();
 
 				swriter.emplace(block_id, vc2.block_, index_entry);
 				++block_id;
@@ -754,8 +756,10 @@ bool VariantReader::TempWrite(void){
 			return false;
 		}
 
-		index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
-		index_entry.block_id = block_id;
+		//index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
+		//index_entry.block_id = block_id;
+		writer->index.IndexContainer(vc2, block_id);
+		index_entry_type index_entry = writer->index.GetCurrent();
 
 		swriter.emplace(block_id, vc2.block_, index_entry);
 		++block_id;

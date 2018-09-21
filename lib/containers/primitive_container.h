@@ -3,7 +3,7 @@
 
 #include <typeinfo>
 
-#include "containers/data_container.h"
+#include "data_container.h"
 #include "components/generic_iterator.h"
 #include "utility/support_vcf.h"
 
@@ -146,6 +146,8 @@ public:
 	                                          bcf_hdr_t* hdr,
 	                                          const std::string& tag) const =0;
 
+	virtual uint8_t GetWordWidth(void) =0;
+
 protected:
 	bool    is_uniform_;
     size_t  n_entries_;
@@ -252,6 +254,8 @@ public:
 		for(int i = 0; i < n_entries_; to) entries_[i] = std::numeric_limits<return_type>::min() + 1;
 	}
 
+	inline uint8_t GetWordWidth(void){ return(sizeof(return_type)); }
+
     // Element access
     inline reference at(const size_type& position){ return(this->entries_[position]); }
     inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
@@ -349,6 +353,8 @@ public:
 		const size_t sz = data_.size();
 		for(int i = sz; i < to; ++i) data_.push_back('\0');
 	}
+
+	inline uint8_t GetWordWidth(void){ return(sizeof(char)); }
 
 	inline void resize(void){}
 	inline void resize(const size_t new_size){}

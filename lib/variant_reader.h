@@ -8,7 +8,7 @@
 #include "zstd.h"
 #include "zstd_errors.h"
 
-#include "algorithm/encryption/encryption.h"
+#include "encryption.h"
 
 #include "containers/primitive_group_container.h"
 #include "core/footer/footer.h"
@@ -18,11 +18,11 @@
 #include "core/variant_reader_settings.h"
 #include "core/data_block_settings.h"
 
-#include "index/index.h"
+#include "index.h"
 
 #include "utility/support_vcf.h"
 
-#include "containers/variant_container.h"
+#include "variant_container.h"
 
 #include "algorithm/parallel/variant_slaves.h"
 #include "algorithm/parallel/variant_base_slave.h"
@@ -39,7 +39,7 @@ public:
 	typedef DataBlockSettings         block_settings_type;
 	typedef VariantReaderSettings     settings_type;
 	typedef Index                     index_type;
-	typedef index::VariantIndexEntry  index_entry_type;
+	typedef yon1_idx_rec              index_entry_type;
 
 	typedef yon1_vb_t                 block_entry_type;
 	typedef VariantReaderFilters      variant_filter_type;

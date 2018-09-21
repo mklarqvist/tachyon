@@ -3,7 +3,7 @@
 
 #include "components/generic_iterator.h"
 #include "io/vcf_utils.h"
-#include "core/variant_record.h"
+#include "variant_record.h"
 
 namespace tachyon{
 namespace containers{

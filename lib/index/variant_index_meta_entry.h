@@ -1,7 +1,7 @@
 #ifndef INDEX_INDEX_INDEX_ENTRY_H_
 #define INDEX_INDEX_INDEX_ENTRY_H_
 
-#include "variant_index_entry.h"
+#include "index_record.h"
 
 namespace tachyon{
 namespace index{
@@ -9,7 +9,7 @@ namespace index{
 struct VariantIndexMetaEntry{
 public:
 	typedef VariantIndexMetaEntry self_type;
-	typedef VariantIndexEntry entry_type;
+	typedef yon1_idx_rec          entry_type;
 
 public:
 	VariantIndexMetaEntry() :
@@ -39,13 +39,13 @@ public:
 	}
 
 	void operator=(const entry_type& entry){
-		this->contig_id          = entry.contig_id;
+		this->contig_id         = entry.contig_id;
 		this->n_blocks          = 1;
 		this->n_variants        = entry.n_variants;
 		this->byte_offset_begin = entry.byte_offset;
 		this->byte_offest_end   = entry.byte_offset_end;
-		this->min_position       = entry.min_position;
-		this->max_position       = entry.max_position;
+		this->min_position      = entry.min_position;
+		this->max_position      = entry.max_position;
 		this->start_block       = entry.block_id;
 		this->end_block         = entry.block_id;
 	}

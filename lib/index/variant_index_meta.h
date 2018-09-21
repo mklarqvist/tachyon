@@ -9,9 +9,9 @@ namespace index{
 
 class VariantIndexMeta{
 public:
-	typedef VariantIndexMeta self_type;
+	typedef VariantIndexMeta   self_type;
     typedef std::size_t        size_type;
-    typedef VariantIndexMetaEntry    value_type;
+    typedef VariantIndexMetaEntry value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;

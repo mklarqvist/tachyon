@@ -50,7 +50,7 @@ size_t Index::sizeMeta(void) const{ return(this->mImpl->index_meta_.size()); }
 uint64_t Index::GetLinearSize(void) const{ return(this->mImpl->linear_.size()); }
 
 
-std::vector<index::VariantIndexEntry> Index::FindOverlap(const uint32_t& contig_id) const{
+std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id) const{
 	if(contig_id > this->mImpl->index_meta_.size())
 		return(std::vector<entry_type>());
 
@@ -62,9 +62,9 @@ std::vector<index::VariantIndexEntry> Index::FindOverlap(const uint32_t& contig_
 	return(yon_blocks);
 }
 
-std::vector<index::VariantIndexEntry> Index::FindOverlap(const uint32_t& contig_id,
-                                                  const uint64_t& start_pos,
-                                                  const uint64_t& end_pos) const
+std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id,
+                                             const uint64_t& start_pos,
+                                             const uint64_t& end_pos) const
 {
 	if(contig_id > this->mImpl->index_meta_.size())
 		return(std::vector<entry_type>());
@@ -159,8 +159,8 @@ Index& Index::operator+=(const entry_type& entry){
 	return(*this);
 }
 
-index::VariantIndexEntry& Index::operator[](const uint32_t block_id){ return(this->mImpl->linear_.at(block_id)); }
-const index::VariantIndexEntry& Index::operator[](const uint32_t block_id) const{ return(this->mImpl->linear_.at(block_id)); }
+yon1_idx_rec& Index::operator[](const uint32_t block_id){ return(this->mImpl->linear_.at(block_id)); }
+const yon1_idx_rec& Index::operator[](const uint32_t block_id) const{ return(this->mImpl->linear_.at(block_id)); }
 
 
 std::ostream& Index::Print(std::ostream& stream) const{

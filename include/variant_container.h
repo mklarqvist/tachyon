@@ -1,3 +1,25 @@
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
 #ifndef CONTAINERS_VARIANT_CONTAINER_H_
 #define CONTAINERS_VARIANT_CONTAINER_H_
 
@@ -9,11 +31,10 @@
 #include <cmath>
 #include <fstream>
 
-#include "index/index.h"
 #include "data_container.h"
 #include "variant_block.h"
-#include "primitive_container.h"
-#include "core/variant_record.h"
+#include "containers/primitive_container.h"
+#include "variant_record.h"
 
 namespace tachyon {
 
@@ -157,6 +178,7 @@ public:
 
 	bool PrepareWritableBlock(const uint32_t n_samples);
 
+	/*
 	index::VariantIndexEntry GetIndexEntry(void){
 		index::VariantIndexEntry index_entry;
 		//index_entry.blockID     = block_id;
@@ -166,6 +188,7 @@ public:
 		index_entry.n_variants   = this->block_.header.n_variants;
 		return(index_entry);
 	}
+	*/
 
 	 // Element access
 	inline reference at(const size_type& position){ return(this->variants_[position]); }
@@ -256,9 +279,9 @@ private:
 	bool AddQuality(dc_type& container);
 	bool AddRefAlt(dc_type& container);
 
-	inline bool AddFilterIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFilterPId)); }
-	inline bool AddFormatIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFormatPId)); }
-	inline bool AddInfoIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetInfoPId)); }
+	inline bool AddFilterIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFilterPatternId)); }
+	inline bool AddFormatIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetFormatPatternId)); }
+	inline bool AddInfoIds(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetInfoPatternId)); }
 	inline bool AddPloidy(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetBasePloidy)); }
 
 	bool AddAlleles(dc_type& container);

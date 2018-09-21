@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_PARALLEL_VARIANT_BASE_SLAVE_H_
 #define ALGORITHM_PARALLEL_VARIANT_BASE_SLAVE_H_
 
-#include "containers/variant_container.h"
+#include "variant_container.h"
 #include "algorithm/compression/compression_manager.h"
 
 namespace tachyon {

@@ -7,7 +7,7 @@
 #include <condition_variable>
 #include <atomic>
 
-#include "containers/variant_container.h"
+#include "variant_container.h"
 
 namespace tachyon {
 

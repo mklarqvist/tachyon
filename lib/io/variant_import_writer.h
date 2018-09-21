@@ -4,9 +4,9 @@
 #include <cassert>
 #include <fstream>
 
-#include "index/index.h"
+#include "index.h"
 #include "support/magic_constants.h"
-#include "containers/data_container.h"
+#include "data_container.h"
 
 namespace tachyon {
 

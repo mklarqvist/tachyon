@@ -844,7 +844,7 @@ public:
 	map_reverse_type filter_fields_reverse_map_; // map IDX -> index offset
 };
 
-class VcfReader{
+class VcfReader {
 public:
 	typedef VcfReader self_type;
 

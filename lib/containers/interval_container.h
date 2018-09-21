@@ -6,9 +6,9 @@
 #include "support/magic_constants.h"
 #include "support/helpers.h"
 #include "third_party/intervalTree.h"
-#include "index/index.h"
+#include "index.h"
 #include "core/header/variant_header.h"
-#include "core/variant_record.h"
+#include "variant_record.h"
 #include "components/generic_iterator.h"
 
 namespace tachyon{
@@ -25,7 +25,7 @@ public:
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
     typedef Index                  index_type;
-    typedef index::VariantIndexEntry  index_entry_type;
+    typedef yon1_idx_rec           index_entry_type;
     typedef VariantHeader          header_type;
 
     typedef yonRawIterator<value_type>       iterator;

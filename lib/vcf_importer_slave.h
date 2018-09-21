@@ -6,15 +6,15 @@
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
 #include "algorithm/digest/variant_digest_manager.h"
-#include "algorithm/encryption/encryption.h"
-#include "containers/variant_container.h"
+#include "encryption.h"
+#include "variant_container.h"
 #include "containers/vcf_container.h"
-#include "index/variant_index_entry.h"
+#include "index_record.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
 #include "io/variant_import_writer.h"
 #include "variant_importer.h"
-#include "core/variant_record.h"
+#include "variant_record.h"
 
 namespace tachyon{
 
@@ -28,7 +28,7 @@ public:
 	typedef VcfImporterSlave                self_type;
 	typedef VariantWriterInterface          writer_type;
 	typedef io::BasicBuffer                 buffer_type;
-	typedef index::VariantIndexEntry        index_entry_type;
+	typedef yon1_idx_rec                    index_entry_type;
 	typedef io::VcfHeader                   vcf_header_type;
 	typedef containers::VcfContainer        vcf_container_type;
 	typedef algorithm::CompressionManager   compression_manager_type;
