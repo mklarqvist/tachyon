@@ -152,10 +152,10 @@ public:
 				int64_t end_pos = 0;
 
 				switch(word_width){
-				case(1): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0);  break;
-				case(2): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
-				case(4): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
-				case(8): end_pos = reinterpret_cast<containers::PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(1): end_pos = reinterpret_cast<PrimitiveContainer<uint8_t>*>(rcd.info[info_end_key])->at(0);  break;
+				case(2): end_pos = reinterpret_cast<PrimitiveContainer<uint16_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(4): end_pos = reinterpret_cast<PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
+				case(8): end_pos = reinterpret_cast<PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
 				default:
 					std::cerr << "unknown end type: " << (int)word_width << std::endl;
 					exit(1);

@@ -69,8 +69,8 @@ yon1_vnt_t::yon1_vnt_t(const yon1_vnt_t& other) :
 	gt(nullptr), gt_sum(nullptr), gt_sum_occ(nullptr),
 	info(nullptr), fmt(nullptr)
 {
-	if(n_info) info = new containers::PrimitiveContainerInterface*[m_info];
-	if(n_fmt)  fmt  = new containers::PrimitiveGroupContainerInterface*[m_fmt];
+	if(n_info) info = new PrimitiveContainerInterface*[m_info];
+	if(n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
 	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
 	for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
 	for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
@@ -104,8 +104,8 @@ yon1_vnt_t& yon1_vnt_t::operator=(const yon1_vnt_t& other){
 	gt = nullptr; gt_sum = nullptr; gt_sum_occ = nullptr,
 	info = nullptr; fmt = nullptr;
 
-	if(n_info) info = new containers::PrimitiveContainerInterface*[m_info];
-	if(n_fmt)  fmt  = new containers::PrimitiveGroupContainerInterface*[m_fmt];
+	if(n_info) info = new PrimitiveContainerInterface*[m_info];
+	if(n_fmt)  fmt  = new PrimitiveGroupContainerInterface*[m_fmt];
 	for(int i = 0; i < n_alleles; ++i) alleles[i] = other.alleles[i];
 	for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Clone();
 	for(int i = 0; i < n_fmt; ++i)  fmt[i]  = other.fmt[i]->Clone();
@@ -137,12 +137,12 @@ yon1_vnt_t::yon1_vnt_t(yon1_vnt_t&& other) noexcept :
 	std::swap(gt_sum, other.gt_sum);
 	std::swap(gt_sum_occ, other.gt_sum_occ);
 	if(n_info){
-		info = new containers::PrimitiveContainerInterface*[n_info];
+		info = new PrimitiveContainerInterface*[n_info];
 		for(int i = 0; i < n_info; ++i) info[i] = other.info[i]->Move();
 	}
 
 	if(n_fmt){
-		fmt = new containers::PrimitiveGroupContainerInterface*[n_fmt];
+		fmt = new PrimitiveGroupContainerInterface*[n_fmt];
 		for(int i = 0; i < n_fmt; ++i) fmt[i] = other.fmt[i]->Move();
 	}
 }
@@ -545,9 +545,9 @@ bool yon1_vnt_t::AddInfoFlag(const std::string& tag, VariantHeader& header){
 	int32_t offset = GetInfoOffset(tag);
 	if(offset >= 0){
 		delete info[offset];
-		info[offset] = new containers::PrimitiveContainer<int8_t>();
+		info[offset] = new PrimitiveContainer<int8_t>();
 	} else {
-		info[n_info++] = new containers::PrimitiveContainer<int8_t>();
+		info[n_info++] = new PrimitiveContainer<int8_t>();
 		info_hdr.push_back(info_tag);
 	}
 	return true;
@@ -566,8 +566,8 @@ bool yon1_vnt_t::AddGenotypeStatistics(VariantHeader& header, const bool replace
 
 	if(n_info + 10 > m_info){
 		m_info = std::max(n_info + 10, m_info + 10);
-		containers::PrimitiveContainerInterface** old = info;
-		info = new containers::PrimitiveContainerInterface*[m_info];
+		PrimitiveContainerInterface** old = info;
+		info = new PrimitiveContainerInterface*[m_info];
 		for(int i = 0; i < n_info; ++i) info[i] = old[i];
 		delete [] old;
 	}
@@ -585,7 +585,7 @@ bool yon1_vnt_t::AddGenotypeStatistics(VariantHeader& header, const bool replace
 	if(this->n_alleles > 2) this->AddInfoFlag("MULTI_ALLELIC", header);
 
 	// Special case for AC_P
-	containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+	PrimitiveContainer<uint32_t>* ac_p = new PrimitiveContainer<uint32_t>();
 	ac_p->resize(n_base_ploidy * (gt_sum->d->n_ac_af - 2));
 
 	int j = 0;
@@ -609,8 +609,8 @@ bool yon1_vnt_t::AddGenotypeStatistics(VariantHeader& header, const bool replace
 bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names){
 	if(n_info + names.size()*10 + 3 > m_info){
 		m_info += names.size()*10 + 3;
-		containers::PrimitiveContainerInterface** old = info;
-		info = new containers::PrimitiveContainerInterface*[m_info];
+		PrimitiveContainerInterface** old = info;
+		info = new PrimitiveContainerInterface*[m_info];
 		for(int i = 0; i < n_info; ++i) info[i] = old[i];
 		delete [] old;
 	}
@@ -618,9 +618,9 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std
 	EvaluatePopGenOcc(header);
 
 	for(int i = 0; i < names.size(); ++i){
-		this->AddInfo(names[i]+"_NM", header, gt_sum_occ[i].d->nm);
-		this->AddInfo(names[i]+"_NPM", header, gt_sum_occ[i].d->npm);
-		this->AddInfo(names[i]+"_AN", header, gt_sum_occ[i].d->an);
+		this->AddInfo(names[i]+"_NM",    header, gt_sum_occ[i].d->nm);
+		this->AddInfo(names[i]+"_NPM",   header, gt_sum_occ[i].d->npm);
+		this->AddInfo(names[i]+"_AN",    header, gt_sum_occ[i].d->an);
 		this->AddInfo(names[i]+"_HWE_P", header, gt_sum_occ[i].d->hwe_p);
 
 		if(gt_sum_occ[i].d->n_ac_af > 2){
@@ -631,7 +631,7 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std
 		if(this->n_alleles > 2) this->AddInfoFlag(names[i]+"_MULTI_ALLELIC", header);
 
 		// Special case for AC_P
-		containers::PrimitiveContainer<uint32_t>* ac_p = new containers::PrimitiveContainer<uint32_t>();
+		PrimitiveContainer<uint32_t>* ac_p = new PrimitiveContainer<uint32_t>();
 		ac_p->resize(n_base_ploidy * (gt_sum_occ[i].d->n_ac_af - 2));
 
 		int j = 0;
@@ -645,7 +645,7 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std
 
 		if(n_base_ploidy == 2){
 			this->AddInfo(names[i]+"_F_PIC", header, gt_sum_occ[i].d->f_pic);
-			this->AddInfo(names[i]+"_HET", header, gt_sum_occ[i].d->heterozygosity);
+			this->AddInfo(names[i]+"_HET",   header, gt_sum_occ[i].d->heterozygosity);
 		}
 	}
 
@@ -739,13 +739,13 @@ bool yon1_vnt_t::EvaluatePopGenOcc(VariantHeader& header){
 	return true;
 }
 
-containers::PrimitiveContainerInterface* yon1_vnt_t::GetInfo(const std::string& name) const {
+PrimitiveContainerInterface* yon1_vnt_t::GetInfo(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
 	if(it != info_map.end()) return(info[it->second]);
 	return(nullptr);
 }
 
-containers::PrimitiveGroupContainerInterface* yon1_vnt_t::GetFmt(const std::string& name) const {
+PrimitiveGroupContainerInterface* yon1_vnt_t::GetFmt(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = info_map.find(name);
 	if(it != info_map.end()) return(fmt[it->second]);
 	return(nullptr);

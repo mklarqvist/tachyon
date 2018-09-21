@@ -10,7 +10,7 @@
 
 #include "encryption.h"
 
-#include "containers/primitive_group_container.h"
+#include "primitive_container.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 

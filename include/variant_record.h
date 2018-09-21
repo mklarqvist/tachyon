@@ -23,8 +23,7 @@ DEALINGS IN THE SOFTWARE.
 #ifndef CORE_VARIANT_RECORD_H_
 #define CORE_VARIANT_RECORD_H_
 
-#include "containers/primitive_group_container.h"
-#include "containers/primitive_group_container_string.h"
+#include "primitive_container.h"
 #include "genotypes.h"
 
 #include <cmath>
@@ -185,9 +184,9 @@ public:
 		int32_t offset = GetInfoOffset(tag);
 		if(offset >= 0){
 			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<int_t>(data_point);
+			info[offset] = new PrimitiveContainer<int_t>(data_point);
 		} else {
-			info[n_info++] = new containers::PrimitiveContainer<int_t>(data_point);
+			info[n_info++] = new PrimitiveContainer<int_t>(data_point);
 			info_hdr.push_back(info_tag);
 		}
 		return true;
@@ -201,16 +200,16 @@ public:
 		int32_t offset = GetInfoOffset(tag);
 		if(offset >= 0){
 			delete info[offset];
-			info[offset] = new containers::PrimitiveContainer<int_t>(data_point, n_points);
+			info[offset] = new PrimitiveContainer<int_t>(data_point, n_points);
 		} else {
-			info[n_info++] = new containers::PrimitiveContainer<int_t>(data_point, n_points);
+			info[n_info++] = new PrimitiveContainer<int_t>(data_point, n_points);
 			info_hdr.push_back(info_tag);
 		}
 		return true;
 	}
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, VariantHeader& header, containers::PrimitiveContainer<int_t>*& container){
+	bool AddInfo(const std::string& tag, VariantHeader& header, PrimitiveContainer<int_t>*& container){
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
@@ -245,8 +244,8 @@ public:
 	 */
 	bool EvaluatePopGenOcc(VariantHeader& header);
 
-	containers::PrimitiveContainerInterface* GetInfo(const std::string& name) const;
-	containers::PrimitiveGroupContainerInterface* GetFmt(const std::string& name) const;
+	PrimitiveContainerInterface* GetInfo(const std::string& name) const;
+	PrimitiveGroupContainerInterface* GetFmt(const std::string& name) const;
 
 	const io::VcfFilter* GetFlt(const std::string& name) const;
 	int32_t GetInfoOffset(const std::string& name) const;
@@ -279,8 +278,8 @@ public:
 	yon_gt* gt;
 	yon_gt_summary* gt_sum;
 	yon_gt_summary* gt_sum_occ; // summary if occ has been invoked
-	containers::PrimitiveContainerInterface** info;
-	containers::PrimitiveGroupContainerInterface** fmt;
+	PrimitiveContainerInterface** info;
+	PrimitiveGroupContainerInterface** fmt;
 };
 
 // Genotype helper
@@ -364,7 +363,9 @@ public:
 	 * Collects information regarding the number of missing genotypes and
 	 * count of sentinel nodes, checks if the phasing is uniform and whether
 	 * all the genotypes are identical.
+	 *
 	 * Todo: Use hashes to check for uniformity of genotypes.
+	 *
 	 * @param rec       The src yon1_vnt_t record.
 	 * @param n_samples Total number of samples in the input vector.
 	 *                  This is equivalent to the samples in the file.

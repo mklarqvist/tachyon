@@ -33,7 +33,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include "data_container.h"
 #include "variant_block.h"
-#include "containers/primitive_container.h"
+#include "primitive_container.h"
 #include "variant_record.h"
 
 namespace tachyon {
@@ -328,7 +328,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 		if(this->variants_[i].info_pid == -1){
 			continue;
 		} else if(matches[this->variants_[i].info_pid]){
-			this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, it->GetInt32(stride_offset));
+			this->variants_[i].info[this->variants_[i].n_info++] = new PrimitiveContainer<return_ptype>(container, current_offset, it->GetInt32(stride_offset));
 			this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
 			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype);
 			++stride_offset;
@@ -352,7 +352,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
-				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, 0, stride_size);
+				this->variants_[i].info[this->variants_[i].n_info++] = new PrimitiveContainer<return_ptype>(container, 0, stride_size);
 				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
 			}
 		}
@@ -361,7 +361,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
-				this->variants_[i].info[this->variants_[i].n_info++] = new containers::PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
+				this->variants_[i].info[this->variants_[i].n_info++] = new PrimitiveContainer<return_ptype>(container, current_offset, stride_size);
 				this->variants_[i].info_hdr.push_back(&header.info_fields_[container.header.GetGlobalKey()]);
 				current_offset += stride_size * sizeof(intrinsic_ptype);
 			}
@@ -395,7 +395,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 		if(this->variants_[i].fmt_pid == -1){
 			continue;
 		} else if(matches[this->variants_[i].fmt_pid]){
-			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
+			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), it->GetInt32(stride_offset));
 			this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
 			current_offset += it->GetInt32(stride_offset) * sizeof(intrinsic_ptype) * header.GetNumberSamples();
 			++stride_offset;
@@ -419,7 +419,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 			if(this->variants_[i].fmt_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].fmt_pid]){
-				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, 0, header.GetNumberSamples(), stride_size);
+				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new PrimitiveGroupContainer<return_ptype>(container, 0, header.GetNumberSamples(), stride_size);
 				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
 			}
 		}
@@ -428,7 +428,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 			if(this->variants_[i].fmt_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].fmt_pid]){
-				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new containers::PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
+				this->variants_[i].fmt[this->variants_[i].n_fmt++] = new PrimitiveGroupContainer<return_ptype>(container, current_offset, header.GetNumberSamples(), stride_size);
 				this->variants_[i].fmt_hdr.push_back(&header.format_fields_[container.header.GetGlobalKey()]);
 				current_offset += stride_size * sizeof(intrinsic_ptype) * header.GetNumberSamples();
 			}
