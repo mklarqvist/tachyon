@@ -337,7 +337,7 @@ struct yon_writer_sync {
 		}
 
 		// Write data container.
-		this->Write(importer.block, container, importer.index_entry);
+		this->Write(importer.block, container, importer.index.GetCurrent());
 		// Update compression/storage statistics.
 		importer.block.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
 		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;

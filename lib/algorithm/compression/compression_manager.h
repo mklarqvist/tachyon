@@ -4,6 +4,7 @@
 #include "uncompressed_codec.h"
 #include "zstd_codec.h"
 #include "containers/variant_container.h"
+#include "algorithm/compression/compression_manager.h"
 
 namespace tachyon{
 namespace algorithm{

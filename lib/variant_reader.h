@@ -8,49 +8,44 @@
 #include "zstd.h"
 #include "zstd_errors.h"
 
-#include "algorithm/compression/compression_manager.h"
-#include "algorithm/digest/variant_digest_manager.h"
 #include "algorithm/encryption/encryption.h"
-#include "algorithm/timer.h"
-#include "containers/interval_container.h"
+
 #include "containers/primitive_group_container.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
+
 #include "core/variant_reader_filters.h"
 #include "core/variant_reader_settings.h"
 #include "core/data_block_settings.h"
+
 #include "index/index.h"
-#include "math/basic_vector_math.h"
-#include "math/fisher_math.h"
-#include "math/square_matrix.h"
+
 #include "utility/support_vcf.h"
-#include "io/basic_reader.h"
+
+#include "containers/variant_container.h"
 
 #include "algorithm/parallel/variant_slaves.h"
 #include "algorithm/parallel/variant_base_slave.h"
-#include "containers/variant_container.h"
 
 namespace tachyon{
 
 class VariantReader {
 public:
-	typedef VariantReader                          self_type;
-	typedef io::BasicBuffer                        buffer_type;
-	typedef VariantHeader                          header_type;
-	typedef core::Footer                           footer_type;
-	typedef algorithm::CompressionManager          codec_manager_type;
-	typedef DataBlockSettings                      block_settings_type;
-	typedef VariantReaderSettings                  settings_type;
-	typedef index::Index                           index_type;
-	typedef index::VariantIndexEntry               index_entry_type;
-	typedef algorithm::VariantDigestManager        checksum_type;
-	typedef Keychain                               keychain_type;
-	typedef yon1_vb_t                              block_entry_type;
-	typedef containers::IntervalContainer          interval_container_type;
-	typedef VariantReaderFilters                   variant_filter_type;
-	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
-	typedef io::BasicReader                        basic_reader_type;
-	typedef EncryptionDecorator                    encryption_manager_type;
+	typedef VariantReader             self_type;
+	typedef io::BasicBuffer           buffer_type;
+	typedef VariantHeader             header_type;
+	typedef core::Footer              footer_type;
+
+	typedef DataBlockSettings         block_settings_type;
+	typedef VariantReaderSettings     settings_type;
+	typedef Index                     index_type;
+	typedef index::VariantIndexEntry  index_entry_type;
+
+	typedef yon1_vb_t                 block_entry_type;
+	typedef VariantReaderFilters      variant_filter_type;
+
+	typedef EncryptionDecorator       encryption_manager_type;
+	typedef Keychain                  keychain_type;
 
 private:
 	// Function pointer to interval slicing.
@@ -59,7 +54,6 @@ private:
 public:
 	VariantReader();
 	VariantReader(const std::string& filename);
-	VariantReader(const self_type& other);
 	virtual ~VariantReader();
 
 	/**<
@@ -96,7 +90,6 @@ public:
 	inline const footer_type& GetGlobalFooter(void) const{ return(this->global_footer); }
 	inline index_type& GetIndex(void){ return(this->index); }
 	inline const index_type& GetIndex(void) const{ return(this->index); }
-	inline size_t GetFilesize(void) const{ return(this->basic_reader.filesize_); }
 	inline block_entry_type& GetCurrentContainer(void){ return(this->variant_container); }
 	inline const block_entry_type& GetCurrentContainer(void) const{ return(this->variant_container); }
 
@@ -113,15 +106,7 @@ public:
 	 * @param filename Target input filename
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
-	inline bool open(const std::string& filename){
-		this->basic_reader.filename_ = filename;
-		this->settings.input = filename;
-		if(settings.keychain_file.size()){
-			if(this->LoadKeychainFile() == false)
-				return false;
-		}
-		return(this->open());
-	}
+	bool open(const std::string& filename);
 
 	/**<
 	 * Overloaded operator for blocks. Useful when
@@ -157,20 +142,7 @@ public:
 	bool NextBlock(void);
 	bool NextBlockRaw(void);
 
-	bool CheckNextValid(void){
-		// If the stream is faulty then return
-		if(!this->basic_reader.stream_.good()){
-			std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
-			return false;
-		}
-
-		// If the current position is the EOF then
-		// exit the function
-		if((uint64_t)this->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
-			return false;
-
-		return true;
-	}
+	bool CheckNextValid(void);
 
 	block_entry_type ReturnBlock(void);
 
@@ -191,15 +163,7 @@ public:
 	 * @param blockID
 	 * @return
 	 */
-	bool SeekBlock(const uint32_t& block_id){
-		const uint64_t offset = this->GetIndex().GetLinearIndex().at(block_id).byte_offset;
-		this->basic_reader.stream_.seekg(offset);
-		if(this->basic_reader.stream_.good() == false){
-			std::cerr << "failed to seek" << std::endl;
-			return false;
-		}
-		return true;
-	}
+	bool SeekBlock(const uint32_t& block_id);
 
 	/**<
 	 * Open a yon encryption keychain and store the loaded object
@@ -228,7 +192,7 @@ public:
 
 	// Filter interval intersection and dummy version
 	inline bool FilterIntervalsDummy(const yon1_vnt_t& entry) const{ return true; }
-	inline bool FilterIntervals(const yon1_vnt_t& entry) const{ return(this->interval_container.FindOverlaps(entry).size()); }
+	bool FilterIntervals(const yon1_vnt_t& entry) const;
 
 	/**<
 	 * Parse interval strings. These strings have to match the regular expression
@@ -236,9 +200,7 @@ public:
 	 * YON_REGEX_CONTIG_ONLY, YON_REGEX_CONTIG_POSITION, or YON_REGEX_CONTIG_RANGE
 	 * @return Returns TRUE if successful or FALSE otherwise
 	 */
-	inline bool AddIntervals(std::vector<std::string>& interval_strings){
-		return(this->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
-	}
+	bool AddIntervals(std::vector<std::string>& interval_strings);
 
 	/**<
 	 * Adds provenance tracking information to the yon header. This data
@@ -257,25 +219,23 @@ public:
 	bool TempWrite(void);
 
 private:
-	// Todo:
 	// Pimpl idiom
 	class VariantReaderImpl;
 	std::unique_ptr<VariantReaderImpl> mImpl;
 
 private:
 	uint64_t                b_data_start;
-	basic_reader_type       basic_reader;
+
 	block_entry_type        variant_container;
+
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
+
 	header_type             global_header;
 	footer_type             global_footer;
 	index_type              index;
-	checksum_type           checksums;
-	codec_manager_type      codec_manager;
 	keychain_type           keychain;
-	interval_container_type interval_container;
 	yon_occ                 occ_table;
 
 
@@ -284,12 +244,6 @@ private:
 	// numbers are becoming large as allocating/deallocating hundreds
 	// of thousands of pointers for every variant is very time consuming.
 	yon_gt_rcd* gt_exp;
-};
-
-class VariantReader::VariantReaderImpl {
-public:
-
-
 };
 
 }

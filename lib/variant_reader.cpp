@@ -5,49 +5,51 @@
 
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
+#include "algorithm/timer.h"
 
+#include "algorithm/compression/compression_manager.h"
+#include "algorithm/digest/variant_digest_manager.h"
+#include "containers/interval_container.h"
+#include "io/basic_reader.h"
 #include "algorithm/parallel/vcf_slaves.h"
 
 namespace tachyon {
 
+class VariantReader::VariantReaderImpl {
+public:
+	typedef algorithm::CompressionManager          codec_manager_type;
+	typedef algorithm::VariantDigestManager        checksum_type;
+	typedef containers::IntervalContainer          interval_container_type;
+	typedef algorithm::Interval<uint32_t, int64_t> interval_type;
+	typedef io::BasicReader                        basic_reader_type;
+
+public:
+	VariantReaderImpl() = default;
+	VariantReaderImpl(const std::string& filename) : basic_reader(filename){}
+
+	basic_reader_type       basic_reader;
+	checksum_type           checksums;
+	codec_manager_type      codec_manager;
+	interval_container_type interval_container;
+
+};
+
 VariantReader::VariantReader() :
+	mImpl(new VariantReader::VariantReaderImpl),
 	b_data_start(0),
 	gt_exp(nullptr)
 {}
 
 VariantReader::VariantReader(const std::string& filename) :
+	mImpl(new VariantReader::VariantReaderImpl(filename)),
 	b_data_start(0),
-	basic_reader(filename),
 	gt_exp(nullptr)
-{}
+{
+
+}
 
 VariantReader::~VariantReader(){
 	delete [] gt_exp;
-}
-
-VariantReader::VariantReader(const self_type& other) :
-	b_data_start(other.b_data_start),
-	basic_reader(other.basic_reader),
-	//variant_container(other.variant_container),
-
-	block_settings(other.block_settings),
-	settings(other.settings),
-	//variant_filters(other.variant_filters), // illeal to copy
-
-	global_header(other.global_header),
-	global_footer(other.global_footer),
-	index(other.index),
-	checksums(other.checksums),
-	keychain(other.keychain),
-	interval_container(other.interval_container),
-	occ_table(other.occ_table),
-	gt_exp(nullptr)
-{
-	if(other.gt_exp != nullptr){
-		// Allocate new array but do not copy contents.
-		gt_exp = new yon_gt_rcd[global_header.GetNumberSamples()];
-	}
-	this->basic_reader.stream_.seekg(this->b_data_start);
 }
 
 bool VariantReader::open(void){
@@ -56,23 +58,23 @@ bool VariantReader::open(void){
 		return false;
 	}
 
-	if(this->basic_reader.open() == false){
+	if(this->mImpl->basic_reader.open() == false){
 		std::cerr << "Failed to open" << std::endl;
 		return false;
 	}
 
-	if(this->basic_reader.filesize_ <= YON_FOOTER_LENGTH){
+	if(this->mImpl->basic_reader.filesize_ <= YON_FOOTER_LENGTH){
 		std::cerr << utility::timestamp("ERROR") << "File is corrupted!" << std::endl;
 		return false;
 	}
 
 	// Seek to start of footer
-	this->basic_reader.stream_.seekg((uint64_t)this->basic_reader.filesize_ - YON_FOOTER_LENGTH);
-	if(!this->basic_reader.stream_.good()){
+	this->mImpl->basic_reader.stream_.seekg((uint64_t)this->mImpl->basic_reader.filesize_ - YON_FOOTER_LENGTH);
+	if(!this->mImpl->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to seek in file!" << std::endl;
 		return false;
 	}
-	this->basic_reader.stream_ >> this->global_footer;
+	this->mImpl->basic_reader.stream_ >> this->global_footer;
 
 	// Validate the global footer.
 	if(this->global_footer.Validate() == false){
@@ -80,14 +82,14 @@ bool VariantReader::open(void){
 		return false;
 	}
 
-	if(!this->basic_reader.stream_.good()){
+	if(!this->mImpl->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to read file!" << std::endl;
 		return false;
 	}
 
 	// Seek to start of file
-	this->basic_reader.stream_.seekg(0);
-	if(!this->basic_reader.stream_.good()){
+	this->mImpl->basic_reader.stream_.seekg(0);
+	if(!this->mImpl->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to rewind file!" << std::endl;
 		return false;
 	}
@@ -95,7 +97,7 @@ bool VariantReader::open(void){
 	// Load header
 	//this->stream >> this->global_header;
 	char magic_string[TACHYON_MAGIC_HEADER_LENGTH];
-	this->basic_reader.stream_.read(&magic_string[0], TACHYON_MAGIC_HEADER_LENGTH);
+	this->mImpl->basic_reader.stream_.read(&magic_string[0], TACHYON_MAGIC_HEADER_LENGTH);
 	if(strncmp(&magic_string[0], &TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH) != 0){
 		std::cerr << utility::timestamp("ERROR") << "Failed to validate Tachyon magic string!" << std::endl;
 		return false;
@@ -103,22 +105,22 @@ bool VariantReader::open(void){
 
 	uint32_t l_data   = 0;
 	uint32_t l_c_data = 0;
-	utility::DeserializePrimitive(l_data, this->basic_reader.stream_);
-	utility::DeserializePrimitive(l_c_data, this->basic_reader.stream_);
+	utility::DeserializePrimitive(l_data, this->mImpl->basic_reader.stream_);
+	utility::DeserializePrimitive(l_c_data, this->mImpl->basic_reader.stream_);
 
 	io::BasicBuffer header_uncompressed(l_data + 1024);
 	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars_ = l_c_data;
 
-	this->basic_reader.stream_.read(header_compressed.data(), l_c_data);
+	this->mImpl->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 
-	if(!this->codec_manager.zstd_codec.Decompress(header_compressed, header_uncompressed)){
+	if(!this->mImpl->codec_manager.zstd_codec.Decompress(header_compressed, header_uncompressed)){
 		std::cerr << utility::timestamp("ERROR") << "Failed to decompress header!" << std::endl;
 		return false;
 	}
 	assert(header_uncompressed.size() == l_data);
 	header_uncompressed >> this->global_header; // parse header from buffer
 
-	if(!this->basic_reader.stream_.good()){
+	if(!this->mImpl->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR") << "Failed to get header!" << std::endl;
 		return false;
 	}
@@ -126,16 +128,26 @@ bool VariantReader::open(void){
 	// Keep track of start of data offset in the byte stream.
 	// We use this information if spawning copies of this
 	// reader object.
-	this->b_data_start = this->basic_reader.stream_.tellg();
+	this->b_data_start = this->mImpl->basic_reader.stream_.tellg();
 
 	// Keep track of start position
-	const uint64_t return_pos = this->basic_reader.stream_.tellg();
-	this->basic_reader.stream_.seekg(this->global_footer.offset_end_of_data);
-	this->basic_reader.stream_ >> this->index;
-	this->basic_reader.stream_ >> this->checksums;
-	this->basic_reader.stream_.seekg(return_pos);
+	const uint64_t return_pos = this->mImpl->basic_reader.stream_.tellg();
+	this->mImpl->basic_reader.stream_.seekg(this->global_footer.offset_end_of_data);
+	this->mImpl->basic_reader.stream_ >> this->index;
+	this->mImpl->basic_reader.stream_ >> this->mImpl->checksums;
+	this->mImpl->basic_reader.stream_.seekg(return_pos);
 
-	return(this->basic_reader.stream_.good());
+	return(this->mImpl->basic_reader.stream_.good());
+}
+
+bool VariantReader::open(const std::string& filename){
+	this->mImpl->basic_reader.filename_ = filename;
+	this->settings.input = filename;
+	if(settings.keychain_file.size()){
+		if(this->LoadKeychainFile() == false)
+			return false;
+	}
+	return(this->open());
 }
 
 bool VariantReader::NextBlock(){
@@ -144,17 +156,17 @@ bool VariantReader::NextBlock(){
 	// Reset and re-use
 	this->variant_container.clear();
 
-	if(!this->variant_container.ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
+	if(!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
 	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.read(this->basic_reader.stream_, this->block_settings, this->global_header))
+	if(!this->variant_container.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
 		return false;
 
 	// encryption manager ascertainment
@@ -172,7 +184,7 @@ bool VariantReader::NextBlock(){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(this->variant_container)){
+	if(!this->mImpl->codec_manager.Decompress(this->variant_container)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
@@ -187,20 +199,35 @@ bool VariantReader::NextBlockRaw(void){
 	// Reset and re-use
 	this->variant_container.clear();
 
-	if(!this->variant_container.ReadHeaderFooter(this->basic_reader.stream_))
+	if(!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return false;
 
-	if(!this->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
+	if(!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
 	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.read(this->basic_reader.stream_, this->block_settings, this->global_header))
+	if(!this->variant_container.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
 		return false;
 
 	// All passed
+	return true;
+}
+
+bool VariantReader::CheckNextValid(void){
+	// If the stream is faulty then return
+	if(!this->mImpl->basic_reader.stream_.good()){
+		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
+		return false;
+	}
+
+	// If the current position is the EOF then
+	// exit the function
+	if((uint64_t)this->mImpl->basic_reader.stream_.tellg() == this->global_footer.offset_end_of_data)
+		return false;
+
 	return true;
 }
 
@@ -210,16 +237,16 @@ yon1_vb_t VariantReader::ReturnBlock(void){
 	if(this->CheckNextValid() == false)
 		return c;
 
-	if(!c.ReadHeaderFooter(this->basic_reader.stream_))
+	if(!c.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return(c);
 
-	if(!this->codec_manager.zstd_codec.Decompress(c.footer_support)){
+	if(!this->mImpl->codec_manager.zstd_codec.Decompress(c.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 	}
 	c.footer_support.data_uncompressed >> c.footer;
 
 	// Attempts to read a YON block with the settings provided
-	if(!c.read(this->basic_reader.stream_, this->block_settings, this->global_header))
+	if(!c.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
 		return(c);
 
 	// encryption manager ascertainment
@@ -237,7 +264,7 @@ yon1_vb_t VariantReader::ReturnBlock(void){
 	}
 
 	// Internally decompress available data
-	if(!this->codec_manager.Decompress(c)){
+	if(!this->mImpl->codec_manager.Decompress(c)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return(c);
 	}
@@ -247,20 +274,30 @@ yon1_vb_t VariantReader::ReturnBlock(void){
 
 bool VariantReader::GetBlock(const index_entry_type& index_entry){
 	// If the stream is not good then return.
-	if(!this->basic_reader.stream_.good()){
+	if(!this->mImpl->basic_reader.stream_.good()){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Corrupted! Input stream died prematurely!" << std::endl;
 		return false;
 	}
 
 	// Seek to target block id with the help of the linear index.
-	this->basic_reader.stream_.seekg(index_entry.byte_offset);
-	if(this->basic_reader.stream_.good() == false){
+	this->mImpl->basic_reader.stream_.seekg(index_entry.byte_offset);
+	if(this->mImpl->basic_reader.stream_.good() == false){
 		std::cerr << utility::timestamp("ERROR", "IO") << "Failed to seek to given offset using target index entry!" << std::endl;
 		return(false);
 	}
 
 	// Load the next block if possible.
 	return(this->NextBlock());
+}
+
+bool VariantReader::SeekBlock(const uint32_t& block_id){
+	const uint64_t offset = this->GetIndex()[block_id].byte_offset;
+	this->mImpl->basic_reader.stream_.seekg(offset);
+	if(this->mImpl->basic_reader.stream_.good() == false){
+		std::cerr << "failed to seek" << std::endl;
+		return false;
+	}
+	return true;
 }
 
 bool VariantReader::LoadKeychainFile(void){
@@ -318,8 +355,8 @@ uint64_t VariantReader::OutputVcfSearch(void){
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
 	io::BasicBuffer buf(100000);
 
-	for(uint32_t i = 0; i < this->interval_container.GetBlockList().size(); ++i){
-		this->GetBlock(this->interval_container.GetBlockList()[i]);
+	for(uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i){
+		this->GetBlock(this->mImpl->interval_container.GetBlockList()[i]);
 
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
@@ -346,7 +383,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 
 uint64_t VariantReader::OutputRecords(void){
 	this->UpdateHeaderView();
-	this->interval_container.Build(this->global_header);
+	this->mImpl->interval_container.Build(this->global_header);
 
 	// Load encryption keychain if available.
 	if(this->settings.keychain_file.size())
@@ -369,11 +406,11 @@ uint64_t VariantReader::OutputRecords(void){
 		this->global_header.PrintVcfHeader(std::cout);
 
 	if(this->settings.use_htslib){
-		if(this->interval_container.size()) return(this->OutputHtslibVcfSearch());
+		if(this->mImpl->interval_container.size()) return(this->OutputHtslibVcfSearch());
 		else return(this->OutputHtslibVcfLinear());
 	}
 
-	if(this->interval_container.size()) return(this->OutputVcfSearch());
+	if(this->mImpl->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
 }
 
@@ -540,6 +577,11 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 	return 0;
 }
 
+bool VariantReader::FilterIntervals(const yon1_vnt_t& entry) const{ return(this->mImpl->interval_container.FindOverlaps(entry).size()); }
+bool VariantReader::AddIntervals(std::vector<std::string>& interval_strings){
+	return(this->mImpl->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
+}
+
 void VariantReader::UpdateHeaderView(void){
 	io::VcfExtra e;
 	e.key = "tachyon_viewVersion";
@@ -563,13 +605,13 @@ void VariantReader::UpdateHeaderView(void){
 bool VariantReader::Benchmark(const uint32_t threads){
 	std::cerr << utility::timestamp("LOG") << "Starting benchmark with " << threads << " threads..." << std::endl;
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::LoadData);
-	this->basic_reader.stream_.close();
+	this->mImpl->basic_reader.stream_.close();
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::UncompressData);
-	this->basic_reader.stream_.close();
+	this->mImpl->basic_reader.stream_.close();
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateData);
-	this->basic_reader.stream_.close();
+	this->mImpl->basic_reader.stream_.close();
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::EvaluateRecords);
-	this->basic_reader.stream_.close();
+	this->mImpl->basic_reader.stream_.close();
 	return(true);
 }
 
@@ -719,7 +761,7 @@ bool VariantReader::TempWrite(void){
 		vc2.clear();
 	}
 
-	swriter.WriteFinal(checksums);
+	swriter.WriteFinal(mImpl->checksums);
 
 	delete writer;
 

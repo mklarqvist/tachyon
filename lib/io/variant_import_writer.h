@@ -12,9 +12,9 @@ namespace tachyon {
 
 class VariantWriterInterface {
 public:
-	typedef VariantWriterInterface     self_type;
-	typedef index::Index               sorted_index_type;
-	typedef yon1_dc_t  container_type;
+	typedef VariantWriterInterface  self_type;
+	typedef Index                   sorted_index_type;
+	typedef yon1_dc_t               container_type;
 
 public:
 	VariantWriterInterface();

@@ -24,8 +24,8 @@ public:
     typedef const value_type&      const_reference;
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
-    typedef index::Index           index_type;
-    typedef index::VariantIndexEntry      index_entry_type;
+    typedef Index                  index_type;
+    typedef index::VariantIndexEntry  index_entry_type;
     typedef VariantHeader          header_type;
 
     typedef yonRawIterator<value_type>       iterator;

@@ -22,21 +22,21 @@ VcfImporterSlave::~VcfImporterSlave(){
 
 VcfImporterSlave& VcfImporterSlave::operator+=(const VcfImporterSlave& other){
 	this->n_blocks_processed += other.n_blocks_processed;
-	this->index += other.index;
-	this->stats_basic += other.stats_basic;
+	this->index        += other.index;
+	this->stats_basic  += other.stats_basic;
 	this->stats_format += other.stats_format;
-	this->stats_info += other.stats_info;
+	this->stats_info   += other.stats_info;
 	return(*this);
 }
 
 bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_id){
 	// Clear current data.
 	this->block.clear();
-	this->index_entry.reset();
+	this->index.GetCurrent().reset();
 
 	// Assign new block id. This is provided by the producer.
 	this->block_id = block_id;
-	this->index_entry.block_id = block_id;
+	this->index.GetCurrent().block_id = block_id;
 
 	if(this->n_blocks_processed++ == 0){
 		// Allocate containers and offsets for this file.
@@ -157,7 +157,14 @@ bool VcfImporterSlave::AddRecord(const vcf_container_type& container, const uint
 	}
 
 	// Update the tachyon index.
-	if(this->IndexRecord(container.at(position), rcd) == false) return false;
+	if(this->index.IndexRecord(container.at(position),
+			this->block_id,
+			this->settings_->info_end_key,
+			rcd) == false)
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -341,6 +348,7 @@ bool VcfImporterSlave::AddVcfFilterPattern(const std::vector<int>& pattern, yon1
 	return true;
 }
 
+/*
 bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd){
 	int32_t index_bin = -1;
 
@@ -428,6 +436,7 @@ bool VcfImporterSlave::IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd){
 
 	return true;
 }
+*/
 
 /*
 bool VcfImporterSlave::GenerateIdentifiers(void){
