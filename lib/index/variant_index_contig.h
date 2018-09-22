@@ -6,7 +6,7 @@
 #include <vector>
 #include <cassert>
 
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 #include "variant_index_bin.h"
 
 namespace tachyon{

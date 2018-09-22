@@ -24,11 +24,13 @@ DEALINGS IN THE SOFTWARE.
 #define CORE_GENOTYPES_H_
 
 #include <cstring>
+#include <unordered_map>
 
 #include "htslib/vcf.h"
 
 #include "io/basic_buffer.h"
 #include "support_vcf.h"
+#include "core/header/variant_header.h"
 
 namespace tachyon {
 

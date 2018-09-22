@@ -292,7 +292,7 @@ struct yon_writer_sync {
 	}
 
 	VariantHeader& UpdateHeaderImport(VariantHeader& header, VariantImporterSettings& settings){
-		io::VcfExtra e;
+		VcfExtra e;
 		e.key = "tachyon_importVersion";
 		e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
 		e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","

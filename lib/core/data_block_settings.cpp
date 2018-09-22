@@ -203,7 +203,7 @@ bool DataBlockSettings::Parse(const header_type& header){
 		for(uint32_t j = 0; j < ind.size(); ++j){
 			ind[j] = utility::remove_excess_whitespace(ind[j]);
 			if(std::regex_match(ind[j], field_identifier_regex)){
-				const io::VcfInfo* info = header.GetInfo(ind[j]);
+				const VcfInfo* info = header.GetInfo(ind[j]);
 				if(info == nullptr){
 					std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
 					continue;
@@ -240,7 +240,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 				for(uint32_t j = 0; j < ind.size(); ++j){
 					ind[j] = utility::remove_excess_whitespace(ind[j]);
 					if(std::regex_match(ind[j], field_identifier_regex)){
-						const io::VcfInfo* info = header.GetInfo(ind[j]);
+						const VcfInfo* info = header.GetInfo(ind[j]);
 						if(info == nullptr){
 							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
 							allGood = false;
@@ -270,7 +270,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 							this->LoadMinimumVcf(true);
 							this->LoadGenotypes(true);
 
-							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
 							if(fmt == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
@@ -284,7 +284,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 							this->LoadGenotypes(true);
 							this->DisplayAllFormat(true);
 
-							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
 							if(fmt == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;
@@ -295,7 +295,7 @@ bool DataBlockSettings::ParseCommandString(const std::vector<std::string>& comma
 						}
 						// Any other FORMAT
 						else {
-							const io::VcfFormat* fmt = header.GetFormat(ind[j]);
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
 							if(fmt == nullptr){
 								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
 								allGood = false;

@@ -4,7 +4,7 @@
 
 #include <openssl/evp.h>
 
-#include "io/variant_import_writer.h"
+#include "io/variant_writer.h"
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 #include "algorithm/parallel/vcf_slaves.h"
@@ -195,7 +195,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	bool GT_available = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
 
 	// Predicate of a search for "END" INFO field in the Vcf header.
-	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
+	VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
 	if(vcf_info_end != nullptr)
 		this->settings->info_end_key = vcf_info_end->idx;
 
@@ -368,7 +368,7 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 }
 
 void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& header){
-	io::VcfExtra e;
+	VcfExtra e;
 	e.key = "tachyon_importVersion";
 	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
 	e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","

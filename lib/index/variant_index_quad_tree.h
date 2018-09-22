@@ -10,8 +10,7 @@
 #include "variant_index_linear.h"
 #include "core/header/variant_header.h"
 #include "io/vcf_utils.h"
-
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace index{
@@ -71,7 +70,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->contigs_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
 
-	self_type& Add(const std::vector<io::VcfContig>& contigs){
+	self_type& Add(const std::vector<VcfContig>& contigs){
 		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
 			this->resize();
 

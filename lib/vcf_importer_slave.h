@@ -12,7 +12,7 @@
 #include "index_record.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
-#include "io/variant_import_writer.h"
+#include "io/variant_writer.h"
 #include "variant_importer.h"
 #include "variant_record.h"
 

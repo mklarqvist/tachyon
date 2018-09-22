@@ -2,7 +2,7 @@
 #define INDEX_INDEX_META_CONTAINER_H_
 
 #include "variant_index_meta_entry.h"
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace index{

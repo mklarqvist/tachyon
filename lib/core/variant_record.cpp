@@ -751,7 +751,7 @@ PrimitiveGroupContainerInterface* yon1_vnt_t::GetFmt(const std::string& name) co
 	return(nullptr);
 }
 
-const io::VcfFilter* yon1_vnt_t::GetFlt(const std::string& name) const {
+const VcfFilter* yon1_vnt_t::GetFlt(const std::string& name) const {
 	std::unordered_map<std::string, uint32_t>::const_iterator it = flt_map.find(name);
 	if(it != flt_map.end()) return(flt_hdr[it->second]);
 	return(nullptr);

@@ -3,7 +3,7 @@
 
 #include "algorithm/digest/digest_manager.h"
 #include "core/header/variant_header.h"
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 #include "variant_container.h"
 
 namespace tachyon{

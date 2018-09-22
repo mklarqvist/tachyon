@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace index{

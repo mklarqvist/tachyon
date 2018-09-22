@@ -247,7 +247,7 @@ public:
 	PrimitiveContainerInterface* GetInfo(const std::string& name) const;
 	PrimitiveGroupContainerInterface* GetFmt(const std::string& name) const;
 
-	const io::VcfFilter* GetFlt(const std::string& name) const;
+	const VcfFilter* GetFlt(const std::string& name) const;
 	int32_t GetInfoOffset(const std::string& name) const;
 	int32_t GetFormatOffset(const std::string& name) const;
 	int32_t GetFilterOffset(const std::string& name) const;
@@ -268,7 +268,7 @@ public:
 
 	std::vector<const YonInfo*> info_hdr;
 	std::vector<const YonFormat*> fmt_hdr;
-	std::vector<const io::VcfFilter*> flt_hdr;
+	std::vector<const VcfFilter*> flt_hdr;
 
 	std::unordered_map<std::string, uint32_t> info_map;
 	std::unordered_map<std::string, uint32_t> fmt_map;

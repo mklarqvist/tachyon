@@ -5,11 +5,7 @@
 #include <cmath>
 #include <thread>
 
-#include "zstd.h"
-#include "zstd_errors.h"
-
 #include "encryption.h"
-
 #include "primitive_container.h"
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
@@ -18,9 +14,7 @@
 #include "core/data_block_settings.h"
 
 #include "index.h"
-
 #include "support_vcf.h"
-
 #include "variant_container.h"
 
 #include "algorithm/parallel/variant_slaves.h"
@@ -28,7 +22,7 @@
 
 namespace tachyon{
 
-struct VariantReaderSettings{
+struct VariantReaderSettings {
 public:
 	typedef VariantReaderSettings self_type;
 

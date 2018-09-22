@@ -602,7 +602,7 @@ bool VariantReader::AddIntervals(std::vector<std::string>& interval_strings){
 }
 
 void VariantReader::UpdateHeaderView(void){
-	io::VcfExtra e;
+	VcfExtra e;
 	e.key = "tachyon_viewVersion";
 	e.value = TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
 	e.value += "libraries=" +  TACHYON_PROGRAM_NAME + '-' + TACHYON_LIB_VERSION + ","

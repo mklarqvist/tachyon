@@ -9,7 +9,7 @@
 #include "index.h"
 #include "core/header/variant_header.h"
 #include "variant_record.h"
-#include "components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace containers{

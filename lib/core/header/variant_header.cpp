@@ -1,6 +1,47 @@
 #include "variant_header.h"
 
-namespace tachyon{
+namespace tachyon {
+
+VariantHeader::VariantHeader(const VariantHeader& other) :
+	fileformat_string_(other.fileformat_string_),
+	literals_(other.literals_),
+	samples_(other.samples_),
+	contigs_(other.contigs_),
+	info_fields_(other.info_fields_),
+	format_fields_(other.format_fields_),
+	filter_fields_(other.filter_fields_),
+	structured_extra_fields_(other.structured_extra_fields_),
+	extra_fields_(other.extra_fields_)
+{
+	this->BuildMaps();
+	this->BuildReverseMaps();
+}
+
+VariantHeader::VariantHeader(const io::VcfHeader& other) :
+	fileformat_string_(other.fileformat_string_),
+	literals_(other.literals_),
+	samples_(other.samples_),
+	filter_fields_(other.filter_fields_),
+	structured_extra_fields_(other.structured_extra_fields_),
+	extra_fields_(other.extra_fields_)
+{
+	this->BuildMaps();
+	this->BuildReverseMaps();
+
+	this->contigs_.resize(other.contigs_.size());
+	for(uint32_t i = 0; i < other.contigs_.size(); ++i)
+		this->contigs_[i] = other.contigs_[i];
+
+	this->info_fields_.resize(other.info_fields_.size());
+	for(uint32_t i = 0; i < other.info_fields_.size(); ++i)
+		this->info_fields_[i] = other.info_fields_[i];
+
+	this->format_fields_.resize(other.format_fields_.size());
+	for(uint32_t i = 0; i < other.format_fields_.size(); ++i)
+		this->format_fields_[i] = other.format_fields_[i];
+
+	this->RecodeIndices();
+}
 
 bool VariantHeader::BuildReverseMaps(void){
 	this->contigs_reverse_map_.clear();

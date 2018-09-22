@@ -1,7 +1,7 @@
 #include "vcf_container.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
 VcfContainer::VcfContainer(void) :
 	n_carry_over_(0),
@@ -185,7 +185,7 @@ GenotypeSummary VcfContainer::GetGenotypeSummary(const uint32_t position, const 
 	case(BCF_BT_FLOAT):
 	case(BCF_BT_CHAR):
 	default:
-		std::cerr << "Illegal genotype primtive type: " << io::BCF_TYPE_LOOKUP[this->at(position)->d.fmt[0].type] << std::endl;
+		std::cerr << "Illegal genotype primtive type: " << this->at(position)->d.fmt[0].type << std::endl;
 	}
 
 	return(g);

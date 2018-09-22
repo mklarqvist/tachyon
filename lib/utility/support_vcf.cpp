@@ -1,7 +1,7 @@
 #include "support_vcf.h"
 
-namespace tachyon{
-namespace utility{
+namespace tachyon {
+namespace utility {
 
 io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint8_t* data, const size_t n_data){
 	if(n_data == 0){

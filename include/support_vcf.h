@@ -25,12 +25,15 @@ DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <string>
+
+#include "support/magic_constants.h"
+#include "io/basic_buffer.h"
 
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
 #include "htslib/hts.h"
-
-#include "core/data_block_settings.h"
 
 #define YON_BYTE_MISSING  INT8_MIN
 #define YON_BYTE_EOV      (INT8_MIN+1)
@@ -46,9 +49,25 @@ namespace tachyon {
 
 struct VcfContig {
 public:
-	VcfContig();
+	VcfContig() : idx(0), n_bases(0){}
 	~VcfContig() = default;
-	std::string ToVcfString(const bool is_bcf = false) const;
+
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##contig=<ID=GL000241.1,assembly=b37,length=42152>
+		std::string ret = "##contig=<ID=" + this->name;
+		if(extra.size()){
+			ret += "," + this->extra[0].first + "=" + this->extra[0].second;
+			for(uint32_t i = 1; i < this->extra.size(); ++i){
+				ret += "," + this->extra[i].first + "=" + this->extra[i].second;
+			}
+		}
+		if(this->description.size()) ret += ",Description=" + this->description;
+		ret += ",length=" + std::to_string(this->n_bases);
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
 
 public:
 	// Required. The internal identifier for this field
@@ -80,13 +99,38 @@ public:
 };
 
 // Temp declare
-struct VcfInfo {
+struct VcfInfo{
 public:
-	VcfInfo();
+	VcfInfo() : idx(0){}
 	~VcfInfo() = default;
 
-	std::string ToVcfString(const bool is_bcf = false) const;
-	std::string ToVcfString(const uint32_t idx) const;
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##INFO=<ID=AF,Number=A,Type=Float,Description="Estimated allele frequency in the range (0,1)">
+		std::string ret = "##INFO=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(this->source.size()) ret += ",Source=" + this->source;
+		if(this->source.size()) ret += ",Version=" + this->version;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##INFO=<ID=AF,Number=A,Type=Float,Description="Estimated allele frequency in the range (0,1)">
+		std::string ret = "##INFO=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(this->source.size()) ret += ",Source=" + this->source;
+		if(this->source.size()) ret += ",Version=" + this->version;
+		ret += ",IDX=" + std::to_string(idx);
+		ret += ">";
+		return(ret);
+	}
 
 public:
 	// Required. The internal identifier for this field
@@ -121,11 +165,32 @@ public:
 
 struct VcfFormat{
 public:
-	VcfFormat();
+	VcfFormat() : idx(0){}
 	~VcfFormat() = default;
 
-	std::string ToVcfString(const bool is_bcf = false) const;
-	std::string ToVcfString(const uint32_t idx) const;
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FORMAT=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
+
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FORMAT=<ID=" + this->id;
+		ret += ",Number=" + this->number;
+		ret += ",Type=" + this->type;
+		ret += ",Description=" + this->description;
+		ret += ",IDX=" + std::to_string(idx);
+		ret += ">";
+		return(ret);
+	}
 
 public:
 	// Required. The unique ID of the FORMAT field. Examples include "GT", "PL".
@@ -148,16 +213,60 @@ public:
 
 struct VcfFilter{
 public:
-	VcfFilter();
+	VcfFilter() : idx(0){}
 	~VcfFilter() = default;
 
-	std::string ToVcfString(const bool is_bcf = false) const;
-	std::string ToVcfString(const uint32_t idx) const;
+	std::string ToVcfString(const bool is_bcf = false) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FILTER=<ID=" + this->id;
+		ret += ",Description=" + this->description;
+		if(is_bcf) ret += ",IDX=" + std::to_string(this->idx);
+		ret += ">";
+		return(ret);
+	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const VcfFilter& flt);
-	friend std::istream& operator>>(std::istream& stream, VcfFilter& flt);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfFilter& flt);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfFilter& flt);
+	std::string ToVcfString(const uint32_t idx) const{
+		// Template:
+		// ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+		std::string ret = "##FILTER=<ID=" + this->id;
+		ret += ",Description=" + this->description;
+		ret += ",IDX=" + std::to_string(idx);
+		ret += ">";
+		return(ret);
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const VcfFilter& flt){
+		stream.write((const char*)&flt.idx, sizeof(uint32_t));
+
+		utility::SerializeString(flt.id, stream);
+		utility::SerializeString(flt.description, stream);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfFilter& flt){
+		stream.read((char*)&flt.idx, sizeof(uint32_t));
+
+		utility::DeserializeString(flt.id, stream);
+		utility::DeserializeString(flt.description, stream);
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfFilter& flt){
+		io::SerializePrimitive(flt.idx, buffer);
+		io::SerializeString(flt.id, buffer);
+		io::SerializeString(flt.description, buffer);
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfFilter& flt){
+		io::DeserializePrimitive(flt.idx, buffer);
+		io::DeserializeString(flt.id, buffer);
+		io::DeserializeString(flt.description, buffer);
+		return(buffer);
+	}
 
 public:
 	// Required. The internal identifier for this field
@@ -174,18 +283,46 @@ public:
 // ##pedigreeDB=http://url_of_pedigrees
 // The VcfExtra message would represent this with key="pedigreeDB",
 // value="http://url_of_pedigrees".
-struct VcfExtra {
+struct VcfExtra{
 public:
 	VcfExtra() = default;
-	VcfExtra(const std::string& key, const std::string& value);
+	VcfExtra(const std::string& key, const std::string& value) :
+		key(key),
+		value(value)
+	{}
+
 	~VcfExtra() = default;
 
-	std::string ToVcfString(void) const;
+	std::string ToVcfString(void) const{
+		// Template:
+		// ##source=CombineGVCFs
+		std::string ret = "##" + this->key + "=" + this->value;
+		return(ret);
+	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const VcfExtra& extra);
-	friend std::istream& operator>>(std::istream& stream, VcfExtra& extra);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfExtra& extra);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfExtra& extra);
+	friend std::ostream& operator<<(std::ostream& stream, const VcfExtra& extra){
+		utility::SerializeString(extra.key, stream);
+		utility::SerializeString(extra.value, stream);
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfExtra& extra){
+		utility::DeserializeString(extra.key, stream);
+		utility::DeserializeString(extra.value, stream);
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfExtra& extra){
+		io::SerializeString(extra.key, buffer);
+		io::SerializeString(extra.value, buffer);
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfExtra& extra){
+		io::DeserializeString(extra.key, buffer);
+		io::DeserializeString(extra.value, buffer);
+		return(buffer);
+	}
 
 public:
   // Required by VCF. The key of the extra header field. Note that this key does
@@ -207,12 +344,58 @@ public:
 	VcfStructuredExtra() = default;
 	~VcfStructuredExtra() = default;
 
-	std::string ToVcfString(void) const;
+	std::string ToVcfString(void) const{
+		// Template:
+		// ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome, Exome]>
+		std::string ret = "##" + this->key + "=<";
+		ret += this->fields[0].key + "=" + this->fields[0].value;
+		for(uint32_t i = 1; i < this->fields.size(); ++i)
+			ret += "," + this->fields[i].key + "=" + this->fields[i].value;
+		ret += ">";
+		return(ret);
+	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const VcfStructuredExtra& extra);
-	friend std::istream& operator>>(std::istream& stream, VcfStructuredExtra& extra);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfStructuredExtra& extra);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfStructuredExtra& extra);
+	friend std::ostream& operator<<(std::ostream& stream, const VcfStructuredExtra& extra){
+		utility::SerializeString(extra.key, stream);
+		size_t l_extra = extra.fields.size();
+		stream.write((const char*)&l_extra, sizeof(size_t));
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
+			stream << extra.fields[i];
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, VcfStructuredExtra& extra){
+		utility::DeserializeString(extra.key, stream);
+		size_t l_extra;
+		stream.read((char*)&l_extra, sizeof(size_t));
+		extra.fields.resize(l_extra);
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
+			stream >> extra.fields[i];
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfStructuredExtra& extra){
+		io::SerializeString(extra.key, buffer);
+		size_t l_extra = extra.fields.size();
+		io::SerializePrimitive(l_extra, buffer);
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
+			buffer << extra.fields[i];
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfStructuredExtra& extra){
+		io::DeserializeString(extra.key, buffer);
+		size_t l_extra;
+		io::DeserializePrimitive(l_extra, buffer);
+		extra.fields.resize(l_extra);
+		for(uint32_t i = 0; i < extra.fields.size(); ++i)
+			buffer >> extra.fields[i];
+
+		return(buffer);
+	}
 
 public:
 	// Required by VCF. The key of the extra header field. Note that this key does
@@ -221,6 +404,238 @@ public:
 
 	// Required by VCF. The key=value pairs contained in the structure.
 	std::vector<VcfExtra> fields;
+};
+
+struct YonContig : public VcfContig {
+public:
+	YonContig() : n_blocks(0){}
+	YonContig(const VcfContig& vcf_contig) : VcfContig(vcf_contig), n_blocks(0){}
+	~YonContig() = default;
+
+	std::string ToVcfString(const bool is_bcf = false) const{ return(VcfContig::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(VcfContig::ToVcfString(idx)); }
+
+	inline void operator++(void){ ++this->n_blocks; }
+	inline void operator--(void){ --this->n_blocks; }
+	template <class T> inline void operator+=(const T value){ this->n_blocks += value; }
+	template <class T> inline void operator-=(const T value){ this->n_blocks -= value; }
+
+	friend std::ostream& operator<<(std::ostream& stream, const YonContig& contig){
+		utility::SerializePrimitive(contig.idx, stream);
+		utility::SerializePrimitive(contig.n_bases, stream);
+		utility::SerializePrimitive(contig.n_blocks, stream);
+		utility::SerializeString(contig.name, stream);
+		utility::SerializeString(contig.description, stream);
+
+		size_t size_helper = contig.extra.size();
+		utility::SerializePrimitive(size_helper, stream);
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
+			utility::SerializeString(contig.extra[i].first, stream);
+			utility::SerializeString(contig.extra[i].second, stream);
+		}
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, YonContig& contig){
+		utility::DeserializePrimitive(contig.idx, stream);
+		utility::DeserializePrimitive(contig.n_bases, stream);
+		utility::DeserializePrimitive(contig.n_blocks, stream);
+		utility::DeserializeString(contig.name, stream);
+		utility::DeserializeString(contig.description, stream);
+
+		size_t l_extra;
+		utility::DeserializePrimitive(l_extra, stream);
+		contig.extra.resize(l_extra);
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
+			utility::DeserializeString(contig.extra[i].first, stream);
+			utility::DeserializeString(contig.extra[i].second, stream);
+		}
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonContig& contig){
+		io::SerializePrimitive(contig.idx, buffer);
+		io::SerializePrimitive(contig.n_bases, buffer);
+		io::SerializePrimitive(contig.n_blocks, buffer);
+		io::SerializeString(contig.name, buffer);
+		io::SerializeString(contig.description, buffer);
+
+		size_t size_helper = contig.extra.size();
+		io::SerializePrimitive(size_helper, buffer);
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
+			io::SerializeString(contig.extra[i].first, buffer);
+			io::SerializeString(contig.extra[i].second, buffer);
+		}
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonContig& contig){
+		io::DeserializePrimitive(contig.idx, buffer);
+		io::DeserializePrimitive(contig.n_bases, buffer);
+		io::DeserializePrimitive(contig.n_blocks, buffer);
+		io::DeserializeString(contig.name, buffer);
+		io::DeserializeString(contig.description, buffer);
+
+		size_t l_extra;
+		io::DeserializePrimitive(l_extra, buffer);
+		contig.extra.resize(l_extra);
+		for(uint32_t i = 0; i < contig.extra.size(); ++i){
+			io::DeserializeString(contig.extra[i].first, buffer);
+			io::DeserializeString(contig.extra[i].second, buffer);
+		}
+		return(buffer);
+	}
+
+public:
+	// Number of Tachyon blocks associated with this contig
+	uint32_t n_blocks;
+};
+
+class YonInfo : public VcfInfo {
+public:
+	YonInfo() : yon_type(YON_VCF_HEADER_FLAG){}
+	YonInfo(const VcfInfo& vcf_info) : VcfInfo(vcf_info), yon_type(YON_VCF_HEADER_FLAG){
+		this->EvaluateType();
+	}
+	~YonInfo() = default;
+
+	std::string ToVcfString(const bool is_bcf = false) const{ return(VcfInfo::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(VcfInfo::ToVcfString(idx)); }
+
+	bool EvaluateType(void){
+		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
+		else if(this->type == "Float") this->yon_type = YON_VCF_HEADER_FLOAT;
+		else if(this->type == "Flag") this->yon_type = YON_VCF_HEADER_FLAG;
+		else if(this->type == "Character") this->yon_type = YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type = YON_VCF_HEADER_STRING;
+		else {
+			std::cerr << "Illegal header type: " << this->type << std::endl;
+			return false;
+ 		}
+ 		return true;
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const YonInfo& info){
+		utility::SerializePrimitive(info.idx, stream);
+		utility::SerializeString(info.id, stream);
+		utility::SerializeString(info.number, stream);
+		utility::SerializeString(info.type, stream);
+		utility::SerializeString(info.description, stream);
+		utility::SerializeString(info.source, stream);
+		utility::SerializeString(info.version, stream);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, YonInfo& info){
+		utility::DeserializePrimitive(info.idx, stream);
+		utility::DeserializeString(info.id, stream);
+		utility::DeserializeString(info.number, stream);
+		utility::DeserializeString(info.type, stream);
+		utility::DeserializeString(info.description, stream);
+		utility::DeserializeString(info.source, stream);
+		utility::DeserializeString(info.version, stream);
+		info.EvaluateType();
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonInfo& info){
+		io::SerializePrimitive(info.idx, buffer);
+		io::SerializeString(info.id, buffer);
+		io::SerializeString(info.number, buffer);
+		io::SerializeString(info.type, buffer);
+		io::SerializeString(info.description, buffer);
+		io::SerializeString(info.source, buffer);
+		io::SerializeString(info.version, buffer);
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonInfo& info){
+		io::DeserializePrimitive(info.idx, buffer);
+		io::DeserializeString(info.id, buffer);
+		io::DeserializeString(info.number, buffer);
+		io::DeserializeString(info.type, buffer);
+		io::DeserializeString(info.description, buffer);
+		io::DeserializeString(info.source, buffer);
+		io::DeserializeString(info.version, buffer);
+		info.EvaluateType();
+
+		return(buffer);
+	}
+
+public:
+	TACHYON_VARIANT_HEADER_FIELD_TYPE yon_type;
+};
+
+class YonFormat : public VcfFormat {
+public:
+	YonFormat() : yon_type(YON_VCF_HEADER_FLAG){}
+	YonFormat(const VcfFormat& vcf_format) : VcfFormat(vcf_format), yon_type(YON_VCF_HEADER_FLAG){
+		this->EvaluateType();
+	}
+	~YonFormat() = default;
+
+	std::string ToVcfString(const bool is_bcf = false) const{ return(VcfFormat::ToVcfString(is_bcf)); }
+	std::string ToVcfString(const uint32_t idx) const{ return(VcfFormat::ToVcfString(idx)); }
+
+	bool EvaluateType(void){
+		if(this->type == "Integer") this->yon_type = YON_VCF_HEADER_INTEGER;
+		else if(this->type == "Float") this->yon_type = YON_VCF_HEADER_FLOAT;
+		else if(this->type == "Character") this->yon_type = YON_VCF_HEADER_CHARACTER;
+		else if(this->type == "String") this->yon_type = YON_VCF_HEADER_STRING;
+		else {
+			std::cerr << "Illegal header type: " << this->type << std::endl;
+			return false;
+		}
+		return true;
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const YonFormat& fmt){
+		utility::SerializePrimitive(fmt.idx, stream);
+		utility::SerializeString(fmt.id, stream);
+		utility::SerializeString(fmt.number, stream);
+		utility::SerializeString(fmt.type, stream);
+		utility::SerializeString(fmt.description, stream);
+
+		return(stream);
+	}
+
+	friend std::istream& operator>>(std::istream& stream, YonFormat& fmt){
+		utility::DeserializePrimitive(fmt.idx, stream);
+		utility::DeserializeString(fmt.id, stream);
+		utility::DeserializeString(fmt.number, stream);
+		utility::DeserializeString(fmt.type, stream);
+		utility::DeserializeString(fmt.description, stream);
+		fmt.EvaluateType();
+
+		return(stream);
+	}
+
+	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonFormat& fmt){
+		io::SerializePrimitive(fmt.idx, buffer);
+		io::SerializeString(fmt.id, buffer);
+		io::SerializeString(fmt.number, buffer);
+		io::SerializeString(fmt.type, buffer);
+		io::SerializeString(fmt.description, buffer);
+
+		return(buffer);
+	}
+
+	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonFormat& fmt){
+		io::DeserializePrimitive(fmt.idx, buffer);
+		io::DeserializeString(fmt.id, buffer);
+		io::DeserializeString(fmt.number, buffer);
+		io::DeserializeString(fmt.type, buffer);
+		io::DeserializeString(fmt.description, buffer);
+		fmt.EvaluateType();
+
+		return(buffer);
+	}
+
+public:
+	TACHYON_VARIANT_HEADER_FIELD_TYPE yon_type;
 };
 
 namespace utility {

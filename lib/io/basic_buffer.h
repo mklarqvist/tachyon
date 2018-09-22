@@ -10,7 +10,7 @@
 #include <cassert>
 
 #include "support/helpers.h"
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon {
 namespace io {

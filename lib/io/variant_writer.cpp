@@ -5,7 +5,7 @@
 #include <vector>
 #include <fstream>
 
-#include "variant_import_writer.h"
+#include "variant_writer.h"
 #include "support/helpers.h"
 #include "support/magic_constants.h"
 

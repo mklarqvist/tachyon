@@ -119,7 +119,7 @@ std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id,
 	return(yon_blocks_deduped);
 }
 
-void Index::Setup(const std::vector<io::VcfContig>& contigs){
+void Index::Setup(const std::vector<VcfContig>& contigs){
 	this->mImpl->index_.Add(contigs);
 	this->mImpl->index_meta_.reserve(contigs.size());
 	for(int i = 0; i < contigs.size(); ++i)
@@ -308,7 +308,7 @@ bool Index::IndexRecord(const bcf1_t*  record,
 				case(BCF_BT_INT16): end = *reinterpret_cast<int16_t*>(record->d.info[i].vptr); break;
 				case(BCF_BT_INT32): end = *reinterpret_cast<int32_t*>(record->d.info[i].vptr); break;
 				default:
-					std::cerr << utility::timestamp("ERROR","INDEX") << "Illegal END primitive type: " << io::BCF_TYPE_LOOKUP[record->d.info[i].type] << std::endl;
+					std::cerr << utility::timestamp("ERROR","INDEX") << "Illegal END primitive type: " << record->d.info[i].type << std::endl;
 					return false;
 				}
 

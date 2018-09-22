@@ -98,7 +98,7 @@ public:
 	 * index objects.
 	 * @param contigs Src vector of contigs.
 	 */
-	void Setup(const std::vector<io::VcfContig>& contigs);
+	void Setup(const std::vector<VcfContig>& contigs);
 	void Setup(const std::vector<YonContig>& contigs);
 
 	int32_t AddSorted(const uint32_t contig_id,

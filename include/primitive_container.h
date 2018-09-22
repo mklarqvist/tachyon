@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #include <typeinfo>
 
 #include "data_container.h"
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 #include "support_vcf.h"
 
 namespace tachyon {
