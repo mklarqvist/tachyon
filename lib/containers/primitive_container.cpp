@@ -101,7 +101,7 @@ yon1_dc_t& PrimitiveContainer<std::string>::UpdateDataContainer(yon1_dc_t& conta
 	return(container);
 }
 
-io::BasicBuffer& PrimitiveContainer<std::string>::ToVcfString(io::BasicBuffer& buffer) const{
+yon_buffer_t& PrimitiveContainer<std::string>::ToVcfString(yon_buffer_t& buffer) const{
 	if(this->data_.size() == 0){
 		buffer += '.';
 		return(buffer);

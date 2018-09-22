@@ -10,9 +10,9 @@ namespace algorithm{
 
 struct DigitalDigest{
 private:
-	typedef DigitalDigest             self_type;
-	typedef yon1_dc_t container_type;
-	typedef io::BasicBuffer           buffer_type;
+	typedef DigitalDigest self_type;
+	typedef yon1_dc_t     container_type;
+	typedef yon_buffer_t  buffer_type;
 
 public:
 	DigitalDigest(void) :

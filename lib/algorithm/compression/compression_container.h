@@ -209,10 +209,10 @@ EncodeInt16(int16_t input, uint8_t* output)
 
 class CompressionContainer{
 public:
-	typedef CompressionContainer          self_type;
+	typedef CompressionContainer self_type;
 	typedef yon1_dc_t     container_type;
-	typedef io::BasicBuffer               buffer_type;
-	typedef yon_gt_ppa                    permutation_type;
+	typedef yon_buffer_t  buffer_type;
+	typedef yon_gt_ppa    permutation_type;
 
 public:
 	CompressionContainer() = default;

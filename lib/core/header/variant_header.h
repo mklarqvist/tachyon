@@ -3,7 +3,7 @@
 
 #include "support/magic_constants.h"
 #include "support/helpers.h"
-#include "io/basic_buffer.h"
+#include "buffer.h"
 
 #include "io/vcf_utils.h"
 
@@ -11,7 +11,7 @@
 
 namespace tachyon {
 
-class VariantHeader{
+class VariantHeader {
 public:
 	typedef VariantHeader self_type;
 	typedef bcf_hdr_t     hts_vcf_header;
@@ -134,8 +134,8 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header);
 	friend std::istream& operator>>(std::istream& stream, VariantHeader& header);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantHeader& header);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantHeader& header);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const VariantHeader& header);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, VariantHeader& header);
 
 public:
 	// VCF file version string.

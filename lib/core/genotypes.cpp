@@ -54,19 +54,19 @@ void yon_gt_ppa::reset(void){
 		this->ordering[i] = i;
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa){
-	io::DeserializePrimitive(ppa.n_s, buffer);
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_gt_ppa& ppa){
+	DeserializePrimitive(ppa.n_s, buffer);
 	ppa.ordering = new uint32_t[ppa.n_s];
 	for(uint32_t i = 0; i < ppa.n_s; ++i)
-		io::DeserializePrimitive(ppa.ordering[i], buffer);
+		DeserializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa){
-	io::SerializePrimitive(ppa.n_s, buffer);
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_gt_ppa& ppa){
+	SerializePrimitive(ppa.n_s, buffer);
 	for(uint32_t i = 0; i < ppa.n_s; ++i)
-		io::SerializePrimitive(ppa.ordering[i], buffer);
+		SerializePrimitive(ppa.ordering[i], buffer);
 
 	return(buffer);
 }
@@ -199,7 +199,7 @@ yon_gt_rcd& yon_gt_rcd::operator=(yon_gt_rcd&& other){
 	return(*this);
 }
 
-io::BasicBuffer& yon_gt_rcd::PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy){
+yon_buffer_t& yon_gt_rcd::PrintVcf(yon_buffer_t& buffer, const uint8_t& n_ploidy){
 	if(this->allele[0] == 1){
 		buffer += '.';
 		return(buffer);

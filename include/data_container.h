@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef CONTAINERS_DATA_CONTAINERS_H_
-#define CONTAINERS_DATA_CONTAINERS_H_
+#ifndef TACHYON_DATA_CONTAINER_H_
+#define TACHYON_DATA_CONTAINER_H_
 
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
@@ -35,7 +35,7 @@ DEALINGS IN THE SOFTWARE.
 #include <cmath>
 
 #include "support/magic_constants.h"
-#include "io/basic_buffer.h"
+#include "buffer.h"
 #include "core/data_block_settings.h"
 
 namespace tachyon {
@@ -74,8 +74,8 @@ struct yon_blk_bv_pair {
 	void Build(const uint32_t n_footer_total_fields,
 	           const std::unordered_map<uint32_t, uint32_t>* local_map);
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_blk_bv_pair& entry);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_blk_bv_pair& entry);
 
 public:
 	std::vector<int> pattern; // vector of global idx values.
@@ -87,7 +87,7 @@ public:
 struct yon_dc_hdr_cont {
 public:
 	typedef yon_dc_hdr_cont self_type;
-	typedef io::BasicBuffer               buffer_type;
+	typedef yon_buffer_t               buffer_type;
 
 public:
 	yon_dc_hdr_cont();
@@ -160,9 +160,9 @@ public:
 	bool CheckChecksum(const uint8_t* compare) const;
 
 private:
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const self_type& entry);
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
 
 public:
@@ -180,7 +180,7 @@ struct yon_dc_hdr {
 private:
 	typedef yon_dc_hdr       self_type;
 	typedef yon_dc_hdr_obj header_type;
-	typedef io::BasicBuffer           buffer_type;
+	typedef yon_buffer_t           buffer_type;
 
 public:
 	yon_dc_hdr();
@@ -225,9 +225,9 @@ public:
  */
 class yon1_dc_t {
 public:
-	typedef yon1_dc_t       self_type;
-	typedef yon_dc_hdr header_type;
-	typedef io::BasicBuffer     buffer_type;
+	typedef yon1_dc_t    self_type;
+	typedef yon_dc_hdr   header_type;
+	typedef yon_buffer_t buffer_type;
 
 public:
 	yon1_dc_t();

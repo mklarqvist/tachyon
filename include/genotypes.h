@@ -20,15 +20,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef CORE_GENOTYPES_H_
-#define CORE_GENOTYPES_H_
+#ifndef TACHYON_GENOTYPES_H_
+#define TACHYON_GENOTYPES_H_
 
 #include <cstring>
 #include <unordered_map>
 
 #include "htslib/vcf.h"
 
-#include "io/basic_buffer.h"
+#include "buffer.h"
 #include "support_vcf.h"
 #include "core/header/variant_header.h"
 
@@ -113,8 +113,8 @@ struct yon_gt_ppa {
 	 */
 	void reset(void);
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_gt_ppa& ppa);
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_gt_ppa& ppa);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_gt_ppa& ppa);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_gt_ppa& ppa);
 
 	uint32_t  n_s;
 	uint32_t* ordering;
@@ -192,7 +192,7 @@ public:
 	 * @param n_ploidy Src base ploidy this data was constructed with.
 	 * @return         Returns a reference to the dst buffer.
 	 */
-	io::BasicBuffer& PrintVcf(io::BasicBuffer& buffer, const uint8_t& n_ploidy);
+	yon_buffer_t& PrintVcf(yon_buffer_t& buffer, const uint8_t& n_ploidy);
 
 public:
 	uint32_t run_length;
@@ -595,7 +595,7 @@ struct yon_vnt_cnt {
 	yon_vnt_cnt(void);
 	~yon_vnt_cnt() = default;
 
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const yon_vnt_cnt& entry){
+	friend yon_buffer_t& operator+=(yon_buffer_t& buffer, const yon_vnt_cnt& entry){
 		buffer += (uint16_t)*reinterpret_cast<const uint16_t* const>(&entry);
 		return(buffer);
 	}

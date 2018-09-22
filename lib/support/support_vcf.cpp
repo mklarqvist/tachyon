@@ -3,7 +3,7 @@
 namespace tachyon {
 namespace utility {
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint8_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -18,7 +18,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint8_t* data, const
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint16_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -33,7 +33,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint16_t* data, cons
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -48,7 +48,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint32_t* data, cons
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -63,7 +63,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t* data, cons
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int8_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const int8_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -92,7 +92,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int8_t* data, const 
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int16_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const int16_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -120,7 +120,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int16_t* data, const
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int32_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const int32_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -149,7 +149,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int32_t* data, const
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int64_t* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const int64_t* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -179,7 +179,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const int64_t* data, const
 }
 
 // Special case
-io::BasicBuffer& ToVcfString_char(io::BasicBuffer& buffer, const char* data, const size_t n_data){
+yon_buffer_t& ToVcfString_char(yon_buffer_t& buffer, const char* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -194,7 +194,7 @@ io::BasicBuffer& ToVcfString_char(io::BasicBuffer& buffer, const char* data, con
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const float* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const float* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);
@@ -225,7 +225,7 @@ io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const float* data, const s
 	return(buffer);
 }
 
-io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const double* data, const size_t n_data){
+yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const double* data, const size_t n_data){
 	if(n_data == 0){
 		buffer += '.';
 		return(buffer);

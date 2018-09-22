@@ -10,7 +10,7 @@
 #include <cstring>
 #include <regex>
 
-#include "io/basic_buffer.h"
+#include "buffer.h"
 
 namespace tachyon{
 namespace utility{

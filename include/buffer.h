@@ -1,5 +1,27 @@
-#ifndef BASICBUFFER__H_
-#define BASICBUFFER__H_
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
+#ifndef TACHYON_BUFFER_H_
+#define TACHYON_BUFFER_H_
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -13,11 +35,10 @@
 #include "generic_iterator.h"
 
 namespace tachyon {
-namespace io {
 
-struct BasicBuffer {
+struct yon_buffer_t {
 public:
-    typedef BasicBuffer       self_type;
+    typedef yon_buffer_t       self_type;
     typedef char              value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;
@@ -30,14 +51,14 @@ public:
 	typedef yonRawIterator<const value_type> const_iterator;
 
 public:
-	BasicBuffer();
-	BasicBuffer(const uint64_t size);
-	BasicBuffer(char* target, const size_t length);
-	BasicBuffer(const uint64_t size, char* target);
-	BasicBuffer(const self_type& other);
+	yon_buffer_t();
+	yon_buffer_t(const uint64_t size);
+	yon_buffer_t(char* target, const size_t length);
+	yon_buffer_t(const uint64_t size, char* target);
+	yon_buffer_t(const self_type& other);
 	self_type& operator=(const self_type& other);
 	self_type& operator=(self_type&& other) noexcept;
-	~BasicBuffer();
+	~yon_buffer_t();
 
 	inline reference back(void){ return(this->buffer_[this->n_chars_-1]); }
 	inline reference front(void){ return(this->buffer_[0]); }
@@ -125,20 +146,25 @@ public:
 	pointer  buffer_;
 };
 
-void SerializeString(const std::string& string, io::BasicBuffer& buffer);
-void DeserializeString(std::string& string, io::BasicBuffer& buffer);
+/**<
+ * Supportive functions for serializing/deserialize data to/from a byte
+ * stream.
+ * @param value  Src value.
+ * @param buffer Dst buffer reference.
+ */
+void SerializeString(const std::string& string, yon_buffer_t& buffer);
+void DeserializeString(std::string& string, yon_buffer_t& buffer);
 
 template <class T>
-static void SerializePrimitive(const T& value, io::BasicBuffer& buffer){
+static void SerializePrimitive(const T& value, yon_buffer_t& buffer){
 	buffer += value;
 }
 
 template <class T>
-static void DeserializePrimitive(T& value, io::BasicBuffer& buffer){
+static void DeserializePrimitive(T& value, yon_buffer_t& buffer){
 	buffer >> value;
 }
 
-} /* namespace IO */
-} /* namespace Tomahawk */
+}
 
-#endif /* BASICBUFFER__H_ */
+#endif

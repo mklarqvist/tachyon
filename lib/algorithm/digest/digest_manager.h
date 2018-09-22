@@ -4,7 +4,7 @@
 #include <cstring>
 #include <openssl/sha.h>
 
-#include "io/basic_buffer.h"
+#include "buffer.h"
 #include "digest.h"
 
 namespace tachyon{

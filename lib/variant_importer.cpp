@@ -355,8 +355,8 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 
 	// Pack header into a byte-stream, compress it, and write
 	// it out.
-	io::BasicBuffer temp(500000);
-	io::BasicBuffer temp_cmp(temp);
+	yon_buffer_t temp(500000);
+	yon_buffer_t temp_cmp(temp);
 	temp << this->yon_header_;
 	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 20);
 	uint32_t l_data   = temp.size();

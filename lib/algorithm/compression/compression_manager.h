@@ -28,7 +28,7 @@ public:
 
 	bool EncodeZigZagVariableInt32(container_type& container){
 		if(container.header.data_header.GetPrimitiveType() == YON_TYPE_32B){
-			io::BasicBuffer buf(container.data_uncompressed.size() + 65536);
+			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const uint32_t* data = reinterpret_cast<const uint32_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int32_t);
 			uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
@@ -51,7 +51,7 @@ public:
 
 			const uint64_t hash_orignal = XXH64(container.data_uncompressed.data(), container.data_uncompressed.size(), 0);
 
-			io::BasicBuffer restore(container.data_uncompressed.size() + 65536);
+			yon_buffer_t restore(container.data_uncompressed.size() + 65536);
 			size_t offset = 0;
 			for(int i = 0; i < n_entries; ++i){
 				restore += DecodeZigzag16(DecodeVarint<uint16_t>(out, offset));
@@ -64,7 +64,7 @@ public:
 			assert(hash_orignal == hash_restore);
 */
 
-			//io::BasicBuffer backup;
+			//yon_buffer_t backup;
 			//backup = std::move(container.data_uncompressed);
 
 			container.data_uncompressed = std::move(buf);
@@ -79,7 +79,7 @@ public:
 
 	bool EncodeZigZagVariableInt16(container_type& container){
 		if(container.header.data_header.GetPrimitiveType() == YON_TYPE_16B){
-			io::BasicBuffer buf(container.data_uncompressed.size() + 65536);
+			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const uint16_t* data = reinterpret_cast<const uint16_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int16_t);
 			uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
@@ -101,7 +101,7 @@ public:
 
 			const uint64_t hash_orignal = XXH64(container.data_uncompressed.data(), container.data_uncompressed.size(), 0);
 
-			io::BasicBuffer restore(container.data_uncompressed.size() + 65536);
+			yon_buffer_t restore(container.data_uncompressed.size() + 65536);
 			size_t offset = 0;
 			for(int i = 0; i < n_entries; ++i){
 				restore += DecodeZigzag16(DecodeVarint<uint16_t>(out, offset));
@@ -114,7 +114,7 @@ public:
 			assert(hash_orignal == hash_restore);
 */
 
-			//io::BasicBuffer backup;
+			//yon_buffer_t backup;
 			//backup = std::move(container.data_uncompressed);
 			container.data_uncompressed = std::move(buf);
 			container.header.data_header.uLength = buf.size();
@@ -128,7 +128,7 @@ public:
 
 	template <class int_t, class uint_t>
 	bool EncodeZigZag(container_type& container){
-			io::BasicBuffer buf(container.data_uncompressed.size() + 65536);
+			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const int_t* data = reinterpret_cast<const int_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int_t);
 			uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
@@ -153,7 +153,7 @@ public:
 			//zstd_codec.Compress(container);
 			//std::cerr << "zstd-ref-zigzag8o: " << container.data.size() << " " << (float)container.data_uncompressed.size()/container.data.size() << std::endl;
 
-			//io::BasicBuffer backup;
+			//yon_buffer_t backup;
 			//backup = std::move(container.data_uncompressed);
 			container.data_uncompressed = std::move(buf);
 			container.header.data_header.uLength = buf.size();
@@ -167,7 +167,7 @@ public:
 
 	bool EncodeZigZagInt16(container_type& container){
 		if(container.header.data_header.GetPrimitiveType() == YON_TYPE_16B){
-			io::BasicBuffer buf(container.data_uncompressed.size() + 65536);
+			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const uint16_t* data = reinterpret_cast<const uint16_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int16_t);
 			uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
@@ -181,7 +181,7 @@ public:
 			//zstd_codec.Compress(container);
 			//std::cerr << "zstd-ref-zigzag8o: " << container.data.size() << " " << (float)container.data_uncompressed.size()/container.data.size() << std::endl;
 
-			//io::BasicBuffer backup;
+			//yon_buffer_t backup;
 			//backup = std::move(container.data_uncompressed);
 			container.data_uncompressed = std::move(buf);
 			container.header.data_header.uLength = buf.size();
@@ -207,7 +207,7 @@ public:
 		zstd_codec.Compress(container);
 		const uint32_t base = container.data.size();
 
-		io::BasicBuffer buf(container.data_uncompressed.size() + 65536);
+		yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 		const int_t* data = reinterpret_cast<const int_t*>(container.data_uncompressed.data());
 		const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int_t);
 		uint8_t* out = reinterpret_cast<uint8_t*>(buf.data());
@@ -227,7 +227,7 @@ public:
 		buf.n_chars_ = bytes;
 		const uint32_t b_original = container.data_uncompressed.size();
 
-		//io::BasicBuffer backup;
+		//yon_buffer_t backup;
 		//backup = std::move(container.data_uncompressed);
 		container.data_uncompressed = std::move(buf);
 		container.header.data_header.uLength = buf.size();

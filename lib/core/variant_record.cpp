@@ -418,7 +418,7 @@ void yon1_vnt_t::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const{
 }
 
 void yon1_vnt_t::ToVcfString(const VariantHeader& header,
-		   io::BasicBuffer& buffer,
+		   yon_buffer_t& buffer,
 		   uint32_t display,
 		   yon_gt_rcd* external_rcd) const
 {
@@ -834,7 +834,7 @@ bool yon_stats_sample::LazyEvalute(void){
 	return true;
 }
 
-io::BasicBuffer& yon_stats_sample::ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const {
+yon_buffer_t& yon_stats_sample::ToJsonString(yon_buffer_t& buffer, const std::string& sample_name) const {
 	buffer +=  "\"" + sample_name + "\":{";
 	buffer +=  "\"n_ins\":" + std::to_string(this->n_ins);
 	buffer += ",\"n_del\":" + std::to_string(this->n_del);
@@ -941,7 +941,7 @@ void yon_stats_tstv::SetSize(const uint32_t n_samples){
 	sample = new yon_stats_sample[n_samples];
 }
 
-io::BasicBuffer& yon_stats_tstv::ToJsonString(io::BasicBuffer& buffer, const std::vector<std::string>& sample_names) const {
+yon_buffer_t& yon_stats_tstv::ToJsonString(yon_buffer_t& buffer, const std::vector<std::string>& sample_names) const {
 	buffer += '{';
 	buffer +=  "\"VI\":{";
 	buffer +=  "\"n_samples\":";

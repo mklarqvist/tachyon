@@ -27,7 +27,7 @@ class VcfImporterSlave {
 public:
 	typedef VcfImporterSlave                self_type;
 	typedef VariantWriterInterface          writer_type;
-	typedef io::BasicBuffer                 buffer_type;
+	typedef yon_buffer_t                    buffer_type;
 	typedef yon1_idx_rec                    index_entry_type;
 	typedef io::VcfHeader                   vcf_header_type;
 	typedef containers::VcfContainer        vcf_container_type;

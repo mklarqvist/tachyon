@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 
 // encryption
 #include "support/magic_constants.h"
-#include "io/basic_buffer.h"
+#include "buffer.h"
 #include "variant_container.h"
 
 namespace tachyon {
@@ -37,7 +37,7 @@ public:
 	KeychainKey();
 	virtual ~KeychainKey() = default;
 
-	friend io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const KeychainKey& key);
+	friend yon_buffer_t& operator+=(yon_buffer_t& buffer, const KeychainKey& key);
 	friend std::ostream& operator<<(std::ostream& stream, const KeychainKey& key);
 	friend std::istream& operator>>(std::istream& stream, KeychainKey& key);
 
@@ -48,7 +48,7 @@ public:
 	// Virtual functions.
 	virtual std::ostream& print(std::ostream& stream) =0;
 	virtual KeychainKey* Clone() const =0;
-	virtual io::BasicBuffer& AddToBuffer(io::BasicBuffer& buffer) const =0;
+	virtual yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const =0;
 	virtual std::ostream& WriteToStream(std::ostream& stream) const =0;
 	virtual std::istream& ReadFromStream(std::istream& stream) =0;
 
@@ -62,7 +62,7 @@ struct KeychainKeyBase : public KeychainKey {
 public:
 	typedef KeychainKeyBase self_type;
 	typedef KeychainKey     parent_type;
-	typedef io::BasicBuffer buffer_type;
+	typedef yon_buffer_t buffer_type;
 
 public:
 	KeychainKeyBase() = default;
@@ -85,7 +85,7 @@ public:
 
 	virtual inline KeychainKey* Clone() const{ return new self_type(*this); }
 
-	virtual io::BasicBuffer& AddToBuffer(io::BasicBuffer& buffer) const{
+	virtual yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const{
 		buffer += this->encryption_type;
 		buffer += this->field_id;
 		buffer.Add((const char*)&this->key[0], KeyLength);
@@ -167,7 +167,7 @@ public:
 		return(stream);
 	}
 
-	io::BasicBuffer& AddToBuffer(io::BasicBuffer& buffer) const{
+	yon_buffer_t& AddToBuffer(yon_buffer_t& buffer) const{
 		buffer += this->encryption_type;
 		buffer += this->field_id;
 		buffer.Add((const char*)&this->key[0], KeyLength);
@@ -305,11 +305,11 @@ private:
 
 class EncryptionDecorator {
 public:
-	typedef EncryptionDecorator       self_type;
-	typedef yon1_vb_t  variant_block_type;
-	typedef yon1_dc_t stream_container;
-	typedef io::BasicBuffer           buffer_type;
-	typedef Keychain                  keychain_type;
+	typedef EncryptionDecorator self_type;
+	typedef yon1_vb_t     variant_block_type;
+	typedef yon1_dc_t     stream_container;
+	typedef yon_buffer_t  buffer_type;
+	typedef Keychain      keychain_type;
 
 public:
 	EncryptionDecorator();

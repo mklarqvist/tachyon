@@ -14,7 +14,7 @@
 #include "support_vcf.h"
 
 #include "support/helpers.h"
-#include "io/basic_buffer.h"
+#include "buffer.h"
 
 namespace tachyon {
 namespace io {

@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef CONTAINERS_VARIANT_BLOCK_H_
-#define CONTAINERS_VARIANT_BLOCK_H_
+#ifndef TACHYON_VARIANT_BLOCK_H_
+#define TACHYON_VARIANT_BLOCK_H_
 
 #include <fstream>
 
@@ -198,8 +198,8 @@ public:
 	*/
 	static uint64_t HashIdentifiers(const std::vector<int>& id_vector);
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const self_type& entry);
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, self_type& entry);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const self_type& entry);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, self_type& entry);
 
 private:
 	/**<
@@ -590,7 +590,7 @@ public:
 	typedef yon1_dc_t          container_type;
 	typedef yon_vb_hdr         block_header_type;
 	typedef yon_vb_ftr         block_footer_type;
-	typedef io::BasicBuffer    buffer_type;
+	typedef yon_buffer_t       buffer_type;
 	typedef yon_vb_istats      import_stats_type;
 	typedef yon_dc_hdr         offset_type;
 	typedef DataBlockSettings  block_settings_type;

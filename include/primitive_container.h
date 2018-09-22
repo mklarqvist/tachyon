@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef CONTAINER_PRIMITIVECONTAINER_H_
-#define CONTAINER_PRIMITIVECONTAINER_H_
+#ifndef TACHYON_PRIMITIVECONTAINER_H_
+#define TACHYON_PRIMITIVECONTAINER_H_
 
 #include <typeinfo>
 
@@ -143,7 +143,7 @@ public:
 	 * @param buffer Destination buffer.
 	 * @return       Returns a reference to the destination buffer.
 	 */
-	virtual io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const =0;
+	virtual yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const =0;
 
 	/**<
 	 * Update a given htslib bcf1_t record destination Info field
@@ -251,7 +251,7 @@ public:
     inline const_iterator cbegin() const{ return const_iterator(&this->entries_[0]); }
     inline const_iterator cend() const{ return const_iterator(&this->entries_[this->n_entries_]); }
 
-    inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const{
+    inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const{
     	return(utility::ToVcfString(buffer, this->data(), this->size()));
     }
 
@@ -334,7 +334,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->data_); }
 	inline const_iterator cend() const{ return const_iterator(&this->data_ + this->n_entries_); }
 
-	io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer) const;
+	yon_buffer_t& ToVcfString(yon_buffer_t& buffer) const;
 
 	inline bcf1_t* UpdateHtslibVcfRecordInfo(bcf1_t* rec,
 	                                         bcf_hdr_t* hdr,
@@ -408,7 +408,7 @@ public:
 	 * @param buffer Destination buffer.
 	 * @return       Returns a reference to the destination buffer.
 	 */
-	virtual io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t position) const =0;
+	virtual yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const =0;
 
 	/**<
 	 * Update a given htslib bcf1_t record destination Format field
@@ -494,7 +494,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
 
-	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t position) const{
+	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const{
 		return(utility::ToVcfString(buffer, this->at(position).data(), this->at(position).size()));
 	}
 
@@ -572,7 +572,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->containers_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->containers_[this->n_objects_]); }
 
-	inline io::BasicBuffer& ToVcfString(io::BasicBuffer& buffer, const uint64_t position) const{
+	inline yon_buffer_t& ToVcfString(yon_buffer_t& buffer, const uint64_t position) const{
 		return(this->at(position).ToVcfString(buffer));
 	}
 

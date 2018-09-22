@@ -605,7 +605,7 @@ uint32_t yon_vb_ftr::AddFilter(const uint32_t global_id){
 	return(this->AddStreamWrapper(global_id, this->filter_map, this->filter_offsets, this->n_filter_streams));
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_vb_ftr& entry){
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_vb_ftr& entry){
 	buffer += (uint16_t)entry.n_info_streams;
 	buffer += (uint16_t)entry.n_format_streams;
 	buffer += (uint16_t)entry.n_filter_streams;
@@ -626,7 +626,7 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_vb_ftr& entry){
 }
 
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_vb_ftr& entry){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_vb_ftr& entry){
 	entry.reset();
 
 	buffer >> entry.n_info_streams;

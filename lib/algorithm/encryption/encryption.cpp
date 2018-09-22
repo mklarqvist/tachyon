@@ -12,7 +12,7 @@ namespace tachyon {
 KeychainKey::KeychainKey(): field_id(0), encryption_type(YON_ENCRYPTION_NONE){}
 
 // keys
-io::BasicBuffer& operator+=(io::BasicBuffer& buffer, const KeychainKey& key){
+yon_buffer_t& operator+=(yon_buffer_t& buffer, const KeychainKey& key){
 	return(key.AddToBuffer(buffer));
 }
 
@@ -343,7 +343,7 @@ bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(stream_containe
 
 	// Mask header in encrypted message
 	this->buffer.reset();
-	io::BasicBuffer temp(65536);
+	yon_buffer_t temp(65536);
 	temp << container.header;
 	this->buffer.resize(container.data.size() + container.strides.size() + temp.size() + 65536);
 

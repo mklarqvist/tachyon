@@ -127,8 +127,8 @@ bool VariantReader::open(void){
 	utility::DeserializePrimitive(l_data, this->mImpl->basic_reader.stream_);
 	utility::DeserializePrimitive(l_c_data, this->mImpl->basic_reader.stream_);
 
-	io::BasicBuffer header_uncompressed(l_data + 1024);
-	io::BasicBuffer header_compressed(l_c_data + 1024); header_compressed.n_chars_ = l_c_data;
+	yon_buffer_t header_uncompressed(l_data + 1024);
+	yon_buffer_t header_compressed(l_c_data + 1024); header_compressed.n_chars_ = l_c_data;
 
 	this->mImpl->basic_reader.stream_.read(header_compressed.data(), l_c_data);
 
@@ -338,7 +338,7 @@ uint64_t VariantReader::OutputVcfLinear(void){
 	if(this->gt_exp == nullptr)
 		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
 
-	io::BasicBuffer buf(100000);
+	yon_buffer_t buf(100000);
 	while(this->NextBlock()){
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
@@ -372,7 +372,7 @@ uint64_t VariantReader::OutputVcfSearch(void){
 
 	// Filter functionality
 	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
-	io::BasicBuffer buf(100000);
+	yon_buffer_t buf(100000);
 
 	for(uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i){
 		this->GetBlock(this->mImpl->interval_container.GetBlockList()[i]);
@@ -715,7 +715,7 @@ bool VariantReader::Stats(void){
 	delete [] slave_test;
 	delete [] csm;
 
-	io::BasicBuffer json_buffer(250000);
+	yon_buffer_t json_buffer(250000);
 	s.Evaluate();
 	s.ToJsonString(json_buffer, this->global_header.samples_);
 
@@ -743,7 +743,7 @@ bool VariantReader::TempWrite(void){
 	uint32_t block_id = 0;
 	yon1_vc_t vc2;
 
-	io::BasicBuffer buf(100000);
+	yon_buffer_t buf(100000);
 	while(this->NextBlock()){
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 

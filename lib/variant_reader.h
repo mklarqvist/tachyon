@@ -46,7 +46,7 @@ public:
 class VariantReader {
 public:
 	typedef VariantReader             self_type;
-	typedef io::BasicBuffer           buffer_type;
+	typedef yon_buffer_t              buffer_type;
 	typedef VariantHeader             header_type;
 	typedef core::Footer              footer_type;
 

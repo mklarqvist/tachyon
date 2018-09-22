@@ -568,71 +568,71 @@ std::istream& operator>>(std::istream& stream, VariantHeader& header){
 	return stream;
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VariantHeader& header){
-	io::SerializeString(header.fileformat_string_, buffer);
-	io::SerializeString(header.literals_, buffer);
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const VariantHeader& header){
+	SerializeString(header.fileformat_string_, buffer);
+	SerializeString(header.literals_, buffer);
 
 	uint32_t l_helper = header.samples_.size();
-	io::SerializePrimitive(l_helper, buffer);
-	for(uint32_t i = 0; i < header.samples_.size(); ++i) io::SerializeString(header.samples_[i], buffer);
+	SerializePrimitive(l_helper, buffer);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) SerializeString(header.samples_[i], buffer);
 
 	l_helper = header.contigs_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.contigs_.size(); ++i) buffer << header.contigs_[i];
 
 	l_helper = header.info_fields_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.info_fields_.size(); ++i) buffer << header.info_fields_[i];
 
 	l_helper = header.format_fields_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) buffer << header.format_fields_[i];
 
 	l_helper = header.filter_fields_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) buffer << header.filter_fields_[i];
 
 	l_helper = header.structured_extra_fields_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) buffer << header.structured_extra_fields_[i];
 
 	l_helper = header.extra_fields_.size();
-	io::SerializePrimitive(l_helper, buffer);
+	SerializePrimitive(l_helper, buffer);
 	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) buffer << header.extra_fields_[i];
 
 	return(buffer);
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VariantHeader& header){
-	io::DeserializeString(header.fileformat_string_, buffer);
-	io::DeserializeString(header.literals_, buffer);
+yon_buffer_t& operator>>(yon_buffer_t& buffer, VariantHeader& header){
+	DeserializeString(header.fileformat_string_, buffer);
+	DeserializeString(header.literals_, buffer);
 
 	uint32_t l_helper;
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.samples_.resize(l_helper);
-	for(uint32_t i = 0; i < header.samples_.size(); ++i) io::DeserializeString(header.samples_[i], buffer);
+	for(uint32_t i = 0; i < header.samples_.size(); ++i) DeserializeString(header.samples_[i], buffer);
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.contigs_.resize(l_helper);
 	for(uint32_t i = 0; i < header.contigs_.size(); ++i)       buffer >> header.contigs_[i];
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.info_fields_.resize(l_helper);
 	for(uint32_t i = 0; i < header.info_fields_.size(); ++i)   buffer >> header.info_fields_[i];
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.format_fields_.resize(l_helper);
 	for(uint32_t i = 0; i < header.format_fields_.size(); ++i) buffer >> header.format_fields_[i];
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.filter_fields_.resize(l_helper);
 	for(uint32_t i = 0; i < header.filter_fields_.size(); ++i) buffer >> header.filter_fields_[i];
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.structured_extra_fields_.resize(l_helper);
 	for(uint32_t i = 0; i < header.structured_extra_fields_.size(); ++i) buffer >> header.structured_extra_fields_[i];
 
-	io::DeserializePrimitive(l_helper, buffer);
+	DeserializePrimitive(l_helper, buffer);
 	header.extra_fields_.resize(l_helper);
 	for(uint32_t i = 0; i < header.extra_fields_.size(); ++i) buffer >> header.extra_fields_[i];
 

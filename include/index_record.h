@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef INDEX_INDEX_ENTRY_H_
-#define INDEX_INDEX_ENTRY_H_
+#ifndef TACHYON_INDEX_RECORD_H_
+#define TACHYON_INDEX_RECORD_H_
 
 #include <fstream>
 #include <limits>

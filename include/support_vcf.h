@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef UTILITY_SUPPORT_VCF_H_
-#define UTILITY_SUPPORT_VCF_H_
+#ifndef TACHYON_SUPPORT_VCF_H_
+#define TACHYON_SUPPORT_VCF_H_
 
 #include <iostream>
 #include <cmath>
@@ -29,7 +29,7 @@ DEALINGS IN THE SOFTWARE.
 #include <string>
 
 #include "support/magic_constants.h"
-#include "io/basic_buffer.h"
+#include "buffer.h"
 
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
@@ -254,17 +254,17 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfFilter& flt){
-		io::SerializePrimitive(flt.idx, buffer);
-		io::SerializeString(flt.id, buffer);
-		io::SerializeString(flt.description, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const VcfFilter& flt){
+		SerializePrimitive(flt.idx, buffer);
+		SerializeString(flt.id, buffer);
+		SerializeString(flt.description, buffer);
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfFilter& flt){
-		io::DeserializePrimitive(flt.idx, buffer);
-		io::DeserializeString(flt.id, buffer);
-		io::DeserializeString(flt.description, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, VcfFilter& flt){
+		DeserializePrimitive(flt.idx, buffer);
+		DeserializeString(flt.id, buffer);
+		DeserializeString(flt.description, buffer);
 		return(buffer);
 	}
 
@@ -312,15 +312,15 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfExtra& extra){
-		io::SerializeString(extra.key, buffer);
-		io::SerializeString(extra.value, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const VcfExtra& extra){
+		SerializeString(extra.key, buffer);
+		SerializeString(extra.value, buffer);
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfExtra& extra){
-		io::DeserializeString(extra.key, buffer);
-		io::DeserializeString(extra.value, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, VcfExtra& extra){
+		DeserializeString(extra.key, buffer);
+		DeserializeString(extra.value, buffer);
 		return(buffer);
 	}
 
@@ -376,20 +376,20 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const VcfStructuredExtra& extra){
-		io::SerializeString(extra.key, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const VcfStructuredExtra& extra){
+		SerializeString(extra.key, buffer);
 		size_t l_extra = extra.fields.size();
-		io::SerializePrimitive(l_extra, buffer);
+		SerializePrimitive(l_extra, buffer);
 		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			buffer << extra.fields[i];
 
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, VcfStructuredExtra& extra){
-		io::DeserializeString(extra.key, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, VcfStructuredExtra& extra){
+		DeserializeString(extra.key, buffer);
 		size_t l_extra;
-		io::DeserializePrimitive(l_extra, buffer);
+		DeserializePrimitive(l_extra, buffer);
 		extra.fields.resize(l_extra);
 		for(uint32_t i = 0; i < extra.fields.size(); ++i)
 			buffer >> extra.fields[i];
@@ -453,35 +453,35 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonContig& contig){
-		io::SerializePrimitive(contig.idx, buffer);
-		io::SerializePrimitive(contig.n_bases, buffer);
-		io::SerializePrimitive(contig.n_blocks, buffer);
-		io::SerializeString(contig.name, buffer);
-		io::SerializeString(contig.description, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const YonContig& contig){
+		SerializePrimitive(contig.idx, buffer);
+		SerializePrimitive(contig.n_bases, buffer);
+		SerializePrimitive(contig.n_blocks, buffer);
+		SerializeString(contig.name, buffer);
+		SerializeString(contig.description, buffer);
 
 		size_t size_helper = contig.extra.size();
-		io::SerializePrimitive(size_helper, buffer);
+		SerializePrimitive(size_helper, buffer);
 		for(uint32_t i = 0; i < contig.extra.size(); ++i){
-			io::SerializeString(contig.extra[i].first, buffer);
-			io::SerializeString(contig.extra[i].second, buffer);
+			SerializeString(contig.extra[i].first, buffer);
+			SerializeString(contig.extra[i].second, buffer);
 		}
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonContig& contig){
-		io::DeserializePrimitive(contig.idx, buffer);
-		io::DeserializePrimitive(contig.n_bases, buffer);
-		io::DeserializePrimitive(contig.n_blocks, buffer);
-		io::DeserializeString(contig.name, buffer);
-		io::DeserializeString(contig.description, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, YonContig& contig){
+		DeserializePrimitive(contig.idx, buffer);
+		DeserializePrimitive(contig.n_bases, buffer);
+		DeserializePrimitive(contig.n_blocks, buffer);
+		DeserializeString(contig.name, buffer);
+		DeserializeString(contig.description, buffer);
 
 		size_t l_extra;
-		io::DeserializePrimitive(l_extra, buffer);
+		DeserializePrimitive(l_extra, buffer);
 		contig.extra.resize(l_extra);
 		for(uint32_t i = 0; i < contig.extra.size(); ++i){
-			io::DeserializeString(contig.extra[i].first, buffer);
-			io::DeserializeString(contig.extra[i].second, buffer);
+			DeserializeString(contig.extra[i].first, buffer);
+			DeserializeString(contig.extra[i].second, buffer);
 		}
 		return(buffer);
 	}
@@ -540,26 +540,26 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonInfo& info){
-		io::SerializePrimitive(info.idx, buffer);
-		io::SerializeString(info.id, buffer);
-		io::SerializeString(info.number, buffer);
-		io::SerializeString(info.type, buffer);
-		io::SerializeString(info.description, buffer);
-		io::SerializeString(info.source, buffer);
-		io::SerializeString(info.version, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const YonInfo& info){
+		SerializePrimitive(info.idx, buffer);
+		SerializeString(info.id, buffer);
+		SerializeString(info.number, buffer);
+		SerializeString(info.type, buffer);
+		SerializeString(info.description, buffer);
+		SerializeString(info.source, buffer);
+		SerializeString(info.version, buffer);
 
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonInfo& info){
-		io::DeserializePrimitive(info.idx, buffer);
-		io::DeserializeString(info.id, buffer);
-		io::DeserializeString(info.number, buffer);
-		io::DeserializeString(info.type, buffer);
-		io::DeserializeString(info.description, buffer);
-		io::DeserializeString(info.source, buffer);
-		io::DeserializeString(info.version, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, YonInfo& info){
+		DeserializePrimitive(info.idx, buffer);
+		DeserializeString(info.id, buffer);
+		DeserializeString(info.number, buffer);
+		DeserializeString(info.type, buffer);
+		DeserializeString(info.description, buffer);
+		DeserializeString(info.source, buffer);
+		DeserializeString(info.version, buffer);
 		info.EvaluateType();
 
 		return(buffer);
@@ -613,22 +613,22 @@ public:
 		return(stream);
 	}
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const YonFormat& fmt){
-		io::SerializePrimitive(fmt.idx, buffer);
-		io::SerializeString(fmt.id, buffer);
-		io::SerializeString(fmt.number, buffer);
-		io::SerializeString(fmt.type, buffer);
-		io::SerializeString(fmt.description, buffer);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const YonFormat& fmt){
+		SerializePrimitive(fmt.idx, buffer);
+		SerializeString(fmt.id, buffer);
+		SerializeString(fmt.number, buffer);
+		SerializeString(fmt.type, buffer);
+		SerializeString(fmt.description, buffer);
 
 		return(buffer);
 	}
 
-	friend io::BasicBuffer& operator>>(io::BasicBuffer& buffer, YonFormat& fmt){
-		io::DeserializePrimitive(fmt.idx, buffer);
-		io::DeserializeString(fmt.id, buffer);
-		io::DeserializeString(fmt.number, buffer);
-		io::DeserializeString(fmt.type, buffer);
-		io::DeserializeString(fmt.description, buffer);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, YonFormat& fmt){
+		DeserializePrimitive(fmt.idx, buffer);
+		DeserializeString(fmt.id, buffer);
+		DeserializeString(fmt.number, buffer);
+		DeserializeString(fmt.type, buffer);
+		DeserializeString(fmt.description, buffer);
 		fmt.EvaluateType();
 
 		return(buffer);
@@ -648,18 +648,18 @@ namespace utility {
  * @param n_data Number of entries the src pointer is pointing to.
  * @return       Returns a reference to the dst buffer reference.
  */
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint8_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint16_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint32_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const uint64_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int8_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int16_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int32_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const int64_t* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const char* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const float* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const double* const data, const size_t n_data);
-io::BasicBuffer& ToVcfString(io::BasicBuffer& stream, const std::string& string);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const uint8_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const uint16_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const uint32_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const uint64_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const int8_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const int16_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const int32_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const int64_t* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const char* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const float* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const double* const data, const size_t n_data);
+yon_buffer_t& ToVcfString(yon_buffer_t& stream, const std::string& string);
 
 /**<
  * Helper functions for adding raw primitive data into a htslib bcf1_t info field.

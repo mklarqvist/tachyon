@@ -17,17 +17,17 @@ namespace index{
 
 class VariantIndexQuadTree {
 public:
-	typedef VariantIndexQuadTree       self_type;
-    typedef std::size_t        size_type;
-    typedef VariantIndexContig value_type;
-    typedef VariantIndexLinear linear_type;
-    typedef value_type&        reference;
-    typedef const value_type&  const_reference;
-    typedef value_type*        pointer;
-    typedef const value_type*  const_pointer;
-    typedef yon1_idx_rec       linear_entry_type;
-    typedef YonContig          contig_type;
-    typedef linear_type*       linear_pointer;
+	typedef VariantIndexQuadTree self_type;
+    typedef std::size_t          size_type;
+    typedef VariantIndexContig   value_type;
+    typedef VariantIndexLinear   linear_type;
+    typedef value_type&          reference;
+    typedef const value_type&    const_reference;
+    typedef value_type*          pointer;
+    typedef const value_type*    const_pointer;
+    typedef yon1_idx_rec         linear_entry_type;
+    typedef YonContig            contig_type;
+    typedef linear_type*         linear_pointer;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;

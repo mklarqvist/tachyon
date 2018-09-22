@@ -19,7 +19,7 @@ public:
 		if(n_extra_threads){
 			int ret = hts_set_threads(fp, n_extra_threads);
 			if(ret < 0){
-				std::cerr << "failed to open multiple handles" << std::endl;
+				std::cerr << utility::timestamp("ERROR") << "Failed to open multiple handles!" << std::endl;
 				return nullptr;
 			}
 		}
@@ -71,14 +71,14 @@ public:
 	 * Utility function that writes the VcfHeader literals string into
 	 * a target output stream. The literals string does NOT contain
 	 * sample information or the column header string ("#CHROM...").
-	 * @param stream Target output stream
+	 * @param stream Dst output stream.
 	 */
 	inline void PrintLiterals(std::ostream& stream) const{ stream << this->vcf_header_.literals_ << std::endl; }
 
 	/**<
 	 * Utility function that writes a valid VCF header output string
 	 * to the target stream.
-	 * @param stream Target output stream
+	 * @param stream Dst output stream.
 	 */
 	void PrintVcfHeader(std::ostream& stream) const{
 		this->PrintLiterals(stream);
@@ -93,6 +93,7 @@ public:
 	}
 
 private:
+	// Private constructor.
 	VcfReader(const std::string& variants_path,
               htsFile* fp,
 			  bcf_hdr_t* header) :
@@ -171,6 +172,7 @@ private:
 }
 
 public:
+	// Public destructor.
 	~VcfReader() {
 		bcf_destroy(this->bcf1_);
 		bcf_hdr_destroy(this->header_);

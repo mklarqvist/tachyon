@@ -83,11 +83,11 @@ struct GenotypeEncoderStatistics{
 
 class GenotypeEncoder {
 public:
-	typedef GenotypeEncoder              self_type;
-	typedef io::BasicBuffer              buffer_type;
-	typedef yon1_dc_t    container_type;
-	typedef yon1_vb_t     block_type;
-	typedef GenotypeEncoderStatistics    stats_type;
+	typedef GenotypeEncoder self_type;
+	typedef yon_buffer_t    buffer_type;
+	typedef yon1_dc_t       container_type;
+	typedef yon1_vb_t       block_type;
+	typedef GenotypeEncoderStatistics stats_type;
 
 public:
 	GenotypeEncoder();

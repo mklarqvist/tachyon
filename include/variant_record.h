@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ==============================================================================*/
-#ifndef CORE_VARIANT_RECORD_H_
-#define CORE_VARIANT_RECORD_H_
+#ifndef TACHYON_VARIANT_RECORD_H_
+#define TACHYON_VARIANT_RECORD_H_
 
 #include "primitive_container.h"
 #include "genotypes.h"
@@ -87,7 +87,7 @@ public:
 	inline const uint16_t& length(void) const{ return(this->l_allele); }
 	inline const std::string ToString(void) const{ return(std::string(this->allele, this->l_allele)); }
 
-	friend io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_allele& entry);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_allele& entry);
 
 public:
 	uint16_t l_allele;
@@ -170,7 +170,7 @@ public:
 	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const;
 
 	void ToVcfString(const VariantHeader& header,
-	           io::BasicBuffer& buffer,
+	           yon_buffer_t& buffer,
 	           uint32_t display,
 	           yon_gt_rcd* external_rcd = nullptr) const;
 
@@ -453,7 +453,7 @@ public:
 	 * @param sample_name Src sample name.
 	 * @return            Returns TRUE.
 	 */
-	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::string& sample_name) const;
+	yon_buffer_t& ToJsonString(yon_buffer_t& buffer, const std::string& sample_name) const;
 
 	/**<
 	 * Resets all internal counters. Useful when reusing
@@ -528,7 +528,7 @@ public:
 	 * @param sample_names Src vector of sample names.
 	 * @return             Returns a reference to the dst data buffer.
 	 */
-	io::BasicBuffer& ToJsonString(io::BasicBuffer& buffer, const std::vector<std::string>& sample_names) const;
+	yon_buffer_t& ToJsonString(yon_buffer_t& buffer, const std::vector<std::string>& sample_names) const;
 
 	/**<
 	 * Construct mappings for the alleles into relative offset. Function

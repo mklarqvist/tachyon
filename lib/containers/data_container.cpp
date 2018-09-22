@@ -67,35 +67,35 @@ void yon_blk_bv_pair::Build(const uint32_t n_footer_total_fields,
 	}
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_blk_bv_pair& entry){
-	io::SerializePrimitive(entry.l_bytes, buffer);
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_blk_bv_pair& entry){
+	SerializePrimitive(entry.l_bytes, buffer);
 	buffer += (uint32_t)entry.pattern.size();
 	for(uint32_t i = 0; i < entry.pattern.size(); ++i)
-		io::SerializePrimitive(entry.pattern[i], buffer);
+		SerializePrimitive(entry.pattern[i], buffer);
 
 	for(uint32_t i = 0; i < entry.l_bytes; ++i)
-		io::SerializePrimitive(entry.bit_bytes[i], buffer);
+		SerializePrimitive(entry.bit_bytes[i], buffer);
 
 
 	return(buffer);
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_blk_bv_pair& entry){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_blk_bv_pair& entry){
 	entry.pattern.clear();
-	io::DeserializePrimitive(entry.l_bytes, buffer);
+	DeserializePrimitive(entry.l_bytes, buffer);
 	uint32_t l_vector;
 	buffer >> l_vector;
 	//entry.pattern.resize(l_vector);
 	for(uint32_t i = 0; i < l_vector; ++i){
 		int temp;
-		io::DeserializePrimitive(temp, buffer);
+		DeserializePrimitive(temp, buffer);
 		//entry.pattern[i] = temp;
 		entry.pattern.push_back(temp);
 	}
 
 	entry.bit_bytes = new uint8_t[entry.l_bytes];
 	for(uint32_t i = 0; i < entry.l_bytes; ++i)
-		io::DeserializePrimitive(entry.bit_bytes[i], buffer);
+		DeserializePrimitive(entry.bit_bytes[i], buffer);
 
 	return(buffer);
 }
@@ -140,7 +140,7 @@ bool yon_dc_hdr_cont::operator==(const self_type& other) const{
 	return true;
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer,const yon_dc_hdr_cont& controller){
+yon_buffer_t& operator<<(yon_buffer_t& buffer,const yon_dc_hdr_cont& controller){
 	const uint32_t c =
 				controller.signedness   << 0  |
 				controller.mixedStride  << 1  |
@@ -176,7 +176,7 @@ std::istream& operator>>(std::istream& stream, yon_dc_hdr_cont& controller){
 	return(stream);
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_dc_hdr_cont& controller){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr_cont& controller){
 	uint32_t* c = reinterpret_cast<uint32_t*>(&controller);
 	buffer >> *c;
 	return(buffer);
@@ -292,7 +292,7 @@ bool yon_dc_hdr_obj::CheckChecksum(const uint8_t* compare) const{
 	return true;
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_dc_hdr_obj& entry){
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_dc_hdr_obj& entry){
 	buffer << entry.controller;
 	buffer += entry.stride;
 	buffer += entry.offset;
@@ -316,7 +316,7 @@ std::ostream& operator<<(std::ostream& stream, const yon_dc_hdr_obj& entry){
 	return(stream);
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_dc_hdr_obj& entry){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr_obj& entry){
 	buffer >> entry.controller;
 	buffer >> entry.stride;
 	buffer >> entry.offset;
@@ -415,7 +415,7 @@ yon_dc_hdr& yon_dc_hdr::operator+=(const self_type& other) {
 	return(*this);
 }
 
-io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_dc_hdr& entry){
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_dc_hdr& entry){
 	buffer += entry.identifier;
 	buffer += entry.n_entries;
 	buffer += entry.n_additions;
@@ -427,7 +427,7 @@ io::BasicBuffer& operator<<(io::BasicBuffer& buffer, const yon_dc_hdr& entry){
 	return(buffer);
 }
 
-io::BasicBuffer& operator>>(io::BasicBuffer& buffer, yon_dc_hdr& entry){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr& entry){
 	buffer >> entry.identifier;
 	buffer >> entry.n_entries;
 	buffer >> entry.n_additions;

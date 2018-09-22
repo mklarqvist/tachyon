@@ -29,8 +29,8 @@ public:
 	bool DecompressStrides(container_type& container);
 	bool Decompress(container_type& container, permutation_type& manager);
 
-	bool Compress(const io::BasicBuffer& src, io::BasicBuffer& dst, const int compression_level);
-	bool Decompress(const io::BasicBuffer& src, io::BasicBuffer& dst);
+	bool Compress(const yon_buffer_t& src, yon_buffer_t& dst, const int compression_level);
+	bool Decompress(const yon_buffer_t& src, yon_buffer_t& dst);
 
 private:
 	int32_t compression_level_data;

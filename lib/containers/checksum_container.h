@@ -18,8 +18,8 @@ public:
     typedef const value_type&        const_reference;
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
-    typedef io::BasicBuffer          buffer_type;
-    typedef yon1_vb_t block_type;
+    typedef yon_buffer_t             buffer_type;
+    typedef yon1_vb_t                block_type;
     typedef VariantHeader            header_type;
 
     typedef yonRawIterator<value_type>       iterator;
