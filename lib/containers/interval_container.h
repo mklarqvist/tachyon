@@ -24,7 +24,7 @@ public:
     typedef const value_type&      const_reference;
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
-    typedef Index                  index_type;
+    typedef yon_index_t            index_type;
     typedef yon1_idx_rec           index_entry_type;
     typedef VariantHeader          header_type;
 

@@ -13,7 +13,6 @@ namespace tachyon {
 class VariantWriterInterface {
 public:
 	typedef VariantWriterInterface  self_type;
-	typedef Index                   sorted_index_type;
 	typedef yon1_dc_t               container_type;
 
 public:
@@ -43,7 +42,7 @@ public:
 	uint64_t n_blocks_written;
 	uint64_t n_variants_written;
 	std::ostream* stream;
-	sorted_index_type index;
+	yon_index_t index;
 };
 
 class VariantWriterFile : public VariantWriterInterface{

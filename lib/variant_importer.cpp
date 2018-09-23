@@ -89,6 +89,13 @@ private:
 	 */
 	void UpdateHeaderImport(VariantHeader& header);
 
+	/**<
+	 * Converts a htslib-styled Vcf header into a Tachyon header.
+	 * @param vcf_header Src reference of a Vcf header.
+	 * @return           Returns a Tachyon VariantHeader.
+	 */
+	VariantHeader ConvertVcfHeader(const io::VcfHeader& vcf_header);
+
 public:
 	writer_interface_type* writer; // writer
 
@@ -349,7 +356,8 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 
 	// Transmute a htslib-styled vcf header into a tachyon
 	// header.
-	this->yon_header_ = VariantHeader(this->vcf_reader_->vcf_header_);
+	this->yon_header_ = this->ConvertVcfHeader(this->vcf_reader_->vcf_header_);
+	//this->yon_header_ = VariantHeader(this->vcf_reader_->vcf_header_);
 	// Update the extra provenance fields in the new header.
 	this->UpdateHeaderImport(this->yon_header_);
 
@@ -385,6 +393,35 @@ void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& hea
 	e.value = this->settings->GetInterpretedString();
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
+}
+
+VariantHeader VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header){
+	VariantHeader header;
+	header.fileformat_string_ = vcf_header.fileformat_string_;
+	header.literals_ = vcf_header.literals_;
+	header.samples_ = vcf_header.samples_;
+	header.filter_fields_ = vcf_header.filter_fields_;
+	header.structured_extra_fields_ = vcf_header.structured_extra_fields_;
+	header.extra_fields_ = vcf_header.extra_fields_;
+
+	header.BuildMaps();
+	header.BuildReverseMaps();
+
+	header.contigs_.resize(vcf_header.contigs_.size());
+	for(uint32_t i = 0; i < vcf_header.contigs_.size(); ++i)
+		header.contigs_[i] = vcf_header.contigs_[i];
+
+	header.info_fields_.resize(vcf_header.info_fields_.size());
+	for(uint32_t i = 0; i < vcf_header.info_fields_.size(); ++i)
+		header.info_fields_[i] = vcf_header.info_fields_[i];
+
+	header.format_fields_.resize(vcf_header.format_fields_.size());
+	for(uint32_t i = 0; i < vcf_header.format_fields_.size(); ++i)
+		header.format_fields_[i] = vcf_header.format_fields_[i];
+
+	header.RecodeIndices();
+
+	return(header);
 }
 
 } /* namespace Tachyon */

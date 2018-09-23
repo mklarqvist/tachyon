@@ -33,17 +33,17 @@ DEALINGS IN THE SOFTWARE.
 
 namespace tachyon {
 
-class Index {
+class yon_index_t {
 public:
-	typedef Index        self_type;
+	typedef yon_index_t  self_type;
     typedef std::size_t  size_type;
     typedef yon1_idx_rec entry_type;
 	typedef YonContig    contig_type;
 
 public:
-	Index();
-	Index(const self_type& other);
-	~Index();
+	yon_index_t();
+	yon_index_t(const self_type& other);
+	~yon_index_t();
 
 	/**<
 	 * Reduce operator for the VariantIndex. Used during parallel
@@ -51,7 +51,7 @@ public:
 	 * @param other Other Index object.
 	 * @return      Returns the reduced Index object.
 	 */
-	Index& operator+=(const Index& other);
+	yon_index_t& operator+=(const yon_index_t& other);
 
 	// Capacity
 	bool empty(void) const;

@@ -38,7 +38,7 @@ namespace tachyon {
 
 struct yon_buffer_t {
 public:
-    typedef yon_buffer_t       self_type;
+    typedef yon_buffer_t      self_type;
     typedef char              value_type;
     typedef value_type&       reference;
     typedef const value_type& const_reference;

@@ -7,10 +7,10 @@ DataBlockSettings::DataBlockSettings() :
 	display_ref(true),
 	display_alt(true),
 	display_filter(true),
-	load_static(0),
-	display_static(std::numeric_limits<uint32_t>::max()),
 	construct_occ_table(false),
-	annotate_extra(false)
+	annotate_extra(false),
+	load_static(0),
+	display_static(std::numeric_limits<uint32_t>::max())
 {}
 
 DataBlockSettings& DataBlockSettings::LoadWrapper(bool set, const int field_bv){
@@ -217,9 +217,10 @@ bool DataBlockSettings::Parse(const header_type& header){
 		}
 	}
 
-	for(uint32_t i = 0; i < this->format_list.size(); ++i){
-
-	}
+	// Todo
+	//for(uint32_t i = 0; i < this->format_list.size(); ++i){
+	//
+	//}
 
 	return true;
 }

@@ -87,6 +87,7 @@ const std::vector< std::string > YON_GT_ANNOTATE_FIELDS = {"NM","NPM","AN","HWE_
  * in your use-case then this structure has no value.
  */
 struct yon_gt_ppa {
+public:
 	yon_gt_ppa(void);
 	yon_gt_ppa(const uint32_t n_samples);
 	yon_gt_ppa(const yon_gt_ppa& other);
@@ -116,6 +117,7 @@ struct yon_gt_ppa {
 	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_gt_ppa& ppa);
 	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_gt_ppa& ppa);
 
+public:
 	uint32_t  n_s;
 	uint32_t* ordering;
 };
@@ -560,6 +562,7 @@ struct yon_occ {
 public:
 	typedef std::unordered_map<std::string, uint32_t> map_type;
 
+public:
 	yon_occ() = default;
 	~yon_occ() = default;
 
@@ -567,6 +570,7 @@ public:
 	bool BuildTable(void);
 	bool BuildTable(const yon_gt_ppa* ppa_p);
 
+public:
 	// Map from group name to row offset in the table.
 	map_type map;
 	// Unique names of grouping factors.
@@ -592,6 +596,7 @@ public:
  * functioning of tachyon.
  */
 struct yon_vnt_cnt {
+public:
 	yon_vnt_cnt(void);
 	~yon_vnt_cnt() = default;
 
@@ -613,7 +618,7 @@ struct yon_vnt_cnt {
 	 */
 	inline uint16_t ToValue(void) const{ return((uint16_t)*reinterpret_cast<const uint16_t* const>(this)); }
 
-
+public:
 	/**< Controller field. The first seven fields describes
 	 * genotype-specific information. The remainder bit-fields
 	 * describes variant-specific information.

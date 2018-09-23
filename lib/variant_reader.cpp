@@ -11,7 +11,10 @@
 #include "algorithm/digest/variant_digest_manager.h"
 #include "containers/interval_container.h"
 #include "io/basic_reader.h"
+
 #include "algorithm/parallel/vcf_slaves.h"
+#include "algorithm/parallel/variant_slaves.h"
+#include "algorithm/parallel/variant_base_slave.h"
 
 namespace tachyon {
 
@@ -379,6 +382,9 @@ uint64_t VariantReader::OutputVcfSearch(void){
 
 		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
 
+		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+			this->occ_table.BuildTable(this->variant_container.gt_ppa);
+
 		for(uint32_t i = 0; i < vc.size(); ++i){
 			if((this->*filter_intervals)(vc[i]) == false)
 				continue;
@@ -387,8 +393,12 @@ uint64_t VariantReader::OutputVcfSearch(void){
 				continue;
 
 			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
 				vc[i].EvaluateSummary(true);
 				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
 			}
 
 			vc[i].ToVcfString(this->global_header, buf, this->GetBlockSettings().display_static, this->gt_exp);
@@ -597,6 +607,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 }
 
 bool VariantReader::FilterIntervals(const yon1_vnt_t& entry) const{ return(this->mImpl->interval_container.FindOverlaps(entry).size()); }
+
 bool VariantReader::AddIntervals(std::vector<std::string>& interval_strings){
 	return(this->mImpl->interval_container.ParseIntervals(interval_strings, this->global_header, this->index));
 }
@@ -621,6 +632,7 @@ void VariantReader::UpdateHeaderView(void){
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 }
 
+/*
 bool VariantReader::Benchmark(const uint32_t threads){
 	std::cerr << utility::timestamp("LOG") << "Starting benchmark with " << threads << " threads..." << std::endl;
 	this->BenchmarkWrapper(threads, &VariantSlavePerformance::LoadData);
@@ -678,6 +690,7 @@ bool VariantReader::BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePe
 	std::cerr << utility::timestamp("LOG") << time_elapsed << "\t" << slave[0].data_loaded << "\t" << (double)slave[0].data_loaded/time_elapsed/1e6 << "\t" << slave[0].data_uncompressed << "\t" << (double)slave[0].data_uncompressed/time_elapsed/1e6 << std::endl;
 	return true;
 }
+*/
 
 bool VariantReader::Stats(void){
 	const uint32_t n_threads = std::thread::hardware_concurrency();

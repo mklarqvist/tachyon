@@ -1,7 +1,7 @@
 #include <fstream>
 
 #include "genotypes.h"
-#include "math/fisher_math.h"
+#include "support/fisher_math.h"
 
 namespace tachyon{
 

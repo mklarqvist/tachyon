@@ -12,59 +12,11 @@
 #include "htslib/hts.h"
 
 #include "support_vcf.h"
-
 #include "support/helpers.h"
 #include "buffer.h"
 
 namespace tachyon {
 namespace io {
-
-//
-// -----------------------------------------------------------------------------
-// VCF type encoding utilities
-template<class T>
-struct VcfType {
-  // Predicates for checking missing and sentinel entries.  Use these, not ==.
-  // Is argument the "missing" value?
-  static bool IsMissing(T);
-  // Is argument the vector end sentinel value?
-  static bool IsVectorEnd(T);
-};
-
-// See interface description comment above.
-template<>
-struct VcfType<int8_t> {
-  static bool IsMissing(int8_t v)  { return (v == bcf_int8_missing); }
-  static bool IsVectorEnd(int8_t v){ return (v == bcf_int8_vector_end); }
-};
-
-// See interface description comment above.
-template<>
-struct VcfType<int16_t> {
-  static bool IsMissing(int16_t v)  { return (v == bcf_int16_missing); }
-  static bool IsVectorEnd(int16_t v){ return (v == bcf_int16_vector_end); }
-};
-
-// See interface description comment above.
-template<>
-struct VcfType<int> {
-  static bool IsMissing(int v)  { return (v == bcf_int32_missing); }
-  static bool IsVectorEnd(int v){ return (v == bcf_int32_vector_end); }
-};
-
-// See interface description comment above.
-template<>
-struct VcfType<float> {
-  static bool IsMissing(float v)  { return bcf_float_is_missing(v); }
-  static bool IsVectorEnd(float v){ return bcf_float_is_vector_end(v); }
-};
-
-
-template <class T>
-struct VcfGenotype {
-	// Predicates for checking missing and sentinel entries.
-	static bool IsMissing(const T& value){ return(value == bcf_gt_missing); }
-};
 
 // Returns the hrec that contains information or nullptr if none does.
 const bcf_hrec_t* GetPopulatedHrec(const bcf_idpair_t& idPair);

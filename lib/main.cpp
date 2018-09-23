@@ -27,7 +27,6 @@ DEALINGS IN THE SOFTWARE.
 #include "stats.h"
 #include "utility.h"
 #include "view.h"
-#include "benchmark.h"
 #include "debug.h"
 
 int main(int argc, char** argv){
@@ -57,9 +56,6 @@ int main(int argc, char** argv){
 		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
-		return(0);
-	} else if(strncmp(subroutine.data(), "benchmark", 9) == 0 && subroutine.size() == 9){
-		return(benchmark(argc, argv));
 		return(0);
 	} else if(strncmp(subroutine.data(), "debug", 5) == 0 && subroutine.size() == 5){
 		return(debug(argc, argv));

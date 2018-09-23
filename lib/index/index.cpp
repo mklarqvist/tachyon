@@ -7,7 +7,7 @@
 
 namespace tachyon {
 
-class Index::IndexImpl {
+class yon_index_t::IndexImpl {
 public:
 	typedef index::VariantIndexQuadTree  variant_quad_tree_type;
 	typedef index::VariantIndexMeta      variant_meta_type;
@@ -29,26 +29,26 @@ public:
 	variant_linear_type    linear_;
 };
 
-Index::Index() : mImpl(new IndexImpl), is_sorted_(true){}
+yon_index_t::yon_index_t() : mImpl(new IndexImpl), is_sorted_(true){}
 
-Index::Index(const self_type& other) :
+yon_index_t::yon_index_t(const self_type& other) :
 	is_sorted_(other.is_sorted_),
 	mImpl(new IndexImpl(*other.mImpl))
 {
 }
 
-Index& Index::operator+=(const Index& other){
+yon_index_t& yon_index_t::operator+=(const yon_index_t& other){
 	this->mImpl->index_ += other.mImpl->index_;
 	return(*this);
 }
 
-Index::~Index(){}
+yon_index_t::~yon_index_t(){}
 
-bool Index::empty(void) const{ return(this->mImpl->index_.empty()); }
-size_t Index::size(void) const{ return(this->mImpl->index_.size()); }
-uint64_t Index::GetLinearSize(void) const{ return(this->mImpl->linear_.size()); }
+bool yon_index_t::empty(void) const{ return(this->mImpl->index_.empty()); }
+size_t yon_index_t::size(void) const{ return(this->mImpl->index_.size()); }
+uint64_t yon_index_t::GetLinearSize(void) const{ return(this->mImpl->linear_.size()); }
 
-std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id) const{
+std::vector<yon1_idx_rec> yon_index_t::FindOverlap(const uint32_t& contig_id) const{
 	if(contig_id > this->mImpl->index_meta_.size())
 		return(std::vector<entry_type>());
 
@@ -60,7 +60,7 @@ std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id) const{
 	return(yon_blocks);
 }
 
-std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id,
+std::vector<yon1_idx_rec> yon_index_t::FindOverlap(const uint32_t& contig_id,
                                              const uint64_t& start_pos,
                                              const uint64_t& end_pos) const
 {
@@ -119,21 +119,21 @@ std::vector<yon1_idx_rec> Index::FindOverlap(const uint32_t& contig_id,
 	return(yon_blocks_deduped);
 }
 
-void Index::Setup(const std::vector<VcfContig>& contigs){
+void yon_index_t::Setup(const std::vector<VcfContig>& contigs){
 	this->mImpl->index_.Add(contigs);
 	this->mImpl->index_meta_.reserve(contigs.size());
 	for(int i = 0; i < contigs.size(); ++i)
 		this->mImpl->index_meta_[i].contig_id = contigs[i].idx;
 }
 
-void Index::Setup(const std::vector<YonContig>& contigs){
+void yon_index_t::Setup(const std::vector<YonContig>& contigs){
 	this->mImpl->index_.Add(contigs);
 	this->mImpl->index_meta_.reserve(contigs.size());
 	for(int i = 0; i < contigs.size(); ++i)
 		this->mImpl->index_meta_[i].contig_id = contigs[i].idx;
 }
 
-int32_t Index::AddSorted(const uint32_t contig_id,
+int32_t yon_index_t::AddSorted(const uint32_t contig_id,
 						 const uint64_t from_position,
 						 const uint64_t to_position,
 						 const uint32_t yon_block_id)
@@ -141,7 +141,7 @@ int32_t Index::AddSorted(const uint32_t contig_id,
 	return(this->mImpl->index_[contig_id].Add(from_position, to_position, yon_block_id));
 }
 
-Index& Index::operator+=(const entry_type& entry){
+yon_index_t& yon_index_t::operator+=(const entry_type& entry){
 	this->mImpl->linear_ += entry;
 
 	// Update the meta index if the input data is sorted.
@@ -157,11 +157,11 @@ Index& Index::operator+=(const entry_type& entry){
 	return(*this);
 }
 
-yon1_idx_rec& Index::operator[](const uint32_t block_id){ return(this->mImpl->linear_.at(block_id)); }
-const yon1_idx_rec& Index::operator[](const uint32_t block_id) const{ return(this->mImpl->linear_.at(block_id)); }
+yon1_idx_rec& yon_index_t::operator[](const uint32_t block_id){ return(this->mImpl->linear_.at(block_id)); }
+const yon1_idx_rec& yon_index_t::operator[](const uint32_t block_id) const{ return(this->mImpl->linear_.at(block_id)); }
 
 
-std::ostream& Index::Print(std::ostream& stream) const{
+std::ostream& yon_index_t::Print(std::ostream& stream) const{
 	for(int i = 0; i < this->mImpl->index_meta_.size(); ++i){
 		stream << "contig " << i << ". blocks: ";
 		uint32_t n_blocks = 0;
@@ -175,7 +175,7 @@ std::ostream& Index::Print(std::ostream& stream) const{
 	return(stream);
 }
 
-bool Index::IndexContainer(const yon1_vc_t& vc, const uint32_t block_id){
+bool yon_index_t::IndexContainer(const yon1_vc_t& vc, const uint32_t block_id){
 	current_entry_.reset();
 	current_entry_.block_id     = block_id;
 	current_entry_.contig_id    = vc.block_.header.contig_id;
@@ -192,7 +192,7 @@ bool Index::IndexContainer(const yon1_vc_t& vc, const uint32_t block_id){
 	return true;
 }
 
-bool Index::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
+bool yon_index_t::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
 	int32_t index_bin = -1;
 	const int32_t info_end_key = rcd.GetInfoOffset("END");
 
@@ -274,7 +274,7 @@ bool Index::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
 	return true;
 }
 
-bool Index::IndexRecord(const bcf1_t*  record,
+bool yon_index_t::IndexRecord(const bcf1_t*  record,
 				 const uint32_t block_id,
 				 const int32_t  info_end_key,
 				 const yon1_vnt_t& rcd)
@@ -363,7 +363,7 @@ bool Index::IndexRecord(const bcf1_t*  record,
 	return true;
 }
 
-std::ostream& operator<<(std::ostream& stream, const Index& entry){
+std::ostream& operator<<(std::ostream& stream, const yon_index_t& entry){
 	utility::SerializePrimitive(entry.is_sorted_, stream);
 	stream << entry.mImpl->index_;
 	stream << entry.mImpl->index_meta_;
@@ -372,7 +372,7 @@ std::ostream& operator<<(std::ostream& stream, const Index& entry){
 	return(stream);
 }
 
-std::istream& operator>>(std::istream& stream, Index& entry){
+std::istream& operator>>(std::istream& stream, yon_index_t& entry){
 	utility::DeserializePrimitive(entry.is_sorted_, stream);
 	stream >> entry.mImpl->index_;
 	stream >> entry.mImpl->index_meta_;

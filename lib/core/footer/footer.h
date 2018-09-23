@@ -9,7 +9,7 @@ namespace core{
 
 #define YON_FOOTER_LENGTH ((TACHYON_FILE_EOF_LENGTH) + sizeof(uint64_t)*3 + sizeof(uint16_t))
 
-struct Footer{
+struct Footer {
 public:
 	typedef Footer self_type;
 

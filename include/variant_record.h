@@ -327,8 +327,8 @@ public:
 		// sentinel node symbol.
 		int j = fmt.n - 1;
 		for(uint32_t i = 0; i < n_samples; ++i){
-			if(io::VcfGenotype<T>::IsMissing(fmt.p[j]) == true
-			   || io::VcfType<T>::IsVectorEnd(fmt.p[j]) == true)
+			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == true
+			   || VcfType<T>::IsVectorEnd(fmt.p[j]) == true)
 				j += fmt.n;
 			else {
 				this->phase_if_uniform = fmt.p[j] & 1;
@@ -341,8 +341,8 @@ public:
 		// symbols and assess uniformity of phasing.
 		j = fmt.n - 1;
 		for(uint32_t i = 0; i < n_samples; ++i){
-			if(io::VcfGenotype<T>::IsMissing(fmt.p[j]) == false
-			   && io::VcfType<int8_t>::IsVectorEnd(fmt.p[j]) == false
+			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == false
+			   && VcfType<int8_t>::IsVectorEnd(fmt.p[j]) == false
 			   && (fmt.p[j] & 1) != this->phase_if_uniform)
 			{
 				this->mixed_phasing = true;
@@ -350,8 +350,8 @@ public:
 
 			// Iterate over the number of chromosomes / individual
 			for(int k = 0; k < fmt.n; ++k, ++j){
-				this->n_missing    += io::VcfGenotype<T>::IsMissing(fmt.p[j]);
-				this->n_vector_end += io::VcfType<T>::IsVectorEnd(fmt.p[j]);
+				this->n_missing    += VcfGenotype<T>::IsMissing(fmt.p[j]);
+				this->n_vector_end += VcfType<T>::IsVectorEnd(fmt.p[j]);
 			}
 		}
 

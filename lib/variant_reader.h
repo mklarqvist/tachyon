@@ -7,6 +7,7 @@
 
 #include "encryption.h"
 #include "primitive_container.h"
+
 #include "core/footer/footer.h"
 #include "core/header/variant_header.h"
 
@@ -17,8 +18,6 @@
 #include "support_vcf.h"
 #include "variant_container.h"
 
-#include "algorithm/parallel/variant_slaves.h"
-#include "algorithm/parallel/variant_base_slave.h"
 
 namespace tachyon{
 
@@ -52,7 +51,7 @@ public:
 
 	typedef DataBlockSettings         block_settings_type;
 	typedef VariantReaderSettings     settings_type;
-	typedef Index                     index_type;
+	typedef yon_index_t               index_type;
 	typedef yon1_idx_rec              index_entry_type;
 
 	typedef yon1_vb_t                 block_entry_type;
@@ -197,10 +196,8 @@ public:
 	 * @return Returns the number of variants processed.
 	 */
 	uint64_t OutputRecords(void);
-
 	uint64_t OutputVcfLinear(void);
 	uint64_t OutputVcfSearch(void);
-
 	uint64_t OutputHtslibVcfLinear(void);
 	uint64_t OutputHtslibVcfSearch(void);
 
@@ -225,10 +222,9 @@ public:
 	 */
 	void UpdateHeaderView(void);
 
-	// temp
 	bool Stats(void);
-	bool Benchmark(const uint32_t threads);
-	bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&));
+	//bool Benchmark(const uint32_t threads);
+	//bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&));
 
 	bool TempWrite(void);
 
@@ -251,7 +247,6 @@ private:
 	index_type              index;
 	keychain_type           keychain;
 	yon_occ                 occ_table;
-
 
 	// External memory allocation for linear use of lazy-evaluated
 	// expansion of genotype records. This is critical when the sample

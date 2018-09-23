@@ -119,7 +119,7 @@ public:
 public:
 	uint32_t n_blocks_processed; // number of blocks processed
 	uint32_t block_id; // local block id
-	Index index; // local index for this thread
+	yon_index_t index; // local index for this thread
 	std::shared_ptr<Keychain> keychain; // shared encryption keychain
 	std::shared_ptr<vcf_header_type> vcf_header_; // global header
 	std::shared_ptr<settings_type> settings_; // internal settings

@@ -277,14 +277,14 @@ private:
 template <>
 class PrimitiveContainer<std::string> : public PrimitiveContainerInterface{
 public:
-    typedef PrimitiveContainer   self_type;
-    typedef std::string          value_type;
-    typedef value_type&          reference;
-    typedef const value_type&    const_reference;
-    typedef value_type*          pointer;
-    typedef const value_type*    const_pointer;
-    typedef std::ptrdiff_t       difference_type;
-    typedef std::size_t          size_type;
+    typedef PrimitiveContainer self_type;
+    typedef std::string        value_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
+    typedef std::ptrdiff_t     difference_type;
+    typedef std::size_t        size_type;
 
     typedef yonRawIterator<value_type>       iterator;
 	typedef yonRawIterator<const value_type> const_iterator;
@@ -450,7 +450,7 @@ public:
     typedef value_type*             pointer;
     typedef const value_type*       const_pointer;
     typedef std::ptrdiff_t          difference_type;
-    typedef yon1_dc_t           data_container_type;
+    typedef yon1_dc_t               data_container_type;
 
     typedef yonRawIterator<return_type>       iterator;
 	typedef yonRawIterator<const return_type> const_iterator;
