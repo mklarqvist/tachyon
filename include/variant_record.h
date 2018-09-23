@@ -164,7 +164,7 @@ public:
 
 	void OutputHtslibVcfFormat(bcf1_t* rec,
 	                           bcf_hdr_t* hdr,
-	                           DataBlockSettings& settings,
+	                           bool display_genotypes,
 	                           yon_gt_rcd* external_exp) const;
 
 	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const;

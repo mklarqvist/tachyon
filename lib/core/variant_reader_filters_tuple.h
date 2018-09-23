@@ -4,6 +4,7 @@
 #include <regex>
 
 #include "support/helpers.h"
+#include "support/magic_constants.h"
 
 namespace tachyon{
 

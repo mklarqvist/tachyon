@@ -359,14 +359,14 @@ void yon1_vnt_t::OutputHtslibVcfInfo(bcf1_t* rec, bcf_hdr_t* hdr){
 
 void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 						   bcf_hdr_t* hdr,
-						   DataBlockSettings& settings,
+						   const bool display_genotypes,
 						   yon_gt_rcd* external_exp) const
 {
 	if(n_fmt){
 		// Case when the only available FORMAT field is the GT field.
 		if(n_fmt == 1 && is_loaded_gt &&
 		   controller.gt_available &&
-		   (settings.display_static & YON_BLK_BV_GT))
+		   display_genotypes)
 		{
 			gt->ExpandExternal(external_exp);
 			gt->d_exp = external_exp;
@@ -377,7 +377,7 @@ void yon1_vnt_t::OutputHtslibVcfFormat(bcf1_t* rec,
 		// is available.
 		else if(n_fmt > 1 && is_loaded_gt &&
 				controller.gt_available &&
-				(settings.display_static & YON_BLK_BV_GT))
+				display_genotypes)
 		{
 			gt->ExpandExternal(external_exp);
 			gt->d_exp = external_exp;

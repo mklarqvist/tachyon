@@ -710,6 +710,368 @@ uint64_t yon_vb_ftr::HashIdentifiers(const std::vector<int>& id_vector){
 	return hash;
 }
 
+// Variant block settings
+yon_vb_settings::yon_vb_settings() :
+	show_vcf_header(true),
+	display_ref(true),
+	display_alt(true),
+	display_filter(true),
+	construct_occ_table(false),
+	annotate_extra(false),
+	load_static(0),
+	display_static(std::numeric_limits<uint32_t>::max())
+{}
+
+yon_vb_settings& yon_vb_settings::LoadWrapper(bool set, const int field_bv){
+	this->load_static &= ~(field_bv);
+	if(set) this->load_static |= field_bv;
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayWrapper(bool set, const int field_bv){
+	this->display_static &= ~(field_bv);
+	if(set) this->display_static |= field_bv;
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadDisplayWrapper(bool set, const int field_bv){
+	this->LoadWrapper(set, field_bv);
+	this->DisplayWrapper(set, field_bv);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadCore(const bool set){
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
+		this->LoadWrapper(set, bv);
+	}
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayCore(const bool set){
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
+		this->DisplayWrapper(set, bv);
+	}
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadAll(const bool set){
+	if(set){
+		this->load_static = std::numeric_limits<uint32_t>::max();
+	} else {
+		this->load_static = 0;
+	}
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayAll(const bool set){
+	if(set){
+		this->display_static = std::numeric_limits<uint32_t>::max();
+	} else {
+		this->display_static = 0;
+	}
+	this->display_alt = set;
+	this->display_ref = set;
+	this->display_filter = set;
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadAllMeta(const bool set){
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
+		this->LoadWrapper(set, i);
+	}
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayAllMeta(const bool set){
+	for(uint32_t i = YON_BLK_CONTIG; i <= YON_BLK_ID_FILTER; ++i){
+		const uint32_t bv = 1 << i;
+		this->DisplayWrapper(set, i);
+	}
+
+	this->display_alt = set;
+	this->display_ref = set;
+	this->display_filter = set;
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadAllFilter(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_ID_INFO);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->LoadWrapper(set, YON_BLK_BV_CONTROLLER);
+
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayAllFilter(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_ID_INFO);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->DisplayWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->DisplayWrapper(set, YON_BLK_BV_CONTROLLER);
+
+	this->display_filter  = true;
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadAllInfo(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_INFO); // all info
+	if(set) this->LoadMinimumVcf(true);
+
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadInfo(const std::string& field_name){
+	if(field_name.size() == 0) return(*this);
+	this->info_list.push_back(field_name);
+	this->LoadMinimumVcf(true);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadInfo(const uint32_t field_id){
+	this->info_id_global.push_back(field_id);
+	this->LoadMinimumVcf(true);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadGenotypes(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_GT);
+	this->LoadWrapper(set, YON_BLK_BV_GT_SUPPORT);
+	this->LoadWrapper(set, YON_BLK_BV_GT_PLOIDY);
+	this->LoadWrapper(set, YON_BLK_BV_PPA);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayGenotypes(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_GT);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadPermutationArray(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_PPA);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadAllFormat(const bool set){
+	this->LoadGenotypes(set);
+	this->LoadWrapper(set, YON_BLK_BV_FORMAT); // all format
+	if(set) this->LoadCore(set);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayAllFormat(const bool set){
+	this->DisplayGenotypes(set);
+	this->DisplayWrapper(set, YON_BLK_BV_FORMAT); // all format
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayAllInfo(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_INFO);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadFormat(const std::string& field_name){
+	if(field_name.size() == 0) return(*this);
+	this->LoadMinimumVcf(true);
+	if(field_name == "GT") this->LoadGenotypes(true);
+	this->format_list.push_back(field_name);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadFormat(const uint32_t field_id){
+	this->LoadMinimumVcf(true);
+	this->format_id_global.push_back(field_id);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::LoadMinimumVcf(const bool set){
+	this->LoadWrapper(set, YON_BLK_BV_CONTIG);
+	this->LoadWrapper(set, YON_BLK_BV_POSITION);
+	this->LoadWrapper(set, YON_BLK_BV_CONTROLLER);
+	this->LoadWrapper(set, YON_BLK_BV_ID_INFO);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FORMAT);
+	this->LoadWrapper(set, YON_BLK_BV_ID_FILTER);
+	this->LoadWrapper(set, YON_BLK_BV_ALLELES);
+	this->LoadWrapper(set, YON_BLK_BV_REFALT);
+	return(*this);
+}
+
+yon_vb_settings& yon_vb_settings::DisplayMinimumVcf(const bool set){
+	this->DisplayWrapper(set, YON_BLK_BV_CONTIG);
+	this->DisplayWrapper(set, YON_BLK_BV_POSITION);
+	return(*this);
+}
+
+bool yon_vb_settings::Parse(const header_type& header){
+	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
+
+	for(uint32_t i = 0; i < this->info_list.size(); ++i){
+		std::vector<std::string> ind = utility::split(this->info_list[i], ',');
+		for(uint32_t j = 0; j < ind.size(); ++j){
+			ind[j] = utility::remove_excess_whitespace(ind[j]);
+			if(std::regex_match(ind[j], field_identifier_regex)){
+				const VcfInfo* info = header.GetInfo(ind[j]);
+				if(info == nullptr){
+					std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << this->info_list[i] << std::endl;
+					continue;
+				}
+				this->LoadInfo(ind[j]);
+			} else {
+				std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
+				return(false);
+			}
+			this->LoadInfo(ind[j]);
+		}
+	}
+
+	// Todo
+	//for(uint32_t i = 0; i < this->format_list.size(); ++i){
+	//
+	//}
+
+	return true;
+}
+
+bool yon_vb_settings::ParseCommandString(const std::vector<std::string>& command, const header_type& header){
+	bool allGood = true;
+
+	this->display_static = 0;
+	this->load_static = 0;
+
+	std::regex field_identifier_regex("^[A-Za-z_0-9]{1,}$");
+	for(uint32_t i = 0; i < command.size(); ++i){
+		std::vector<std::string> partitions = utility::split(command[i], ';');
+		for(uint32_t p = 0; p < partitions.size(); ++p){
+			partitions[p].erase(std::remove(partitions[p].begin(), partitions[p].end(), ' '), partitions[p].end()); // remove all spaces
+			if(strncasecmp(partitions[p].data(), "INFO=", 5) == 0){
+				std::vector<std::string> ind = utility::split(partitions[p].substr(5,command.size()-5), ',');
+				for(uint32_t j = 0; j < ind.size(); ++j){
+					ind[j] = utility::remove_excess_whitespace(ind[j]);
+					if(std::regex_match(ind[j], field_identifier_regex)){
+						const VcfInfo* info = header.GetInfo(ind[j]);
+						if(info == nullptr){
+							std::cerr << utility::timestamp("ERROR") << "Cannot find INFO field: " << ind[j] << " in string " << partitions[p] << std::endl;
+							allGood = false;
+							continue;
+						}
+						this->LoadInfo(info->idx);
+						this->DisplayAllInfo(true);
+					} else {
+						std::cerr << utility::timestamp("ERROR") << "Illegal field name: " << ind[j] << ". Must match \"[A-Za-z_0-9]\"..." << std::endl;
+						allGood = false;
+					}
+				}
+			} else if(strncasecmp(partitions[p].data(), "INFO", 4) == 0 && partitions[p].size() == 4){
+				this->LoadAllInfo(true);
+				this->DisplayAllInfo(true);
+			} else if(strncasecmp(partitions[p].data(), "FORMAT", 6) == 0 && partitions[p].size() == 6){
+				this->LoadAllFormat(true);
+				this->DisplayAllFormat(true);
+
+			} else if(strncasecmp(partitions[p].data(), "FORMAT=", 7) == 0){
+				std::vector<std::string> ind = utility::split(partitions[p].substr(7,command.size()-7), ',');
+				for(uint32_t j = 0; j < ind.size(); ++j){
+					std::transform(ind[j].begin(), ind[j].end(), ind[j].begin(), ::toupper); // transform to UPPERCASE
+					if(std::regex_match(ind[j], field_identifier_regex)){
+						// Special case for genotypes
+						if(strncasecmp(ind[j].data(), "GT", 2) == 0 && ind[j].size() == 2){
+							this->LoadMinimumVcf(true);
+							this->LoadGenotypes(true);
+
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
+
+						} else if(strncasecmp(ind[j].data(), "GENOTYPES", 9) == 0 && ind[j].size() == 9){
+							this->LoadMinimumVcf(true);
+							this->LoadGenotypes(true);
+							this->DisplayAllFormat(true);
+
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
+						}
+						// Any other FORMAT
+						else {
+							const VcfFormat* fmt = header.GetFormat(ind[j]);
+							if(fmt == nullptr){
+								std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+								allGood = false;
+								continue;
+							}
+							this->LoadFormat(fmt->idx);
+							this->DisplayAllFormat(true);
+						}
+					} else {
+						std::cerr << utility::timestamp("ERROR") << "Cannot find FORMAT field: " << ind[j] << " in string " << partitions[p] << std::endl;
+						allGood = false;
+					}
+				}
+
+			} else if((strncasecmp(partitions[p].data(), "CONTIG", 6) == 0 && partitions[p].length() == 6) ||
+					  (strncasecmp(partitions[p].data(), "CHROM", 5) == 0 && partitions[p].length() == 5)  ||
+					  (strncasecmp(partitions[p].data(), "CHROMOSOME", 10) == 0 && partitions[p].length() == 10)){
+				this->LoadWrapper(true, YON_BLK_BV_CONTIG);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTIG);
+			} else if((strncasecmp(partitions[p].data(), "POSITION", 8) == 0 && partitions[p].length() == 8) ||
+					  (strncasecmp(partitions[p].data(), "POS", 3) == 0 && partitions[p].length() == 3)){
+				this->LoadWrapper(true, YON_BLK_BV_POSITION);
+			} else if((strncasecmp(partitions[p].data(), "REF", 3) == 0 && partitions[p].length() == 3) ||
+					  (strncasecmp(partitions[p].data(), "REFERENCE", 9) == 0 && partitions[p].length() == 9)){
+				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
+				this->LoadWrapper(true, YON_BLK_BV_REFALT);
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->display_ref = true;
+			} else if((strncasecmp(partitions[p].data(), "ALT", 3) == 0 && partitions[p].length() == 3) ||
+					  (strncasecmp(partitions[p].data(), "ALTERNATE", 9) == 0 && partitions[p].length() == 9)){
+				this->LoadWrapper(true, YON_BLK_BV_ALLELES);
+				this->LoadWrapper(true, YON_BLK_BV_REFALT);
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ALLELES);
+				this->DisplayWrapper(true, YON_BLK_BV_REFALT);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->display_alt = true;
+			} else if((strncasecmp(partitions[p].data(), "QUALITY", 7) == 0 && partitions[p].length() == 7) ||
+					  (strncasecmp(partitions[p].data(), "QUAL", 4) == 0 && partitions[p].length() == 4)){
+				this->LoadWrapper(true, YON_BLK_BV_QUALITY);
+				this->DisplayWrapper(true, YON_BLK_BV_QUALITY);
+			} else if((strncasecmp(partitions[p].data(), "NAMES", 5) == 0 && partitions[p].length() == 5) ||
+					  (strncasecmp(partitions[p].data(), "NAME", 4) == 0 && partitions[p].length() == 4)){
+				this->LoadWrapper(true, YON_BLK_BV_NAMES);
+				this->DisplayWrapper(true, YON_BLK_BV_NAMES);
+			} else if((strncasecmp(partitions[p].data(), "FILTERS", 7) == 0 && partitions[p].length() == 7) ||
+					  (strncasecmp(partitions[p].data(), "FILTER", 6) == 0 && partitions[p].length() == 6)){
+				this->LoadWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->LoadWrapper(true, YON_BLK_BV_ID_FILTER);
+				this->DisplayWrapper(true, YON_BLK_BV_CONTROLLER);
+				this->DisplayWrapper(true, YON_BLK_BV_ID_FILTER);
+				this->display_filter = true;
+			} else {
+				std::cerr << utility::timestamp("ERROR") << "Unknown pattern: " << partitions[p] << std::endl;
+				allGood = false;
+			}
+		}
+	}
+
+	if(allGood == false) return false;
+	return true;
+}
+
 yon1_vb_t::yon1_vb_t() :
 	n_info_c_allocated(0),
 	n_format_c_allocated(0),
@@ -1003,7 +1365,7 @@ bool yon1_vb_t::read(std::ifstream& stream){
 }
 
 
-bool yon1_vb_t::ParseSettings(DataBlockSettings& settings, const yon_vnt_hdr_t& header){
+bool yon1_vb_t::ParseSettings(yon_vb_settings& settings, const yon_vnt_hdr_t& header){
 	// Clear previous information (if any).
 	this->load_settings->clear();
 
@@ -1112,7 +1474,7 @@ bool yon1_vb_t::ParseSettings(DataBlockSettings& settings, const yon_vnt_hdr_t& 
 	return(this->ParseLoadedPatterns(settings));
 }
 
-bool yon1_vb_t::ParseLoadedPatterns(DataBlockSettings& settings){
+bool yon1_vb_t::ParseLoadedPatterns(yon_vb_settings& settings){
 	// Clear previous information (if any).
 	this->load_settings->info_patterns_local.clear();
 	this->load_settings->format_patterns_local.clear();

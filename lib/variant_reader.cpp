@@ -508,7 +508,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr);
-			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
+			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings().display_static & YON_BLK_BV_GT, this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
 
@@ -589,7 +589,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 			vc[i].UpdateHtslibVcfRecord(rec, hdr);
 			vc[i].OutputHtslibVcfInfo(rec, hdr);
-			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings(), this->gt_exp);
+			vc[i].OutputHtslibVcfFormat(rec, hdr, this->GetBlockSettings().display_static & YON_BLK_BV_GT, this->gt_exp);
 			vc[i].OutputHtslibVcfFilter(rec, hdr);
 
 			if ( bcf_write1(fp, hdr, rec) != 0 ){

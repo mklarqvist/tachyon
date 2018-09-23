@@ -62,7 +62,7 @@ public:
 	yon_vnt_hdr_t* global_header;
 	yon1_vb_t vc;
 	yon_gt_rcd* gt_exp;
-	DataBlockSettings settings;
+	yon_vb_settings settings;
 	algorithm::CompressionManager codec_manager;
 };
 

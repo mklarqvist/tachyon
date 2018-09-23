@@ -1,5 +1,27 @@
-#ifndef CORE_TACHYON_READER_H_
-#define CORE_TACHYON_READER_H_
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
+#ifndef TACHYON_VARIANT_READER_H_
+#define TACHYON_VARIANT_READER_H_
 
 #include <regex>
 #include <cmath>
@@ -8,14 +30,10 @@
 #include "encryption.h"
 #include "primitive_container.h"
 #include "header_footer.h"
-
-#include "core/variant_reader_filters.h"
-#include "core/data_block_settings.h"
-
+#include "variant_reader_filters.h"
 #include "index.h"
 #include "support_vcf.h"
 #include "variant_container.h"
-
 
 namespace tachyon{
 
@@ -42,21 +60,18 @@ public:
 
 class VariantReader {
 public:
-	typedef VariantReader             self_type;
-	typedef yon_buffer_t              buffer_type;
-	typedef yon_vnt_hdr_t             header_type;
-	typedef yon_ftr_t                 footer_type;
-
-	typedef DataBlockSettings         block_settings_type;
-	typedef VariantReaderSettings     settings_type;
-	typedef yon_index_t               index_type;
-	typedef yon1_idx_rec              index_entry_type;
-
-	typedef yon1_vb_t                 block_entry_type;
-	typedef VariantReaderFilters      variant_filter_type;
-
-	typedef EncryptionDecorator       encryption_manager_type;
-	typedef Keychain                  keychain_type;
+	typedef VariantReader         self_type;
+	typedef yon_buffer_t          buffer_type;
+	typedef yon_vnt_hdr_t         header_type;
+	typedef yon_ftr_t             footer_type;
+	typedef yon_vb_settings       block_settings_type;
+	typedef VariantReaderSettings settings_type;
+	typedef yon_index_t           index_type;
+	typedef yon1_idx_rec          index_entry_type;
+	typedef yon1_vb_t             block_entry_type;
+	typedef VariantReaderFilters  variant_filter_type;
+	typedef EncryptionDecorator   encryption_manager_type;
+	typedef Keychain              keychain_type;
 
 private:
 	// Function pointer to interval slicing.
@@ -142,7 +157,9 @@ public:
 	 * @param to_bp_position
 	 * @return
 	 */
-	bool SeekToBlockChromosome(const std::string& chromosome_name, const uint32_t from_bp_position, const uint32_t to_bp_position);
+	bool SeekToBlockChromosome(const std::string& chromosome_name,
+	                           const uint32_t from_bp_position,
+	                           const uint32_t to_bp_position);
 
 	/**<
 	 * Get the next YON block in-order. The NextBlockRaw() simply loads
@@ -237,13 +254,10 @@ private:
 
 private:
 	uint64_t                b_data_start;
-
 	block_entry_type        variant_container;
-
 	block_settings_type     block_settings;
 	settings_type           settings;
 	variant_filter_type     variant_filters;
-
 	header_type             global_header;
 	footer_type             global_footer;
 	index_type              index;
@@ -259,4 +273,4 @@ private:
 
 }
 
-#endif /* CORE_TACHYON_READER_H_ */
+#endif

@@ -124,9 +124,9 @@ int view(int argc, char** argv){
 	};
 
 	tachyon::VariantReaderSettings settings;
-	tachyon::DataBlockSettings     block_settings;
-	std::vector<std::string>       interpret_commands;
-	std::vector<std::string>       interval_strings;
+	tachyon::yon_vb_settings block_settings;
+	std::vector<std::string> interpret_commands;
+	std::vector<std::string> interval_strings;
 
 	SILENT = 0;
 	std::string temp;
@@ -152,11 +152,11 @@ int view(int argc, char** argv){
 			break;
 		case 'l':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'L':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'q':
 			filters.Add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
@@ -181,11 +181,11 @@ int view(int argc, char** argv){
 			break;
 		case 'c':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'C':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'p':
 			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
@@ -201,19 +201,19 @@ int view(int argc, char** argv){
 			break;
 		case 'w':
 			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'W':
 			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'u':
 			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'U':
 			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'z':
 			filters.Add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
@@ -247,11 +247,11 @@ int view(int argc, char** argv){
 			break;
 		case 'e':
 			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 		case 'E':
 			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
-			filters.require_genotypes = true;
+			filters.SetRequireGenotypes(true);
 			break;
 
 		default:

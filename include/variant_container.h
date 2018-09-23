@@ -172,23 +172,11 @@ public:
 	 * @param settings  Settings record describing reading parameters.
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
-	inline bool ReadBlock(std::ifstream& stream, const yon_vnt_hdr_t& header, DataBlockSettings& settings){
+	inline bool ReadBlock(std::ifstream& stream, const yon_vnt_hdr_t& header, yon_vb_settings& settings){
 		return(this->block_.read(stream, settings, header));
 	}
 
 	bool PrepareWritableBlock(const uint32_t n_samples);
-
-	/*
-	index::VariantIndexEntry GetIndexEntry(void){
-		index::VariantIndexEntry index_entry;
-		//index_entry.blockID     = block_id;
-		index_entry.contig_id    = this->block_.header.contig_id;
-		index_entry.min_position = this->block_.header.min_position;
-		index_entry.max_position = this->block_.header.max_position;
-		index_entry.n_variants   = this->block_.header.n_variants;
-		return(index_entry);
-	}
-	*/
 
 	 // Element access
 	inline reference at(const size_type& position){ return(this->variants_[position]); }

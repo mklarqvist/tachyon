@@ -36,7 +36,6 @@ DEALINGS IN THE SOFTWARE.
 
 #include "support/magic_constants.h"
 #include "buffer.h"
-#include "core/data_block_settings.h"
 
 namespace tachyon {
 
