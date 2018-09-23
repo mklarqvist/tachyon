@@ -12,7 +12,7 @@
 #include "htslib/hts.h"
 
 #include "support_vcf.h"
-#include "support/helpers.h"
+#include "utility.h"
 #include "buffer.h"
 
 namespace tachyon {

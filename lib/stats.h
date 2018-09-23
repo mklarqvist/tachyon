@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+#include "program_utils.h"
 #include "variant_reader.h"
 
 void stats_usage(void){

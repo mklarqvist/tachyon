@@ -8,8 +8,8 @@
 #include <openssl/evp.h>
 #include <zstd.h>
 
-#include "support/helpers.h"
-#include "support/magic_constants.h"
+#include "utility.h"
+#include "tachyon.h"
 
 // These utility strings have been declared extern so that
 // they can be used globally throughout the program.

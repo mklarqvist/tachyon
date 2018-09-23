@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 #ifndef TACHYON_VARIANT_READER_FILTERS_H_
 #define TACHYON_VARIANT_READER_FILTERS_H_
 
-#include "support/magic_constants.h"
+#include "tachyon.h"
 #include "variant_record.h"
 
 namespace tachyon {

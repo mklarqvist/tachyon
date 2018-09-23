@@ -1,4 +1,5 @@
 #include "header_footer.h"
+#include "utility.h"
 
 namespace tachyon {
 
@@ -690,19 +691,19 @@ bool yon_ftr_t::Validate(void) const{
 }
 
 std::ostream& operator<<(std::ostream& stream, const yon_ftr_t& yon_ftr_t){
-	SerializePrimitive(yon_ftr_t.offset_end_of_data, stream);
-	SerializePrimitive(yon_ftr_t.n_blocks,   stream);
-	SerializePrimitive(yon_ftr_t.n_variants, stream);
-	SerializePrimitive(yon_ftr_t.controller, stream);
+	utility::SerializePrimitive(yon_ftr_t.offset_end_of_data, stream);
+	utility::SerializePrimitive(yon_ftr_t.n_blocks,   stream);
+	utility::SerializePrimitive(yon_ftr_t.n_variants, stream);
+	utility::SerializePrimitive(yon_ftr_t.controller, stream);
 	stream.write(reinterpret_cast<const char*>(&yon_ftr_t.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
 	return(stream);
 }
 
 std::istream& operator>>(std::istream& stream, yon_ftr_t& yon_ftr_t){
-	DeserializePrimitive(yon_ftr_t.offset_end_of_data, stream);
-	DeserializePrimitive(yon_ftr_t.n_blocks,   stream);
-	DeserializePrimitive(yon_ftr_t.n_variants, stream);
-	DeserializePrimitive(yon_ftr_t.controller, stream);
+	utility::DeserializePrimitive(yon_ftr_t.offset_end_of_data, stream);
+	utility::DeserializePrimitive(yon_ftr_t.n_blocks,   stream);
+	utility::DeserializePrimitive(yon_ftr_t.n_variants, stream);
+	utility::DeserializePrimitive(yon_ftr_t.controller, stream);
 	stream.read(reinterpret_cast<char*>(&yon_ftr_t.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
 	return(stream);
 }

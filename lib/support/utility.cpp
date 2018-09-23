@@ -1,12 +1,11 @@
-#include "helpers.h"
-
 #include <sys/time.h>
 #include <regex>
 
-#include "magic_constants.h"
+#include "utility.h"
+#include "tachyon.h"
 
-namespace tachyon{
-namespace utility{
+namespace tachyon {
+namespace utility {
 
 std::string remove_whitespace(std::string& string){
 	string.erase(remove_if(string.begin(), string.end(), isspace), string.end());
@@ -17,7 +16,7 @@ std::string remove_excess_whitespace(const std::string& string){
 	return(std::regex_replace(string, std::regex("^ +| +$|( ) +"), std::string("$1")));
 }
 
-int isBigEndian(){
+int IsBigEndian(){
 	union {
 		uint32_t i;
 		uint8_t  c[4];
@@ -106,6 +105,21 @@ std::string timestamp(const std::string type, const std::string type2){
 	return(ret.str());
 }
 
+std::string SecondsToTimestring(const double& value){
+	uint32_t internalVal = value;
+	std::string retVal;
+	const uint32_t hours = internalVal / 3600;
+	if(hours > 0) retVal += std::to_string(hours) + "h";
+	internalVal %= 3600;
+	const uint32_t min = internalVal / 60;
+	if(min > 0) retVal += std::to_string(min) + "m";
+	internalVal %= 60;
+	const uint32_t sec = internalVal;
+	retVal += std::to_string(sec) + "s";
+
+	return(retVal);
+}
+
 std::string BasePath(const std::string& input){
 	size_t found = input.find_last_of("/\\");
 	if(found != std::string::npos)
@@ -172,7 +186,7 @@ std::string NumberThousandsSeparator(std::string number){
 	return number;
 }
 
-int32_t char2int(const char& input){
+int32_t ConvertCharToInt(const char& input){
 	if(input >= '0' && input <= '9') return input - '0';
 	else if(input >= 'A' && input <= 'F') return input - 'A' + 10;
 	else if(input >= 'a' && input <= 'f') return input - 'a' + 10;
@@ -187,7 +201,7 @@ bool HexToBytes(const std::string& hex, uint8_t* target){
 
 	uint32_t p = 0;
 	for (uint32_t i = 0; i < hex.length(); i += 2, ++p)
-		target[p] = char2int(hex[i])*16 + char2int(hex[i+1]);
+		target[p] = ConvertCharToInt(hex[i])*16 + ConvertCharToInt(hex[i+1]);
 
 	return true;
 }

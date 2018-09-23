@@ -1,5 +1,27 @@
-#ifndef BASIC_HELPERS_H_
-#define BASIC_HELPERS_H_
+/*
+Copyright (C) 2017-current Genome Research Ltd.
+Author: Marcus D. R. Klarqvist <mk819@cam.ac.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================*/
+#ifndef TACHYON_UTILS_H_
+#define TACHYON_UTILS_H_
 
 #include <string>
 #include <vector>
@@ -12,10 +34,10 @@
 
 #include "buffer.h"
 
-namespace tachyon{
-namespace utility{
+namespace tachyon {
+namespace utility {
 
-int isBigEndian(void);
+int IsBigEndian(void);
 
 std::vector<std::string> &split(std::string &s, char delim, std::vector<std::string> &elems);
 std::vector<std::string> split(std::string &s, char delim, const bool keepEmpty = false);
@@ -52,22 +74,9 @@ std::string ToPrettyString(const std::vector<T>& data){
 	return ret;
 }
 
-inline std::string SecondsToTimestring(const double& value){
-	uint32_t internalVal = value;
-	std::string retVal;
-	const uint32_t hours = internalVal / 3600;
-	if(hours > 0) retVal += std::to_string(hours) + "h";
-	internalVal %= 3600;
-	const uint32_t min = internalVal / 60;
-	if(min > 0) retVal += std::to_string(min) + "m";
-	internalVal %= 60;
-	const uint32_t sec = internalVal;
-	retVal += std::to_string(sec) + "s";
+std::string SecondsToTimestring(const double& value);
 
-	return(retVal);
-}
-
-int32_t char2int(const char& input);
+int32_t ConvertCharToInt(const char& input);
 bool HexToBytes(const std::string& hex, uint8_t* target);
 
 template <class T>
@@ -98,4 +107,4 @@ void DeserializePrimitive(T& value, std::istream& stream){
 }
 }
 
-#endif /* HELPERS_H_ */
+#endif

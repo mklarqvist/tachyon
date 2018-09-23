@@ -1,4 +1,4 @@
-#include "support/magic_constants.h"
+#include "tachyon.h"
 #include "variant_record.h"
 
 namespace tachyon{

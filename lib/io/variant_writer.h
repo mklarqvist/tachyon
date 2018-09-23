@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "index.h"
-#include "support/magic_constants.h"
+#include "tachyon.h"
 #include "data_container.h"
 
 namespace tachyon {

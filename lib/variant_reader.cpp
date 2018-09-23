@@ -24,7 +24,7 @@ VariantReaderSettings::VariantReaderSettings() :
 	output("-"), output_type('v')
 {}
 
-std::string VariantReaderSettings::get_settings_string(void) const{
+std::string VariantReaderSettings::GetSettingsString(void) const {
 	return(std::string(
 	"{"
 	"\"input\":" + (this->input.length() ? "\"" + this->input + "\"" : "null") +
@@ -636,7 +636,7 @@ void VariantReader::UpdateHeaderView(void){
 	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 	e.key = "tachyon_viewCommandSettings";
-	e.value = this->GetSettings().get_settings_string();
+	e.value = this->GetSettings().GetSettingsString();
 	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
 	this->GetGlobalHeader().extra_fields_.push_back(e);
 }

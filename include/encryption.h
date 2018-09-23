@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #include <memory>
 
 // encryption
-#include "support/magic_constants.h"
+#include "tachyon.h"
 #include "buffer.h"
 #include "variant_container.h"
 

@@ -3,8 +3,8 @@
 
 #include <regex>
 
-#include "support/helpers.h"
-#include "support/magic_constants.h"
+#include "utility.h"
+#include "tachyon.h"
 
 namespace tachyon{
 

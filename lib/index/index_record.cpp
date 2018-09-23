@@ -58,28 +58,28 @@ std::ostream& yon1_idx_rec::Print(std::ostream& stream) const{
 }
 
 std::ostream& operator<<(std::ostream& stream, const yon1_idx_rec& entry){
-	SerializePrimitive(entry.block_id,     stream);
-	SerializePrimitive(entry.contig_id,    stream);
-	SerializePrimitive(entry.n_variants,   stream);
-	SerializePrimitive(entry.byte_offset,  stream);
-	SerializePrimitive(entry.byte_offset_end, stream);
-	SerializePrimitive(entry.min_position, stream);
-	SerializePrimitive(entry.max_position, stream);
-	SerializePrimitive(entry.min_bin,      stream);
-	SerializePrimitive(entry.max_bin,      stream);
+	utility::SerializePrimitive(entry.block_id,     stream);
+	utility::SerializePrimitive(entry.contig_id,    stream);
+	utility::SerializePrimitive(entry.n_variants,   stream);
+	utility::SerializePrimitive(entry.byte_offset,  stream);
+	utility::SerializePrimitive(entry.byte_offset_end, stream);
+	utility::SerializePrimitive(entry.min_position, stream);
+	utility::SerializePrimitive(entry.max_position, stream);
+	utility::SerializePrimitive(entry.min_bin,      stream);
+	utility::SerializePrimitive(entry.max_bin,      stream);
 	return(stream);
 }
 
 std::istream& operator>>(std::istream& stream, yon1_idx_rec& entry){
-	DeserializePrimitive(entry.block_id,     stream);
-	DeserializePrimitive(entry.contig_id,    stream);
-	DeserializePrimitive(entry.n_variants,   stream);
-	DeserializePrimitive(entry.byte_offset,  stream);
-	DeserializePrimitive(entry.byte_offset_end, stream);
-	DeserializePrimitive(entry.min_position, stream);
-	DeserializePrimitive(entry.max_position, stream);
-	DeserializePrimitive(entry.min_bin,      stream);
-	DeserializePrimitive(entry.max_bin,      stream);
+	utility::DeserializePrimitive(entry.block_id,     stream);
+	utility::DeserializePrimitive(entry.contig_id,    stream);
+	utility::DeserializePrimitive(entry.n_variants,   stream);
+	utility::DeserializePrimitive(entry.byte_offset,  stream);
+	utility::DeserializePrimitive(entry.byte_offset_end, stream);
+	utility::DeserializePrimitive(entry.min_position, stream);
+	utility::DeserializePrimitive(entry.max_position, stream);
+	utility::DeserializePrimitive(entry.min_bin,      stream);
+	utility::DeserializePrimitive(entry.max_bin,      stream);
 	return(stream);
 }
 

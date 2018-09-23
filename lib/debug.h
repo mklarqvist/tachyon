@@ -4,7 +4,7 @@
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+#include "program_utils.h"
 #include "variant_reader.h"
 
 void debug_usage(void){

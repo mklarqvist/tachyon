@@ -1,7 +1,7 @@
 #ifndef VCF_IMPORTER_SLAVE_H_
 #define VCF_IMPORTER_SLAVE_H_
 
-#include "support/helpers.h"
+#include "utility.h"
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"

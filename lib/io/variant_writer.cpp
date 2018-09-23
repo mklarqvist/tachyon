@@ -6,8 +6,8 @@
 #include <fstream>
 
 #include "variant_writer.h"
-#include "support/helpers.h"
-#include "support/magic_constants.h"
+#include "utility.h"
+#include "tachyon.h"
 
 namespace tachyon {
 

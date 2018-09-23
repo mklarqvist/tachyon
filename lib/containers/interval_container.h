@@ -3,8 +3,8 @@
 
 #include <regex>
 
-#include "support/magic_constants.h"
-#include "support/helpers.h"
+#include "tachyon.h"
+#include "utility.h"
 #include "third_party/intervalTree.h"
 #include "index.h"
 #include "header_footer.h"

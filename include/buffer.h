@@ -31,7 +31,7 @@ DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <cassert>
 
-#include "support/helpers.h"
+#include "utility.h"
 #include "generic_iterator.h"
 
 namespace tachyon {
@@ -163,16 +163,6 @@ static void SerializePrimitive(const T& value, yon_buffer_t& buffer){
 template <class T>
 static void DeserializePrimitive(T& value, yon_buffer_t& buffer){
 	buffer >> value;
-}
-
-template <class T>
-static void SerializePrimitive(const T& value, std::ostream& stream){
-	stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
-}
-
-template <class T>
-static void DeserializePrimitive(T& value, std::istream& stream){
-	stream.read(reinterpret_cast<char*>(&value), sizeof(T));
 }
 
 }

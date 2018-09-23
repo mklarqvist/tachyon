@@ -25,12 +25,12 @@ DEALINGS IN THE SOFTWARE.
 
 #include "import.h"
 #include "stats.h"
-#include "utility.h"
+#include "program_utils.h"
 #include "view.h"
 #include "debug.h"
 
 int main(int argc, char** argv){
-	if(tachyon::utility::isBigEndian()){
+	if(tachyon::utility::IsBigEndian()){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
 		return(1);
 	}

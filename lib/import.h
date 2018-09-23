@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+#include "program_utils.h"
 #include "variant_importer.h"
 
 void import_usage(void){

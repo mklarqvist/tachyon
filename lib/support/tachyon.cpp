@@ -1,6 +1,5 @@
-#include "magic_constants.h"
-
 #include <string>
 
+#include "tachyon.h"
 
 int SILENT = 0;

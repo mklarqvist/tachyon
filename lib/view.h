@@ -25,8 +25,8 @@ DEALINGS IN THE SOFTWARE.
 
 #include <regex>
 
-#include "support/magic_constants.h"
-#include "utility.h"
+#include "tachyon.h"
+#include "program_utils.h"
 #include "variant_reader.h"
 
 void view_usage(void){

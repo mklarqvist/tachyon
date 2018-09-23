@@ -34,7 +34,7 @@ DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 #include <cmath>
 
-#include "support/magic_constants.h"
+#include "tachyon.h"
 #include "buffer.h"
 
 namespace tachyon {

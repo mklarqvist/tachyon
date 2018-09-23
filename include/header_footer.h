@@ -25,8 +25,8 @@ DEALINGS IN THE SOFTWARE.
 
 #include <unordered_map>
 
-#include "support/magic_constants.h"
-#include "support/helpers.h"
+#include "tachyon.h"
+#include "utility.h"
 #include "buffer.h"
 #include "support_vcf.h"
 

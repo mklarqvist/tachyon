@@ -35,7 +35,7 @@ DEALINGS IN THE SOFTWARE.
 #include "support_vcf.h"
 #include "variant_container.h"
 
-namespace tachyon{
+namespace tachyon {
 
 struct VariantReaderSettings {
 public:
@@ -49,7 +49,7 @@ public:
 	 * Construct a string with the internal interpreted parameters
 	 * @return Returns a string
 	 */
-	std::string get_settings_string(void) const;
+	std::string GetSettingsString(void) const;
 
 public:
 	bool drop_format, header_only, show_header, annotate_genotypes;
@@ -83,10 +83,10 @@ public:
 	virtual ~VariantReader();
 
 	/**<
-	 * Retrieve current settings records. Settings object is used
-	 * prior to each read of a `block` and can be freely modified
-	 * before each call. Modifying the settings after a read block
-	 * has been invoked has no effect on the loaded `block` data.
+	 * Retrieve current settings records. Settings object is used prior to
+	 * each read of a `block` and can be freely modified before each call.
+	 * Modifying the settings after a read block has been invoked has no
+	 * effect on the loaded `block` data.
 	 * @return A reference instance of the block settings object
 	 */
 	inline block_settings_type& GetBlockSettings(void){ return(this->block_settings); }
@@ -120,24 +120,23 @@ public:
 	inline const block_entry_type& GetCurrentContainer(void) const{ return(this->variant_container); }
 
 	/**<
-	 * Opens a YON file. Performs all prerequisite
-	 * checks and loads all auxiliary data structures
+	 * Opens a YON file. Performs all prerequisite checks and loads all
+	 * auxiliary data structures
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
 	bool open(void);
 
 	/**<
-	 * Opens a YON file. Performs all prerequisite
-	 * checks and loads all auxiliary data structures
+	 * Opens a YON file. Performs all prerequisite checks and loads all
+	 * auxiliary data structures
 	 * @param filename Target input filename
 	 * @return Returns TRUE upon success or FALSE otherwise
 	 */
 	bool open(const std::string& filename);
 
 	/**<
-	 * Overloaded operator for blocks. Useful when
-	 * looping over a range of blocks. This happens
-	 * frequently in parallel programs.
+	 * Overloaded operator for blocks. Useful when looping over a range of
+	 * blocks. This happens frequently in parallel programs.
 	 * @param index Block index value in range [0..n_blocks)
 	 * @return      Returns TRUE if operation was successful or FALSE otherwise
 	 */
@@ -179,27 +178,25 @@ public:
 	block_entry_type ReturnBlock(void);
 
 	/**<
-	 * Get the target YON block that matches the provided index
-	 * entry. Internally this function seeks to the offset
-	 * described in the index entry and then invokes NextBlock().
+	 * Get the target YON block that matches the provided index entry. Internally
+	 * this function seeks to the offset described in the index entry and then
+	 * invokes NextBlock().
 	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
 	bool GetBlock(const index_entry_type& index_entry);
 
 
 	/**<
-	 * Seeks to a specific YON block without loading anything.
-	 * This allows the user to seek to a specific block and
-	 * change the block_settings (i.e. what fields to load) and
-	 * then invoke NextBlock() for example.
+	 * Seeks to a specific YON block without loading anything. This allows the
+	 * user to seek to a specific block and change the block_settings (i.e.
+	 * what fields to load) and then invoke NextBlock() for example.
 	 * @param block_id Target yon block id.
 	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool SeekBlock(const uint32_t& block_id);
 
 	/**<
-	 * Open a yon encryption keychain and store the loaded object
-	 * in this reader.
+	 * Open a yon encryption keychain and store the loaded object in this reader.
 	 * @param path File path to archive.
 	 * @return     Returns TRUE upon success or FALSE otherwise.
 	 */
