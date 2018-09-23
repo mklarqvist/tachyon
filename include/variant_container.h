@@ -119,7 +119,7 @@ public:
 		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
 	{
 		if(this->n_variants_){
-			for(int i = 0; i < this->n_variants_; ++i)
+			for(uint32_t i = 0; i < this->n_variants_; ++i)
 				new( &this->variants_[i] ) yon1_vnt_t( );
 
 			this->Build(variant_block, header);
@@ -244,12 +244,12 @@ private:
 		if(container.header.data_header.controller.uniform){
 			it->is_uniform_ = true;
 
-			for(int i = 0; i < this->n_variants_; ++i){
+			for(uint32_t i = 0; i < this->n_variants_; ++i){
 				(variants_[i].*fnc)(it->GetInt32(0));
 			}
 		} else {
 			assert(this->n_variants_ == it->n_elements_);
-			for(int i = 0; i < this->n_variants_; ++i){
+			for(uint32_t i = 0; i < this->n_variants_; ++i){
 				(variants_[i].*fnc)(it->GetInt32(i));
 			}
 		}
@@ -312,7 +312,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 	uint32_t current_offset = 0;
 	uint32_t stride_offset = 0;
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].info_pid == -1){
 			continue;
 		} else if(matches[this->variants_[i].info_pid]){
@@ -336,7 +336,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 	uint32_t current_offset = 0;
 
 	if(container.header.data_header.IsUniform()){
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -345,7 +345,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 			}
 		}
 	} else {
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -379,7 +379,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 	uint32_t current_offset = 0;
 	uint32_t stride_offset = 0;
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
 			continue;
 		} else if(matches[this->variants_[i].fmt_pid]){
@@ -403,7 +403,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 	uint32_t current_offset = 0;
 
 	if(container.header.data_header.IsUniform()){
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].fmt_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].fmt_pid]){
@@ -412,7 +412,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 			}
 		}
 	} else {
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].fmt_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].fmt_pid]){

@@ -24,7 +24,7 @@ void yon1_vc_t::reserve(const uint32_t new_size){
 	yon1_vnt_t* temp = this->variants_;
 	this->variants_ = static_cast<yon1_vnt_t*>(::operator new[](new_size*sizeof(yon1_vnt_t)));
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		new( &this->variants_[i] ) yon1_vnt_t( std::move(temp[i]) );
 		((temp + i)->~yon1_vnt_t)(); // invoke dtor.
 	}
@@ -52,7 +52,7 @@ bool yon1_vc_t::Build(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 	// Allocate memory to support upcoming data to overload into the
 	// containers. After memory allocation we provide the list of local
 	// offsets that provide data.
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		this->variants_[i].info   = new PrimitiveContainerInterface*[variant_block.footer.n_info_streams];
 		this->variants_[i].m_info = variant_block.footer.n_info_streams;
 		this->variants_[i].fmt    = new PrimitiveGroupContainerInterface*[variant_block.footer.n_format_streams];
@@ -105,7 +105,7 @@ bool yon1_vc_t::PermuteOrder(const yon1_vb_t& variant_block){
 
 	// Permute Info and Format fields back into original ordering
 	// NOT the order they were loaded in (FILO-stack order).
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].info_pid >= 0){
 			//std::cerr << "info pid=" << this->variants_[i].info_pid << " : " << this->variants_[i].n_info << std::endl;
 			PrimitiveContainerInterface** old = this->variants_[i].info;
@@ -151,7 +151,7 @@ bool yon1_vc_t::AddInfo(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 }
 
 bool yon1_vc_t::AddFilter(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].flt_pid >= 0){
 			const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
 			for(int j = 0; j < filter_patterns.pattern.size(); ++j){
@@ -231,7 +231,7 @@ bool yon1_vc_t::AddInfoWrapper(dc_type& container,
 	if((container.data_uncompressed.size() == 0 &&
 	   header.info_fields_[container.header.GetGlobalKey()].yon_type == YON_VCF_HEADER_FLAG) || container.header.data_header.GetPrimitiveType() == YON_TYPE_BOOLEAN)
 	{
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -331,7 +331,7 @@ bool yon1_vc_t::InfoSetupString(dc_type& container,
 	uint32_t current_offset = 0;
 	uint32_t stride_offset = 0;
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].info_pid == -1){
 			continue;
 		} else if(matches[this->variants_[i].info_pid]){
@@ -352,7 +352,7 @@ bool yon1_vc_t::InfoSetupString(dc_type& container,
                                        const uint32_t stride)
 {
 	if(container.header.data_header.IsUniform()){
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -362,7 +362,7 @@ bool yon1_vc_t::InfoSetupString(dc_type& container,
 		}
 	} else {
 		uint32_t current_offset = 0;
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			if(this->variants_[i].info_pid == -1){
 				continue;
 			} else if(matches[this->variants_[i].info_pid]){
@@ -626,7 +626,7 @@ bool yon1_vc_t::FormatSetupString(dc_type& container,
 	uint32_t current_offset = 0;
 	uint32_t stride_offset = 0;
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
 
 		} else if(matches[this->variants_[i].fmt_pid]){
@@ -649,7 +649,7 @@ bool yon1_vc_t::FormatSetupString(dc_type& container,
 	assert(container.header.data_header.IsUniform() == false);
 
 	uint32_t current_offset = 0;
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
 			std::cerr << "pid=" << this->variants_[i].fmt_pid << " matched in fstring: " << current_offset << " + " << stride*header.GetNumberSamples() << std::endl;
 
@@ -673,12 +673,12 @@ bool yon1_vc_t::AddQuality(dc_type& container){
 	if(container.header.data_header.controller.uniform){
 		it.is_uniform_ = true;
 
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			this->variants_[i].qual = it[0];
 		}
 	} else {
 		assert(this->n_variants_ == it.n_elements_);
-		for(int i = 0; i < this->n_variants_; ++i){
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
 			this->variants_[i].qual = it[i];
 		}
 	}
@@ -840,7 +840,7 @@ bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples){
 	this->block_.header.controller.has_gt = false;
 	this->block_.header.controller.has_gt_permuted = false;
 
-	for(int i = 0; i < this->n_variants_; ++i){
+	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->at(i).controller.gt_available){
 			this->block_.header.controller.has_gt = true;
 			this->block_.header.controller.has_gt_permuted = true;
