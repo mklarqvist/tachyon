@@ -417,7 +417,7 @@ void yon1_vnt_t::OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const{
 	}
 }
 
-void yon1_vnt_t::ToVcfString(const VariantHeader& header,
+void yon1_vnt_t::ToVcfString(const yon_vnt_hdr_t& header,
 		   yon_buffer_t& buffer,
 		   uint32_t display,
 		   yon_gt_rcd* external_rcd) const
@@ -538,7 +538,7 @@ void yon1_vnt_t::ToVcfString(const VariantHeader& header,
 	buffer += '\n';
 }
 
-bool yon1_vnt_t::AddInfoFlag(const std::string& tag, VariantHeader& header){
+bool yon1_vnt_t::AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header){
 	const YonInfo* info_tag = header.GetInfo(tag);
 	assert(info_tag != nullptr);
 
@@ -553,7 +553,7 @@ bool yon1_vnt_t::AddInfoFlag(const std::string& tag, VariantHeader& header){
 	return true;
 }
 
-bool yon1_vnt_t::AddGenotypeStatistics(VariantHeader& header, const bool replace_existing){
+bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace_existing){
 	if(gt_sum == nullptr){
 		std::cerr << utility::timestamp("LOG") << "Failed to update record. Genotype statistics have not been processed!" << std::endl;
 		return false;
@@ -606,7 +606,7 @@ bool yon1_vnt_t::AddGenotypeStatistics(VariantHeader& header, const bool replace
 	return true;
 }
 
-bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names){
+bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std::string>& names){
 	if(n_info + names.size()*10 + 3 > m_info){
 		m_info += names.size()*10 + 3;
 		PrimitiveContainerInterface** old = info;
@@ -653,7 +653,7 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std
 	return true;
 }
 
-bool yon1_vnt_t::EvaluatePopGenOcc(VariantHeader& header){
+bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	if(this->gt == nullptr) return false;
 	if(this->gt->n_o == 0) return false;
 	if(gt->n_allele != 2 || gt->m != 2) return false;

@@ -48,6 +48,15 @@ public:
 	VariantReaderImpl() = default;
 	VariantReaderImpl(const std::string& filename) : basic_reader(filename){}
 
+	/**<
+	* Converts this header object into a hts_vcf_header object from the
+	* internally stored literal string. This object is required for
+	* writing out VCF/BCF files.
+	* @return
+	*/
+	bcf_hdr_t* ConvertVcfHeaderLiterals(const yon_vnt_hdr_t& hdr, const bool add_format);
+	bcf_hdr_t* ConvertVcfHeader(const yon_vnt_hdr_t& hdr, const bool add_format);
+
 public:
 	basic_reader_type       basic_reader;
 	checksum_type           checksums;
@@ -466,7 +475,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
-	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(!this->settings.drop_format);
+	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetGlobalHeader(), !this->settings.drop_format);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
 		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
@@ -548,7 +557,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
-	bcf_hdr_t* hdr = this->GetGlobalHeader().ConvertVcfHeader(!this->settings.drop_format);
+	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetGlobalHeader(), !this->settings.drop_format);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
 		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
@@ -802,6 +811,50 @@ bool VariantReader::TempWrite(void){
 	delete writer;
 
 	return 0;
+}
+
+bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeaderLiterals(const yon_vnt_hdr_t& hdr, const bool add_format){
+	std::string internal = hdr.literals_;
+	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+	if(hdr.samples_.size() && add_format){
+		internal += "\tFORMAT\t";
+		internal += hdr.samples_[0];
+		for(size_t i = 1; i < hdr.samples_.size(); ++i)
+			internal += "\t" + hdr.samples_[i];
+	}
+	internal += "\n";
+
+	bcf_hdr_t* bcf_hdr = bcf_hdr_init("r");
+	int ret = bcf_hdr_parse(bcf_hdr, (char*)internal.c_str());
+	if(ret != 0){
+		std::cerr << "failed to get bcf header from literals" << std::endl;
+		bcf_hdr_destroy(bcf_hdr);
+		return(nullptr);
+	}
+
+	return(bcf_hdr);
+}
+
+bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeader(const yon_vnt_hdr_t& hdr, const bool add_format){
+	std::string internal = hdr.ToString(true);
+	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
+	if(hdr.samples_.size() && add_format){
+		internal += "\tFORMAT\t";
+		internal += hdr.samples_[0];
+		for(size_t i = 1; i < hdr.samples_.size(); ++i)
+			internal += "\t" + hdr.samples_[i];
+	}
+	internal += "\n";
+
+	bcf_hdr_t* bcf_hdr = bcf_hdr_init("r");
+	int ret = bcf_hdr_parse(bcf_hdr, (char*)internal.c_str());
+	if(ret != 0){
+		std::cerr << "failed to get bcf header from literals" << std::endl;
+		bcf_hdr_destroy(bcf_hdr);
+		return(nullptr);
+	}
+
+	return(bcf_hdr);
 }
 
 }

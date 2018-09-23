@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include <memory>
 #include <vector>
 
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 #include "index_record.h"
 #include "variant_container.h"
 

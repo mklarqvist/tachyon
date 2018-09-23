@@ -26,6 +26,8 @@ DEALINGS IN THE SOFTWARE.
 #include <fstream>
 #include <limits>
 
+#include "buffer.h"
+
 namespace tachyon {
 
 struct yon1_idx_rec {
@@ -33,96 +35,31 @@ public:
 	typedef yon1_idx_rec self_type;
 
 public:
-	yon1_idx_rec() :
-		block_id(0),
-		contig_id(-1),
-		n_variants(0),
-		byte_offset(0),
-		byte_offset_end(0),
-		min_position(0),
-		max_position(0),
-		min_bin(std::numeric_limits<int32_t>::max()),
-		max_bin(0)
-	{}
+	yon1_idx_rec();
+	~yon1_idx_rec();
 
-	bool operator!=(const self_type& other) const{
-		if(this->block_id         != other.block_id)         return true;
-		if(this->contig_id        != other.contig_id)        return true;
-		if(this->n_variants       != other.n_variants)      return true;
-		if(this->byte_offset      != other.byte_offset)     return true;
-		if(this->byte_offset_end  != other.byte_offset_end) return true;
-		if(this->min_position     != other.min_position)     return true;
-		if(this->max_position     != other.max_position)     return true;
-		if(this->min_bin          != other.min_bin)          return true;
-		if(this->max_bin          != other.max_bin)          return true;
-		return false;
-	}
-
+	// Basic comparators.
+	bool operator<(const self_type& other) const;
+	bool operator<=(const self_type& other) const;
+	bool operator!=(const self_type& other) const;
 	inline bool operator==(const self_type& other) const{ return(!(*this != other)); }
 
-	bool operator<(const self_type& other) const{
-		if(this->block_id  < other.block_id)  return true;
-		if(this->block_id  > other.block_id)  return false;
-		if(this->contig_id < other.contig_id) return true;
-		if(this->contig_id > other.contig_id) return false;
-		return true;
-	}
+	/**<
+	 * Reset members of this struct to their original values
+	 * without releasing memory.
+	 */
+	void reset(void);
 
-	bool operator<=(const self_type& other) const{
-		if(this->block_id  <= other.block_id)  return true;
-		if(this->block_id  >  other.block_id)  return false;
-		if(this->contig_id <= other.contig_id) return true;
-		if(this->contig_id >  other.contig_id) return false;
-		return true;
-	}
+	/**<
+	 * Print out this record into the dst stream. Used for debugging purposed
+	 * only.
+	 * @param stream Dst stream.
+	 * @return       Returns a reference to the dst stream.
+	 */
+	std::ostream& Print(std::ostream& stream) const;
 
-	~yon1_idx_rec(){}
-
-	void reset(void){
-		this->block_id         = 0;
-		this->contig_id        = -1;
-		this->n_variants       = 0;
-		this->byte_offset      = 0;
-		this->byte_offset_end  = 0;
-		this->min_position     = 0;
-		this->max_position     = 0;
-		this->min_bin          = std::numeric_limits<int32_t>::max();
-		this->max_bin          = 0;
-	}
-
-	std::ostream& print(std::ostream& stream) const{
-		stream << block_id << '\t' << contig_id << '\t' << n_variants << "\tOffset: " << byte_offset << '-' << byte_offset_end << " Position: " << min_position << '-' << max_position << " Bins: " << min_bin << '-' << max_bin;
-		return(stream);
-	}
-
-private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
-		stream.write(reinterpret_cast<const char*>(&entry.block_id),         sizeof(uint64_t));
-		stream.write(reinterpret_cast<const char*>(&entry.contig_id),        sizeof(int32_t));
-		stream.write(reinterpret_cast<const char*>(&entry.n_variants),      sizeof(uint32_t));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offset),     sizeof(uint64_t));
-		stream.write(reinterpret_cast<const char*>(&entry.byte_offset_end), sizeof(uint64_t));
-		stream.write(reinterpret_cast<const char*>(&entry.min_position),     sizeof(uint64_t));
-		stream.write(reinterpret_cast<const char*>(&entry.max_position),     sizeof(uint64_t));
-		stream.write(reinterpret_cast<const char*>(&entry.min_bin),          sizeof(int32_t));
-		stream.write(reinterpret_cast<const char*>(&entry.max_bin),          sizeof(int32_t));
-
-		return(stream);
-	}
-
-	friend std::istream& operator>>(std::istream& stream, self_type& entry){
-		stream.read(reinterpret_cast<char*>(&entry.block_id),         sizeof(uint64_t));
-		stream.read(reinterpret_cast<char*>(&entry.contig_id),        sizeof(int32_t));
-		stream.read(reinterpret_cast<char*>(&entry.n_variants),      sizeof(uint32_t));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offset),     sizeof(uint64_t));
-		stream.read(reinterpret_cast<char*>(&entry.byte_offset_end), sizeof(uint64_t));
-		stream.read(reinterpret_cast<char*>(&entry.min_position),     sizeof(uint64_t));
-		stream.read(reinterpret_cast<char*>(&entry.max_position),     sizeof(uint64_t));
-		stream.read(reinterpret_cast<char*>(&entry.min_bin),          sizeof(int32_t));
-		stream.read(reinterpret_cast<char*>(&entry.max_bin),          sizeof(int32_t));
-
-		return(stream);
-	}
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
+	friend std::istream& operator>>(std::istream& stream, self_type& entry);
 
 public:
 	uint64_t block_id; // this data is duplicated

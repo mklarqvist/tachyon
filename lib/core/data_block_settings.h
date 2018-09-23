@@ -4,7 +4,7 @@
 #include <regex>
 
 #include "support/helpers.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 
 namespace tachyon {
 
@@ -14,7 +14,7 @@ namespace tachyon {
 struct DataBlockSettings {
 public:
 	typedef DataBlockSettings self_type;
-	typedef VariantHeader     header_type;
+	typedef yon_vnt_hdr_t     header_type;
 
 public:
 	DataBlockSettings();

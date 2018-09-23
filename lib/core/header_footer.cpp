@@ -1,8 +1,8 @@
-#include "variant_header.h"
+#include "header_footer.h"
 
 namespace tachyon {
 
-VariantHeader::VariantHeader(const VariantHeader& other) :
+yon_vnt_hdr_t::yon_vnt_hdr_t(const yon_vnt_hdr_t& other) :
 	fileformat_string_(other.fileformat_string_),
 	literals_(other.literals_),
 	samples_(other.samples_),
@@ -17,7 +17,82 @@ VariantHeader::VariantHeader(const VariantHeader& other) :
 	this->BuildReverseMaps();
 }
 
-bool VariantHeader::BuildReverseMaps(void){
+void yon_vnt_hdr_t::AddSample(const std::string& sample_name) {
+	if(this->samples_.size() == 0){
+		this->samples_.push_back(sample_name);
+		this->samples_map_[sample_name] = 0;
+		return;
+	}
+
+	if(this->samples_map_.find(sample_name) == this->samples_map_.end()){
+		this->samples_map_[sample_name] = this->samples_.size();
+		this->samples_.push_back(sample_name);
+	} else {
+		std::cerr << utility::timestamp("ERROR", "HEADER") << "Illegal: duplicated sample name: " << sample_name << std::endl;
+	}
+}
+
+const YonContig* yon_vnt_hdr_t::GetContig(const std::string& name) const {
+	map_type::const_iterator it = this->contigs_map_.find(name);
+	if(it != this->contigs_map_.end()) return(&this->contigs_[it->second]);
+	return(nullptr);
+}
+
+const YonContig* yon_vnt_hdr_t::GetContig(const int& idx) const {
+	map_reverse_type::const_iterator it = this->contigs_reverse_map_.find(idx);
+	if(it != this->contigs_reverse_map_.end()) return(&this->contigs_[it->second]);
+	return(nullptr);
+}
+
+const YonInfo* yon_vnt_hdr_t::GetInfo(const std::string& name) const {
+	map_type::const_iterator it = this->info_fields_map_.find(name);
+	if(it != this->info_fields_map_.end()) return(&this->info_fields_[it->second]);
+	return(nullptr);
+}
+
+const YonInfo* yon_vnt_hdr_t::GetInfo(const int& idx) const {
+	map_reverse_type::const_iterator it = this->info_fields_reverse_map_.find(idx);
+	if(it != this->info_fields_reverse_map_.end()) return(&this->info_fields_[it->second]);
+	return(nullptr);
+}
+
+const YonFormat* yon_vnt_hdr_t::GetFormat(const std::string& name) const {
+	map_type::const_iterator it = this->format_fields_map_.find(name);
+	if(it != this->format_fields_map_.end()) return(&this->format_fields_[it->second]);
+	return(nullptr);
+}
+
+const YonFormat* yon_vnt_hdr_t::GetFormat(const int& idx) const {
+	map_reverse_type::const_iterator it = this->format_fields_reverse_map_.find(idx);
+	if(it != this->format_fields_reverse_map_.end()) return(&this->format_fields_[it->second]);
+	return(nullptr);
+}
+
+const VcfFilter* yon_vnt_hdr_t::GetFilter(const std::string& name) const {
+	map_type::const_iterator it = this->filter_fields_map_.find(name);
+	if(it != this->filter_fields_map_.end()) return(&this->filter_fields_[it->second]);
+	return(nullptr);
+}
+
+const VcfFilter* yon_vnt_hdr_t::GetFilter(const int& idx) const {
+	map_reverse_type::const_iterator it = this->filter_fields_reverse_map_.find(idx);
+	if(it != this->filter_fields_reverse_map_.end()) return(&this->filter_fields_[it->second]);
+	return(nullptr);
+}
+
+const std::string* yon_vnt_hdr_t::GetSample(const std::string& name) const {
+	map_type::const_iterator it = this->samples_map_.find(name);
+	if(it != this->samples_map_.end()) return(&this->samples_[it->second]);
+	return(nullptr);
+}
+
+int32_t yon_vnt_hdr_t::GetSampleId(const std::string& name) const {
+	map_type::const_iterator it = this->samples_map_.find(name);
+	if(it != this->samples_map_.end()) return(it->second);
+	return(-1);
+}
+
+bool yon_vnt_hdr_t::BuildReverseMaps(void){
 	this->contigs_reverse_map_.clear();
 	this->info_fields_reverse_map_.clear();
 	this->format_fields_reverse_map_.clear();
@@ -31,7 +106,7 @@ bool VariantHeader::BuildReverseMaps(void){
 	return true;
 }
 
-bool VariantHeader::BuildMaps(void){
+bool yon_vnt_hdr_t::BuildMaps(void){
 	this->info_fields_map_.clear();
 	this->format_fields_map_.clear();
 	this->filter_fields_map_.clear();
@@ -46,7 +121,7 @@ bool VariantHeader::BuildMaps(void){
 	return true;
 }
 
-bool VariantHeader::RecodeIndices(void){
+bool yon_vnt_hdr_t::RecodeIndices(void){
 	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       this->contigs_[i].idx = i;
 	for(uint32_t i = 0; i < this->info_fields_.size(); ++i)   this->info_fields_[i].idx = i;
 	for(uint32_t i = 0; i < this->format_fields_.size(); ++i) this->format_fields_[i].idx = i;
@@ -57,51 +132,9 @@ bool VariantHeader::RecodeIndices(void){
 	return true;
 }
 
-bcf_hdr_t* VariantHeader::ConvertVcfHeaderLiterals(const bool add_format){
-	std::string internal = this->literals_;
-	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(this->samples_.size() && add_format){
-		internal += "\tFORMAT\t";
-		internal += this->samples_[0];
-		for(size_t i = 1; i < this->samples_.size(); ++i)
-			internal += "\t" + this->samples_[i];
-	}
-	internal += "\n";
 
-	hts_vcf_header* hdr = bcf_hdr_init("r");
-	int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
-	if(ret != 0){
-		std::cerr << "failed to get bcf header from literals" << std::endl;
-		bcf_hdr_destroy(hdr);
-		return(nullptr);
-	}
 
-	return(hdr);
-}
-
-bcf_hdr_t* VariantHeader::ConvertVcfHeader(const bool add_format){
-	std::string internal = this->ToString(true);
-	internal += "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-	if(this->samples_.size() && add_format){
-		internal += "\tFORMAT\t";
-		internal += this->samples_[0];
-		for(size_t i = 1; i < this->samples_.size(); ++i)
-			internal += "\t" + this->samples_[i];
-	}
-	internal += "\n";
-
-	hts_vcf_header* hdr = bcf_hdr_init("r");
-	int ret = bcf_hdr_parse(hdr, (char*)internal.c_str());
-	if(ret != 0){
-		std::cerr << "failed to get bcf header from literals" << std::endl;
-		bcf_hdr_destroy(hdr);
-		return(nullptr);
-	}
-
-	return(hdr);
-}
-
-void VariantHeader::AddGenotypeAnnotationFields(void){
+void yon_vnt_hdr_t::AddGenotypeAnnotationFields(void){
 	//"NM","NPM","AN","HWE_P","AC","AF","AC_P","FS_A","F_PIC","HET","MULTI_ALLELIC"
 
 	const YonInfo* info = this->GetInfo("NM");
@@ -292,7 +325,7 @@ void VariantHeader::AddGenotypeAnnotationFields(void){
 }
 
 
-void VariantHeader::AddGenotypeAnnotationFields(const std::vector<std::string>& group_names){
+void yon_vnt_hdr_t::AddGenotypeAnnotationFields(const std::vector<std::string>& group_names){
 	for(int i = 0; i < group_names.size(); ++i){
 		const YonInfo* info = this->GetInfo(group_names[i] + "_NM");
 		if(info == nullptr){
@@ -442,7 +475,7 @@ void VariantHeader::AddGenotypeAnnotationFields(const std::vector<std::string>& 
 	}
 }
 
-std::ostream& VariantHeader::PrintVcfHeader(std::ostream& stream) const{
+std::ostream& yon_vnt_hdr_t::PrintVcfHeader(std::ostream& stream) const{
 	stream << this->literals_;
 	stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
 	if(this->samples_.size()){
@@ -456,7 +489,7 @@ std::ostream& VariantHeader::PrintVcfHeader(std::ostream& stream) const{
 }
 
 
-std::string VariantHeader::ToString(const bool is_bcf) const{
+std::string yon_vnt_hdr_t::ToString(const bool is_bcf) const{
 	std::string string = "##fileformat=VCFv4.1\n";
 	uint32_t idx = 0;
 	for(uint32_t i = 0; i < this->contigs_.size(); ++i)       string += this->contigs_[i].ToVcfString(is_bcf) + "\n";
@@ -468,7 +501,7 @@ std::string VariantHeader::ToString(const bool is_bcf) const{
 	return(string);
 }
 
-std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
+std::ostream& operator<<(std::ostream& stream, const yon_vnt_hdr_t& header){
 	utility::SerializeString(header.fileformat_string_, stream);
 	utility::SerializeString(header.literals_, stream);
 
@@ -503,7 +536,7 @@ std::ostream& operator<<(std::ostream& stream, const VariantHeader& header){
 	return(stream);
 }
 
-std::istream& operator>>(std::istream& stream, VariantHeader& header){
+std::istream& operator>>(std::istream& stream, yon_vnt_hdr_t& header){
 	utility::DeserializeString(header.fileformat_string_, stream);
 	utility::DeserializeString(header.literals_, stream);
 
@@ -542,7 +575,7 @@ std::istream& operator>>(std::istream& stream, VariantHeader& header){
 	return stream;
 }
 
-yon_buffer_t& operator<<(yon_buffer_t& buffer, const VariantHeader& header){
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_vnt_hdr_t& header){
 	SerializeString(header.fileformat_string_, buffer);
 	SerializeString(header.literals_, buffer);
 
@@ -577,7 +610,7 @@ yon_buffer_t& operator<<(yon_buffer_t& buffer, const VariantHeader& header){
 	return(buffer);
 }
 
-yon_buffer_t& operator>>(yon_buffer_t& buffer, VariantHeader& header){
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_vnt_hdr_t& header){
 	DeserializeString(header.fileformat_string_, buffer);
 	DeserializeString(header.literals_, buffer);
 
@@ -614,6 +647,64 @@ yon_buffer_t& operator>>(yon_buffer_t& buffer, VariantHeader& header){
 	header.BuildReverseMaps();
 
 	return buffer;
+}
+
+yon_ftr_t::yon_ftr_t() :
+	offset_end_of_data(0),
+	n_blocks(0),
+	n_variants(0),
+	controller(0)
+{
+	utility::HexToBytes(TACHYON_FILE_EOF, &this->EOF_marker[0]);
+}
+
+yon_ftr_t::yon_ftr_t(const char* const data) :
+	offset_end_of_data(*reinterpret_cast<const uint64_t* const>(data)),
+	n_blocks(*reinterpret_cast<const uint64_t* const>(&data[sizeof(uint64_t)])),
+	n_variants(*reinterpret_cast<const uint64_t* const>(&data[sizeof(uint64_t)*2])),
+	controller(*reinterpret_cast<const uint16_t* const>(&data[sizeof(uint64_t)*3]))
+{
+	memcpy(&this->EOF_marker[0], &data[sizeof(uint64_t)*3+sizeof(uint16_t)], TACHYON_FILE_EOF_LENGTH);
+}
+
+yon_ftr_t::yon_ftr_t(const self_type& other) :
+	offset_end_of_data(other.offset_end_of_data),
+	n_blocks(other.n_blocks),
+	n_variants(other.n_variants),
+	controller(other.controller)
+{
+	memcpy(&this->EOF_marker[0], &other.EOF_marker[0], TACHYON_FILE_EOF_LENGTH);
+}
+
+bool yon_ftr_t::Validate(void) const{
+	if(this->offset_end_of_data == 0) return false;
+	if(this->n_blocks  == 0)          return false;
+	if(this->n_variants == 0)         return false;
+
+	// Check EOF marker
+	uint8_t reference[TACHYON_FILE_EOF_LENGTH];
+	utility::HexToBytes(TACHYON_FILE_EOF, &reference[0]);
+
+	if(strncmp(reinterpret_cast<const char* const>(&this->EOF_marker[0]), reinterpret_cast<const char* const>(&reference[0]), TACHYON_FILE_EOF_LENGTH) != 0) return false;
+	return true;
+}
+
+std::ostream& operator<<(std::ostream& stream, const yon_ftr_t& yon_ftr_t){
+	SerializePrimitive(yon_ftr_t.offset_end_of_data, stream);
+	SerializePrimitive(yon_ftr_t.n_blocks,   stream);
+	SerializePrimitive(yon_ftr_t.n_variants, stream);
+	SerializePrimitive(yon_ftr_t.controller, stream);
+	stream.write(reinterpret_cast<const char*>(&yon_ftr_t.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
+	return(stream);
+}
+
+std::istream& operator>>(std::istream& stream, yon_ftr_t& yon_ftr_t){
+	DeserializePrimitive(yon_ftr_t.offset_end_of_data, stream);
+	DeserializePrimitive(yon_ftr_t.n_blocks,   stream);
+	DeserializePrimitive(yon_ftr_t.n_variants, stream);
+	DeserializePrimitive(yon_ftr_t.controller, stream);
+	stream.read(reinterpret_cast<char*>(&yon_ftr_t.EOF_marker[0]), TACHYON_FILE_EOF_LENGTH);
+	return(stream);
 }
 
 }

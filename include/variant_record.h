@@ -169,15 +169,15 @@ public:
 
 	void OutputHtslibVcfFilter(bcf1_t* rec, bcf_hdr_t* hdr) const;
 
-	void ToVcfString(const VariantHeader& header,
+	void ToVcfString(const yon_vnt_hdr_t& header,
 	           yon_buffer_t& buffer,
 	           uint32_t display,
 	           yon_gt_rcd* external_rcd = nullptr) const;
 
-	bool AddInfoFlag(const std::string& tag, VariantHeader& header);
+	bool AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header);
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, VariantHeader& header, int_t& data_point){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t& data_point){
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
@@ -193,7 +193,7 @@ public:
 	}
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, VariantHeader& header, int_t* data_point, const size_t n_points){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t* data_point, const size_t n_points){
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
@@ -209,7 +209,7 @@ public:
 	}
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, VariantHeader& header, PrimitiveContainer<int_t>*& container){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, PrimitiveContainer<int_t>*& container){
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
@@ -225,9 +225,9 @@ public:
 		return true;
 	}
 
-	bool AddFilter(const std::string& tag, VariantHeader& header);
-	bool AddGenotypeStatistics(VariantHeader& header, const bool replace_existing = true);
-	bool AddGenotypeStatisticsOcc(VariantHeader& header, std::vector<std::string>& names);
+	bool AddFilter(const std::string& tag, yon_vnt_hdr_t& header);
+	bool AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace_existing = true);
+	bool AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std::string>& names);
 
 	/**<
 	 * Calculates various F-statistics over the provided groupings using
@@ -239,10 +239,10 @@ public:
 	 *          grouping sets are overlapping. The incorrect results arise
 	 *          from the fact that a single individual cannot simultaneously
 	 *          exist in multiple distinct populations.
-	 * @param header Src VariantHeader.
+	 * @param header Src yon_vnt_hdr_t.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool EvaluatePopGenOcc(VariantHeader& header);
+	bool EvaluatePopGenOcc(yon_vnt_hdr_t& header);
 
 	PrimitiveContainerInterface* GetInfo(const std::string& name) const;
 	PrimitiveGroupContainerInterface* GetFmt(const std::string& name) const;

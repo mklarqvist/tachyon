@@ -11,7 +11,7 @@
 
 #include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
-#include "core/footer/footer.h"
+#include "header_footer.h"
 #include "variant_container.h"
 
 namespace tachyon{
@@ -266,7 +266,7 @@ struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
 
-	bool WriteFileHeader(VariantHeader& header){
+	bool WriteFileHeader(yon_vnt_hdr_t& header){
 		if(writer == nullptr)
 			return false;
 
@@ -291,7 +291,7 @@ struct yon_writer_sync {
 		return(writer->stream->good());
 	}
 
-	VariantHeader& UpdateHeaderImport(VariantHeader& header, VariantImporterSettings& settings){
+	yon_vnt_hdr_t& UpdateHeaderImport(yon_vnt_hdr_t& header, VariantImporterSettings& settings){
 		VcfExtra e;
 		e.key = "tachyon_importVersion";
 		e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -418,7 +418,7 @@ struct yon_writer_sync {
 		index_entry.n_variants       = container.sizeWithoutCarryOver();
 		this->writer->index         += index_entry;
 
-		index_entry.print(std::cerr);
+		index_entry.Print(std::cerr);
 		std::cerr << std::endl;
 
 		index_entry.reset();
@@ -434,7 +434,7 @@ struct yon_writer_sync {
 		index_entry.byte_offset_end = this->writer->stream->tellp();
 		this->writer->index        += index_entry;
 
-		index_entry.print(std::cerr);
+		index_entry.Print(std::cerr);
 		std::cerr << std::endl;
 
 		++this->writer->n_blocks_written;
@@ -472,7 +472,7 @@ struct yon_writer_sync {
 		this->writer->stream->flush();
 
 		// Write global footer.
-		core::Footer footer;
+		yon_ftr_t footer;
 		footer.offset_end_of_data = this->writer->stream->tellp();
 		footer.n_blocks           = this->writer->n_blocks_written;
 		footer.n_variants         = this->writer->n_variants_written;

@@ -7,7 +7,7 @@
 #include "support/helpers.h"
 #include "third_party/intervalTree.h"
 #include "index.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 #include "variant_record.h"
 #include "generic_iterator.h"
 
@@ -26,7 +26,7 @@ public:
     typedef const value_type*      const_pointer;
     typedef yon_index_t            index_type;
     typedef yon1_idx_rec           index_entry_type;
-    typedef VariantHeader          header_type;
+    typedef yon_vnt_hdr_t          header_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;

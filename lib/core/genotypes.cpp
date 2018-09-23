@@ -1165,7 +1165,7 @@ bool yon_gt_summary::LazyEvaluate(void){
 }
 
 bool yon_occ::ReadTable(const std::string file_name,
-                        const VariantHeader& header,
+                        const yon_vnt_hdr_t& header,
                         const char delimiter)
 {
 	std::ifstream f;

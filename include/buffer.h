@@ -165,6 +165,16 @@ static void DeserializePrimitive(T& value, yon_buffer_t& buffer){
 	buffer >> value;
 }
 
+template <class T>
+static void SerializePrimitive(const T& value, std::ostream& stream){
+	stream.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template <class T>
+static void DeserializePrimitive(T& value, std::istream& stream){
+	stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
 }
 
 #endif

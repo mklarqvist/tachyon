@@ -8,7 +8,7 @@
 #include "variant_index_bin.h"
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 #include "io/vcf_utils.h"
 #include "generic_iterator.h"
 

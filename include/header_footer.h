@@ -30,98 +30,37 @@ DEALINGS IN THE SOFTWARE.
 #include "buffer.h"
 #include "support_vcf.h"
 
+#define YON_FOOTER_LENGTH ((TACHYON_FILE_EOF_LENGTH) + sizeof(uint64_t)*3 + sizeof(uint16_t))
+
 namespace tachyon {
 
-class VariantHeader {
+class yon_vnt_hdr_t {
 public:
-	typedef VariantHeader self_type;
+	typedef yon_vnt_hdr_t self_type;
 	typedef bcf_hdr_t     hts_vcf_header;
 	typedef std::unordered_map<std::string, uint32_t> map_type;
 	typedef std::unordered_map<uint32_t, uint32_t>    map_reverse_type;
 
 public:
-	VariantHeader() = default;
-	VariantHeader(const VariantHeader& other);
-	//VariantHeader(const io::VcfHeader& other);
-	~VariantHeader() = default;
+	yon_vnt_hdr_t() = default;
+	yon_vnt_hdr_t(const yon_vnt_hdr_t& other);
+	~yon_vnt_hdr_t() = default;
 
 	inline size_t GetNumberSamples(void) const{ return(this->samples_.size()); }
 	inline size_t GetNumberContigs(void) const{ return(this->contigs_.size()); }
 
-	void AddSample(const std::string& sample_name) {
-		if(this->samples_.size() == 0){
-			this->samples_.push_back(sample_name);
-			this->samples_map_[sample_name] = 0;
-			return;
-		}
+	void AddSample(const std::string& sample_name);
 
-		if(this->samples_map_.find(sample_name) == this->samples_map_.end()){
-			this->samples_map_[sample_name] = this->samples_.size();
-			this->samples_.push_back(sample_name);
-		} else {
-			std::cerr << "illegal: duplicated sample name: " << sample_name << std::endl;
-		}
-	}
-
-	const YonContig* GetContig(const std::string& name) const {
-		map_type::const_iterator it = this->contigs_map_.find(name);
-		if(it != this->contigs_map_.end()) return(&this->contigs_[it->second]);
-		return(nullptr);
-	}
-
-	const YonContig* GetContig(const int& idx) const {
-		map_reverse_type::const_iterator it = this->contigs_reverse_map_.find(idx);
-		if(it != this->contigs_reverse_map_.end()) return(&this->contigs_[it->second]);
-		return(nullptr);
-	}
-
-	const YonInfo* GetInfo(const std::string& name) const {
-		map_type::const_iterator it = this->info_fields_map_.find(name);
-		if(it != this->info_fields_map_.end()) return(&this->info_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const YonInfo* GetInfo(const int& idx) const {
-		map_reverse_type::const_iterator it = this->info_fields_reverse_map_.find(idx);
-		if(it != this->info_fields_reverse_map_.end()) return(&this->info_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const YonFormat* GetFormat(const std::string& name) const {
-		map_type::const_iterator it = this->format_fields_map_.find(name);
-		if(it != this->format_fields_map_.end()) return(&this->format_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const YonFormat* GetFormat(const int& idx) const {
-		map_reverse_type::const_iterator it = this->format_fields_reverse_map_.find(idx);
-		if(it != this->format_fields_reverse_map_.end()) return(&this->format_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const VcfFilter* GetFilter(const std::string& name) const {
-		map_type::const_iterator it = this->filter_fields_map_.find(name);
-		if(it != this->filter_fields_map_.end()) return(&this->filter_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const VcfFilter* GetFilter(const int& idx) const {
-		map_reverse_type::const_iterator it = this->filter_fields_reverse_map_.find(idx);
-		if(it != this->filter_fields_reverse_map_.end()) return(&this->filter_fields_[it->second]);
-		return(nullptr);
-	}
-
-	const std::string* GetSample(const std::string& name) const {
-		map_type::const_iterator it = this->samples_map_.find(name);
-		if(it != this->samples_map_.end()) return(&this->samples_[it->second]);
-		return(nullptr);
-	}
-
-	int32_t GetSampleId(const std::string& name) const {
-		map_type::const_iterator it = this->samples_map_.find(name);
-		if(it != this->samples_map_.end()) return(it->second);
-		return(-1);
-	}
+	const YonContig* GetContig(const std::string& name) const;
+	const YonContig* GetContig(const int& idx) const;
+	const YonInfo* GetInfo(const std::string& name) const;
+	const YonInfo* GetInfo(const int& idx) const;
+	const YonFormat* GetFormat(const std::string& name) const;
+	const YonFormat* GetFormat(const int& idx) const;
+	const VcfFilter* GetFilter(const std::string& name) const;
+	const VcfFilter* GetFilter(const int& idx) const;
+	const std::string* GetSample(const std::string& name) const;
+	int32_t GetSampleId(const std::string& name) const;
 
 	bool BuildReverseMaps(void);
 	bool BuildMaps(void);
@@ -132,15 +71,6 @@ public:
 	 * @return Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool RecodeIndices(void);
-
-	/**<
-	* Converts this header object into a hts_vcf_header object from the
-	* internally stored literal string. This object is required for
-	* writing out VCF/BCF files.
-	* @return
-	*/
-	hts_vcf_header* ConvertVcfHeaderLiterals(const bool add_format = true);
-	hts_vcf_header* ConvertVcfHeader(const bool add_format = true);
 
 	void AddGenotypeAnnotationFields(void);
 	void AddGenotypeAnnotationFields(const std::vector<std::string>& group_names);
@@ -153,10 +83,10 @@ public:
 
 	std::string ToString(const bool is_bcf = false) const;
 
-	friend std::ostream& operator<<(std::ostream& stream, const VariantHeader& header);
-	friend std::istream& operator>>(std::istream& stream, VariantHeader& header);
-	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const VariantHeader& header);
-	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, VariantHeader& header);
+	friend std::ostream& operator<<(std::ostream& stream, const yon_vnt_hdr_t& header);
+	friend std::istream& operator>>(std::istream& stream, yon_vnt_hdr_t& header);
+	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_vnt_hdr_t& header);
+	friend yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_vnt_hdr_t& header);
 
 public:
 	// VCF file version string.
@@ -211,6 +141,38 @@ public:
 	map_reverse_type info_fields_reverse_map_;   // map IDX -> index offset
 	map_reverse_type format_fields_reverse_map_; // map IDX -> index offset
 	map_reverse_type filter_fields_reverse_map_; // map IDX -> index offset
+};
+
+struct yon_ftr_t {
+public:
+	typedef yon_ftr_t self_type;
+
+public:
+	yon_ftr_t();
+	yon_ftr_t(const char* const data);
+	yon_ftr_t(const self_type& other);
+	~yon_ftr_t() = default;
+
+	inline const uint64_t& GetEODOffset(void) const{ return(this->offset_end_of_data); }
+	inline uint64_t& GetEODOffset(void){ return(this->offset_end_of_data); }
+	inline const uint64_t& GetNumberBlocks(void) const{ return(this->n_blocks); }
+	inline uint64_t& GetNumberBlocks(void){ return(this->n_blocks); }
+	inline const uint64_t& GetNumberVariants(void) const{ return(this->n_variants); }
+	inline uint64_t& GetNumberVariants(void){ return(this->n_variants); }
+	inline const uint16_t& GetController(void) const{ return(this->controller); }
+	inline uint16_t& GetController(void){ return(this->controller); }
+
+	bool Validate(void) const;
+
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& yon_ftr_t);
+	friend std::istream& operator>>(std::istream& stream, self_type& yon_ftr_t);
+
+public:
+	uint64_t  offset_end_of_data;
+	uint64_t  n_blocks;
+	uint64_t  n_variants;
+	uint16_t  controller;
+    uint8_t   EOF_marker[TACHYON_FILE_EOF_LENGTH];
 };
 
 }

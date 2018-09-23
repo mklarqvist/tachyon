@@ -640,7 +640,7 @@ public:
 	 */
 	bool read(std::ifstream& stream,
 	          block_settings_type& settings,
-	          const VariantHeader& header);
+	          const yon_vnt_hdr_t& header);
 
 	/**<
 	 * Read the header and footer of a block.
@@ -947,7 +947,7 @@ private:
 	 * @param header   Reference to the global variant header object.
 	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool ParseSettings(DataBlockSettings& settings, const VariantHeader& header);
+	bool ParseSettings(DataBlockSettings& settings, const yon_vnt_hdr_t& header);
 
 	/**<
 	 * Parse what data will be displayed given the requested fields and

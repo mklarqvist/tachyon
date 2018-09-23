@@ -87,14 +87,14 @@ private:
 	 * the target file was imported in the tachyon archive.
 	 * @param header Global tachyon header.
 	 */
-	void UpdateHeaderImport(VariantHeader& header);
+	void UpdateHeaderImport(yon_vnt_hdr_t& header);
 
 	/**<
 	 * Converts a htslib-styled Vcf header into a Tachyon header.
 	 * @param vcf_header Src reference of a Vcf header.
-	 * @return           Returns a Tachyon VariantHeader.
+	 * @return           Returns a Tachyon yon_vnt_hdr_t.
 	 */
-	VariantHeader ConvertVcfHeader(const io::VcfHeader& vcf_header);
+	yon_vnt_hdr_t ConvertVcfHeader(const io::VcfHeader& vcf_header);
 
 public:
 	writer_interface_type* writer; // writer
@@ -117,7 +117,7 @@ public:
 	reorder_map_type contig_reorder_map_;
 
 	std::unique_ptr<vcf_reader_type> vcf_reader_;
-	VariantHeader yon_header_;
+	yon_vnt_hdr_t yon_header_;
 
 	hash_map_type block_hash_map;
 };
@@ -357,7 +357,7 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 	// Transmute a htslib-styled vcf header into a tachyon
 	// header.
 	this->yon_header_ = this->ConvertVcfHeader(this->vcf_reader_->vcf_header_);
-	//this->yon_header_ = VariantHeader(this->vcf_reader_->vcf_header_);
+	//this->yon_header_ = yon_vnt_hdr_t(this->vcf_reader_->vcf_header_);
 	// Update the extra provenance fields in the new header.
 	this->UpdateHeaderImport(this->yon_header_);
 
@@ -375,7 +375,7 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 	return(writer->stream->good());
 }
 
-void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& header){
+void VariantImporter::VariantImporterImpl::UpdateHeaderImport(yon_vnt_hdr_t& header){
 	VcfExtra e;
 	e.key = "tachyon_importVersion";
 	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -395,8 +395,8 @@ void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& hea
 	header.extra_fields_.push_back(e);
 }
 
-VariantHeader VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header){
-	VariantHeader header;
+yon_vnt_hdr_t VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header){
+	yon_vnt_hdr_t header;
 	header.fileformat_string_ = vcf_header.fileformat_string_;
 	header.literals_ = vcf_header.literals_;
 	header.samples_ = vcf_header.samples_;

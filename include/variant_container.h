@@ -113,7 +113,7 @@ public:
 
 	}
 
-	yon1_vc_t(yon1_vb_t& variant_block, const VariantHeader& header) :
+	yon1_vc_t(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header) :
 		n_variants_(variant_block.header.n_variants), n_capacity_(variant_block.header.n_variants + 64),
 		//variants_(new yon1_vnt_t[size])
 		variants_(static_cast<yon1_vnt_t*>(::operator new[](this->n_capacity_*sizeof(yon1_vnt_t))))
@@ -162,7 +162,7 @@ public:
 	void reserve(const uint32_t new_size);
 	void resize(const uint32_t new_size);
 
-	bool Build(yon1_vb_t& variant_block, const VariantHeader& header);
+	bool Build(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header);
 
 	/**< @brief Reads a target Tachyon block from disk.
 	 * Primary function for reading partial data from disk. Data
@@ -172,7 +172,7 @@ public:
 	 * @param settings  Settings record describing reading parameters.
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
-	inline bool ReadBlock(std::ifstream& stream, const VariantHeader& header, DataBlockSettings& settings){
+	inline bool ReadBlock(std::ifstream& stream, const yon_vnt_hdr_t& header, DataBlockSettings& settings){
 		return(this->block_.read(stream, settings, header));
 	}
 
@@ -213,28 +213,28 @@ public:
 private:
 	bool PermuteOrder(const yon1_vb_t& variant_block);
 
-	bool AddInfo(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddFilter(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddFormat(yon1_vb_t& variant_block, const VariantHeader& header);
-	bool AddInfoWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool AddFormatWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
+	bool AddInfo(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header);
+	bool AddFilter(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header);
+	bool AddFormat(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header);
+	bool AddInfoWrapper(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
+	bool AddFormatWrapper(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
 
 	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
+	bool InfoSetup(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
 
 	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool InfoSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
+	bool InfoSetup(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches, const uint32_t stride_size);
 
-	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool InfoSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride);
-
-	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
+	bool InfoSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
+	bool InfoSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches, const uint32_t stride);
 
 	template <class return_ptype, class intrinsic_ptype = return_ptype>
-	bool FormatSetup(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride_size);
+	bool FormatSetup(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
 
-	bool AddGenotypes(yon1_vb_t& block, const VariantHeader& header);
+	template <class return_ptype, class intrinsic_ptype = return_ptype>
+	bool FormatSetup(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches, const uint32_t stride_size);
+
+	bool AddGenotypes(yon1_vb_t& block, const yon_vnt_hdr_t& header);
 
 	template <class T>
 	bool AddBaseInteger(dc_type& container, void(yon1_vnt_t::*fnc)(const T v)){
@@ -269,8 +269,8 @@ private:
 		return true;
 	}
 
-	bool FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches);
-	bool FormatSetupString(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches, const uint32_t stride);
+	bool FormatSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
+	bool FormatSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches, const uint32_t stride);
 
 	inline bool AddContigs(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetChromosome)); }
 	inline bool AddController(dc_type& container){ return(this->AddBaseInteger(container, &yon1_vnt_t::SetController)); }
@@ -306,7 +306,7 @@ public:
 
 template <class return_ptype, class intrinsic_ptype>
 bool yon1_vc_t::InfoSetup(dc_type& container,
-                                 const VariantHeader& header,
+                                 const yon_vnt_hdr_t& header,
                                  const std::vector<bool>& matches)
 {
 	if(container.strides_uncompressed.size() == 0)
@@ -341,7 +341,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 
 template <class return_ptype, class intrinsic_ptype>
 bool yon1_vc_t::InfoSetup(dc_type& container,
-                                 const VariantHeader& header,
+                                 const yon_vnt_hdr_t& header,
                                  const std::vector<bool>& matches,
                                  const uint32_t stride_size)
 {
@@ -373,7 +373,7 @@ bool yon1_vc_t::InfoSetup(dc_type& container,
 
 template <class return_ptype, class intrinsic_ptype>
 bool yon1_vc_t::FormatSetup(dc_type& container,
-                                   const VariantHeader& header,
+                                   const yon_vnt_hdr_t& header,
                                    const std::vector<bool>& matches)
 {
 	if(container.strides_uncompressed.size() == 0)
@@ -408,7 +408,7 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 
 template <class return_ptype, class intrinsic_ptype>
 bool yon1_vc_t::FormatSetup(dc_type& container,
-                                   const VariantHeader& header,
+                                   const yon_vnt_hdr_t& header,
                                    const std::vector<bool>& matches,
                                    const uint32_t stride_size)
 {

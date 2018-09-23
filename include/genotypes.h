@@ -30,7 +30,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include "buffer.h"
 #include "support_vcf.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 
 namespace tachyon {
 
@@ -566,7 +566,7 @@ public:
 	yon_occ() = default;
 	~yon_occ() = default;
 
-	bool ReadTable(const std::string file_name, const VariantHeader& header, const char delimiter = '\t');
+	bool ReadTable(const std::string file_name, const yon_vnt_hdr_t& header, const char delimiter = '\t');
 	bool BuildTable(void);
 	bool BuildTable(const yon_gt_ppa* ppa_p);
 

@@ -35,7 +35,7 @@ void yon1_vc_t::reserve(const uint32_t new_size){
 	this->n_capacity_ = new_size;
 }
 
-bool yon1_vc_t::Build(yon1_vb_t& variant_block, const VariantHeader& header){
+bool yon1_vc_t::Build(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 	// Interlace meta streams into the variant records.
 	this->AddController(variant_block.base_containers[YON_BLK_CONTROLLER]);
 	this->AddContigs(variant_block.base_containers[YON_BLK_CONTIG]);
@@ -138,7 +138,7 @@ bool yon1_vc_t::PermuteOrder(const yon1_vb_t& variant_block){
 	return true;
 }
 
-bool yon1_vc_t::AddInfo(yon1_vb_t& variant_block, const VariantHeader& header){
+bool yon1_vc_t::AddInfo(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 	for(int i = 0; i < variant_block.load_settings->info_id_local_loaded.size(); ++i){
 		// Evaluate the set-membership of a given global key in the available Info patterns
 		// described in the data container footer.
@@ -150,7 +150,7 @@ bool yon1_vc_t::AddInfo(yon1_vb_t& variant_block, const VariantHeader& header){
 	return true;
 }
 
-bool yon1_vc_t::AddFilter(yon1_vb_t& variant_block, const VariantHeader& header){
+bool yon1_vc_t::AddFilter(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 	for(int i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].flt_pid >= 0){
 			const yon_blk_bv_pair& filter_patterns = variant_block.footer.filter_patterns[this->variants_[i].flt_pid];
@@ -163,7 +163,7 @@ bool yon1_vc_t::AddFilter(yon1_vb_t& variant_block, const VariantHeader& header)
 	return true;
 }
 
-bool yon1_vc_t::AddFormat(yon1_vb_t& variant_block, const VariantHeader& header){
+bool yon1_vc_t::AddFormat(yon1_vb_t& variant_block, const yon_vnt_hdr_t& header){
 	if(variant_block.load_settings->format_id_local_loaded.size() == 0 && variant_block.load_settings->loaded_genotypes){
 		//std::cerr << "adding genotypes when no other fmt is loaded" << std::endl;
 		// Add genotypes.
@@ -225,7 +225,7 @@ bool yon1_vc_t::AddFormat(yon1_vb_t& variant_block, const VariantHeader& header)
 }
 
 bool yon1_vc_t::AddInfoWrapper(dc_type& container,
-                                      const VariantHeader& header,
+                                      const yon_vnt_hdr_t& header,
                                       const std::vector<bool>& matches)
 {
 	if((container.data_uncompressed.size() == 0 &&
@@ -313,7 +313,7 @@ bool yon1_vc_t::AddInfoWrapper(dc_type& container,
 }
 
 bool yon1_vc_t::InfoSetupString(dc_type& container,
-                                       const VariantHeader& header,
+                                       const yon_vnt_hdr_t& header,
                                        const std::vector<bool>& matches)
 {
 	if(container.strides_uncompressed.size() == 0)
@@ -347,7 +347,7 @@ bool yon1_vc_t::InfoSetupString(dc_type& container,
 }
 
 bool yon1_vc_t::InfoSetupString(dc_type& container,
-                                       const VariantHeader& header,
+                                       const yon_vnt_hdr_t& header,
                                        const std::vector<bool>& matches,
                                        const uint32_t stride)
 {
@@ -376,7 +376,7 @@ bool yon1_vc_t::InfoSetupString(dc_type& container,
 	return true;
 }
 
-bool yon1_vc_t::AddFormatWrapper(dc_type& container, const VariantHeader& header, const std::vector<bool>& matches){
+bool yon1_vc_t::AddFormatWrapper(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches){
 	if(container.data_uncompressed.size() == 0){
 		return false;
 	}
@@ -446,7 +446,7 @@ bool yon1_vc_t::AddFormatWrapper(dc_type& container, const VariantHeader& header
 	return true;
 }
 
-bool yon1_vc_t::AddGenotypes(yon1_vb_t& block, const VariantHeader& header){
+bool yon1_vc_t::AddGenotypes(yon1_vb_t& block, const yon_vnt_hdr_t& header){
 	const bool uniform_stride = block.base_containers[YON_BLK_GT_SUPPORT].header.data_header.IsUniform();
 	PrimitiveContainer<uint32_t> lengths(block.base_containers[YON_BLK_GT_SUPPORT]); // n_runs / objects size
 
@@ -606,7 +606,7 @@ bool yon1_vc_t::AddGenotypes(yon1_vb_t& block, const VariantHeader& header){
 }
 
 bool yon1_vc_t::FormatSetupString(dc_type& container,
-                                         const VariantHeader& header,
+                                         const yon_vnt_hdr_t& header,
                                          const std::vector<bool>& matches)
 {
 	if(container.strides_uncompressed.size() == 0)
@@ -642,7 +642,7 @@ bool yon1_vc_t::FormatSetupString(dc_type& container,
 }
 
 bool yon1_vc_t::FormatSetupString(dc_type& container,
-                                         const VariantHeader& header,
+                                         const yon_vnt_hdr_t& header,
                                          const std::vector<bool>& matches,
                                          const uint32_t stride)
 {

@@ -1003,7 +1003,7 @@ bool yon1_vb_t::read(std::ifstream& stream){
 }
 
 
-bool yon1_vb_t::ParseSettings(DataBlockSettings& settings, const VariantHeader& header){
+bool yon1_vb_t::ParseSettings(DataBlockSettings& settings, const yon_vnt_hdr_t& header){
 	// Clear previous information (if any).
 	this->load_settings->clear();
 
@@ -1155,8 +1155,8 @@ bool yon1_vb_t::ParseLoadedPatterns(DataBlockSettings& settings){
 }
 
 bool yon1_vb_t::read(std::ifstream& stream,
-                        block_settings_type& settings,
-                        const VariantHeader& header)
+                     block_settings_type& settings,
+                     const yon_vnt_hdr_t& header)
 {
 	if(this->load_settings == nullptr)
 		this->load_settings = new yon_blk_load_settings;

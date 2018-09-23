@@ -7,9 +7,7 @@
 
 #include "encryption.h"
 #include "primitive_container.h"
-
-#include "core/footer/footer.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 
 #include "core/variant_reader_filters.h"
 #include "core/data_block_settings.h"
@@ -46,8 +44,8 @@ class VariantReader {
 public:
 	typedef VariantReader             self_type;
 	typedef yon_buffer_t              buffer_type;
-	typedef VariantHeader             header_type;
-	typedef core::Footer              footer_type;
+	typedef yon_vnt_hdr_t             header_type;
+	typedef yon_ftr_t                 footer_type;
 
 	typedef DataBlockSettings         block_settings_type;
 	typedef VariantReaderSettings     settings_type;
@@ -150,11 +148,15 @@ public:
 	 * Get the next YON block in-order. The NextBlockRaw() simply loads
 	 * the appropriate data into memory without decrypting and uncompressing.
 	 * The NextBlock() function performs these additional steps.
-	 * @return Returns TRUE if successful or FALSE otherwise
+	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
 	bool NextBlock(void);
 	bool NextBlockRaw(void);
 
+	/**<
+	 * Predicate for checking if it is possible to retrieve another block.
+	 * @return Returns TRUE if successful or FALSE otherwise.
+	 */
 	bool CheckNextValid(void);
 
 	block_entry_type ReturnBlock(void);
@@ -163,7 +165,7 @@ public:
 	 * Get the target YON block that matches the provided index
 	 * entry. Internally this function seeks to the offset
 	 * described in the index entry and then invokes NextBlock().
-	 * @return Returns TRUE if successful or FALSE otherwise
+	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
 	bool GetBlock(const index_entry_type& index_entry);
 
@@ -173,8 +175,8 @@ public:
 	 * This allows the user to seek to a specific block and
 	 * change the block_settings (i.e. what fields to load) and
 	 * then invoke NextBlock() for example.
-	 * @param blockID
-	 * @return
+	 * @param block_id Target yon block id.
+	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool SeekBlock(const uint32_t& block_id);
 

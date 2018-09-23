@@ -59,7 +59,7 @@ public:
 	}
 
 public:
-	VariantHeader* global_header;
+	yon_vnt_hdr_t* global_header;
 	yon1_vb_t vc;
 	yon_gt_rcd* gt_exp;
 	DataBlockSettings settings;
