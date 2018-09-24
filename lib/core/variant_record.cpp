@@ -85,7 +85,7 @@ yon1_vnt_t::yon1_vnt_t(const yon1_vnt_t& other) :
 yon1_vnt_t& yon1_vnt_t::operator=(const yon1_vnt_t& other){
 	// Delete existing data without consideration.
 	delete [] alleles;
-	delete gt, gt_sum;
+	delete gt; delete gt_sum;
 	delete [] gt_sum_occ;
 	for(int i = 0; i < n_info; ++i) delete info[i];
 	for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
@@ -150,7 +150,7 @@ yon1_vnt_t::yon1_vnt_t(yon1_vnt_t&& other) noexcept :
 
 yon1_vnt_t::~yon1_vnt_t(){
 	delete [] alleles;
-	delete gt, gt_sum;
+	delete gt; delete gt_sum;
 	delete [] gt_sum_occ;
 	for(int i = 0; i < n_info; ++i) delete info[i];
 	for(int i = 0; i < n_fmt;  ++i) delete fmt[i];
@@ -607,6 +607,9 @@ bool yon1_vnt_t::AddGenotypeStatistics(yon_vnt_hdr_t& header, const bool replace
 }
 
 bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std::string>& names){
+	if(names.size() == 0)
+		return true;
+
 	if(n_info + names.size()*10 + 3 > m_info){
 		m_info += names.size()*10 + 3;
 		PrimitiveContainerInterface** old = info;
@@ -615,7 +618,10 @@ bool yon1_vnt_t::AddGenotypeStatisticsOcc(yon_vnt_hdr_t& header, std::vector<std
 		delete [] old;
 	}
 
-	EvaluatePopGenOcc(header);
+	if(EvaluatePopGenOcc(header) == false){
+		//std::cerr << utility::timestamp("ERROR") << "Failed to evaluate popgen for occ..." << std::endl;
+		return false;
+	}
 
 	for(int i = 0; i < names.size(); ++i){
 		this->AddInfo(names[i]+"_NM",    header, gt_sum_occ[i].d->nm);
@@ -659,11 +665,8 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	if(gt->n_allele != 2 || gt->m != 2) return false;
 
 	// Number of genotypes across populations.
-	const uint32_t n_gt_all =
-			this->gt_sum->gt[2][2].n_cnt +
-			this->gt_sum->gt[2][3].n_cnt +
-			this->gt_sum->gt[3][2].n_cnt +
-			this->gt_sum->gt[3][3].n_cnt;
+	uint32_t n_gt_all = 0;
+	uint32_t n_gt_ref = 0, n_gt_alt, n_gt_het = 0;
 
 	float* obs = new float[this->gt->n_o];
 	float* exp = new float[this->gt->n_o];
@@ -673,9 +676,19 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 		const uint32_t het  = this->gt_sum_occ[i].gt[2][3].n_cnt + this->gt_sum_occ[i].gt[3][2].n_cnt;
 		const uint32_t n_gt = het + this->gt_sum_occ[i].gt[2][2].n_cnt + this->gt_sum_occ[i].gt[3][3].n_cnt;
 
-		const float p   = (2*(float)this->gt_sum_occ[i].gt[2][2].n_cnt + het) / (2*n_gt);
-		const float q   = (2*(float)this->gt_sum_occ[i].gt[3][3].n_cnt + het) / (2*n_gt);;
+		if(n_gt == 0){
+			obs[i] = 0; exp[i] = 0; n_s[i] = 0;
+			continue;
+		}
+		n_gt_all += n_gt;
+		n_gt_ref += this->gt_sum_occ[i].gt[2][2].n_cnt;
+		n_gt_alt += this->gt_sum_occ[i].gt[3][3].n_cnt;
+		n_gt_het += het;
+
+		const float p  = (2*(float)this->gt_sum_occ[i].gt[2][2].n_cnt + het) / (2*n_gt);
+		const float q  = (2*(float)this->gt_sum_occ[i].gt[3][3].n_cnt + het) / (2*n_gt);
 		const float pq2 = 2*p*q;
+
 
 		// F = (Hexp - Hobs) / Hexp
 		const float Hobs = (float)het/n_gt; // observed heterozygosities in populations
@@ -697,6 +710,9 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 		n_s[i] = n_gt;
 	}
 
+	if(n_gt_all == 0)
+		return false;
+
 	float exp_sum = 0, obs_sum = 0;
 	for(int i = 0; i < this->gt->n_o; ++i){
 		exp_sum += exp[i] * n_s[i];
@@ -707,15 +723,13 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	const float h_s = exp_sum / n_gt_all;
 	// p-bar (frequency of allele A) over all populations
 	// q-bar
-	const float p_bar = (2*(float)this->gt_sum->gt[2][2].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt) / (2*n_gt_all);
-	const float q_bar = (2*(float)this->gt_sum->gt[3][3].n_cnt + this->gt_sum->gt[2][3].n_cnt + this->gt_sum->gt[3][2].n_cnt) / (2*n_gt_all);
-	const float h_t   = 2*p_bar*q_bar;
+	const float p_bar = (2*(float)n_gt_ref + n_gt_het) / (2*n_gt_all);
+	const float q_bar = (2*(float)n_gt_alt + n_gt_het) / (2*n_gt_all);
+	const float h_t   =  2*p_bar*q_bar;
 
-	/*
-	std::cerr << "pbar=" << p_bar << " qbar=" << q_bar << " with " << n_gt_all << std::endl;
-	std::cerr << "sums: " << exp_sum << ", " << obs_sum << std::endl;
-	std::cerr << "hi=" << h_i << ", hs=" << h_s << ", ht=" << h_t << std::endl;
-	*/
+	//std::cerr << "pbar=" << p_bar << " qbar=" << q_bar << " with " << n_gt_all << std::endl;
+	//std::cerr << "sums: " << exp_sum << ", " << obs_sum << std::endl;
+	//std::cerr << "hi=" << h_i << ", hs=" << h_s << ", ht=" << h_t << std::endl;
 
 	// Fstatistics
 	// FIS [= (HS - HI)/HS]
@@ -724,15 +738,15 @@ bool yon1_vnt_t::EvaluatePopGenOcc(yon_vnt_hdr_t& header){
 	//std::cerr << "FST=" << (h_t - h_s) / h_t << std::endl;
 	// FIT [= (HT - HI)/HT]
 	//std::cerr << "FIT=" << (h_t - h_i) / h_t << std::endl;
-	float fis = (h_s - h_i) / h_s;
-	float fst = (h_t - h_s) / h_t;
-	float fit = (h_t - h_i) / h_t;
+	float fis = 0, fst = 0, fit = 0;
+
+	if(h_s != 0) fis = (h_s - h_i) / h_s;
+	if(h_t != 0) fst = (h_t - h_s) / h_t;
+	if(h_t != 0) fit = (h_t - h_i) / h_t;
 
 	this->AddInfo("FIS", header, fis);
 	this->AddInfo("FST", header, fst);
 	this->AddInfo("FIT", header, fit);
-
-
 
 	delete [] exp; delete [] obs; delete [] n_s;
 

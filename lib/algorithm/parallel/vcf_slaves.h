@@ -266,53 +266,6 @@ struct yon_writer_sync {
 	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
 	~yon_writer_sync(){}
 
-	bool WriteFileHeader(yon_vnt_hdr_t& header){
-		if(writer == nullptr)
-			return false;
-
-		// Write basic header prefix.
-		writer->stream->write(&TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH);
-
-		// Update the extra provenance fields in the new header.
-		//this->UpdateHeaderImport(this->yon_header_);
-
-		// Pack header into a byte-stream, compress it, and write
-		// it out.
-		yon_buffer_t temp(500000);
-		yon_buffer_t temp_cmp(temp);
-		temp << header;
-		algorithm::CompressionManager manager;
-		manager.zstd_codec.Compress(temp, temp_cmp, 20);
-		uint32_t l_data   = temp.size();
-		uint32_t l_c_data = temp_cmp.size();
-		utility::SerializePrimitive(l_data,   *writer->stream);
-		utility::SerializePrimitive(l_c_data, *writer->stream);
-		writer->stream->write(temp_cmp.data(), l_c_data);
-		return(writer->stream->good());
-	}
-
-	yon_vnt_hdr_t& UpdateHeaderImport(yon_vnt_hdr_t& header, VariantImporterSettings& settings){
-		VcfExtra e;
-		e.key = "tachyon_importVersion";
-		e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
-		e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","
-				+   SSLeay_version(SSLEAY_VERSION) + ","
-				+  "ZSTD-" + ZSTD_versionString()
-				+  "; timestamp=" + tachyon::utility::datetime();
-		header.literals_ += "##" + e.key + "=" + e.value + '\n';
-		header.extra_fields_.push_back(e);
-		e.key = "tachyon_importCommand";
-		e.value = tachyon::LITERAL_COMMAND_LINE;
-		header.literals_ += "##" + e.key + "=" + e.value + '\n';
-		header.extra_fields_.push_back(e);
-		e.key = "tachyon_importSettings";
-		e.value = settings.GetInterpretedString();
-		header.literals_ += "##" + e.key + "=" + e.value + '\n';
-		header.extra_fields_.push_back(e);
-
-		return(header);
-	}
-
 	/**<
 	 * Push a Tachyon archive to the writer queue to be written. Only if the
 	 * next block number matches the provided block number will the block be
@@ -365,7 +318,7 @@ struct yon_writer_sync {
 		}
 
 		// Write data container.
-		this->Write(container, index_entry);
+		this->writer->Write(container, index_entry);
 		// Update compression/storage statistics.
 		//container.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
 		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;
@@ -386,19 +339,11 @@ struct yon_writer_sync {
 	 * @return            Returns TRUE upon sucess or FALSE otherwise.
 	 */
 	bool Write(yon1_vb_t& block,
-	           const containers::VcfContainer& container,
-	           yon1_idx_rec& index_entry)
-	{
-		this->WriteBlock(block, index_entry); // write block
-		this->UpdateIndex(container, index_entry); // Update index.
-		return(this->writer->stream->good());
-	}
-
-	bool Write(yon1_vb_t& container,
+			   const containers::VcfContainer& container,
 			   yon1_idx_rec& index_entry)
 	{
-		this->WriteBlock(container, index_entry); // write block
-		this->UpdateIndex(index_entry); // Update index.
+		this->writer->WriteBlock(block, index_entry); // write block
+		this->UpdateIndex(container, index_entry); // Update index.
 		return(this->writer->stream->good());
 	}
 
@@ -410,7 +355,7 @@ struct yon_writer_sync {
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool UpdateIndex(const containers::VcfContainer& container, yon1_idx_rec& index_entry){
-		assert(this->writer != nullptr);
+		assert(this->writer->stream != nullptr);
 		index_entry.block_id         = this->writer->n_blocks_written;
 		index_entry.byte_offset_end  = this->writer->stream->tellp();
 		index_entry.contig_id        = container.front()->rid;
@@ -428,70 +373,6 @@ struct yon_writer_sync {
 		return true;
 	}
 
-	bool UpdateIndex(yon1_idx_rec& index_entry){
-		assert(this->writer != nullptr);
-		index_entry.block_id        = this->writer->n_blocks_written;
-		index_entry.byte_offset_end = this->writer->stream->tellp();
-		this->writer->index        += index_entry;
-
-		index_entry.Print(std::cerr);
-		std::cerr << std::endl;
-
-		++this->writer->n_blocks_written;
-		this->writer->n_variants_written += index_entry.n_variants;
-		index_entry.reset();
-
-		return true;
-	}
-
-	/**<
-	 * Wrapper function for writing a valid VariantBlock to a
-	 * Tachyon archive. Writes the block itself then the block footer
-	 * and end-of-block marker.
-	 * @param block       Source VariantBlock for writing.
-	 * @param index_entry Source VariantIndexEntry to update the variant index with.
-	 * @return            Returns TRUE upon success or FALSE otherwise.
-	 */
-	bool WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_entry){
-		index_entry.byte_offset = this->writer->stream->tellp();
-		block.write(*this->writer->stream);
-		this->writer->WriteBlockFooter(block.footer_support);
-		this->writer->WriteEndOfBlock(); // End-of-block marker.
-
-		return(this->writer->stream->good());
-	}
-
-	/**<
-	 * Finalize the writing of a Tachyon archive. Writes the
-	 * footer, the index, and the checksums.
-	 * @param checksums Source checksum container for archive integrity checks.
-	 * @return          Returns TRUE upon success or FALSE otherwise.
-	 */
-	bool WriteFinal(algorithm::VariantDigestManager& checksums){
-		// Done importing
-		this->writer->stream->flush();
-
-		// Write global footer.
-		yon_ftr_t footer;
-		footer.offset_end_of_data = this->writer->stream->tellp();
-		footer.n_blocks           = this->writer->n_blocks_written;
-		footer.n_variants         = this->writer->n_variants_written;
-		assert(footer.n_blocks == this->writer->index.GetLinearSize());
-
-		uint64_t last_pos = this->writer->stream->tellp();
-		this->writer->WriteIndex(); // Write index.
-		std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-		last_pos = this->writer->stream->tellp();
-		checksums.finalize();       // Finalize SHA-512 digests.
-		*this->writer->stream << checksums;
-		std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-		last_pos = this->writer->stream->tellp();
-		*this->writer->stream << footer; // Write global footer and EOF marker.
-		std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::ToPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-
-		this->writer->stream->flush();
-		return(this->writer->stream->good());
-	}
 
 public:
 	uint64_t n_written_rcds;

@@ -135,14 +135,9 @@ VariantReaderFilters::~VariantReaderFilters(){
 const size_t& VariantReaderFilters::size(void) const{ return(this->mImpl->n_filters_); }
 const size_t& VariantReaderFilters::capacity(void) const{ return(this->mImpl->n_capacity_); }
 
-/**<
- * Checks if any filter function require genotype data to be loaded and prepared
- * @return Returns TRUE if genotype data is required or FALSE otherwise
- */
 bool VariantReaderFilters::HasRequireGenotypes(void) const{ return(this->mImpl->require_genotypes); }
 
 void VariantReaderFilters::SetRequireGenotypes(bool set){ this->mImpl->require_genotypes = set; }
-
 
 void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function){
 	switch(filter_function){
@@ -150,18 +145,23 @@ void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function){
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterAlternativeAlleles);
 		break;
 	case(YON_FILTER_MIXED_PHASING):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterMixedPhasing);
 		break;
 	case(YON_FILTER_MIXED_PLOIDY):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterMixedPloidy);
 		break;
 	case(YON_FILTER_MISSING_GT):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterHasMissingGenotypes);
 		break;
 	case(YON_FILTER_ALLELE_FREQUENCY):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterAlleleFrequency);
 		break;
 	case(YON_FILTER_ALLELE_COUNT):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterAlleleCount);
 		break;
 	case(YON_FILTER_UNIFORM_PHASE):
@@ -180,6 +180,7 @@ void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function){
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterName);
 		break;
 	case(YON_FILTER_UNSEEN_ALT):
+		this->SetRequireGenotypes(true);
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterUnseenAlternativeAlleles);
 		break;
 	case(YON_FILTER_QUALITY):

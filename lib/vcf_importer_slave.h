@@ -12,7 +12,7 @@
 #include "index_record.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
-#include "io/variant_writer.h"
+#include "variant_writer.h"
 #include "variant_importer.h"
 #include "variant_record.h"
 
@@ -25,19 +25,19 @@ namespace tachyon{
  */
 class VcfImporterSlave {
 public:
-	typedef VcfImporterSlave                self_type;
-	typedef VariantWriterInterface          writer_type;
-	typedef yon_buffer_t                    buffer_type;
-	typedef yon1_idx_rec                    index_entry_type;
-	typedef io::VcfHeader                   vcf_header_type;
-	typedef containers::VcfContainer        vcf_container_type;
-	typedef algorithm::CompressionManager   compression_manager_type;
-	typedef algorithm::GenotypeSorter       radix_sorter_type;
-	typedef algorithm::GenotypeEncoder      gt_encoder_type;
-	typedef yon1_dc_t       stream_container;
-	typedef yon1_vb_t        block_type;
-	typedef yon_vb_istats import_stats_type;
-	typedef VariantImporterSettings         settings_type;
+	typedef VcfImporterSlave              self_type;
+	typedef VariantWriterInterface        writer_type;
+	typedef yon_buffer_t                  buffer_type;
+	typedef yon1_idx_rec                  index_entry_type;
+	typedef io::VcfHeader                 vcf_header_type;
+	typedef containers::VcfContainer      vcf_container_type;
+	typedef algorithm::CompressionManager compression_manager_type;
+	typedef algorithm::GenotypeSorter     radix_sorter_type;
+	typedef algorithm::GenotypeEncoder    gt_encoder_type;
+	typedef yon1_dc_t                     stream_container;
+	typedef yon1_vb_t                     block_type;
+	typedef yon_vb_istats                 import_stats_type;
+	typedef VariantImporterSettings       settings_type;
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
@@ -107,7 +107,7 @@ public:
 	 * @param meta_entries Destination MetaEntry records.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddGenotypes(const vcf_container_type& container, yon1_vnt_t* rcds);
+	//bool AddGenotypes(const vcf_container_type& container, yon1_vnt_t* rcds);
 
 	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){
 		this->vcf_header_ = header;

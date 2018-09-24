@@ -122,6 +122,7 @@ std::vector<yon1_idx_rec> yon_index_t::FindOverlap(const uint32_t& contig_id,
 void yon_index_t::Setup(const std::vector<VcfContig>& contigs){
 	this->mImpl->index_.Add(contigs);
 	this->mImpl->index_meta_.reserve(contigs.size());
+
 	for(int i = 0; i < contigs.size(); ++i)
 		this->mImpl->index_meta_[i].contig_id = contigs[i].idx;
 }
@@ -129,6 +130,7 @@ void yon_index_t::Setup(const std::vector<VcfContig>& contigs){
 void yon_index_t::Setup(const std::vector<YonContig>& contigs){
 	this->mImpl->index_.Add(contigs);
 	this->mImpl->index_meta_.reserve(contigs.size());
+
 	for(int i = 0; i < contigs.size(); ++i)
 		this->mImpl->index_meta_[i].contig_id = contigs[i].idx;
 }
@@ -218,17 +220,18 @@ bool yon_index_t::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
 			case(4): end_pos = reinterpret_cast<PrimitiveContainer<uint32_t>*>(rcd.info[info_end_key])->at(0); break;
 			case(8): end_pos = reinterpret_cast<PrimitiveContainer<uint64_t>*>(rcd.info[info_end_key])->at(0); break;
 			default:
-				std::cerr << "unknown end type: " << (int)word_width << std::endl;
+				std::cerr << utility::timestamp("ERROR", "INDEX") << "Unknown Info:End type: " << (int)word_width << std::endl;
 				exit(1);
 				break;
 			}
 
-			std::cerr << "have end. " << "adding: (" << rcd.rid << "," << rcd.pos << "," << end_pos << ")"  << std::endl;
+			//std::cerr << "have end. " << "adding: (" << rcd.rid << "," << rcd.pos << "," << end_pos << ")"  << std::endl;
 
 			index_bin = this->AddSorted(rcd.rid, rcd.pos, end_pos, block_id);
 
 		} else {
-			std::cerr << "size of Info:End is not 1..." << std::endl;
+			std::cerr << utility::timestamp("ERROR", "INDEX") << "Size of Info:End field is not 1..." << std::endl;
+			index_bin = -1;
 		}
 	}
 

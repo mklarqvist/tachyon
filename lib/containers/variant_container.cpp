@@ -826,7 +826,7 @@ bool yon1_vc_t::AddNames(dc_type& container){
 	return true;
 }
 
-bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples){
+bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples, const uint32_t compression_level){
 	// Destroy existing data.
 	this->block_.clear();
 
@@ -877,7 +877,8 @@ bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples){
 
 	// Compress data.
 	algorithm::CompressionManager codec_manager;
-	codec_manager.Compress(this->block_, 20 ,n_samples);
+	// Todo: modify compression level
+	codec_manager.Compress(this->block_, compression_level ,n_samples);
 
 	// Finalize block.
 	this->block_.Finalize();

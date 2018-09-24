@@ -27,7 +27,6 @@ DEALINGS IN THE SOFTWARE.
 #include "stats.h"
 #include "program_utils.h"
 #include "view.h"
-#include "debug.h"
 
 int main(int argc, char** argv){
 	if(tachyon::utility::IsBigEndian()){
@@ -56,9 +55,6 @@ int main(int argc, char** argv){
 		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
-		return(0);
-	} else if(strncmp(subroutine.data(), "debug", 5) == 0 && subroutine.size() == 5){
-		return(debug(argc, argv));
 		return(0);
 	} else {
 		programHelp();

@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/mklarqvist/tachyon.svg?branch=master)](https://travis-ci.org/mklarqvist/tachyon)
-[![Release](https://img.shields.io/badge/Release-beta_0.5.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
+[![Release](https://img.shields.io/badge/Release-beta_0.6.0-blue.svg)](https://github.com/mklarqvist/Tachyon/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <div align="center">
@@ -77,7 +77,7 @@ Interested in contributing? Fork and submit a pull request and it will be review
 We are actively developing Tachyon and are always interested in improving its quality. If you run into an issue, please report the problem on our Issue tracker. Be sure to add enough detail to your report that we can reproduce the problem and address it. We have not reached version 1.0 and as such the specification and/or the API interfaces may change.
 
 ### Version
-This is Tachyon 0.5.0. Tachyon follows [semantic versioning](https://semver.org/).
+This is Tachyon 0.6.0. Tachyon follows [semantic versioning](https://semver.org/).
 
 ### History
 Tachyon grew out of the [Tomahawk][tomahawk] project for calculating genome-wide linkage-disequilibrium.

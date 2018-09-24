@@ -2,6 +2,7 @@
 #include <openssl/evp.h>
 
 #include "variant_reader.h"
+#include "variant_writer.h"
 
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
@@ -419,6 +420,115 @@ uint64_t VariantReader::OutputVcfSearch(void){
 	return 0;
 }
 
+uint64_t VariantReader::OutputYonLinear(void){
+	VariantWriterInterface* writer = nullptr;
+	if(settings.output == "-" || settings.output.size() == 0)
+		writer = new VariantWriterStream();
+	else
+		writer = new VariantWriterFile();
+
+	if(writer->open(settings.output) == false){
+		std::cerr << "failed to open: " << settings.output << std::endl;
+		return false;
+	}
+
+	writer->n_s = this->GetHeader().GetNumberSamples();
+	writer->index.Setup(this->GetHeader().contigs_);
+	writer->settings.checkpoint_n_snps = 500;
+	writer->settings.compression_level = 10;
+	writer->WriteFileHeader(this->global_header);
+
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
+
+	while(this->NextBlock()){
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
+
+		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+			this->occ_table.BuildTable(this->variant_container.gt_ppa);
+
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if(this->variant_filters.Filter(vc[i], i) == false)
+				continue;
+
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
+				vc[i].EvaluateSummary(true);
+				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
+			}
+			if(vc[i].gt != nullptr) vc[i].gt->Expand();
+			*writer += vc[i];
+		}
+	}
+
+	writer->close();
+	delete writer;
+
+	return 0;
+}
+
+uint64_t VariantReader::OutputYonSearch(void){
+	VariantWriterInterface* writer = nullptr;
+	if(settings.output == "-" || settings.output.size() == 0)
+		writer = new VariantWriterStream();
+	else
+		writer = new VariantWriterFile();
+
+	if(writer->open(settings.output) == false){
+		std::cerr << "failed to open: " << settings.output << std::endl;
+		return false;
+	}
+
+	writer->n_s = this->GetHeader().GetNumberSamples();
+	writer->index.Setup(this->GetHeader().contigs_);
+	writer->settings.checkpoint_n_snps = 500;
+	writer->settings.compression_level = 10;
+	writer->WriteFileHeader(this->global_header);
+
+	if(this->gt_exp == nullptr)
+		this->gt_exp = new yon_gt_rcd[this->global_header.GetNumberSamples()];
+
+	// Filter functionality
+	filter_intervals_function filter_intervals = &self_type::FilterIntervals;
+
+	for(uint32_t i = 0; i < this->mImpl->interval_container.GetBlockList().size(); ++i){
+		this->GetBlock(this->mImpl->interval_container.GetBlockList()[i]);
+
+		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
+
+		if(this->GetBlockSettings().annotate_extra && this->settings.group_file.size())
+			this->occ_table.BuildTable(this->variant_container.gt_ppa);
+
+		for(uint32_t i = 0; i < vc.size(); ++i){
+			if((this->*filter_intervals)(vc[i]) == false)
+				continue;
+
+			if(this->variant_filters.Filter(vc[i], i) == false)
+				continue;
+
+			if(this->GetBlockSettings().annotate_extra){
+				vc[i].EvaluateOcc(this->occ_table);
+				vc[i].EvaluateOccSummary(true);
+
+				vc[i].EvaluateSummary(true);
+				vc[i].AddGenotypeStatistics(this->global_header);
+				vc[i].AddGenotypeStatisticsOcc(this->global_header, this->occ_table.row_names);
+			}
+
+			if(vc[i].gt != nullptr) vc[i].gt->Expand();
+			*writer += vc[i];
+		}
+	}
+
+	writer->close();
+	delete writer;
+
+	return 0;
+}
+
 uint64_t VariantReader::OutputRecords(void){
 	this->UpdateHeaderView();
 	this->mImpl->interval_container.Build(this->global_header);
@@ -428,25 +538,32 @@ uint64_t VariantReader::OutputRecords(void){
 		this->LoadKeychainFile();
 
 	if(this->settings.annotate_genotypes)
-		this->GetGlobalHeader().AddGenotypeAnnotationFields();
+		this->GetHeader().AddGenotypeAnnotationFields();
 
-	// temp
+	// Occ
 	if(this->settings.group_file.size()){
-		if(this->occ_table.ReadTable(this->settings.group_file, this->GetGlobalHeader(), '\t') == false){
+		if(this->occ_table.ReadTable(this->settings.group_file, this->GetHeader(), '\t') == false){
 			return(0);
 		}
 
 		this->global_header.AddGenotypeAnnotationFields(this->occ_table.row_names);
 	}
 
-
-	if(this->GetBlockSettings().show_vcf_header)
-		this->global_header.PrintVcfHeader(std::cout);
-
+	// Any htslib
 	if(this->settings.use_htslib){
 		if(this->mImpl->interval_container.size()) return(this->OutputHtslibVcfSearch());
 		else return(this->OutputHtslibVcfLinear());
 	}
+
+	// Tachyon
+	if(this->settings.output_type == 'y'){
+		if(this->mImpl->interval_container.size()) return(this->OutputYonSearch());
+		else return(this->OutputYonLinear());
+	}
+
+	// Vcf
+	if(this->GetBlockSettings().show_vcf_header)
+		this->global_header.PrintVcfHeader(std::cout);
 
 	if(this->mImpl->interval_container.size()) return(this->OutputVcfSearch());
 	else return(this->OutputVcfLinear());
@@ -475,7 +592,7 @@ uint64_t VariantReader::OutputHtslibVcfLinear(void){
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
-	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetGlobalHeader(), !this->settings.drop_format);
+	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetHeader(), !this->settings.drop_format);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
 		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
@@ -557,7 +674,7 @@ uint64_t VariantReader::OutputHtslibVcfSearch(void){
 
 	// Convert the internal yon header to a bcf_hdr_t
 	// structure.
-	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetGlobalHeader(), !this->settings.drop_format);
+	bcf_hdr_t* hdr = this->mImpl->ConvertVcfHeader(this->GetHeader(), !this->settings.drop_format);
 	if ( bcf_hdr_write(fp, hdr) != 0 ) {
 		std::cerr << "Failed to write header to " << this->settings.output << std::endl;
 		exit(1);
@@ -629,16 +746,16 @@ void VariantReader::UpdateHeaderView(void){
 			+   SSLeay_version(SSLEAY_VERSION) + ","
 			+  "ZSTD-" + ZSTD_versionString()
 			+  "; timestamp=" + tachyon::utility::datetime();
-	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
-	this->GetGlobalHeader().extra_fields_.push_back(e);
+	this->GetHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetHeader().extra_fields_.push_back(e);
 	e.key = "tachyon_viewCommand";
 	e.value = LITERAL_COMMAND_LINE;
-	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
-	this->GetGlobalHeader().extra_fields_.push_back(e);
+	this->GetHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetHeader().extra_fields_.push_back(e);
 	e.key = "tachyon_viewCommandSettings";
 	e.value = this->GetSettings().GetSettingsString();
-	this->GetGlobalHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
-	this->GetGlobalHeader().extra_fields_.push_back(e);
+	this->GetHeader().literals_ += "##" + e.key + "=" + e.value + '\n';
+	this->GetHeader().extra_fields_.push_back(e);
 }
 
 /*
@@ -731,7 +848,7 @@ bool VariantReader::Stats(void){
 	prd.all_finished = true;
 	prd.thread_.join();
 
-	yon_stats_tstv s(this->GetGlobalHeader().GetNumberSamples());
+	yon_stats_tstv s(this->GetHeader().GetNumberSamples());
 	for(uint32_t i = 0; i < n_threads; ++i) s += slave_test[i].s;
 
 	delete [] slave_test;
@@ -745,72 +862,6 @@ bool VariantReader::Stats(void){
 	std::cout.flush();
 
 	return true;
-}
-
-
-bool VariantReader::TempWrite(void){
-	VariantWriterInterface* writer = new VariantWriterStream();
-	yon_writer_sync swriter; swriter.writer = writer;
-	// The index needs to know how many contigs that's described in the
-	// Vcf header and their lengths in base-pairs. This information is
-	// needed to construct the linear and quad-tree index most appropriate
-	// for the data lengths.
-	writer->index.Setup(this->GetGlobalHeader().contigs_);
-	// Write out a fresh Tachyon header with the data from the Vcf header. As
-	// this data will not be modified during the import stage it is safe to
-	// write out now.
-	swriter.WriteFileHeader(this->global_header);
-
-
-	uint32_t block_id = 0;
-	yon1_vc_t vc2;
-
-	yon_buffer_t buf(100000);
-	while(this->NextBlock()){
-		yon1_vc_t vc(this->GetCurrentContainer(), this->global_header);
-
-		for(uint32_t i = 0; i < vc.size(); ++i){
-			if(vc2.size() == 500){
-				if(vc2.PrepareWritableBlock(this->global_header.GetNumberSamples()) == false){
-					std::cerr << "failed to prepare" << std::endl;
-					return false;
-				}
-
-				//index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
-				//index_entry.block_id = block_id;
-				writer->index.IndexContainer(vc2, block_id);
-				index_entry_type index_entry = writer->index.GetCurrent();
-
-				swriter.emplace(block_id, vc2.block_, index_entry);
-				++block_id;
-				vc2.clear();
-			}
-			vc[i].gt->Expand();
-			vc2 += vc[i];
-		}
-	}
-
-	if(vc2.size()){
-		if(vc2.PrepareWritableBlock(this->global_header.GetNumberSamples()) == false){
-			std::cerr << "failed to prepare" << std::endl;
-			return false;
-		}
-
-		//index::VariantIndexEntry index_entry = vc2.GetIndexEntry();
-		//index_entry.block_id = block_id;
-		writer->index.IndexContainer(vc2, block_id);
-		index_entry_type index_entry = writer->index.GetCurrent();
-
-		swriter.emplace(block_id, vc2.block_, index_entry);
-		++block_id;
-		vc2.clear();
-	}
-
-	swriter.WriteFinal(mImpl->checksums);
-
-	delete writer;
-
-	return 0;
 }
 
 bcf_hdr_t* VariantReader::VariantReaderImpl::ConvertVcfHeaderLiterals(const yon_vnt_hdr_t& hdr, const bool add_format){

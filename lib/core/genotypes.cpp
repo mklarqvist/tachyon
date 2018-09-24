@@ -242,10 +242,10 @@ yon_gt::yon_gt(const yon_gt& other) :
 	}
 
 	if(n_o){
-		assert(n_i_occ != nullptr);
+		assert(other.n_i_occ != nullptr);
 		n_i_occ = new uint32_t[n_o];
 		for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
-		assert(d_occ != nullptr);
+		assert(other.d_occ != nullptr);
 		d_occ = new yon_gt_rcd*[n_o];
 		for(int i = 0; i < n_o; ++i){
 			d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
@@ -284,10 +284,10 @@ yon_gt& yon_gt::operator=(const yon_gt& other){
 	}
 
 	if(n_o){
-		assert(n_i_occ != nullptr);
+		assert(other.n_i_occ != nullptr);
 		n_i_occ = new uint32_t[n_o];
 		for(int i = 0; i < n_o; ++i) n_i_occ[i] = other.n_i_occ[i];
-		assert(d_occ != nullptr);
+		assert(other.d_occ != nullptr);
 		d_occ = new yon_gt_rcd*[n_o];
 		for(int i = 0; i < n_o; ++i){
 			d_occ[i] = new yon_gt_rcd[n_i_occ[i]];
@@ -1105,12 +1105,23 @@ bool yon_gt_summary::LazyEvaluate(void){
 	this->d->npm = this->d->ac[0];
 	this->d->nm  = n_total;
 	this->d->an  = n_total + this->d->ac[0];
-	this->d->hwe_p = this->CalculateHardyWeinberg();
+
+	if(n_total)
+		this->d->hwe_p = this->CalculateHardyWeinberg();
+	else
+		this->d->hwe_p = 1;
 
 	// Strand-specific bias and inbreeding coefficient (F-statistic)
 	if(this->n_ploidy == 2){
-		this->d->heterozygosity = ((double)this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) /
-			(this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt + this->gt[3][3].n_cnt);
+		// Total number of genotypes is the sum of the root
+		// nodes excluding special missing and sentinel node
+		// (0 and 1).
+		const uint32_t n_total_gt = (this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt + this->gt[3][3].n_cnt);
+
+		if(n_total_gt)
+			this->d->heterozygosity = ((double)this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / n_total_gt;
+		else
+			this->d->heterozygosity = 0;
 
 		uint8_t n_fs_used = (this->n_alleles - 2 == 2 ? 1 : this->n_alleles - 2);
 		this->d->n_fs = n_fs_used;
@@ -1147,20 +1158,17 @@ bool yon_gt_summary::LazyEvaluate(void){
 			}
 		}
 
-		// Total number of genotypes is the sum of the root
-		// nodes excluding special missing and sentinel node
-		// (0 and 1).
-		uint64_t n_genotypes = this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt + this->gt[3][3].n_cnt;
-
-		// Allele frequency of A
-		const double p = ((double)2*this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / (2*n_genotypes);
-		// Genotype frequency of heterozyotes
-		const double pg = ((double)this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / n_genotypes;
-		// Expected heterozygosity
-		const double exp = 2*p*(1-p);
-		// Population inbreeding coefficient: F
-		const double f_pic = exp > 0 ? (exp-pg)/exp : 0;
-		this->d->f_pic = f_pic;
+		if(n_total_gt){
+			// Allele frequency of A
+			const double p = ((double)2*this->gt[2][2].n_cnt + this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / (2*n_total_gt);
+			// Genotype frequency of heterozyotes
+			const double pg = ((double)this->gt[2][3].n_cnt + this->gt[3][2].n_cnt) / n_total_gt;
+			// Expected heterozygosity
+			const double exp = 2*p*(1-p);
+			// Population inbreeding coefficient: F
+			this->d->f_pic = (exp > 0 ? (exp-pg)/exp : 0);
+		}
+		else this->d->f_pic = 0;
 	}
 }
 

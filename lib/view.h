@@ -152,11 +152,9 @@ int view(int argc, char** argv){
 			break;
 		case 'l':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'L':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'q':
 			filters.Add(tachyon::YON_FILTER_QUALITY, atof(optarg), tachyon::YON_CMP_GREATER);
@@ -181,11 +179,9 @@ int view(int argc, char** argv){
 			break;
 		case 'c':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'C':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'p':
 			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
@@ -201,19 +197,15 @@ int view(int argc, char** argv){
 			break;
 		case 'w':
 			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)true, tachyon::YON_CMP_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'W':
 			filters.Add(tachyon::YON_FILTER_MIXED_PLOIDY, (bool)false, tachyon::YON_CMP_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'u':
 			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_GREATER);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'U':
 			filters.Add(tachyon::YON_FILTER_MISSING_GT, 0, tachyon::YON_CMP_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'z':
 			filters.Add(tachyon::YON_FILTER_KNOWN_NOVEL, (bool)true, tachyon::YON_CMP_EQUAL);
@@ -247,11 +239,9 @@ int view(int argc, char** argv){
 			break;
 		case 'e':
 			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)true, tachyon::YON_CMP_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 		case 'E':
 			filters.Add(tachyon::YON_FILTER_UNSEEN_ALT, (bool)false, tachyon::YON_CMP_EQUAL);
-			filters.SetRequireGenotypes(true);
 			break;
 
 		default:
@@ -272,13 +262,13 @@ int view(int argc, char** argv){
 
 	if(settings.header_only){
 		reader.UpdateHeaderView();
-		reader.GetGlobalHeader().PrintVcfHeader(std::cout);
+		reader.GetHeader().PrintVcfHeader(std::cout);
 		return(0);
 	}
 
 	// User provided '-f' string(s)
 	if(interpret_commands.size()){
-		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetGlobalHeader())){
+		if(!reader.GetBlockSettings().ParseCommandString(interpret_commands, reader.GetHeader())){
 			std::cerr << tachyon::utility::timestamp("ERROR") << "Failed to parse command..." << std::endl;
 			return(1);
 		}
@@ -302,13 +292,12 @@ int view(int argc, char** argv){
 		settings.output_type = 'u';
 		settings.use_htslib = true;
 	} else if(settings.output_type == 'y'){
-		std::cerr << "not supported yet" << std::endl;
-		return(1);
+		settings.output_type = 'y';
+		settings.use_htslib = false;
 	} else {
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Unrecognised output option: " << settings.output_type << "..." << std::endl;
 		return(1);
 	}
-
 
 	// If user is triggering annotation
 	if(settings.annotate_genotypes){

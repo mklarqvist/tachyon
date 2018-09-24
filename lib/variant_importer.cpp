@@ -4,7 +4,7 @@
 
 #include <openssl/evp.h>
 
-#include "io/variant_writer.h"
+#include "variant_writer.h"
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 #include "algorithm/parallel/vcf_slaves.h"
@@ -291,7 +291,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	//this->writer->index.Print(std::cerr);
 
 	// Finalize writing procedure.
-	write.WriteFinal(checksums);
+	writer->close();
 	this->WriteKeychain(writer);
 
 	uint64_t b_uncompressed = 0;

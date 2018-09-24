@@ -90,8 +90,8 @@ public:
 
 class yon1_vc_t {
 public:
-	typedef yon1_dc_t dc_type;
-	typedef yon1_vc_t self_type;
+	typedef yon1_dc_t         dc_type;
+	typedef yon1_vc_t         self_type;
     typedef std::size_t       size_type;
     typedef yon1_vnt_t        value_type;
     typedef value_type&       reference;
@@ -176,7 +176,15 @@ public:
 		return(this->block_.read(stream, settings, header));
 	}
 
-	bool PrepareWritableBlock(const uint32_t n_samples);
+	/**<
+	 * Prepares the data block structure in the variant container for writing.
+	 * Internally permutes genotypes, perform compression, encryption, and prepares
+	 * the internal header and footer structures.
+	 * @param n_samples         Number of samples in the file.
+	 * @param compression_level Dst compression level of data block.
+	 * @return                  Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool PrepareWritableBlock(const uint32_t n_samples, const uint32_t compression_level);
 
 	 // Element access
 	inline reference at(const size_type& position){ return(this->variants_[position]); }
@@ -225,37 +233,7 @@ private:
 	bool AddGenotypes(yon1_vb_t& block, const yon_vnt_hdr_t& header);
 
 	template <class T>
-	bool AddBaseInteger(dc_type& container, void(yon1_vnt_t::*fnc)(const T v)){
-		if(container.data_uncompressed.size() == 0)
-			return false;
-
-		assert(container.header.HasMixedStride() == false);
-
-		yon_cont_ref_iface* it = nullptr;
-		switch(container.header.data_header.controller.type){
-		case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
-		}
-		assert(it != nullptr);
-
-		// If data is uniform.
-		if(container.header.data_header.controller.uniform){
-			it->is_uniform_ = true;
-
-			for(uint32_t i = 0; i < this->n_variants_; ++i){
-				(variants_[i].*fnc)(it->GetInt32(0));
-			}
-		} else {
-			assert(this->n_variants_ == it->n_elements_);
-			for(uint32_t i = 0; i < this->n_variants_; ++i){
-				(variants_[i].*fnc)(it->GetInt32(i));
-			}
-		}
-		delete it;
-		return true;
-	}
+	bool AddBaseInteger(dc_type& container, void(yon1_vnt_t::*fnc)(const T v));
 
 	bool FormatSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches);
 	bool FormatSetupString(dc_type& container, const yon_vnt_hdr_t& header, const std::vector<bool>& matches, const uint32_t stride);
@@ -396,9 +374,9 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 
 template <class return_ptype, class intrinsic_ptype>
 bool yon1_vc_t::FormatSetup(dc_type& container,
-                                   const yon_vnt_hdr_t& header,
-                                   const std::vector<bool>& matches,
-                                   const uint32_t stride_size)
+                            const yon_vnt_hdr_t& header,
+                            const std::vector<bool>& matches,
+                            const uint32_t stride_size)
 {
 	uint32_t current_offset = 0;
 
@@ -423,6 +401,39 @@ bool yon1_vc_t::FormatSetup(dc_type& container,
 		}
 		assert(current_offset == container.data_uncompressed.size());
 	}
+	return true;
+}
+
+template <class T>
+bool yon1_vc_t::AddBaseInteger(dc_type& container, void(yon1_vnt_t::*fnc)(const T v)){
+	if(container.data_uncompressed.size() == 0)
+		return false;
+
+	assert(container.header.HasMixedStride() == false);
+
+	yon_cont_ref_iface* it = nullptr;
+	switch(container.header.data_header.controller.type){
+	case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
+	case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
+	case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
+	case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.data_uncompressed.data(), container.data_uncompressed.size()); break;
+	}
+	assert(it != nullptr);
+
+	// If data is uniform.
+	if(container.header.data_header.controller.uniform){
+		it->is_uniform_ = true;
+
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			(variants_[i].*fnc)(it->GetInt32(0));
+		}
+	} else {
+		assert(this->n_variants_ == it->n_elements_);
+		for(uint32_t i = 0; i < this->n_variants_; ++i){
+			(variants_[i].*fnc)(it->GetInt32(i));
+		}
+	}
+	delete it;
 	return true;
 }
 

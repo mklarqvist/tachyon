@@ -110,10 +110,10 @@ public:
 	inline variant_filter_type& GetFilterSettings(void){ return(this->variant_filters); }
 
 	// Basic accessors
-	inline header_type& GetGlobalHeader(void){ return(this->global_header); }
-	inline const header_type& GetGlobalHeader(void) const{ return(this->global_header); }
-	inline footer_type& GetGlobalFooter(void){ return(this->global_footer); }
-	inline const footer_type& GetGlobalFooter(void) const{ return(this->global_footer); }
+	inline header_type& GetHeader(void){ return(this->global_header); }
+	inline const header_type& GetHeader(void) const{ return(this->global_header); }
+	inline footer_type& GetFooter(void){ return(this->global_footer); }
+	inline const footer_type& GetFooter(void) const{ return(this->global_footer); }
 	inline index_type& GetIndex(void){ return(this->index); }
 	inline const index_type& GetIndex(void) const{ return(this->index); }
 	inline block_entry_type& GetCurrentContainer(void){ return(this->variant_container); }
@@ -214,6 +214,8 @@ public:
 	uint64_t OutputRecords(void);
 	uint64_t OutputVcfLinear(void);
 	uint64_t OutputVcfSearch(void);
+	uint64_t OutputYonLinear(void);
+	uint64_t OutputYonSearch(void);
 	uint64_t OutputHtslibVcfLinear(void);
 	uint64_t OutputHtslibVcfSearch(void);
 
@@ -239,10 +241,6 @@ public:
 	void UpdateHeaderView(void);
 
 	bool Stats(void);
-	//bool Benchmark(const uint32_t threads);
-	//bool BenchmarkWrapper(const uint32_t threads, bool(VariantSlavePerformance::*func)(yon1_vb_t*&));
-
-	bool TempWrite(void);
 
 private:
 	// Pimpl idiom
