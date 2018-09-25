@@ -31,10 +31,6 @@ DEALINGS IN THE SOFTWARE.
 #include "tachyon.h"
 #include "buffer.h"
 
-#ifndef SIZE_MAX
-#define SIZE_MAX static_cast<size_t>(-1)
-#endif
-
 #include "htslib/vcf.h"
 
 #define YON_BYTE_MISSING  INT8_MIN
