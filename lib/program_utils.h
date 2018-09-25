@@ -58,9 +58,9 @@ void programHelp(void){
 	std::cerr << "\nUsage: " << tachyon::TACHYON_PROGRAM_NAME << " [--version] [--help] <commands> <argument>"
     "\n\n"
     "Commands:\n"
-	"import    import VCF/BCF to YON\n"
-    "view      YON->VCF/BCF conversion, YON subset and filter\n"
-	"stats     calculate comprehensive per-sample statistics\n" << std::endl;
+	"import  import VCF/VCF.gz/BCF to YON\n"
+    "view    convert YON->VCF/BCF/YON; provides subsetting and slicing functionality\n"
+	"stats   calculate comprehensive per-sample statistics\n" << std::endl;
 }
 
 #endif /* TACHYON_UTILITY_H_ */

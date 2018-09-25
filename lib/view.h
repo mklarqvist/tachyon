@@ -32,7 +32,7 @@ DEALINGS IN THE SOFTWARE.
 void view_usage(void){
 	programMessage(true);
 	std::cerr <<
-	"About:  Convert YON->VCF/BCF; provides subsetting and slicing functionality\n"
+	"About:  Convert YON->VCF/BCF/YON; provides subsetting and slicing functionality\n"
 	"Usage:  " << tachyon::TACHYON_PROGRAM_NAME << " view [options] -i <in.yon>\n\n"
 	"Options:\n"
 	"  -i FILE   input YON file (required)\n"
