@@ -1,20 +1,20 @@
 #ifndef VCF_IMPORTER_SLAVE_H_
 #define VCF_IMPORTER_SLAVE_H_
 
-#include "support/helpers.h"
+#include "utility.h"
 #include "algorithm/compression/compression_manager.h"
 #include "algorithm/compression/genotype_encoder.h"
 #include "algorithm/permutation/genotype_sorter.h"
 #include "algorithm/digest/variant_digest_manager.h"
-#include "algorithm/encryption/encryption_decorator.h"
-#include "containers/variant_block.h"
+#include "encryption.h"
+#include "variant_container.h"
 #include "containers/vcf_container.h"
-#include "core/variant_importer_container_stats.h"
-#include "index/variant_index_entry.h"
+#include "index_record.h"
 #include "index/variant_index_meta_entry.h"
 #include "io/vcf_utils.h"
-#include "io/variant_import_writer.h"
+#include "variant_writer.h"
 #include "variant_importer.h"
+#include "variant_record.h"
 
 namespace tachyon{
 
@@ -25,20 +25,19 @@ namespace tachyon{
  */
 class VcfImporterSlave {
 public:
-	typedef VcfImporterSlave                self_type;
-	typedef VariantWriterInterface          writer_type;
-	typedef io::BasicBuffer                 buffer_type;
-	typedef index::VariantIndexEntry        index_entry_type;
-	typedef io::VcfHeader                   vcf_header_type;
-	typedef containers::VcfContainer        vcf_container_type;
-	typedef algorithm::CompressionManager   compression_manager_type;
-	typedef algorithm::GenotypeSorter       radix_sorter_type;
-	typedef algorithm::GenotypeEncoder      gt_encoder_type;
-	typedef containers::DataContainer       stream_container;
-	typedef containers::VariantBlock        block_type;
-	typedef support::VariantImporterContainerStats import_stats_type;
-	typedef core::MetaEntry                 meta_type;
-	typedef VariantImporterSettings         settings_type;
+	typedef VcfImporterSlave              self_type;
+	typedef VariantWriterInterface        writer_type;
+	typedef yon_buffer_t                  buffer_type;
+	typedef yon1_idx_rec                  index_entry_type;
+	typedef io::VcfHeader                 vcf_header_type;
+	typedef containers::VcfContainer      vcf_container_type;
+	typedef algorithm::CompressionManager compression_manager_type;
+	typedef algorithm::GenotypeSorter     radix_sorter_type;
+	typedef algorithm::GenotypeEncoder    gt_encoder_type;
+	typedef yon1_dc_t                     stream_container;
+	typedef yon1_vb_t                     block_type;
+	typedef yon_vb_istats                 import_stats_type;
+	typedef VariantImporterSettings       settings_type;
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
@@ -77,7 +76,7 @@ public:
 	 * @param meta      Reference to the relevant MetaEntry object.
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddRecord(const vcf_container_type& container, const uint32_t position, meta_type& meta);
+	bool AddRecord(const vcf_container_type& container, const uint32_t position, yon1_vnt_t& rcd);
 
 	/**<
 	 * Add all htslib Info/Format/Filter fields from the src record to the internal VariantBlock
@@ -86,12 +85,12 @@ public:
 	 * @param meta   Reference to destination MetaEntry.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddVcfInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfFormatInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfFilterInfo(const bcf1_t* record, meta_type& meta);
-	bool AddVcfInfoPattern(const std::vector<int>& pattern, meta_type& meta);
-	bool AddVcfFormatPattern(const std::vector<int>& pattern, meta_type& meta);
-	bool AddVcfFilterPattern(const std::vector<int>& pattern, meta_type& meta);
+	bool AddVcfInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfFormatInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfFilterInfo(const bcf1_t* record, yon1_vnt_t& rcd);
+	bool AddVcfInfoPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
+	bool AddVcfFormatPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
+	bool AddVcfFilterPattern(const std::vector<int>& pattern, yon1_vnt_t& rcd);
 
 	/**<
 	 * Attempts to add the target htslib bcf1_t target pointer to the sorted Tachyon index for
@@ -100,7 +99,7 @@ public:
 	 * @param meta   Source reference to MetaEntry.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool IndexRecord(const bcf1_t* record, const meta_type& meta);
+	//bool IndexRecord(const bcf1_t* record, const yon1_vnt_t& rcd);
 
 	/**<
 	 * Adds the Format:GT field to the local VariantBlock container.
@@ -108,7 +107,7 @@ public:
 	 * @param meta_entries Destination MetaEntry records.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool AddGenotypes(const vcf_container_type& container, meta_type* meta_entries);
+	//bool AddGenotypes(const vcf_container_type& container, yon1_vnt_t* rcds);
 
 	inline void SetVcfHeader(std::shared_ptr<vcf_header_type>& header){
 		this->vcf_header_ = header;
@@ -120,12 +119,12 @@ public:
 public:
 	uint32_t n_blocks_processed; // number of blocks processed
 	uint32_t block_id; // local block id
-	index::Index index; // local index for this thread
+	yon_index_t index; // local index for this thread
 	std::shared_ptr<Keychain> keychain; // shared encryption keychain
 	std::shared_ptr<vcf_header_type> vcf_header_; // global header
 	std::shared_ptr<settings_type> settings_; // internal settings
 	bool GT_available_; // genotypes available
-	index_entry_type  index_entry; // streaming index entry
+	//index_entry_type  index_entry; // streaming index entry
 	radix_sorter_type permutator;  // GT permuter
 	gt_encoder_type   encoder;     // RLE packer
 	compression_manager_type compression_manager; // General compression manager
@@ -138,9 +137,9 @@ public:
 	reorder_map_type contig_reorder_map_;
 
 	// Stats
-	support::VariantImporterContainerStats stats_basic;
-	support::VariantImporterContainerStats stats_info;
-	support::VariantImporterContainerStats stats_format;
+	yon_vb_istats stats_basic;
+	yon_vb_istats stats_info;
+	yon_vb_istats stats_format;
 };
 
 }

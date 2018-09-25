@@ -3,13 +3,13 @@
 
 #include <regex>
 
-#include "support/magic_constants.h"
-#include "support/helpers.h"
+#include "tachyon.h"
+#include "utility.h"
 #include "third_party/intervalTree.h"
-#include "index/index.h"
-#include "core/header/variant_header.h"
-#include "core/meta_entry.h"
-#include "components/generic_iterator.h"
+#include "index.h"
+#include "header_footer.h"
+#include "variant_record.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace containers{
@@ -24,10 +24,9 @@ public:
     typedef const value_type&      const_reference;
     typedef value_type*            pointer;
     typedef const value_type*      const_pointer;
-    typedef index::Index           index_type;
-    typedef index::VariantIndexEntry      index_entry_type;
-    typedef VariantHeader          header_type;
-    typedef core::MetaEntry        meta_entry_type;
+    typedef yon_index_t            index_type;
+    typedef yon1_idx_rec           index_entry_type;
+    typedef yon_vnt_hdr_t          header_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
@@ -92,9 +91,9 @@ public:
 		return(this->at(contigID).findOverlapping(start_position, end_position));
 	}
 
-	inline std::vector<interval_type> FindOverlaps(const meta_entry_type& meta_entry) const{
-		if(meta_entry.contigID > this->size()) return(std::vector<interval_type>());
-		return(this->at(meta_entry.contigID).findOverlapping(meta_entry.position, meta_entry.position + 1));
+	inline std::vector<interval_type> FindOverlaps(const yon1_vnt_t& rcd) const {
+		if(rcd.rid > this->size()) return(std::vector<interval_type>());
+		return(this->at(rcd.rid).findOverlapping(rcd.pos, rcd.pos + 1));
 	}
 
 private:

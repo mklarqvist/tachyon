@@ -25,12 +25,11 @@ DEALINGS IN THE SOFTWARE.
 
 #include "import.h"
 #include "stats.h"
-#include "utility.h"
+#include "program_utils.h"
 #include "view.h"
-#include "benchmark.h"
 
 int main(int argc, char** argv){
-	if(tachyon::utility::isBigEndian()){
+	if(tachyon::utility::IsBigEndian()){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
 		return(1);
 	}
@@ -41,9 +40,9 @@ int main(int argc, char** argv){
 	}
 
 	// Literal string input line
-	tachyon::constants::LITERAL_COMMAND_LINE = tachyon::constants::PROGRAM_NAME;
+	tachyon::LITERAL_COMMAND_LINE = tachyon::TACHYON_PROGRAM_NAME;
 	for(uint32_t i = 1; i < argc; ++i)
-		tachyon::constants::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
+		tachyon::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
 	const std::string subroutine(argv[1]);
 
@@ -56,9 +55,6 @@ int main(int argc, char** argv){
 		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
-		return(0);
-	} else if(strncmp(subroutine.data(), "benchmark", 9) == 0 && subroutine.size() == 9){
-		return(benchmark(argc, argv));
 		return(0);
 	} else {
 		programHelp();

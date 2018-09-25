@@ -7,7 +7,6 @@
     - [Field-slicing](#field-slicing)
     - [Searching for genomic regions](#searching-for-genomic-regions)
     - [Annotating meta-data](#annotating-meta-data)
-- [C++ API Examples](#c-api-examples)
 
 ---
 
@@ -133,6 +132,3 @@ Output
 ```
 Contig110_arrow	672	.	A	T	525.07	basic_filtering	AC=10;AF=0.217;AN=46;BaseQRankSum=0.967;DP=72;ExcessHet=0.8113;FS=54.73;InbreedingCoeff=-0.0525;MLEAC=11;MLEAF=0.239;MQ=31.05;MQRankSum=1.38;QD=18.11;ReadPosRankSum=-0.431;SOR=5.889;FS_A=11.5091,0;NM=26;AC_FWD=21,2;AC_REV=15,8;HWE_P=0.25072;VT=SNP
 ```
-
-## C++ API Examples
-We provide several API examples in the `lib_example` directory. Get started by `make examples`: this requires you to have compiled the shared library first.

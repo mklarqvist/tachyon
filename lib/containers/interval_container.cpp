@@ -70,11 +70,11 @@ bool IntervalContainer::ValidateIntervalStrings(std::vector<std::string>& interv
 		//interval_strings[i].erase(remove_if(interval_strings[i].begin(), interval_strings[i].end(), isspace), interval_strings[i].end());
 		interval_strings[i] = utility::remove_whitespace(interval_strings[i]);
 
-		if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
+		if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_ONLY )){
 			//std::cerr << "chromosome onlu" << std::endl;
-		} else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
+		} else if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_POSITION )){
 			//std::cerr << "chromosome pos" << std::endl;
-		} else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
+		} else if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_RANGE )){
 			//std::cerr << "chromosome pos - pos" << std::endl;
 		} else {
 			std::cerr << utility::timestamp("ERROR") << "Uninterpretable interval string: " << interval_strings[i] << std::endl;
@@ -108,7 +108,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 		const YonContig* contig = nullptr;
 
 		// Chromosome only
-		if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_ONLY )){
+		if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_ONLY )){
 			//std::cerr << "chromosome only" << std::endl;
 			contig = header.GetContig(interval_strings[i]);
 			if(contig == nullptr){
@@ -122,7 +122,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 			this->interval_list_[contig->idx].push_back(interval_type(0, contig->n_bases, contig->idx));
 		}
 		// Chromosome:position
-		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_POSITION )){
+		else if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_POSITION )){
 			//std::cerr << "chromosome pos" << std::endl;
 			std::vector<std::string> substrings = utility::split(interval_strings[i], ':');
 			if(substrings[0].size() == 0 || substrings[1].size() == 0){
@@ -145,7 +145,7 @@ bool IntervalContainer::ParseIntervals(std::vector<std::string>& interval_string
 			this->interval_list_[contig->idx].push_back(interval_type(position, position, contig->idx));
 		}
 		// Chromosome:position-position
-		else if (std::regex_match (interval_strings[i], constants::YON_REGEX_CONTIG_RANGE )){
+		else if (std::regex_match (interval_strings[i], YON_REGEX_CONTIG_RANGE )){
 			//std::cerr << "chromosome pos - pos" << std::endl;
 			std::vector<std::string> substrings = utility::split(interval_strings[i], ':');
 			if(substrings[0].size() == 0 || substrings[1].size() == 0){

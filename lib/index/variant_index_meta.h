@@ -2,16 +2,16 @@
 #define INDEX_INDEX_META_CONTAINER_H_
 
 #include "variant_index_meta_entry.h"
-#include "containers/components/generic_iterator.h"
+#include "generic_iterator.h"
 
 namespace tachyon{
 namespace index{
 
 class VariantIndexMeta{
 public:
-	typedef VariantIndexMeta self_type;
+	typedef VariantIndexMeta   self_type;
     typedef std::size_t        size_type;
-    typedef VariantIndexMetaEntry    value_type;
+    typedef VariantIndexMetaEntry value_type;
     typedef value_type&        reference;
     typedef const value_type&  const_reference;
     typedef value_type*        pointer;

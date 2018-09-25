@@ -1,7 +1,7 @@
 #include "vcf_container.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
 VcfContainer::VcfContainer(void) :
 	n_carry_over_(0),
@@ -164,8 +164,8 @@ bool VcfContainer::GetVariants(const int32_t n_variants,
 	return(this->size());
 }
 
-io::VcfGenotypeSummary VcfContainer::GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const{
-	io::VcfGenotypeSummary g;
+GenotypeSummary VcfContainer::GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const{
+	GenotypeSummary g;
 
 	// If there are no FORMAT fields there cannot exist any
 	// GT data.
@@ -178,14 +178,14 @@ io::VcfGenotypeSummary VcfContainer::GetGenotypeSummary(const uint32_t position,
 	// the number of samples that has a special end-of-vector encoding.
 	// Only the signed primitives int8_t, int16_t, and int32_t are valid for genotypes.
 	switch(this->at(position)->d.fmt[0].type){
-	case(BCF_BT_INT8):  g.evaluate<int8_t> (n_samples, this->at(position)->d.fmt[0]); break;
-	case(BCF_BT_INT16): g.evaluate<int16_t>(n_samples, this->at(position)->d.fmt[0]); break;
-	case(BCF_BT_INT32): g.evaluate<int32_t>(n_samples, this->at(position)->d.fmt[0]); break;
+	case(BCF_BT_INT8):  g.Evaluate<int8_t> (n_samples, this->at(position)->d.fmt[0]); break;
+	case(BCF_BT_INT16): g.Evaluate<int16_t>(n_samples, this->at(position)->d.fmt[0]); break;
+	case(BCF_BT_INT32): g.Evaluate<int32_t>(n_samples, this->at(position)->d.fmt[0]); break;
 	case(BCF_BT_NULL):
 	case(BCF_BT_FLOAT):
 	case(BCF_BT_CHAR):
 	default:
-		std::cerr << "Illegal genotype primtive type: " << io::BCF_TYPE_LOOKUP[this->at(position)->d.fmt[0].type] << std::endl;
+		std::cerr << "Illegal genotype primtive type: " << this->at(position)->d.fmt[0].type << std::endl;
 	}
 
 	return(g);

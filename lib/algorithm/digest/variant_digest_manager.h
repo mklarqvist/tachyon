@@ -3,15 +3,16 @@
 
 #include "openssl/md5.h"
 #include "digest_manager.h"
+#include "variant_container.h"
 
 namespace tachyon{
 namespace algorithm{
 
 class VariantDigestManager : public DigestManager{
 private:
-	typedef VariantDigestManager      self_type;
-	typedef DigestManager             parent_type;
-	typedef containers::VariantBlock  variant_block_type;
+	typedef VariantDigestManager  self_type;
+	typedef DigestManager         parent_type;
+	typedef yon1_vb_t             variant_block_type;
 
 public:
 	VariantDigestManager();

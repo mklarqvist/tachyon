@@ -1,7 +1,7 @@
 #ifndef ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 #define ALGORITHM_COMPRESSION_RADIXSORTGT_H_
 
-#include "core/genotypes.h"
+#include "genotypes.h"
 #include "containers/vcf_container.h"
 
 namespace tachyon {
@@ -49,6 +49,16 @@ public:
 	 * @return              Returns TRUE upon success or FALSE otherwise.
 	 */
 	bool Build(const vcf_container_type& vcf_container, io::VcfHeader& vcf_header);
+
+	/**<
+	 * Permutes the genotypes in the provided array of yon1_vnt_t records.
+	 * Genotypes will be permuted according to their genotypes. This function respects
+	 * the base ploidy and phasing.
+	 * @param rec   Src array of yon1_vnt_t records.
+	 * @param n_rec Number of records provided in rec.
+	 * @return      Returns TRUE upon success or FALSE otherwise.
+	 */
+	bool Build(const yon1_vnt_t* rec, const uint32_t n_rec);
 	void Debug(std::ostream& stream, const vcf_container_type& vcf_container, const yon_gt_ppa& ppa);
 
 public:

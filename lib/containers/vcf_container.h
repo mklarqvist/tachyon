@@ -1,17 +1,18 @@
 #ifndef CONTAINERS_VCF_CONTAINER_H_
 #define CONTAINERS_VCF_CONTAINER_H_
 
-#include "components/generic_iterator.h"
+#include "generic_iterator.h"
 #include "io/vcf_utils.h"
+#include "variant_record.h"
+#include "io/vcf_reader.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
+namespace containers {
 
 /**<
- * This class is both a container and iterator for htslib
- * vcf entries. Primarily used during import from Vcf/Bcf
- * into a Tachyon archive. Retrieves Vcf records from a byte
- * stream or disk if an active VcfReader is provided.
+ * This class is both a container and iterator for htslib vcf entries. Primarily
+ * used during import from Vcf/Bcf into a Tachyon archive. Retrieves Vcf records
+ * from a byte stream or disk if an active VcfReader is provided.
  */
 class VcfContainer{
 public:
@@ -83,7 +84,7 @@ public:
 	 * @param n_samples Number of samples as described in the Vcf header.
 	 * @return          Returns a VcfGenotypeSummary object.
 	 */
-	io::VcfGenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const;
+	GenotypeSummary GetGenotypeSummary(const uint32_t position, const uint64_t& n_samples) const;
 
 	/**<
 	 * Clear data without releasing allocated memory.

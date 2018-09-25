@@ -1,7 +1,7 @@
 #ifndef INDEX_VARIANT_INDEX_LINEAR_H_
 #define INDEX_VARIANT_INDEX_LINEAR_H_
 
-#include "variant_index_entry.h"
+#include "index_record.h"
 
 namespace tachyon{
 namespace index{
@@ -10,7 +10,7 @@ class VariantIndexLinear{
 public:
 	typedef VariantIndexLinear   self_type;
     typedef std::size_t          size_type;
-    typedef VariantIndexEntry    value_type;
+    typedef yon1_idx_rec         value_type;
     typedef value_type&          reference;
     typedef const value_type&    const_reference;
     typedef value_type*          pointer;

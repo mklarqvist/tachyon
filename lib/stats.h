@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+#include "program_utils.h"
 #include "variant_reader.h"
 
 void stats_usage(void){
@@ -35,7 +35,7 @@ void stats_usage(void){
 	std::cerr <<
 	"About:  Calculate comprehensive per-sample statistics. Data is written to\n"
 	"        stdout as a JSON object.\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " stats [options] -i <in.yon>\n\n"
+	"Usage:  " << tachyon::TACHYON_PROGRAM_NAME << " stats [options] -i <in.yon>\n\n"
 	"Options:\n"
 	"  -i FILE   input YON file (required)\n" << std::endl;
 }

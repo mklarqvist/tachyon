@@ -22,9 +22,9 @@
 # ################################################################
 
 # Version numbers slices from the source header
-LIBVER_MAJOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
-LIBVER_MINOR_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
-LIBVER_PATCH_SCRIPT:=`sed -n '/const S32 TACHYON_VERSION_PATCH = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < lib/support/magic_constants.h`
+LIBVER_MAJOR_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_MAJOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < include/tachyon.h`
+LIBVER_MINOR_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_MINOR = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < include/tachyon.h`
+LIBVER_PATCH_SCRIPT:=`sed -n '/const int32_t TACHYON_VERSION_PATCH = /s/.*[[:blank:]]\([0-9][0-9]*\).*/\1/p' < include/tachyon.h`
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_SCRIPT:= $(LIBVER_MAJOR_SCRIPT).$(LIBVER_MINOR_SCRIPT).$(LIBVER_PATCH_SCRIPT)
 LIBVER_MAJOR := $(shell echo $(LIBVER_MAJOR_SCRIPT))
@@ -47,7 +47,7 @@ DEBUG_FLAGS :=
 endif
 
 # Global build parameters
-INCLUDE_PATH = -I./lib/
+INCLUDE_PATH = -I./lib/ -I./include/
 ZSTD_LIBRARY_PATH = 
 
 # Check if ZSTD is in the current directory
@@ -146,11 +146,6 @@ lib/third_party/xxhash/xxhash.c \
 OBJECTS  = $(CXX_SOURCE:.cpp=.o) $(C_SOURCE:.c=.o)
 CPP_DEPS = $(CXX_SOURCE:.cpp=.d) $(C_SOURCE:.c=.d)
 
-LIB_INCLUDE_PATH   = -I./lib/
-LIB_EXAMPLE_FLAGS  = -L./ -ltachyon '-Wl,-rpath,$$ORIGIN/../,-rpath,$(PWD)'
-LIB_EXAMPLE_SOURCE = $(wildcard lib_example/*.cpp)
-LIB_EXAMPLE_OUTPUT = $(LIB_EXAMPLE_SOURCE:.cpp=)
-
 # Inject git information
 BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 ifneq ($(BRANCH), master)
@@ -172,9 +167,8 @@ lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
 
 tachyon: $(OBJECTS)
 	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
-	#$(MAKE) cleanmost
-	#$(MAKE) library library=true
-	#$(MAKE) examples
+	$(MAKE) cleanmost
+	$(MAKE) library library=true
 
 library: $(OBJECTS)
 	@echo 'Building dynamic library...'
@@ -187,17 +181,11 @@ library: $(OBJECTS)
 
 examples: $(LIB_EXAMPLE_OUTPUT)
 
-lib_example/%: lib_example/%.cpp
-	g++ $(CXXFLAGS) $(INCLUDE_PATH) $(LIB_INCLUDE_PATH) $(LIB_EXAMPLE_FLAGS) -DVERSION=\"$(GIT_VERSION)\" -o $@ $<
-
 # Clean procedures
-clean_examples:
-	rm -f $(LIB_EXAMPLE_OUTPUT)
-
 cleanmost:
 	rm -f $(OBJECTS) $(CPP_DEPS)
 
 clean: cleanmost clean_examples
 	rm -f tachyon libtachyon.so libtachyon.so.* ltachyon.so
 
-.PHONY: all clean clean_examples cleanmost library examples
+.PHONY: all clean clean_examples cleanmost library

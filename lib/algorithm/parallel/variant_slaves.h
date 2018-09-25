@@ -5,14 +5,15 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
-#include "containers/variant_block.h"
+#include "variant_container.h"
 
 namespace tachyon {
 
 struct yon_pool_vblock_payload {
 	yon_pool_vblock_payload() : block_id(0), c(nullptr){}
-	yon_pool_vblock_payload(const uint32_t bid, containers::VariantBlock* vc) : block_id(bid), c(vc){}
+	yon_pool_vblock_payload(const uint32_t bid, yon1_vb_t* vc) : block_id(bid), c(vc){}
 	~yon_pool_vblock_payload(){ delete c; }
 	yon_pool_vblock_payload(const yon_pool_vblock_payload& other) = delete; // copy is not allowed
 	yon_pool_vblock_payload& operator=(const yon_pool_vblock_payload& other) = delete; // copy assign is not allowed
@@ -30,7 +31,7 @@ struct yon_pool_vblock_payload {
 	}
 
 	uint32_t block_id;
-	containers::VariantBlock* c;
+	yon1_vb_t* c;
 };
 
 struct yon_pool_vblock {
@@ -184,7 +185,7 @@ public:
 	std::atomic<bool> data_available;
 	yon_pool_vblock data_pool;
 	std::thread thread_;
-	containers::VariantBlock* dst_block_;
+	yon1_vb_t* dst_block_;
 };
 
 /**<
@@ -217,7 +218,7 @@ public:
 	 */
 	void Setup(F produce_function,
 	           T& vreader,
-	           containers::VariantBlock& block)
+	           yon1_vb_t& block)
 	{
 		this->instance_  = &vreader;
 		this->func_      = produce_function;
@@ -260,8 +261,8 @@ private:
 			// Peculiar syntax for adding a new payload to the cyclic queue. The
 			// move semantics is required for intended functionality!
 			//std::cerr << "emplacing: " << this->dst_block_->size() << " @ " <<  this->data_pool.n_c << std::endl;
-			this->data_pool.emplace(new yon_pool_vblock_payload(n_blocks++, new containers::VariantBlock(std::move(*this->dst_block_))));
-			*this->dst_block_ = containers::VariantBlock();
+			this->data_pool.emplace(new yon_pool_vblock_payload(n_blocks++, new yon1_vb_t(std::move(*this->dst_block_))));
+			*this->dst_block_ = yon1_vb_t();
 		}
 		return true;
 	}
@@ -278,7 +279,7 @@ public:
  * objects from the shared pooled of payloads until end-of-file has been
  * reached in the production thread(s).
  */
-template <class T, class F = bool(T::*)(containers::VariantBlock*&)>
+template <class T, class F = bool(T::*)(yon1_vb_t*&)>
 struct yon_consumer_vblock {
 public:
 	yon_consumer_vblock(void) : n_rcds_processed(0), thread_id(0), data_available(nullptr), data_pool(nullptr), instance_(nullptr){}
@@ -332,7 +333,7 @@ private:
 			}
 			assert(d->c != nullptr);
 
-			// Invoke cosumer function of interest
+			// Invoke consumer function of interest
 			if((*this->instance_.*this->func_)(d->c) == false){
 				std::cerr << "error occurred" << std::endl;
 			}

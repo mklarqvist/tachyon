@@ -1,26 +1,484 @@
-#include <cassert>
-
 #include "data_container.h"
-#include "io/basic_buffer.h"
-#include "support/helpers.h"
 #include "algorithm/digest/variant_digest_manager.h"
+#include "third_party/xxhash/xxhash.h"
 
-namespace tachyon{
-namespace containers{
+namespace tachyon {
 
-DataContainer::DataContainer()
+yon_blk_bv_pair::yon_blk_bv_pair() : l_bytes(0), bit_bytes(nullptr){}
+yon_blk_bv_pair::~yon_blk_bv_pair(){ delete [] this->bit_bytes; }
+
+void yon_blk_bv_pair::clear(void){
+	this->pattern.clear();
+	this->l_bytes = 0;
+	delete [] this->bit_bytes;
+	this->bit_bytes = nullptr;
+}
+
+yon_blk_bv_pair& yon_blk_bv_pair::operator=(const yon_blk_bv_pair& other){
+	delete [] this->bit_bytes;
+	this->pattern   = other.pattern;
+	this->l_bytes   = other.l_bytes;
+	this->bit_bytes = new uint8_t[this->l_bytes];
+	memcpy(this->bit_bytes, other.bit_bytes, this->l_bytes);
+	return(*this);
+}
+
+yon_blk_bv_pair& yon_blk_bv_pair::operator=(yon_blk_bv_pair&& other) noexcept{
+	if (this == &other){
+		// take precautions against self-moves
+		return *this;
+	}
+
+	delete [] this->bit_bytes; this->bit_bytes = nullptr;
+	std::swap(this->bit_bytes, other.bit_bytes);
+	this->pattern = std::move(other.pattern);
+	other.pattern.clear(); // Clear the src pattern vector.
+	this->l_bytes = other.l_bytes;
+	other.l_bytes = 0; // Clear the src byte length.
+	return(*this);
+}
+
+void yon_blk_bv_pair::Build(const uint32_t n_footer_total_fields,
+                            const std::unordered_map<uint32_t, uint32_t>* local_map)
+{
+	if(this->pattern.size() == 0) return;
+	assert(local_map != nullptr);
+
+	// Determine the required byte width of the bit-vector.
+	uint8_t bitvector_width = ceil((float)(n_footer_total_fields + 1) / 8);
+
+	// Allocate new bit-vectors.
+	delete [] this->bit_bytes;
+	this->l_bytes = bitvector_width;
+	this->bit_bytes = new uint8_t[bitvector_width];
+	memset(this->bit_bytes, 0, sizeof(uint8_t)*bitvector_width);
+
+	// Cycle over global idx values in the vector.
+	for(uint32_t i = 0; i < this->pattern.size(); ++i){
+		std::unordered_map<uint32_t, uint32_t>::const_iterator it = local_map->find(this->pattern[i]);
+		assert(it != local_map->end());
+
+		// Map from absolute key to local key.
+		uint32_t local_key = it->second;
+		assert(local_key <= n_footer_total_fields);
+
+		// Set the target bit to TRUE at the local key position.
+		this->bit_bytes[local_key/8] |= 1 << (local_key % 8);
+	}
+}
+
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_blk_bv_pair& entry){
+	SerializePrimitive(entry.l_bytes, buffer);
+	buffer += (uint32_t)entry.pattern.size();
+	for(uint32_t i = 0; i < entry.pattern.size(); ++i)
+		SerializePrimitive(entry.pattern[i], buffer);
+
+	for(uint32_t i = 0; i < entry.l_bytes; ++i)
+		SerializePrimitive(entry.bit_bytes[i], buffer);
+
+
+	return(buffer);
+}
+
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_blk_bv_pair& entry){
+	entry.pattern.clear();
+	DeserializePrimitive(entry.l_bytes, buffer);
+	uint32_t l_vector;
+	buffer >> l_vector;
+	//entry.pattern.resize(l_vector);
+	for(uint32_t i = 0; i < l_vector; ++i){
+		int temp;
+		DeserializePrimitive(temp, buffer);
+		//entry.pattern[i] = temp;
+		entry.pattern.push_back(temp);
+	}
+
+	entry.bit_bytes = new uint8_t[entry.l_bytes];
+	for(uint32_t i = 0; i < entry.l_bytes; ++i)
+		DeserializePrimitive(entry.bit_bytes[i], buffer);
+
+	return(buffer);
+}
+
+// Header
+yon_dc_hdr_cont::yon_dc_hdr_cont() :
+	signedness(0), mixedStride(0), type(0), encoder(0),
+	uniform(0), encryption(0), preprocessor(0)
 {}
 
-DataContainer::DataContainer(const uint32_t start_size) :
+yon_dc_hdr_cont::~yon_dc_hdr_cont(){}
+
+inline void yon_dc_hdr_cont::clear(){
+	this->signedness   = 0;
+	this->mixedStride  = 0;
+	this->type         = 0;
+	this->encoder      = 0;
+	this->uniform      = 0;
+	this->encryption   = 0;
+	this->preprocessor = 0;
+}
+
+yon_dc_hdr_cont& yon_dc_hdr_cont::operator=(const self_type& other){
+	this->signedness   = other.signedness;
+	this->mixedStride  = other.mixedStride;
+	this->type         = other.type;
+	this->encoder      = other.encoder;
+	this->uniform      = other.uniform;
+	this->encryption   = other.encryption;
+	this->preprocessor = other.preprocessor;
+	return(*this);
+}
+
+bool yon_dc_hdr_cont::operator==(const self_type& other) const{
+	if(this->signedness   != other.signedness)   return false;
+	if(this->mixedStride  != other.mixedStride)  return false;
+	if(this->type         != other.type)         return false;
+	if(this->encoder      != other.encoder)      return false;
+	if(this->uniform      != other.uniform)      return false;
+	if(this->encryption   != other.encryption)   return false;
+	if(this->preprocessor != other.preprocessor) return false;
+	return true;
+}
+
+yon_buffer_t& operator<<(yon_buffer_t& buffer,const yon_dc_hdr_cont& controller){
+	const uint32_t c =
+				controller.signedness   << 0  |
+				controller.mixedStride  << 1  |
+				controller.type         << 2  |
+				controller.encoder      << 8  |
+				controller.uniform      << 13 |
+				controller.encryption   << 14 |
+				controller.preprocessor << 16;
+
+	//const uint16_t* c = reinterpret_cast<const uint16_t* const>(&controller);
+	buffer += c;
+	return(buffer);
+}
+
+std::ostream& operator<<(std::ostream& stream, const yon_dc_hdr_cont& controller){
+	const uint32_t c =
+				controller.signedness   << 0  |
+				controller.mixedStride  << 1  |
+				controller.type         << 2  |
+				controller.encoder      << 8  |
+				controller.uniform      << 13 |
+				controller.encryption   << 14 |
+				controller.preprocessor << 16;
+
+	//assert(*reinterpret_cast<const uint16_t* const>(&controller) == c);
+
+	stream.write(reinterpret_cast<const char*>(&c), sizeof(uint32_t));
+	return(stream);
+}
+
+std::istream& operator>>(std::istream& stream, yon_dc_hdr_cont& controller){
+	stream.read(reinterpret_cast<char*>(&controller), sizeof(uint32_t));
+	return(stream);
+}
+
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr_cont& controller){
+	uint32_t* c = reinterpret_cast<uint32_t*>(&controller);
+	buffer >> *c;
+	return(buffer);
+}
+
+yon_dc_hdr_obj::yon_dc_hdr_obj() :
+	stride(1),
+	offset(0),
+	cLength(0),
+	uLength(0),
+	eLength(0),
+	global_key(-1)
+{
+	memset(&this->crc[0], 0, MD5_DIGEST_LENGTH);
+}
+
+yon_dc_hdr_obj::yon_dc_hdr_obj(const yon_dc_hdr_obj& other) :
+	controller(other.controller),
+	stride(other.stride),
+	offset(other.offset),
+	cLength(other.cLength),
+	uLength(other.uLength),
+	eLength(other.eLength),
+	global_key(other.global_key)
+{
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
+}
+
+yon_dc_hdr_obj::yon_dc_hdr_obj(yon_dc_hdr_obj&& other) noexcept :
+	controller(other.controller),
+	stride(other.stride),
+	offset(other.offset),
+	cLength(other.cLength),
+	uLength(other.uLength),
+	eLength(other.eLength),
+	global_key(other.global_key)
+{
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
+}
+
+yon_dc_hdr_obj& yon_dc_hdr_obj::operator=(const yon_dc_hdr_obj& other){
+	this->controller = other.controller;
+	this->stride     = other.stride;
+	this->offset     = other.offset;
+	this->cLength    = other.cLength;
+	this->uLength    = other.uLength;
+	this->eLength    = other.eLength;
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
+	this->global_key = other.global_key;
+	return *this;
+}
+
+yon_dc_hdr_obj& yon_dc_hdr_obj::operator=(yon_dc_hdr_obj&& other) noexcept{
+	this->controller = other.controller;
+	this->stride     = other.stride;
+	this->offset     = other.offset;
+	this->cLength    = other.cLength;
+	this->uLength    = other.uLength;
+	this->eLength    = other.eLength;
+	memcpy(&this->crc[0], &other.crc[0], MD5_DIGEST_LENGTH);
+	this->global_key = other.global_key;
+	return *this;
+}
+
+yon_dc_hdr_obj::~yon_dc_hdr_obj(){ }
+
+void yon_dc_hdr_obj::reset(void){
+	this->controller.clear();
+	this->stride     = 1;
+	this->offset     = 0;
+	this->cLength    = 0;
+	this->uLength    = 0;
+	memset(&this->crc[0], 0, MD5_DIGEST_LENGTH);
+	this->global_key = -1;
+}
+
+bool yon_dc_hdr_obj::operator==(const self_type& other) const{
+	if(this->stride     != other.stride)     return false;
+	if(this->offset     != other.offset)     return false;
+	if(this->cLength    != other.cLength)    return false;
+	if(this->uLength    != other.uLength)    return false;
+	if(this->eLength    != other.eLength)    return false;
+	if(this->global_key != other.global_key) return false;
+	if(this->controller != other.controller) return false;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i)
+		if(this->crc[i] != other.crc[i]) return false;
+
+	return true;
+}
+
+int8_t yon_dc_hdr_obj::GetPrimitiveWidth(void) const{
+	// We do not care about signedness here
+	switch(this->controller.type){
+	case(YON_TYPE_UNKNOWN):
+	case(YON_TYPE_STRUCT): return(-1);
+	case(YON_TYPE_BOOLEAN):
+	case(YON_TYPE_CHAR):   return(sizeof(char));
+	case(YON_TYPE_8B):     return(sizeof(uint8_t));
+	case(YON_TYPE_16B):    return(sizeof(uint16_t));
+	case(YON_TYPE_32B):    return(sizeof(uint32_t));
+	case(YON_TYPE_64B):    return(sizeof(uint64_t));
+	case(YON_TYPE_FLOAT):  return(sizeof(float));
+	case(YON_TYPE_DOUBLE): return(sizeof(double));
+	}
+	return 0;
+}
+
+bool yon_dc_hdr_obj::CheckChecksum(const uint8_t* compare) const{
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i){
+		if(compare[i] != this->crc[i])
+			return false;
+	}
+	return true;
+}
+
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_dc_hdr_obj& entry){
+	buffer << entry.controller;
+	buffer += entry.stride;
+	buffer += entry.offset;
+	buffer += entry.cLength;
+	buffer += entry.uLength;
+	buffer += entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer += entry.crc[i];
+	buffer += entry.global_key;
+	return(buffer);
+}
+
+std::ostream& operator<<(std::ostream& stream, const yon_dc_hdr_obj& entry){
+	stream << entry.controller;
+	stream.write(reinterpret_cast<const char*>(&entry.stride),    sizeof(int32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.offset),    sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.cLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.uLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.eLength),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.crc[0]),    sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.write(reinterpret_cast<const char*>(&entry.global_key),sizeof(int32_t));
+	return(stream);
+}
+
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr_obj& entry){
+	buffer >> entry.controller;
+	buffer >> entry.stride;
+	buffer >> entry.offset;
+	buffer >> entry.cLength;
+	buffer >> entry.uLength;
+	buffer >> entry.eLength;
+	for(uint32_t i = 0; i < MD5_DIGEST_LENGTH; ++i) buffer >> entry.crc[i];
+	buffer >> entry.global_key;
+	return(buffer);
+}
+
+std::ifstream& operator>>(std::ifstream& stream, yon_dc_hdr_obj& entry){
+	stream >> entry.controller;
+	stream.read(reinterpret_cast<char*>(&entry.stride),     sizeof(int32_t));
+	stream.read(reinterpret_cast<char*>(&entry.offset),     sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.cLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.uLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.eLength),    sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.crc[0]),     sizeof(uint8_t)*MD5_DIGEST_LENGTH);
+	stream.read(reinterpret_cast<char*>(&entry.global_key), sizeof(int32_t));
+
+	return(stream);
+}
+
+// header
+yon_dc_hdr::yon_dc_hdr() :
+	identifier(0),
+	n_entries(0),
+	n_additions(0),
+	n_strides(0)
+{
+}
+
+yon_dc_hdr::yon_dc_hdr(const self_type& other) :
+	identifier(other.identifier),
+	n_entries(other.n_entries),
+	n_additions(other.n_additions),
+	n_strides(other.n_strides),
+	data_header(other.data_header),
+	stride_header(other.stride_header)
+{
+
+}
+
+yon_dc_hdr::~yon_dc_hdr(){}
+
+void yon_dc_hdr::reset(void){
+	this->identifier  = 0;
+	this->n_entries   = 0;
+	this->n_additions = 0;
+	this->n_strides   = 0;
+	this->data_header.reset();
+	this->stride_header.reset();
+}
+
+yon_dc_hdr& yon_dc_hdr::operator=(const self_type& other){
+	this->identifier    = other.identifier;
+	this->n_entries     = other.n_entries;
+	this->n_additions   = other.n_additions;
+	this->n_strides     = other.n_strides;
+	this->data_header   = other.data_header;
+	this->stride_header = other.stride_header;
+	return(*this);
+}
+
+yon_dc_hdr& yon_dc_hdr::operator=(self_type&& other) noexcept{
+	this->identifier    = other.identifier;
+	this->n_entries     = other.n_entries;
+	this->n_additions   = other.n_additions;
+	this->n_strides     = other.n_strides;
+	this->data_header   = std::move(other.data_header);
+	this->stride_header = std::move(other.stride_header);
+	return(*this);
+}
+
+// Comparators
+bool yon_dc_hdr::operator==(const self_type& other) const {
+	if(this->identifier    != other.identifier)    return false;
+	if(this->n_entries     != other.n_entries)     return false;
+	if(this->n_additions   != other.n_additions)   return false;
+	if(this->n_strides     != other.n_strides)     return false;
+	if(this->data_header   != other.data_header)   return false;
+	if(this->stride_header != other.stride_header) return false;
+	return true;
+}
+
+yon_dc_hdr& yon_dc_hdr::operator+=(const self_type& other) {
+	this->n_entries     += other.n_entries;
+	this->n_additions   += other.n_additions;
+	this->n_strides     += other.n_strides;
+	if(data_header.stride != other.data_header.stride || other.data_header.controller.mixedStride){
+		//if(data_header.HasMixedStride() == false)
+		//	std::cerr << "triggering mixed stride: " << data_header.stride << "!=" << other.data_header.stride << std::endl;
+		this->data_header.SetMixedStride(true);
+	}
+	return(*this);
+}
+
+yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_dc_hdr& entry){
+	buffer += entry.identifier;
+	buffer += entry.n_entries;
+	buffer += entry.n_additions;
+	buffer += entry.n_strides;
+	buffer << entry.data_header;
+
+	if(entry.data_header.HasMixedStride())
+		buffer << entry.stride_header;
+
+	return(buffer);
+}
+
+yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr& entry){
+	buffer >> entry.identifier;
+	buffer >> entry.n_entries;
+	buffer >> entry.n_additions;
+	buffer >> entry.n_strides;
+	buffer >> entry.data_header;
+
+	if(entry.data_header.HasMixedStride())
+		buffer >> entry.stride_header;
+
+	return(buffer);
+}
+
+std::ostream& operator<<(std::ostream& stream, const yon_dc_hdr& entry){
+	stream.write(reinterpret_cast<const char*>(&entry.identifier),  sizeof(uint64_t));
+	stream.write(reinterpret_cast<const char*>(&entry.n_entries),   sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.n_additions), sizeof(uint32_t));
+	stream.write(reinterpret_cast<const char*>(&entry.n_strides),   sizeof(uint32_t));
+	stream << entry.data_header;
+	if(entry.data_header.HasMixedStride())
+		stream << entry.stride_header;
+
+	return(stream);
+}
+
+std::ifstream& operator>>(std::ifstream& stream, yon_dc_hdr& entry){
+	stream.read(reinterpret_cast<char*>(&entry.identifier),  sizeof(uint64_t));
+	stream.read(reinterpret_cast<char*>(&entry.n_entries),   sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.n_additions), sizeof(uint32_t));
+	stream.read(reinterpret_cast<char*>(&entry.n_strides),   sizeof(uint32_t));
+	stream >> entry.data_header;
+	if(entry.data_header.HasMixedStride())
+		stream >> entry.stride_header;
+
+	return(stream);
+}
+
+// data container
+yon1_dc_t::yon1_dc_t()
+{}
+
+yon1_dc_t::yon1_dc_t(const uint32_t start_size) :
 	data(start_size),
 	strides(start_size),
 	data_uncompressed(start_size),
 	strides_uncompressed(start_size)
 {}
 
-DataContainer::~DataContainer(){ }
+yon1_dc_t::~yon1_dc_t(){ }
 
-DataContainer::DataContainer(self_type&& other) noexcept :
+yon1_dc_t::yon1_dc_t(self_type&& other) noexcept :
 	header(std::move(other.header)),
 	data(std::move(other.data)),
 	strides(std::move(other.strides)),
@@ -30,7 +488,7 @@ DataContainer::DataContainer(self_type&& other) noexcept :
 
 }
 
-DataContainer::DataContainer(const self_type& other) :
+yon1_dc_t::yon1_dc_t(const self_type& other) :
 	header(other.header),
 	data(other.data),
 	strides(other.strides),
@@ -38,7 +496,7 @@ DataContainer::DataContainer(const self_type& other) :
 	strides_uncompressed(other.strides_uncompressed)
 {}
 
-DataContainer& DataContainer::operator=(const self_type& other){
+yon1_dc_t& yon1_dc_t::operator=(const self_type& other){
 	this->data = other.data;
 	this->data_uncompressed = other.data_uncompressed;
 	this->strides = other.strides;
@@ -47,7 +505,7 @@ DataContainer& DataContainer::operator=(const self_type& other){
 	return(*this);
 }
 
-DataContainer& DataContainer::operator=(self_type&& other) noexcept{
+yon1_dc_t& yon1_dc_t::operator=(self_type&& other) noexcept{
 	this->data = std::move(other.data);
 	this->data_uncompressed = std::move(other.data_uncompressed);
 	this->strides = std::move(other.strides);
@@ -56,7 +514,7 @@ DataContainer& DataContainer::operator=(self_type&& other) noexcept{
 	return(*this);
 }
 
-void DataContainer::reset(void){
+void yon1_dc_t::reset(void){
 	this->data.reset();
 	this->data_uncompressed.reset();
 	this->strides.reset();
@@ -64,19 +522,19 @@ void DataContainer::reset(void){
 	this->header.reset();
 }
 
-void DataContainer::resize(const uint32_t size){
+void yon1_dc_t::resize(const uint32_t size){
 	this->data.resize(size);
 	this->data_uncompressed.resize(size);
 	this->strides.resize(size);
 	this->strides_uncompressed.resize(size);
 }
 
-void DataContainer::GenerateMd5(void){
+void yon1_dc_t::GenerateMd5(void){
 	algorithm::VariantDigestManager::GenerateMd5(this->data_uncompressed.data(), this->data_uncompressed.size(), &this->header.data_header.crc[0]);
 	algorithm::VariantDigestManager::GenerateMd5(this->strides_uncompressed.data(), this->strides_uncompressed.size(), &this->header.stride_header.crc[0]);
 }
 
-bool DataContainer::CheckMd5(int target){
+bool yon1_dc_t::CheckMd5(int target){
 	if(target == 0){
 		if(this->data_uncompressed.size() == 0)
 			return true;
@@ -113,11 +571,14 @@ bool DataContainer::CheckMd5(int target){
 	return true;
 }
 
-bool DataContainer::CheckUniformity(void){
+bool yon1_dc_t::CheckUniformity(void){
 	if(data_uncompressed.size() == 0)
 		return false;
 
 	if(this->header.n_entries == 0)
+		return false;
+
+	if(this->header.data_header.controller.type == YON_TYPE_CHAR)
 		return false;
 
 	// We know the stride cannot be uniform if
@@ -140,15 +601,20 @@ bool DataContainer::CheckUniformity(void){
 	default: return false; break;
 	}
 
+	assert(data_uncompressed.size() % word_width == 0);
+	assert((data_uncompressed.size() / word_width) % header.n_additions == 0);
+	const uint32_t n_e = data_uncompressed.size() / stride_update;
+
 	const uint64_t first_hash = XXH64(this->data_uncompressed.data(), stride_update, 2147483647);
 
 	uint64_t cumulative_position = stride_update;
-	for(uint32_t i = 1; i < this->header.n_entries; ++i){
+	for(uint32_t i = 1; i < n_e; ++i){
 		if(XXH64(&this->data_uncompressed.buffer_[cumulative_position], stride_update, 2147483647) != first_hash){
 			return(false);
 		}
 		cumulative_position += stride_update;
 	}
+	//std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
 	assert(cumulative_position == this->data_uncompressed.size());
 
 	this->header.n_entries   = 1;
@@ -162,7 +628,61 @@ bool DataContainer::CheckUniformity(void){
 	return(true);
 }
 
-void DataContainer::ReformatInteger(){
+bool yon1_dc_t::CheckUniformity(const uint32_t n_samples){
+	if(data_uncompressed.size() == 0)
+		return false;
+
+	if(this->header.n_entries == 0)
+		return false;
+
+	if(this->header.data_header.controller.type == YON_TYPE_CHAR)
+		return false;
+
+	// We know the stride cannot be uniform if
+	// the stride size is uneven
+	const int16_t& stride_size = this->header.data_header.stride;
+	if(stride_size == -1)
+		return false;
+
+	uint32_t stride_update = stride_size;
+
+	uint8_t word_width = sizeof(char);
+	switch(this->header.data_header.controller.type){
+	case YON_TYPE_DOUBLE: stride_update *= sizeof(double);   word_width = sizeof(double);  break;
+	case YON_TYPE_FLOAT:  stride_update *= sizeof(float);    word_width = sizeof(float);   break;
+	case YON_TYPE_8B:     stride_update *= sizeof(uint8_t);  word_width = sizeof(uint8_t); break;
+	case YON_TYPE_16B:    stride_update *= sizeof(uint16_t); word_width = sizeof(uint16_t);break;
+	case YON_TYPE_32B:    stride_update *= sizeof(int32_t);  word_width = sizeof(int32_t); break;
+	case YON_TYPE_64B:    stride_update *= sizeof(uint64_t); word_width = sizeof(uint64_t);break;
+	case YON_TYPE_CHAR:   stride_update *= sizeof(char);     word_width = sizeof(char);    break;
+	default: return false; break;
+	}
+	stride_update *= n_samples;
+
+	const uint64_t first_hash = XXH64(this->data_uncompressed.data(), stride_update, 2147483647);
+
+	uint64_t cumulative_position = stride_update;
+	for(uint32_t i = 1; i < this->header.n_entries; ++i){
+		if(XXH64(&this->data_uncompressed.buffer_[cumulative_position], stride_update, 2147483647) != first_hash){
+			return(false);
+		}
+		cumulative_position += stride_update;
+	}
+	//std::cerr << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	assert(cumulative_position == this->data_uncompressed.size());
+
+	this->header.n_entries   = 1;
+	this->header.n_strides   = 0;
+	this->data_uncompressed.n_chars_                = stride_size * word_width * n_samples;
+	this->header.data_header.uLength                = stride_size * word_width * n_samples;
+	this->header.data_header.cLength                = stride_size * word_width * n_samples;
+	this->header.data_header.controller.uniform     = true;
+	this->header.data_header.controller.mixedStride = false;
+	this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
+	return(true);
+}
+
+void yon1_dc_t::ReformatInteger(){
 	if(data_uncompressed.size() == 0)
 		return;
 
@@ -307,7 +827,7 @@ void DataContainer::ReformatInteger(){
 	this->data.reset();
 }
 
-void DataContainer::ReformatStride(){
+void yon1_dc_t::ReformatStride(){
 	if(this->strides_uncompressed.size() == 0)
 		return;
 
@@ -383,7 +903,7 @@ void DataContainer::ReformatStride(){
 	this->strides.reset();
 }
 
-uint32_t DataContainer::GetObjectSize(void) const{
+uint32_t yon1_dc_t::GetObjectSize(void) const{
 	// In case data is encrypted
 	if(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 		return(this->data.size());
@@ -395,7 +915,7 @@ uint32_t DataContainer::GetObjectSize(void) const{
 	return(total_size);
 }
 
-uint64_t DataContainer::GetObjectSizeUncompressed(void) const{
+uint64_t yon1_dc_t::GetObjectSizeUncompressed(void) const{
 	uint64_t total_size = this->data_uncompressed.size();
 	if(this->header.data_header.HasMixedStride())
 		total_size += this->strides_uncompressed.size();
@@ -403,7 +923,7 @@ uint64_t DataContainer::GetObjectSizeUncompressed(void) const{
 	return(total_size);
 }
 
-void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
+void yon1_dc_t::UpdateContainer(bool reformat_data, bool reformat_stride){
 	// If the data container Has entries in it but has
 	// no actual data then it is a BOOLEAN
 	if(this->header.n_entries && this->data_uncompressed.size() == 0){
@@ -413,7 +933,7 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 		this->header.data_header.controller.mixedStride = false;
 		this->header.data_header.controller.encoder     = YON_ENCODE_NONE;
 		this->header.data_header.controller.signedness  = 0;
-		this->header.data_header.stride  = 0;
+		this->header.data_header.stride  = 1;
 		this->header.data_header.uLength = 0;
 		this->header.data_header.cLength = 0;
 		this->header.n_strides           = 0;
@@ -441,17 +961,39 @@ void DataContainer::UpdateContainer(bool reformat_data, bool reformat_stride){
 	}
 }
 
-void DataContainer::AddStride(const uint32_t value){
+void yon1_dc_t::UpdateContainerFormat(bool reformat_data, bool reformat_stride, const uint32_t n_samples){
+	if(this->data_uncompressed.size() == 0)
+		return;
+
+	// Check if stream is uniform in content
+	this->CheckUniformity();
+	// Reformat stream to use as small word size as possible
+	if(reformat_data) this->ReformatInteger();
+
+	// Set uncompressed length
+	this->header.data_header.uLength = this->data_uncompressed.size();
+
+	// If we have mixed striding
+	if(this->header.data_header.HasMixedStride()){
+		// Reformat stream to use as small word size as possible
+		if(reformat_stride) this->ReformatStride();
+		this->header.stride_header.uLength = this->strides_uncompressed.size();
+	}
+}
+
+void yon1_dc_t::AddStride(const uint32_t value){
 	// If this is the first stride set
 	if(this->header.n_strides == 0){
 		this->header.stride_header.controller.type = YON_TYPE_32B;
 		this->header.stride_header.controller.signedness = false;
-		this->SetStrideSize(value);
+		this->header.data_header.stride = value;
 	}
 
 	// Check if there are different strides
-	if(!this->CheckStrideSize(value)){
-		this->TriggerMixedStride();
+	if(this->header.data_header.HasMixedStride() == false){
+		if(this->header.data_header.stride != value){
+			this->header.data_header.controller.mixedStride = true;
+		}
 	}
 
 	// Add value
@@ -459,7 +1001,7 @@ void DataContainer::AddStride(const uint32_t value){
 	++this->header.n_strides;
 }
 
-bool DataContainer::Add(const uint8_t& value){
+bool yon1_dc_t::Add(const uint8_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -474,7 +1016,7 @@ bool DataContainer::Add(const uint8_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const uint16_t& value){
+bool yon1_dc_t::Add(const uint16_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -489,7 +1031,7 @@ bool DataContainer::Add(const uint16_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const uint32_t& value){
+bool yon1_dc_t::Add(const uint32_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -504,7 +1046,7 @@ bool DataContainer::Add(const uint32_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const int8_t& value){
+bool yon1_dc_t::Add(const int8_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -535,7 +1077,7 @@ bool DataContainer::Add(const int8_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const int16_t& value){
+bool yon1_dc_t::Add(const int16_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -565,7 +1107,7 @@ bool DataContainer::Add(const int16_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const int32_t& value){
+bool yon1_dc_t::Add(const int32_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_32B);
 		this->header.data_header.controller.signedness = false;
@@ -595,7 +1137,7 @@ bool DataContainer::Add(const int32_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const uint64_t& value){
+bool yon1_dc_t::Add(const uint64_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_64B);
 		this->header.data_header.controller.signedness = false;
@@ -612,7 +1154,7 @@ bool DataContainer::Add(const uint64_t& value){
 	return(true);
 }
 
-bool DataContainer::Add(const int64_t& value){
+bool yon1_dc_t::Add(const int64_t& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_64B);
 		this->header.data_header.controller.signedness = true;
@@ -625,13 +1167,13 @@ bool DataContainer::Add(const int64_t& value){
 		return false;
 	}
 
-	this->data_uncompressed += (uint64_t)value;
+	this->data_uncompressed += (int64_t)value;
 	++this->header.n_additions;
 	//++this->n_entries;
 	return(true);
 }
 
-bool DataContainer::Add(const float& value){
+bool yon1_dc_t::Add(const float& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_FLOAT);
 		this->header.data_header.controller.signedness = true;
@@ -648,7 +1190,7 @@ bool DataContainer::Add(const float& value){
 	return(true);
 }
 
-bool DataContainer::Add(const double& value){
+bool yon1_dc_t::Add(const double& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_DOUBLE);
 		this->header.data_header.controller.signedness = true;
@@ -665,7 +1207,7 @@ bool DataContainer::Add(const double& value){
 	return(true);
 }
 
-bool DataContainer::AddCharacter(const char& value){
+bool yon1_dc_t::AddCharacter(const char& value){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_CHAR);
 		this->header.data_header.controller.signedness = true;
@@ -682,7 +1224,7 @@ bool DataContainer::AddCharacter(const char& value){
 	return(true);
 }
 
-bool DataContainer::AddCharacter(const char* const string, const uint32_t l_string){
+bool yon1_dc_t::AddCharacter(const char* const string, const uint32_t l_string){
 	if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
 		this->header.data_header.SetType(YON_TYPE_CHAR);
 		this->header.data_header.controller.signedness = true;
@@ -700,7 +1242,7 @@ bool DataContainer::AddCharacter(const char* const string, const uint32_t l_stri
 	return(true);
 }
 
-std::ostream& operator<<(std::ostream& stream, const DataContainer& entry){
+std::ostream& operator<<(std::ostream& stream, const yon1_dc_t& entry){
 	stream << entry.data;
 	if(entry.header.data_header.HasMixedStride())
 		stream << entry.strides;
@@ -708,7 +1250,7 @@ std::ostream& operator<<(std::ostream& stream, const DataContainer& entry){
 	return(stream);
 }
 
-std::istream& operator>>(std::istream& stream, DataContainer& entry){
+std::istream& operator>>(std::istream& stream, yon1_dc_t& entry){
 	if(entry.header.data_header.controller.encryption == YON_ENCRYPTION_NONE){
 		entry.data.resize(entry.header.data_header.cLength);
 		stream.read(entry.data.data(), entry.header.data_header.cLength);
@@ -727,5 +1269,4 @@ std::istream& operator>>(std::istream& stream, DataContainer& entry){
 	return(stream);
 }
 
-}
 }

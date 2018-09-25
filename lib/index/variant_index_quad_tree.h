@@ -8,43 +8,26 @@
 #include "variant_index_bin.h"
 #include "variant_index_contig.h"
 #include "variant_index_linear.h"
-#include "core/header/variant_header.h"
+#include "header_footer.h"
 #include "io/vcf_utils.h"
+#include "generic_iterator.h"
 
-#include "containers/components/generic_iterator.h"
-
-namespace tachyon{
-namespace index{
-
-/*
-class VIndex {
-
-
-	// Does not required sorted data. Linear array of variant block
-	// offsets.
-	VariantIndexLinear* c;
-	// If data is sorted then the meta index is equivalent to
-	// a run of linear blocks.
-	VariantIndexMeta* m;
-	// If data is sorted then the quad-tree allows random access
-	// lookups of data.
-	VariantIndexQuad* q;
-};
-*/
+namespace tachyon {
+namespace index {
 
 class VariantIndexQuadTree {
 public:
-	typedef VariantIndexQuadTree       self_type;
-    typedef std::size_t        size_type;
-    typedef VariantIndexContig value_type;
-    typedef VariantIndexLinear linear_type;
-    typedef value_type&        reference;
-    typedef const value_type&  const_reference;
-    typedef value_type*        pointer;
-    typedef const value_type*  const_pointer;
-    typedef VariantIndexEntry  linear_entry_type;
-    typedef YonContig          contig_type;
-    typedef linear_type*       linear_pointer;
+	typedef VariantIndexQuadTree self_type;
+    typedef std::size_t          size_type;
+    typedef VariantIndexContig   value_type;
+    typedef VariantIndexLinear   linear_type;
+    typedef value_type&          reference;
+    typedef const value_type&    const_reference;
+    typedef value_type*          pointer;
+    typedef const value_type*    const_pointer;
+    typedef yon1_idx_rec         linear_entry_type;
+    typedef YonContig            contig_type;
+    typedef linear_type*         linear_pointer;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;
@@ -87,32 +70,8 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->contigs_[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->contigs_[this->n_contigs_]); }
 
-	self_type& Add(const std::vector<io::VcfContig>& contigs){
-		while(this->size() + contigs.size() + 1 >= this->n_capacity_)
-			this->resize();
-
-		for(uint32_t i = 0; i < contigs.size(); ++i){
-			const uint64_t contig_length = contigs[i].n_bases;
-			uint8_t n_levels = 7;
-			uint64_t bins_lowest = pow(4,n_levels);
-			double used = ( bins_lowest - (contig_length % bins_lowest) ) + contig_length;
-
-			if(used / bins_lowest < 2500){
-				for(int32_t i = n_levels; i != 0; --i){
-					if(used/pow(4,i) > 2500){
-						n_levels = i;
-						break;
-					}
-				}
-			}
-
-			this->Add(i, contig_length, n_levels);
-			//std::cerr << "contig: " << this->header->contigs[i].name << "(" << i << ")" << " -> " << contig_length << " levels: " << (int)n_levels << std::endl;
-			//std::cerr << "idx size:" << idx.size() << " at " << this->writer->index.variant_index_[i].size() << std::endl;
-			//std::cerr << i << "->" << this->header->contigs[i].name << ":" << contig_length << " up to " << (uint64_t)used << " width (bp) lowest level: " << used/pow(4,n_levels) << "@level: " << (int)n_levels << std::endl;
-		}
-		return(*this);
-	}
+	self_type& Add(const std::vector<VcfContig>& contigs);
+	self_type& Add(const std::vector<YonContig>& contigs);
 
 	/**<
 	 * Add a contig with n_levels to the chain
@@ -139,9 +98,9 @@ public:
 	friend std::istream& operator>>(std::istream& stream, self_type& index);
 
 public:
-	size_type      n_contigs_; // number of contigs
-	size_type      n_capacity_;
-	pointer        contigs_;
+	size_type n_contigs_; // number of contigs
+	size_type n_capacity_;
+	pointer   contigs_;
 };
 
 }

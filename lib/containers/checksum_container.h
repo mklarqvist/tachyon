@@ -2,9 +2,9 @@
 #define CONTAINERS_CHECKSUM_CONTAINER_H_
 
 #include "algorithm/digest/digest_manager.h"
-#include "containers/variant_block.h"
-#include "core/header/variant_header.h"
-#include "containers/components/generic_iterator.h"
+#include "header_footer.h"
+#include "generic_iterator.h"
+#include "variant_container.h"
 
 namespace tachyon{
 namespace containers{
@@ -18,9 +18,9 @@ public:
     typedef const value_type&        const_reference;
     typedef value_type*              pointer;
     typedef const value_type*        const_pointer;
-    typedef io::BasicBuffer          buffer_type;
-    typedef containers::VariantBlock block_type;
-    typedef VariantHeader            header_type;
+    typedef yon_buffer_t             buffer_type;
+    typedef yon1_vb_t                block_type;
+    typedef yon_vnt_hdr_t            header_type;
 
     typedef yonRawIterator<value_type>       iterator;
    	typedef yonRawIterator<const value_type> const_iterator;

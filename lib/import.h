@@ -23,14 +23,14 @@ DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <getopt.h>
 
-#include "utility.h"
+#include "program_utils.h"
 #include "variant_importer.h"
 
 void import_usage(void){
 	programMessage();
 	std::cerr <<
 	"Brief:  Convert Vcf/Bcf records into a Yon archive.\n"
-	"Usage:  " << tachyon::constants::PROGRAM_NAME << " import [options] -i <input> -o <output.yon>\n\n"
+	"Usage:  " << tachyon::TACHYON_PROGRAM_NAME << " import [options] -i <input> -o <output.yon>\n\n"
 	"Options:\n"
 	"  -i FILE  input Vcf/Bcf/Vcf.gz file (required, \"-\" for piping from stdin)\n"
 	"  -o FILE  output file prefix (required, \"-\" for piping to stdout)\n"

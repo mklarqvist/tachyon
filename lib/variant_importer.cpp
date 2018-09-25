@@ -2,6 +2,9 @@
 #include <regex>
 #include <thread>
 
+#include <openssl/evp.h>
+
+#include "variant_writer.h"
 #include "variant_importer.h"
 #include "containers/checksum_container.h"
 #include "algorithm/parallel/vcf_slaves.h"
@@ -11,18 +14,20 @@
 namespace tachyon {
 
 VariantImporterSettings::VariantImporterSettings() :
+	verbose(true),
 	permute_genotypes(true),
 	encrypt_data(false),
 	checkpoint_n_snps(1000),
 	checkpoint_bases(10e6),
 	n_threads(std::thread::hardware_concurrency()),
-	info_end_key(-1),
-	info_svlen_key(-1),
 	compression_level(6),
 	htslib_extra_threads(std::thread::hardware_concurrency() - 1 >= 0
 	                     ? std::thread::hardware_concurrency() - 1
-	                     : 0)
-{}
+	                     : 0),
+	info_end_key(-1),
+	info_svlen_key(-1)
+{
+}
 
 std::string VariantImporterSettings::GetInterpretedString(void) const{
 	return(std::string("{\"input_file\":\"" + this->input_file +
@@ -35,7 +40,7 @@ std::string VariantImporterSettings::GetInterpretedString(void) const{
 }
 
 /**<
- * Pimpl implementation of private functionality of VariantImporter
+ * PImpl implementation of private functionality of VariantImporter
  * class. Hides the private logic from the exposed public API and
  * speeds up compilation.
  */
@@ -47,8 +52,16 @@ public:
 	typedef std::unordered_map<uint32_t, uint32_t> reorder_map_type;
 	typedef std::unordered_map<uint64_t, uint32_t> hash_map_type;
 
+	typedef VariantWriterInterface    writer_interface_type;
+	typedef VariantWriterFile         writer_file_type;
+	typedef VariantWriterStream       writer_stream_type;
+
 public:
+	~VariantImporterImpl(){ delete this->writer; }
 	bool Build(writer_interface_type* writer, settings_type& settings);
+
+	void SetWriterTypeFile(void);
+	void SetWriterTypeStream(void);
 
 private:
 	/**<
@@ -74,9 +87,18 @@ private:
 	 * the target file was imported in the tachyon archive.
 	 * @param header Global tachyon header.
 	 */
-	void UpdateHeaderImport(VariantHeader& header);
+	void UpdateHeaderImport(yon_vnt_hdr_t& header);
+
+	/**<
+	 * Converts a htslib-styled Vcf header into a Tachyon header.
+	 * @param vcf_header Src reference of a Vcf header.
+	 * @return           Returns a Tachyon yon_vnt_hdr_t.
+	 */
+	yon_vnt_hdr_t ConvertVcfHeader(const io::VcfHeader& vcf_header);
 
 public:
+	writer_interface_type* writer; // writer
+
 	std::shared_ptr<settings_type> settings;
 	compression_manager_type compression_manager;
 
@@ -95,42 +117,47 @@ public:
 	reorder_map_type contig_reorder_map_;
 
 	std::unique_ptr<vcf_reader_type> vcf_reader_;
-	VariantHeader yon_header_;
+	yon_vnt_hdr_t yon_header_;
 
 	hash_map_type block_hash_map;
 };
 
+
+VariantImporter::VariantImporter(void) :
+	mImpl(new VariantImporter::VariantImporterImpl)
+{
+
+}
+
 VariantImporter::VariantImporter(const settings_type& settings) :
-		settings_(settings),
-		writer(nullptr),
-		mImpl(new VariantImporter::VariantImporterImpl)
+	settings_(settings),
+	mImpl(new VariantImporter::VariantImporterImpl)
 {
 
 }
 
 VariantImporter::~VariantImporter(){
-	delete this->writer;
 }
 
-void VariantImporter::SetWriterTypeFile(void)  { this->writer = new writer_file_type;   }
-void VariantImporter::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+void VariantImporter::VariantImporterImpl::SetWriterTypeFile(void)  { this->writer = new writer_file_type;   }
+void VariantImporter::VariantImporterImpl::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
 
 bool VariantImporter::Build(){
 	// Allocate a new writer.
 	if(this->settings_.output_prefix.size() == 0 ||
 	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
 	{
-		writer = new writer_stream_type;
+		this->mImpl->writer = new VariantImporterImpl::writer_stream_type;
 	}
-	else writer = new writer_file_type;
+	else this->mImpl->writer = new VariantImporterImpl::writer_file_type;
 
 	// Open a file handle or standard out for writing.
-	if(!writer->open(this->settings_.output_prefix)){
+	if(!this->mImpl->writer->open(this->settings_.output_prefix)){
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
-	if(!this->mImpl->Build(this->writer, this->settings_)){
+	if(!this->mImpl->Build(this->mImpl->writer, this->settings_)){
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
@@ -175,7 +202,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	bool GT_available = (this->vcf_reader_->vcf_header_.GetFormat("GT") != nullptr);
 
 	// Predicate of a search for "END" INFO field in the Vcf header.
-	io::VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
+	VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
 	if(vcf_info_end != nullptr)
 		this->settings->info_end_key = vcf_info_end->idx;
 
@@ -183,10 +210,6 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	algorithm::VariantDigestManager checksums(YON_BLK_N_STATIC   + 1, // Add one for global checksum.
 			this->vcf_reader_->vcf_header_.info_fields_.size()   + 1,
 			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
-
-	// Setup the encryption container.
-	EncryptionDecorator encryption_manager;
-	Keychain keychain;
 
 	// The index needs to know how many contigs that's described in the
 	// Vcf header and their lengths in base-pairs. This information is
@@ -264,7 +287,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	//this->writer->index.Print(std::cerr);
 
 	// Finalize writing procedure.
-	write.WriteFinal(checksums);
+	writer->close();
 	this->WriteKeychain(writer);
 
 	uint64_t b_uncompressed = 0;
@@ -286,8 +309,8 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 		}
 	}
 
-	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::toPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::toPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
-	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::toPrettyDiskString((uint64_t)writer->stream->tellp()) << "(" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/((uint64_t)writer->stream->tellp()) << ")" << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Processed " << utility::ToPrettyDiskString(consumers[0].b_indiv + consumers[0].b_shared) << " of htslib bcf1_t records -> " << utility::ToPrettyDiskString(b_uncompressed) << " (" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/b_uncompressed << ")" << std::endl;
+	std::cerr << utility::timestamp("PROGRESS") << "Wrote: " << utility::ToPrettyString(consumers[0].poolw->n_written_rcds) << " variants to " << utility::ToPrettyString(consumers->poolw->writer->n_blocks_written) << " blocks in " << utility::ToPrettyDiskString((uint64_t)writer->stream->tellp()) << "(" << (double)(consumers[0].b_indiv + consumers[0].b_shared)/((uint64_t)writer->stream->tellp()) << ")" << std::endl;
 	std::cerr << utility::timestamp("PROGRESS") << "All done (" << timer.ElapsedString() << ")" << std::endl;
 
 	//delete [] consumers;
@@ -314,7 +337,7 @@ bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* 
 			const uint32_t keychain_size = writer_keychain.tellp();
 			writer_keychain.close();
 			if(!SILENT)
-				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::toPrettyDiskString(keychain_size) << "..." << std::endl;
+				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::ToPrettyDiskString(keychain_size) << "..." << std::endl;
 		}
 	}
 	return true;
@@ -325,18 +348,19 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 		return false;
 
 	// Write basic header prefix.
-	writer->stream->write(&constants::FILE_HEADER[0], constants::FILE_HEADER_LENGTH); // Todo: fix
+	writer->stream->write(&TACHYON_MAGIC_HEADER[0], TACHYON_MAGIC_HEADER_LENGTH); // Todo: fix
 
 	// Transmute a htslib-styled vcf header into a tachyon
 	// header.
-	this->yon_header_ = VariantHeader(this->vcf_reader_->vcf_header_);
+	this->yon_header_ = this->ConvertVcfHeader(this->vcf_reader_->vcf_header_);
+	//this->yon_header_ = yon_vnt_hdr_t(this->vcf_reader_->vcf_header_);
 	// Update the extra provenance fields in the new header.
 	this->UpdateHeaderImport(this->yon_header_);
 
 	// Pack header into a byte-stream, compress it, and write
 	// it out.
-	io::BasicBuffer temp(500000);
-	io::BasicBuffer temp_cmp(temp);
+	yon_buffer_t temp(500000);
+	yon_buffer_t temp_cmp(temp);
 	temp << this->yon_header_;
 	this->compression_manager.zstd_codec.Compress(temp, temp_cmp, 20);
 	uint32_t l_data   = temp.size();
@@ -347,24 +371,53 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 	return(writer->stream->good());
 }
 
-void VariantImporter::VariantImporterImpl::UpdateHeaderImport(VariantHeader& header){
-	io::VcfExtra e;
+void VariantImporter::VariantImporterImpl::UpdateHeaderImport(yon_vnt_hdr_t& header){
+	VcfExtra e;
 	e.key = "tachyon_importVersion";
-	e.value = tachyon::constants::PROGRAM_NAME + "-" + VERSION + ";";
-	e.value += "libraries=" +  tachyon::constants::PROGRAM_NAME + '-' + tachyon::constants::TACHYON_LIB_VERSION + ","
+	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
+	e.value += "libraries=" +  tachyon::TACHYON_PROGRAM_NAME + '-' + tachyon::TACHYON_LIB_VERSION + ","
 			+   SSLeay_version(SSLEAY_VERSION) + ","
 			+  "ZSTD-" + ZSTD_versionString()
 			+  "; timestamp=" + tachyon::utility::datetime();
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
 	e.key = "tachyon_importCommand";
-	e.value = tachyon::constants::LITERAL_COMMAND_LINE;
+	e.value = tachyon::LITERAL_COMMAND_LINE;
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
 	e.key = "tachyon_importSettings";
 	e.value = this->settings->GetInterpretedString();
 	header.literals_ += "##" + e.key + "=" + e.value + '\n';
 	header.extra_fields_.push_back(e);
+}
+
+yon_vnt_hdr_t VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header){
+	yon_vnt_hdr_t header;
+	header.fileformat_string_ = vcf_header.fileformat_string_;
+	header.literals_ = vcf_header.literals_;
+	header.samples_ = vcf_header.samples_;
+	header.filter_fields_ = vcf_header.filter_fields_;
+	header.structured_extra_fields_ = vcf_header.structured_extra_fields_;
+	header.extra_fields_ = vcf_header.extra_fields_;
+
+	header.BuildMaps();
+	header.BuildReverseMaps();
+
+	header.contigs_.resize(vcf_header.contigs_.size());
+	for(uint32_t i = 0; i < vcf_header.contigs_.size(); ++i)
+		header.contigs_[i] = vcf_header.contigs_[i];
+
+	header.info_fields_.resize(vcf_header.info_fields_.size());
+	for(uint32_t i = 0; i < vcf_header.info_fields_.size(); ++i)
+		header.info_fields_[i] = vcf_header.info_fields_[i];
+
+	header.format_fields_.resize(vcf_header.format_fields_.size());
+	for(uint32_t i = 0; i < vcf_header.format_fields_.size(); ++i)
+		header.format_fields_[i] = vcf_header.format_fields_[i];
+
+	header.RecodeIndices();
+
+	return(header);
 }
 
 } /* namespace Tachyon */

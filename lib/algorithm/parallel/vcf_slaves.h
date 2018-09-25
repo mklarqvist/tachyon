@@ -1,6 +1,9 @@
 #ifndef ALGORITHM_PARALLEL_VCF_SLAVES_H_
 #define ALGORITHM_PARALLEL_VCF_SLAVES_H_
 
+#include <openssl/evp.h>
+
+#include <atomic>
 #include <cstdint>
 #include <thread>
 #include <mutex>
@@ -8,8 +11,8 @@
 
 #include "vcf_importer_slave.h"
 #include "containers/vcf_container.h"
-#include "core/variant_importer_container_stats.h"
-#include "core/footer/footer.h"
+#include "header_footer.h"
+#include "variant_container.h"
 
 namespace tachyon{
 
@@ -287,13 +290,41 @@ struct yon_writer_sync {
 		}
 
 		// Write data container.
-		this->Write(importer.block, container, importer.index_entry);
+		this->Write(importer.block, container, importer.index.GetCurrent());
 		// Update compression/storage statistics.
 		importer.block.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
 		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;
 
 		++this->next_block_id;
 		this->n_written_rcds += container.sizeWithoutCarryOver();
+
+		l.unlock();
+		cv_next_checkpoint.notify_all();
+	}
+
+	void emplace(uint32_t block_id, yon1_vb_t& container, yon1_idx_rec& index_entry){
+		std::unique_lock<std::mutex> l(lock);
+
+		cv_next_checkpoint.wait(l, [this, block_id](){
+			if(this->alive == false) return true;
+			return this->next_block_id == block_id;
+		});
+
+		if(this->alive == false){
+			//std::cerr << "is exit condition in wblock" << std::endl;
+			l.unlock();
+			cv_next_checkpoint.notify_all();
+			return;
+		}
+
+		// Write data container.
+		this->writer->Write(container, index_entry);
+		// Update compression/storage statistics.
+		//container.UpdateOutputStatistics(this->stats_basic, this->stats_info, this->stats_format);
+		//std::cerr << utility::timestamp("LOG") << "Writing: " << this->next_block_id << ": " << importer.block.GetCompressedSize() << "b" << std::endl;
+
+		++this->next_block_id;
+		this->n_written_rcds += index_entry.n_variants;
 
 		l.unlock();
 		cv_next_checkpoint.notify_all();
@@ -307,11 +338,11 @@ struct yon_writer_sync {
 	 * @param index_entry Reference to src VariantIndexEntry.
 	 * @return            Returns TRUE upon sucess or FALSE otherwise.
 	 */
-	bool Write(containers::VariantBlock& block,
-	           const containers::VcfContainer& container,
-	           index::VariantIndexEntry& index_entry)
+	bool Write(yon1_vb_t& block,
+			   const containers::VcfContainer& container,
+			   yon1_idx_rec& index_entry)
 	{
-		this->WriteBlock(block, index_entry); // write block
+		this->writer->WriteBlock(block, index_entry); // write block
 		this->UpdateIndex(container, index_entry); // Update index.
 		return(this->writer->stream->good());
 	}
@@ -323,16 +354,16 @@ struct yon_writer_sync {
 	 * @param index_entry  Reference to source VariantIndexEntry.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool UpdateIndex(const containers::VcfContainer& container, index::VariantIndexEntry& index_entry){
-		assert(this->writer != nullptr);
-		index_entry.blockID         = this->writer->n_blocks_written;
-		index_entry.byte_offset_end = this->writer->stream->tellp();
-		index_entry.contigID        = container.front()->rid;
-		index_entry.minPosition     = container.front()->pos;
-		index_entry.n_variants      = container.sizeWithoutCarryOver();
-		this->writer->index        += index_entry;
+	bool UpdateIndex(const containers::VcfContainer& container, yon1_idx_rec& index_entry){
+		assert(this->writer->stream != nullptr);
+		index_entry.block_id         = this->writer->n_blocks_written;
+		index_entry.byte_offset_end  = this->writer->stream->tellp();
+		index_entry.contig_id        = container.front()->rid;
+		index_entry.min_position     = container.front()->pos;
+		index_entry.n_variants       = container.sizeWithoutCarryOver();
+		this->writer->index         += index_entry;
 
-		index_entry.print(std::cerr);
+		index_entry.Print(std::cerr);
 		std::cerr << std::endl;
 
 		index_entry.reset();
@@ -342,54 +373,6 @@ struct yon_writer_sync {
 		return true;
 	}
 
-	/**<
-	 * Wrapper function for writing a valid VariantBlock to a
-	 * Tachyon archive. Writes the block itself then the block footer
-	 * and end-of-block marker.
-	 * @param block       Source VariantBlock for writing.
-	 * @param index_entry Source VariantIndexEntry to update the variant index with.
-	 * @return            Returns TRUE upon success or FALSE otherwise.
-	 */
-	bool WriteBlock(containers::VariantBlock& block, index::VariantIndexEntry& index_entry){
-		index_entry.byte_offset = this->writer->stream->tellp();
-		block.write(*this->writer->stream);
-		this->writer->WriteBlockFooter(block.footer_support);
-		this->writer->WriteEndOfBlock(); // End-of-block marker.
-
-		return(this->writer->stream->good());
-	}
-
-	/**<
-	 * Finalize the writing of a Tachyon archive. Writes the
-	 * footer, the index, and the checksums.
-	 * @param checksums Source checksum container for archive integrity checks.
-	 * @return          Returns TRUE upon success or FALSE otherwise.
-	 */
-	bool WriteFinal(algorithm::VariantDigestManager& checksums){
-		// Done importing
-		this->writer->stream->flush();
-
-		// Write global footer.
-		core::Footer footer;
-		footer.offset_end_of_data = this->writer->stream->tellp();
-		footer.n_blocks           = this->writer->n_blocks_written;
-		footer.n_variants         = this->writer->n_variants_written;
-		assert(footer.n_blocks == this->writer->index.GetLinearSize());
-
-		uint64_t last_pos = this->writer->stream->tellp();
-		this->writer->WriteIndex(); // Write index.
-		std::cerr << utility::timestamp("PROGRESS") << "Index size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-		last_pos = this->writer->stream->tellp();
-		checksums.finalize();       // Finalize SHA-512 digests.
-		*this->writer->stream << checksums;
-		std::cerr << utility::timestamp("PROGRESS") << "Checksum size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-		last_pos = this->writer->stream->tellp();
-		*this->writer->stream << footer; // Write global footer and EOF marker.
-		std::cerr << utility::timestamp("PROGRESS") << "Footer size: " << utility::toPrettyDiskString((uint64_t)this->writer->stream->tellp() - last_pos) << "..." << std::endl;
-
-		this->writer->stream->flush();
-		return(this->writer->stream->good());
-	}
 
 public:
 	uint64_t n_written_rcds;
@@ -401,9 +384,9 @@ public:
 	VariantWriterInterface* writer; // writer
 
 	// Stats
-	support::VariantImporterContainerStats stats_basic;
-	support::VariantImporterContainerStats stats_info;
-	support::VariantImporterContainerStats stats_format;
+	yon_vb_istats stats_basic;
+	yon_vb_istats stats_info;
+	yon_vb_istats stats_format;
 };
 
 /**<

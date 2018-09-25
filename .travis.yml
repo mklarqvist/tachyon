@@ -209,7 +209,8 @@ before_install:
   - git clone https://github.com/facebook/zstd
   - cd zstd && make -j4 && sudo make install && cd ..
   - git clone https://github.com/samtools/htslib
-  - cd htslib && autoheader && autoconf && ./configure && make -j 4 && sudo make install && cd ..
+  - cd htslib && git checkout 1832d3a1b75133e55fb6abffc3f50f8a6ed5ceae
+  - autoheader && autoconf && ./configure && make -j 4 && sudo make install && cd ..
 
 script:
   - git submodule update --recursive
