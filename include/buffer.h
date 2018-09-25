@@ -56,6 +56,7 @@ public:
 	yon_buffer_t(char* target, const size_t length);
 	yon_buffer_t(const uint64_t size, char* target);
 	yon_buffer_t(const self_type& other);
+	yon_buffer_t(self_type&& other) noexcept;
 	self_type& operator=(const self_type& other);
 	self_type& operator=(self_type&& other) noexcept;
 	~yon_buffer_t();

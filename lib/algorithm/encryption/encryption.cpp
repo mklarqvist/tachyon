@@ -222,16 +222,16 @@ public:
 	~EncryptionDecoratorImpl() = default;
 
     // Pimpl
-	bool EncryptAES256(variant_block_type& block, keychain_type& keychain);
-	bool EncryptAES256(stream_container& container, keychain_type& keychain);
-	bool DecryptAES256(stream_container& container, keychain_type& keychain);
+	bool EncryptAES256(yon1_vb_t& block, keychain_type& keychain);
+	bool EncryptAES256(yon1_dc_t& container, keychain_type& keychain);
+	bool DecryptAES256(yon1_dc_t& container, keychain_type& keychain);
 
 public:
 	buffer_type buffer;
 };
 
 //decorator
-bool EncryptionDecorator::Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
+bool EncryptionDecorator::Encrypt(yon1_vb_t& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type){
 	if(encryption_type == YON_ENCRYPTION_NONE){
 		return true;
 	} else if(encryption_type == YON_ENCRYPTION_AES_256_GCM){
@@ -242,7 +242,7 @@ bool EncryptionDecorator::Encrypt(variant_block_type& block, keychain_type& keyc
 	return(false);
 }
 
-bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keychain){
+bool EncryptionDecorator::Decrypt(yon1_vb_t& block, keychain_type& keychain){
 	uint32_t temp_match = 0;
 
 	for(uint32_t i = 1; i < YON_BLK_N_STATIC; ++i){
@@ -282,7 +282,7 @@ bool EncryptionDecorator::Decrypt(variant_block_type& block, keychain_type& keyc
 	return true;
 }
 
-bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(variant_block_type& block, keychain_type& keychain){
+bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(yon1_vb_t& block, keychain_type& keychain){
 	block.header.block_hash = keychain.GetRandomHashIdentifier(true);
 
 	// Iterate over available basic containers.
@@ -312,7 +312,7 @@ bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(variant_block_t
 	return(true);
 }
 
-bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(stream_container& container, keychain_type& keychain){
+bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(yon1_dc_t& container, keychain_type& keychain){
 	KeychainKeyGCM<> entry;
 	entry.InitiateRandom();
 	entry.encryption_type = YON_ENCRYPTION_AES_256_GCM;
@@ -402,7 +402,7 @@ bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(stream_containe
 	return(true);
 }
 
-bool EncryptionDecorator::EncryptionDecoratorImpl::DecryptAES256(stream_container& container, keychain_type& keychain){
+bool EncryptionDecorator::EncryptionDecoratorImpl::DecryptAES256(yon1_dc_t& container, keychain_type& keychain){
 	if(container.data.size() == 0)
 		return true;
 

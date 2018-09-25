@@ -37,15 +37,21 @@ void view_usage(void){
 	"Options:\n"
 	"  -i FILE   input YON file (required)\n"
 	"  -o FILE   output file (- for stdout)[-]\n"
-	"  -k FILE   keychain file with encryption keys (required if the file is encrypted)\n"
 	"  -O <y|b|u|z|v> y: tachyon archive, b: compressed BCF, u: uncompressed BCF, \n"
 	"                 z: compressed VCF,  v: uncompressed VCF [v]\n"
+	"  -c INT    import checkpoint size in number of variants (default: 1000)\n"
+	"  -C FLOAT  import checkpoint size in bases (default: 5 Mb)\n"
+	"  -L INT    compression level 1-20 (default: 6)\n"
+	"  -t INT    number of compression threads (default: all available)\n"
+	"  -p/-P     permute/do not permute diploid genotypes\n"
+	"  -k FILE   keychain file with encryption keys (required if the file is encrypted)\n"
 	"  -f STRING interpreted filter string for slicing output (see manual)\n"
-	"  -r STRING interval string\n"
-	"  -b STRING groupings file\n"
+	"  -r STRING interval string (e.g. chr20:10e6-11e6 or chr11:451021)\n"
+	"  -b STRING groupings file for Occ-functionality\n"
 	//"  -R STRING path to file with interval strings\n"
 	"  -G        drop all FORMAT fields from output\n"
 	"  -X        annotate FORMAT:GT data and add these statistics to the INFO column\n"
+	"            If -b is set then compute these statistics for each grouping."
 	"  -h/H      header only / no header\n\n"
 
 	//"Subset options:\n"
@@ -55,16 +61,16 @@ void view_usage(void){
 	"Filter options:\n"
 	"  -a/A, --ref-match/--alt-match <REGEX>       regular expression pattern for the reference allele -a or for any alternative alleles -A\n"
 	"  -n,   --name-match <REGEX>                  regular expression pattern for the locus name\n"
-    "  -c/C, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
+    "  -s/S, --min-ac/--max-ac <int>               minimum/maximum count for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     //"  -g,   --genotype [^]<hom|het|miss>          require one or more hom/het/missing genotype or, if prefixed with \"^\", exclude sites with hom/het/missing genotypes\n"
     "  -z/Z, --known/--novel                       select known/novel sites only (ID is not/is '.')\n"
 	"  -q/Q, --min-quality/--max-quality           minimum/maximum quality value\n"
     "  -m/M, --min-alleles/--max-alleles <int>     minimum/maximum number of alleles listed in REF and ALT\n"
-    "  -p/P, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
+    "  -y/Y, --phased/--exclude-phased             select/exclude sites where all samples are phased\n"
 	"  -j/J  --mixed-phasing/--no-mixed-phasing    select sites with both phased and unphased samples\n"
 	"  -w/W  --mixed-ploidy/--no-mixed-ploidy      select sites with mixed ploidy\n"
-	"  -l/L, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
+	"  -d/D, --min-af/--max-af <float>             minimum/maximum frequency for non-reference least frequent\n"
     "                                                 (minor), most frequent (major) or sum of all but most frequent (nonmajor) alleles [nref]\n"
     "  -u/U, --uncalled/--exclude-uncalled         select/exclude sites without a called genotype\n"
 	"  -e/E, --remove-unseen/--keep-unseen         select/exclude sites with unseen alternative allele(s)\n\n";
@@ -91,22 +97,28 @@ int view(int argc, char** argv){
 		{"keychain",          optional_argument, 0,  'k' },
 		{"filter",            optional_argument, 0,  'f' },
 		{"output-type",       optional_argument, 0,  'O' },
+		{"checkpoint-variants", optional_argument, 0, 'c' },
+		{"checkpoint-bases",    optional_argument, 0, 'C' },
+		{"compression-level",   optional_argument, 0, 'L' },
+		{"permute",             no_argument,       0, 'p' },
+		{"no-permute",          no_argument,       0, 'P' },
+		{"threads",             optional_argument, 0, 't' },
+
 		{"annotate-genotype", no_argument,       0,  'X' },
 		{"region",            optional_argument, 0,  'r' },
 		{"noHeader",          no_argument,       0,  'H' },
 		{"onlyHeader",        no_argument,       0,  'h' },
 		{"dropFormat",        no_argument,       0,  'G' },
-		{"silent",            no_argument,       0,  's' },
-		{"af-min",            optional_argument, 0,  'l' },
-		{"af-max",            optional_argument, 0,  'L' },
-		{"ac-min",            optional_argument, 0,  'c' },
-		{"ac-max",            optional_argument, 0,  'C' },
+		{"af-min",            optional_argument, 0,  'd' },
+		{"af-max",            optional_argument, 0,  'D' },
+		{"ac-min",            optional_argument, 0,  's' },
+		{"ac-max",            optional_argument, 0,  'S' },
 		{"alleles-min",       optional_argument, 0,  'm' },
 		{"alleles-max",       optional_argument, 0,  'M' },
 		{"known",             no_argument,       0,  'z' },
 		{"novel",             no_argument,       0,  'Z' },
-		{"phased",            no_argument,       0,  'p' },
-		{"exclude-phased"    ,no_argument,       0,  'P' },
+		{"phased",            no_argument,       0,  'y' },
+		{"exclude-phased"    ,no_argument,       0,  'Y' },
 		{"mixed-phase",       no_argument,       0,  'j' },
 		{"no-mixed-phase",    no_argument,       0,  'J' },
 		{"uncalled",          no_argument,       0,  'u' },
@@ -144,16 +156,39 @@ int view(int argc, char** argv){
 		case 'o':
 			settings.output = std::string(optarg);
 			break;
+		case 'c':
+			settings.checkpoint_n_snps = atoi(optarg);
+			if(settings.checkpoint_n_snps <= 0){
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				return(1);
+			}
+			break;
+		case 'C':
+			settings.checkpoint_bases = atof(optarg);
+			if(settings.checkpoint_bases <= 0){
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
+				return(1);
+			}
+			break;
+		case 'L':
+			settings.compression_level = atoi(optarg);
+			if(settings.compression_level <= 0){
+				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set compression level to <= 0..." << std::endl;
+				return(1);
+			}
+			break;
+		case 'p': settings.permute_genotypes = true;  break;
+		case 'P': settings.permute_genotypes = false; break;
 		case 'b':
 			settings.group_file = std::string(optarg);
 			break;
 		case 'k':
 			settings.keychain_file = std::string(optarg);
 			break;
-		case 'l':
+		case 'd':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_GREATER);
 			break;
-		case 'L':
+		case 'D':
 			filters.Add(tachyon::YON_FILTER_ALLELE_FREQUENCY, atof(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
 		case 'q':
@@ -177,16 +212,16 @@ int view(int argc, char** argv){
 		case 'n':
 			filters.Add(tachyon::YON_FILTER_NAME, std::string(optarg), tachyon::YON_CMP_REGEX);
 			break;
-		case 'c':
+		case 's':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_GREATER);;
 			break;
-		case 'C':
+		case 'S':
 			filters.Add(tachyon::YON_FILTER_ALLELE_COUNT, atoi(optarg), tachyon::YON_CMP_LESS_EQUAL);
 			break;
-		case 'p':
+		case 'y':
 			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)true, tachyon::YON_CMP_EQUAL);
 			break;
-		case 'P':
+		case 'Y':
 			filters.Add(tachyon::YON_FILTER_UNIFORM_PHASE, (bool)false, tachyon::YON_CMP_EQUAL);
 			break;
 		case 'j':
@@ -218,9 +253,6 @@ int view(int argc, char** argv){
 			break;
 		case 'G':
 			settings.drop_format = true;
-			break;
-		case 's':
-			SILENT = 1;
 			break;
 		case 'r':
 			interval_strings.push_back(std::string(optarg));

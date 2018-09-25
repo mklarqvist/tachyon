@@ -32,37 +32,13 @@ DEALINGS IN THE SOFTWARE.
 #include "data_container.h"
 #include "header_footer.h"
 #include "variant_container.h"
+#include "variant_reader.h"
 
 namespace tachyon {
-
-struct VariantWriteSettings {
-public:
-	VariantWriteSettings();
-	~VariantWriteSettings() = default;
-
-	inline void SetThreads(const int32_t n_threads){ this->n_threads = n_threads; }
-	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
-	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void SetCompressionLevel(const int32_t compression_level){ this->compression_level = compression_level; }
-	inline void SetCheckpointBases(const int32_t bases){ this->checkpoint_bases = bases; }
-	inline void SetCheckpointVariants(const int32_t variants){ this->checkpoint_n_snps = variants; }
-	inline void SetPermuteGenotypes(const bool yes = true){ this->permute_genotypes = yes; }
-
-public:
-	bool permute_genotypes; // permute GT flag
-	bool encrypt_data; // encryption flag
-	int32_t checkpoint_n_snps; // number of variants until checkpointing
-	int32_t checkpoint_bases; // number of bases until checkpointing
-	int32_t n_threads; // number of parallel importer threads
-	int32_t compression_level; // compression level sent to ZSTD
-
-	std::string output_prefix; // output file prefix
-};
 
 class VariantWriterInterface {
 public:
 	typedef VariantWriterInterface  self_type;
-	typedef VariantWriteSettings    settings_type;
 	typedef yon1_dc_t               container_type;
 
 public:
@@ -130,13 +106,14 @@ public:
 	uint64_t n_blocks_written;
 	uint64_t n_variants_written;
 	std::ostream* stream;
-	yon_index_t index;
+	yon_index_t index; // local variant index
 
 	// Local variant container to add to.
-	uint32_t n_s;
-	settings_type settings;
-	yon1_vc_t     variant_container;
+	uint32_t n_s; // number of samples
+	VariantReaderSettings settings; // import settings
+	yon1_vc_t     variant_container; // local variant container
 
+private:
 	class VariantWriterInterfaceImpl;
 	std::unique_ptr<VariantWriterInterfaceImpl> mImpl;
 };

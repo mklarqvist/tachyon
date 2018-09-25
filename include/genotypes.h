@@ -26,6 +26,10 @@ DEALINGS IN THE SOFTWARE.
 #include <cstring>
 #include <unordered_map>
 
+#ifndef SIZE_MAX
+#define SIZE_MAX static_cast<size_t>(-1)
+#endif
+
 #include "htslib/vcf.h"
 
 #include "buffer.h"
@@ -237,9 +241,9 @@ public:
 	*
 	* Decodings are invoked from the EvaluateRecordsM*() functions. These
 	* corresponds to the following genotype encodings:
-	*     M1) Diploid bi-allelic
-	*     M2) Diploid other
-	*     M4) Nploid
+	*     M1) Diploid bi-allelic and no EOV
+	*     M2) Diploid any allele count, missingness, and EOV
+	*     M4) Nploid any
 	*
 	* @return Returns TRUE upon success or FALSE otherwise
 	*/
@@ -251,50 +255,26 @@ public:
 	template <class T> bool EvaluateRecordsM2_();
 	template <class T> bool EvaluateRecordsM4_();
 
-	bool Expand(void);
-	bool ExpandExternal(yon_gt_rcd* d_expe);
-
 	/**<
-	 * Lazy evaluated (expands) (possibly) run-length encoded rcds structures
-	 * into a vector of pointers corresponding to distinct samples in the order
-	 * they were stored. This unpermutation (restoration) of order requires the
-	 * ppa array (stored at YON_BLK_PPA).
-	 *
-	 * This function should be considered private as the generic wrapper function
-	 * Expand() calls this function if ppa is available or ExpandRecords()
-	 * otherwise.
-	 * @return Always returns TRUE if the critical assertions passes.
-	 */
-	bool ExpandRecordsPpa(void);
-
-	/**<
-	 * Expand records into externally allocated yon_gt_rcd
-	 * array of pointers. This function does consider the
-	 * possible permutation of the genotypes relative the
-	 * global ordering.
-	 * @param d_expe Dst array of yon_gt_rcd*.
-	 * @return       Returns TRUE upon success or FALSE otherwise.
-	 */
-	bool ExpandRecordsPpaExternal(yon_gt_rcd* d_expe);
-
-
-	/**<
-	 * Expand records into internally into individual pointers
-	 * to the matched compressed object. This function does not
-	 * consider the possible permutation of the genotypes
-	 * relative the global ordering.
+	 * Wrapper for expanding (possibly) run-length encoded rcds structures
+	 * into a vector of length N where each entry corresponds to a single
+	 * individual.
 	 * @return Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool ExpandRecords(void);
+	bool Expand(void);
 
 	/**<
-	 * Expand records into externally allocated yon_gt_rcd
-	 * array of pointers. This function does not consider the
-	 * possible permutation of the genotypes relative the
-	 * global ordering.
-	 * @param d_expe Dst array of yon_gt_rcd*.
+	 * Wrapper for expanding (possibly) run-length encoded rcds structures
+	 * into a vector of length N using external memory. No checks are made
+	 * to ascertain that the array length is properly allocated. Failure to
+	 * allocate sufficient memory will result in a seg-fault.
+	 * @param d_expe Dst array of pre-allocated array of length N.
 	 * @return       Returns TRUE upon success or FALSE otherwise.
 	 */
+	bool ExpandExternal(yon_gt_rcd* d_expe);
+	bool ExpandRecordsPpa(void);
+	bool ExpandRecordsPpaExternal(yon_gt_rcd* d_expe);
+	bool ExpandRecords(void);
 	bool ExpandRecordsExternal(yon_gt_rcd* d_expe);
 
 	/**<
@@ -404,8 +384,6 @@ bool yon_gt::EvaluateRecordsM2_(){
 	this->eval_cont |= YON_GT_UN_RCDS;
 }
 
-
-
 template <class T>
 bool yon_gt::EvaluateRecordsM4_(){
 	// Prevent double evaluation.
@@ -440,6 +418,27 @@ bool yon_gt::EvaluateRecordsM4_(){
 	this->eval_cont |= YON_GT_UN_RCDS;
 }
 
+/****************************
+*  Genotype summary statistics
+****************************/
+
+/**<
+ * Supportive structure used in yon_gt_summary below. Corresponds to the
+ * lazy evaluation of a genotype summary statistics ojbect. Pre-computes
+ * a variety of standard genotype statistics such as:
+ *    1) Base ploidy
+ *    2) Allele counts
+ *    3) Allele frequencies
+ *    4) Number of missing, number of special sentinel symbols
+ *    5) Fisher's exact test for strand bias
+ *    6) Hardy-Weinberg equilibrium P-value
+ *    7) F-statistics for population inbreeding
+ *    8) Site heterozygosity
+ *
+ * This object should be considered internal. Manipulation of this object
+ * without modifying all othe related genotype objects could result in
+ * significant discord.
+ */
 struct yon_gt_summary_rcd {
 public:
 	yon_gt_summary_rcd();
@@ -465,12 +464,12 @@ public:
 };
 
 /**<
- * Primary object used in the genotype trie. This object is built
+ * Primary object used in the genotype trie in yon_gt_summary below. This object is built
  * using information about the number of alleles. However this information
  * is not explicitly stored here (it is stored in the parent container).
  * Because of this it is not possible to invoke the copy ctor or copy assign
- * operator. It also prevents the use of this object in direct arithmetic
- * use cases.
+ * operator (use Clone() instead). It also prevents the use of this object
+ * in direct arithmetic use cases.
  */
 struct yon_gt_summary_obj {
 public:
@@ -525,16 +524,54 @@ public:
 	inline uint32_t* GetAlleleCountsRaw(void){ return(this->alleles); }
 	inline const uint32_t* GetAlleleCountsRaw(void) const{ return(this->alleles); }
 
+	/**<
+	 * Calculates and returns a vector of alelle counts.
+	 * @return Returns a vector of allele counts.
+	 */
 	std::vector<uint64_t> GetAlleleCounts(void) const;
+
+	/**<
+	 * Calculates and returns a vector of tuples (allele count, allele frequency)
+	 * for each unique allele.
+	 * @return Returns a vector of tuples (allele count, allele frequency) of alleles.
+	 */
 	std::vector< std::pair<uint64_t,double> > GetAlleleCountFrequency(void) const;
+
+	/**<
+	 * Calculates and returns a vector of vectors of allele counts. The structure is
+	 * x[ploidy][allele] corresponding to, for example, maternal (0) and paternal (1)
+	 * chromosome for a given allele.
+	 * @return Returns a vector of vectors of allele counts of allle counts.
+	 */
 	std::vector< std::vector<uint64_t> > GetAlleleStrandCounts(void) const;
+
+	/**<
+	 * Traverse the genotypic trie and return the
+	 * @param data
+	 * @param target
+	 * @param depth
+	 * @return
+	 */
 	bool GetGenotype(std::vector<uint64_t>& data,
 	                 yon_gt_summary_obj* target,
 	                 uint8_t depth) const;
 
 	// Todo: unfinished.
 	std::vector<yon_gt_rcd> GetGenotypeCounts(bool drop_empty = true) const;
+
+	/**<
+	 * Calculates and returns a vector of Fisher's exact test P-values for strand
+	 * bias. This function requires that the data is diploid.
+	 * @param phred_scale Predicate for PHRED-scaling the data.
+	 * @return            Returns a vector of Fisher's exact P-values or empty if not diploid.
+	 */
 	std::vector<double> GetStrandBiasAlleles(const bool phred_scale = true) const;
+
+	/**<
+	 * Calulcates and returns the Hardy-Weinberg P-value. This function requires the
+	 * data to be diploid and biallelic.
+	 * @return Returns the Hardy-Weinberg P-value or -1 if not diploid and biallelic.
+	 */
 	double CalculateHardyWeinberg(void) const;
 
 	/**<
@@ -553,10 +590,13 @@ public:
 	yon_gt_summary_rcd* d; // lazy evaluated record
 };
 
+/****************************
+*  Occ functionality
+****************************/
+
 /**<
- * Structure for using the partial-sum algortihms with
- * constrained run-length encoded genotypes. Allows for
- * O(1)-time partitions into one or more groupings.
+ * Structure for using the partial-sum algortihms with constrained run-length
+ * encoded genotypes. Allows for O(1)-time partitions into one or more groupings.
  */
 struct yon_occ {
 public:
@@ -566,7 +606,22 @@ public:
 	yon_occ() = default;
 	~yon_occ() = default;
 
+	/**<
+	 * Read a target file from disk and parse its contents into a valid Occ
+	 * table.
+	 * @param file_name Src file-name to read.
+	 * @param header    Src variant header reference.
+	 * @param delimiter Delimiter character used in the src file.
+	 * @return          Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool ReadTable(const std::string file_name, const yon_vnt_hdr_t& header, const char delimiter = '\t');
+
+	/**<
+	 * Construct an Occ table from the pre-loaded matrix of sample->groupings.
+	 * The BuildTable() and BuildTable(yon_gt_ppa*) function requires that
+	 * ReadTable() has been run and successfully completed.
+	 * @return Returns TRUE upon success or FALSE otherwise.
+	 */
 	bool BuildTable(void);
 	bool BuildTable(const yon_gt_ppa* ppa_p);
 
@@ -589,6 +644,10 @@ public:
 	// using constrained run-length encoded objects.
 	std::vector< std::vector<uint32_t> > vocc;
 };
+
+/****************************
+*  Supportive structures
+****************************/
 
 /**<
  * Primary bit-packed controller for a yon1_vnt_t record. Keeps track
@@ -735,4 +794,4 @@ static yon_gt* GetGenotypeNploid(
 
 }
 
-#endif /* CORE_GENOTYPES_H_ */
+#endif

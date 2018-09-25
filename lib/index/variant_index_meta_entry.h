@@ -70,7 +70,7 @@ public:
 		++this->n_blocks;
 		this->n_variants     += entry.n_variants;
 		this->byte_offest_end = entry.byte_offset_end;
-		this->max_position     = entry.max_position;
+		this->max_position    = entry.max_position;
 		this->end_block       = entry.block_id;
 	}
 

@@ -7,6 +7,10 @@
 #include <memory>
 #include <unordered_map>
 
+#ifndef SIZE_MAX
+#define SIZE_MAX static_cast<size_t>(-1)
+#endif
+
 #include "htslib/kstring.h"
 #include "htslib/vcf.h"
 #include "htslib/hts.h"

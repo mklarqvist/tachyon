@@ -48,7 +48,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 
 		// Resize containers
 		const uint32_t resize_to = this->settings_->checkpoint_n_snps * sizeof(uint32_t) * 2; // small initial allocation
-		this->block.resize(resize_to);
+		//this->block.resize(resize_to);
 	}
 
 	// This pointer here is borrowed from the PPA manager

@@ -834,8 +834,8 @@ bool yon1_vc_t::PrepareWritableBlock(const uint32_t n_samples, const uint32_t co
 	gts.SetSamples(n_samples);
 	algorithm::GenotypeEncoder gte(n_samples);
 
-	this->block_.Allocate(100,100,100); // todo: fix
-	this->block_.resize(128000);
+	this->block_.Allocate(20,20,100); // todo: fix
+	//this->block_.resize(128000);
 
 	this->block_.header.controller.has_gt = false;
 	this->block_.header.controller.has_gt_permuted = false;

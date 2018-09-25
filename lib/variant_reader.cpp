@@ -22,7 +22,10 @@ namespace tachyon {
 VariantReaderSettings::VariantReaderSettings() :
 	drop_format(false), header_only(false), show_header(true),
 	annotate_genotypes(false), use_htslib(false),
-	output("-"), output_type('v')
+	output("-"), output_type('v'),
+	permute_genotypes(true), encrypt_data(true),
+	checkpoint_n_snps(500), checkpoint_bases(5000000),
+	n_threads(std::thread::hardware_concurrency()), compression_level(6)
 {}
 
 std::string VariantReaderSettings::GetSettingsString(void) const {
@@ -434,8 +437,9 @@ uint64_t VariantReader::OutputYonLinear(void){
 
 	writer->n_s = this->GetHeader().GetNumberSamples();
 	writer->index.Setup(this->GetHeader().contigs_);
-	writer->settings.checkpoint_n_snps = 500;
-	writer->settings.compression_level = 10;
+	writer->settings = this->settings;
+	std::cerr << "writer settigns is=" << writer->settings.checkpoint_n_snps << std::endl;
+	writer->UpdateHeaderView(this->global_header, this->settings.GetSettingsString());
 	writer->WriteFileHeader(this->global_header);
 
 	if(this->gt_exp == nullptr)
@@ -484,8 +488,8 @@ uint64_t VariantReader::OutputYonSearch(void){
 
 	writer->n_s = this->GetHeader().GetNumberSamples();
 	writer->index.Setup(this->GetHeader().contigs_);
-	writer->settings.checkpoint_n_snps = 500;
-	writer->settings.compression_level = 10;
+	writer->settings = this->settings;
+	writer->UpdateHeaderView(this->global_header, this->settings.GetSettingsString());
 	writer->WriteFileHeader(this->global_header);
 
 	if(this->gt_exp == nullptr)

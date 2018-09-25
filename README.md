@@ -66,7 +66,6 @@ When installing locally the required dependencies are downloaded and built in th
 * Overview.
 * [Building and installing](docs/building.md)
 * [Getting started](docs/getting_started.md)
-* [Summary of example programs](docs/example_programs.md).
 * [Performance benchmarks](docs/benchmarks.md)
 
 ### Contributing

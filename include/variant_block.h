@@ -412,13 +412,13 @@ struct yon_vb_istats_obj {
 
 class yon_vb_istats {
 public:
-	typedef yon_vb_istats self_type;
-	typedef yon_vb_istats_obj    value_type;
-    typedef std::size_t                   size_type;
-    typedef value_type&                   reference;
-    typedef const value_type&             const_reference;
-    typedef value_type*                   pointer;
-    typedef const value_type*             const_pointer;
+	typedef yon_vb_istats      self_type;
+	typedef yon_vb_istats_obj  value_type;
+    typedef std::size_t        size_type;
+    typedef value_type&        reference;
+    typedef const value_type&  const_reference;
+    typedef value_type*        pointer;
+    typedef const value_type*  const_pointer;
 
 public:
     yon_vb_istats() :
@@ -684,7 +684,8 @@ public:
 	 * Resize base container buffer streams
 	 * @param s Number of bytes to allocate in buffers.
 	 */
-	void resize(const uint32_t s);
+	void resizeInfo(const uint32_t n);
+	void resizeFormat(const uint32_t n);
 
 	/**<
 	 * Recycle structure without releasing memory.
@@ -749,140 +750,17 @@ public:
 					const int32_t idx,
 	                container_type* dst_containers,
 					uint32_t(yon_vb_ftr::*AddWrapper)(const uint32_t),
-	                int32_t(yon1_vb_t::*StreamFieldLookup)(const uint32_t) const)
-	{
-		if(idx < 0){
-			std::cerr << "illegal idx" << std::endl;
-			return false;
-		}
-		dc.header.data_header.global_key = idx;
+	                int32_t(yon1_vb_t::*StreamFieldLookup)(const uint32_t) const);
 
-		// 1) Search for global idx
-		int field_exists = (this->*StreamFieldLookup)(dc.GetIdx());
-		if(field_exists >= 0){
-			//assert(dst_containers[field_exists].GetDataPrimitiveType() == dc.GetDataPrimitiveType());
-			dst_containers[field_exists] += dc;
-			//assert(dst_containers[field_exists].header.data_header.stride == dc.header.data_header.stride);
-			//std::cerr << "merging: " << dst_containers[field_exists].header.data_header.stride << " and " << dc.header.data_header.stride << std::endl;
-			//std::cerr << "field exists at " << field_exists << " for id " << (uint32_t)dc.GetIdx() << ": adding now " << dst_containers[field_exists].GetSizeUncompressed() << std::endl;
-		} else {
-			uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
-			//std::cerr << "field does not exist. adding. " << offset  << std::endl;
-			dst_containers[offset] = dc;
-		}
+	bool AddInfo(yon1_dc_t& dc, const YonInfo* info);
+	bool AddFormat(yon1_dc_t& dc, const YonFormat* fmt);
 
-		return true;
-	}
-
-	inline bool AddInfo(yon1_dc_t& dc, const YonInfo* info){
-		return(this->AddWrapper(dc,
-		       info->idx,
-		       this->info_containers,
-		       &block_footer_type::AddInfo,
-		       &self_type::GetInfoPosition));
-	}
-
-	inline bool AddFormat(yon1_dc_t& dc, const YonFormat* fmt){
-		return(this->AddWrapper(dc,
-		                        fmt->idx,
-		                        this->format_containers,
-		                        &block_footer_type::AddFormat,
-		                        &self_type::GetFormatPosition));
-	}
-
-	self_type& AddMore(yon1_vnt_t& rec){
-		if(this->header.n_variants == 0){
-			this->header.contig_id    = rec.rid;
-			this->header.min_position = rec.pos;
-			this->header.max_position = rec.pos;
-		}
-
-		++this->header.n_variants;
-		this->header.max_position = rec.pos;
-
-		// TODO: MAJOR WARNING: NO GUARANTEE THAT DATA ADDED TO THE BYTE STREAMS
-		//       HAVE THE SAME PRIMITIVE TYPE AS IS __REQUIRED__ IN TACHYON.
-		std::vector<int> id_list(rec.n_info);
-		if(rec.n_info){
-			for(int i = 0; i < rec.n_info; ++i){
-				id_list[i] = rec.info_hdr[i]->idx;
-				// 1 add info, format, and filter
-				yon1_dc_t dc(std::move(rec.info[i]->ToDataContainer()));
-
-				if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
-					dc.header.data_header.controller.type = YON_TYPE_32B;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
-					dc.header.data_header.controller.type = YON_TYPE_FLOAT;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.info_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
-					dc.header.data_header.controller.type = YON_TYPE_CHAR;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
-					dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
-					dc.header.data_header.controller.signedness = false;
-				} else {
-					std::cerr << "unknwon type" << std::endl;
-					exit(1);
-				}
-
-				if(this->AddInfo(dc, rec.info_hdr[i]) == false){
-					std::cerr << "failed to add info: " << rec.info_hdr[i]->id << std::endl;
-				}
-			}
-
-			rec.info_pid = this->AddInfoPattern(id_list);
-			//std::cerr << "info_pid=" << rec.info_pid << std::endl;
-		} else rec.info_pid = -1;
-
-		if(rec.n_fmt){
-			id_list.resize(rec.n_fmt);
-			for(int i = 0; i < rec.n_fmt; ++i){
-				id_list[i] = rec.fmt_hdr[i]->idx;
-				yon1_dc_t dc(std::move(rec.fmt[i]->ToDataContainer()));
-
-				if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
-					dc.header.data_header.controller.type = YON_TYPE_32B;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
-					dc.header.data_header.controller.type = YON_TYPE_FLOAT;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
-					dc.header.data_header.controller.type = YON_TYPE_CHAR;
-					dc.header.data_header.controller.signedness = true;
-				} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
-					dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
-					dc.header.data_header.controller.signedness = false;
-				} else {
-					std::cerr << "unknwon type" << std::endl;
-					exit(1);
-				}
-
-				if(this->AddFormat(dc, rec.fmt_hdr[i]) == false){
-					std::cerr << "failed to add format: " << rec.fmt_hdr[i]->id << std::endl;
-				}
-			}
-
-			rec.fmt_pid = this->AddFormatPattern(id_list);
-			//std::cerr << "fmt_pid=" << rec.fmt_pid << std::endl;
-		} else rec.fmt_pid = -1;
-
-		if(rec.n_flt){
-			id_list.resize(rec.n_flt);
-			for(int i = 0; i < rec.n_flt; ++i){
-				id_list[i] = rec.flt_hdr[i]->idx;
-				this->AddFilter(id_list[i]);
-			}
-			rec.flt_pid = this->AddFilterPattern(id_list);
-		} else rec.fmt_pid = -1;
-
-		return(*this);
-	}
+	self_type& AddMore(yon1_vnt_t& rec);
 
 	/**<
 	 * Compares a vector of global Info/Format/Filter identifiers to the identifier set in this
 	 * block and returns the set intersection of keys.
-	 * @param keys Vector of global Info/Format/Filter keys
+	 * @param keys Vector oinline f global Info/Format/Filter keys
 	 * @return     Returns the set intersection of the provided keys and the local keys.
 	 */
 	std::vector<int> IntersectInfoKeys(const std::vector<int>& info_ids_global) const;
@@ -1100,8 +978,8 @@ private:
 	}
 
 public:
-	uint16_t n_info_c_allocated;
-	uint16_t n_format_c_allocated;
+	uint16_t m_info;
+	uint16_t m_format;
 	block_header_type header;
 	block_footer_type footer;
 	container_type*   base_containers;

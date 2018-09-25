@@ -271,9 +271,6 @@ bool yon_index_t::IndexRecord(const yon1_vnt_t& rcd, const uint32_t block_id){
 	if(end_position_used > this->current_entry_.max_position)
 		this->current_entry_.max_position = end_position_used;
 
-	// Update number of entries in block
-	++this->current_entry_.n_variants;
-
 	return true;
 }
 

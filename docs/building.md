@@ -12,10 +12,6 @@ git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
 make
 ```
-Tachyon comes bundled with several API-examples in the `lib_example` directory. They are built by default but should you want to rebuild them execute the command:
-```bash
-make examples
-```
 
 ## Installation
 For Ubuntu, Debian, and Mac systems, installation is easy: just run

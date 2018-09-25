@@ -3,6 +3,10 @@
 
 #include <iostream>
 
+#ifndef SIZE_MAX
+#define SIZE_MAX static_cast<size_t>(-1)
+#endif
+
 #include <htslib/hts.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>

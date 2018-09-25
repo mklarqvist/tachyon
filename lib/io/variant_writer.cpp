@@ -15,13 +15,6 @@
 
 namespace tachyon {
 
-VariantWriteSettings::VariantWriteSettings() :
-		permute_genotypes(true), encrypt_data(true),
-		checkpoint_n_snps(500), checkpoint_bases(5000000),
-		n_threads(std::thread::hardware_concurrency()), compression_level(10)
-{}
-
-
 class VariantWriterInterface::VariantWriterInterfaceImpl {
 public:
 	VariantWriterInterfaceImpl() = default;
@@ -41,6 +34,7 @@ VariantWriterInterface::VariantWriterInterface() :
 
 VariantWriterInterface::~VariantWriterInterface()
 {
+
 }
 
 bool VariantWriterInterface::WriteFileHeader(yon_vnt_hdr_t& header){
@@ -106,8 +100,7 @@ yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderView(yon_vnt_hdr_t& header, c
 }
 
 
-bool VariantWriterInterface::Write(yon1_vb_t& container,
-		   yon1_idx_rec& index_entry)
+bool VariantWriterInterface::Write(yon1_vb_t& container, yon1_idx_rec& index_entry)
 {
 	this->WriteBlock(container, index_entry); // write block
 	this->UpdateIndex(index_entry); // Update index.
@@ -140,7 +133,7 @@ bool VariantWriterInterface::WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_en
 }
 
 bool VariantWriterInterface::close(){
-	if(this->stream != nullptr) return false;
+	if(this->stream == nullptr) return false;
 	if(this->stream->good() == false) return false;
 
 	this->WriteFinal();
@@ -228,6 +221,13 @@ void VariantWriterInterface::operator+=(const yon1_vnt_t& rec){
 		} else if(rec.pos < this->variant_container.front().pos){
 			std::cerr << "unsorted file: " << rec.pos << " < " << variant_container.front().pos << std::endl;
 			exit(1);
+		} else if(variant_container.back().pos - variant_container.front().pos > settings.checkpoint_bases){
+			//std::cerr << "length cutoff=" << (variant_container.back().pos - variant_container.front().pos) << "/" << settings.checkpoint_bases << std::endl;
+			// write
+			this->variant_container.PrepareWritableBlock(this->n_s, this->settings.compression_level);
+			this->index.IndexContainer(this->variant_container, this->n_blocks_written);
+			this->Write(variant_container.block_, this->index.GetCurrent());
+			this->variant_container.clear();
 		}
 	}
 

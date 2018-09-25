@@ -49,6 +49,18 @@ yon_buffer_t::~yon_buffer_t(){
 		delete [] this->buffer_;
 }
 
+yon_buffer_t::yon_buffer_t(self_type&& other) noexcept :
+	owns_data_(other.owns_data_),
+	n_chars_(other.n_chars_),
+	width_(other.width_),
+	iterator_position_(other.iterator_position_),
+	buffer_(nullptr)
+{
+	std::swap(buffer_, other.buffer_);
+	other.reset();
+	other.width_ = 0;
+}
+
 yon_buffer_t& yon_buffer_t::operator=(const self_type& other){
 	if(this->owns_data_) delete [] this->buffer_;
 	this->owns_data_  = other.owns_data_;
@@ -62,15 +74,14 @@ yon_buffer_t& yon_buffer_t::operator=(const self_type& other){
 
 yon_buffer_t& yon_buffer_t::operator=(self_type&& other) noexcept{
 	if(this->owns_data_) delete [] this->buffer_;
-	this->buffer_ = nullptr;
+	this->buffer_     = nullptr;
 	this->owns_data_  = other.owns_data_;
 	this->n_chars_    = other.n_chars_;
 	this->width_      = other.width_;
 	this->iterator_position_ = other.iterator_position_;
 	std::swap(this->buffer_, other.buffer_);
-	other.n_chars_ = 0;
+	other.reset();
 	other.width_   = 0;
-	other.iterator_position_ = 0;
 	return(*this);
 }
 

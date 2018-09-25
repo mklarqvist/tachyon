@@ -576,9 +576,9 @@ uint32_t yon_vb_ftr::UpdateFilterMap(const header_type& offset, const uint16_t l
 }
 
 uint32_t yon_vb_ftr::AddStreamWrapper(const uint32_t global_id,
-                                              map_type* map,
-                                              header_type*& offsets,
-                                              uint16_t& n_streams)
+                                            map_type* map,
+                                            header_type*& offsets,
+                                            uint16_t& n_streams)
 {
 	map_type::const_iterator it = map->find(global_id);
 	if(it == map->end()){
@@ -1073,8 +1073,8 @@ bool yon_vb_settings::ParseCommandString(const std::vector<std::string>& command
 }
 
 yon1_vb_t::yon1_vb_t() :
-	n_info_c_allocated(0),
-	n_format_c_allocated(0),
+	m_info(0),
+	m_format(0),
 	base_containers(new container_type[YON_BLK_N_STATIC]),
 	info_containers(nullptr),
 	format_containers(nullptr),
@@ -1091,8 +1091,8 @@ yon1_vb_t::yon1_vb_t() :
 }
 
 yon1_vb_t::yon1_vb_t(const uint16_t n_info, const uint16_t n_format) :
-	n_info_c_allocated(n_info),
-	n_format_c_allocated(n_format),
+	m_info(n_info),
+	m_format(n_format),
 	base_containers(new container_type[YON_BLK_N_STATIC]),
 	info_containers(new container_type[n_info]),
 	format_containers(new container_type[n_format]),
@@ -1117,13 +1117,13 @@ yon1_vb_t::~yon1_vb_t(){
 }
 
 yon1_vb_t::yon1_vb_t(const self_type& other) :
-	n_info_c_allocated(other.n_info_c_allocated),
-	n_format_c_allocated(other.n_info_c_allocated),
+	m_info(other.m_info),
+	m_format(other.m_info),
 	header(other.header),
 	footer(other.footer),
 	base_containers(new container_type[YON_BLK_N_STATIC]),
-	info_containers(new container_type[other.n_info_c_allocated]),
-	format_containers(new container_type[other.n_format_c_allocated]),
+	info_containers(new container_type[other.m_info]),
+	format_containers(new container_type[other.m_format]),
 	gt_ppa(nullptr),
 	load_settings(nullptr),
 	end_block_(other.end_block_),
@@ -1146,8 +1146,8 @@ yon1_vb_t::yon1_vb_t(const self_type& other) :
 }
 
 yon1_vb_t::yon1_vb_t(self_type&& other) noexcept :
-	n_info_c_allocated(other.n_info_c_allocated),
-	n_format_c_allocated(other.n_format_c_allocated),
+	m_info(other.m_info),
+	m_format(other.m_format),
 	header(std::move(other.header)),
 	footer(std::move(other.footer)),
 	base_containers(nullptr),
@@ -1183,8 +1183,8 @@ yon1_vb_t& yon1_vb_t::operator=(self_type&& other) noexcept{
 		return *this;
 	}
 
-	this->n_info_c_allocated   = other.n_info_c_allocated;
-	this->n_format_c_allocated = other.n_format_c_allocated;
+	this->m_info   = other.m_info;
+	this->m_format = other.m_format;
 	this->header = std::move(other.header);
 	this->footer = std::move(other.footer);
 	delete [] this->base_containers; this->base_containers = nullptr;
@@ -1205,21 +1205,59 @@ yon1_vb_t& yon1_vb_t::operator=(self_type&& other) noexcept{
 }
 
 void yon1_vb_t::Allocate(const uint16_t n_info,
-                            const uint16_t n_format,
-                            const uint16_t n_filter)
+                         const uint16_t n_format,
+                         const uint16_t n_filter)
 {
 	// Allocate space for INFO containers.
 	delete [] this->info_containers;
 	this->info_containers = new container_type[n_info];
-	this->n_info_c_allocated = n_info;
+	this->m_info = n_info;
 
 	// Allocate space for FORMAT containers.
 	delete [] this->format_containers;
 	this->format_containers = new container_type[n_format];
-	this->n_format_c_allocated = n_format;
+	this->m_format = n_format;
 
 	// Alocate space for headers.
 	this->footer.AllocateHeaders(n_info, n_format, n_filter);
+}
+
+void yon1_vb_t::resizeInfo(const uint32_t n){
+	if(n < this->m_info) return;
+
+	container_type* temp = this->info_containers;
+	this->info_containers = new container_type[n];
+	for(int i = 0; i < this->footer.n_info_streams; ++i){
+		this->info_containers[i] = std::move(temp[i]);
+	}
+	this->m_info = n;
+
+	yon_vb_ftr::header_type* temp_ftr = this->footer.info_offsets;
+	this->footer.info_offsets = new yon_vb_ftr::header_type[n];
+	for(int i = 0; i < this->footer.n_info_streams; ++i)
+		this->footer.info_offsets[i] = std::move(temp_ftr[i]);
+
+	delete [] temp;
+	delete [] temp_ftr;
+}
+
+void yon1_vb_t::resizeFormat(const uint32_t n){
+	if(n < this->m_format) return;
+
+	container_type* temp = this->format_containers;
+	this->format_containers = new container_type[n];
+	for(int i = 0; i < this->footer.n_format_streams; ++i){
+		this->format_containers[i] = std::move(temp[i]);
+	}
+	this->m_format = n;
+
+	yon_vb_ftr::header_type* temp_ftr = this->footer.format_offsets;
+	this->footer.format_offsets = new yon_vb_ftr::header_type[n];
+	for(int i = 0; i < this->footer.n_format_streams; ++i)
+		this->footer.format_offsets[i] = std::move(temp_ftr[i]);
+
+	delete [] temp;
+	delete [] temp_ftr;
 }
 
 void yon1_vb_t::clear(void){
@@ -1242,12 +1280,156 @@ void yon1_vb_t::clear(void){
 	if(this->gt_ppa != nullptr) this->gt_ppa->reset();
 }
 
+/*
 void yon1_vb_t::resize(const uint32_t s){
 	if(s == 0) return;
 
-	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i)     this->base_containers[i].resize(s);
-	for(uint32_t i = 0; i < n_info_c_allocated; ++i)   this->info_containers[i].resize(s);
-	for(uint32_t i = 0; i < n_format_c_allocated; ++i) this->format_containers[i].resize(s);
+	for(uint32_t i = 0; i < YON_BLK_N_STATIC; ++i) this->base_containers[i].resize(s);
+	for(uint32_t i = 0; i < m_info; ++i)   this->info_containers[i].resize(s);
+	for(uint32_t i = 0; i < m_format; ++i) this->format_containers[i].resize(s);
+}
+*/
+
+bool yon1_vb_t::AddWrapper(yon1_dc_t& dc,
+				const int32_t idx,
+				container_type* dst_containers,
+				uint32_t(yon_vb_ftr::*AddWrapper)(const uint32_t),
+				int32_t(yon1_vb_t::*StreamFieldLookup)(const uint32_t) const)
+{
+	if(idx < 0){
+		std::cerr << "illegal idx" << std::endl;
+		return false;
+	}
+	dc.header.data_header.global_key = idx;
+
+	// 1) Search for global idx
+	int field_exists = (this->*StreamFieldLookup)(dc.GetIdx());
+	if(field_exists >= 0){
+		//assert(dst_containers[field_exists].GetDataPrimitiveType() == dc.GetDataPrimitiveType());
+		//std::cerr << "field exists at " << field_exists << " for id " << (uint32_t)dc.GetIdx() << ": adding..." << std::endl;
+		dst_containers[field_exists] += dc;
+		//std::cerr << "after add" << std::endl;
+		//assert(dst_containers[field_exists].header.data_header.stride == dc.header.data_header.stride);
+		//std::cerr << "merging: " << dst_containers[field_exists].header.data_header.stride << " and " << dc.header.data_header.stride << std::endl;
+	} else {
+		//std::cerr << "field does not exist. setting" << std::endl;
+		uint32_t offset = (this->footer.*AddWrapper)(dc.GetIdx());
+		dst_containers[offset] = dc;
+		//std::cerr << "after set @ " << offset << std::endl;
+	}
+
+	return true;
+}
+
+bool yon1_vb_t::AddInfo(yon1_dc_t& dc, const YonInfo* info){
+	if(this->footer.n_info_streams == this->m_info)
+		this->resizeInfo(this->footer.n_info_streams + 10);
+
+	return(this->AddWrapper(dc,
+		   info->idx,
+		   this->info_containers,
+		   &block_footer_type::AddInfo,
+		   &self_type::GetInfoPosition));
+}
+
+bool yon1_vb_t::AddFormat(yon1_dc_t& dc, const YonFormat* fmt){
+	if(this->footer.n_format_streams == this->m_format)
+		this->resizeFormat(this->footer.n_format_streams + 10);
+
+	return(this->AddWrapper(dc,
+							fmt->idx,
+							this->format_containers,
+							&block_footer_type::AddFormat,
+							&self_type::GetFormatPosition));
+}
+
+yon1_vb_t& yon1_vb_t::AddMore(yon1_vnt_t& rec){
+	if(this->header.n_variants == 0){
+		this->header.contig_id    = rec.rid;
+		this->header.min_position = rec.pos;
+		this->header.max_position = rec.pos;
+	}
+
+	++this->header.n_variants;
+	this->header.max_position = rec.pos;
+
+	// TODO: MAJOR WARNING: NO GUARANTEE THAT DATA ADDED TO THE BYTE STREAMS
+	//       HAVE THE SAME PRIMITIVE TYPE AS IS __REQUIRED__ IN TACHYON.
+	std::vector<int> id_list(rec.n_info);
+	if(rec.n_info){
+		for(int i = 0; i < rec.n_info; ++i){
+			id_list[i] = rec.info_hdr[i]->idx;
+			// 1 add info, format, and filter
+			yon1_dc_t dc(std::move(rec.info[i]->ToDataContainer()));
+
+			if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
+				dc.header.data_header.controller.type = YON_TYPE_32B;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
+				dc.header.data_header.controller.type = YON_TYPE_FLOAT;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.info_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
+				dc.header.data_header.controller.type = YON_TYPE_CHAR;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.info_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
+				dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
+				dc.header.data_header.controller.signedness = false;
+			} else {
+				std::cerr << "unknwon type" << std::endl;
+				exit(1);
+			}
+
+			if(this->AddInfo(dc, rec.info_hdr[i]) == false){
+				std::cerr << "failed to add info: " << rec.info_hdr[i]->id << std::endl;
+			}
+		}
+
+		rec.info_pid = this->AddInfoPattern(id_list);
+		//std::cerr << "info_pid=" << rec.info_pid << std::endl;
+	} else rec.info_pid = -1;
+
+	if(rec.n_fmt){
+		id_list.resize(rec.n_fmt);
+		for(int i = 0; i < rec.n_fmt; ++i){
+			id_list[i] = rec.fmt_hdr[i]->idx;
+			yon1_dc_t dc(std::move(rec.fmt[i]->ToDataContainer()));
+
+			if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_INTEGER){
+				dc.header.data_header.controller.type = YON_TYPE_32B;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLOAT){
+				dc.header.data_header.controller.type = YON_TYPE_FLOAT;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_STRING || rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_CHARACTER){
+				dc.header.data_header.controller.type = YON_TYPE_CHAR;
+				dc.header.data_header.controller.signedness = true;
+			} else if(rec.fmt_hdr[i]->yon_type == YON_VCF_HEADER_FLAG){
+				dc.header.data_header.controller.type = YON_TYPE_BOOLEAN;
+				dc.header.data_header.controller.signedness = false;
+			} else {
+				std::cerr << "unknwon type" << std::endl;
+				exit(1);
+			}
+
+			if(this->AddFormat(dc, rec.fmt_hdr[i]) == false){
+				std::cerr << "failed to add format: " << rec.fmt_hdr[i]->id << std::endl;
+			}
+		}
+
+		rec.fmt_pid = this->AddFormatPattern(id_list);
+		//std::cerr << "fmt_pid=" << rec.fmt_pid << std::endl;
+	} else rec.fmt_pid = -1;
+
+	if(rec.n_flt){
+		id_list.resize(rec.n_flt);
+		for(int i = 0; i < rec.n_flt; ++i){
+			id_list[i] = rec.flt_hdr[i]->idx;
+			this->AddFilter(id_list[i]);
+		}
+		rec.flt_pid = this->AddFilterPattern(id_list);
+	} else rec.fmt_pid = -1;
+
+	return(*this);
 }
 
 void yon1_vb_t::UpdateContainers(const uint32_t n_samples){
@@ -1339,7 +1521,7 @@ bool yon1_vb_t::read(std::ifstream& stream){
 	// Load all INFO
 	delete [] this->info_containers;
 	this->info_containers = new container_type[this->footer.n_info_streams];
-	this->n_info_c_allocated = this->footer.n_info_streams;
+	this->m_info = this->footer.n_info_streams;
 	if(this->footer.n_info_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.info_offsets[0].data_header.offset);
 		for(uint32_t i = 0; i < this->footer.n_info_streams; ++i)
@@ -1350,7 +1532,7 @@ bool yon1_vb_t::read(std::ifstream& stream){
 	// Load all FORMAT
 	delete [] this->format_containers;
 	this->format_containers = new container_type[this->footer.n_format_streams];
-	this->n_format_c_allocated = this->footer.n_format_streams;
+	this->m_format = this->footer.n_format_streams;
 	if(this->footer.n_format_streams){
 		stream.seekg(this->start_compressed_data_ + this->footer.format_offsets[0].data_header.offset);
 		for(uint32_t i = 0; i < this->footer.n_format_streams; ++i)
@@ -1526,12 +1708,12 @@ bool yon1_vb_t::read(std::ifstream& stream,
 	// Allocate enough memory to store all available Format and
 	// Info containers.
 	delete [] this->info_containers;
-	this->info_containers    = new yon1_vb_t::container_type[this->footer.n_info_streams];
-	this->n_info_c_allocated = this->footer.n_info_streams;
+	this->info_containers   = new yon1_vb_t::container_type[this->footer.n_info_streams];
+	this->m_info = this->footer.n_info_streams;
 
 	delete [] this->format_containers;
-	this->format_containers    = new yon1_vb_t::container_type[this->footer.n_format_streams];
-	this->n_format_c_allocated = this->footer.n_format_streams;
+	this->format_containers = new yon1_vb_t::container_type[this->footer.n_format_streams];
+	this->m_format = this->footer.n_format_streams;
 
 	// Interpret the user-specified block-settings if any. This step converts
 	// global index offset values into local offsets and computes new pattern
