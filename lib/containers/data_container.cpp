@@ -422,7 +422,8 @@ yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_dc_hdr& entry){
 	buffer += entry.n_strides;
 	buffer << entry.data_header;
 
-	if(entry.data_header.HasMixedStride()) buffer << entry.stride_header;
+	if(entry.data_header.HasMixedStride())
+		buffer << entry.stride_header;
 
 	return(buffer);
 }
@@ -434,7 +435,8 @@ yon_buffer_t& operator>>(yon_buffer_t& buffer, yon_dc_hdr& entry){
 	buffer >> entry.n_strides;
 	buffer >> entry.data_header;
 
-	if(entry.data_header.HasMixedStride()) buffer >> entry.stride_header;
+	if(entry.data_header.HasMixedStride())
+		buffer >> entry.stride_header;
 
 	return(buffer);
 }

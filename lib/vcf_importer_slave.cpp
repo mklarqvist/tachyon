@@ -88,6 +88,7 @@ bool VcfImporterSlave::Add(vcf_container_type& container, const uint32_t block_i
 		this->block.header.controller.any_encrypted = true;
 		if(!this->encryption_decorator.Encrypt(this->block, *this->keychain, YON_ENCRYPTION_AES_256_GCM)){
 			std::cerr << utility::timestamp("ERROR","ENCRYPTION") << "Failed to encrypt..." << std::endl;
+			exit(1);
 		}
 	}
 

@@ -651,7 +651,7 @@ bool yon1_vc_t::FormatSetupString(dc_type& container,
 	uint32_t current_offset = 0;
 	for(uint32_t i = 0; i < this->n_variants_; ++i){
 		if(this->variants_[i].fmt_pid == -1){
-			std::cerr << "pid=" << this->variants_[i].fmt_pid << " matched in fstring: " << current_offset << " + " << stride*header.GetNumberSamples() << std::endl;
+			//std::cerr << "pid=" << this->variants_[i].fmt_pid << " matched in fstring: " << current_offset << " + " << stride*header.GetNumberSamples() << std::endl;
 
 		} else if(matches[this->variants_[i].fmt_pid]){
 			this->variants_[i].fmt[this->variants_[i].n_fmt++] = new PrimitiveGroupContainer<std::string>(container, current_offset, header.GetNumberSamples(), stride);

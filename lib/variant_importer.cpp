@@ -211,10 +211,6 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 			this->vcf_reader_->vcf_header_.info_fields_.size()   + 1,
 			this->vcf_reader_->vcf_header_.format_fields_.size() + 1);
 
-	// Setup the encryption container.
-	EncryptionDecorator encryption_manager;
-	Keychain keychain;
-
 	// The index needs to know how many contigs that's described in the
 	// Vcf header and their lengths in base-pairs. This information is
 	// needed to construct the linear and quad-tree index most appropriate

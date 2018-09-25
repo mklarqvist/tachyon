@@ -191,18 +191,25 @@ bool VariantReader::NextBlock(){
 	// Reset and re-use
 	this->variant_container.clear();
 
+	// Read packed header and footer bytes from the byte-stream.
 	if(!this->variant_container.ReadHeaderFooter(this->mImpl->basic_reader.stream_))
 		return false;
 
+	// Decompress the footer.
 	if(!this->mImpl->codec_manager.zstd_codec.Decompress(this->variant_container.footer_support)){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression of footer!" << std::endl;
 		return false;
 	}
+	// Inject the decompressed footer into the container.
 	this->variant_container.footer_support.data_uncompressed >> this->variant_container.footer;
 
-	// Attempts to read a YON block with the settings provided
-	if(!this->variant_container.read(this->mImpl->basic_reader.stream_, this->block_settings, this->global_header))
+	// Attempts to read a YON block with the settings provided.
+	if(!this->variant_container.read(this->mImpl->basic_reader.stream_,
+	                                 this->block_settings,
+	                                 this->global_header))
+	{
 		return false;
+	}
 
 	// encryption manager ascertainment
 	if(this->variant_container.header.controller.any_encrypted){
@@ -223,6 +230,10 @@ bool VariantReader::NextBlock(){
 		std::cerr << utility::timestamp("ERROR", "COMPRESSION") << "Failed decompression!" << std::endl;
 		return false;
 	}
+
+	// Checks need to made to ascertain that any data actually exists
+	// and that if data was encrypted that any data was successfully
+	// decrypted.
 
 	// All passed
 	return true;

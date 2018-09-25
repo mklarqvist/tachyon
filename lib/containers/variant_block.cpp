@@ -1433,6 +1433,10 @@ yon1_vb_t& yon1_vb_t::AddMore(yon1_vnt_t& rec){
 }
 
 void yon1_vb_t::UpdateContainers(const uint32_t n_samples){
+	for(int i = 0; i < YON_BLK_N_STATIC; ++i){
+		this->base_containers[i].header.data_header.global_key = this->footer.offsets[i].data_header.global_key;
+	}
+
 	this->base_containers[YON_BLK_CONTIG].UpdateContainer();
 	this->base_containers[YON_BLK_POSITION].UpdateContainer();
 	this->base_containers[YON_BLK_REFALT].UpdateContainer(false, true);
@@ -1460,6 +1464,8 @@ void yon1_vb_t::UpdateContainers(const uint32_t n_samples){
 
 	for(uint32_t i = 0; i < this->footer.n_info_streams; ++i){
 		this->info_containers[i].UpdateContainer();
+		this->info_containers[i].header.data_header.global_key = this->footer.info_offsets[i].data_header.global_key;
+
 	}
 
 	for(uint32_t i = 0; i < this->footer.n_format_streams; ++i){
@@ -1467,6 +1473,8 @@ void yon1_vb_t::UpdateContainers(const uint32_t n_samples){
 		// Therefore we assert that this is never the case.
 		assert(this->format_containers[i].header.data_header.stride != 0);
 		this->format_containers[i].UpdateContainerFormat(true, true, n_samples);
+		this->format_containers[i].header.data_header.global_key = this->footer.format_offsets[i].data_header.global_key;
+
 	}
 }
 

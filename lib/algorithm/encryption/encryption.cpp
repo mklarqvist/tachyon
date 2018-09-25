@@ -103,11 +103,13 @@ Keychain& Keychain::operator+=(const self_type& other){
 }
 
 void Keychain::operator+=(KeychainKey& keychain){
+	// Lock keychain and add.
 	this->mImpl->spinlock_.lock();
 	if(this->size() + 1 == this->capacity())
 		this->resize();
 
 	this->entries_[this->n_entries_++] = keychain.Clone();
+	// Unlock keychain.
 	this->mImpl->spinlock_.unlock();
 }
 
@@ -222,7 +224,7 @@ public:
 	~EncryptionDecoratorImpl() = default;
 
     // Pimpl
-	bool EncryptAES256(yon1_vb_t& block, keychain_type& keychain);
+	bool EncryptAES256(yon1_vb_t& block,     keychain_type& keychain);
 	bool EncryptAES256(yon1_dc_t& container, keychain_type& keychain);
 	bool DecryptAES256(yon1_dc_t& container, keychain_type& keychain);
 
@@ -345,46 +347,72 @@ bool EncryptionDecorator::EncryptionDecoratorImpl::EncryptAES256(yon1_dc_t& cont
 	this->buffer.reset();
 	yon_buffer_t temp(65536);
 	temp << container.header;
+
+	//yon1_dc_t::header_type restore_test;
+	//temp >> restore_test;
+	//assert(container.header.GetGlobalKey() == restore_test.GetGlobalKey());
+	//std::cerr << container.header.GetGlobalKey() << "==" << restore_test.GetGlobalKey() << std::endl;
+
 	this->buffer.resize(container.data.size() + container.strides.size() + temp.size() + 65536);
 
-	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)this->buffer.data(), &len, (uint8_t*)temp.data(), temp.size())){
+	if(1 != EVP_EncryptUpdate(ctx,
+	                          (uint8_t*)this->buffer.data(),
+	                          &len,
+	                          (uint8_t*)temp.data(),
+	                          temp.size()))
+	{
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
 		return false;
 	}
 	this->buffer.n_chars_ = len;
 
-	if(1 != EVP_EncryptUpdate(ctx, (uint8_t*)&this->buffer[this->buffer.size()], &len, (uint8_t*)container.data.data(), container.data.size())){
-		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
-		return false;
+	// Encrypt data if available.
+	if(container.data.size()){
+		if(1 != EVP_EncryptUpdate(ctx,
+		                          (uint8_t*)&this->buffer[this->buffer.size()],
+		                          &len,
+		                          (uint8_t*)container.data.data(),
+		                          container.data.size()))
+		{
+			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
+			return false;
+		}
+		this->buffer.n_chars_ += len;
 	}
-	this->buffer.n_chars_ += len;
 
-	if(1 != EVP_EncryptUpdate(ctx,
-		                      (uint8_t*)&this->buffer[this->buffer.size()],
-	                          &len,
-		                      (uint8_t*)container.strides.data(),
-		                      container.strides.size()))
-	{
-		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
-		return false;
+	// Encrypt data if available.
+	if(container.strides.size()){
+		if(1 != EVP_EncryptUpdate(ctx,
+								  (uint8_t*)&this->buffer[this->buffer.size()],
+								  &len,
+								  (uint8_t*)container.strides.data(),
+								  container.strides.size()))
+		{
+			std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to update the encryption model..." << std::endl;
+			return false;
+		}
+		this->buffer.n_chars_ += len;
 	}
-	this->buffer.n_chars_ += len;
 
+	// Finalize encryption.
 	if(1 != EVP_EncryptFinal_ex(ctx,
 	                            (uint8_t*)this->buffer.data() + len,
-		                        &len))
+                                &len))
 	{
+		std::cerr << this->buffer.size() << "->" << this->buffer.size() + len << std::endl;
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to finalise the encryption..." << std::endl;
 		return false;
 	}
 	this->buffer.n_chars_ += len;
 
+	// Controller.
 	container.data.resize(this->buffer.size());
 	if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, &entry.tag[0])){
 		std::cerr << utility::timestamp("ERROR", "ENCRYPTION") << "Failed to retrieve the GCM tag..." << std::endl;
 		return false;
 	}
 
+	// Release memory.
 	EVP_CIPHER_CTX_free(ctx);
 
 	// Trigger encryption flag

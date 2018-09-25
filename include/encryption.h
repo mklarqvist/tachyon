@@ -40,8 +40,6 @@ namespace tachyon {
 struct KeychainKey {
 public:
 	KeychainKey();
-	KeychainKey(const KeychainKey& other) = delete;
-	KeychainKey& operator=(const KeychainKey& other) = delete;
 	virtual ~KeychainKey() = default;
 
 	friend yon_buffer_t& operator+=(yon_buffer_t& buffer, const KeychainKey& key);
@@ -75,10 +73,9 @@ public:
 	KeychainKeyBase() = default;
 	virtual ~KeychainKeyBase() = default;
 
-	KeychainKeyBase(const KeychainKeyBase& other)
+	KeychainKeyBase(const KeychainKeyBase& other) :
+		parent_type(other)
 	{
-		this->encryption_type = other.encryption_type;
-		this->field_id = other.field_id;
 		memcpy(&this->key[0], &other.key[0], KeyLength);
 		memcpy(&this->iv[0],  &other.iv[0],  IVLength);
 	}
@@ -147,16 +144,16 @@ public:
 	}
 	~KeychainKeyGCM(){}
 
-	KeychainKeyGCM(const KeychainKeyGCM& other)
+	KeychainKeyGCM(const KeychainKeyGCM& other) :
+		parent_type(other)
 	{
-		this->encryption_type = other.encryption_type;
-		this->field_id = other.field_id;
+		this->encryption_type = YON_ENCRYPTION_AES_256_GCM;
 		memcpy(&this->tag[0], &other.tag[0], TagLength);
 	}
 
 	KeychainKeyGCM& operator=(const KeychainKeyGCM& other){
-		this->encryption_type = other.encryption_type;
 		this->field_id = other.field_id;
+		this->encryption_type = other.encryption_type;
 		memcpy(&this->key[0], &other.key[0], KeyLength);
 		memcpy(&this->iv[0],  &other.iv[0],  IVLength);
 		memcpy(&this->tag[0], &other.tag[0], TagLength);
@@ -314,6 +311,8 @@ private:
 class EncryptionDecorator {
 public:
 	typedef EncryptionDecorator self_type;
+	typedef yon1_vb_t     variant_block_type;
+	typedef yon1_dc_t     stream_container;
 	typedef yon_buffer_t  buffer_type;
 	typedef Keychain      keychain_type;
 
@@ -329,7 +328,7 @@ public:
 	 * @param encryption_type Target encryption algorithm to use.
 	 * @return                Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool Encrypt(yon1_vb_t& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type);
+	bool Encrypt(variant_block_type& block, keychain_type& keychain, TACHYON_ENCRYPTION encryption_type);
 
 	/**<
 	 * Decrypt a provided variant block using the provided keychain.
@@ -337,7 +336,7 @@ public:
 	 * @param keychain Src keychain holding the decryption keys.
 	 * @return         Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool Decrypt(yon1_vb_t& block, keychain_type& keychain);
+	bool Decrypt(variant_block_type& block, keychain_type& keychain);
 
 private:
 	// Pimpl idiom
@@ -347,4 +346,4 @@ private:
 
 }
 
-#endif
+#endif /* ALGORITHM_ENCRYPTION_ENCRYPTION_H_ */
