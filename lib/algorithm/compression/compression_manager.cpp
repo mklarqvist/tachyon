@@ -177,7 +177,9 @@ bool CompressionManager::Compress(variant_block_type& block,
 				}
 				else
 				*/
-					zstd_codec.Compress(block.format_containers[i]);
+
+					if(this->EncodeHorizontalDelta(block.format_containers[i], n_samples) == false)
+						zstd_codec.Compress(block.format_containers[i]);
 
 			}
 		}

@@ -6,6 +6,8 @@
 #include "variant_container.h"
 #include "algorithm/compression/compression_manager.h"
 
+#include "algorithm/compression/packed_array.h"
+
 namespace tachyon{
 namespace algorithm{
 
@@ -26,8 +28,162 @@ public:
 	bool Decompress(variant_block_type& block);
 	bool Decompress(container_type& container, yon_gt_ppa& gt_ppa);
 
+	bool EncodeHorizontalDelta(container_type& container, const uint32_t n_samples){
+		if(container.header.data_header.IsSigned() == false){
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B): return(this->EncodeHorizontalDelta_<uint8_t>(container,n_samples));
+			case(YON_TYPE_16B): return(this->EncodeHorizontalDelta_<uint16_t>(container,n_samples));
+			case(YON_TYPE_32B): return(this->EncodeHorizontalDelta_<uint32_t>(container,n_samples));
+			case(YON_TYPE_64B): return(this->EncodeHorizontalDelta_<uint64_t>(container,n_samples));
+			default: return false;
+			}
+		}
+		else {
+			switch(container.header.data_header.GetPrimitiveType()){
+			case(YON_TYPE_8B): return(this->EncodeHorizontalDelta_<int8_t>(container,n_samples));
+			case(YON_TYPE_16B): return(this->EncodeHorizontalDelta_<int16_t>(container,n_samples));
+			case(YON_TYPE_32B): return(this->EncodeHorizontalDelta_<int32_t>(container,n_samples));
+			case(YON_TYPE_64B): return(this->EncodeHorizontalDelta_<int64_t>(container,n_samples));
+			default: return false;
+			}
+		}
+
+		return false;
+	}
+
+	template <class int_t>
+	bool EncodeHorizontalDelta_(container_type& container, const uint32_t n_samples){
+		if(container.data_uncompressed.size() == 0) return false;
+
+		const uint32_t nrdata = container.data_uncompressed.size() / sizeof(int_t);
+		assert(container.data_uncompressed.size() % sizeof(int_t) == 0);
+
+		if(container.header.data_header.HasMixedStride() == false){
+			std::cerr << "no mxied stride" << std::endl;
+			return false;
+			//exit(1);
+		} else {
+			yon_cont_ref_iface* it = nullptr;
+			switch(container.header.stride_header.controller.type){
+			case(YON_TYPE_8B):  it = new yon_cont_ref<uint8_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+			case(YON_TYPE_16B): it = new yon_cont_ref<uint16_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+			case(YON_TYPE_32B): it = new yon_cont_ref<uint32_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+			case(YON_TYPE_64B): it = new yon_cont_ref<uint64_t>(container.strides_uncompressed.data(), container.strides_uncompressed.size()); break;
+			}
+			assert(it != nullptr);
+
+			uint32_t n_stride[256]; memset(n_stride, 0, sizeof(uint32_t)*256);
+			uint32_t n_largest_stride = 0;
+			for(int i = 0; i < it->n_elements_; ++i){
+				//std::cerr << "stride-" << it->GetInt32(i) << std::endl;
+				const uint32_t cur_stride = it->GetInt32(i);
+				n_largest_stride = cur_stride > n_largest_stride ? cur_stride : n_largest_stride;
+				for(int j = 0; j < it->GetInt32(i); ++j)
+					++n_stride[j];
+			}
+			++n_largest_stride;
+
+			std::cerr << "input=" << container.data_uncompressed.size() << std::endl;
+
+			const int_t* rdata  = reinterpret_cast<const int_t*>(container.data_uncompressed.data());
+			yon1_dc_t* streams  = new yon1_dc_t[n_largest_stride];
+			uint64_t* s_offsets = new uint64_t[n_largest_stride];
+			int_t** tdata       = new int_t*[n_largest_stride];
+			for(int i = 0; i < n_largest_stride; ++i){
+				std::cerr << "stride=" << n_stride[i] << std::endl;
+				streams[i].data_uncompressed.resize(n_samples * n_stride[i] * sizeof(int_t));
+				std::cerr << "capacity=" << streams[i].data_uncompressed.capacity() << std::endl;
+				tdata[i] = reinterpret_cast<int_t*>(streams[i].data_uncompressed.data());
+			}
+			memset(s_offsets, 0, sizeof(uint64_t)*n_largest_stride);
+
+			uint32_t offset = 0;
+			for(int i = 0; i < it->n_elements_; ++i){
+				uint32_t local_offset = 0;
+				const int_t* ldata = &rdata[offset];
+				uint32_t cur_stride = it->GetInt32(i);
+
+				for(int s = 0; s < n_samples; ++s){ // over samples
+					const uint32_t cur_stride = it->GetInt32(i);
+					for(int j = 0; j < cur_stride; ++j, ++local_offset){ // over stride
+						tdata[j][s_offsets[j]++] = ldata[local_offset];
+						++tdata[j][s_offsets[j]++];
+						//if(j == 1) std::cerr << "adding to=" << j << "/" << cur_stride << " at " << s_offsets[j] << " value=" << (int64_t)ldata[local_offset] << std::endl;
+					}
+				}
+				offset += sizeof(int_t)*n_samples*cur_stride;
+			}
+			assert(offset == container.data_uncompressed.size());
+
+			uint32_t n_total = 0;
+			for(int i = 0; i < n_largest_stride; ++i){
+				if(s_offsets[i] == 0) continue;
+				streams[i].data_uncompressed.n_chars_ = s_offsets[i]*sizeof(int_t);
+				std::cerr << "checking=" << streams[i].data_uncompressed.size() << "/" << streams[i].data_uncompressed.capacity() << std::endl;
+
+				//streams[i].UpdateContainer(true,true);
+				this->zstd_codec.Compress(streams[i]);
+				std::cerr << streams[i].data_uncompressed.size() << "->" << streams[i].data.size() << "\t" << (float)streams[i].data_uncompressed.size()/streams[i].data.size() << std::endl;
+
+				if((float)streams[i].data_uncompressed.size()/streams[i].data.size() < 5){
+					int_t maxv = std::numeric_limits<int_t>::min(), minv = std::numeric_limits<int_t>::max(),
+							maxv2 = std::numeric_limits<int_t>::min(), minv2 = std::numeric_limits<int_t>::max();
+
+					/*
+					uint32_t nbins = s_offsets[i] / 512;
+					uint32_t o_tot = 0;
+					for(int j = 0; j < nbins; ++j){
+						for(int k = 0; k < 512; ++k, ++o_tot){
+							maxv = tdata[i][o_tot] > maxv ? tdata[i][o_tot] : maxv;
+							minv = tdata[i][o_tot] < minv ? tdata[i][o_tot] : minv;
+							minv2 = tdata[i][o_tot] < minv2 && tdata[i][o_tot] != minv ? tdata[i][o_tot] : minv2;
+							maxv2 = tdata[i][o_tot] > maxv2 && tdata[i][o_tot] != maxv ? tdata[i][o_tot] : maxv2;
+						}
+						//std::cerr << "range=" << (int64_t)minv << "-" << (int64_t)maxv << " 2nd-min=" << (int64_t)minv2 << " 2nd-max=" << (int64_t)maxv2 << " " << log2((maxv-minv)+1) << std::endl;
+						maxv = std::numeric_limits<int_t>::min(), minv = std::numeric_limits<int_t>::max();
+						maxv2 = std::numeric_limits<int_t>::min(), minv2 = std::numeric_limits<int_t>::max();
+					}
+					*/
+
+					//if(i == 1){
+					for(int j = 0; j < s_offsets[i]; ++j){
+						maxv = tdata[i][j] > maxv ? tdata[i][j] : maxv;
+						minv = tdata[i][j] < minv && tdata[i][j] > std::numeric_limits<int_t>::min()+1 ? tdata[i][j] : minv;
+						//std::cerr << (int)tdata[i][j] << ",";
+					}
+					//std::cerr << std::endl;
+					std::cerr << "range=" << (int64_t)minv << "-" << (int64_t)maxv << " at " << sizeof(int_t) << " sign=" << container.header.data_header.IsSigned() << std::endl;
+
+					if(container.header.data_header.IsSigned() == false){
+						if(sizeof(int_t) > 1)
+							this->EncodeUnsignedVariableInt<int_t>(streams[i]);
+					}
+
+					//}
+					//exit(1);
+				}
+
+				n_total += streams[i].data.size();
+				//delete tdata[i];
+			}
+			std::cerr << "total: " << container.data_uncompressed.size() << "->" << n_total << "\t" << (float)container.data_uncompressed.size()/n_total << std::endl;
+			//std::cerr << "bitpack: " << a->count << std::endl;
+
+
+			this->zstd_codec.Compress(container);
+			std::cerr << "ref: " << container.data_uncompressed.size() << "->" << container.data.size() << "\t" << (float)container.data_uncompressed.size()/container.data.size() << std::endl;
+
+			//delete a;
+			delete [] tdata;
+			delete [] s_offsets;
+			delete [] streams;
+			delete it;
+			return true;
+		}
+	}
+
 	bool EncodeZigZagVariableInt32(container_type& container){
-		if(container.header.data_header.GetPrimitiveType() == YON_TYPE_32B){
+		//if(container.header.data_header.GetPrimitiveType() == YON_TYPE_32B){
 			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const uint32_t* data = reinterpret_cast<const uint32_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int32_t);
@@ -73,12 +229,12 @@ public:
 			zstd_codec.Compress(container);
 			std::cerr << utility::timestamp("DEBUG") << "zstd-vintz32: " << b_original << "->" << container.data.size() << "->" << (float)b_original/container.data.size() << std::endl;
 			//container.data_uncompressed = std::move(backup);
-		}
+		//}
 		return true;
 	}
 
 	bool EncodeZigZagVariableInt16(container_type& container){
-		if(container.header.data_header.GetPrimitiveType() == YON_TYPE_16B){
+		//if(container.header.data_header.GetPrimitiveType() == YON_TYPE_16B){
 			yon_buffer_t buf(container.data_uncompressed.size() + 65536);
 			const uint16_t* data = reinterpret_cast<const uint16_t*>(container.data_uncompressed.data());
 			const uint32_t n_entries = container.data_uncompressed.size() / sizeof(int16_t);
@@ -122,7 +278,7 @@ public:
 			zstd_codec.Compress(container);
 			std::cerr << utility::timestamp("DEBUG")<< "zstd-vintz16 " << b_original << "->" << container.data.size() << "->" << (float)b_original/container.data.size() << std::endl;
 			//container.data_uncompressed = std::move(backup);
-		}
+		//}
 		return true;
 	}
 

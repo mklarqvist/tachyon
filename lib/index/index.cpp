@@ -70,7 +70,6 @@ std::vector<yon1_idx_rec> yon_index_t::FindOverlap(const uint32_t& contig_id,
 	if(this->mImpl->index_meta_.at(contig_id).n_blocks == 0)
 		return(std::vector<entry_type>());
 
-
 	// We also need to know possible overlaps in the quad-tree:
 	// Seek from root to origin in quad-tree for potential overlapping bins with counts > 0.
 	// Retrieve vector of bins that might contain the data of interest.
