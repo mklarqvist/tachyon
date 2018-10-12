@@ -145,7 +145,7 @@ int view(int argc, char** argv){
 	tachyon::VariantReader reader;
 	tachyon::VariantReaderFilters& filters = reader.GetFilterSettings();
 
-	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:GshHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:b:", long_options, &option_index)) != -1){
+	while ((c = getopt_long(argc, argv, "i:o:k:f:O:r:Gs:S:hHX?l:L:m:M:pPuUc:C:jJzZa:A:n:wWeEq:Q:b:", long_options, &option_index)) != -1){
 		switch (c){
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;

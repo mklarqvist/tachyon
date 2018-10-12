@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include "stats.h"
 #include "program_utils.h"
 #include "view.h"
+#include "fastq.h"
 
 int main(int argc, char** argv){
 	if(tachyon::utility::IsBigEndian()){
@@ -52,10 +53,11 @@ int main(int argc, char** argv){
 		return(view(argc, argv));
 	} else if(strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5){
 		return(stats(argc, argv));
-		return(0);
 	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
 		return(0);
+	} else if(strncmp(subroutine.data(), "fastq", 5) == 0 && subroutine.size() == 5){
+		return(fastq(argc, argv));
 	} else {
 		programHelp();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Illegal command: " << subroutine << std::endl;
