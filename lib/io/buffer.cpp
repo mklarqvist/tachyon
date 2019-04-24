@@ -320,6 +320,18 @@ yon_buffer_t& yon_buffer_t::operator+=(const uint64_t& value){
 	return *this;
 }
 
+#ifdef __APPLE__
+yon_buffer_t& yon_buffer_t::operator+=(const unsigned long& value){
+	if(this->n_chars_ + sizeof(uint64_t) >= this->width_)
+		this->resize(std::max(this->width_ + 1000, this->width_*2));
+
+	uint64_t* p = reinterpret_cast<uint64_t*>(&this->buffer_[this->n_chars_]);
+	*p = value;
+	this->n_chars_ += sizeof(uint64_t);
+	return *this;
+}
+#endif
+
 yon_buffer_t& yon_buffer_t::operator+=(const int64_t& value){
 	if(this->n_chars_ + sizeof(int64_t) >= this->width_)
 		this->resize(std::max(this->width_ + 1000, this->width_*2));
@@ -366,6 +378,13 @@ yon_buffer_t& operator>>(yon_buffer_t& data, uint64_t& target){
 	data.iterator_position_ += sizeof(uint64_t);
 	return(data);
 }
+#ifdef __APPLE__
+yon_buffer_t& operator>>(yon_buffer_t& data, unsigned long& target){
+	target = *reinterpret_cast<uint64_t*>(&data.buffer_[data.iterator_position_]);
+	data.iterator_position_ += sizeof(uint64_t);
+	return(data);
+}
+#endif
 
 yon_buffer_t& operator>>(yon_buffer_t& data, int8_t& target){
 	target = *reinterpret_cast<int8_t*>(&data.buffer_[data.iterator_position_++]);

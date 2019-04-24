@@ -67,16 +67,32 @@ endif
 
 
 # Try to deduce where OpenSSL is located
+OPENSSL_PATH =
+ifeq ($(OPENSSL_PATH),)
 OPENSSL_LIBRARY_PATH = 
+OPENSSL_INCLUDE_PATH =
+ifeq ($(OPENSSL_INCLUDE_PATH),)
 ifneq ("$(wildcard ./openssl/)","")
-  INCLUDE_PATH += -I./openssl/include/ 
+  OPENSSL_INCLUDE_PATH = ./openssl/include/
+  # INCLUDE_PATH += -I./openssl/include/ 
   OPENSSL_LIBRARY_PATH = -L./openssl/
 else ifneq ("$(wildcard /usr/local/include/openssl/)","")
-  INCLUDE_PATH += -I/usr/local/include/
-  #OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
+  OPENSSL_INCLUDE_PATH = /usr/local/include/
+  # INCLUDE_PATH += -I/usr/local/include/
+  # OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
 else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
-  INCLUDE_PATH += -I/usr/include/
+  # INCLUDE_PATH += -I/usr/include/
+  OPENSSL_INCLUDE_PATH += /usr/include/
   OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
+endif
+endif # end if not defined OPENSSL_INCLUDE_PATH
+else
+  OPENSSL_INCLUDE_PATH = $(OPENSSL_PATH)/include/
+  OPENSSL_LIBRARY_PATH = -L$(OPENSSL_PATH)/lib/
+endif # end if no OPENSSL_PATH set
+
+ifneq ($(OPENSSL_INCLUDE_PATH),)
+  INCLUDE_PATH += -I$(OPENSSL_INCLUDE_PATH)
 endif
 
 # Try to deduce where HTSLib is located
@@ -113,7 +129,7 @@ SHARED_EXT   = so
 LD_LIB_FLAGS = -shared '-Wl,-rpath-link,$$ORIGIN/,-rpath-link,$(PWD),-rpath-link,$$ORIGIN/zstd/lib,-rpath-link,$$ORIGIN/openssl,-rpath-link,$$ORIGIN/htslib,-soname,libtachyon.$(SHARED_EXT)'
 else
 SHARED_EXT   = dylib
-LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath-link,$$ORIGIN/,-rpath-link,$(PWD),-rpath-link,$$ORIGIN/zstd/lib,-rpath-link,$$ORIGIN/openssl,-rpath-link,$$ORIGIN/htslib'
+LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
 endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
