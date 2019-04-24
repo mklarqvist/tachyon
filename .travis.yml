@@ -68,29 +68,6 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       compiler: gcc
-      
-    # works on Precise and Trusty
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
-          packages:
-            - clang-3.6
-            - pkg-config
-            - libncurses5-dev
-            - libncursesw5-dev
-            - zlib1g-dev 
-            - libssl-dev
-            - liblz4-dev
-            - libcurl4-openssl-dev 
-            - liblz-dev
-            - libbz2-dev
-            - liblzma-dev
-      env:
-        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
-      compiler: clang
 
     # works on Precise and Trusty
     - os: linux
@@ -202,6 +179,50 @@ matrix:
             - liblzma-dev
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      compiler: clang
+
+    # works on Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      compiler: clang
+
+    # works on Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-7
+          packages:
+            - clang-7.0
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
       compiler: clang
 
     # OSX begin

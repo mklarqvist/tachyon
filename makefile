@@ -190,7 +190,7 @@ library: $(OBJECTS)
 	@echo 'Building dynamic library...'
 	$(CXX) $(LD_LIB_FLAGS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o libtachyon.$(SHARED_EXT).$(LIBVER)
 	@echo 'Building static library...'
-	ar crs libtachyon.a $(OBJECTS)
+	$(AR) crs libtachyon.a $(OBJECTS)
 	@echo 'Symlinking library...'
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) libtachyon.$(SHARED_EXT)
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) ltachyon.$(SHARED_EXT)
