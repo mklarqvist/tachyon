@@ -175,20 +175,20 @@ all: tachyon
 
 # Third party rules
 lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
-	gcc $(CFLAGS_VENDOR) -c -o $@ $<
+	$(CC) $(CFLAGS_VENDOR) -c -o $@ $<
 
 # Generic rules
 %.o: %.cpp
-	g++ $(CXXFLAGS) $(INCLUDE_PATH) -c -DVERSION=\"$(GIT_VERSION)\" -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INCLUDE_PATH) -c -DVERSION=\"$(GIT_VERSION)\" -o $@ $<
 
 tachyon: $(OBJECTS)
-	g++ $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
+	$(CXX) $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
 	$(MAKE) cleanmost
 	$(MAKE) library library=true
 
 library: $(OBJECTS)
 	@echo 'Building dynamic library...'
-	g++ $(LD_LIB_FLAGS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o libtachyon.$(SHARED_EXT).$(LIBVER)
+	$(CXX) $(LD_LIB_FLAGS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o libtachyon.$(SHARED_EXT).$(LIBVER)
 	@echo 'Building static library...'
 	ar crs libtachyon.a $(OBJECTS)
 	@echo 'Symlinking library...'
