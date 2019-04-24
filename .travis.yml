@@ -75,6 +75,50 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      compiler: gcc
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      compiler: gcc
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.7
           packages:
             - clang-3.7
@@ -186,9 +230,11 @@ matrix:
       addons:
         apt:
           sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-6.0
           packages:
             - clang-6.0
+            - libstdc++-6-dev
             - pkg-config
             - libncurses5-dev
             - libncursesw5-dev
@@ -208,9 +254,11 @@ matrix:
       addons:
         apt:
           sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-7
           packages:
-            - clang-7.0
+            - clang-7
+            - libstdc++-7-dev
             - pkg-config
             - libncurses5-dev
             - libncursesw5-dev
