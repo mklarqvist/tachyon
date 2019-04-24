@@ -270,7 +270,7 @@ matrix:
             - libbz2-dev
             - liblzma-dev
       env:
-        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
       compiler: clang
 
     # OSX begin
