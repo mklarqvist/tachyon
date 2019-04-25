@@ -6,16 +6,23 @@
 <img src="https://github.com/mklarqvist/tachyon/blob/master/yon_logo.png"><br><br>
 </div>
 
-Tachyon, or `YON` for short, is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
+Tachyon is an open source C++ software library for reading, writing, and manipulating sequence variant data in a lossless and bit-exact representation. It is completely compatible with BCF/VCF. It was developed with a focus on enabling fast experimentation and storage of population-scaled datasets.
 
 ## How does it work?
 
-Tachyon stores data in a format that optimized query execution (column store). Additionally, this data layout generally results in considerable gains in compression
-as similar data are stored together separately. Tachyon can be considered the equivalent of [CRAM](http://samtools.github.io/hts-specs/) but for sequence variant data.
+Tachyon stores data in a format that optimize query execution (column store). Additionally, this data layout generally results in considerable gains in compression
+as similar data are stored together separately. Tachyon can be considered the equivalent of what [CRAM](http://samtools.github.io/hts-specs/) is for SAM/BAM but for sequence variant data (VCF/BCF).
+
+## Documentation
+
+* Overview.
+* [Building and installing](docs/building.md)
+* [Getting started](docs/getting_started.md)
+* [Performance benchmarks](docs/benchmarks.md)
 
 ## Perfomance
 
-The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. Left panel: Filesizes for chromosomes 1-22. Right panel: We generated a yon archive for this dataset (left) and compared file sizes for both uncompressed (ubcf and uyon) and compressed data (bcf and yon) and next retrieved the site-specific information only (dropping all FORMAT fields; right).
+The following tests were run on the first release of [Haplotype Reference Consortium](http://www.haplotype-reference-consortium.org/) (HRC) data. There are ~39 million phased SNPs in 32,488 samples. Left panel: Filesizes for chromosomes 1-22. Right panel: We generated a yon archive for this dataset (left) and compared file sizes for both uncompressed (ubcf and uyon) and compressed data (bcf and yon).
 
 Compression Ratio / Chromosome | Compression Ratio
 ------------------|-------------------
@@ -36,34 +43,13 @@ The following tests were run to benchmark the processing time of various `yon` a
 
 | Dataset     | Variants | #INFO | #FORMAT | ubcf      | bcf       | uyon      | yon       |
 |-------------|----------|-------|---------|-----------|-----------|-----------|-----------|
-| 1kgp3-chr11 | 4045628  | 24    | 1       | 20.60 GB  | 633.70 MB | 670.29 MB | 157.28 MB |
-| HRC-chr11   | 1936990  | 6     | 1       | 125.90 GB | 3.48 GB   | 1.47 GB   | 461.96 MB |
-| HGDP-chr10  | 3766673  | 24    | 9       | 73.93 GB  | 19.07 GB  | 67.76 GB  | 14.40 GB  |
+| 1kgp3-chr11 | 4,045,628  | 24    | 1       | 20.60 GB  | 633.70 MB | 670.29 MB | 157.28 MB |
+| HRC-chr11   | 1,936,990  | 6     | 1       | 125.90 GB | 3.48 GB   | 1.47 GB   | 461.96 MB |
+| HGDP-chr10  | 3,766,673  | 24    | 9       | 73.93 GB  | 19.07 GB  | 67.76 GB  | 14.40 GB  |
 
 \#INFO: number of INFO fields; \#FORMAT: number of FORMAT fields; ubcf: uncompressed bcf; uyon: uncompressed yon; 1 MB = 1000 * 1000 b
 
 ---  
-
-## Installation
-For Ubuntu, Debian, and Mac systems, installation is easy: just run
-```bash
-git clone --recursive https://github.com/mklarqvist/tachyon
-cd tachyon
-./install.sh
-```
-Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on `apt-get`, so it is unlikely to run without extensive modifications on non-Debian-based systems.
-If you do not have super-user (administrator) privileges required to install new packages on your system then run the local installation:
-```bash
-./install.sh local
-```
-When installing locally the required dependencies are downloaded and built in the root directory. This approach will require additional effort if you intend to move the compiled libraries to a different directory.
-
-## Documentation
-
-* Overview.
-* [Building and installing](docs/building.md)
-* [Getting started](docs/getting_started.md)
-* [Performance benchmarks](docs/benchmarks.md)
 
 ### Contributing
 
