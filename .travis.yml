@@ -68,16 +68,15 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       compiler: gcc
-      
+
     # works on Precise and Trusty
     - os: linux
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
           packages:
-            - clang-3.6
+            - g++-7
             - pkg-config
             - libncurses5-dev
             - libncursesw5-dev
@@ -89,8 +88,30 @@ matrix:
             - libbz2-dev
             - liblzma-dev
       env:
-        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
-      compiler: clang
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      compiler: gcc
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      compiler: gcc
 
     # works on Precise and Trusty
     - os: linux
@@ -204,15 +225,83 @@ matrix:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       compiler: clang
 
+    # works on Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+            - libstdc++-6-dev
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      compiler: clang
+
+    # works on Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-7
+          packages:
+            - clang-7
+            - libstdc++-7-dev
+            - pkg-config
+            - libncurses5-dev
+            - libncursesw5-dev
+            - zlib1g-dev 
+            - libssl-dev
+            - liblz4-dev
+            - libcurl4-openssl-dev 
+            - liblz-dev
+            - libbz2-dev
+            - liblzma-dev
+      env:
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+      compiler: clang
+
+    # OSX begin
+    - os: osx
+      osx_image: xcode10
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@5 && brew install openssl && CC=gcc-5 && CXX=g++-5
+
+    - os: osx
+      osx_image: xcode10
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@6 && brew install openssl && CC=gcc-6 && CXX=g++-6
+
+    - os: osx
+      osx_image: xcode10
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@7 && brew install openssl && CC=gcc-7 && CXX=g++-7
+
+    - os: osx
+      osx_image: xcode10
+      env:
+        - MATRIX_EVAL="brew update && brew install gcc@8 && brew install openssl && CC=gcc-8 && CXX=g++-8
+
 before_install:
   - eval "${MATRIX_EVAL}"
   - git clone https://github.com/facebook/zstd
   - cd zstd && make -j4 && sudo make install && cd ..
   - git clone https://github.com/samtools/htslib
-  - cd htslib && git checkout 1832d3a1b75133e55fb6abffc3f50f8a6ed5ceae
-  - autoheader && autoconf && ./configure && make -j 4 && sudo make install && cd ..
+  - cd htslib && autoheader && autoconf && ./configure && make -j 4 && sudo make install && cd ..
 
 script:
   - git submodule update --recursive
-  - make -j 4
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make -j 4 OPENSSL_PATH=/usr/local/opt/openssl/; else make -j 4; fi
   

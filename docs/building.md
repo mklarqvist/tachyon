@@ -18,14 +18,14 @@ For Ubuntu, Debian, and Mac systems, installation is easy: just run
 ```bash
 git clone --recursive https://github.com/mklarqvist/tachyon
 cd tachyon
-sudo ./install.sh
+./install.sh
 ```
-Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on apt-get, so it is unlikely to run without extensive modifications on non-Debian-based systems.
-If you do not have super-user privileges required to install new packages on your system then run
+Note the added `--recursive` flag to the clone request. This flag is required to additionally pull down the latest third-party dependencies. The install.sh file depends extensively on `apt-get`, so it is unlikely to run without extensive modifications on non-Debian-based systems.
+If you do not have super-user (administrator) privileges required to install new packages on your system then run the local installation:
 ```bash
 ./install.sh local
 ```
-In this situation, all required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a new directory.
+When installing locally the required dependencies are downloaded and built in the current directory. This approach will require additional effort if you intend to move the compiled libraries to a different directory.
 
 [openssl]:  https://www.openssl.org/
 [zstd]:     https://github.com/facebook/zstd

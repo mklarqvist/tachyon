@@ -338,6 +338,8 @@ bool yon_gt::EvaluateRecordsM1_(){
 	}
 	assert(n_total == this->n_s);
 	this->eval_cont |= YON_GT_UN_RCDS;
+
+	return true;
 }
 
 template <class T>
@@ -378,6 +380,8 @@ bool yon_gt::EvaluateRecordsM2_(){
 	}
 	assert(n_total == this->n_s);
 	this->eval_cont |= YON_GT_UN_RCDS;
+
+	return true;
 }
 
 template <class T>
@@ -412,6 +416,8 @@ bool yon_gt::EvaluateRecordsM4_(){
 	}
 	assert(n_total == this->n_s);
 	this->eval_cont |= YON_GT_UN_RCDS;
+
+	return true;
 }
 
 /****************************

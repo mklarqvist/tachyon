@@ -846,7 +846,7 @@ void PrimitiveContainer<return_type>::ExpandEmpty(const uint32_t to){
 	if(to > this->capacity())
 		this->resize(to + 10);
 
-	for(int i = 0; i < n_entries_; to)
+	for(int i = 0; i < n_entries_; ++i)
 		entries_[i] = std::numeric_limits<return_type>::min() + 1;
 }
 

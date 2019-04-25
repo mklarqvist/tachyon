@@ -193,7 +193,7 @@ yon_gt_rcd::yon_gt_rcd(yon_gt_rcd&& other) :
 
 yon_gt_rcd& yon_gt_rcd::operator=(yon_gt_rcd&& other){
 	if(this == &other) return(*this);
-	delete allele; allele = nullptr;
+	delete[] allele; allele = nullptr;
 	std::swap(allele, other.allele);
 	run_length = other.run_length;
 	return(*this);
@@ -1170,6 +1170,8 @@ bool yon_gt_summary::LazyEvaluate(void){
 		}
 		else this->d->f_pic = 0;
 	}
+
+	return true;
 }
 
 bool yon_occ::ReadTable(const std::string file_name,

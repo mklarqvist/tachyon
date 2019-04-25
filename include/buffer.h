@@ -110,6 +110,10 @@ public:
 	self_type& operator+=(const int32_t& value);
 	self_type& operator+=(const double& value);
 	self_type& operator+=(const uint64_t& value);
+// Apple LLVM requires the definition for unsigned long.
+#ifdef __APPLE__
+	self_type& operator+=(const unsigned long& value);
+#endif
 	self_type& operator+=(const int64_t& value);
 	self_type& operator+=(const std::string& value);
 
@@ -130,6 +134,10 @@ private:
 	friend self_type& operator>>(self_type& data, uint16_t& target);
 	friend self_type& operator>>(self_type& data, uint32_t& target);
 	friend self_type& operator>>(self_type& data, uint64_t& target);
+// Apple LLVM requires the definition for unsigned long.
+#ifdef __APPLE__
+	friend self_type& operator>>(self_type& data, unsigned long& target);
+#endif
 	friend self_type& operator>>(self_type& data, int8_t& target);
 	friend self_type& operator>>(self_type& data, int16_t& target);
 	friend self_type& operator>>(self_type& data, int32_t& target);

@@ -65,7 +65,7 @@ public:
 	inline const_iterator cbegin() const{ return const_iterator(&this->__entries[0]); }
 	inline const_iterator cend() const{ return const_iterator(&this->__entries[this->n_entries]); }
 
-	inline self_type& operator+=(const const_reference index_entry){
+	inline self_type& operator+=(const_reference index_entry){
 		if(this->size() + 1 == this->n_capacity)
 			this->resize();
 
@@ -73,7 +73,7 @@ public:
 		this->__entries[this->n_entries++] = index_entry;
 		return(*this);
 	}
-	inline self_type& add(const const_reference index_entry){ return(*this += index_entry); }
+	inline self_type& add(const_reference index_entry){ return(*this += index_entry); }
 
 	void resize(void){
 		pointer temp = this->__entries;
