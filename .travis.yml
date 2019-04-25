@@ -277,22 +277,22 @@ matrix:
     - os: osx
       osx_image: xcode10
       env:
-        - MATRIX_EVAL="brew update && brew install gcc5 && brew install openssl && CC=gcc-5 && CXX=g++-5
+        - MATRIX_EVAL="brew update && brew install gcc@5 && brew install openssl && CC=gcc-5 && CXX=g++-5
 
     - os: osx
       osx_image: xcode10
       env:
-        - MATRIX_EVAL="brew update && brew install gcc6 && brew install openssl && CC=gcc-6 && CXX=g++-6
+        - MATRIX_EVAL="brew update && brew install gcc@6 && brew install openssl && CC=gcc-6 && CXX=g++-6
 
     - os: osx
       osx_image: xcode10
       env:
-        - MATRIX_EVAL="brew update && brew install gcc7 && brew install openssl && CC=gcc-7 && CXX=g++-7
+        - MATRIX_EVAL="brew update && brew install gcc@7 && brew install openssl && CC=gcc-7 && CXX=g++-7
 
     - os: osx
       osx_image: xcode10
       env:
-        - MATRIX_EVAL="brew update && brew install gcc8 && brew install openssl && CC=gcc-8 && CXX=g++-8
+        - MATRIX_EVAL="brew update && brew install gcc@8 && brew install openssl && CC=gcc-8 && CXX=g++-8
 
 before_install:
   - eval "${MATRIX_EVAL}"

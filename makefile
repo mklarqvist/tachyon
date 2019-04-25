@@ -129,13 +129,18 @@ SHARED_EXT   = so
 LD_LIB_FLAGS = -shared '-Wl,-rpath-link,$$ORIGIN/,-rpath-link,$(PWD),-rpath-link,$$ORIGIN/zstd/lib,-rpath-link,$$ORIGIN/openssl,-rpath-link,$$ORIGIN/htslib,-soname,libtachyon.$(SHARED_EXT)'
 else
 SHARED_EXT   = dylib
-LD_LIB_FLAGS = -dynamiclib -install_name libtachyon.$(SHARED_EXT) '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
+LD_LIB_FLAGS = -dynamiclib -install_name "@rpath/libtachyon.$(SHARED_EXT)" '-Wl,-rpath,@loader_path/,-rpath,$(PWD),-rpath,@loader_path/zstd/lib,-rpath,@loader_path/openssl,-rpath,@loader_path/htslib'
 endif
 
 CXXFLAGS      = -std=c++0x $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS        = -std=c99   $(OPTFLAGS) $(DEBUG_FLAGS)
 CFLAGS_VENDOR = -std=c99   $(OPTFLAGS)
+
+ifneq ($(shell uname), Darwin)
 BINARY_RPATHS = '-Wl,-rpath,$$ORIGIN/,-rpath,$(PWD),-rpath,$$ORIGIN/zstd/lib,-rpath,$$ORIGIN/openssl,-rpath,$$ORIGIN/htslib'
+else
+BINARY_RPATHS = '-Wl,-rpath,@loader_path/,-rpath,$(PWD),-rpath,@loader_path/zstd/lib,-rpath,@loader_path/openssl,-rpath,@loader_path/htslib'
+endif
 
 LIBS := -lzstd -lcrypto -lhts
 CXX_SOURCE = $(wildcard lib/algorithm/compression/*.cpp) \
