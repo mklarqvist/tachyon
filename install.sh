@@ -72,8 +72,6 @@ git clone https://github.com/samtools/htslib.git
 fi
 cd htslib
 if [ ! -f htslib.so ]; then
-    # Temporary fix for broken htslib compatibility with C++
-    git checkout 1832d3a1b75133e55fb6abffc3f50f8a6ed5ceae
     autoheader && autoconf && ./configure CPPFLAGS="-I/usr/local/include/" LDFLAGS="-L/usr/local/lib/" && make -j$(nproc)
 else
     echo "htslib already built! Skipping..."
