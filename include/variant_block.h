@@ -517,7 +517,7 @@ public:
 	}
 
 	//
-	inline self_type& operator+=(const const_reference entry){
+	inline self_type& operator+=(const_reference entry){
 		if(this->size() + 1 == this->n_capacity_)
 			this->resize();
 
@@ -525,7 +525,7 @@ public:
 		this->entries_[this->n_entries_++] = entry;
 		return(*this);
 	}
-	inline self_type& add(const const_reference entry){ return(*this += entry); }
+	inline self_type& add(const_reference entry){ return(*this += entry); }
 
 	void resize(const uint32_t new_size){
 		if(new_size == this->capacity()) return;

@@ -32,7 +32,22 @@ LIBVER_MINOR := $(shell echo $(LIBVER_MINOR_SCRIPT))
 LIBVER_PATCH := $(shell echo $(LIBVER_PATCH_SCRIPT))
 LIBVER       := $(shell echo $(LIBVER_SCRIPT))
 
-PREFIX := /usr/local
+prefix      = /usr/local
+exec_prefix = $(prefix)
+bindir      = $(exec_prefix)/bin
+libdir      = $(exec_prefix)/lib
+includedir  = $(exec_prefix)/include
+#mandir      = $(prefix)/share/man
+#man1dir     = $(mandir)/man1
+
+MKDIR_P = mkdir -p
+INSTALL = install -p
+INSTALL_DATA    = $(INSTALL) -m 644
+INSTALL_DIR     = $(MKDIR_P) -m 755
+INSTALL_MAN     = $(INSTALL_DATA)
+INSTALL_PROGRAM = $(INSTALL)
+INSTALL_SCRIPT  = $(INSTALL_PROGRAM)
+INSTALL_LIB     = $(INSTALL_DATA)
 
 # If you want to build in debug mode then add DEBUG=true to your build command
 # make DEBUG=true
@@ -77,23 +92,22 @@ ifneq ("$(wildcard ./openssl/)","")
   # INCLUDE_PATH += -I./openssl/include/ 
   OPENSSL_LIBRARY_PATH = -L./openssl/
 else ifneq ("$(wildcard /usr/local/include/openssl/)","")
-  OPENSSL_INCLUDE_PATH = /usr/local/include/
+  OPENSSL_INCLUDE_PATH = -I/usr/local/include/
   # INCLUDE_PATH += -I/usr/local/include/
   # OPENSSL_LIBRARY_PATH = -L/usr/local/lib/
 else ifneq ("$(wildcard /usr/include/openssl/evp.h)","")
   # INCLUDE_PATH += -I/usr/include/
-  OPENSSL_INCLUDE_PATH += /usr/include/
+  OPENSSL_INCLUDE_PATH += -I/usr/include/
   OPENSSL_LIBRARY_PATH = -L/usr/lib/x86_64-linux-gnu/
 endif
 endif # end if not defined OPENSSL_INCLUDE_PATH
 else
-  OPENSSL_INCLUDE_PATH = $(OPENSSL_PATH)/include/
+  # if OPENSSL_PATH is set
+  OPENSSL_INCLUDE_PATH = -I$(OPENSSL_PATH)/include/
   OPENSSL_LIBRARY_PATH = -L$(OPENSSL_PATH)/lib/
 endif # end if no OPENSSL_PATH set
 
-ifneq ($(OPENSSL_INCLUDE_PATH),)
-  INCLUDE_PATH += -I$(OPENSSL_INCLUDE_PATH)
-endif
+INCLUDE_PATH += ${OPENSSL_INCLUDE_PATH}
 
 # Try to deduce where HTSLib is located
 HSLIB_LIBRARY_PATH =
@@ -176,7 +190,11 @@ GIT_VERSION = $(shell git describe --abbrev=8 --dirty --always --tags)
 endif
 
 # Default target
-all: tachyon
+all: 
+	@echo 'Compiling executable...'
+	@$(MAKE) tachyon
+	@echo 'Compiling library...'
+	@$(MAKE) library
 
 # Third party rules
 lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
@@ -188,10 +206,11 @@ lib/third_party/xxhash/%.o: lib/third_party/xxhash/%.c
 
 tachyon: $(OBJECTS)
 	$(CXX) $(BINARY_RPATHS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o tachyon
-	$(MAKE) cleanmost
-	$(MAKE) library library=true
+	
+library_hack:
+	@$(MAKE) cleanmost
 
-library: $(OBJECTS)
+library_inner: $(OBJECTS)
 	@echo 'Building dynamic library...'
 	$(CXX) $(LD_LIB_FLAGS) $(LIBRARY_PATHS) -pthread $(OBJECTS) $(LIBS) -o libtachyon.$(SHARED_EXT).$(LIBVER)
 	@echo 'Building static library...'
@@ -200,13 +219,29 @@ library: $(OBJECTS)
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) libtachyon.$(SHARED_EXT)
 	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) ltachyon.$(SHARED_EXT)
 
+library:
+	@$(MAKE) library_hack
+	@$(MAKE) library_inner library=true
+
 examples: $(LIB_EXAMPLE_OUTPUT)
+
+install:
+	$(MAKE) tachyon
+	$(MAKE) library
+	$(INSTALL_DIR) $(DESTDIR)$(bindir) $(DESTDIR)$(includedir)/tachyon $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) include/*.h $(DESTDIR)$(includedir)/tachyon
+	$(INSTALL_PROGRAM) tachyon $(DESTDIR)$(bindir)
+	$(INSTALL_DATA) libtachyon.a $(DESTDIR)$(libdir)/libtachyon.a
+	$(INSTALL_LIB) libtachyon.$(SHARED_EXT).$(LIBVER) $(DESTDIR)$(libdir)/libtachyon.$(SHARED_EXT).$(LIBVER)
+	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) $(DESTDIR)$(libdir)/libtachyon.$(SHARED_EXT)
+	ln -sf libtachyon.$(SHARED_EXT).$(LIBVER) $(DESTDIR)$(libdir)/ltachyon.$(SHARED_EXT)
+  	#$(INSTALL_MAN) doc/tachyon.1 $(DESTDIR)$(man1dir)
 
 # Clean procedures
 cleanmost:
 	rm -f $(OBJECTS) $(CPP_DEPS)
 
 clean: cleanmost clean_examples
-	rm -f tachyon libtachyon.so libtachyon.so.* ltachyon.so
+	rm -f tachyon libtachyon.$(SHARED_EXT) libtachyon.$(SHARED_EXT).* ltachyon.$(SHARED_EXT) libtachyon.a
 
-.PHONY: all clean clean_examples cleanmost library
+.PHONY: all clean clean_examples cleanmost library library_hack library_inner install
