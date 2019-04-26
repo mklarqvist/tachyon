@@ -1879,7 +1879,6 @@ bool yon1_vb_t::write(std::ostream& stream)
 	// Start at offset 1 because offset 0 (YON_BLK_PPA) is encoding for the
 	// genotype permutation array that is handled differently.
 	for (uint32_t i = 1; i < YON_BLK_N_STATIC; ++i) {
-		std::cerr << "static-" << i << "->" << YON_BLK_PRINT_NAMES[i] << std::endl;
 		this->WriteContainer(stream, this->footer.offsets[i], this->base_containers[i], (uint64_t)stream.tellp() - start_pos);
 	}
 

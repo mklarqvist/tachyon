@@ -617,9 +617,9 @@ bool yon1_dc_t::CheckUniformity(void) {
 		}
 		cumulative_position += stride_update;
 	}
-	std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
-	std::cerr << "controller=" << this->header.data_header.controller.type << "," << this->header.data_header.controller.uniform << "," << this->header.data_header.controller.signedness << "," << this->header.data_header.controller.mixedStride << std::endl;
-	std::cerr << "Data size=" << data_uncompressed.size() << " with stride " << stride_size << " and stride update=" << stride_update << std::endl;
+	// std::cerr << "n_entries: " << this->header.n_entries << "/" << n_e << " -> " << cumulative_position << "/" << this->data_uncompressed.size() << " stride: " << stride_update << " word " << (int)word_width << std::endl;
+	// std::cerr << "controller=" << this->header.data_header.controller.type << "," << this->header.data_header.controller.uniform << "," << this->header.data_header.controller.signedness << "," << this->header.data_header.controller.mixedStride << std::endl;
+	// std::cerr << "Data size=" << data_uncompressed.size() << " with stride " << stride_size << " and stride update=" << stride_update << std::endl;
 
 	assert(cumulative_position == this->data_uncompressed.size());
 
