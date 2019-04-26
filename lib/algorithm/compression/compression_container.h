@@ -24,7 +24,7 @@ inline uint32_t permuteIntBits(const char* const data,
                           const uint32_t  size,
                           char* destination)
 {
-	if(size == 0) return 0;
+	if (size == 0) return 0;
 	// Balance the number of uint8_ts in the output
 	// uint8_t stream to be divisible by 32. Assert
 	// that this is true or the procedure fails.
@@ -40,22 +40,22 @@ inline uint32_t permuteIntBits(const char* const data,
 	const uint32_t partition_size = internal_size / 32; // Partition size
 
 	// Assign a pointer to each bucket
-	for(uint32_t i = 0; i < 32; ++i)
+	for (uint32_t i = 0; i < 32; ++i)
 		target[31-i] = &dest[partition_size*i];
 
 	uint32_t k = 0, p = 0;
 	// Iterate over the data and  update position K for
 	// each element. When K reaches position 7 then reset
 	// to 0.
-	for(uint32_t i = 0; i + 4 < internal_size; i+=4, ++k){
-		if(k == 8){ k = 0; ++p; }
+	for (uint32_t i = 0; i + 4 < internal_size; i+=4, ++k) {
+		if (k == 8) { k = 0; ++p; }
 
 		// Foreach bit in uint32_t
 		// Update target T at uint8_t position P with bit J at position K
-		for(uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
-		for(uint32_t j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
-		for(uint32_t j = 0; j < 8; ++j) target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
-		for(uint32_t j = 0; j < 8; ++j) target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
+		for (uint32_t j = 0; j < 8; ++j) target[j+ 0][p] |= ((d[i]   & (1 << j)) >> j) << k;
+		for (uint32_t j = 0; j < 8; ++j) target[j+ 8][p] |= ((d[i+1] & (1 << j)) >> j) << k;
+		for (uint32_t j = 0; j < 8; ++j) target[j+16][p] |= ((d[i+2] & (1 << j)) >> j) << k;
+		for (uint32_t j = 0; j < 8; ++j) target[j+24][p] |= ((d[i+3] & (1 << j)) >> j) << k;
 	}
 
 	return internal_size;
@@ -65,7 +65,7 @@ inline uint32_t unpermuteIntBits(char* data,
                             const uint32_t  size,
                             char* destination)
 {
-	if(size == 0) return 0;
+	if (size == 0) return 0;
 	//uint32_t internal_size = size + (32-size%32); // Balance uint8_ts
 	//assert(internal_size % 32 == 0);
 
@@ -78,17 +78,17 @@ inline uint32_t unpermuteIntBits(char* data,
 	const uint32_t partition_size = size / 32; // Partition size
 
 	// Assign a pointer to each bucket
-	for(uint32_t i = 0; i < 32; ++i)
+	for (uint32_t i = 0; i < 32; ++i)
 		target[31-i] = &temp[partition_size*i];
 
 	uint32_t k = 0; uint32_t p = 0;
 	// Foreach uint32_t
 	// Update position K for each element
 	// When K reaches position 7 then reset to 0
-	for(uint32_t i = 0; i < n_entries; ++i, ++k){
-		if(k == 8){ k = 0; ++p; }
+	for (uint32_t i = 0; i < n_entries; ++i, ++k) {
+		if (k == 8) { k = 0; ++p; }
 
-		for(uint32_t j = 0; j < 32; ++j)
+		for (uint32_t j = 0; j < 32; ++j)
 			dest[i] |= ((target[j][p] & (1 << k)) >> k) << j;
 	}
 
@@ -129,7 +129,7 @@ int_t DecodeVarint(uint8_t* input, size_t& offset) {
     while(true) {
         ret |= (input[offset] & 127) << (7 * its);
         //If the next-byte flag is set
-        if(!(input[offset] & 128)) {
+        if (!(input[offset] & 128)) {
         	++offset;
         	break;
         }

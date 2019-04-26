@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #include "program_utils.h"
 #include "variant_importer.h"
 
-void import_usage(void){
+void import_usage(void) {
 	programMessage();
 	std::cerr <<
 	"Brief:  Convert Vcf/Bcf records into a Yon archive.\n"
@@ -45,14 +45,14 @@ void import_usage(void){
 	"  -s       Hide all program messages [null]\n";
 }
 
-int import(int argc, char** argv){
-	if(argc <= 2){
+int import(int argc, char** argv) {
+	if (argc <= 2) {
 		import_usage();
 		return(1);
 	}
 
 	int c;
-	if(argc < 2){
+	if (argc < 2) {
 		import_usage();
 		return(1);
 	}
@@ -77,8 +77,8 @@ int import(int argc, char** argv){
 
 	tachyon::VariantImporterSettings settings;
 
-	while ((c = getopt_long(argc, argv, "i:o:c:C:L:t:T:sepP?", long_options, &option_index)) != -1){
-		switch (c){
+	while ((c = getopt_long(argc, argv, "i:o:c:C:L:t:T:sepP?", long_options, &option_index)) != -1) {
+		switch (c) {
 		case 0:
 			std::cerr << "Case 0: " << option_index << '\t' << long_options[option_index].name << std::endl;
 			break;
@@ -93,21 +93,21 @@ int import(int argc, char** argv){
 			break;
 		case 'c':
 			settings.checkpoint_n_snps = atoi(optarg);
-			if(settings.checkpoint_n_snps <= 0){
+			if (settings.checkpoint_n_snps <= 0) {
 				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
 		case 'C':
 			settings.checkpoint_bases = atof(optarg);
-			if(settings.checkpoint_bases <= 0){
+			if (settings.checkpoint_bases <= 0) {
 				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set checkpoint to <= 0..." << std::endl;
 				return(1);
 			}
 			break;
 		case 'L':
 			settings.compression_level = atoi(optarg);
-			if(settings.compression_level <= 0){
+			if (settings.compression_level <= 0) {
 				std::cerr << tachyon::utility::timestamp("ERROR") << "Cannot set compression level to <= 0..." << std::endl;
 				return(1);
 			}
@@ -127,20 +127,20 @@ int import(int argc, char** argv){
 		}
 	}
 
-	if(settings.input_file.length() == 0){
+	if (settings.input_file.length() == 0) {
 		import_usage();
 		std::cerr << tachyon::utility::timestamp("ERROR") << "No input value specified..." << std::endl;
 		return(1);
 	}
 
 	// Print messages
-	if(!SILENT){
+	if (!SILENT) {
 		programMessage();
 		std::cerr << tachyon::utility::timestamp("LOG") << "Calling import..." << std::endl;
 	}
 
 	tachyon::VariantImporter importer(settings);
-	if(!importer.Build())
+	if (!importer.Build())
 		return 1;
 
 	return 0;

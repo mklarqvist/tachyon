@@ -37,8 +37,8 @@ VariantWriterInterface::~VariantWriterInterface()
 
 }
 
-bool VariantWriterInterface::WriteFileHeader(yon_vnt_hdr_t& header){
-	if(stream == nullptr)
+bool VariantWriterInterface::WriteFileHeader(yon_vnt_hdr_t& header) {
+	if (stream == nullptr)
 		return false;
 
 	// Write basic header prefix.
@@ -59,7 +59,7 @@ bool VariantWriterInterface::WriteFileHeader(yon_vnt_hdr_t& header){
 	return(stream->good());
 }
 
-yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderImport(yon_vnt_hdr_t& header, const std::string command_string){
+yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderImport(yon_vnt_hdr_t& header, const std::string command_string) {
 	VcfExtra e;
 	e.key = "tachyon_importVersion";
 	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -81,7 +81,7 @@ yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderImport(yon_vnt_hdr_t& header,
 	return(header);
 }
 
-yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderView(yon_vnt_hdr_t& header, const std::string command_string){
+yon_vnt_hdr_t& VariantWriterInterface::UpdateHeaderView(yon_vnt_hdr_t& header, const std::string command_string) {
 	VcfExtra e;
 	e.key = "tachyon_viewVersion";
 	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -107,7 +107,7 @@ bool VariantWriterInterface::Write(yon1_vb_t& container, yon1_idx_rec& index_ent
 	return(this->stream->good());
 }
 
-bool VariantWriterInterface::UpdateIndex(yon1_idx_rec& index_entry){
+bool VariantWriterInterface::UpdateIndex(yon1_idx_rec& index_entry) {
 	assert(this->stream != nullptr);
 	index_entry.block_id        = this->n_blocks_written;
 	index_entry.byte_offset_end = this->stream->tellp();
@@ -123,7 +123,7 @@ bool VariantWriterInterface::UpdateIndex(yon1_idx_rec& index_entry){
 	return true;
 }
 
-bool VariantWriterInterface::WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_entry){
+bool VariantWriterInterface::WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_entry) {
 	index_entry.byte_offset = this->stream->tellp();
 	block.write(*this->stream);
 	this->WriteBlockFooter(block.footer_support);
@@ -132,9 +132,9 @@ bool VariantWriterInterface::WriteBlock(yon1_vb_t& block, yon1_idx_rec& index_en
 	return(this->stream->good());
 }
 
-bool VariantWriterInterface::close(){
-	if(this->stream == nullptr) return false;
-	if(this->stream->good() == false) return false;
+bool VariantWriterInterface::close() {
+	if (this->stream == nullptr) return false;
+	if (this->stream->good() == false) return false;
 
 	this->WriteFinal();
 	this->stream->flush();
@@ -142,9 +142,9 @@ bool VariantWriterInterface::close(){
 	return true;
 }
 
-bool VariantWriterInterface::WriteFinal(){
+bool VariantWriterInterface::WriteFinal() {
 	// Write last if any.
-	if(variant_container.size()){
+	if (variant_container.size()) {
 		this->variant_container.PrepareWritableBlock(this->n_s, this->settings.compression_level);
 		this->index.IndexContainer(this->variant_container, this->n_blocks_written);
 		this->Write(variant_container.block_, this->index.GetCurrent());
@@ -176,13 +176,13 @@ bool VariantWriterInterface::WriteFinal(){
 	return(this->stream->good());
 }
 
-void VariantWriterInterface::WriteIndex(void){
+void VariantWriterInterface::WriteIndex(void) {
 	*this->stream << this->index;
 	this->stream->flush();
 }
 
-bool VariantWriterInterface::WriteBlockFooter(const container_type& footer){
-	if(this->stream == nullptr) return false;
+bool VariantWriterInterface::WriteBlockFooter(const container_type& footer) {
+	if (this->stream == nullptr) return false;
 	const uint64_t start_footer_pos = this->stream->tellp();
 	utility::SerializePrimitive(footer.header.data_header.uLength, *this->stream);
 	utility::SerializePrimitive(footer.header.data_header.cLength, *this->stream);
@@ -191,18 +191,18 @@ bool VariantWriterInterface::WriteBlockFooter(const container_type& footer){
 	return(this->stream->good());
 }
 
-bool VariantWriterInterface::WriteEndOfBlock(void){
-	if(this->stream == nullptr) return false;
+bool VariantWriterInterface::WriteEndOfBlock(void) {
+	if (this->stream == nullptr) return false;
 	utility::SerializePrimitive(TACHYON_BLOCK_EOF, *this->stream);
 	return(this->stream->good());
 }
 
-void VariantWriterInterface::operator+=(const yon1_vnt_t& rec){
+void VariantWriterInterface::operator+=(const yon1_vnt_t& rec) {
 	// Make sure we have enough space.
-	if(variant_container.capacity() < settings.checkpoint_n_snps + 10)
+	if (variant_container.capacity() < settings.checkpoint_n_snps + 10)
 		variant_container.reserve(settings.checkpoint_n_snps + 10);
 
-	if(variant_container.size() == settings.checkpoint_n_snps){
+	if (variant_container.size() == settings.checkpoint_n_snps) {
 		// write
 		this->variant_container.PrepareWritableBlock(this->n_s, this->settings.compression_level);
 		this->index.IndexContainer(this->variant_container, this->n_blocks_written);
@@ -210,18 +210,18 @@ void VariantWriterInterface::operator+=(const yon1_vnt_t& rec){
 		this->variant_container.clear();
 	}
 
-	if(variant_container.size()){
-		if(rec.rid != variant_container.front().rid){
+	if (variant_container.size()) {
+		if (rec.rid != variant_container.front().rid) {
 			//std::cerr << "different rid: write" << std::endl;
 			// write
 			this->variant_container.PrepareWritableBlock(this->n_s, this->settings.compression_level);
 			this->index.IndexContainer(this->variant_container, this->n_blocks_written);
 			this->Write(this->variant_container.block_, this->index.GetCurrent());
 			this->variant_container.clear();
-		} else if(rec.pos < this->variant_container.front().pos){
+		} else if (rec.pos < this->variant_container.front().pos) {
 			std::cerr << "unsorted file: " << rec.pos << " < " << variant_container.front().pos << std::endl;
 			exit(1);
-		} else if(variant_container.back().pos - variant_container.front().pos > settings.checkpoint_bases){
+		} else if (variant_container.back().pos - variant_container.front().pos > settings.checkpoint_bases) {
 			//std::cerr << "length cutoff=" << (variant_container.back().pos - variant_container.front().pos) << "/" << settings.checkpoint_bases << std::endl;
 			// write
 			this->variant_container.PrepareWritableBlock(this->n_s, this->settings.compression_level);
@@ -234,8 +234,8 @@ void VariantWriterInterface::operator+=(const yon1_vnt_t& rec){
 	variant_container += rec;
 }
 
-bool VariantWriterFile::open(const std::string output){
-	if(output.size() == 0){
+bool VariantWriterFile::open(const std::string output) {
+	if (output.size() == 0) {
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "No output file/file prefix provided!" << std::endl;
 		return false;
 	}
@@ -246,39 +246,39 @@ bool VariantWriterFile::open(const std::string output){
 	ostream->open(this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX, std::ios::out | std::ios::binary);
 
 	// Check streams
-	if(!this->stream->good()){
+	if (!this->stream->good()) {
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Could not open: " << this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX << "!" << std::endl;
 		return false;
 	}
 
-	if(!SILENT){
+	if (!SILENT) {
 		std::cerr << utility::timestamp("LOG", "WRITER") << "Opening: " << this->basePath + this->baseName + '.' + TACHYON_OUTPUT_SUFFIX << "..." << std::endl;
 	}
 
 	return true;
 }
 
-void VariantWriterFile::CheckOutputNames(const std::string& input){
+void VariantWriterFile::CheckOutputNames(const std::string& input) {
 	std::vector<std::string> paths = utility::FilePathBaseExtension(input);
 	this->basePath = paths[0];
-	if(this->basePath.size() > 0)
+	if (this->basePath.size() > 0)
 		this->basePath += '/';
 
-	if(paths[3].size() == TACHYON_OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &TACHYON_OUTPUT_SUFFIX[0], TACHYON_OUTPUT_SUFFIX.size()) == 0)
+	if (paths[3].size() == TACHYON_OUTPUT_SUFFIX.size() && strncasecmp(&paths[3][0], &TACHYON_OUTPUT_SUFFIX[0], TACHYON_OUTPUT_SUFFIX.size()) == 0)
 		this->baseName = paths[2];
 	else this->baseName = paths[1];
 }
 
-VariantWriterFile::VariantWriterFile(){ this->stream = new std::ofstream; }
+VariantWriterFile::VariantWriterFile() { this->stream = new std::ofstream; }
 
-VariantWriterFile::~VariantWriterFile(){
+VariantWriterFile::~VariantWriterFile() {
 	this->stream->flush();
 	delete this->stream;
 }
 
-VariantWriterStream::VariantWriterStream(){ this->stream = &std::cout; }
+VariantWriterStream::VariantWriterStream() { this->stream = &std::cout; }
 
-VariantWriterStream::~VariantWriterStream(){
+VariantWriterStream::~VariantWriterStream() {
 	this->stream->flush();;
 }
 

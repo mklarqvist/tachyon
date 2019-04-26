@@ -97,9 +97,9 @@ public:
 
 	~yon_gt_ppa(void);
 
-	uint32_t& operator[](const uint32_t& position){ return(this->ordering[position]); }
+	uint32_t& operator[](const uint32_t& position) { return(this->ordering[position]); }
 	const uint32_t& operator[](const uint32_t& position) const{ return(this->ordering[position]); }
-	uint32_t& at(const uint32_t& position){ return(this->ordering[position]); }
+	uint32_t& at(const uint32_t& position) { return(this->ordering[position]); }
 	const uint32_t& at(const uint32_t& position) const{ return(this->ordering[position]); }
 
 	/**<
@@ -172,7 +172,7 @@ public:
 struct yon_gt_rcd {
 public:
 	yon_gt_rcd();
-	yon_gt_rcd(const uint32_t rl, const uint32_t ploidy, const uint8_t* ref) : run_length(rl), allele(new uint8_t[ploidy]){ memcpy(allele, ref, ploidy); }
+	yon_gt_rcd(const uint32_t rl, const uint32_t ploidy, const uint8_t* ref) : run_length(rl), allele(new uint8_t[ploidy]) { memcpy(allele, ref, ploidy); }
 	yon_gt_rcd(const yon_gt_rcd& other) = delete; // disallow copy ctor (use Clone() instead)
 	yon_gt_rcd& operator=(const yon_gt_rcd& other) = delete; // disallow move copy (use Clone() instead)
 	yon_gt_rcd(yon_gt_rcd&& other);
@@ -186,7 +186,7 @@ public:
 	 * @param ploidy Src base ploidy this data was constructed with.
 	 * @return       Returns an new instance of yon_gt_rcd.
 	 */
-	inline yon_gt_rcd Clone(const uint32_t ploidy){ return(yon_gt_rcd(run_length, ploidy, allele)); }
+	inline yon_gt_rcd Clone(const uint32_t ploidy) { return(yon_gt_rcd(run_length, ploidy, allele)); }
 
 	/**<
 	 * Convert this Genotype representation into a valid Vcf string.
@@ -222,7 +222,7 @@ public:
 	~yon_gt();
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->rcds[0]); }
+	inline iterator begin() { return iterator(&this->rcds[0]); }
 	inline iterator end()  { return iterator(&this->rcds[this->n_i]); }
 	inline const_iterator begin()  const{ return const_iterator(&this->rcds[0]); }
 	inline const_iterator end()    const{ return const_iterator(&this->rcds[this->n_i]); }
@@ -300,12 +300,12 @@ public:
 };
 
 template <class T>
-bool yon_gt::EvaluateRecordsM1_(){
+bool yon_gt::EvaluateRecordsM1_() {
 	// Prevent double evaluation.
-	if(this->eval_cont & YON_GT_UN_RCDS)
+	if (this->eval_cont & YON_GT_UN_RCDS)
 		return true;
 
-	if(this->rcds != nullptr) delete [] this->rcds;
+	if (this->rcds != nullptr) delete [] this->rcds;
 	assert(this->m == 2);
 	assert(this->n_allele == 2);
 
@@ -322,9 +322,9 @@ bool yon_gt::EvaluateRecordsM1_(){
 
 	// Iterate over the internal run-length encoded genotypes
 	// and populate the rcds structure.
-	for(uint32_t i = 0; i < this->n_i; ++i){
+	for (uint32_t i = 0; i < this->n_i; ++i) {
 		uint8_t phasing = 0;
-		if(add) phasing = r_data[i] & 1;
+		if (add) phasing = r_data[i] & 1;
 		else    phasing = this->global_phase;
 
 		this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
@@ -343,12 +343,12 @@ bool yon_gt::EvaluateRecordsM1_(){
 }
 
 template <class T>
-bool yon_gt::EvaluateRecordsM2_(){
+bool yon_gt::EvaluateRecordsM2_() {
 	// Prevent double evaluation.
-	if(this->eval_cont & YON_GT_UN_RCDS)
+	if (this->eval_cont & YON_GT_UN_RCDS)
 		return true;
 
-	if(this->rcds != nullptr) delete [] this->rcds;
+	if (this->rcds != nullptr) delete [] this->rcds;
 	assert(this->m == 2);
 
 	// Allocate memory for new records.
@@ -364,9 +364,9 @@ bool yon_gt::EvaluateRecordsM2_(){
 
 	// Iterate over the internal run-length encoded genotypes
 	// and populate the rcds structure.
-	for(uint32_t i = 0; i < this->n_i; ++i){
+	for (uint32_t i = 0; i < this->n_i; ++i) {
 		uint8_t phasing = 0;
-		if(add) phasing = r_data[i] & 1;
+		if (add) phasing = r_data[i] & 1;
 		else    phasing = this->global_phase;
 
 		this->rcds[i].run_length = YON_GT_RLE_LENGTH(r_data[i], shift, add);
@@ -385,12 +385,12 @@ bool yon_gt::EvaluateRecordsM2_(){
 }
 
 template <class T>
-bool yon_gt::EvaluateRecordsM4_(){
+bool yon_gt::EvaluateRecordsM4_() {
 	// Prevent double evaluation.
-	if(this->eval_cont & YON_GT_UN_RCDS)
+	if (this->eval_cont & YON_GT_UN_RCDS)
 		return true;
 
-	if(this->rcds != nullptr) delete [] this->rcds;
+	if (this->rcds != nullptr) delete [] this->rcds;
 	assert(this->m != 2);
 
 	// Allocate memory for new records.
@@ -403,13 +403,13 @@ bool yon_gt::EvaluateRecordsM4_(){
 
 	// Iterate over the internal run-length encoded genotypes
 	// and populate the rcds structure.
-	for(uint32_t i = 0; i < this->n_i; ++i){
+	for (uint32_t i = 0; i < this->n_i; ++i) {
 		const T* run_length = reinterpret_cast<const T*>(&this->data[b_offset]);
 		b_offset += sizeof(T);
 
 		this->rcds[i].run_length = *run_length;
 		this->rcds[i].allele = new uint8_t[this->m];
-		for(uint32_t j = 0; j < this->m; ++j, ++b_offset)
+		for (uint32_t j = 0; j < this->m; ++j, ++b_offset)
 			this->rcds[i].allele[j] = this->data[b_offset];
 
 		n_total += this->rcds[i].run_length;
@@ -485,9 +485,9 @@ public:
 	// Clone helper ctor.
 	yon_gt_summary_obj(const uint8_t n_alleles, const uint64_t cnt, yon_gt_summary_obj* c);
 
-	yon_gt_summary_obj Clone(const uint8_t n_alleles){ return(yon_gt_summary_obj(n_alleles, n_cnt, children)); }
+	yon_gt_summary_obj Clone(const uint8_t n_alleles) { return(yon_gt_summary_obj(n_alleles, n_cnt, children)); }
 
-	inline yon_gt_summary_obj& operator[](const uint32_t pos){ return(this->children[pos]); }
+	inline yon_gt_summary_obj& operator[](const uint32_t pos) { return(this->children[pos]); }
 	inline const yon_gt_summary_obj& operator[](const uint32_t pos) const{ return(this->children[pos]); }
 
 public:
@@ -523,7 +523,7 @@ public:
 	yon_gt_summary& Add(const yon_gt& gt, const uint32_t n_i, const yon_gt_rcd* rcds);
 
 	// Accessors to internal data.
-	inline uint32_t* GetAlleleCountsRaw(void){ return(this->alleles); }
+	inline uint32_t* GetAlleleCountsRaw(void) { return(this->alleles); }
 	inline const uint32_t* GetAlleleCountsRaw(void) const{ return(this->alleles); }
 
 	/**<
@@ -661,7 +661,7 @@ public:
 	yon_vnt_cnt(void);
 	~yon_vnt_cnt() = default;
 
-	friend yon_buffer_t& operator+=(yon_buffer_t& buffer, const yon_vnt_cnt& entry){
+	friend yon_buffer_t& operator+=(yon_buffer_t& buffer, const yon_vnt_cnt& entry) {
 		buffer += (uint16_t)*reinterpret_cast<const uint16_t* const>(&entry);
 		return(buffer);
 	}

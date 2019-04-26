@@ -32,7 +32,7 @@ public:
 		memcpy(&this->stride_digest[0], other.stride_digest, 64);
 	}
 
-	DigitalDigest& operator=(const self_type& other){
+	DigitalDigest& operator=(const self_type& other) {
 		this->hasInitialized = other.hasInitialized;
 		this->hasFinished    = other.hasFinished;
 		this->data_context   = other.data_context;
@@ -42,18 +42,18 @@ public:
 		return(*this);
 	}
 
-	~DigitalDigest(void){}
+	~DigitalDigest(void) {}
 
 	/**<
 	 * Initializes the SHA512 context. Calling this function
 	 * is mandatory!
 	 * @return
 	 */
-	inline bool initialize(){
+	inline bool initialize() {
 		this->hasInitialized = true;
 
-		if(!SHA512_Init(&this->data_context))   return false;
-		if(!SHA512_Init(&this->stride_context)) return false;
+		if (!SHA512_Init(&this->data_context))   return false;
+		if (!SHA512_Init(&this->stride_context)) return false;
 
 		return true;
 	}
@@ -65,14 +65,14 @@ public:
 	 * @param has_strides
 	 * @return
 	 */
-	inline bool update(const buffer_type& data_buffer, const buffer_type& stride_buffer, const bool has_strides = true){
-		if(!this->hasInitialized) this->initialize();
+	inline bool update(const buffer_type& data_buffer, const buffer_type& stride_buffer, const bool has_strides = true) {
+		if (!this->hasInitialized) this->initialize();
 
-		if(!SHA512_Update(&this->data_context, (const uint8_t*)data_buffer.data(), data_buffer.size()))
+		if (!SHA512_Update(&this->data_context, (const uint8_t*)data_buffer.data(), data_buffer.size()))
 			return false;
 
-		if(has_strides){
-			if(!SHA512_Update(&this->stride_context, (const uint8_t*)stride_buffer.data(), stride_buffer.size()))
+		if (has_strides) {
+			if (!SHA512_Update(&this->stride_context, (const uint8_t*)stride_buffer.data(), stride_buffer.size()))
 				return false;
 		}
 		return true;
@@ -82,14 +82,14 @@ public:
 	 *
 	 * @return
 	 */
-	inline bool finalize(){
-		if(!this->hasInitialized) return false;
-		if(this->hasFinished) return true;
+	inline bool finalize() {
+		if (!this->hasInitialized) return false;
+		if (this->hasFinished) return true;
 
-		if(!SHA512_Final(&this->data_digest[0], &this->data_context))
+		if (!SHA512_Final(&this->data_digest[0], &this->data_context))
 			return false;
 
-		if(!SHA512_Final(&this->stride_digest[0], &this->stride_context))
+		if (!SHA512_Final(&this->stride_digest[0], &this->stride_context))
 			return false;
 
 		return true;
@@ -98,7 +98,7 @@ public:
 	/**<
 	 *
 	 */
-	void clear(void){
+	void clear(void) {
 		this->hasFinished = false;
 		this->finalize();
 		memset(&this->data_digest[0],   0, 64);
@@ -108,13 +108,13 @@ public:
 	}
 
 private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry) {
 		stream.write(reinterpret_cast<const char* const>(&entry.data_digest),   64);
 		stream.write(reinterpret_cast<const char* const>(&entry.stride_digest), 64);
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry) {
 		stream.read(reinterpret_cast<char*>(&entry.data_digest),   64);
 		stream.read(reinterpret_cast<char*>(&entry.stride_digest), 64);
 		return(stream);
@@ -136,7 +136,7 @@ private:
 	typedef yon1_dc_t container_type;
 
 public:
-	DigitalDigestPair(){}
+	DigitalDigestPair() {}
 
 	DigitalDigestPair(const self_type& other) :
 		uncompressed(other.uncompressed),
@@ -145,37 +145,37 @@ public:
 
 	}
 
-	DigitalDigestPair& operator=(const self_type& other){
+	DigitalDigestPair& operator=(const self_type& other) {
 		this->uncompressed = other.uncompressed;
 		this->compressed = other.compressed;
 		return(*this);
 	}
 
-	~DigitalDigestPair(){}
+	~DigitalDigestPair() {}
 
-	inline bool finalize(void){
-		if(!this->uncompressed.finalize())
+	inline bool finalize(void) {
+		if (!this->uncompressed.finalize())
 			return false;
 
-		if(!this->compressed.finalize())
+		if (!this->compressed.finalize())
 			return false;
 
 		return true;
 	}
 
-	void operator+=(const container_type& container){
+	void operator+=(const container_type& container) {
 		this->compressed.update(container.data, container.strides, container.header.HasMixedStride());
 		this->uncompressed.update(container.data_uncompressed, container.strides_uncompressed, container.header.HasMixedStride());
 	}
 
 private:
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry) {
 		stream << entry.compressed;
 		stream << entry.uncompressed;
 		return(stream);
 	}
 
-	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry){
+	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry) {
 		stream >> entry.compressed;
 		stream >> entry.uncompressed;
 		return(stream);

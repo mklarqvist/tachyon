@@ -144,7 +144,7 @@ public:
 public:
 	VariantWriterStream();
 	~VariantWriterStream();
-	bool open(const std::string output){ return true; }
+	bool open(const std::string output) { return true; }
 
 };
 

@@ -31,8 +31,8 @@ struct yon_gt_assess {
 	uint8_t GetCheapestPrimitive(void) const {
 		uint64_t n_cost_best = this->n_cost[0];
 		uint8_t best_primitive = 0;
-		for(int i = 1; i < 4; ++i){
-			if(this->n_cost[i] < n_cost_best){
+		for (int i = 1; i < 4; ++i) {
+			if (this->n_cost[i] < n_cost_best) {
 				n_cost_best = this->n_cost[i];
 				best_primitive = i;
 			}
@@ -43,8 +43,8 @@ struct yon_gt_assess {
 	uint8_t GetCheapestRawPrimitive(void) const {
 		uint64_t n_cost_best = this->n_cost[4];
 		uint8_t best_primitive = 4;
-		for(int i = 5; i < 8; ++i){
-			if(this->n_cost[i] < n_cost_best){
+		for (int i = 5; i < 8; ++i) {
+			if (this->n_cost[i] < n_cost_best) {
 				n_cost_best = this->n_cost[i];
 				best_primitive = i;
 			}
@@ -59,19 +59,19 @@ struct yon_gt_assess {
 };
 
 struct GenotypeEncoderStatistics{
-	GenotypeEncoderStatistics(){
+	GenotypeEncoderStatistics() {
 		memset(this->rle_counts,         0, sizeof(uint64_t)*4);
 		memset(this->rle_simple_counts,  0, sizeof(uint64_t)*4);
 		memset(this->diploid_bcf_counts, 0, sizeof(uint64_t)*3);
 		memset(this->bcf_counts,         0, sizeof(uint64_t)*3);
 	}
 
-	uint64_t getTotal(void) const{
+	uint64_t getTotal(void) const {
 		uint64_t total = 0;
-		for(uint32_t i = 0; i < 4; ++i) total += this->rle_counts[i];
-		for(uint32_t i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
-		for(uint32_t i = 0; i < 3; ++i) total += this->diploid_bcf_counts[i];
-		for(uint32_t i = 0; i < 3; ++i) total += this->bcf_counts[i];
+		for (uint32_t i = 0; i < 4; ++i) total += this->rle_counts[i];
+		for (uint32_t i = 0; i < 4; ++i) total += this->rle_simple_counts[i];
+		for (uint32_t i = 0; i < 3; ++i) total += this->diploid_bcf_counts[i];
+		for (uint32_t i = 0; i < 3; ++i) total += this->bcf_counts[i];
 		return(total);
 	}
 
@@ -94,8 +94,8 @@ public:
 	GenotypeEncoder(const uint64_t samples);
 	~GenotypeEncoder();
 
-	inline void SetSamples(const uint64_t samples){ this->n_samples = samples; }
-	inline const stats_type& GetUsageStats(void) const{ return(this->stats_); }
+	inline void SetSamples(const uint64_t samples) { this->n_samples = samples; }
+	inline const stats_type& GetUsageStats(void) const { return(this->stats_); }
 
 	bool Encode(const containers::VcfContainer& container, yon1_vnt_t* rcds, block_type& block, const yon_gt_ppa& ppa) const;
 	bool Encode(yon1_vnt_t* rcds, const uint32_t n_rcds, block_type& block, const yon_gt_ppa& ppa) const;
@@ -179,11 +179,11 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const bcf1_t* entry,
 	                                                   shift, add);
 
 	// Iterate over all available samples.
-	for(uint32_t i = 1; i < this->n_samples; ++i){
+	for (uint32_t i = 1; i < this->n_samples; ++i) {
 		const uint8_t* gt_ppa_target = &gt[ppa[i] * sizeof(int8_t) * base_ploidy];
 		uint32_t rle_ppa_current = YON_PACK_GT_DIPLOID(gt_ppa_target[0], gt_ppa_target[1], shift, add);
 
-		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+		if (rle_ppa_current != rle_ppa_current_ref || l_runs == limit) {
 			YON_RLE_TYPE RLE = l_runs;
 			RLE <<= (base_ploidy*shift + add);
 			RLE |= rle_ppa_current_ref;
@@ -242,10 +242,10 @@ uint64_t GenotypeEncoder::EncodeDiploidBiallelic(const yon1_vnt_t& entry,
 	uint32_t rle_ppa_current_ref = YON_PACK_GT_RCD_DIPLOID_EXPAND(entry.gt->d_exp[ppa[0]], shift, add);
 
 	// Iterate over all available samples.
-	for(uint32_t i = 1; i < this->n_samples; ++i){
+	for (uint32_t i = 1; i < this->n_samples; ++i) {
 		uint32_t rle_ppa_current = YON_PACK_GT_RCD_DIPLOID_EXPAND(entry.gt->d_exp[ppa[i]], shift, add);
 
-		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+		if (rle_ppa_current != rle_ppa_current_ref || l_runs == limit) {
 			YON_RLE_TYPE RLE = l_runs;
 			RLE <<= (base_ploidy*shift + add);
 			RLE |= rle_ppa_current_ref;
@@ -309,7 +309,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
-	for(uint32_t i = 0; i <= entry->n_allele; ++i){
+	for (uint32_t i = 0; i <= entry->n_allele; ++i) {
 		gt_remap[i << 1]       = ((i+1) << 1);
 		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
@@ -323,7 +323,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 														   gt_remap[gt[ppa[0] * sizeof(int8_t) * base_ploidy + 1]]);
 
 	// Iterate over all available samples.
-	for(uint32_t i = 1; i < this->n_samples; ++i){
+	for (uint32_t i = 1; i < this->n_samples; ++i) {
 		const uint8_t* gt_ppa_target = &gt[ppa[i] * sizeof(int8_t) * base_ploidy];
 		uint32_t rle_ppa_current = YON_PACK_GT_DIPLOID_NALLELIC(gt_remap[gt_ppa_target[0]] >> 1,
 														   gt_remap[gt_ppa_target[1]] >> 1,
@@ -333,7 +333,7 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const bcf1_t* entry,
 		assert(gt_remap[gt_ppa_target[0]] != 255);
 		assert(gt_remap[gt_ppa_target[1]] != 255);
 
-		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+		if (rle_ppa_current != rle_ppa_current_ref || l_runs == limit) {
 			YON_RLE_TYPE RLE = l_runs;
 			RLE <<= (base_ploidy*shift + add);
 			RLE |= rle_ppa_current_ref;
@@ -399,10 +399,10 @@ uint64_t GenotypeEncoder::EncodeDiploidMultiAllelic(const yon1_vnt_t& entry,
 	uint32_t rle_ppa_current_ref = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[ppa[0]], shift, add);
 
 	// Iterate over all available samples.
-	for(uint32_t i = 1; i < this->n_samples; ++i){
+	for (uint32_t i = 1; i < this->n_samples; ++i) {
 		uint32_t rle_ppa_current = YON_PACK_GT_RCD_NALLELIC_EXPAND(entry.gt->d_exp[ppa[i]], shift, add);
 
-		if(rle_ppa_current != rle_ppa_current_ref || l_runs == limit){
+		if (rle_ppa_current != rle_ppa_current_ref || l_runs == limit) {
 			YON_RLE_TYPE RLE = l_runs;
 			RLE <<= (base_ploidy*shift + add);
 			RLE |= rle_ppa_current_ref;
@@ -458,7 +458,7 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	// 1 maps to the sentinel node symbol (EOV).
 	uint8_t gt_remap[256];
 	memset(gt_remap, 256, 255);
-	for(uint32_t i = 0; i <= entry->n_allele; ++i){
+	for (uint32_t i = 0; i <= entry->n_allele; ++i) {
 		gt_remap[i << 1]       = ((i+1) << 1);
 		gt_remap[(i << 1) + 1] = ((i+1) << 1) + 1;
 	}
@@ -472,32 +472,32 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 	// Keep track of the current reference sequence as we
 	// iterate over the available genotypes.
 	uint8_t* reference = new uint8_t[base_ploidy];
-	for(uint32_t i = 0; i < base_ploidy; ++i)
+	for (uint32_t i = 0; i < base_ploidy; ++i)
 		reference[i] = gt_remap[gt[ppa[0] * sizeof(int8_t) * base_ploidy + i]];
 
 	// Hash of current reference genotype sequence.
 	uint64_t hash_value_ppa_ref = XXH64(&gt[ppa[0] * sizeof(int8_t) * base_ploidy], sizeof(int8_t) * base_ploidy, 89231478);
 
 	// Iterate over all available samples.
-	for(uint32_t i = 1; i < this->n_samples; ++i){
+	for (uint32_t i = 1; i < this->n_samples; ++i) {
 		const uint8_t* gt_ppa_target = &gt[ppa[i] * sizeof(int8_t) * base_ploidy];
 		uint64_t hash_value_ppa = XXH64(gt_ppa_target, sizeof(int8_t) * base_ploidy, 89231478);
 
-		if(hash_value_ppa != hash_value_ppa_ref){
+		if (hash_value_ppa != hash_value_ppa_ref) {
 			dst.AddLiteral(l_run);
-			for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			for (uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 			++dst.header.n_additions;
 
 			++n_runs;
 			l_run = 0;
 			hash_value_ppa_ref = hash_value_ppa;
-			for(uint32_t k = 0; k < base_ploidy; ++k) reference[k] = gt_remap[gt_ppa_target[k]];
+			for (uint32_t k = 0; k < base_ploidy; ++k) reference[k] = gt_remap[gt_ppa_target[k]];
 		}
 
 		// Overflow: trigger a break
-		if(l_run == limit){
+		if (l_run == limit) {
 			dst.AddLiteral(l_run);
-			for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+			for (uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 			++dst.header.n_additions;
 
 			++n_runs;
@@ -506,12 +506,12 @@ uint64_t GenotypeEncoder::EncodeMultiploid(const bcf1_t* entry,
 		++l_run;
 	}
 	dst.AddLiteral(l_run);
-	for(uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
+	for (uint32_t k = 0; k < base_ploidy; ++k) dst.AddLiteral(reference[k]);
 	++dst.header.n_additions;
 	++dst.header.n_entries;
 
 	//std::cerr << l_run << ":" << (uint32_t)reference[0];
-	//for(uint32_t k = 1; k < base_ploidy; ++k) std::cerr << "," << (uint32_t)reference[k];
+	//for (uint32_t k = 1; k < base_ploidy; ++k) std::cerr << "," << (uint32_t)reference[k];
 	//std::cerr << std::endl;
 	++n_runs;
 

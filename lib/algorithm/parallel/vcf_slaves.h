@@ -22,16 +22,16 @@ namespace tachyon{
  * shared resources.
  */
 struct yon_pool_vcfc_payload {
-	yon_pool_vcfc_payload() : block_id(0), c(nullptr){}
-	yon_pool_vcfc_payload(const uint32_t bid, containers::VcfContainer* vc) : block_id(bid), c(vc){}
-	~yon_pool_vcfc_payload(){ delete c; }
+	yon_pool_vcfc_payload() : block_id(0), c(nullptr) {}
+	yon_pool_vcfc_payload(const uint32_t bid, containers::VcfContainer* vc) : block_id(bid), c(vc) {}
+	~yon_pool_vcfc_payload() { delete c; }
 	yon_pool_vcfc_payload(const yon_pool_vcfc_payload& other) = delete; // copy is not allowed
 	yon_pool_vcfc_payload& operator=(const yon_pool_vcfc_payload& other) = delete; // copy assign is not allowed
-	yon_pool_vcfc_payload(yon_pool_vcfc_payload&& other) noexcept : block_id(other.block_id), c(nullptr){
+	yon_pool_vcfc_payload(yon_pool_vcfc_payload&& other) noexcept : block_id(other.block_id), c(nullptr) {
 		std::swap(this->c, other.c);
 	}
 	yon_pool_vcfc_payload& operator=(yon_pool_vcfc_payload&& other) noexcept{
-		if(this == &other) return(*this);
+		if (this == &other) return(*this);
 
 		this->block_id = other.block_id;
 		delete this->c;
@@ -81,7 +81,7 @@ public:
 	}
 
 	yon_pool_vcfc& operator=(yon_pool_vcfc&& other) noexcept {
-		if(this == &other){ return(*this); }
+		if (this == &other) { return(*this); }
 		delete [] this->c;
 		this->c = nullptr;
 		this->n_capacity = other.n_capacity;
@@ -93,7 +93,7 @@ public:
 		return(*this);
 	}
 
-	~yon_pool_vcfc(){
+	~yon_pool_vcfc() {
 		delete [] this->c;
 	}
 
@@ -102,18 +102,18 @@ public:
 	 * wait until an item has been popped.
 	 * @param data Input pointer to payload.
 	 */
-	void emplace(yon_pool_vcfc_payload* data){
+	void emplace(yon_pool_vcfc_payload* data) {
 		std::unique_lock<std::mutex> l(lock);
 
-		this->not_full.wait(l, [this](){
+		this->not_full.wait(l, [this]() {
 			// Exit condition to be triggered if the alive predicate
 			// starts to evaluate as FALSE.
-			if(this->n_c == 0 && this->alive == false) return true;
+			if (this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != this->n_capacity;
 		});
 
 		// Exit condition when alive predicate evaluates as FALSE.
-		if(this->n_c == 0 && this->alive == false){
+		if (this->n_c == 0 && this->alive == false) {
 			l.unlock();
 			this->not_full.notify_all(); // flush
 			this->not_empty.notify_all(); // flush
@@ -133,18 +133,18 @@ public:
 	 * If the queue is empty * then wait until an item has been inserted.
 	 * @return Returns a pointer to the retrieved payload or a nullpointer in the special case the producer operations has finished.
 	 */
-	yon_pool_vcfc_payload* pop(void){
+	yon_pool_vcfc_payload* pop(void) {
 		std::unique_lock<std::mutex> l(lock);
 
-		this->not_empty.wait(l, [this](){
+		this->not_empty.wait(l, [this]() {
 			// Exit condition to be triggered if the alive predicate
 			// starts to evaluate as FALSE.
-			if(this->n_c == 0 && this->alive == false) return true;
+			if (this->n_c == 0 && this->alive == false) return true;
 			return this->n_c != 0;
 		});
 
 		// Exit condition when alive predicate evaluates as FALSE.
-		if(this->n_c == 0){
+		if (this->n_c == 0) {
 			l.unlock();
 			this->not_empty.notify_all();
 			this->not_full.notify_all();
@@ -196,7 +196,7 @@ public:
 	 * Spawn worker reading data into the producer data pool.
 	 * @return Returns a reference to the spawned thread.
 	 */
-	std::thread& Start(void){
+	std::thread& Start(void) {
 		this->thread_ = std::thread(&yon_producer_vcfc::Produce, this);
 		return(this->thread_);
 	}
@@ -208,17 +208,17 @@ private:
 	 * consumers to retrieve. Continues until no more data is available.
 	 * @return Returns TRUE if successful or FALSE otherwise.
 	 */
-	bool Produce(void){
+	bool Produce(void) {
 		uint32_t n_blocks = 0;
 		this->data_available  = true;
 		this->data_pool.alive = true;
-		while(true){
+		while(true) {
 			// Retrieve bcf1_t records using htslib and lazy evaluate them. Stop
 			// after retrieving a set number of variants or if the interval between
 			// the smallest and largest variant exceeds some distance in base pairs.
 			// Vcf records are NOT lazy evaluated (unpacked) in the producer step
 			// that is the job of the consumers.
-			if(this->container.GetVariants(this->settings.checkpoint_n_snps,
+			if (this->container.GetVariants(this->settings.checkpoint_n_snps,
 			                               this->settings.checkpoint_bases,
 			                               this->reader,
 			                               0) == false)
@@ -233,7 +233,7 @@ private:
 				// Keep flushing until the predicate for all_finished
 				// evaluates TRUE. This occurs after all consumer threads
 				// have been joined.
-				while(data_pool.n_c && all_finished == false){
+				while(data_pool.n_c && all_finished == false) {
 					data_pool.not_empty.notify_all();
 					data_pool.not_full.notify_all();
 				}
@@ -263,8 +263,8 @@ public:
 
 // Synchronised writer.
 struct yon_writer_sync {
-	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr){}
-	~yon_writer_sync(){}
+	yon_writer_sync() : n_written_rcds(0), next_block_id(0), alive(true), writer(nullptr) {}
+	~yon_writer_sync() {}
 
 	/**<
 	 * Push a Tachyon archive to the writer queue to be written. Only if the
@@ -274,15 +274,15 @@ struct yon_writer_sync {
 	 * @param container Source VcfContainer.
 	 * @param importer  Source reference to VcfImporterSlave instance that internally has a VariantBlock to be written.
 	 */
-	void emplace(uint32_t block_id, const containers::VcfContainer& container, VcfImporterSlave& importer){
+	void emplace(uint32_t block_id, const containers::VcfContainer& container, VcfImporterSlave& importer) {
 		std::unique_lock<std::mutex> l(lock);
 
-		cv_next_checkpoint.wait(l, [this, block_id](){
-			if(this->alive == false) return true;
+		cv_next_checkpoint.wait(l, [this, block_id]() {
+			if (this->alive == false) return true;
 			return this->next_block_id == block_id;
 		});
 
-		if(this->alive == false){
+		if (this->alive == false) {
 			//std::cerr << "is exit condition in wblock" << std::endl;
 			l.unlock();
 			cv_next_checkpoint.notify_all();
@@ -302,15 +302,15 @@ struct yon_writer_sync {
 		cv_next_checkpoint.notify_all();
 	}
 
-	void emplace(uint32_t block_id, yon1_vb_t& container, yon1_idx_rec& index_entry){
+	void emplace(uint32_t block_id, yon1_vb_t& container, yon1_idx_rec& index_entry) {
 		std::unique_lock<std::mutex> l(lock);
 
-		cv_next_checkpoint.wait(l, [this, block_id](){
-			if(this->alive == false) return true;
+		cv_next_checkpoint.wait(l, [this, block_id]() {
+			if (this->alive == false) return true;
 			return this->next_block_id == block_id;
 		});
 
-		if(this->alive == false){
+		if (this->alive == false) {
 			//std::cerr << "is exit condition in wblock" << std::endl;
 			l.unlock();
 			cv_next_checkpoint.notify_all();
@@ -354,7 +354,7 @@ struct yon_writer_sync {
 	 * @param index_entry  Reference to source VariantIndexEntry.
 	 * @return             Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool UpdateIndex(const containers::VcfContainer& container, yon1_idx_rec& index_entry){
+	bool UpdateIndex(const containers::VcfContainer& container, yon1_idx_rec& index_entry) {
 		assert(this->writer->stream != nullptr);
 		index_entry.block_id         = this->writer->n_blocks_written;
 		index_entry.byte_offset_end  = this->writer->stream->tellp();
@@ -398,13 +398,13 @@ public:
  */
 struct yon_consumer_vcfc {
 public:
-	yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), b_shared(0), b_indiv(0), data_available(nullptr), data_pool(nullptr), global_header(nullptr), poolw(nullptr){}
+	yon_consumer_vcfc(void) : n_rcds_processed(0), thread_id(0), b_shared(0), b_indiv(0), data_available(nullptr), data_pool(nullptr), global_header(nullptr), poolw(nullptr) {}
 	yon_consumer_vcfc(uint32_t thread_id, std::atomic<bool>& data_available, yon_pool_vcfc& data_pool) :
 		n_rcds_processed(0), thread_id(thread_id), b_shared(0), b_indiv(0), data_available(&data_available), data_pool(&data_pool), global_header(nullptr),
 		poolw(nullptr)
 	{}
 
-	yon_consumer_vcfc& operator+=(const yon_consumer_vcfc& other){
+	yon_consumer_vcfc& operator+=(const yon_consumer_vcfc& other) {
 		this->n_rcds_processed += other.n_rcds_processed;
 		this->b_shared += other.b_shared;
 		this->b_indiv  += other.b_indiv;
@@ -412,7 +412,7 @@ public:
 		return(*this);
 	}
 
-	std::thread& Start(void){
+	std::thread& Start(void) {
 		this->thread_ = std::thread(&yon_consumer_vcfc::Consume, this);
 		return(this->thread_);
 	}
@@ -428,13 +428,13 @@ private:
 	 * writer to be written to a byte stream.
 	 * @return Returns TRUE upon success or FALSE oterhwise.
 	 */
-	bool Consume(void){
+	bool Consume(void) {
 		algorithm::GenotypeSorter sorter;
 		sorter.SetSamples(this->global_header->GetNumberSamples());
 
 		// Continue to consume data until there is no more
 		// or an exit condition has been triggered.
-		while(data_available){
+		while(data_available) {
 			// Pop a Vcf container payload from the shared
 			// resource pool.
 			yon_pool_vcfc_payload* d = data_pool->pop();
@@ -443,7 +443,7 @@ private:
 			// condition has been triggered. If this is the
 			// case we discontinue the consumption for this
 			// consumer.
-			if(d == nullptr){
+			if (d == nullptr) {
 				//std::cerr << "is exit conditon: nullptr" << std::endl;
 				break;
 			}
@@ -452,7 +452,7 @@ private:
 			// Compute the number of bytes we have loaded in the
 			// htslib bcf1_t records in the container.
 			uint64_t b_l_shared = 0, b_l_indiv = 0;
-			for(int i = 0; i < d->c->sizeWithoutCarryOver(); ++i){
+			for (int i = 0; i < d->c->sizeWithoutCarryOver(); ++i) {
 				b_l_shared += d->c->at(i)->shared.l;
 				b_l_indiv  += d->c->at(i)->indiv.l;
 			}
@@ -461,7 +461,7 @@ private:
 
 			// Unpack (lazy evaluate) the htslib bcf1_t records.
 			n_rcds_processed += d->c->sizeWithoutCarryOver();
-			for(int i = 0; i < d->c->sizeWithoutCarryOver(); ++i)
+			for (int i = 0; i < d->c->sizeWithoutCarryOver(); ++i)
 				bcf_unpack(d->c->at(i), BCF_UN_ALL);
 
 			// Add data from the container to the local importer.

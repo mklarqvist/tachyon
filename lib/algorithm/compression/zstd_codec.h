@@ -18,7 +18,7 @@ public:
 	ZSTDCodec();
 	~ZSTDCodec();
 
-	inline void SetCompressionLevel(const int32_t& c){ this->compression_level_data = c; this->compression_level_strides = c; }
+	inline void SetCompressionLevel(const int32_t& c) { this->compression_level_data = c; this->compression_level_strides = c; }
 	inline void SetCompressionLevelData(const int32_t& c){ this->compression_level_data = c; }
 	inline void SetCompressionLevelStrides(const int32_t& c){ this->compression_level_strides = c; }
 

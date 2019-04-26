@@ -59,14 +59,14 @@ std::string ExtensionName(const std::string& input);
 std::vector<std::string> FilePathBaseExtension(const std::string& input);
 
 template <class T>
-std::string ToPrettyString(const T& data){
+std::string ToPrettyString(const T& data) {
 	return utility::NumberThousandsSeparator(std::to_string(data));
 }
 
 template <class T>
-std::string ToPrettyString(const std::vector<T>& data){
+std::string ToPrettyString(const std::vector<T>& data) {
 	std::string ret;
-	for(uint32_t i = 0; i < data.size() - 1; ++i){
+	for (uint32_t i = 0; i < data.size() - 1; ++i) {
 		ret += utility::NumberThousandsSeparator(std::to_string(data[i]));
 		ret += ", ";
 	}
@@ -80,12 +80,12 @@ int32_t ConvertCharToInt(const char& input);
 bool HexToBytes(const std::string& hex, uint8_t* target);
 
 template <class T>
-std::string ToPrettyDiskString(const T value){
-	if(value > 1E9){
+std::string ToPrettyDiskString(const T value) {
+	if (value > 1E9) {
 		return(std::to_string((double)value/1e9) + " GB");
-	} else if(value > 1E6){
+	} else if (value > 1E6) {
 		return(std::to_string((double)value/1e6) + " MB");
-	} else if(value > 1E3){
+	} else if (value > 1E3) {
 		return(std::to_string((double)value/1e3) + " KB");
 	} else
 		return(std::to_string(value) + " B");
@@ -95,12 +95,12 @@ void SerializeString(const std::string& string, std::ostream& stream);
 void DeserializeString(std::string& string, std::istream& stream);
 
 template <class T>
-void SerializePrimitive(const T& value, std::ostream& stream){
+void SerializePrimitive(const T& value, std::ostream& stream) {
 	stream.write((const char*)&value, sizeof(T));
 }
 
 template <class T>
-void DeserializePrimitive(T& value, std::istream& stream){
+void DeserializePrimitive(T& value, std::istream& stream) {
 	stream.read((char*)&value, sizeof(T));
 }
 

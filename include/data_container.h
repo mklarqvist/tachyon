@@ -54,7 +54,7 @@ struct yon_blk_bv_pair {
 	 * @param position Target bit position.
 	 * @return         Returns TRUE if the bit is set or FALSE otherwise.
 	 */
-	inline bool operator[](const uint32_t position) const{ return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
+	inline bool operator[](const uint32_t position) const { return((this->bit_bytes[position / 8] & (1 << (position % 8))) >> (position % 8)); }
 
 	/**<
 	 * Construct the lookup bit-vector for this object. This function needs
@@ -94,13 +94,13 @@ public:
 
 	inline void clear();
 
-	inline bool IsEncrypted(void) const{ return(this->encryption > 0); }
-	inline bool CompareType(const uint8_t& type) const{ return(this->type == type); }
-	inline bool CompareTypeSign(const uint8_t& type, const bool& sign) const{ return(this->type == type && this->signedness == sign); }
+	inline bool IsEncrypted(void) const { return(this->encryption > 0); }
+	inline bool CompareType(const uint8_t& type) const { return(this->type == type); }
+	inline bool CompareTypeSign(const uint8_t& type, const bool& sign) const { return(this->type == type && this->signedness == sign); }
 
 	self_type& operator=(const self_type& other);
 	bool operator==(const self_type& other) const;
-	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator!=(const self_type& other) const { return(!(*this == other)); }
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer,const self_type& controller);
@@ -134,28 +134,28 @@ public:
 	void reset(void);
 
 	bool operator==(const self_type& other) const;
-	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator!=(const self_type& other) const { return(!(*this == other)); }
 
 	int8_t GetPrimitiveWidth(void) const;
 
-	inline int32_t& GetStride(void){ return(this->stride); }
-	inline const int32_t& GetStride(void) const{ return(this->stride); }
-	inline bool IsUniform(void) const{ return(this->controller.uniform); }
-	inline bool IsSigned(void) const{ return(this->controller.signedness); }
-	inline bool HasMixedStride(void) const{ return(this->controller.mixedStride); }
-	inline void SetUniform(const bool yes){ this->controller.uniform = yes; }
-	inline void SetSignedness(const bool yes){ this->controller.signedness = yes; }
-	inline void SetMixedStride(const bool yes){ this->controller.mixedStride = yes; }
+	inline int32_t& GetStride(void) { return(this->stride); }
+	inline const int32_t& GetStride(void) const { return(this->stride); }
+	inline bool IsUniform(void) const { return(this->controller.uniform); }
+	inline bool IsSigned(void) const { return(this->controller.signedness); }
+	inline bool HasMixedStride(void) const { return(this->controller.mixedStride); }
+	inline void SetUniform(const bool yes) { this->controller.uniform = yes; }
+	inline void SetSignedness(const bool yes) { this->controller.signedness = yes; }
+	inline void SetMixedStride(const bool yes) { this->controller.mixedStride = yes; }
 
-	inline TACHYON_CORE_TYPE GetPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->controller.type)); }
-	inline TACHYON_CORE_COMPRESSION GetEncoder(void) const{ return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
+	inline TACHYON_CORE_TYPE GetPrimitiveType(void) const { return(TACHYON_CORE_TYPE(this->controller.type)); }
+	inline TACHYON_CORE_COMPRESSION GetEncoder(void) const { return(TACHYON_CORE_COMPRESSION(this->controller.encoder)); }
 
 	// Set types
-	inline void SetType(const TACHYON_CORE_TYPE& type){ this->controller.type = type; }
+	inline void SetType(const TACHYON_CORE_TYPE& type) { this->controller.type = type; }
 
 	// Checksum
-	inline uint8_t* GetChecksum(void){ return(&this->crc[0]); }
-	inline const uint8_t* GetChecksum(void) const{ return(&this->crc[0]); }
+	inline uint8_t* GetChecksum(void) { return(&this->crc[0]); }
+	inline const uint8_t* GetChecksum(void) const { return(&this->crc[0]); }
 	bool CheckChecksum(const uint8_t* compare) const;
 
 private:
@@ -193,14 +193,14 @@ public:
 
 	// Comparators
 	bool operator==(const self_type& other) const;
-	inline bool operator!=(const self_type& other) const{ return(!(*this == other)); }
+	inline bool operator!=(const self_type& other) const { return(!(*this == other)); }
 
 	self_type& operator+=(const self_type& other);
 
 	// Accessors
-	inline int32_t& GetGlobalKey(void){ return(this->data_header.global_key); }
-	inline const int32_t& GetGlobalKey(void) const{ return(this->data_header.global_key); }
-	inline bool HasMixedStride(void) const{ return(this->data_header.HasMixedStride()); }
+	inline int32_t& GetGlobalKey(void) { return(this->data_header.global_key); }
+	inline const int32_t& GetGlobalKey(void) const { return(this->data_header.global_key); }
+	inline bool HasMixedStride(void) const { return(this->data_header.HasMixedStride()); }
 
 private:
 	friend buffer_type& operator<<(buffer_type& buffer, const self_type& entry);
@@ -242,7 +242,7 @@ public:
 	 * the objects in this container.
 	 * @param value Data primitive type
 	 */
-	inline void SetType(const TACHYON_CORE_TYPE value){ this->header.data_header.controller.type = value; }
+	inline void SetType(const TACHYON_CORE_TYPE value) { this->header.data_header.controller.type = value; }
 
 	/**<
 	 * Set the stride size of this container to some value.
@@ -251,23 +251,23 @@ public:
 	 * [0,..inf)
 	 * @param value Stride size
 	 */
-	inline void SetStrideSize(const int32_t value){ this->header.data_header.stride = value; }
+	inline void SetStrideSize(const int32_t value) { this->header.data_header.stride = value; }
 
 	// Accessors for the primitive types.
-	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
-	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const{ return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
+	inline TACHYON_CORE_TYPE GetDataPrimitiveType(void) const { return(TACHYON_CORE_TYPE(this->header.data_header.controller.type)); }
+	inline TACHYON_CORE_TYPE GetStridePrimitiveType(void) const { return(TACHYON_CORE_TYPE(this->header.stride_header.controller.type)); }
 
 	// Accessors for the global identifier
-	inline int32_t& GetIdx(void){ return(this->header.data_header.global_key); }
-	inline const int32_t& GetIdx(void) const{ return(this->header.data_header.global_key); }
-	inline int32_t& GetGlobalKey(void){ return(this->header.data_header.global_key); }
-	inline const int32_t& GetGlobalKey(void) const{ return(this->header.data_header.global_key); }
+	inline int32_t& GetIdx(void) { return(this->header.data_header.global_key); }
+	inline const int32_t& GetIdx(void) const { return(this->header.data_header.global_key); }
+	inline int32_t& GetGlobalKey(void) { return(this->header.data_header.global_key); }
+	inline const int32_t& GetGlobalKey(void) const { return(this->header.data_header.global_key); }
 
 	/**<
 	 * Predicate for checking if the byte stream is encrypted or not.
 	 * @return Returns TRUE if the byte streams is encrypted or FALSE otherwise.
 	 */
-	inline bool IsEncrypted(void) const{ return(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE); }
+	inline bool IsEncrypted(void) const { return(this->header.data_header.controller.encryption != YON_ENCRYPTION_NONE); }
 
 	/**<
 	 * Check if the stride size of this container matches the
@@ -276,8 +276,8 @@ public:
 	 * @param value Stride size to compare against
 	 * @return      Returns TRUE if they are the same or FALSE otherwise
 	 */
-	inline bool CheckStrideSize(const int32_t value) const{
-		if(this->header.data_header.HasMixedStride() == false)
+	inline bool CheckStrideSize(const int32_t value) const {
+		if (this->header.data_header.HasMixedStride() == false)
 			return false;
 
 		return(this->header.data_header.stride == value);
@@ -287,15 +287,15 @@ public:
 	 * Triggers the necessary switches to set this container
 	 * as having mixed strides.
 	 */
-	inline void TriggerMixedStride(void){
+	inline void TriggerMixedStride(void) {
 		this->header.data_header.stride = -1;
 		this->header.data_header.controller.mixedStride = true;
 	}
 
 	// Operators
-	inline void operator++(void){ ++this->header.n_entries; }
+	inline void operator++(void) { ++this->header.n_entries; }
 
-	self_type& operator+=(const self_type& other){
+	self_type& operator+=(const self_type& other) {
 		// Add buffers together
 		this->data                 += other.data;
 		this->data_uncompressed    += other.data_uncompressed;
@@ -307,9 +307,9 @@ public:
 	}
 
 	// Utility functions.
-	inline const uint64_t& GetSizeUncompressed(void) const{ return(this->data_uncompressed.size()); }
-	inline const uint64_t& GetSizeCompressed(void) const{ return(this->data.size()); }
-	inline const uint32_t& size(void) const{ return(this->header.n_entries); }
+	inline const uint64_t& GetSizeUncompressed(void) const { return(this->data_uncompressed.size()); }
+	inline const uint64_t& GetSizeCompressed(void) const { return(this->data.size()); }
+	inline const uint32_t& size(void) const { return(this->header.n_entries); }
 
 	/**<
 	 * Adds a stride value to the uncompressed buffer. At this
@@ -340,10 +340,10 @@ public:
 	bool AddCharacter(const char& value);
 	bool AddCharacter(const char* const string, const uint32_t l_string);
 	// Aliases for adding a string.
-	inline bool AddString(const char* const string, const uint32_t l_string){ return(this->AddCharacter(string, l_string)); }
-	inline bool AddString(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	inline bool AddCharacter(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
-	inline bool Add(const std::string& string){ return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddString(const char* const string, const uint32_t l_string) { return(this->AddCharacter(string, l_string)); }
+	inline bool AddString(const std::string& string) { return(this->AddCharacter(&string[0], string.size())); }
+	inline bool AddCharacter(const std::string& string) { return(this->AddCharacter(&string[0], string.size())); }
+	inline bool Add(const std::string& string) { return(this->AddCharacter(&string[0], string.size())); }
 
 	/**<
 	 * Add a literal primitive/string to the byte stream without conversion
@@ -354,12 +354,12 @@ public:
 	 * @param value Src primitive type.
 	 */
 	template <class T>
-	inline void AddLiteral(const T& value){
+	inline void AddLiteral(const T& value) {
 		this->data_uncompressed += (T)value;
 		++this->header.n_additions;
 	}
 
-	inline void AddLiteral(const char* const string, const uint32_t l_string){
+	inline void AddLiteral(const char* const string, const uint32_t l_string) {
 		this->data_uncompressed.Add(string, l_string);
 		this->header.n_additions += l_string;
 	}
@@ -453,17 +453,18 @@ private:
 	 * floats, doubles, or strings may be stored in the same stream.
 	 * @return Returns TRUE if acceptable addition or FALSE otherwise.
 	 */
-	inline bool CheckInteger(void){
-		if(this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0){
+	inline bool CheckInteger(void) {
+		if (this->header.data_header.controller.encoder == YON_ENCODE_NONE && this->header.n_entries == 0) {
 			this->header.data_header.SetType(YON_TYPE_32B);
 			this->header.data_header.controller.signedness = true;
 		}
 
 		// Make checks
-		if(!this->header.data_header.controller.CompareTypeSign(YON_TYPE_32B, true)){
+		if (!this->header.data_header.controller.CompareTypeSign(YON_TYPE_32B, true)) {
 			std::cerr << utility::timestamp("ERROR") << "Illegal primitive type mismatch (integer)!" << std::endl;
 			return false;
 		}
+		
 		return true;
 	}
 

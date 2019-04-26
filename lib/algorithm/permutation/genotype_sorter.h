@@ -29,7 +29,7 @@ public:
 	void reset(void);
 
 	// Accessor
-	inline const uint64_t& GetNumberSamples(void) const{ return(this->n_samples); }
+	inline const uint64_t& GetNumberSamples(void) const { return(this->n_samples); }
 
 	/**<
 	 * Allocates memory to allocate for a set number of samples.

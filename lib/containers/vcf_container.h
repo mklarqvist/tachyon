@@ -40,18 +40,18 @@ public:
 	inline const size_type& size(void) const{ return(this->n_entries_); }
 	inline size_type sizeWithoutCarryOver(void) const{ return(this->n_entries_ - this->n_carry_over_); }
 	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
-	inline pointer front(void){ return(this->entries_[0]); }
+	inline pointer front(void) { return(this->entries_[0]); }
 	inline const_pointer front(void) const{ return(this->entries_[0]); }
-	inline pointer back(void){ return(this->entries_[this->size() == 0 ? 0 : this->size() - 1 - this->n_carry_over_]); }
+	inline pointer back(void) { return(this->entries_[this->size() == 0 ? 0 : this->size() - 1 - this->n_carry_over_]); }
 	inline const_pointer back(void) const{ return(this->entries_[this->size() == 0 ? 0 : this->size() - 1 - this->n_carry_over_]); }
 
-	inline void operator+=(const pointer entry){ this->entries_[this->n_entries_++] = entry; }
-	inline pointer operator[](const uint32_t position){ return(this->entries_[position]); }
+	inline void operator+=(const pointer entry) { this->entries_[this->n_entries_++] = entry; }
+	inline pointer operator[](const uint32_t position) { return(this->entries_[position]); }
 	inline const_pointer operator[](const uint32_t position) const{ return(this->entries_[position]); }
-	inline pointer at(const uint32_t position){ return(this->entries_[position]); }
+	inline pointer at(const uint32_t position) { return(this->entries_[position]); }
 	inline const_pointer at(const uint32_t position) const{ return(this->entries_[position]); }
 
-	inline pointer end(void){ return(this->entries_[this->n_entries_]); }
+	inline pointer end(void) { return(this->entries_[this->n_entries_]); }
 	inline const_pointer end(void) const{ return(this->entries_[this->n_entries_]); }
 
 	void resize(const size_t new_size);

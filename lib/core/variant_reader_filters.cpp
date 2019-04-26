@@ -28,8 +28,8 @@ public:
 
 	}
 
-	~VariantReaderFiltersImpl(){
-		if(this->filter_data_ != nullptr){
+	~VariantReaderFiltersImpl() {
+		if (this->filter_data_ != nullptr) {
 			for(uint32_t i = 0; i < this->n_filters_; ++i)
 				delete this->filter_data_[i];
 
@@ -52,7 +52,7 @@ public:
 
 	// GT data matches this
 	inline bool FilterUniformMatchPhase(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
-		if(objects.controller.gt_has_mixed_phasing == true) return false;
+		if (objects.controller.gt_has_mixed_phasing == true) return false;
 		return(pair->applyFilter(objects.controller.gt_has_mixed_phasing));
 	}
 
@@ -68,8 +68,8 @@ public:
 	}
 
 	inline bool FilterAlleleCount(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
-		for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
-			if(pair->applyFilter((uint32_t)objects.gt_sum->d->ac[i])){
+		for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i) {
+			if (pair->applyFilter((uint32_t)objects.gt_sum->d->ac[i])) {
 				return true;
 			}
 		}
@@ -92,8 +92,8 @@ public:
 	}
 
 	inline bool FilterAlternativeAllele(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
-		for(uint32_t i = 1; i < objects.n_alleles; ++i){
-			if(pair->applyFilter(objects.alleles[i].ToString()))
+		for(uint32_t i = 1; i < objects.n_alleles; ++i) {
+			if (pair->applyFilter(objects.alleles[i].ToString()))
 				return true;
 		}
 		return false;
@@ -127,20 +127,20 @@ VariantReaderFilters::VariantReaderFilters() :
 
 }
 
-VariantReaderFilters::~VariantReaderFilters(){
+VariantReaderFilters::~VariantReaderFilters() {
 
 }
 
 // Capacity
-const size_t& VariantReaderFilters::size(void) const{ return(this->mImpl->n_filters_); }
-const size_t& VariantReaderFilters::capacity(void) const{ return(this->mImpl->n_capacity_); }
+const size_t& VariantReaderFilters::size(void) const { return(this->mImpl->n_filters_); }
+const size_t& VariantReaderFilters::capacity(void) const { return(this->mImpl->n_capacity_); }
 
-bool VariantReaderFilters::HasRequireGenotypes(void) const{ return(this->mImpl->require_genotypes); }
+bool VariantReaderFilters::HasRequireGenotypes(void) const { return(this->mImpl->require_genotypes); }
 
-void VariantReaderFilters::SetRequireGenotypes(bool set){ this->mImpl->require_genotypes = set; }
+void VariantReaderFilters::SetRequireGenotypes(bool set) { this->mImpl->require_genotypes = set; }
 
-void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function){
-	switch(filter_function){
+void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function) {
+	switch(filter_function) {
 	case(YON_FILTER_NUMBER_ALT_ALLELES):
 		this->mImpl->filters.push_back(&VariantReaderFiltersImpl::FilterAlternativeAlleles);
 		break;
@@ -189,9 +189,9 @@ void VariantReaderFilters::AddWrapper(TACHYON_FILTER_FUNCTION filter_function){
 	}
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const char& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const char& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -201,9 +201,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const ch
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<char>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int8_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int8_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -213,9 +213,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const in
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<int8_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int16_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int16_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -225,9 +225,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const in
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<int16_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int32_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int32_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -237,9 +237,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const in
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<int32_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int64_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const int64_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -249,9 +249,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const in
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<int64_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint8_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint8_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -261,9 +261,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const ui
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<uint8_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint16_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint16_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -273,9 +273,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const ui
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<uint16_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint32_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint32_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -285,9 +285,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const ui
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<uint32_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint64_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const uint64_t& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -297,9 +297,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const ui
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<uint64_t>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const std::string& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -309,9 +309,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const st
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<std::string>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const float& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const float& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -321,9 +321,9 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const fl
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<float>(r_value, comparator);
 }
 
-void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const double& r_value, const TACHYON_COMPARATOR_TYPE& comparator){
+void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const double& r_value, const TACHYON_COMPARATOR_TYPE& comparator) {
 	// Todo: currently if full then return: fix to resize and update
-	if(this->size() + 1 == this->capacity()){
+	if (this->size() + 1 == this->capacity()) {
 		std::cerr << utility::timestamp("ERROR","KNOWN-BUG") << "Filter array is full..." << std::endl;
 		return;
 	}
@@ -333,31 +333,31 @@ void VariantReaderFilters::Add(TACHYON_FILTER_FUNCTION filter_function, const do
 	this->mImpl->filter_data_[this->mImpl->n_filters_++] = new VariantReaderFiltersTuple<double>(r_value, comparator);
 }
 
-bool VariantReaderFilters::VariantReaderFiltersImpl::FilterAlleleFrequency(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
-	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
-		if(pair->applyFilter(objects.gt_sum->d->af[i]))
+bool VariantReaderFilters::VariantReaderFiltersImpl::FilterAlleleFrequency(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
+	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i) {
+		if (pair->applyFilter(objects.gt_sum->d->af[i]))
 			return true;
 	}
 	return(false);
 }
 
 
-bool VariantReaderFilters::VariantReaderFiltersImpl::FilterUnseenAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const{
-	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i){
-		if(pair->applyFilter(objects.gt_sum->d->ac[i] + objects.gt_sum->d->ac[i] == 0))
+bool VariantReaderFilters::VariantReaderFiltersImpl::FilterUnseenAlternativeAlleles(const_pointer pair, const yon1_vnt_t& objects, const uint32_t& position) const {
+	for(uint32_t i = 3; i < objects.gt_sum->d->n_ac_af; ++i) {
+		if (pair->applyFilter(objects.gt_sum->d->ac[i] + objects.gt_sum->d->ac[i] == 0))
 			return true;
 	}
 	return false;
 }
 
-bool VariantReaderFilters::Filter(yon1_vnt_t& objects, const uint32_t position) const{
-	if(this->mImpl->require_genotypes)
+bool VariantReaderFilters::Filter(yon1_vnt_t& objects, const uint32_t position) const {
+	if (this->mImpl->require_genotypes)
 		objects.EvaluateSummary(true);
 
 	// Iterate over the vector of filter function pointers and
 	// invoke them in order.
-	for(uint32_t i = 0 ; i < this->mImpl->filters.size(); ++i){
-		if((this->mImpl.get()->*(this->mImpl->filters[i]))(this->mImpl->filter_data_[i], objects, position) == false){
+	for(uint32_t i = 0 ; i < this->mImpl->filters.size(); ++i) {
+		if ((this->mImpl.get()->*(this->mImpl->filters[i]))(this->mImpl->filter_data_[i], objects, position) == false) {
 			return false;
 		}
 	}

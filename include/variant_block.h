@@ -64,12 +64,12 @@ public:
 	yon_vb_hdr();
 	~yon_vb_hdr();
 
-	inline const uint32_t& size(void) const{ return(this->n_variants); }
-	inline const int32_t& GetContigId(void) const{ return(this->contig_id); }
-	inline const int64_t& GetMinPosition(void) const{ return(this->min_position); }
-	inline const int64_t& GetMaxPosition(void) const{ return(this->max_position); }
-	inline uint64_t& GetBlockHash(void){ return(this->block_hash); }
-	inline const uint64_t& GetBlockHash(void) const{ return(this->block_hash); }
+	inline const uint32_t& size(void) const { return(this->n_variants); }
+	inline const int32_t& GetContigId(void) const { return(this->contig_id); }
+	inline const int64_t& GetMinPosition(void) const { return(this->min_position); }
+	inline const int64_t& GetMaxPosition(void) const { return(this->max_position); }
+	inline uint64_t& GetBlockHash(void) { return(this->block_hash); }
+	inline const uint64_t& GetBlockHash(void) const { return(this->block_hash); }
 
 	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry);
 	friend std::ifstream& operator>>(std::ifstream& stream, self_type& entry);
@@ -333,10 +333,10 @@ public:
 
 struct yon_blk_load_settings {
 public:
-	yon_blk_load_settings() : loaded_genotypes(false){}
+	yon_blk_load_settings() : loaded_genotypes(false) {}
 	~yon_blk_load_settings() = default;
 
-	void clear(){
+	void clear() {
 		this->loaded_genotypes = false;
 		this->info_id_local_loaded.clear();
 		this->format_id_local_loaded.clear();
@@ -372,9 +372,9 @@ struct yon_vb_istats_obj {
 		cost_bcf(0)
 	{}
 
-	~yon_vb_istats_obj(){}
+	~yon_vb_istats_obj() {}
 
-	self_type& operator+=(const self_type& other){
+	self_type& operator+=(const self_type& other) {
 		this->cost_compressed += other.cost_compressed;
 		this->cost_strides += other.cost_strides;
 		this->cost_strides_compressed += other.cost_strides_compressed;
@@ -383,19 +383,19 @@ struct yon_vb_istats_obj {
 		return(*this);
 	}
 
-	self_type& operator+=(const data_container_type& container){
+	self_type& operator+=(const data_container_type& container) {
 		this->cost_uncompressed += container.data_uncompressed.size();
-		if(container.header.data_header.HasMixedStride())
+		if (container.header.data_header.HasMixedStride())
 			this->cost_strides += container.strides_uncompressed.size();
 
 		this->cost_compressed   += container.data.size();
-		if(container.header.data_header.HasMixedStride())
+		if (container.header.data_header.HasMixedStride())
 			this->cost_strides_compressed += container.strides.size();
 
 		return(*this);
 	}
 
-	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry){
+	friend std::ostream& operator<<(std::ostream& stream, const self_type& entry) {
 		stream << entry.cost_compressed << '\t' << entry.cost_uncompressed <<
 				'\t' << entry.cost_strides_compressed << "\t" << entry.cost_strides <<
 				'\t' << (entry.cost_compressed ? (double)(entry.cost_uncompressed)/(entry.cost_compressed) : 0) <<
@@ -436,8 +436,8 @@ public:
 
     }
 
-    ~yon_vb_istats(){
-    	for(std::size_t i = 0; i < this->size(); ++i)
+    ~yon_vb_istats() {
+    	for (std::size_t i = 0; i < this->size(); ++i)
 			(this->entries_ + i)->~yon_vb_istats_obj();
 
 		::operator delete[](static_cast<void*>(this->entries_));
@@ -448,7 +448,7 @@ public:
 		n_capacity_(other.n_capacity_),
 		entries_(static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type))))
     {
-    	for(uint32_t i = 0; i < this->size(); ++i)
+    	for (uint32_t i = 0; i < this->size(); ++i)
     		new( &this->entries_[i] ) value_type( other.at(i) );
     }
 
@@ -464,7 +464,7 @@ public:
     	this->n_entries_ = other.n_entries_;
     	this->n_capacity_ = other.n_capacity_;
     	// Clear local entries if any.
-    	for(std::size_t i = 0; i < this->size(); ++i)
+    	for (std::size_t i = 0; i < this->size(); ++i)
 			(this->entries_ + i)->~yon_vb_istats_obj();
 
 		::operator delete[](static_cast<void*>(this->entries_));
@@ -478,60 +478,60 @@ public:
 		this->n_entries_ = other.n_entries_;
 		this->n_capacity_ = other.n_capacity_;
 		// Clear local entries if any.
-		for(std::size_t i = 0; i < this->size(); ++i)
+		for (std::size_t i = 0; i < this->size(); ++i)
 			(this->entries_ + i)->~yon_vb_istats_obj();
 
 		::operator delete[](static_cast<void*>(this->entries_));
 		this->entries_ = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 
-		for(uint32_t i = 0; i < this->size(); ++i)
+		for (uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( other.at(i) );
 
 		return(*this);
 	}
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->entries_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->entries_[position]); }
-	inline reference operator[](const size_type& position){ return(this->entries_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->entries_[position]); }
-	inline pointer data(void){ return(this->entries_); }
-	inline const_pointer data(void) const{ return(this->entries_); }
-	inline reference front(void){ return(this->entries_[0]); }
-	inline const_reference front(void) const{ return(this->entries_[0]); }
-	inline reference back(void){ return(this->entries_[this->n_entries_ - 1]); }
-	inline const_reference back(void) const{ return(this->entries_[this->n_entries_ - 1]); }
+	inline reference at(const size_type& position) { return(this->entries_[position]); }
+	inline const_reference at(const size_type& position) const { return(this->entries_[position]); }
+	inline reference operator[](const size_type& position) { return(this->entries_[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->entries_[position]); }
+	inline pointer data(void) { return(this->entries_); }
+	inline const_pointer data(void) const { return(this->entries_); }
+	inline reference front(void) { return(this->entries_[0]); }
+	inline const_reference front(void) const { return(this->entries_[0]); }
+	inline reference back(void) { return(this->entries_[this->n_entries_ - 1]); }
+	inline const_reference back(void) const { return(this->entries_[this->n_entries_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_entries_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_entries_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
+	inline bool empty(void) const { return(this->n_entries_ == 0); }
+	inline const size_type& size(void) const { return(this->n_entries_); }
+	inline const size_type& capacity(void) const { return(this->n_capacity_); }
 
-	self_type& operator+=(const self_type& other){
-		while(other.size() > this->size()) this->resize();
+	self_type& operator+=(const self_type& other) {
+		while (other.size() > this->size()) this->resize();
 
-		for(uint32_t i = 0; i < other.size(); ++i)
+		for (uint32_t i = 0; i < other.size(); ++i)
 			this->at(i) += other[i];
 
 		return(*this);
 	}
 
 	//
-	inline self_type& operator+=(const_reference entry){
-		if(this->size() + 1 == this->n_capacity_)
+	inline self_type& operator+=(const_reference entry) {
+		if (this->size() + 1 == this->n_capacity_)
 			this->resize();
 
 
 		this->entries_[this->n_entries_++] = entry;
 		return(*this);
 	}
-	inline self_type& add(const_reference entry){ return(*this += entry); }
+	inline self_type& add(const_reference entry) { return(*this += entry); }
 
-	void resize(const uint32_t new_size){
-		if(new_size == this->capacity()) return;
-		if(new_size < this->capacity()){
-			if(new_size < this->size()){
-				for(uint32_t i = new_size; i < this->size(); ++i)
+	void resize(const uint32_t new_size) {
+		if (new_size == this->capacity()) return;
+		if (new_size < this->capacity()) {
+			if (new_size < this->size()) {
+				for (uint32_t i = new_size; i < this->size(); ++i)
 					(this->entries_ + i)->~yon_vb_istats_obj();
 				this->n_entries_ = new_size;
 			}
@@ -544,33 +544,33 @@ public:
 		this->entries_    = static_cast<pointer>(::operator new[](this->capacity()*sizeof(value_type)));
 
 		// Lift over values from old addresses
-		for(uint32_t i = 0; i < this->size(); ++i)
+		for (uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( temp[i] );
 
-		if(temp != nullptr){
-			for(std::size_t i = 0; i < this->size(); ++i)
+		if (temp != nullptr) {
+			for (std::size_t i = 0; i < this->size(); ++i)
 				(temp + i)->~yon_vb_istats_obj();
 
 			::operator delete[](static_cast<void*>(temp));
 		}
 	}
 
-	inline void resize(void){ return(this->resize(this->capacity()*2)); }
+	inline void resize(void) { return(this->resize(this->capacity()*2)); }
 
-	void Allocate(const uint32_t entries){
+	void Allocate(const uint32_t entries) {
 		// Delete previous entries.
-		if(this->entries_ != nullptr){
-			for(std::size_t i = 0; i < this->size(); ++i)
+		if (this->entries_ != nullptr) {
+			for (std::size_t i = 0; i < this->size(); ++i)
 				(this->entries_ + i)->~yon_vb_istats_obj();
 			::operator delete[](static_cast<void*>(this->entries_));
 
 			this->entries_ = nullptr;
 		}
 
-		if(entries > this->capacity()) this->resize(entries);
+		if (entries > this->capacity()) this->resize(entries);
 
 		this->n_entries_ = entries;
-		for(uint32_t i = 0; i < this->size(); ++i)
+		for (uint32_t i = 0; i < this->size(); ++i)
 			new( &this->entries_[i] ) value_type( );
 	}
 
@@ -692,7 +692,7 @@ public:
 	 */
 	void clear(void);
 
-	inline const uint32_t& size(void) const{ return(this->header.n_variants); }
+	inline const uint32_t& size(void) const { return(this->header.n_variants); }
 
 	/**<
 	 * Reads all objects from disk. Primary function for reading
@@ -842,18 +842,18 @@ public:
 	uint64_t GetUncompressedSize(void) const;
 
 
-	inline void PackFooter(void){
+	inline void PackFooter(void) {
 		this->footer_support.reset();
 		this->footer_support.data_uncompressed << this->footer;
 		++this->footer_support;
 	}
 
-	inline uint32_t AddInfoPattern(const std::vector<int>& pattern){ return(this->footer.AddInfoPattern(pattern)); }
-	inline uint32_t AddFormatPattern(const std::vector<int>& pattern){ return(this->footer.AddFormatPattern(pattern)); }
-	inline uint32_t AddFilterPattern(const std::vector<int>& pattern){ return(this->footer.AddFilterPattern(pattern)); }
-	inline uint32_t AddInfo(const uint32_t id){ return(this->footer.AddInfo(id)); }
-	inline uint32_t AddFormat(const uint32_t id){ return(this->footer.AddFormat(id)); }
-	inline uint32_t AddFilter(const uint32_t id){ return(this->footer.AddFilter(id)); }
+	inline uint32_t AddInfoPattern(const std::vector<int>& pattern) { return(this->footer.AddInfoPattern(pattern)); }
+	inline uint32_t AddFormatPattern(const std::vector<int>& pattern) { return(this->footer.AddFormatPattern(pattern)); }
+	inline uint32_t AddFilterPattern(const std::vector<int>& pattern) { return(this->footer.AddFilterPattern(pattern)); }
+	inline uint32_t AddInfo(const uint32_t id) { return(this->footer.AddInfo(id)); }
+	inline uint32_t AddFormat(const uint32_t id) { return(this->footer.AddFormat(id)); }
+	inline uint32_t AddFilter(const uint32_t id) { return(this->footer.AddFilter(id)); }
 
 	/**<
 	 * Finalize this block for writing. Tells the header and footer objects to
@@ -913,7 +913,7 @@ private:
 	 * @param offset    Destination header in footer
 	 * @param container Target container hosting the header
 	 */
-	inline static void UpdateHeader(offset_type& offset, const container_type& container){
+	inline static void UpdateHeader(offset_type& offset, const container_type& container) {
 		const uint32_t global_key = offset.data_header.global_key; // carry over global key
 		offset = container.header;
 		assert(offset == container.header); // Assert copy is correct
@@ -949,7 +949,7 @@ private:
 	                           const container_type& container,
 	                           const uint32_t virtual_offset)
 	{
-		if(container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
+		if (container.header.data_header.controller.encryption != YON_ENCRYPTION_NONE)
 			return(yon1_vb_t::WriteContainerEncrypted(stream, offset, container, virtual_offset));
 
 		assert(offset.data_header.offset == virtual_offset);

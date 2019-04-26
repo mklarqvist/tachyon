@@ -28,32 +28,32 @@ DEALINGS IN THE SOFTWARE.
 #include "program_utils.h"
 #include "view.h"
 
-int main(int argc, char** argv){
-	if(tachyon::utility::IsBigEndian()){
+int main(int argc, char** argv) {
+	if (tachyon::utility::IsBigEndian()) {
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Tachyon does not support big endian systems..." << std::endl;
 		return(1);
 	}
 
-	if(argc == 1){
+	if (argc == 1) {
 		programHelp();
 		return(1);
 	}
 
 	// Literal string input line
 	tachyon::LITERAL_COMMAND_LINE = tachyon::TACHYON_PROGRAM_NAME;
-	for(uint32_t i = 1; i < argc; ++i)
+	for (uint32_t i = 1; i < argc; ++i)
 		tachyon::LITERAL_COMMAND_LINE += " " + std::string(&argv[i][0]);
 
 	const std::string subroutine(argv[1]);
 
-	if(strncmp(subroutine.data(), "import", 6) == 0 && subroutine.size() == 6){
+	if (strncmp(subroutine.data(), "import", 6) == 0 && subroutine.size() == 6) {
 		return(import(argc, argv));
-	} else if(strncmp(subroutine.data(), "view", 4) == 0 && subroutine.size() == 4){
+	} else if (strncmp(subroutine.data(), "view", 4) == 0 && subroutine.size() == 4) {
 		return(view(argc, argv));
-	} else if(strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5){
+	} else if (strncmp(subroutine.data(), "stats", 5) == 0 && subroutine.size() == 5) {
 		return(stats(argc, argv));
 		return(0);
-	} else if(strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5){
+	} else if (strncmp(subroutine.data(), "check", 5) == 0 && subroutine.size() == 5) {
 		std::cerr << tachyon::utility::timestamp("ERROR") << "Not implemented" << std::endl;
 		return(0);
 	} else {

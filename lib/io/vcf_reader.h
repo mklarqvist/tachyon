@@ -14,11 +14,11 @@ public:
 	// Singleton design pattern for retrieving a guaranteed unique pointer
 	// to a VcfReader. This choice is to prevent inadvertent writes to the
 	// target file as another file-handle is accessing it.
-	static std::unique_ptr<self_type> FromFile(const std::string& variants_path, uint32_t n_extra_threads = 0){
+	static std::unique_ptr<self_type> FromFile(const std::string& variants_path, uint32_t n_extra_threads = 0) {
 		htsFile* fp = hts_open(variants_path.c_str(), "r");
-		if(n_extra_threads){
+		if (n_extra_threads) {
 			int ret = hts_set_threads(fp, n_extra_threads);
-			if(ret < 0){
+			if (ret < 0) {
 				std::cerr << utility::timestamp("ERROR") << "Failed to open multiple handles!" << std::endl;
 				return nullptr;
 			}
@@ -30,7 +30,7 @@ public:
 		}
 
 		bcf_hdr_t* header = bcf_hdr_read(fp);
-		if (header == nullptr){
+		if (header == nullptr) {
 			std::cerr << utility::timestamp("ERROR") << "Couldn't parse header for " << fp->fn << std::endl;
 			return nullptr;
 		}
@@ -38,7 +38,7 @@ public:
 		return std::unique_ptr<self_type>(new self_type(variants_path, fp, header));
 	}
 
-	bool next(const int unpack_level = BCF_UN_ALL){
+	bool next(const int unpack_level = BCF_UN_ALL) {
 		if (bcf_read(this->fp_, this->header_, this->bcf1_) < 0) {
 			if (bcf1_->errcode) {
 				std::cerr << utility::timestamp("ERROR") << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
@@ -52,7 +52,7 @@ public:
 		return true;
 	}
 
-	bool next(bcf1_t* bcf_entry, const int unpack_level = BCF_UN_ALL){
+	bool next(bcf1_t* bcf_entry, const int unpack_level = BCF_UN_ALL) {
 		if (bcf_read(this->fp_, this->header_, bcf_entry) < 0) {
 			if (bcf_entry->errcode) {
 				std::cerr << utility::timestamp("ERROR") << "Failed to parse VCF record: " << bcf1_->errcode << std::endl;
@@ -73,20 +73,20 @@ public:
 	 * sample information or the column header string ("#CHROM...").
 	 * @param stream Dst output stream.
 	 */
-	inline void PrintLiterals(std::ostream& stream) const{ stream << this->vcf_header_.literals_ << std::endl; }
+	inline void PrintLiterals(std::ostream& stream) const { stream << this->vcf_header_.literals_ << std::endl; }
 
 	/**<
 	 * Utility function that writes a valid VCF header output string
 	 * to the target stream.
 	 * @param stream Dst output stream.
 	 */
-	void PrintVcfHeader(std::ostream& stream) const{
+	void PrintVcfHeader(std::ostream& stream) const {
 		this->PrintLiterals(stream);
 		stream << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO";
-		if(this->vcf_header_.samples_.size()){
+		if (this->vcf_header_.samples_.size()) {
 			stream << "\tFORMAT\t";
 			stream << this->vcf_header_.samples_[0];
-			for(size_t i = 1; i < this->vcf_header_.samples_.size(); ++i)
+			for (size_t i = 1; i < this->vcf_header_.samples_.size(); ++i)
 				stream << "\t" + this->vcf_header_.samples_[i];
 		}
 		stream << "\n";

@@ -46,25 +46,25 @@ public:
     }
 
 
-    VariantIndexBin& operator=(const self_type& other){
+    VariantIndexBin& operator=(const self_type& other) {
     	delete [] this->blocks_;
 		this->blocks_     = new value_type[other.capacity()];
     	this->binID_      = other.binID_;
     	this->n_blocks_   = other.n_blocks_;
     	this->n_capacity_ = other.n_capacity_;
-    	for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
+    	for (uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = other.blocks_[i];
 
     	return(*this);
     }
 
-    ~VariantIndexBin(){ delete [] this->blocks_; }
+    ~VariantIndexBin() { delete [] this->blocks_; }
 
-    self_type& operator+=(const self_type& other){
+    self_type& operator+=(const self_type& other) {
     	this->n_variants_ += other.n_variants_;
-    	if(this->n_blocks_ + other.n_blocks_ > this->capacity())
+    	if (this->n_blocks_ + other.n_blocks_ > this->capacity())
     		this->resize(this->n_blocks_ + other.n_blocks_ + 64);
 
-    	for(int i = 0; i < other.n_blocks_; ++i){
+    	for (int i = 0; i < other.n_blocks_; ++i) {
     		//std::cerr << "adding block " << other.blocks_[i] << " to offset " << this->n_ << std::endl;
     		this->blocks_[this->n_blocks_ + i] = other.blocks_[i];
     	}
@@ -72,14 +72,14 @@ public:
     	this->n_blocks_ += other.n_blocks_;
 
     	// Sort and dedupe.
-    	if(this->size() > 1){
+    	if (this->size() > 1) {
 			std::sort(&this->blocks_[0], &this->blocks_[this->n_blocks_]);
 
 			value_type* temp = new value_type[this->size()];
 			temp[0] = this->blocks_[0];
 			int new_size = 1;
-			for(int i = 1; i < this->size(); ++i){
-				if(temp[new_size - 1] != this->blocks_[i]){
+			for (int i = 1; i < this->size(); ++i) {
+				if (temp[new_size - 1] != this->blocks_[i]) {
 					temp[new_size++] = this->blocks_[i];
 				}
 			}
@@ -91,47 +91,47 @@ public:
     	return(*this);
     }
 
-    inline bool operator<(const self_type& other) const{ return(this->binID_ < other.binID_); }
+    inline bool operator<(const self_type& other) const { return(this->binID_ < other.binID_); }
 
 	// Element access
-	inline reference at(const size_type& position){ return(this->blocks_[position]); }
-	inline const_reference at(const size_type& position) const{ return(this->blocks_[position]); }
-	inline reference operator[](const size_type& position){ return(this->blocks_[position]); }
-	inline const_reference operator[](const size_type& position) const{ return(this->blocks_[position]); }
-	inline pointer data(void){ return(this->blocks_); }
-	inline const_pointer data(void) const{ return(this->blocks_); }
-	inline reference front(void){ return(this->blocks_[0]); }
-	inline const_reference front(void) const{ return(this->blocks_[0]); }
-	inline reference back(void){ return(this->blocks_[this->n_blocks_ - 1]); }
-	inline const_reference back(void) const{ return(this->blocks_[this->n_blocks_ - 1]); }
+	inline reference at(const size_type& position) { return(this->blocks_[position]); }
+	inline const_reference at(const size_type& position) const { return(this->blocks_[position]); }
+	inline reference operator[](const size_type& position) { return(this->blocks_[position]); }
+	inline const_reference operator[](const size_type& position) const { return(this->blocks_[position]); }
+	inline pointer data(void) { return(this->blocks_); }
+	inline const_pointer data(void) const { return(this->blocks_); }
+	inline reference front(void) { return(this->blocks_[0]); }
+	inline const_reference front(void) const { return(this->blocks_[0]); }
+	inline reference back(void) { return(this->blocks_[this->n_blocks_ - 1]); }
+	inline const_reference back(void) const { return(this->blocks_[this->n_blocks_ - 1]); }
 
 	// Capacity
-	inline bool empty(void) const{ return(this->n_blocks_ == 0); }
-	inline const size_type& size(void) const{ return(this->n_blocks_); }
-	inline const size_type& capacity(void) const{ return(this->n_capacity_); }
+	inline bool empty(void) const { return(this->n_blocks_ == 0); }
+	inline const size_type& size(void) const { return(this->n_blocks_); }
+	inline const size_type& capacity(void) const { return(this->n_capacity_); }
 
 	// Iterator
-	inline iterator begin(){ return iterator(&this->blocks_[0]); }
-	inline iterator end(){ return iterator(&this->blocks_[this->n_blocks_]); }
-	inline const_iterator begin() const{ return const_iterator(&this->blocks_[0]); }
-	inline const_iterator end() const{ return const_iterator(&this->blocks_[this->n_blocks_]); }
-	inline const_iterator cbegin() const{ return const_iterator(&this->blocks_[0]); }
-	inline const_iterator cend() const{ return const_iterator(&this->blocks_[this->n_blocks_]); }
+	inline iterator begin() { return iterator(&this->blocks_[0]); }
+	inline iterator end() { return iterator(&this->blocks_[this->n_blocks_]); }
+	inline const_iterator begin() const { return const_iterator(&this->blocks_[0]); }
+	inline const_iterator end() const { return const_iterator(&this->blocks_[this->n_blocks_]); }
+	inline const_iterator cbegin() const { return const_iterator(&this->blocks_[0]); }
+	inline const_iterator cend() const { return const_iterator(&this->blocks_[this->n_blocks_]); }
 
 	// resize
-	void resize(){
+	void resize() {
 		pointer old = this->blocks_;
 		this->n_capacity_ *= 2;
 		this->blocks_ = new value_type[this->capacity()*2];
-		for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
+		for (uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
 		delete [] old;
 	}
 
-	void resize(const uint32_t new_size){
+	void resize(const uint32_t new_size) {
 		pointer old = this->blocks_;
 		this->n_capacity_ = new_size;
 		this->blocks_ = new value_type[this->capacity()*2];
-		for(uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
+		for (uint32_t i = 0; i < this->size(); ++i) this->blocks_[i] = old[i];
 		delete [] old;
 	}
 
@@ -139,12 +139,12 @@ public:
 	 * Update
 	 * @param variant_block_number
 	 */
-    void Add(const uint32_t& variant_block_number){
-		if(this->size() + 1 >= this->capacity())
+    void Add(const uint32_t& variant_block_number) {
+		if (this->size() + 1 >= this->capacity())
 			this->resize();
 
-    	if(this->size()){ // Has data
-    		if(this->back() != variant_block_number) // check parity between previous tachyon block and current one
+    	if (this->size()) { // Has data
+    		if (this->back() != variant_block_number) // check parity between previous tachyon block and current one
     			this->blocks_[this->n_blocks_++] = variant_block_number;
 
     		++this->n_variants_;
@@ -154,11 +154,11 @@ public:
     	}
     }
 
-    std::ostream& Print(std::ostream& stream){
+    std::ostream& Print(std::ostream& stream) {
     	stream << "ID: " << this->binID_ << ", variants: " << this->n_variants_ << ", associated blocks: " << this->n_blocks_;
-    	if(this->size()){
+    	if (this->size()) {
     		stream << ", yon-blocks ids: " << this->blocks_[0];
-    		for(uint32_t i = 1; i < this->size(); ++i)
+    		for (uint32_t i = 1; i < this->size(); ++i)
     			stream << ',' << this->blocks_[i];
     	}
 
@@ -166,17 +166,17 @@ public:
 	}
 
 private:
-    friend std::ostream& operator<<(std::ostream& stream, const self_type& bin){
+    friend std::ostream& operator<<(std::ostream& stream, const self_type& bin) {
 		stream.write(reinterpret_cast<const char*>(&bin.binID_),     sizeof(uint32_t));
 		stream.write(reinterpret_cast<const char*>(&bin.n_variants_), sizeof(uint32_t));
 		stream.write(reinterpret_cast<const char*>(&bin.n_blocks_),   sizeof(size_type));
-		for(uint32_t i = 0; i < bin.size(); ++i)
+		for (uint32_t i = 0; i < bin.size(); ++i)
 			stream.write(reinterpret_cast<const char*>(&bin.blocks_[i]), sizeof(value_type));
 
 		return(stream);
 	}
 
-    friend std::istream& operator>>(std::istream& stream, self_type& bin){
+    friend std::istream& operator>>(std::istream& stream, self_type& bin) {
     	delete [] bin.blocks_;
  		stream.read(reinterpret_cast<char*>(&bin.binID_),     sizeof(uint32_t));
 		stream.read(reinterpret_cast<char*>(&bin.n_variants_), sizeof(uint32_t));
@@ -184,7 +184,7 @@ private:
 		bin.n_capacity_ = bin.size() + 64;
 		bin.blocks_ = new value_type[bin.capacity()];
 
-		for(uint32_t i = 0; i < bin.size(); ++i)
+		for (uint32_t i = 0; i < bin.size(); ++i)
 			stream.read(reinterpret_cast<char*>(&bin.blocks_[i]), sizeof(value_type));
 
 		return(stream);

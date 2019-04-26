@@ -83,9 +83,9 @@ public:
 
 	yon_allele& ParseFromBuffer(const char* const in);
 
-	inline const uint16_t& size(void) const{ return(this->l_allele); }
-	inline const uint16_t& length(void) const{ return(this->l_allele); }
-	inline const std::string ToString(void) const{ return(std::string(this->allele, this->l_allele)); }
+	inline const uint16_t& size(void) const { return(this->l_allele); }
+	inline const uint16_t& length(void) const { return(this->l_allele); }
+	inline const std::string ToString(void) const { return(std::string(this->allele, this->l_allele)); }
 
 	friend yon_buffer_t& operator<<(yon_buffer_t& buffer, const yon_allele& entry);
 
@@ -119,7 +119,7 @@ public:
 	/**<
 	 * Check if it is possible to pack the REF and ALT allele strings into
 	 * a single uint8_t. The input allelic data has to be diploid, biallelic and
-	 * match the regular expression pattern "^([ATGCN\\.]{1}){1}|(<NON_REF>){1}$"
+	 * match the regular expression pattern "^([ATGCN\\.]{1}) {1}|(<NON_REF>) {1}$"
 	 * @return Returns TRUE if it is possible to pack the ref and alt alleles into a byte or FALSE otherwise.
 	 */
 	bool UsePackedRefAlt(void) const;
@@ -141,14 +141,14 @@ public:
 	std::string GetAlleleString(void) const;
 
 	// Base setters for function pointer overloading.
-	inline void SetController(const uint16_t value){ this->controller = value; }
-	inline void SetBasePloidy(const uint8_t value){ this->n_base_ploidy = value; }
-	inline void SetInfoPatternId(const int32_t value){ this->info_pid = value; }
-	inline void SetFormatPatternId(const int32_t value){ this->fmt_pid = value; }
-	inline void SetFilterPatternId(const int32_t value){ this->flt_pid = value; }
-	inline void SetQuality(const float value){ this->qual = value; }
-	inline void SetPosition(const int64_t value){ this->pos = value; }
-	inline void SetChromosome(const uint32_t value){ this->rid = value; }
+	inline void SetController(const uint16_t value) { this->controller = value; }
+	inline void SetBasePloidy(const uint8_t value) { this->n_base_ploidy = value; }
+	inline void SetInfoPatternId(const int32_t value) { this->info_pid = value; }
+	inline void SetFormatPatternId(const int32_t value) { this->fmt_pid = value; }
+	inline void SetFilterPatternId(const int32_t value) { this->flt_pid = value; }
+	inline void SetQuality(const float value) { this->qual = value; }
+	inline void SetPosition(const int64_t value) { this->pos = value; }
+	inline void SetChromosome(const uint32_t value) { this->rid = value; }
 	inline void SetName(const std::string& value);
 
 	/**<
@@ -177,12 +177,12 @@ public:
 	bool AddInfoFlag(const std::string& tag, yon_vnt_hdr_t& header);
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t& data_point){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t& data_point) {
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
 		int32_t offset = GetInfoOffset(tag);
-		if(offset >= 0){
+		if (offset >= 0) {
 			delete info[offset];
 			info[offset] = new PrimitiveContainer<int_t>(data_point);
 		} else {
@@ -193,12 +193,12 @@ public:
 	}
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t* data_point, const size_t n_points){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, int_t* data_point, const size_t n_points) {
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
 		int32_t offset = GetInfoOffset(tag);
-		if(offset >= 0){
+		if (offset >= 0) {
 			delete info[offset];
 			info[offset] = new PrimitiveContainer<int_t>(data_point, n_points);
 		} else {
@@ -209,12 +209,12 @@ public:
 	}
 
 	template <class int_t>
-	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, PrimitiveContainer<int_t>*& container){
+	bool AddInfo(const std::string& tag, yon_vnt_hdr_t& header, PrimitiveContainer<int_t>*& container) {
 		const YonInfo* info_tag = header.GetInfo(tag);
 		assert(info_tag != nullptr);
 
 		int32_t offset = GetInfoOffset(tag);
-		if(offset >= 0){
+		if (offset >= 0) {
 			delete info[offset];
 			info[offset] = container;
 		} else {
@@ -309,8 +309,8 @@ public:
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
 	template<class T>
-	bool Evaluate(const size_t& n_samples, const bcf_fmt_t& fmt){
-		if(fmt.p_len == 0) return true;
+	bool Evaluate(const size_t& n_samples, const bcf_fmt_t& fmt) {
+		if (fmt.p_len == 0) return true;
 		assert(fmt.size/fmt.n == sizeof(T));
 
 		// Set the base ploidy. This corresponds to the LARGEST
@@ -326,8 +326,8 @@ public:
 		// continuing the search if the current value is the
 		// sentinel node symbol.
 		int j = fmt.n - 1;
-		for(uint32_t i = 0; i < n_samples; ++i){
-			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == true
+		for (uint32_t i = 0; i < n_samples; ++i) {
+			if (VcfGenotype<T>::IsMissing(fmt.p[j]) == true
 			   || VcfType<T>::IsVectorEnd(fmt.p[j]) == true)
 				j += fmt.n;
 			else {
@@ -340,8 +340,8 @@ public:
 		// regarding missingness, number of special sentinel
 		// symbols and assess uniformity of phasing.
 		j = fmt.n - 1;
-		for(uint32_t i = 0; i < n_samples; ++i){
-			if(VcfGenotype<T>::IsMissing(fmt.p[j]) == false
+		for (uint32_t i = 0; i < n_samples; ++i) {
+			if (VcfGenotype<T>::IsMissing(fmt.p[j]) == false
 			   && VcfType<int8_t>::IsVectorEnd(fmt.p[j]) == false
 			   && (fmt.p[j] & 1) != this->phase_if_uniform)
 			{
@@ -349,7 +349,7 @@ public:
 			}
 
 			// Iterate over the number of chromosomes / individual
-			for(int k = 0; k < fmt.n; ++k, ++j){
+			for (int k = 0; k < fmt.n; ++k, ++j) {
 				this->n_missing    += VcfGenotype<T>::IsMissing(fmt.p[j]);
 				this->n_vector_end += VcfType<T>::IsVectorEnd(fmt.p[j]);
 			}
@@ -371,11 +371,11 @@ public:
 	 *                  This is equivalent to the samples in the file.
 	 * @return          Returns TRUE upon success or FALSE otherwise.
 	 */
-	bool Evaluate(const yon1_vnt_t& rec, const size_t& n_samples){
-		if(rec.gt == nullptr)
+	bool Evaluate(const yon1_vnt_t& rec, const size_t& n_samples) {
+		if (rec.gt == nullptr)
 			return false;
 
-		if(rec.gt->rcds == nullptr)
+		if (rec.gt->rcds == nullptr)
 			return false;
 
 		// Set the base ploidy. This corresponds to the LARGEST
@@ -391,8 +391,8 @@ public:
 		// Iterate over genotypes to find the first valid phase
 		// continuing the search if the current value is the
 		// sentinel node symbol.
-		for(uint32_t i = 0; i < rec.gt->n_i; ++i){
-			if(YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1){
+		for (uint32_t i = 0; i < rec.gt->n_i; ++i) {
+			if (YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1) {
 				this->phase_if_uniform = (YON_GT_RCD_PHASE(rec.gt->rcds[i].allele[p_offset]));
 				break;
 			}
@@ -400,15 +400,15 @@ public:
 
 		// Iterate over genotypes to compute summary statistics
 		// regarding missingness, number of special sentinel
-		for(uint32_t i = 0; i < rec.gt->n_i; ++i){
-			if(YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1
+		for (uint32_t i = 0; i < rec.gt->n_i; ++i) {
+			if (YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[p_offset]) > 1
 			   && (YON_GT_RCD_PHASE(rec.gt->rcds[i].allele[p_offset])) != this->phase_if_uniform)
 			{
 				this->mixed_phasing = true;
 			}
 
 			// Iterate over the number of chromosomes / individual
-			for(int k = 0; k < rec.gt->m; ++k){
+			for (int k = 0; k < rec.gt->m; ++k) {
 				this->n_missing    += YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[k]) == YON_GT_RCD_MISS ? rec.gt->rcds[i].run_length : 0;
 				this->n_vector_end += YON_GT_RCD_ALLELE_UNPACK(rec.gt->rcds[i].allele[k]) == YON_GT_RCD_EOV ? rec.gt->rcds[i].run_length : 0;
 			}
@@ -419,7 +419,7 @@ public:
 		return true;
 	}
 
-	inline bool isBaseDiploid(void) const{ return(this->base_ploidy == 2); }
+	inline bool isBaseDiploid(void) const { return(this->base_ploidy == 2); }
 
 public:
 	uint8_t  base_ploidy;
@@ -477,9 +477,9 @@ struct yon_stats_tstv {
 public:
 	// Supportive structure.
 	struct yon_stats_tstv_obj {
-		yon_stats_tstv_obj(): n_allele(0), n_non_ref(0), t_non_ref(0), allele_encodings(nullptr), non_ref_encodings(nullptr), b_size(nullptr){}
-		yon_stats_tstv_obj(const uint32_t n_allele): n_allele(n_allele), n_non_ref(0), t_non_ref(0), allele_encodings(new uint8_t[n_allele]), non_ref_encodings(new uint8_t[n_allele]), b_size(new int32_t[n_allele]){ }
-		~yon_stats_tstv_obj(){
+		yon_stats_tstv_obj(): n_allele(0), n_non_ref(0), t_non_ref(0), allele_encodings(nullptr), non_ref_encodings(nullptr), b_size(nullptr) {}
+		yon_stats_tstv_obj(const uint32_t n_allele): n_allele(n_allele), n_non_ref(0), t_non_ref(0), allele_encodings(new uint8_t[n_allele]), non_ref_encodings(new uint8_t[n_allele]), b_size(new int32_t[n_allele]) { }
+		~yon_stats_tstv_obj() {
 			delete [] allele_encodings;
 			delete [] non_ref_encodings;
 			delete [] b_size;
@@ -501,8 +501,8 @@ public:
 	yon_stats_tstv& operator+=(const yon_stats_tstv& other);
 
 	// Accessors
-	inline yon_stats_sample& operator[](const uint32_t pos){ return(this->sample[pos]); }
-	inline const yon_stats_sample& operator[](const uint32_t pos) const{ return(this->sample[pos]); }
+	inline yon_stats_sample& operator[](const uint32_t pos) { return(this->sample[pos]); }
+	inline const yon_stats_sample& operator[](const uint32_t pos) const { return(this->sample[pos]); }
 
 	/**<
 	 * Addition operator in the situation where the sample order
@@ -580,8 +580,8 @@ public:
 	 * children objects. See LazyEvaluate() in the children structure for more
 	 * information.
 	 */
-	void Evaluate(void){
-		for(uint32_t i = 0; i < this->n_s; ++i)
+	void Evaluate(void) {
+		for (uint32_t i = 0; i < this->n_s; ++i)
 			this->sample[i].LazyEvalute();
 	}
 

@@ -78,7 +78,7 @@ public:
 	 * @param position  Start and end position in 0-base.
 	 * @return          Returns a vector of index entries intersecting the supplied interval.
 	 */
-	inline std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& position) const{
+	inline std::vector<entry_type> FindOverlap(const uint32_t& contig_id, const uint64_t& position) const {
 		return(this->FindOverlap(contig_id, position, position));
 	}
 
@@ -110,8 +110,8 @@ public:
 	entry_type& operator[](const uint32_t block_id);
 	const entry_type& operator[](const uint32_t block_id) const;
 
-	inline entry_type& GetCurrent(void){ return(this->current_entry_); }
-	inline const entry_type& GetCurrent(void) const{ return(this->current_entry_); }
+	inline entry_type& GetCurrent(void) { return(this->current_entry_); }
+	inline const entry_type& GetCurrent(void) const { return(this->current_entry_); }
 
 	/**<
 	 * Index all yon1_vnt_t records in a yon1_vc_t container. Iteratively

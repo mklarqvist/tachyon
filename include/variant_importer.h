@@ -36,17 +36,17 @@ public:
 
 	std::string GetInterpretedString(void) const;
 
-	inline void SetVerbose(const bool yes = true){ this->verbose = yes; }
-	inline void SetInputFile(const std::string& input_name){ this->input_file = input_name; }
-	inline void SetOutputPrefix(const std::string& output_prefix){ this->output_prefix = output_prefix; }
-	inline void SetThreads(const int32_t n_threads){ this->n_threads = n_threads; }
-	inline void SetHtslibThreads(const int32_t n_threads){ this->htslib_extra_threads = n_threads; }
-	inline void SetPermute(const bool yes){ this->permute_genotypes = yes; }
-	inline void SetEncrypt(const bool yes){ this->encrypt_data = yes; }
-	inline void SetCompressionLevel(const int32_t compression_level){ this->compression_level = compression_level; }
-	inline void SetCheckpointBases(const int32_t bases){ this->checkpoint_bases = bases; }
-	inline void SetCheckpointVariants(const int32_t variants){ this->checkpoint_n_snps = variants; }
-	inline void SetPermuteGenotypes(const bool yes = true){ this->permute_genotypes = yes; }
+	inline void SetVerbose(const bool yes = true) { this->verbose = yes; }
+	inline void SetInputFile(const std::string& input_name) { this->input_file = input_name; }
+	inline void SetOutputPrefix(const std::string& output_prefix) { this->output_prefix = output_prefix; }
+	inline void SetThreads(const int32_t n_threads) { this->n_threads = n_threads; }
+	inline void SetHtslibThreads(const int32_t n_threads) { this->htslib_extra_threads = n_threads; }
+	inline void SetPermute(const bool yes) { this->permute_genotypes = yes; }
+	inline void SetEncrypt(const bool yes) { this->encrypt_data = yes; }
+	inline void SetCompressionLevel(const int32_t compression_level) { this->compression_level = compression_level; }
+	inline void SetCheckpointBases(const int32_t bases) { this->checkpoint_bases = bases; }
+	inline void SetCheckpointVariants(const int32_t variants) { this->checkpoint_n_snps = variants; }
+	inline void SetPermuteGenotypes(const bool yes = true) { this->permute_genotypes = yes; }
 
 public:
 	bool verbose;
@@ -84,8 +84,8 @@ public:
 	 */
 	bool Build();
 
-	inline settings_type& GetSettings(void){ return(this->settings_); }
-	inline const settings_type& GetSettings(void) const{ return(this->settings_); }
+	inline settings_type& GetSettings(void) { return(this->settings_); }
+	inline const settings_type& GetSettings(void) const { return(this->settings_); }
 
 private:
 	settings_type settings_;

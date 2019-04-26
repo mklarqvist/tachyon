@@ -29,7 +29,7 @@ VariantImporterSettings::VariantImporterSettings() :
 {
 }
 
-std::string VariantImporterSettings::GetInterpretedString(void) const{
+std::string VariantImporterSettings::GetInterpretedString(void) const {
 	return(std::string("{\"input_file\":\"" + this->input_file +
 	   "\",\"output_prefix\":\"" + this->output_prefix +
 	   "\",\"checkpoint_snps\":" + std::to_string(this->checkpoint_n_snps) +
@@ -57,7 +57,7 @@ public:
 	typedef VariantWriterStream       writer_stream_type;
 
 public:
-	~VariantImporterImpl(){ delete this->writer; }
+	~VariantImporterImpl() { delete this->writer; }
 	bool Build(writer_interface_type* writer, settings_type& settings);
 
 	void SetWriterTypeFile(void);
@@ -136,15 +136,15 @@ VariantImporter::VariantImporter(const settings_type& settings) :
 
 }
 
-VariantImporter::~VariantImporter(){
+VariantImporter::~VariantImporter() {
 }
 
 void VariantImporter::VariantImporterImpl::SetWriterTypeFile(void)  { this->writer = new writer_file_type;   }
-void VariantImporter::VariantImporterImpl::SetWriterTypeStream(void){ this->writer = new writer_stream_type; }
+void VariantImporter::VariantImporterImpl::SetWriterTypeStream(void) { this->writer = new writer_stream_type; }
 
-bool VariantImporter::Build(){
+bool VariantImporter::Build() {
 	// Allocate a new writer.
-	if(this->settings_.output_prefix.size() == 0 ||
+	if (this->settings_.output_prefix.size() == 0 ||
 	   (this->settings_.output_prefix.size() == 1 && this->settings_.output_prefix == "-"))
 	{
 		this->mImpl->writer = new VariantImporterImpl::writer_stream_type;
@@ -152,32 +152,32 @@ bool VariantImporter::Build(){
 	else this->mImpl->writer = new VariantImporterImpl::writer_file_type;
 
 	// Open a file handle or standard out for writing.
-	if(!this->mImpl->writer->open(this->settings_.output_prefix)){
+	if (!this->mImpl->writer->open(this->settings_.output_prefix)) {
 		std::cerr << utility::timestamp("ERROR", "WRITER") << "Failed to open writer..." << std::endl;
 		return false;
 	}
 
-	if(!this->mImpl->Build(this->mImpl->writer, this->settings_)){
+	if (!this->mImpl->Build(this->mImpl->writer, this->settings_)) {
 		std::cerr << utility::timestamp("ERROR", "IMPORT") << "Failed build!" << std::endl;
 		return false;
 	}
 	return true;
 }
 
-bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, settings_type& settings){
-	if(writer == nullptr)
+bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, settings_type& settings) {
+	if (writer == nullptr)
 		return false;
 
 	this->settings = std::shared_ptr<settings_type>(&settings);
 
 	// Retrieve a unique VcfReader.
 	this->vcf_reader_ = io::VcfReader::FromFile(this->settings->input_file, this->settings->htslib_extra_threads);
-	if(this->vcf_reader_ == nullptr)
+	if (this->vcf_reader_ == nullptr)
 		return false;
 
 
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i){
-		if(this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0){
+	for (uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i) {
+		if (this->vcf_reader_->vcf_header_.contigs_[i].n_bases == 0) {
 			std::cerr << utility::timestamp("NOTICE") << "No length declared for contig (. " << this->vcf_reader_->vcf_header_.contigs_[i].name << "). Setting to INT32_MAX." << std::endl;
 			this->vcf_reader_->vcf_header_.contigs_[i].n_bases = std::numeric_limits<int32_t>::max();
 		}
@@ -186,16 +186,16 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	// Remap the global IDX fields in Vcf to the appropriate incremental order.
 	// This is useful in the situations when fields have been removed or added
 	// to the Vcf header section without reformatting the file.
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
+	for (uint32_t i = 0; i < this->vcf_reader_->vcf_header_.contigs_.size(); ++i)
 		this->contig_reorder_map_[this->vcf_reader_->vcf_header_.contigs_[i].idx] = i;
 
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
+	for (uint32_t i = 0; i < this->vcf_reader_->vcf_header_.info_fields_.size(); ++i)
 		this->info_reorder_map_[this->vcf_reader_->vcf_header_.info_fields_[i].idx] = i;
 
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
+	for (uint32_t i = 0; i < this->vcf_reader_->vcf_header_.format_fields_.size(); ++i)
 		this->format_reorder_map_[this->vcf_reader_->vcf_header_.format_fields_[i].idx] = i;
 
-	for(uint32_t i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
+	for (uint32_t i = 0; i < this->vcf_reader_->vcf_header_.filter_fields_.size(); ++i)
 		this->filter_reorder_map_[this->vcf_reader_->vcf_header_.filter_fields_[i].idx] = i;
 
 	// Predicate of a search for "GT" FORMAT field in the Vcf header.
@@ -203,7 +203,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 
 	// Predicate of a search for "END" INFO field in the Vcf header.
 	VcfInfo* vcf_info_end = this->vcf_reader_->vcf_header_.GetInfo("END");
-	if(vcf_info_end != nullptr)
+	if (vcf_info_end != nullptr)
 		this->settings->info_end_key = vcf_info_end->idx;
 
 	// Setup the checksums container.
@@ -246,7 +246,7 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	std::shared_ptr<Keychain> s_keychain(&this->keychain);
 
 	// Setup and start slaves.
-	for(uint32_t i = 0; i < this->settings->n_threads; ++i){
+	for (uint32_t i = 0; i < this->settings->n_threads; ++i) {
 		consumers[i].thread_id = i;
 		consumers[i].data_available = s_data_avail;
 		consumers[i].data_pool = s_data_pool;
@@ -273,12 +273,12 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	}
 
 	// Join consumer and producer threads.
-	for(uint32_t i = 0; i < this->settings->n_threads; ++i) consumers[i].thread_.join();
+	for (uint32_t i = 0; i < this->settings->n_threads; ++i) consumers[i].thread_.join();
 	producer.all_finished = true;
 	producer.thread_.join();
 
 	// Reduce functions.
-	for(uint32_t i = 1; i < this->settings->n_threads; ++i) consumers[0] += consumers[i];
+	for (uint32_t i = 1; i < this->settings->n_threads; ++i) consumers[0] += consumers[i];
 	write.stats_basic  += consumers[0].importer.stats_basic;
 	write.stats_info   += consumers[0].importer.stats_info;
 	write.stats_format += consumers[0].importer.stats_format;
@@ -291,19 +291,19 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	this->WriteKeychain(writer);
 
 	uint64_t b_uncompressed = 0;
-	if(settings.output_prefix != "-"){
+	if (settings.output_prefix != "-") {
 		std::cout << "Field\tType\tCompressed\tUncompressed\tStrideCompressed\tStrideUncompressed\tFold\tBinaryVcf\tFold-Bcf-Yon" << std::endl;
-		for(int i = 0; i < write.stats_basic.size(); ++i){
+		for (int i = 0; i < write.stats_basic.size(); ++i) {
 			std::cout << YON_BLK_PRINT_NAMES[i] << "\tNA\t" << write.stats_basic.at(i) << std::endl;
 			b_uncompressed += write.stats_basic[i].cost_uncompressed + write.stats_basic[i].cost_strides;
 		}
 
-		for(int i = 0; i < write.stats_info.size(); ++i){
+		for (int i = 0; i < write.stats_info.size(); ++i) {
 			std::cout << "INFO-" << this->yon_header_.info_fields_[i].id << "\t" << this->yon_header_.info_fields_[i].type << "\t" << write.stats_info.at(i) << std::endl;
 			b_uncompressed += write.stats_info[i].cost_uncompressed + write.stats_info[i].cost_strides;
 		}
 
-		for(int i = 0; i < write.stats_format.size(); ++i){
+		for (int i = 0; i < write.stats_format.size(); ++i) {
 			std::cout << "FORMAT-" << this->yon_header_.format_fields_[i].id << "\t" << this->yon_header_.format_fields_[i].type << "\t" << write.stats_format.at(i) << std::endl;
 			b_uncompressed += write.stats_format[i].cost_uncompressed + write.stats_format[i].cost_strides;
 		}
@@ -319,32 +319,32 @@ bool VariantImporter::VariantImporterImpl::Build(writer_interface_type* writer, 
 	return(true);
 }
 
-bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* writer){
+bool VariantImporter::VariantImporterImpl::WriteKeychain(writer_interface_type* writer) {
 	// Write encryption keychain.
-	if(this->settings->encrypt_data){
-		if(this->settings->output_prefix.size()){
+	if (this->settings->encrypt_data) {
+		if (this->settings->output_prefix.size()) {
 			std::ofstream writer_keychain;
 			writer_file_type* wstats = reinterpret_cast<writer_file_type*>(writer);
 			writer_keychain.open(wstats->basePath + wstats->baseName + ".kyon", std::ios::out);
-			if(!SILENT)
+			if (!SILENT)
 				std::cerr << utility::timestamp("LOG") << "Writing encryption keychain to: " << (wstats->basePath + wstats->baseName) << ".kyon" << std::endl;
 
-			if(writer_keychain.good()){
+			if (writer_keychain.good()) {
 				//writer_keychain.write(keybuffer.data(), keybuffer.size());
 				writer_keychain << keychain;
 				writer_keychain.flush();
 			}
 			const uint32_t keychain_size = writer_keychain.tellp();
 			writer_keychain.close();
-			if(!SILENT)
+			if (!SILENT)
 				std::cerr << utility::timestamp("LOG") << "Wrote keychain with " << utility::ToPrettyString(keychain.size()) << " keys to " << utility::ToPrettyDiskString(keychain_size) << "..." << std::endl;
 		}
 	}
 	return true;
 }
 
-bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type* writer){
-	if(writer == nullptr)
+bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type* writer) {
+	if (writer == nullptr)
 		return false;
 
 	// Write basic header prefix.
@@ -371,7 +371,7 @@ bool VariantImporter::VariantImporterImpl::WriteYonHeader(writer_interface_type*
 	return(writer->stream->good());
 }
 
-void VariantImporter::VariantImporterImpl::UpdateHeaderImport(yon_vnt_hdr_t& header){
+void VariantImporter::VariantImporterImpl::UpdateHeaderImport(yon_vnt_hdr_t& header) {
 	VcfExtra e;
 	e.key = "tachyon_importVersion";
 	e.value = tachyon::TACHYON_PROGRAM_NAME + "-" + VERSION + ";";
@@ -391,7 +391,7 @@ void VariantImporter::VariantImporterImpl::UpdateHeaderImport(yon_vnt_hdr_t& hea
 	header.extra_fields_.push_back(e);
 }
 
-yon_vnt_hdr_t VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header){
+yon_vnt_hdr_t VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::VcfHeader& vcf_header) {
 	yon_vnt_hdr_t header;
 	header.fileformat_string_ = vcf_header.fileformat_string_;
 	header.literals_ = vcf_header.literals_;
@@ -404,15 +404,15 @@ yon_vnt_hdr_t VariantImporter::VariantImporterImpl::ConvertVcfHeader(const io::V
 	header.BuildReverseMaps();
 
 	header.contigs_.resize(vcf_header.contigs_.size());
-	for(uint32_t i = 0; i < vcf_header.contigs_.size(); ++i)
+	for (uint32_t i = 0; i < vcf_header.contigs_.size(); ++i)
 		header.contigs_[i] = vcf_header.contigs_[i];
 
 	header.info_fields_.resize(vcf_header.info_fields_.size());
-	for(uint32_t i = 0; i < vcf_header.info_fields_.size(); ++i)
+	for (uint32_t i = 0; i < vcf_header.info_fields_.size(); ++i)
 		header.info_fields_[i] = vcf_header.info_fields_[i];
 
 	header.format_fields_.resize(vcf_header.format_fields_.size());
-	for(uint32_t i = 0; i < vcf_header.format_fields_.size(); ++i)
+	for (uint32_t i = 0; i < vcf_header.format_fields_.size(); ++i)
 		header.format_fields_[i] = vcf_header.format_fields_[i];
 
 	header.RecodeIndices();

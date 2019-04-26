@@ -39,6 +39,9 @@ bin/
 openssl/
 zstd/
 
+# VSCode
+.vscode
+
 # Binary and library
 tachyon
 lib*.so.*

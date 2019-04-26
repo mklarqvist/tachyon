@@ -17,9 +17,9 @@ public:
 	UncompressedCodec() = default;
 	~UncompressedCodec() = default;
 
-	bool Compress(container_type& container, permutation_type& manager){ return true; }
+	bool Compress(container_type& container, permutation_type& manager) { return true; }
 	bool Compress(container_type& container);
-	inline bool CompressStrides(container_type& container){ return true; }
+	inline bool CompressStrides(container_type& container) { return true; }
 	bool Decompress(container_type& container);
 	bool DecompressStrides(container_type& container);
 
